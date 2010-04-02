@@ -3,20 +3,19 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:side fill-slot="side">
+  <div tal:content="structure context/@@+ask-a-question-button" />
+  <div tal:replace="structure context/@@+global-actions" />
   <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
   <div tal:condition="context/distribution|nothing"
        tal:replace="structure context/distribution/@@+portlet-answercontacts" />
-</metal:leftportlets>
+</metal:side>
 
 <metal:css fill-slot="head_epilogue">
   <style type="text/css">
@@ -30,27 +29,8 @@
   </style>
 </metal:css>
 
-<metal:heading fill-slot="pageheading">
-  
-  <tal:block condition="view/context_is_project">
-    <tal:block condition="view/required:launchpad.Edit">
-      <p tal:condition="not: context/products" class="warning message"> 
-        There are no projects registered for
-        <span tal:replace="context/displayname">project displayname</span>.
-        <br />
-        You need to <a href="+newproduct">register another project that is
-        part of <tal:project replace="context/displayname" /></a> or associate
-        an existing project with it.
-      </p>
-    </tal:block>
-  </tal:block>
-
-  <h1 i18n:translate="" tal:content="view/pageheading">Questions</h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
-  
   <p tal:define="unspoken_languages view/unspoken_languages"
     tal:condition="unspoken_languages">
     <span tal:replace="context/displayname">Mozilla Firefox</span> has 
@@ -63,10 +43,6 @@
   <div>
     <form method="get" id="question-search-form" action=""
           tal:attributes="action request/URL">
-
-      <div style="float: right;"
-           tal:content="structure context/@@+ask-a-question-button" />
-
       <tal:searchbox replace="structure view/widgets/search_text" />
 
       <tal:sort replace="structure view/widgets/sort" />
@@ -202,21 +178,5 @@
   </tal:block>
 </div>
 
-<metal:help fill-slot="help">
-  <p>This listing displays the questions matching the selected
-    criteria in this context (project, person, sourcepackage).
-  </p>
-  <p>The search criteria for the current listing can be modified directly at
-    the top of the page. You can enter text to see questions that have the
-    same terms. When the context has questions in more than one of your
-    <a href="/+editmylanguages">preferred languages</a>, you may select the
-    languages you wish to view. You can see a questions in all languages
-    by unselecting your languages. You must select one or more statuses
-    to match questions.
-  </p>
-  <p>If you hover the mouse over a question, the beginning of its
-    description will pop-up after a few seconds.
-  </p>
-</metal:help>
 </body>
 </html>

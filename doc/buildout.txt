@@ -31,7 +31,7 @@ Motivations
 These motivations are labeled as "[INTERNAL]" or "[EXTERNAL]" to indicate
 whether it is pertinent for internal dependencies, which we on the Launchpad
 team create and release ourselves; or external dependencies, which other
-parties, in and out of Canonical, create and release.  
+parties, in and out of Canonical, create and release.
 
 * We want more careful specification of our dependencies across branches.
   [INTERNAL] [EXTERNAL]
@@ -63,7 +63,7 @@ parties, in and out of Canonical, create and release.
 
 * We want to be encouraged to make the effort to interact with upstream
   projects to have our patches integrated. [EXTERNAL]
-  
+
   Interacting and negotiating with upstream is undeniably more time-consuming
   than our current practice of maintaining local bzr branches with our patches,
   especially short-term.  But our current practice is not good open-source
@@ -227,7 +227,7 @@ you might notice seven new items in the checkout.
     This is the standard bootstrapping file provided by the Buildout
     distribution.  As of this writing, the Makefile uses this file, and you do
     not have to modify it or call it directly.
-    
+
     Without a Makefile, the first step of developing a source tree that uses
     Buildout is to run this file in the top level directory with the Python
     executable that you wish to use for the source tree.  It creates a ``bin``
@@ -235,7 +235,7 @@ you might notice seven new items in the checkout.
     there.  The next step is to run ``bin/buildout``, which, unless you supply
     a ``-c`` option to specify a configuration file, will look for a
     buildout.cfg file by default to discover what to do.
-    
+
     Again, as of this writing, the Makefile uses this file, and it does not
     need to be modified, so you need not concern yourself with it further at
     this time.
@@ -250,12 +250,12 @@ you might notice seven new items in the checkout.
     This is the file that uses ``distutils``, extended by ``setuptools``, to
     specify direct dependencies, scripts, and other elements of the local
     source tree.
-    
+
     Buildout uses it, but the reverse is not true: ``setup.py`` does not know
     about Buildout.  This means that packages that use Buildout for development
     do not have to require it when they are being installed in other software
     as a dependency.
-    
+
     Describing this file in full is well beyond the scope of this document.  We
     will give recipes for modifying it for certain tasks below. For more
     information beyond these recipes, see the setuptools and distutils
@@ -273,9 +273,9 @@ you might notice seven new items in the checkout.
 
     The key-value pairs are separated with new lines, when the subsequent line
     is not indented.  The key and value are each separated with an equals sign.
-    
+
     ::
-    
+
         foo = bar
         baz = bing
               bah
@@ -289,7 +289,7 @@ you might notice seven new items in the checkout.
     The ``[buildout]`` section is the starting point for Buildout to determine
     what to do.  It looks for an ``extends`` key to find any additional files
     to merge in; we use this for ``versions.cfg``, discussed below.
-    
+
     In addition to general configuration and initialization such as this, it
     looks in the ``develop`` key to find source trees to develop as part of the
     buildout. In the standard Launchpad configuration, we develop only
@@ -297,7 +297,7 @@ you might notice seven new items in the checkout.
     local ``setup.py`` will be run.  If you want to develop Launchpad while you
     develop another dependency, you can link another source tree in, and
     specify an additional ``develop`` directory in another line::
-    
+
         [buildout]
         develop = .
                   lazr_uri_branch
@@ -307,7 +307,7 @@ you might notice seven new items in the checkout.
     will be processed.  A section that is not identified in the ``[buildout]``
     sections ``parts`` key will usually be ignored (unless chosen for another
     role by another key elsewhere).
-    
+
     Sections other than ``[buildout]`` that are specified as parts always must
     specify a ``recipe``: an identifier that determines what code should
     process that section.  You'll see a variety of recipes in Launchpad's
@@ -337,21 +337,21 @@ you might notice seven new items in the checkout.
     Python Package Index ("PyPI"), or another download source. We manage the
     download cache as a shared resource across all of our developers with a bzr
     branch in a Launchpad project called ``lp-source-dependencies``.
-    
+
     When we run buildout, Buildout reads a special key and value in the
     ``[buildout]`` section: ``install-from-cache = true``.  This means that, by
     default, Buildout will *not* use network access to find packages, but
-    *only* look in the download cache.  This has many advantages.  
-    
+    *only* look in the download cache.  This has many advantages.
+
     - First, it helps us keep our deployment boxes from needing network access
       out to PyPI and other download sites.
 
     - Second, it makes the buildout much faster, because it does not have to
-      look out on the net for every dependency. 
+      look out on the net for every dependency.
 
     - Third, it makes the buildout more repeatable, because we are more
       insulated from outages at download sites such as PyPI, and poor release
-      management. 
+      management.
 
     - Fourth, it makes our deployments more auditable, because we can tell
       exactly what we are deploying.
@@ -395,7 +395,7 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
 
 1.  Add the new package to the ``setup.py`` file in the ``install_requires``
     list.
-    
+
     Generally, our policy is to only set minimum version numbers in this file,
     or none at all.  It doesn't really matter for an application like
     Launchpad, but it a good rule for library packages, so we follow it for
@@ -405,10 +405,10 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
 
 2.  [OPTIONAL] If you know it, add the desired version number to versions.cfg
     now.
-    
+
     For instance, if you know you want lazr.foo 1.1.2, add this line to the
     ``[versions]`` section of ``versions.cfg``::
-  
+
       lazr.foo = 1.1.2
 
 3.  [OPTIONAL] Add the desired distribution of lazr.foo 1.1.2 to the
@@ -436,12 +436,12 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     At this time, note that the output will include at least one, and possibly
     more, spurious "Picked:" listings.  ipython, in particular, shows up
     repeatedly.
-    
+
     In our example, other than the spurious ``ipython`` listing, this means
     that these packages have also been added to your ``download-cache/dist``
     directory. You also need to add those versions to the ``versions.cfg``
     file::
-    
+
         lazr.foom = 1.4
         zope.bar = 3.6.1
         z3c.shazam = 2.0.1
@@ -515,11 +515,15 @@ recipe is one way, but well out of the scope of this document.  Read the
 zc.buildout documentation for direction.
 
 A much easier, and more limited approach is to use `z3c.recipe.filetemplate`_
-to build the file.  In the Launchpad configuration, this is used in the
-``[filetemplates]`` section, and is configured to use the files in the
-``buildout-templates`` directory for sources.  Basically, it finds .in files
-and installs them as found in the source directory, processing them with the
-values from the buildout configuration.
+to build the file.  The recipe uses the ``buildout-templates`` directory,
+which is a mirror of the Launchpad source tree.  The recipe searches the tree
+for files ending in '.in', performs variable substitution on them, and then be
+copies them into the Launchpad source tree.
+
+To add a file using the recipe, simply create mirrors of the source tree
+directories that you need under ``buildout-templates/``, and create a .in file
+template at the desired location.  Take a look at
+``buildout-templates/bin/`` for examples of what is possible.
 
 .. _`z3c.recipe.filetemplate`: http://pypi.python.org/pypi/z3c.recipe.filetemplate
 

@@ -27,6 +27,7 @@ __all__ = [
     'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
+    'NoSuchCodeImportJob',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -42,6 +43,9 @@ __all__ = [
 
 
 import xmlrpclib
+
+
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 def check_fault(fault, *fault_classes):
@@ -309,12 +313,16 @@ class CannotHaveLinkedBranch(LaunchpadFault):
     error_code = 230
     msg_template = (
         "%(component_name)s is a %(component_type)s, and a "
-        "%(component_type)s doesn't have a default branch.")
+        "%(component_type)s cannot have a default branch.")
 
     def __init__(self, component):
+        if IProjectGroup.providedBy(component):
+            component_type = 'project group'
+        else:
+            component_type = component.__class__.__name__.lower()
         LaunchpadFault.__init__(
             self, component_name=component.displayname,
-            component_type=component.__class__.__name__.lower())
+            component_type=component_type)
 
 
 class InvalidProductIdentifier(LaunchpadFault):
@@ -467,3 +475,12 @@ class NoSuchSourcePackageName(LaunchpadFault):
         self.sourcepackagename = sourcepackagename
         LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
 
+
+class NoSuchCodeImportJob(LaunchpadFault):
+    """Raised by `ICodeImportScheduler` methods when a job is not found."""
+
+    error_code = 360
+    msg_template = 'Job %(job_id)d not found.'
+
+    def __init__(self, job_id):
+        LaunchpadFault.__init__(self, job_id=job_id)

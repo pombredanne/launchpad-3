@@ -6,31 +6,65 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProjectSettingsView',
     'ProjectTranslationsMenu',
     'ProjectView',
     ]
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, Link, LaunchpadView)
+    action, canonical_url, enabled_with_permission, Link, LaunchpadView)
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.browser.project import ProjectEditView
+from lp.translations.browser.translations import TranslationsMixin
 
 
 class ProjectTranslationsMenu(NavigationMenu):
 
-    usedfor = IProject
+    usedfor = IProjectGroup
     facet = 'translations'
-    links = ['products', 'changetranslators']
+    links = ['products', 'settings', 'overview']
 
-    @enabled_with_permission('launchpad.Edit')
-    def changetranslators(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def settings(self):
+        text = 'Change permissions'
+        return Link('+settings', text, icon='edit')
 
     def products(self):
         text = 'Products'
         return Link('', text)
 
+    def overview(self):
+        text = 'Overview'
+        link = canonical_url(self.context, rootsite='translations')
+        return Link(link, text, icon='translation')
+
 
 class ProjectView(LaunchpadView):
-    pass
+    """A view for `IProjectGroup` in the translations context."""
+
+    label = "Translatable applications"
+
+    @property
+    def untranslatables(self):
+        translatables = set(self.context.translatables())
+        all_products = set(self.context.products)
+        return list(all_products - translatables)
+
+
+class ProjectSettingsView(TranslationsMixin, ProjectEditView):
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
+    field_names = ["translationgroup", "translationpermission"]
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return self.cancel_url
+
+    @action('Change', name='change')
+    def edit(self, action, data):
+        self.updateContextFromData(data)

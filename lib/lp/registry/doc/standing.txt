@@ -168,21 +168,21 @@ approved.  As a result, his personal standing gets updated.
 Along comes Mark who also sends three messages to three different lists.  His
 personal standing gets updated to Good also.
 
-    >>> message = post_message('mark@hbd.com', 'test-one')
+    >>> message = post_message('mark@example.com', 'test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> mark = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
-    >>> message = post_message('mark@hbd.com', 'test-two')
+    >>> message = post_message('mark@example.com', 'test-two')
     >>> message.approve(foobar)
     >>> script.main()
     >>> sync(mark)
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
-    >>> message = post_message('mark@hbd.com', 'test-three')
+    >>> message = post_message('mark@example.com', 'test-three')
     >>> message.approve(foobar)
     >>> script.main()
     >>> sync(mark)

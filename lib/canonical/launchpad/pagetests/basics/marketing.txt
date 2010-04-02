@@ -153,9 +153,9 @@ the user to the appropriate tour page.
 === Bugs ===
 
     >>> browser.open('http://bugs.launchpad.dev')
-    >>> tour_link = browser.getLink('Take a tour')
+    >>> tour_link = browser.getLink('take a tour')
     >>> print tour_link.url
-    http://launchpad.dev/+tour/bugs
+    http://bugs.launchpad.dev/+tour
     >>> tour_link.click()
 
 

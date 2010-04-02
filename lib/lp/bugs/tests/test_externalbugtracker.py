@@ -20,6 +20,9 @@ def test_suite():
         'bugzilla-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     suite.addTest(LayeredDocFileSuite(
+        'bugzilla-api-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer))
+    suite.addTest(LayeredDocFileSuite(
         'trac-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     suite.addTest(LayeredDocFileSuite(

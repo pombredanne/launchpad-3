@@ -89,6 +89,12 @@ special = {
         '../doc/cve-update.txt',
         setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
         ),
+    'bug-heat.txt': LayeredDocFileSuite(
+        '../doc/bug-heat.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
         setUp=uploaderBugsSetUp,
@@ -202,6 +208,12 @@ special = {
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
+    'bugtracker.txt':
+        LayeredDocFileSuite(
+        '../doc/bugtracker.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
     'checkwatches.txt':
         LayeredDocFileSuite(
         '../doc/checkwatches.txt',
@@ -234,6 +246,13 @@ special = {
     'externalbugtracker-bugzilla.txt':
         LayeredDocFileSuite(
         '../doc/externalbugtracker-bugzilla.txt',
+        setUp=checkwatchesSetUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'externalbugtracker-bugzilla-api.txt':
+        LayeredDocFileSuite(
+        '../doc/externalbugtracker-bugzilla-api.txt',
         setUp=checkwatchesSetUp,
         tearDown=tearDown,
         layer=LaunchpadZopelessLayer

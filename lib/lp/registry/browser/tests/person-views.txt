@@ -4,7 +4,94 @@ There are many views that wrap the Person object to display the
 person's information.
 
 
-== Email address disclosure ==
+Probationary and invalid users
+------------------------------
+
+The person +index view provides the is_probationary_or_invalid_user so that
+page features can be disabled because the user may abuse them. Active
+users with karma are not on probation; the user's homepage_content is
+formatted as HTML.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> homepage_content = "line one <script>\n\nhttp://aa.aa/"
+    >>> person_set = getUtility(IPersonSet)
+    >>> active_user = person_set.getByName('name12')
+    >>> login_person(active_user)
+    >>> active_user.homepage_content = homepage_content
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(active_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    False
+
+    >>> print view.homepage_content
+    <p>line one &lt;script&gt;</p>
+    <BLANKLINE>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+
+Teams are always valid and do not have probation rules; the homepage content
+is formatted HTML.
+
+    >>> team = factory.makeTeam()
+    >>> login_person(team.teamowner)
+    >>> team.homepage_content = homepage_content
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(team, '+index')
+    >>> view.is_probationary_or_invalid_user
+    False
+
+    >>> print view.homepage_content
+    <p>line one &lt;script&gt;</p>
+    <BLANKLINE>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+
+New users are on probation; the homepage content is escaped HTML.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> new_user = factory.makePerson()
+    >>> removeSecurityProxy(new_user).homepage_content = homepage_content
+    >>> view = create_initialized_view(new_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    True
+
+    >>> print view.homepage_content
+    line one &lt;script&gt;
+    <BLANKLINE>
+    http://aa.aa/
+
+Inactive and suspended users are invalid; the homepage content is escaped
+HTML.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces import IMasterObject
+
+    # Only admins can change an account.
+    >>> admin_user = person_set.getByName('name16')
+    >>> login_person(admin_user)
+    >>> invalid_user = factory.makePerson(name="ugh")
+    >>> invalid_user.homepage_content = homepage_content
+    >>> IMasterObject(invalid_user.account).status = AccountStatus.NOACCOUNT
+    >>> view = create_initialized_view(invalid_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    True
+
+    >>> print view.homepage_content
+    line one &lt;script&gt;
+    <BLANKLINE>
+    http://aa.aa/
+
+    >>> login(ANONYMOUS)
+
+If the user has no homepage content, the view's value is None.
+
+    >>> removeSecurityProxy(new_user).homepage_content = None
+    >>> view = create_initialized_view(new_user, '+index')
+    >>> print view.homepage_content
+    None
+
+
+Email address disclosure
+------------------------
 
 PersonView is the base for many views for Person objects, including the
 default view. It provides several properties to help display email
@@ -19,12 +106,9 @@ can see them
 Mark has a registered email address, and he has chosen to disclose it to
 the world.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> person_set = getUtility(IPersonSet)
-    >>> mark = person_set.getByEmail('mark@hbd.com')
+    >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
-    u'mark@hbd.com'
+    u'mark@example.com'
     >>> mark.hide_email_addresses
     False
 
@@ -51,7 +135,7 @@ email addresses.
     >>> view.visible_email_address_description
     'This email address is only visible to Launchpad users.'
     >>> view.visible_email_addresses
-    [u'mark@hbd.com']
+    [u'mark@example.com']
 
 As for Sample Person, he has chosen not to disclose his email addresses.
 
@@ -226,7 +310,7 @@ The map_portlet_html property that creates the map cannot be called.
     AssertionError: Can't generate the map for a person who hasn't set
                     a visible location.
 
-If the user set's his location, but does not make it visible, needs_gmap2
+If the user sets his location, but does not make it visible, needs_gmap2
 will still be False and the map_portlet_html property cannot be called.
 
     >>> login_person(sample_person)
@@ -271,6 +355,33 @@ the 'Show maps' checkbox.
     <script type="text/javascript">
       YUI().use('node', 'lp.mapping', function(Y) { ...
 
+The map portlet is shown if the user has not set his location and is
+viewing his own page.
+
+    >>> user = factory.makePerson()
+    >>> user.latitude is None
+    True
+    >>> login_person(user)
+    >>> person_view = create_initialized_view(
+    ...     user, '+index')
+    >>> person_view.should_show_map_portlet
+    True
+
+However another user will not be shown the portlet.
+
+    >>> login('foo.bar@canonical.com')
+    >>> person_view = create_initialized_view(
+    ...     user, '+index')
+    >>> person_view.should_show_map_portlet
+    False
+
+If a user has a location set and it is visibible then the portlet is shown.
+
+    >>> person_view = create_initialized_view(
+    ...     sample_person, '+index')
+    >>> person_view.should_show_map_portlet
+    True
+
 
 == Things a person is working on ==
 
@@ -290,8 +401,9 @@ that are not in progress.
     0
     >>> len(view.assigned_specs_in_progress)
     0
-    >>> print view.render()
-    <BLANKLINE>
+    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> len(extract_text(view.render()))
+    0
 
 Assigned specifications that do not display when they are not in an
 in progress state.
@@ -331,11 +443,10 @@ the user is working on.
     >>> len(view.assigned_specs_in_progress)
     1
     >>> print view.render()
-    <div id="working-on">...
+    <div id="working-on"...
+    <a href="/~ken/+specs?role=assignee"> All assigned blueprints </a>...
     ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
       need stories</a>...
-    <a href="/~ken/+specs?role=assignee">
-      &raquo; Show all assigned blueprints </a>...
     </div>...
 
 Assigned bugs do not display when their status is not INPROGRESS.
@@ -366,15 +477,15 @@ its status is in INPROGRESS.
     >>> len(view.assigned_specs_in_progress)
     1
     >>> print view.render()
-    <div id="working-on">...
+    <div id="working-on"...
+    <a href="http://launchpad.dev/~ken/+assignedbugs?...">
+      All bugs in progress </a>...
     ...<a href="http://bugs.launchpad.dev/tool/+bug/..."...>tool
       does not work</a>...
-    <a href="http://launchpad.dev/~ken/+assignedbugs?...">
-      &raquo; Show all bugs in progress </a>...
+    <a href="/~ken/+specs?role=assignee">
+      All assigned blueprints </a>...
     ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
       need stories</a>...
-    <a href="/~ken/+specs?role=assignee">
-      &raquo; Show all assigned blueprints </a>...
     </div>...
 
 Multiple bugs and specs are displayed.
@@ -430,7 +541,7 @@ than we're willing to display.
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
     >>> name16 = person_set.getByName('name16')
-    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> from lp.soyuz.tests.test_publishing import (
@@ -446,7 +557,7 @@ than we're willing to display.
     ...     discard = test_pub.getPubSource(
     ...         sourcename=source_name,
     ...         status=PackagePublishingStatus.PUBLISHED,
-    ...         archive=sabdfl.archive,
+    ...         archive=mark.archive,
     ...         distroseries=warty)
     ...     # Add the maintained packages.
     ...     discard = test_pub.getPubSource(
@@ -455,7 +566,7 @@ than we're willing to display.
     ...         distroseries=warty)
     ...     # Add the uploaded packages.
     ...     discard = test_pub.getPubSource(
-    ...         maintainer=sabdfl,
+    ...         maintainer=mark,
     ...         sourcename=source_name,
     ...         status=PackagePublishingStatus.PUBLISHED,
     ...         distroseries=warty)
@@ -587,7 +698,7 @@ address.
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(landscape_developers, '+index')
     >>> print view.contact_link_title
-    Send an email to your team through Launchpad
+    Send an email to your team's members through Launchpad
 
 The EmailToPersonView can be used by members to contact their team.
 
@@ -721,7 +832,8 @@ view property `should_show_ppa_section`.
 
 The property checks two things to decide whether to return True or not:
  * Return True if the current user has launchpad.Edit permission
- * Return True if the person has PPAs and at least one of them is public.
+ * Return True if the person has PPAs and at least one of them is viewable
+   by the current user.
 
 Cprov is a user with a PPA:
 
@@ -741,35 +853,34 @@ Cprov himself can see the section:
     >>> view.should_show_ppa_section
     True
 
-If we disable Cprov's PPA, the section is still presented to anyone.
+If we disable Cprov's PPA, the section is not presented to anonymous
+users who cannot view the PPA, but is displayed to Celso.
 
     >>> login("admin@canonical.com")
-    >>> cprov.archive.enabled = False
+    >>> cprov.archive.disable()
 
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(cprov, "+index")
     >>> view.should_show_ppa_section
-    True
+    False
 
     >>> login("celso.providelo@canonical.com")
     >>> view = create_initialized_view(cprov, "+index")
     >>> view.should_show_ppa_section
     True
 
-If we make the PPA private, only cprov will see the section.
+If the PPA is private, only the owner will see the section.
 
     >>> login("admin@canonical.com")
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
-    >>> transaction.commit()
+    >>> private_ppa = factory.makeArchive(private=True)
 
-    >>> login("celso.providelo@canonical.com")
-    >>> view = create_initialized_view(cprov, "+index")
+    >>> login_person(private_ppa.owner)
+    >>> view = create_initialized_view(private_ppa.owner, "+index")
     >>> view.should_show_ppa_section
     True
 
     >>> login(ANONYMOUS)
-    >>> view = create_initialized_view(cprov, "+index")
+    >>> view = create_initialized_view(private_ppa.owner, "+index")
     >>> view.should_show_ppa_section
     False
 
@@ -795,11 +906,10 @@ section will still not appear for anyone but people with lp.edit.
 
     >>> login("admin@canonical.com")
     >>> team = factory.makeTeam()
-    >>> team.addMember(sample_person, sample_person)
+    >>> ignored = team.addMember(sample_person, sample_person)
     >>> ppa = factory.makeArchive(distribution=ubuntu, owner=team)
 
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(sample_person, "+index")
     >>> view.should_show_ppa_section
     False
-

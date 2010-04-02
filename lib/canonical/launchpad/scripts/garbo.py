@@ -21,7 +21,7 @@ from canonical.database import postgresql
 from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.hwdb import HWSubmission
+from lp.hardwaredb.model.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -30,12 +30,16 @@ from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.scripts.bugheat import BugHeatCalculator
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
+from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
     LaunchpadCronScript, SilentLaunchpadScriptFailure)
 
@@ -469,7 +473,8 @@ class PersonEmailAddressLinkChecker(TunableLoop):
         start = time.time()
         while True:
             lag = self.person_store.execute(
-                "SELECT replication_lag();").get_one()[0]
+                "SELECT COALESCE(EXTRACT(EPOCH FROM replication_lag()), 0);"
+                ).get_one()[0]
             if lag < (time.time() - start):
                 return
             # Guestimate on how long we should wait for. We cap
@@ -656,6 +661,98 @@ class BugNotificationPruner(TunableLoop):
         self.log.debug("Removed %d rows" % num_removed)
 
 
+class BranchJobPruner(TunableLoop):
+    """Prune `BranchJob`s that are in a final state and older than a month old.
+
+    When a BranchJob is completed, it gets set to a final state.  These jobs
+    should be pruned from the database after a month.
+    """
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(BranchJobPruner, self).__init__(log, abort_time)
+        self.job_store = IMasterStore(BranchJob)
+
+    def isDone(self):
+        return self._ids_to_remove().any() is None
+
+    def _ids_to_remove(self):
+        jobs = self.job_store.find(
+            BranchJob.id,
+            BranchJob.job == Job.id,
+            Job.date_finished < THIRTY_DAYS_AGO)
+        return jobs
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        ids_to_remove = list(self._ids_to_remove()[:chunk_size])
+        num_removed = self.job_store.find(
+            BranchJob,
+            In(BranchJob.id, ids_to_remove)).remove()
+        transaction.commit()
+
+
+class BugHeatUpdater(TunableLoop):
+    """A `TunableLoop` for bug heat calculations."""
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(BugHeatUpdater, self).__init__(log, abort_time)
+        self.transaction = transaction
+        self.offset = 0
+        self.total_updated = 0
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        # When the main loop has no more Bugs to process it sets
+        # offset to None. Until then, it always has a numerical
+        # value.
+        return self.offset is None
+
+    def __call__(self, chunk_size):
+        """Retrieve a batch of Bugs and update their heat.
+
+        See `ITunableLoop`.
+        """
+        # XXX 2010-01-08 gmb bug=198767:
+        #     We cast chunk_size to an integer to ensure that we're not
+        #     trying to slice using floats or anything similarly
+        #     foolish. We shouldn't have to do this.
+        chunk_size = int(chunk_size)
+
+        start = self.offset
+        end = self.offset + chunk_size
+
+        transaction.begin()
+        # XXX 2010-01-08 gmb bug=505850:
+        #     This method call should be taken out and shot as soon as
+        #     we have a proper permissions system for scripts.
+        bugs = getUtility(IBugSet).dangerousGetAllBugs()[start:end]
+
+        self.offset = None
+        bug_count = bugs.count()
+        if bug_count > 0:
+            starting_id = bugs.first().id
+            self.log.debug("Updating %i Bugs (starting id: %i)" %
+                (bug_count, starting_id))
+
+        for bug in bugs:
+            # We set the starting point of the next batch to the Bug
+            # id after the one we're looking at now. If there aren't any
+            # bugs this loop will run for 0 iterations and starting_id
+            # will remain set to None.
+            start += 1
+            self.offset = start
+            self.log.debug("Updating heat for bug %s" % bug.id)
+            bug_heat_calculator = BugHeatCalculator(bug)
+            heat = bug_heat_calculator.getBugHeat()
+            bug.setHeat(heat)
+            self.total_updated += 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -671,7 +768,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     def __init__(self, test_args=None):
         super(BaseDatabaseGarbageCollector, self).__init__(
             self.script_name,
-            dbuser=self.script_name.replace('-','_'),
+            dbuser=self.script_name.replace('-', '_'),
             test_args=test_args)
 
     def add_my_options(self):
@@ -759,6 +856,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         MailingListSubscriptionPruner,
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
+        BranchJobPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

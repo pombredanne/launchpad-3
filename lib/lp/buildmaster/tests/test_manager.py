@@ -7,7 +7,7 @@ import os
 import transaction
 import unittest
 
-from twisted.internet import defer
+from twisted.internet import defer, task, reactor
 from twisted.internet.error import (
     ConnectionClosed, ProcessTerminated, TimeoutError)
 from twisted.python.failure import Failure
@@ -18,20 +18,21 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing.layers import (
+    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.scripts.logger import BufferLogger
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing.layers import (
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -51,18 +52,29 @@ class TestRecordingSlaves(TrialTestCase):
         """
         self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
 
+    def assert_ensurepresent(self, func):
+        """Helper function to test results from calling ensurepresent."""
+        self.assertEqual(
+            [True, 'Download'],
+            func('boing', 'bar', 'baz'))
+        self.assertEqual(
+            [('ensurepresent', ('boing', 'bar', 'baz'))],
+            self.slave.calls)
+
     def test_ensurepresent(self):
         """`RecordingSlave.ensurepresent` always succeeds.
 
         It returns the expected succeed code and records the interaction
         information for later use.
         """
-        self.assertEqual(
-            [True, 'Download'],
-            self.slave.ensurepresent('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('ensurepresent', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
+        self.assert_ensurepresent(self.slave.ensurepresent)
+
+    def test_sendFileToSlave(self):
+        """RecordingSlave.sendFileToSlave always succeeeds.
+
+        It calls ensurepresent() and hence returns the same results.
+        """
+        self.assert_ensurepresent(self.slave.sendFileToSlave)
 
     def test_build(self):
         """`RecordingSlave.build` always succeeds.
@@ -466,7 +478,7 @@ class TestBuilddManagerScan(TrialTestCase):
         test_publisher = SoyuzTestPublisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
         login(ANONYMOUS)
 
@@ -489,13 +501,16 @@ class TestBuilddManagerScan(TrialTestCase):
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
+        from lp.services.job.interfaces.job import JobStatus
         if logtail is None:
             logtail = 'Dummy sampledata entry, not processing'
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
-        self.assertTrue(job.buildstart is not None)
-        self.assertEqual(job.build.buildstate, BuildStatus.BUILDING)
+        self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.job.status, JobStatus.RUNNING)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
     def _getManager(self):
@@ -617,24 +632,30 @@ class TestBuilddManagerScan(TrialTestCase):
 
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
-        self.assertTrue(job.buildstart is None)
-        self.assertEqual(job.build.buildstate, BuildStatus.NEEDSBUILD)
+        self.assertTrue(job.date_started is None)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
 
-        # Sampledata builder is broken and is holding a active job.
-        broken_builder = getUtility(IBuilderSet)['bob']
-        self.assertFalse(broken_builder.builderok)
-        lost_job = broken_builder.currentjob
-        self.assertTrue(lost_job is not None)
-        self.assertBuildingJob(lost_job, broken_builder)
+        # Sampledata builder is enabled and is assigned to an active job.
+        builder = getUtility(IBuilderSet)['bob']
+        self.assertTrue(builder.builderok)
+        job = builder.currentjob
+        self.assertBuildingJob(job, builder)
+
+        # Disable the sampledata builder
+        login('foo.bar@canonical.com')
+        builder.builderok = False
+        transaction.commit()
+        login(ANONYMOUS)
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
         manager = self._getManager()
         d = defer.maybeDeferred(manager.scan)
-        d.addCallback(self._checkJobRescued, broken_builder, lost_job)
+        d.addCallback(self._checkJobRescued, builder, job)
         return d
 
     def _checkJobUpdated(self, recording_slaves, builder, job):
@@ -696,13 +717,14 @@ class TestDispatchResult(unittest.TestCase):
         builder.builderok = True
 
         job = builder.currentjob
+        build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
-            job.build.title)
+            build.title)
 
-        self.assertEqual('BUILDING', job.build.buildstate.name)
+        self.assertEqual('BUILDING', build.buildstate.name)
         self.assertNotEqual(None, job.builder)
-        self.assertNotEqual(None, job.buildstart)
+        self.assertNotEqual(None, job.date_started)
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
@@ -712,9 +734,10 @@ class TestDispatchResult(unittest.TestCase):
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
         job = getUtility(IBuildQueueSet).get(job_id)
-        self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.buildstart)
+        self.assertEqual(None, job.date_started)
         self.assertEqual(None, job.logtail)
 
     def testResetDispatchResult(self):

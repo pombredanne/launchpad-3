@@ -50,9 +50,11 @@ __all__ = [
     'AsyncLaunchpadTransport',
     'BadUrl',
     'BadUrlLaunchpad',
+    'BadUrlScheme',
     'BadUrlSsh',
     'branch_id_to_path',
     'BranchPolicy',
+    'DirectDatabaseLaunchpadServer',
     'get_lp_server',
     'get_multi_server',
     'get_puller_server',
@@ -77,16 +79,17 @@ from lazr.uri import URI
 from twisted.internet import defer
 from twisted.python import failure
 
+from zope.component import getUtility
 from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
@@ -106,6 +109,7 @@ class BadUrlLaunchpad(BadUrl):
 
 class BadUrlScheme(BadUrl):
     """Found a URL with an untrusted scheme."""
+
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
@@ -180,20 +184,25 @@ def get_puller_server():
     return get_multi_server(write_mirrored=True)
 
 
-def get_multi_server(write_hosted=False, write_mirrored=False):
+def get_multi_server(write_hosted=False, write_mirrored=False,
+                     direct_database=False):
     """Get a server with access to both mirrored and hosted areas.
 
-    The server wraps up two `LaunchpadInternalServer`s. One of them points to
-    the hosted branch area, the other points to the mirrored area.
+    The server wraps up two `LaunchpadInternalServer`s or
+    `DirectDatabaseLaunchpadServer`s. One server points to the hosted branch
+    area and the other points to the mirrored area.
 
     Write permision defaults to False, but can be overridden.
+
     :param write_hosted: if True, lp-hosted URLs are writeable.  Otherwise,
         they are read-only.
     :param write_mirrored: if True, lp-mirrored URLs are writeable.
         Otherwise, they are read-only.
+
+    :param direct_database: if True, use a server implementation that talks
+        directly to the database.  If False, the default, use a server
+        implementation that talks to the internal XML-RPC server.
     """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
         config.codehosting.hosted_branches_root, mkdir=True)
     if not write_hosted:
@@ -202,10 +211,16 @@ def get_multi_server(write_hosted=False, write_mirrored=False):
         config.codehosting.mirrored_branches_root, mkdir=True)
     if not write_mirrored:
         mirrored_transport = get_readonly_transport(mirrored_transport)
-    hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', branchfs_endpoint, hosted_transport)
-    mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
+    if direct_database:
+        make_server = DirectDatabaseLaunchpadServer
+    else:
+        proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+        branchfs_endpoint = BlockingProxy(proxy)
+        def make_server(scheme, transport):
+            return LaunchpadInternalServer(
+                scheme, branchfs_endpoint, transport)
+    hosted_server = make_server('lp-hosted:///', hosted_transport)
+    mirrored_server = make_server('lp-mirrored:///', mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
 
 
@@ -267,7 +282,7 @@ class BranchTransportDispatch:
         self._checkPath(trailing_path)
         transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
-            ensure_base(transport)
+            transport.create_prefix()
         except TransportNotPossible:
             # Silently ignore TransportNotPossible. This is raised when the
             # base transport is read-only.
@@ -325,7 +340,7 @@ class TransportDispatch:
             configured to use the given default stacked-on location.
         """
         memory_server = MemoryServer()
-        memory_server.setUp()
+        memory_server.start_server()
         transport = get_transport(memory_server.get_url())
         if default_stack_on == '':
             return transport
@@ -353,17 +368,21 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         path on that transport.
     """
 
-    def __init__(self, scheme, authserver, user_id):
+    def __init__(self, scheme, authserver, user_id,
+                 seen_new_branch_hook=None):
         """Construct a LaunchpadServer.
 
         :param scheme: The URL scheme to use.
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
+        :param seen_new_branch_hook: A callable that will be called once for
+            each branch accessed via this server.
         """
         AsyncVirtualServer.__init__(self, scheme)
-        self._authserver = BranchFileSystemClient(authserver, user_id)
-        self._is_set_up = False
+        self._authserver = BranchFileSystemClient(
+            authserver, user_id, seen_new_branch_hook=seen_new_branch_hook)
+        self._is_start_server = False
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.
@@ -414,8 +433,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
-    def setUp(self):
-        super(LaunchpadInternalServer, self).setUp()
+    def start_server(self):
+        super(LaunchpadInternalServer, self).start_server()
         try:
             self._transport_dispatch.base_transport.ensure_base()
         except TransportNotPossible:
@@ -424,7 +443,45 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tearDown()
+        self.stop_server()
+
+
+class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
+
+    def __init__(self, scheme, branch_transport):
+        AsyncVirtualServer.__init__(self, scheme)
+        self._transport_dispatch = BranchTransportDispatch(branch_transport)
+
+    def start_server(self):
+        super(DirectDatabaseLaunchpadServer, self).start_server()
+        try:
+            self._transport_dispatch.base_transport.ensure_base()
+        except TransportNotPossible:
+            pass
+
+    def destroy(self):
+        """Delete the on-disk branches and tear down."""
+        self._transport_dispatch.base_transport.delete_tree('.')
+        self.stop_server()
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        """See `AsyncVirtualServer.translateVirtualPath`.
+
+        This implementation connects to the database directly.
+        """
+        deferred = defer.succeed(
+            getUtility(IBranchLookup).getIdAndTrailingPath(
+                virtual_url_fragment))
+
+        def process_result((branch_id, trailing)):
+            if branch_id is None:
+                raise NoSuchFile(virtual_url_fragment)
+            else:
+                return self._transport_dispatch.makeTransport(
+                    (BRANCH_TRANSPORT, dict(id=branch_id), trailing[1:]))
+
+        deferred.addCallback(process_result)
+        return deferred
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):
@@ -503,7 +560,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
     asyncTransportFactory = AsyncLaunchpadTransport
 
     def __init__(self, authserver, user_id, hosted_transport,
-                 mirror_transport):
+                 mirror_transport, seen_new_branch_hook=None):
         """Construct a `LaunchpadServer`.
 
         See `_BaseLaunchpadServer` for more information.
@@ -522,9 +579,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :param mirror_transport: A Bazaar `Transport` that points to the
             "mirrored" area of Launchpad. See module docstring for more
             information.
+        :param seen_new_branch_hook: A callable that will be called once for
+            each branch accessed via this server.
         """
         scheme = 'lp-%d:///' % id(self)
-        super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
+        super(LaunchpadServer, self).__init__(
+            scheme, authserver, user_id, seen_new_branch_hook)
         mirror_transport = get_readonly_transport(mirror_transport)
         self._transport_dispatch = TransportDispatch(
             hosted_transport, mirror_transport)
@@ -559,7 +619,10 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # parent directories", which is just misleading.
             fault = trap_fault(
                 failure, faults.NotFound, faults.PermissionDenied)
-            raise PermissionDenied(virtual_url_fragment, fault.faultString)
+            faultString = fault.faultString
+            if isinstance(faultString, unicode):
+                faultString = faultString.encode('utf-8')
+            raise PermissionDenied(virtual_url_fragment, faultString)
 
         return deferred.addErrback(translate_fault)
 
@@ -585,7 +648,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
 
 def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
-                  mirror_directory=None):
+                  mirror_directory=None, seen_new_branch_hook=None):
     """Create a Launchpad server.
 
     :param user_id: A unique database ID of the user whose branches are
@@ -593,6 +656,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     :param branchfs_endpoint_url: URL for the branch file system end-point.
     :param hosted_directory: Where the branches are uploaded to.
     :param mirror_directory: Where all Launchpad branches are mirrored.
+    :param seen_new_branch_hook:
     :return: A `LaunchpadServer`.
     """
     # Get the defaults from the config.
@@ -611,7 +675,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     mirror_transport = get_chrooted_transport(mirror_url)
     lp_server = LaunchpadServer(
         BlockingProxy(branchfs_client), user_id,
-        hosted_transport, mirror_transport)
+        hosted_transport, mirror_transport, seen_new_branch_hook)
     return lp_server
 
 

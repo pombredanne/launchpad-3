@@ -10,7 +10,6 @@ __all__ = [
 
 import os
 import psycopg2
-import textwrap
 import traceback
 from StringIO import StringIO
 from zope.component import getAdapter, getUtility
@@ -18,9 +17,13 @@ from zope.component import getAdapter, getUtility
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp import canonical_url
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.poexportrequest import (
     IPOExportRequestSet)
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.translations.interfaces.translationexporter import (
@@ -35,39 +38,215 @@ class ExportResult:
 
     This class has three main attributes:
 
-     - name: A short identifying string for this export.
+     - person: The person requesting this export.
      - url: The Librarian URL for any successfully exported files.
-     - failure: Failure got while exporting.
+     - failure: Failure gotten while exporting.
     """
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, person, requested_exports, logger):
+        self.person = person
         self.url = None
         self.failure = None
-        self.object_names = []
+        self.logger = logger
 
-    def _getFailureEmailBody(self, person):
+        self.requested_exports = list(requested_exports)
+        export_requested_at = self._getExportRequestOrigin()
+        self.name = self._getShortRequestName(export_requested_at)
+
+        self.request_url = canonical_url(
+            export_requested_at,
+            rootsite='translations') + '/+export'
+
+    def _getShortRequestName(self, request):
+        """Return a short request name for use in email subjects."""
+        if IPOFile.providedBy(request):
+            title = '%s translation of %s' % (
+                request.language.englishname,
+                request.potemplate.name)
+            productseries = request.potemplate.productseries
+            distroseries = request.potemplate.distroseries
+            sourcepackagename = request.potemplate.sourcepackagename
+        elif IPOTemplate.providedBy(request):
+            title = '%s template' % (request.name)
+            productseries = request.productseries
+            distroseries = request.distroseries
+            sourcepackagename = request.sourcepackagename
+        elif IProductSeries.providedBy(request):
+            title = None
+            productseries = request
+            distroseries = None
+            sourcepackagename = None
+        elif ISourcePackage.providedBy(request):
+            title = None
+            productseries = None
+            distroseries = request.distroseries
+            sourcepackagename = request.sourcepackagename
+        else:
+            raise AssertionError(
+                "We can not figure out short name for this translation "
+                "export origin.")
+
+        if productseries is not None:
+            root = '%s %s' % (
+                productseries.product.displayname,
+                productseries.name)
+        else:
+            root = '%s %s %s' % (
+                distroseries.distribution.displayname,
+                distroseries.displayname,
+                sourcepackagename.name)
+        if title is not None:
+            return '%s - %s' % (root, title)
+        else:
+            return root
+
+    def _getExportRequestOrigin(self):
+        """Figure out where an export request was made."""
+        # Determine all objects that export request could have
+        # originated on.
+        export_requested_at = None
+        pofiles = set()
+        implicit_potemplates = set()
+        direct_potemplates = set()
+        productseries = set()
+        sourcepackages = set()
+
+        last_template_name = None
+        for request in self.requested_exports:
+            if IPOTemplate.providedBy(request):
+                # If we are exporting a template, add it to
+                # the list of directly requested potemplates.
+                potemplate = request
+                direct_potemplates.add(potemplate)
+            else:
+                # Otherwise, we are exporting a POFile.
+                potemplate = request.potemplate
+                implicit_potemplates.add(potemplate)
+                pofiles.add(request)
+            if potemplate.displayname != last_template_name:
+                self.logger.debug(
+                    'Exporting objects for %s, related to template %s'
+                    % (self.person.displayname, potemplate.displayname))
+                last_template_name = potemplate.displayname
+
+            # Determine productseries or sourcepackage for any
+            # productseries/sourcepackage an export was requested at.
+            if potemplate.productseries is not None:
+                productseries.add(potemplate.productseries)
+            elif potemplate.sourcepackagename is not None:
+                sourcepackage = potemplate.distroseries.getSourcePackage(
+                    potemplate.sourcepackagename)
+                sourcepackages.add(sourcepackage)
+            else:
+                raise AssertionError(
+                    "Requesting a translation export which belongs to "
+                    "neither a ProductSeries nor a SourcePackage.")
+
+        if len(pofiles) == 1 and len(direct_potemplates) == 0:
+            # One POFile was requested.
+            export_requested_at = pofiles.pop()
+        elif len(pofiles) == 0 and len(direct_potemplates) == 1:
+            # A POTemplate was requested.
+            export_requested_at = direct_potemplates.pop()
+        elif len(pofiles) + len(direct_potemplates) >= 2:
+            # More than one file was requested.
+            all_potemplates = implicit_potemplates.union(direct_potemplates)
+            if len(all_potemplates) == 1:
+                # It's all part of a single POTemplate.
+                export_requested_at = all_potemplates.pop()
+            else:
+                # More than one POTemplate: request was made on
+                # either ProductSeries or SourcePackage.
+                if len(sourcepackages) > 0:
+                    export_requested_at = sourcepackages.pop()
+                elif len(productseries) > 0:
+                    export_requested_at = productseries.pop()
+
+        if IPOTemplate.providedBy(export_requested_at):
+            if len(sourcepackages) > 0:
+                container = sourcepackages.pop()
+            elif len(productseries) > 0:
+                container = productseries.pop()
+            else:
+                raise AssertionError(
+                    "Requesting a translation export which belongs to "
+                    "neither a ProductSeries nor a SourcePackage.")
+            if container.getCurrentTranslationTemplates().count() == 1:
+                export_requested_at = container
+
+        return export_requested_at
+
+
+    def _getRequestedExportsNames(self):
+        """Return a list of display names for requested exports."""
+        requested_names = []
+        for translation_object in self.requested_exports:
+            if IPOTemplate.providedBy(translation_object):
+                request_name = translation_object.displayname
+            else:
+                request_name = translation_object.title
+            requested_names.append(request_name)
+
+        return requested_names
+
+    def _getFailureEmailBody(self):
         """Send an email notification about the export failing."""
-        return textwrap.dedent('''
-            Hello %s,
+        template = helpers.get_email_template(
+            'poexport-failure.txt', 'translations')
+        return template % {
+            'person' : self.person.displayname,
+            'request_url' : self.request_url,
+            }
 
-            Launchpad encountered problems exporting the files you requested.
-            The Launchpad Translations team has been notified of this problem.
-            Please reply to this email for further assistance.
-            ''' % person.displayname)
+    def _getFailedRequestsDescription(self):
+        """Return a printable description of failed export requests."""
+        failed_requests = self._getRequestedExportsNames()
+        if len(failed_requests) > 0:
+            failed_requests_text = 'Failed export request included:\n'
+            failed_requests_text += '\n'.join(
+                '  * ' + request for request in failed_requests)
+        else:
+            failed_requests_text = 'There were no export requests.'
+        return failed_requests_text
 
-    def _getSuccessEmailBody(self, person):
+    def _getAdminFailureNotificationEmailBody(self):
+        """Send an email notification about failed export to admins."""
+        template = helpers.get_email_template(
+            'poexport-failure-admin-notification.txt',
+            'translations')
+        failed_requests = self._getFailedRequestsDescription()
+        return template % {
+            'person' : self.person.displayname,
+            'person_id' : self.person.name,
+            'request_url' : self.request_url,
+            'failure_message' : self.failure,
+            'failed_requests' : failed_requests,
+            }
+
+    def _getUnicodeDecodeErrorEmailBody(self):
+        """Send an email notification to admins about UnicodeDecodeError."""
+        template = helpers.get_email_template(
+            'poexport-failure-unicodedecodeerror.txt',
+            'translations')
+        failed_requests = self._getFailedRequestsDescription()
+        return template % {
+            'person' : self.person.displayname,
+            'person_id' : self.person.name,
+            'request_url' : self.request_url,
+            'failed_requests' : failed_requests,
+            }
+
+    def _getSuccessEmailBody(self):
         """Send an email notification about the export working."""
-        return textwrap.dedent('''
-            Hello %s,
+        template = helpers.get_email_template(
+            'poexport-success.txt', 'translations')
+        return template % {
+            'person' : self.person.displayname,
+            'download_url' : self.url,
+            'request_url' : self.request_url,
+            }
 
-            The translation files you requested from Launchpad are ready for
-            download from the following location:
-
-            \t%s''' % (person.displayname, self.url)
-            )
-
-    def notify(self, person):
+    def notify(self):
         """Send a notification email to the given person about the export.
 
         If there is a failure, a copy of the email is also sent to the
@@ -76,22 +255,22 @@ class ExportResult:
         if self.failure is None and self.url is not None:
             # There is no failure, so we have a full export without
             # problems.
-            body = self._getSuccessEmailBody(person)
+            body = self._getSuccessEmailBody()
         elif self.failure is not None and self.url is None:
-            body = self._getFailureEmailBody(person)
+            body = self._getFailureEmailBody()
         elif self.failure is not None and self.url is not None:
             raise AssertionError(
                 'We cannot have a URL for the export and a failure.')
         else:
             raise AssertionError('On success, an exported URL is expected.')
 
-        recipients = list(helpers.get_contact_email_addresses(person))
+        recipients = list(helpers.get_contact_email_addresses(self.person))
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[recipient],
-                subject='Translation download request: %s' % self.name,
+                subject='Launchpad translation download: %s' % self.name,
                 body=body)
 
         if self.failure is None:
@@ -99,42 +278,20 @@ class ExportResult:
             return
 
         # The export process had errors that we should notify admins about.
-        if self.object_names:
-            names = '\n'.join(self.object_names)
-            template_sentence = "\n" + textwrap.dedent(
-                "The failed request involved these objects:\n%s" % names)
-        else:
-            template_sentence = ""
-
         try:
-            admins_email_body = textwrap.dedent('''
-                Hello admins,
-
-                Launchpad encountered problems exporting translation files
-                requested by %s.
-
-                This means we have a bug in Launchpad that needs to be fixed
-                before this export can proceed.  Here is the list of failed
-                files and the error we got:
-
-                %s%s''') % (
-                    person.displayname, self.failure, template_sentence)
+            admins_email_body = self._getAdminFailureNotificationEmailBody()
         except UnicodeDecodeError:
             # Unfortunately this happens sometimes: invalidly-encoded data
             # makes it into the exception description, possibly from error
             # messages printed by msgfmt.  Before we can fix that, we need to
             # know what exports suffer from this problem.
-            admins_email_body = textwrap.dedent('''
-                Hello admins,
-
-                A UnicodeDecodeError occurred while trying to notify you of a
-                failure during a translation export requested by %s.
-                %s''') % (person.displayname, template_sentence)
+            admins_email_body = self._getUnicodeDecodeErrorEmailBody()
 
         simple_sendmail(
             from_addr=config.rosetta.admin_email,
             to_addrs=[config.launchpad.errors_address],
-            subject='Translation download errors: %s' % self.name,
+            subject=(
+                'Launchpad translation download errors: %s' % self.name),
             body=admins_email_body)
 
     def addFailure(self):
@@ -174,26 +331,11 @@ def process_request(person, objects, format, logger):
     translation_format_exporter = (
         translation_exporter.getExporterProducingTargetFileFormat(format))
 
-    result = ExportResult(person.name)
-    translation_file_list = list(objects)
-    last_template_name = None
-    for obj in translation_file_list:
-        if IPOTemplate.providedBy(obj):
-            template_name = obj.displayname
-            object_name = template_name
-        else:
-            template_name = obj.potemplate.displayname
-            object_name = obj.title
-        result.object_names.append(object_name)
-        if template_name != last_template_name:
-            logger.debug(
-                'Exporting objects for %s, related to template %s'
-                % (person.displayname, template_name))
-            last_template_name = template_name
+    result = ExportResult(person, objects, logger)
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(
-            generate_translationfiledata(translation_file_list, format))
+            generate_translationfiledata(list(objects), format))
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
@@ -227,36 +369,22 @@ def process_request(person, objects, format, logger):
         result.url = alias.http_url
         logger.info("Stored file at %s" % result.url)
 
-    result.notify(person)
+    result.notify()
 
 
 def process_queue(transaction_manager, logger):
-    """Process each request in the translation export queue.
+    """Process all requests in the translation export queue.
 
-    Each item is removed from the queue as it is processed, we only handle
-    one request with each function call.
+    Each item is removed from the queue as it is processed.
     """
     request_set = getUtility(IPOExportRequestSet)
+    no_request = (None, None, None, None)
 
-    request = request_set.popRequest()
-
-    if None in request:
-        # Any value is None and we must have all values as not None to have
-        # something to process...
-        return
-
-    person, objects, format = request
-
-    try:
+    request = request_set.getRequest()
+    while request != no_request:
+        person, objects, format, request_ids = request
         process_request(person, objects, format, logger)
-    except psycopg2.Error:
-        # We had a DB error, we don't try to recover it here, just exit
-        # from the script and next run will retry the export.
-        logger.error(
-            "A DB exception was raised when exporting files for %s" % (
-                person.displayname),
-            exc_info=True)
-        transaction_manager.abort()
-    else:
-        # Apply all changes.
+        request_set.removeRequest(request_ids)
         transaction_manager.commit()
+
+        request = request_set.getRequest()

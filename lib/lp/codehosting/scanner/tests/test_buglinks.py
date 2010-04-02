@@ -8,8 +8,7 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.revision import Revision
-# This non-standard import is necessary to hook up the event system.
-import zope.component.event
+from zope.event import notify
 from zope.component import getUtility
 
 from canonical.config import config
@@ -17,11 +16,12 @@ from canonical.launchpad.interfaces import (
     IBugBranchSet, IBugSet, NotFoundError)
 from canonical.testing.layers import LaunchpadZopelessLayer
 
-from lp.codehosting.scanner.buglinks import got_new_revision, BugBranchLinker
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
+from lp.code.interfaces.revision import IRevisionSet
+from lp.codehosting.scanner import events
+from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from lp.testing import TestCase
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class RevisionPropertyParsing(TestCase):
@@ -108,9 +108,6 @@ class TestBugLinking(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(got_new_revision)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
 
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
@@ -241,6 +238,29 @@ class TestBugLinking(BzrSyncTestCase):
 
         self.assertBugBranchLinked(self.bug1, self.db_branch)
         self.assertBugBranchLinked(self.bug2, self.db_branch)
+
+
+class TestSubscription(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_got_new_revision_subscribed(self):
+        """got_new_revision is subscribed to NewRevision."""
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree()
+        bug = self.factory.makeBug()
+        self.layer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        revision_id = tree.commit('fix revision',
+            revprops={'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
+        bzr_revision = tree.branch.repository.get_revision(revision_id)
+        revno = 1
+        revision_set = getUtility(IRevisionSet)
+        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
+        notify(events.NewRevision(
+            db_branch, tree.branch, db_revision, bzr_revision, revno))
+        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
+        self.assertIsNot(None, bug_branch)
 
 
 def test_suite():

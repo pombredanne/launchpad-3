@@ -7,16 +7,17 @@ __metaclass__ = type
 
 import datetime
 import os
+import pytz
 import shutil
+import tempfile
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import (Branch, BzrBranchFormat5, BzrBranchFormat7,
-    BzrBranchFormat8)
+from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirMetaFormat1
-from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
+from bzrlib.transport import get_transport
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -37,18 +38,18 @@ from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file)
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.interfaces.job import JobStatus
-from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.services.job.model.job import Job
+from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
+    IRosettaUploadJob)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
-    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    BranchScanJob, BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
     RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
@@ -110,11 +111,17 @@ class TestBranchDiffJob(TestCaseWithFactory):
     def test_run_diff_content(self):
         """Ensure that run generates expected diff."""
         self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        open('file', 'wb').write('foo\n')
+
+        tree_location = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tree_location)) 
+
+        branch, tree = self.create_branch_and_tree(
+            tree_location=tree_location)
+        tree_file = os.path.join(tree_location, 'file')
+        open(tree_file, 'wb').write('foo\n')
         tree.add('file')
         tree.commit('First commit')
-        open('file', 'wb').write('bar\n')
+        open(tree_file, 'wb').write('bar\n')
         tree.commit('Next commit')
         job = BranchDiffJob.create(branch, '1', '2')
         static_diff = job.run()
@@ -177,51 +184,48 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.assertIsInstance(diff.diff.text, str)
 
 
-class TestBranchUpgradeJob(TestCaseWithFactory):
-    """Tests for `BranchUpgradeJob`."""
+class TestBranchScanJob(TestCaseWithFactory):
+    """Tests for `BranchScanJob`."""
 
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
+        """Ensure that BranchScanJob implements IBranchScanJob."""
         branch = self.factory.makeAnyBranch()
-        job = BranchUpgradeJob.create(branch)
-        verifyObject(IBranchUpgradeJob, job)
+        job = BranchScanJob.create(branch)
+        verifyObject(IBranchScanJob, job)
 
-    def test_upgrades_branch(self):
-        """Ensure that a branch with an outdated format is upgraded."""
+    def test_run(self):
+        """Ensure the job scans the branch."""
         self.useBzrBranches()
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-        self.assertEqual(
-            tree.branch.repository._format.get_format_string(),
-            'Bazaar-NG Knit Repository Format 1')
 
-        job = BranchUpgradeJob.create(db_branch)
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit('First commit', rev_id='rev1')
+        bzr_tree.commit('Second commit', rev_id='rev2')
+        bzr_tree.commit('Third commit', rev_id='rev3')
+        LaunchpadZopelessLayer.commit()
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         job.run()
-        new_branch = Branch.open(tree.branch.base)
-        self.assertEqual(
-            new_branch.repository._format.get_format_string(),
-            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
 
-    def test_upgrade_format_all_formats(self):
-        # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
-        # most up to date branch and repository formats.
-        self.useBzrBranches()
-        branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_5,
-            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
-        job = BranchUpgradeJob.create(branch)
+        self.assertEqual(db_branch.revision_count, 3)
 
-        format = job.upgrade_format
-        self.assertIs(
-            type(format.get_branch_format()),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_5))
-        self.assertIs(
-            type(format._repository_format),
-            REPOSITORY_FORMAT_UPGRADE_PATH.get(
-                RepositoryFormat.BZR_REPOSITORY_4))
+        bzr_tree.commit('Fourth commit', rev_id='rev4')
+        bzr_tree.commit('Fifth commit', rev_id='rev5')
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+
+        self.assertEqual(db_branch.revision_count, 5)
+
+
+class TestBranchUpgradeJob(TestCaseWithFactory):
+    """Tests for `BranchUpgradeJob`."""
+
+    layer = LaunchpadZopelessLayer
 
     def make_format(self, branch_format=None, repo_format=None):
         # Return a Bzr MetaDir format with the provided branch and repository
@@ -235,45 +239,64 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         format._set_repository_format(repo_format())
         return format
 
-    def test_upgrade_format_no_branch_upgrade_needed(self):
-        # getUpgradeFormat should not downgrade the branch format when it is
-        # more up to date than the default formats provided.
+    def test_providesInterface(self):
+        """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        job = BranchUpgradeJob.create(branch)
+        verifyObject(IBranchUpgradeJob, job)
+
+    def test_upgrades_branch(self):
+        """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches()
-        branch = self.factory.makePersonalBranch(
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        self.assertEqual(
+            tree.branch.repository._format.get_format_string(),
+            'Bazaar-NG Knit Repository Format 1')
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
+        self.assertTrue(db_branch.pending_writes)
+
+    def test_needs_no_upgrading(self):
+        # Branch upgrade job creation should raise an AssertionError if the
+        # branch does not need to be upgraded.
+        branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_7,
-            repository_format=RepositoryFormat.BZR_KNIT_1)
-        _format = self.make_format(repo_format=RepositoryFormatKnit1)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch,
-            format=_format)
-        job = BranchUpgradeJob.create(branch)
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
 
-        format = job.upgrade_format
-        self.assertIs(
-            type(format.get_branch_format()),
-            BzrBranchFormat8)
-        self.assertIs(
-            type(format._repository_format),
-            REPOSITORY_FORMAT_UPGRADE_PATH.get(RepositoryFormat.BZR_KNIT_1))
-
-    def test_upgrade_format_no_repository_upgrade_needed(self):
-        # getUpgradeFormat should not downgrade the branch format when it is
-        # more up to date than the default formats provided.
+    def test_existing_bzr_backup(self):
+        # If the target branch already has a backup.bzr dir, the upgrade copy
+        # should remove it.
         self.useBzrBranches()
-        branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_4,
-            repository_format=RepositoryFormat.BZR_KNITPACK_6)
-        _format = self.make_format(branch_format=BzrBranchFormat5)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch,
-            format=_format)
-        job = BranchUpgradeJob.create(branch)
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
-        format = job.upgrade_format
-        self.assertIs(
-            type(format.get_branch_format()),
-            BRANCH_FORMAT_UPGRADE_PATH.get(BranchFormat.BZR_BRANCH_4))
-        self.assertIs(
-            type(format._repository_format),
-            RepositoryFormatKnitPack6)
+        # Add a fake backup.bzr dir
+        source_branch_transport = get_transport(db_branch.getPullURL())
+        source_branch_transport.mkdir('backup.bzr')
+        source_branch_transport.clone('.bzr').copy_tree_to_transport(
+            source_branch_transport.clone('backup.bzr'))
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
@@ -309,7 +332,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
             '%(url)s\n'
             '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'
-            ' %(url)s/+edit-subscription.\n' % {
+            ' %(url)s/+edit-subscription\n' % {
                 'url': canonical_url(branch),
                 'identity': branch.bzr_identity
                 },
@@ -516,7 +539,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.merge_from_branch(tree2.branch)
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
         tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
-        tree.merge_from_branch(tree3.branch)
+        tree.merge_from_branch(tree3.branch, force=True)
         if include_ghost:
             tree.add_parent_tree_id('rev2c-id')
         tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
@@ -547,8 +570,27 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         wrong_target_proposal.source_branch.last_scanned_id = 'rev2a-id'
         job = RevisionsAddedJob.create(target_branch, 'rev2b-id', 'rev2b-id',
                                        '')
-        self.assertEqual([desired_proposal],
-                         list(job.findRelatedBMP(['rev2a-id'])))
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
+
+    def test_findRelatedBMP_one_per_source(self):
+        """findRelatedBMP only returns the most recent proposal for any
+        particular source branch.
+        """
+        self.useBzrBranches()
+        target_branch, tree = self.create_branch_and_tree('tree')
+        the_past = datetime.datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        old_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch, date_created=the_past,
+            set_state=BranchMergeProposalStatus.MERGED)
+        source_branch = old_proposal.source_branch
+        source_branch.last_scanned_id = 'rev2a-id'
+        desired_proposal = source_branch.addLandingTarget(
+            source_branch.owner, target_branch)
+        job = RevisionsAddedJob.create(
+            target_branch, 'rev2b-id', 'rev2b-id', '')
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
 
     def test_getAuthors(self):
         """Ensure getAuthors returns the authors for the revisions."""
@@ -657,6 +699,30 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
         'message:\n'
         '  rev2d\n' % canonical_url(bmp), message)
+
+    def test_getRevisionMessage_with_related_superseded_BMP(self):
+        """Superseded proposals are skipped."""
+        job, bmp = self.makeJobAndBMP()
+        bmp2 = bmp.resubmit(bmp.registrant)
+        transaction.commit()
+        self.layer.switchDbUser(config.sendbranchmail.dbuser)
+        message = job.getRevisionMessage('rev2d-id', 1)
+        self.assertEqual(
+        'Merge authors:\n'
+        '  bar@\n'
+        '  baz@blaine.com\n'
+        '  foo@\n'
+        '  qux@\n'
+        'Related merge proposals:\n'
+        '  %s\n'
+        '  proposed by: J. Random Hacker (jrandom)\n'
+        '------------------------------------------------------------\n'
+        'revno: 2 [merge]\n'
+        'committer: J. Random Hacker <jrandom@example.org>\n'
+        'branch nick: nicholas\n'
+        'timestamp: Thu 1970-01-01 00:16:40 +0000\n'
+        'message:\n'
+        '  rev2d\n' % canonical_url(bmp2), message)
 
     def test_getRevisionMessage_with_BMP_with_requested_review(self):
         """Information about incomplete reviews is omitted.
@@ -831,7 +897,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestRosettaUploadJob, self).setUp()
         self.series = None
 
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
@@ -849,6 +915,25 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.branch, self.tree = self.create_branch_and_tree()
         return self._commitFilesToTree(files, 'First commit')
 
+    def _makeRosettaUploadJob(self):
+        """Create a `RosettaUploadJob`."""
+        # RosettaUploadJob's parent BranchJob is joined to Job through
+        # BranchJob.job, but in tests those two ids can also be the same.
+        # This may hide broken joins, so make sure that the ids are not
+        # identical.
+        # There are at least as many Jobs as BranchJobs, so we can whack
+        # the two out of any accidental sync by advancing the Job.id
+        # sequence.
+        dummy = Job()
+        dummy.sync()
+        dummy.destroySelf()
+
+        # Now create the RosettaUploadJob.
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job.job.sync()
+        job.context.sync()
+        return job
+
     def _commitFilesToTree(self, files, commit_message=None):
         """Add files to the tree.
 
@@ -860,19 +945,18 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         seen_dirs = set()
         for file_pair in files:
             file_name = file_pair[0]
-            dname, fname = os.path.split(file_name)
-            if dname != '' and dname not in seen_dirs:
-                self.tree.bzrdir.root_transport.mkdir(dname)
-                self.tree.add(dname)
-                seen_dirs.add(dname)
             try:
                 file_content = file_pair[1]
                 if file_content is None:
                     raise IndexError # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
+            dname = os.path.dirname(file_name)
+            self.tree.bzrdir.root_transport.clone(dname).create_prefix()
             self.tree.bzrdir.root_transport.put_bytes(file_name, file_content)
-            self.tree.add(file_name)
+        if len(files) > 0:
+            self.tree.smart_add(
+                [self.tree.abspath(file_pair[0]) for file_pair in files])
         if commit_message is None:
             commit_message = self.factory.getUniqueString('commit')
         revision_id = self.tree.commit(commit_message)
@@ -913,7 +997,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.branch = self.factory.makeAnyBranch()
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job = self._makeRosettaUploadJob()
         verifyObject(IRosettaUploadJob, job)
 
     def test_upload_pot(self):
@@ -937,6 +1021,25 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         entry = entries[0]
         self.assertEqual(pot_path, entry.path)
 
+    def test_init_translation_file_lists_skip_dirs(self):
+        # The method _init_translation_file_lists extracts all translation
+        # files from the branch but does not add changed directories to the
+        # template_files_changed and translation_files_changed lists .
+        pot_path = u"subdir/foo.pot"
+        pot_content = self.factory.getUniqueString()
+        po_path = u"subdir/foo.po"
+        po_content = self.factory.getUniqueString()
+        self._makeBranchWithTreeAndFiles(((pot_path, pot_content),
+                                          (po_path, po_content)))
+        self._makeProductSeries(TranslationsBranchImportMode.NO_IMPORT)
+        job = RosettaUploadJob.create(self.branch, NULL_REVISION, True)
+        job._init_translation_file_lists()
+
+        self.assertEqual([(pot_path, pot_content)],
+                         job.template_files_changed)
+        self.assertEqual([(po_path, po_content)],
+                         job.translation_files_changed)
+
     def test_upload_xpi_template(self):
         # XPI templates are indentified by a special name. They are imported
         # like POT files.
@@ -954,6 +1057,20 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # configured for template import.
         entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, 'empty.pot', '')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_pot(self):
+        # A POT cannot be uploaded if its name starts with a dot.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden.pot')
+        self.assertEqual(entries, [])
+
+    def test_upload_pot_hidden_in_subdirectory(self):
+        # In fact, if any parent directory is hidden, the file will not be
+        # imported.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            'bar/.hidden/bla/foo.pot')
         self.assertEqual(entries, [])
 
     def test_upload_pot_uploader(self):
@@ -1079,7 +1196,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Add a job and complete it -> not in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         ready_jobs = list(RosettaUploadJob.iterReady())
@@ -1093,9 +1210,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([], ready_jobs)
 
@@ -1105,9 +1220,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([job], ready_jobs)
 
@@ -1116,9 +1229,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
-        job.context.sync()
+        job = self._makeRosettaUploadJob()
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
             self.branch))
         self.assertEqual([job.context], unfinished_jobs)
@@ -1128,8 +1239,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         unfinished_jobs = list(RosettaUploadJob.findUnfinishedJobs(
@@ -1141,8 +1251,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeBranchWithTreeAndFiles([])
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
-        job = RosettaUploadJob.create(self.branch, NULL_REVISION)
-        job.job.sync()
+        job = self._makeRosettaUploadJob()
         job.job.start()
         job.job.complete()
         job.job._status = JobStatus.FAILED

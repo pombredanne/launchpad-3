@@ -13,8 +13,6 @@ __all__ = [
     'ISearchQuestionsForm',
     ]
 
-import sets
-
 from zope.interface import Interface
 from zope.schema import Choice, List, Set, TextLine
 
@@ -156,7 +154,7 @@ class ISearchQuestionsForm(Interface):
 
     status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary=QuestionStatus),
-                 default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
+                 default=set(QUESTION_STATUS_DEFAULT_SEARCH))
 
 
 class IAnswersFrontPageSearchForm(ISearchQuestionsForm):

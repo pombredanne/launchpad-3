@@ -1,3 +1,4 @@
+=======
 Posting
 =======
 
@@ -14,7 +15,7 @@ A team mailing list is created.
 
 
 Non-member postings
--------------------
+===================
 
 Postings from addresses that are not registered and verified with Launchpad
 are summarily discarded.
@@ -37,7 +38,7 @@ discarded immediately.
 
 
 Non-validated member postings
------------------------------
+=============================
 
 Similarly, an address that has been registered with Launchpad but not verified
 will also be summarily discarded.  Anne registers with Launchpad but does not
@@ -48,7 +49,7 @@ validate her alternative address.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> anne = factory.makePersonByName('Anne')
     >>> alternative_email = get_alternative_email(anne)
 
@@ -75,7 +76,7 @@ gets discarded.
 
 
 Unsubscribed Launchpad members
-------------------------------
+==============================
 
 Anne's preferred email address is still validated, and she posts a message
 from that address.  However, because she has not yet joined the team or
@@ -172,7 +173,7 @@ rejection notice to Anne.
     MIME-Version: 1.0
     ...
     Subject: Request to mailing list Itest-one rejected
-    From: itest-one-bounces@lists.launchpad.dev
+    From: itest-one-...@lists.launchpad.dev
     To: anne.person@example.com
     ...
     Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
@@ -336,7 +337,7 @@ This message is delivered to the archive.
 
 
 Unsubscribed team member
-------------------------
+========================
 
 Once Anne joins the team, she may post to it, though until she subscribes to
 the mailing list, she will not get a copy of the message.
@@ -356,7 +357,7 @@ the mailing list, she will not get a copy of the message.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
     >>> transaction.commit()
@@ -407,7 +408,7 @@ In addition, the in-house MHonArc archiver has archived this message.
 
 
 Verified and registered member postings
----------------------------------------
+=======================================
 
 Anne now subscribes to the team's mailing list.  She gets a copy of each
 message posted to the mailing list.
@@ -503,7 +504,7 @@ validated yet.
 
 However, once she validates this address, she can post from it.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
     >>> logout()
     >>> transaction.commit()
@@ -570,11 +571,11 @@ There should also be no held requests pending.
 
 
 Leaving and re-joining the team
--------------------------------
+===============================
 
 Anne now leaves the team, but she does not unsubscribe from the mailing list.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.leave(team_one)
     >>> logout()
@@ -619,7 +620,7 @@ The team administrator discards the message.
 Anne re-joins the team and once again can post to the mailing list.  She does
 not need to re-subscribe to the mailing list.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> anne.join(team_one)
     >>> logout()
     >>> transaction.commit()
@@ -654,12 +655,12 @@ not need to re-subscribe to the mailing list.
 
 
 First post moderation
----------------------
+=====================
 
 Normally, Launchpad members who are not subscribed to the mailing list will
 have their posts held for moderation.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
     >>> transaction.commit()
     >>> bart.personal_standing
@@ -694,7 +695,7 @@ However, a Launchpad member in good standing is allowed to post to any mailing
 list.
 
     >>> from canonical.launchpad.interfaces import PersonalStanding
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
     >>> transaction.commit()
 
@@ -809,7 +810,7 @@ post to just that mailing list without further approval required.
 
 
 Preventing archiver forgeries
------------------------------
+=============================
 
 We archive messages by sending them to a special address owned by the Mail
 Archive <http://www.mail-archive.com>.  This address becomes a recipient of
@@ -834,7 +835,7 @@ messages to the list.
 
 
 Large messages
---------------
+==============
 
 Only messages which are less than about 40k in size are allowed straight
 through on the mailing list.  A message bigger than that will be held for
@@ -898,3 +899,35 @@ discarded.
     >>> vette_watcher.wait_for_discard('quahog')
     >>> print_message_summaries()
     Number of messages: 0
+
+
+Non-ascii messages
+==================
+
+Cate joins Launchpad and posts a message containing non-ascii characters to
+the mailing list.
+
+    >>> login('admin@canonical.com')
+    >>> cate = factory.makePersonByName('Cate')
+    >>> logout()
+    >>> transaction.commit()
+
+    >>> inject('itest-one', """\
+    ... From: Cate \xa9 Person <cperson@example.org>
+    ... To: team-one@lists.launchpad.dev
+    ... Subject: \xa9 Badgers!
+    ... Message-ID: <racoon>
+    ...
+    ... Watch out for badgers! \xa9
+    ... """)
+    
+However, because Cate is not a member of the mailing list, her message gets
+held for moderator approval.
+
+    >>> vette_watcher.wait_for_hold('itest-one', 'racoon')
+    >>> print_message_summaries()
+    Number of messages: 1
+    bounces@canonical.com
+        ...
+        Itest One <noreply@launchpad.net>
+        New mailing list message requiring approval for Itest One

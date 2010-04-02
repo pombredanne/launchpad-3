@@ -25,11 +25,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_new_distrotask)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm, valid_remote_bug_url)
@@ -48,16 +48,21 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.popup import SearchForUpstreamPopupWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
+    page_title = 'Record as affecting another project'
+
     @property
     def first_step(self):
         return ChooseProductStep
 
 
 class BugAlsoAffectsDistroMetaView(MultiStepView):
+    page_title = 'Record as affecting another distribution/package'
+
     @property
     def first_step(self):
         return DistroBugTaskCreationStep
@@ -166,15 +171,18 @@ class ChooseProductStep(AlsoAffectsStep):
         # Tell the user to search for it using the popup widget as it'll allow
         # the user to register a new product if the one he is looking for is
         # not yet registered.
-        search_url = self.widgets['product'].popupHref()
+        widget_link_id = self.widgets['product'].show_widget_id
         self.setFieldError(
             'product',
-            structured(
-                'There is no project in Launchpad named "%s". Please '
-                '<a href="%s">search for it</a> as it may be registered with '
-                'a different name.',
-                entered_product,
-                search_url))
+            structured("""
+                There is no project in Launchpad named "%s". Please 
+                <a href="/projects"
+                onclick="YUI().use('event').Event.simulate(
+                         document.getElementById('%s'), 'click');
+                         return false;"
+                >search for it</a> as it may be
+                registered with a different name.""",
+                entered_product, widget_link_id))
 
     def main_action(self, data):
         """Perform the 'Continue' action."""

@@ -34,45 +34,44 @@ to the product series.
 
 Now we request that the queue be processed.
 
-    >>> class MockTransactionManager:
-    ...     def commit(self):
-    ...         pass
-
     >>> import logging
+    >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> logger = MockLogger()
     >>> logger.setLevel(logging.DEBUG)
-    >>> process_queue(MockTransactionManager(), logger)
+    >>> transaction.commit()
+    >>> process_queue(transaction, logger)
     log> Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in
     Evolution trunk
     log> Stored file at http://.../launchpad-export.tar.gz
 
-We need to make sure the Librarian data has settled into place.
-
-    >>> import transaction
-    >>> transaction.commit()
-
 The user receives a confirmation email.
 
-    >>> def print_mail_body(body):
-    ...     lines = body[body.index('\n\n')+2:].split('\n')
-    ...     for line in lines:
-    ...         print ">", line
-
-    >>> from lp.services.mail.stub import test_emails
+    >>> from lp.testing.mail_helpers import pop_notifications, print_emails
+    >>> test_emails = pop_notifications()
     >>> len(test_emails)
     1
-    >>> from_addr, to_addrs, body = test_emails.pop()
-    >>> print_mail_body(body)
-    >
-    > Hello ...,
-    >
-    > The translation files you requested from Launchpad are ready for
-    > download from the following location:
-    >
-    >     http://localhost:58000/.../launchpad-export.tar.gz
+    >>> print_emails(notifications=test_emails)
+    From: ...
+    Subject: Launchpad translation download: Evolution trunk
+    Hello ...,
+    <BLANKLINE>
+    The translation files you requested from Launchpad are ready for
+    download from the following location:
+    <BLANKLINE>
+      http://localhost:58000/.../launchpad-export.tar.gz
+    <BLANKLINE>
+    Note: this link will expire in about 1 week.  If you want to
+    download these translations again, you will have to request
+    them again at
+    <BLANKLINE>
+      http://translations.launchpad.dev/evolution/trunk/+export
+    <BLANKLINE>
+    -- =
+    Automatic message from Launchpad.net.
+    ----------------------------------------
 
 The email contains a URL linking to where the exported file can be downloaded.
 
@@ -82,6 +81,7 @@ The email contains a URL linking to where the exported file can be downloaded.
     ...     urls = re.compile(r'^ *(http://.*)$', re.M).findall(text)
     ...     return urls[0]
 
+    >>> body = test_emails[0].get_payload()
     >>> url = extract_url(body)
 
 Let's download it and make sure the contents look ok.

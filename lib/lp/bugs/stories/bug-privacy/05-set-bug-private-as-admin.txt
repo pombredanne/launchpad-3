@@ -9,7 +9,8 @@ When he does so, all currently implicit subscribers will be made
 explicit. There are two implicit subscribers.
 
     >>> from lp.bugs.tests.bug import (
-    ...     print_direct_subscribers, print_indirect_subscribers)
+    ...     print_also_notified, print_direct_subscribers,
+    ...     print_subscribers_from_duplicates)
 
     >>> browser.open(
     ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
@@ -17,8 +18,9 @@ explicit. There are two implicit subscribers.
     >>> print_direct_subscribers(browser.contents)
     Steve Alexander (Subscribed by Launchpad Janitor)
 
-    >>> print_indirect_subscribers(browser.contents)
+    >>> print_subscribers_from_duplicates(browser.contents)
     From duplicates:
+    >>> print_also_notified(browser.contents)
     Also notified:
     Mark Shuttleworth
     Sample Person
@@ -46,8 +48,9 @@ All the implicit subscribers have been made explicit.
   Sample Person (Subscribed by Foo Bar)
   Steve Alexander (Subscribed by Launchpad Janitor)
 
-  >>> print_indirect_subscribers(browser.contents)
+  >>> print_subscribers_from_duplicates(browser.contents)
   From duplicates:
+  >>> print_also_notified(browser.contents)
   Also notified:
 
 When we go back to the secrecy form, the previously set value is pre-selected.

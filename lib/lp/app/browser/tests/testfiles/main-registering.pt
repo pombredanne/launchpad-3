@@ -1,0 +1,19 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only">
+
+  <body>
+
+    <tal:registering metal:fill-slot="registering">
+      <p>something nice about the context registering.</p>
+    </tal:registering>
+
+    <tal:main metal:fill-slot="main">
+     ANYTHING
+    </tal:main>
+
+  </body>
+</html>

@@ -16,7 +16,7 @@ execute_zcml_for_scripts()
 
 def check():
     cur = cursor()
-    cur.execute("UPDATE Person SET country=61 WHERE name='sabdfl'")
+    cur.execute("UPDATE Person SET country=61 WHERE name='mark'")
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 
@@ -24,7 +24,7 @@ def check():
     txn.begin()
 
     cur = cursor()
-    cur.execute("UPDATE Person SET country=66 WHERE name='sabdfl'")
+    cur.execute("UPDATE Person SET country=66 WHERE name='mark'")
     cur.execute("SHOW transaction_isolation")
     print cur.fetchone()[0]
 

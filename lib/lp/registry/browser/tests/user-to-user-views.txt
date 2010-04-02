@@ -268,7 +268,7 @@ address set to an explicit address.
 
 === Non-member to team ===
 
-Non-members cannot are may only contact the team owner.
+Non-members may only contact the team owner.
 
     >>> guadamen = person_set.getByName('guadamen')
     >>> bart = factory.makePerson(email='bart@example.com', name='bart')
@@ -345,7 +345,7 @@ subject and body from the same sender.
         Edgar Bursic <edgar@monteparadiso.hr>
         Foo Bar <foo.bar@canonical.com>
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
-        Mark Shuttleworth <mark@hbd.com>
+        Mark Shuttleworth <mark@example.com>
         Steve Alexander <steve.alexander@ubuntulinux.com>
         Ubuntu Team <support@ubuntu.com>
 
@@ -397,7 +397,7 @@ Foo Bar's message gets sent to each individual member of he team.
         Edgar Bursic <edgar@monteparadiso.hr>
         Foo Bar <foo.bar@canonical.com>
         Jeff Waugh <jeff.waugh@ubuntulinux.com>
-        Mark Shuttleworth <mark@hbd.com>
+        Mark Shuttleworth <mark@example.com>
         Steve Alexander <steve.alexander@ubuntulinux.com>
         Ubuntu Team <support@ubuntu.com>
 

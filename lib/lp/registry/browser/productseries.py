@@ -7,8 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
-    'LinkTranslationsBranchView',
-    'ProductSeriesBreadcrumbBuilder',
+    'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
     'ProductSeriesEditView',
@@ -23,6 +22,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
+    'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
     ]
 
@@ -33,12 +33,17 @@ from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationImplementationStatus)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -51,35 +56,41 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin)
+from lp.registry.interfaces.packaging import (
+    IPackaging, IPackagingUtil)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
-    stepthrough, stepto)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
+    stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+
 
 def quote(text):
-    """Escape and quite text."""
+    """Escape and quote text."""
     return cgi.escape(text, quote=True)
 
 
-class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
     """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 
@@ -121,11 +132,12 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
+
     @property
     def text(self):
-        """See `IBreadcrumbBuilder`."""
+        """See `IBreadcrumb`."""
         return 'Series ' + self.context.name
 
 
@@ -138,20 +150,20 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     def branches(self):
         """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
-        text = 'Code'
+        text = 'Branches'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
 
 
-class ProductSeriesOverviewMenu(ApplicationMenu):
+class ProductSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
-        'add_package', 'create_milestone', 'create_release',
-        'rdf', 'subscribe'
+        'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
+        'create_milestone', 'create_release', 'rdf', 'subscribe',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -181,21 +193,23 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
+            summary = 'Set the branch for this series'
         else:
             text = "Change branch"
             icon = 'edit'
-        summary = 'The code branch that for this series.'
+            summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
 
+    def branch_add(self):
+        text = 'Register a branch'
+        summary = "Register a new Bazaar branch for this series' project"
+        return Link('+addbranch', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='add')
-
-    def add_package(self):
-        """Return a link to link this series to a sourcepackage."""
-        text = 'Link to other package'
-        return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -215,13 +229,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class ProductSeriesBugsMenu(ApplicationMenu):
+class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
@@ -239,12 +248,9 @@ class ProductSeriesBugsMenu(ApplicationMenu):
         """Return a link to review bugs nominated for this series."""
         return Link('+nominations', 'Review nominations', icon='bug')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        return Link('+subscribe', 'Subscribe to bug mail')
 
-
-class ProductSeriesSpecificationsMenu(ApplicationMenu):
+class ProductSeriesSpecificationsMenu(NavigationMenu,
+                                      HasSpecificationsMenuMixin):
     """Specs menu for ProductSeries.
 
     This menu needs to keep track of whether we are showing all the
@@ -255,46 +261,9 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        """Return a link to show all blueprints."""
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listaccepted(self):
-        """Return a link to show the approved goals."""
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        """Return a link to show the proposed goals."""
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        """Return a link to show the declined goals."""
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
-
-    def setgoals(self):
-        """Return a link to set the series goals."""
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, summary, icon='edit')
-
-    def table(self):
-        """Return a link to show the people assigned to the blueprint."""
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        """Return a link to register a blueprint."""
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = [
+        'listall', 'assignments', 'setgoals', 'listdeclined',
+        'new', 'register_sprint']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -321,82 +290,13 @@ def get_series_branch_error(product, branch):
     return None
 
 
-# A View Class for ProductSeries
-#
-# XXX: StuartBishop 2005-05-02:
-# We should be using autogenerated add forms and edit forms so that
-# this becomes maintainable and form validation handled for us.
-# Currently, the pages just return 'System Error' as they trigger database
-# constraints.
 class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.form = self.request.form
-        self.has_errors = False
 
-        # Let's find out what source package is associated with this
-        # productseries in the current release of ubuntu.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_series = ubuntu.currentseries
-        self.setUpPackaging()
-
-        # Check the form submission.
-        self.processForm()
-
-    def processForm(self):
-        """Process a form if it was submitted."""
-        if not self.request.method == "POST":
-            # The form was not posted, we don't do anything.
-            return
-        assert 'set_ubuntu_pkg' in self.form, (
-            "This can handle POST requests only for 'set_ubuntu_pkg' form.")
-        self.setCurrentUbuntuPackage()
-
-    def setUpPackaging(self):
-        """Ensure that the View class correctly reflects the packaging of
-        its product series context."""
-        self.curr_ubuntu_package = None
-        self.curr_ubuntu_pkgname = ''
-        try:
-            cr = self.curr_ubuntu_series
-            self.curr_ubuntu_package = self.context.getPackage(cr)
-            cp = self.curr_ubuntu_package
-            self.curr_ubuntu_pkgname = cp.sourcepackagename.name
-        except NotFoundError:
-            pass
-        ubuntu = self.curr_ubuntu_series.distribution
-        self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
-
-    def setCurrentUbuntuPackage(self):
-        """Set the Packaging record for this product series in the current
-        Ubuntu distroseries to be for the source package name that is given
-        in the form.
-        """
-        ubuntupkg = self.form.get('ubuntupkg', '')
-        if ubuntupkg == '':
-            # No package was selected.
-            self.request.response.addWarningNotification(
-                'Request ignored. You need to select a source package.')
-            return
-        # make sure we have a person to work with
-        if self.user is None:
-            self.request.response.addErrorNotification('Please log in first!')
-            self.has_errors = True
-            return
-        # see if the name that is given is a real source package name
-        spns = getUtility(ISourcePackageNameSet)
-        try:
-            spn = spns[ubuntupkg]
-        except NotFoundError:
-            self.request.response.addErrorNotification(
-                'Invalid source package name %s' % ubuntupkg)
-            self.has_errors = True
-            return
-        # set the packaging record for this productseries in the current
-        # ubuntu series. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
-        self.setUpPackaging()
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return self.context.title
 
     def requestCountry(self):
         """The country associated with the IP of the request."""
@@ -409,7 +309,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+        return canonical_url(self.context.product, view_name='+new-import')
 
     @property
     def user_branch_visible(self):
@@ -420,14 +320,14 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     @property
     def is_obsolete(self):
-        """Return True if the series is OBSOLETE"
+        """Return True if the series is OBSOLETE.
 
         Obsolete series do not need to display as much information as other
         series. Accessing private bugs is an expensive operation and showing
         them for obsolete series can be a problem if many series are being
         displayed.
         """
-        return self.context.status == DistroSeriesStatus.OBSOLETE
+        return self.context.status == SeriesStatus.OBSOLETE
 
     @cachedproperty
     def bugtask_status_counts(self):
@@ -455,20 +355,141 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                                      key=attrgetter('sortkey'))]
 
     @property
-    def milestone_table_class(self):
-        """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
-            return 'listing'
-        else:
-            # The page can remove the 'unseen' class to make the table
-            # visible.
-            return 'listing unseen'
+    def latest_release_with_download_files(self):
+        for release in self.context.releases:
+            if len(list(release.files)) > 0:
+                return release
+        return None
+
+
+class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
+
+    schema = IPackaging
+    field_names = ['sourcepackagename', 'distroseries']
+    page_title = 'Ubuntu source packaging'
+    label = page_title
+
+    def __init__(self, context, request):
+        """Set the static packaging information for this series."""
+        super(ProductSeriesUbuntuPackagingView, self).__init__(
+            context, request)
+        self._ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self._ubuntu_series = self._ubuntu.currentseries
+        try:
+            package = self.context.getPackage(self._ubuntu_series)
+            self.default_sourcepackagename = package.sourcepackagename
+        except NotFoundError:
+            # The package has never been set.
+            self.default_sourcepackagename = None
 
     @property
-    def milestone_row_uri_template(self):
-        return (
-            '%s/+milestone/{name}/+productseries-table-row' %
-            canonical_url(self.context.product, path_only_if_possible=True))
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        The packaging is restricted to ubuntu series and the default value
+        is the current development series.
+        """
+        super(ProductSeriesUbuntuPackagingView, self).setUpFields()
+        series_vocabulary = SimpleVocabulary(
+            [SimpleTerm(series, series.name, series.named_version)
+             for series in self._ubuntu.series])
+        choice = Choice(__name__='distroseries',
+            title=_('Series'),
+            default=self._ubuntu_series,
+            vocabulary=series_vocabulary,
+            description=_(
+                "Series where this package is published. The current series "
+                "is most important to the Ubuntu community."),
+            required=True)
+        field = form.Fields(choice, render_context=self.render_context)
+        self.form_fields = self.form_fields.omit(choice.__name__) + field
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`.
+
+        Set the current `ISourcePackageName` as the default value.
+        """
+        super(ProductSeriesUbuntuPackagingView, self).setUpWidgets()
+        if self.default_sourcepackagename is not None:
+            widget = self.widgets.get('sourcepackagename')
+            widget.setRenderedValue(self.default_sourcepackagename)
+
+    @property
+    def default_distroseries(self):
+        """The current Ubuntu distroseries"""
+        return self._ubuntu_series
+
+    @property
+    def ubuntu_history(self):
+        return self.context.getPackagingInDistribution(
+            self.default_distroseries.distribution)
+
+    def validate(self, data):
+        productseries = self.context
+        sourcepackagename = data.get('sourcepackagename', None)
+        distroseries = data.get('distroseries', self.default_distroseries)
+
+        if sourcepackagename == self.default_sourcepackagename:
+            # The data has not changed, so nothing else needs to be done.
+            return
+
+        if sourcepackagename is None:
+            message = "You must choose the source package name."
+            self.setFieldError('sourcepackagename', message)
+        # Do not allow users to create links to unpublished Ubuntu packages.
+        elif distroseries.distribution.full_functionality:
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                message = ("The source package is not published in %s." %
+                    distroseries.displayname)
+                self.setFieldError('sourcepackagename', message)
+        else:
+            pass
+        packaging_util = getUtility(IPackagingUtil)
+        if packaging_util.packagingEntryExists(
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            # The series packaging conflicts with itself.
+            message = _(
+                "This series is already packaged in %s." %
+                distroseries.displayname)
+            self.setFieldError('sourcepackagename', message)
+        elif packaging_util.packagingEntryExists(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries):
+            # The series package conflicts with another series.
+            sourcepackage = distroseries.getSourcePackage(
+                sourcepackagename.name)
+            message = structured(
+                'The <a href="%s">%s</a> package in %s is already linked to '
+                'another series.' %
+                (canonical_url(sourcepackage),
+                 sourcepackagename.name,
+                 distroseries.displayname))
+            self.setFieldError('sourcepackagename', message)
+        else:
+            # The distroseries and sourcepackagename are not already linked
+            # to this series, or any other series.
+            pass
+
+
+    @action('Update', name='continue')
+    def continue_action(self, action, data):
+        # set the packaging record for this productseries in the current
+        # ubuntu series. if none exists, one will be created
+        sourcepackagename = data['sourcepackagename']
+        if self.default_sourcepackagename == sourcepackagename:
+            # There is no change.
+            return
+        self.context.setPackaging(
+            self.default_distroseries, sourcepackagename, self.user)
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -478,6 +499,17 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         'name', 'summary', 'status', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
@@ -497,6 +529,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
 
 class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     """A view to remove a productseries from a product."""
@@ -506,8 +543,13 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s series %s' % (
+        return 'Delete %s %s series' % (
             self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @cachedproperty
     def milestones(self):
@@ -517,7 +559,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def bugtasks(self):
         """A list of all `IBugTask`s targeted to this series."""
-        all_bugtasks = []
+        all_bugtasks = self._getBugtasks(self.context)
         for milestone in self.milestones:
             all_bugtasks.extend(self._getBugtasks(milestone))
         return all_bugtasks
@@ -525,7 +567,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        all_specifications = []
+        all_specifications = self._getSpecifications(self.context)
         for milestone in self.milestones:
             all_specifications.extend(self._getSpecifications(milestone))
         return all_specifications
@@ -534,6 +576,11 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     def has_bugtasks_and_specifications(self):
         """Does the series have any targeted bugtasks or specifications."""
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+    @property
+    def has_linked_branch(self):
+        """Is the series linked to a branch."""
+        return self.context.branch is not None
 
     @cachedproperty
     def product_release_files(self):
@@ -544,17 +591,46 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         return all_files
 
     @cachedproperty
+    def has_linked_packages(self):
+        """Is the series linked to source packages."""
+        return self.context.packagings.count() > 0
+
+    @cachedproperty
+    def linked_packages_message(self):
+        url = canonical_url(self.context.product, view_name="+packages")
+        return (
+            "You cannot delete a series that is linked to packages in "
+            "distributions. You can remove the links from the "
+            '<a href="%s">project packaging</a> page.' % url)
+
+    development_focus_message = _(
+        "You cannot delete a series that is the focus of "
+        "development. Make another series the focus of development "
+        "before deleting this one.")
+
+    @cachedproperty
+    def has_translations(self):
+        """Does the series have translations?"""
+        return self.context.potemplate_count > 0
+
+    translations_message = (
+        "This series cannot be deleted because it has translations.")
+
+    @cachedproperty
     def can_delete(self):
         """Can this series be delete."""
-        return not self.context.is_development_focus
+        return not (
+            self.context.is_development_focus
+            or self.has_linked_packages or self.has_translations)
 
     def canDeleteAction(self, action):
         """Is the delete action available."""
-        if not self.can_delete:
-            self.addError(
-                "You cannot delete a series that is the focus of "
-                "development. Make another series the focus of development "
-                "before deleting this one.")
+        if self.context.is_development_focus:
+            self.addError(self.development_focus_message)
+        if self.has_linked_packages:
+            self.addError(structured(self.linked_packages_message))
+        if self.has_translations:
+            self.addError(self.translations_message)
         return self.can_delete
 
     @action('Delete this Series', name='delete', condition=canDeleteAction)
@@ -575,6 +651,17 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     field_names = ['branch']
 
     @property
+    def label(self):
+        """The form label."""
+        return 'Link an existing branch to %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -592,30 +679,10 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the product series page."""
-
-
-class LinkTranslationsBranchView(LaunchpadEditFormView):
-    """View to set the series' translations export branch."""
-
-    schema = IProductSeries
-    field_names = ['translations_branch']
-
     @property
-    def next_url(self):
-        return canonical_url(self.context) + '/+translations-settings'
-
-    @action(_('Update'), name='update')
-    def update_action(self, action, data):
-        self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            'Translations export branch updated.')
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the settings page."""
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
@@ -631,8 +698,23 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    label = 'Review product series details'
     custom_widget('name', TextWidget, width=20)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Administer %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -676,6 +758,9 @@ class ProductSeriesSourceListView(LaunchpadView):
 
     See `ICodeImportSet.getActiveImports` for our definition of running.
     """
+
+    page_title = 'Available code imports'
+    label = page_title
 
     def initialize(self):
         """See `LaunchpadFormView`."""

@@ -5,13 +5,13 @@
   omit-tag="">
 
 <table class="listing"
-  tal:attributes="id string:series_${context/name};
+  tal:attributes="id context/name/fmt:css-id/series-;
                   class view/milestone_table_class">
   <thead>
     <tr>
-      <th>Version "Codename"</th>
+      <th>Version</th>
       <th>Expected</th>
-      <th>Released</th>
+      <th tal:condition="view/milestone_can_release">Released</th>
       <th>Summary</th>
     </tr>
   </thead>

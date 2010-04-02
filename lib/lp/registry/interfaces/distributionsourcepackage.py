@@ -21,15 +21,18 @@ from lazr.restful.declarations import (
     rename_parameters_as)
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 
-class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
+class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                                 IStructuralSubscriptionTarget,
+                                 IHasOfficialBugTags):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -99,8 +102,8 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         """
 
     def get_distroseries_packages(active_only=True):
-        """Return a list of DistroSeriesSourcePackage objects, each 
-        representing this same source package in the serieses of this
+        """Return a list of DistroSeriesSourcePackage objects, each
+        representing this same source package in the series of this
         distribution.
 
         By default, this will return SourcePackage's in active

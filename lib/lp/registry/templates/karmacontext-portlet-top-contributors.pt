@@ -1,27 +1,24 @@
-<div
+<tal:uses-launchpad
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-top-contributors"
-  tal:condition="view/getTopFiveContributors">
-  <h2>Top contributors</h2>
+  tal:condition="context/@@+get-involved/has_involvement">
+  <div class="portlet" id="portlet-top-contributors"
+    tal:define="contributors view/getTopFiveContributors"
+    tal:condition="contributors">
+  <h2>
+    <span class="see-all"><a
+      tal:replace="structure context/menu:overview/top_contributors/fmt:link" /></span>
+    Top contributors
+  </h2>
 
-    <table>
-      <tr tal:repeat="contributor view/getTopFiveContributors">
-        <td>
-          <a tal:replace="structure contributor/person/fmt:link">
-            Guilherme Salgado
-          </a>
-        </td>
-        <td align="right">
-          <span tal:replace="contributor/karmavalue" /> points
-        </td>
-      </tr>
-    </table>
-
-  <div
-    tal:define="link context/menu:overview/top_contributors"
-    tal:content="structure link/render"
-    class="actions"
-  />
+  <ul>
+    <tal:contributor tal:repeat="contributor contributors">
+      <li>
+        <a tal:replace="structure contributor/person/fmt:link">
+          Guilherme Salgado</a>
+        <tal:karma replace="contributor/karmavalue" /> points
+      </li>
+    </tal:contributor>
+  </ul>
 </div>
+</tal:uses-launchpad>

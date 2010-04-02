@@ -24,18 +24,17 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from lp.codehosting.vfs.branchfs import (
-    AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
-    LaunchpadServer, BranchTransportDispatch, TransportDispatch,
-    UnknownTransportType)
-from lp.codehosting.bzrutils import ensure_base
+    AsyncLaunchpadTransport, BranchTransportDispatch,
+    DirectDatabaseLaunchpadServer, LaunchpadInternalServer, LaunchpadServer,
+    TransportDispatch, UnknownTransportType, branch_id_to_path)
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.sftp import FatLocalTransport
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from lp.testing import TestCase
-from canonical.testing import TwistedLayer
+from lp.testing import TestCase, TestCaseWithFactory
+from canonical.testing import TwistedLayer, ZopelessDatabaseLayer
 
 
 def branch_to_path(branch, add_slash=True):
@@ -50,7 +49,7 @@ class TestBranchTransportDispatch(TestCase):
     def setUp(self):
         super(TestBranchTransportDispatch, self).setUp()
         memory_server = MemoryServer()
-        memory_server.setUp()
+        memory_server.start_server()
         self.base_transport = get_transport(memory_server.get_url())
         self.factory = BranchTransportDispatch(self.base_transport)
 
@@ -91,7 +90,7 @@ class TestTransportDispatch(TestCase):
     def setUp(self):
         super(TestTransportDispatch, self).setUp()
         memory_server = MemoryServer()
-        memory_server.setUp()
+        memory_server.start_server()
         base_transport = get_transport(memory_server.get_url())
         base_transport.mkdir('hosted')
         base_transport.mkdir('mirrored')
@@ -200,22 +199,25 @@ class MixinBaseLaunchpadServerTests:
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
         # handlers.
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
         self.assertTrue(
             self.server.get_url() in _get_protocol_handlers().keys())
 
     def test_tearDown(self):
         # Setting up then tearing down the server removes its schema from the
         # protocol handlers.
-        self.server.setUp()
-        self.server.tearDown()
+        self.server.start_server()
+        self.server.stop_server()
         self.assertFalse(
             self.server.get_url() in _get_protocol_handlers().keys())
 
 
 class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
                           BzrTestCase):
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -288,23 +290,13 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         # The URL of the server is 'lp-<number>:///', where <number> is the
         # id() of the server object. Including the id allows for multiple
         # Launchpad servers to be running within a single process.
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
 
-class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
-                                  TrialTestCase, BzrTestCase):
-    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
-    """
-
-    def setUp(self):
-        BzrTestCase.setUp(self)
-        MixinBaseLaunchpadServerTests.setUp(self)
-
-    def getLaunchpadServer(self, authserver, user_id):
-        return LaunchpadInternalServer(
-            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
+class LaunchpadInternalServerTests:
+    """Tests for the internal server classes, used by e.g. the scanner."""
 
     def test_translate_branch_path(self):
         branch = self.factory.makeAnyBranch()
@@ -314,7 +306,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         expected_transport, expected_path = dispatch
 
         deferred = self.server.translateVirtualPath(
-            '%s/.bzr/README' % (branch.unique_name,))
+            '/%s/.bzr/README' % (branch.unique_name,))
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -326,8 +318,8 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         return deferred.addCallback(check_branch_transport)
 
     def test_translate_control_dir_path(self):
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
         branch = self.factory.makeProductBranch()
         branch.product.development_focus.branch = branch
         transport = get_transport(self.server.get_url())
@@ -338,8 +330,8 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
     def test_open_containing_raises_branch_not_found(self):
         # open_containing_from_transport raises NotBranchError if there's no
         # branch at that URL.
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
         branch = self.factory.makeAnyBranch(owner=self.requester)
         transport = get_transport(self.server.get_url())
         transport = transport.clone(branch.unique_name)
@@ -348,10 +340,48 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
             BzrDir.open_containing_from_transport, transport)
 
 
+class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
+                                  TrialTestCase, BzrTestCase,
+                                  LaunchpadInternalServerTests):
+    """Tests for `LaunchpadInternalServer`, used by the puller and scanner."""
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
+    def setUp(self):
+        BzrTestCase.setUp(self)
+        self.disable_directory_isolation()
+        MixinBaseLaunchpadServerTests.setUp(self)
+
+    def getLaunchpadServer(self, authserver, user_id):
+        return LaunchpadInternalServer(
+            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
+
+
+class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
+                                        LaunchpadInternalServerTests):
+    """Tests for `DirectDatabaseLaunchpadServer`."""
+
+    layer = ZopelessDatabaseLayer
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
+    def setUp(self):
+        super(TestDirectDatabaseLaunchpadServer, self).setUp()
+        self.requester = self.factory.makePerson()
+        self.server = DirectDatabaseLaunchpadServer(
+            'lp-test://', MemoryTransport())
+
+
+
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
     """Tests for `AsyncVirtualTransport`."""
 
     layer = TwistedLayer
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
 
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
@@ -365,11 +395,11 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
         def get_url(self):
             return self.scheme
 
-        def setUp(self):
+        def start_server(self):
             self.scheme = 'virtual:///'
             register_transport(self.scheme, self._transportFactory)
 
-        def tearDown(self):
+        def stop_server(self):
             unregister_transport(self.scheme, self._transportFactory)
 
         def translateVirtualPath(self, virtual_path):
@@ -381,8 +411,8 @@ class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
         TestCaseInTempDir.setUp(self)
         self.server = self.VirtualServer(
             FatLocalTransport(local_path_to_url('.')))
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
         self.transport = get_transport(self.server.get_url())
 
     def test_writeChunk(self):
@@ -459,8 +489,8 @@ class LaunchpadTransportTests:
         self.server = self.getServer(
             authserver, self.requester.id, self.backing_transport,
             MemoryTransport())
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+        self.server.start_server()
+        self.addCleanup(self.server.stop_server)
 
     def assertFiresFailure(self, exception, function, *args, **kwargs):
         """Assert that calling `function` will cause `exception` to be fired.
@@ -528,7 +558,7 @@ class LaunchpadTransportTests:
         """
         backing_transport = self.backing_transport.clone(
             '%s/.bzr/' % branch_to_path(branch, add_slash=False))
-        ensure_base(backing_transport)
+        backing_transport.create_prefix()
         return backing_transport
 
     def test_get_mapped_file(self):
@@ -752,6 +782,9 @@ class LaunchpadTransportTests:
 
 class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
     def _ensureDeferred(self, function, *args, **kwargs):
         def call_function_and_check_not_deferred():
             ret = function(*args, **kwargs)
@@ -774,6 +807,9 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
 
 
 class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
 
     def _ensureDeferred(self, function, *args, **kwargs):
         deferred = function(*args, **kwargs)
@@ -810,8 +846,8 @@ class TestRequestMirror(TestCaseWithTransport):
             self._server = LaunchpadServer(
                 XMLRPCWrapper(self.authserver), self.requester.id,
                 self.backing_transport, self.mirror_transport)
-            self._server.setUp()
-            self.addCleanup(self._server.tearDown)
+            self._server.start_server()
+            self.addCleanup(self._server.stop_server)
         return self._server
 
     def test_no_mirrors_requested_if_no_branches_changed(self):
@@ -843,6 +879,9 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     # See comment on TestLaunchpadServer.
     layer = TwistedLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
     def setUp(self):
         BzrTestCase.setUp(self)
 
@@ -872,8 +911,8 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
 
     def _setUpMemoryServer(self):
         memory_server = MemoryServer()
-        memory_server.setUp()
-        self.addCleanup(memory_server.tearDown)
+        memory_server.start_server()
+        self.addCleanup(memory_server.stop_server)
         return memory_server
 
     def _setUpLaunchpadServer(self, user_id, authserver, backing_transport,
@@ -881,8 +920,8 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         server = LaunchpadServer(
             XMLRPCWrapper(authserver), user_id, backing_transport,
             mirror_transport)
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
         return server
 
     def test_mkdir_readonly(self):

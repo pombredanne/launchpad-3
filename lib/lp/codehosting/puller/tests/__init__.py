@@ -116,6 +116,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         TestCaseWithFactory.setUp(self)
+        self.disable_directory_isolation()
 
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""

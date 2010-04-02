@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -26,7 +26,7 @@ class RunCreateMergeProposalJobs(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('create_merge_proposals')
         job_source = getUtility(ICreateMergeProposalJobSource)
-        runner = JobRunner.fromReady(job_source)
+        runner = JobRunner.fromReady(job_source, self.logger)
         runner.runAll()
         self.logger.info(
             'Ran %d CreateMergeProposalJobs.' % len(runner.completed_jobs))

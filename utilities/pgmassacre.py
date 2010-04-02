@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -11,6 +11,7 @@ Cut off access, slaughter connections and burn the database to the ground.
 
 # Nothing but system installed libraries - this script sometimes
 # gets installed standalone with no Launchpad tree available.
+from distutils.version import LooseVersion
 import sys
 import time
 import psycopg2
@@ -184,12 +185,20 @@ def rebuild(database, template):
     error_msg = None
     con = connect()
     con.set_isolation_level(0) # Autocommit required for CREATE DATABASE.
+    create_db_cmd = """
+        CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s
+        """ % (database, template)
+    # 8.4 allows us to create empty databases with a different locale
+    # to template1 by using the template0 database as a template.
+    # We make use of this feature so we don't have to care what locale
+    # was used to create the database cluster rather than requiring it
+    # to be rebuilt in the C locale.
+    if pg_version >= LooseVersion("8.4.0") and template == "template0":
+        create_db_cmd += "LC_COLLATE='C' LC_CTYPE='C'"
     while now < start + 20:
         cur = con.cursor()
         try:
-            cur.execute(
-                "CREATE DATABASE %s WITH ENCODING='UTF8' TEMPLATE=%s"
-                % (database, template))
+            cur.execute(create_db_cmd)
             con.close()
             return 0
         except psycopg2.Error, exception:
@@ -219,6 +228,7 @@ def report_open_connections(database):
 
 
 options = None
+pg_version = None # LooseVersion - Initialized in main()
 
 
 def main():
@@ -243,6 +253,12 @@ def main():
 
     con = connect()
     cur = con.cursor()
+
+    # Store the database version for version specific code.
+    global pg_version
+    cur.execute("show server_version")
+    pg_version = LooseVersion(cur.fetchone()[0])
+
     # Ensure the template database exists.
     if options.template is not None:
         cur.execute(

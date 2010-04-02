@@ -20,10 +20,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from lp.app.interfaces.headings import IRootContext
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
 from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.registry.interfaces.person import IPersonSet
@@ -31,6 +33,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import (
     login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
+from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -117,12 +120,13 @@ class TestBranchView(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchView, self).setUp()
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
     def tearDown(self):
         logout()
+        super(TestBranchView, self).tearDown()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
@@ -229,6 +233,70 @@ class TestBranchView(TestCaseWithFactory):
         view.initialize()
         self.assertEqual(list(view.translations_sources()), [trunk])
 
+    def test_user_can_upload(self):
+        # A user can upload if they have edit permissions.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login_person(branch.owner)
+        self.assertTrue(view.user_can_upload)
+
+    def test_user_can_upload_admins_can(self):
+        # Admins can upload to any hosted branch.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login('admin@canonical.com')
+        self.assertTrue(view.user_can_upload)
+
+    def test_user_can_upload_non_owner(self):
+        # Someone not associated with the branch cannot upload
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login_person(self.factory.makePerson())
+        self.assertFalse(view.user_can_upload)
+
+    def test_user_can_upload_mirrored(self):
+        # Even the owner of a mirrored branch can't upload.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        view = create_initialized_view(branch, '+index')
+        login_person(branch.owner)
+        self.assertFalse(view.user_can_upload)
+
+
+class TestBranchAddView(TestCaseWithFactory):
+    """Test the BranchAddView view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBranchAddView, self).setUp()
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.request = LaunchpadTestRequest()
+
+    def tearDown(self):
+        logout()
+        super(TestBranchAddView, self).tearDown()
+
+    def get_view(self, context):
+        view = BranchAddView(context, self.request)
+        view.initialize()
+        return view
+
+    def test_target_person(self):
+        add_view = self.get_view(self.person)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+
+    def test_target_product(self):
+        product = self.factory.makeProduct()
+        add_view = self.get_view(product)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+
+    def test_target_productseries(self):
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        add_view = self.get_view(series)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
     """Test the BranchReviewerEditView view."""
@@ -261,7 +329,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         login_person(branch.owner)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': reviewer})
+        view.initialize()
+        view.change_action.success({'reviewer': reviewer})
         self.assertEqual(reviewer, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -274,7 +343,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         login_person(branch.owner)
         branch.reviewer = self.factory.makePerson()
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -287,7 +357,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
         branch = self.factory.makeAnyBranch(date_created=modified_date)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has not been updated.
         self.assertEqual(modified_date, branch.date_last_modified)
@@ -441,25 +512,49 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
 
-    def test_dependent_public(self):
-        # If the branch is a dependent branch for a public proposals, then
+    def test_prerequisite_public(self):
+        # If the branch is a prerequisite branch for a public proposals, then
         # there are merges.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertFalse(view.no_merges)
         [proposal] = view.dependent_branches
         self.assertEqual(bmp, proposal)
 
-    def test_dependent_private(self):
-        # If the branch is a dependent branch where either the source or the
-        # target is private, then the dependent_branches are not shown.
+    def test_prerequisite_private(self):
+        # If the branch is a prerequisite branch where either the source or
+        # the target is private, then the dependent_branches are not shown.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         removeSecurityProxy(bmp.source_branch).private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
+
+
+class TestBranchRootContext(TestCaseWithFactory):
+    """Test the adaptation of IBranch to IRootContext."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_personal_branch(self):
+        # The root context of a personal branch is the person.
+        branch = self.factory.makePersonalBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.owner, root_context)
+
+    def test_package_branch(self):
+        # The root context of a package branch is the distribution.
+        branch = self.factory.makePackageBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.distroseries.distribution, root_context)
+
+    def test_product_branch(self):
+        # The root context of a product branch is the product.
+        branch = self.factory.makeProductBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.product, root_context)
 
 
 def test_suite():

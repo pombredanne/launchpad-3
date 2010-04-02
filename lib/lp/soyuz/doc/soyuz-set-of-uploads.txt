@@ -159,7 +159,7 @@ And we need a way to process the accepted queue
 
   >>> def process_accepted(distro):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     for series in distribution.serieses:
+  ...     for series in distribution.series:
   ...         items = series.getQueueItems(
   ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:
@@ -210,16 +210,14 @@ given upload into the published state, so here's a very simplistic publisher
   ...                       'Distribution'])
   ...     published_one = False
   ...     for src in srcs_to_publish:
-  ...         sec_src = src.secure_record
-  ...         sec_src.status = PPS.PUBLISHED
-  ...         sec_src.datepublished = UTC_NOW
-  ...         syncUpdate(sec_src)
+  ...         src.status = PPS.PUBLISHED
+  ...         src.datepublished = UTC_NOW
+  ...         syncUpdate(src)
   ...         published_one = True
   ...     for bin in bins_to_publish:
-  ...         sec_bin = bin.secure_record
-  ...         sec_bin.status = PPS.PUBLISHED
-  ...         sec_bin.datepublished = UTC_NOW
-  ...         syncUpdate(sec_bin)
+  ...         bin.status = PPS.PUBLISHED
+  ...         bin.datepublished = UTC_NOW
+  ...         syncUpdate(bin)
   ...         published_one = True
   ...     return published_one
 
@@ -502,8 +500,8 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
-  >>> breezy.status = DistroSeriesStatus.CURRENT
+  >>> from canonical.launchpad.interfaces import SeriesStatus
+  >>> breezy.status = SeriesStatus.CURRENT
   >>> LaunchpadZopelessLayer.txn.commit()
 
 Since we are using 'sync' policy in the following tests the packages
@@ -599,7 +597,7 @@ we expect.
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:
 
-  >>> breezy.status = DistroSeriesStatus.EXPERIMENTAL
+  >>> breezy.status = SeriesStatus.EXPERIMENTAL
   >>> breezy.syncUpdate()
 
 
@@ -622,10 +620,11 @@ eg ubuntu/warty.
 
 Check there's a SourcePackageRelease with no build.
 
+  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
   >>> from lp.registry.model.sourcepackagename import SourcePackageName
-  >>> from canonical.launchpad.database import SourcePackageRelease, Build
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
-  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.model.build import Build
+  >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id

@@ -7,11 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-try:
-    from bzrlib.tests import per_transport
-except ImportError:
-    from bzrlib.tests import test_transport_implementations as per_transport
-
+from bzrlib.tests import per_transport
 from bzrlib.transport import chroot, get_transport, Transport
 from bzrlib.transport.local import LocalTransport
 from bzrlib.urlutils import local_path_to_url
@@ -64,7 +60,7 @@ class TestingServer(LaunchpadInternalServer):
             self._branch_path).clone('.bzr')
         bzrdir_transport.ensure_base()
         chroot_server = chroot.ChrootServer(bzrdir_transport)
-        chroot_server.setUp()
+        chroot_server.start_server()
         self._chroot_servers.append(chroot_server)
         return get_transport(chroot_server.get_url()).clone(relpath)
 
@@ -75,7 +71,7 @@ class TestingServer(LaunchpadInternalServer):
         ChrootServer instances we've set up.
         """
         for chroot_server in self._chroot_servers:
-            chroot_server.tearDown()
+            chroot_server.stop_server()
         LaunchpadInternalServer.tearDown(self)
 
 

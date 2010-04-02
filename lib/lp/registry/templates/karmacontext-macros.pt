@@ -13,10 +13,16 @@
       define="person contributor/person; karma contributor/karmavalue">
     <td><a tal:replace="structure person/fmt:link">Guilherme Salgado</a>
     </td>
-    <td tal:content="karma" style="text-align: right">500</td>
+    <td style="text-align: right">
+      <span tal:content="karma"
+            style="margin-right: 50%">
+        500
+      </span>
+    </td>
     <td style="text-align: right">
       <a tal:attributes="href string:${person/fmt:url}/+karma"
-         tal:content="person/karma">50000</a>
+         tal:content="person/karma"
+         style="margin-right: 50%">50000</a>
     </td>
     </tal:block>
   </tr>

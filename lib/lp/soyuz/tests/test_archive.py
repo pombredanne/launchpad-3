@@ -3,20 +3,32 @@
 
 """Test Archive features."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
 
@@ -94,7 +106,7 @@ class TestGetPublicationsInArchive(TestCaseWithFactory):
 
     def testReturnsOnlyPublishedPublications(self):
         # Publications that are not published will not be returned.
-        secure_src_hist = self.gedit_beta_src_hist.secure_record
+        secure_src_hist = self.gedit_beta_src_hist
         secure_src_hist.status = PackagePublishingStatus.PENDING
 
         results = self.archive_set.getPublicationsInArchives(
@@ -167,6 +179,43 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
             previous_size + 1,
             self.publisher.ubuntutest.main_archive.binaries_size)
 
+    def test_sources_size_on_empty_archive(self):
+        # Zero is returned for an archive without sources.
+        self.assertEquals(
+            0, self.ppa.sources_size,
+            'Zero should be returned for an archive without sources.')
+
+    def test_sources_size_does_not_count_duplicated_files(self):
+        # If there are multiple copies of the same file name/size
+        # only one will be counted.
+        pub_1 = self.publisher.getPubSource(
+            filecontent='22', version='0.5.11~ppa1', archive=self.ppa)
+
+        pub_2 = self.publisher.getPubSource(
+            filecontent='333', version='0.5.11~ppa2', archive=self.ppa)
+
+        self.assertEquals(5, self.ppa.sources_size)
+
+        shared_tarball = self.publisher.addMockFile(
+            filename='foo_0.5.11.tar.gz', filecontent='1')
+
+        # After adding a the shared tarball to the ppa1 version,
+        # the sources_size updates to reflect the change.
+        pub_1.sourcepackagerelease.addFile(shared_tarball)
+        self.assertEquals(
+            6, self.ppa.sources_size,
+            'The sources_size should update after a file is added.')
+
+        # But after adding a copy of the shared tarball to the ppa2 version,
+        # the sources_size is unchanged.
+        shared_tarball_copy = self.publisher.addMockFile(
+            filename='foo_0.5.11.tar.gz', filecontent='1')
+
+        pub_2.sourcepackagerelease.addFile(shared_tarball_copy)
+        self.assertEquals(
+            6, self.ppa.sources_size,
+            'The sources_size should change after adding a duplicate file.')
+
 
 class TestSeriesWithSources(TestCaseWithFactory):
     """Create some sources in different series."""
@@ -181,8 +230,8 @@ class TestSeriesWithSources(TestCaseWithFactory):
         # Create three sources for the two different distroseries.
         breezy_autotest = self.publisher.distroseries
         ubuntu_test = breezy_autotest.distribution
-        self.serieses = [breezy_autotest]
-        self.serieses.append(self.factory.makeDistroRelease(
+        self.series = [breezy_autotest]
+        self.series.append(self.factory.makeDistroRelease(
             distribution=ubuntu_test, name="foo-series"))
 
         self.sources = []
@@ -192,42 +241,42 @@ class TestSeriesWithSources(TestCaseWithFactory):
 
         firefox_src_hist = self.publisher.getPubSource(
             sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.serieses[1])
+            distroseries=self.series[1])
         self.sources.append(firefox_src_hist)
 
         gtg_src_hist = self.publisher.getPubSource(
             sourcename="getting-things-gnome",
             status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.serieses[1])
+            distroseries=self.series[1])
         self.sources.append(gtg_src_hist)
 
         # Shortcuts for test readability.
-        self.archive = self.serieses[0].main_archive
+        self.archive = self.series[0].main_archive
 
     def test_series_with_sources_returns_all_series(self):
         # Calling series_with_sources returns all series with publishings.
-        serieses = self.archive.series_with_sources
-        serieses_names = [series.displayname for series in serieses]
+        series = self.archive.series_with_sources
+        series_names = [s.displayname for s in series]
 
         self.assertContentEqual(
             [u'Breezy Badger Autotest', u'Foo-series'],
-            serieses_names)
+            series_names)
 
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
         # the series will not be returned.
-        self.sources[0].secure_record.status = (
+        self.sources[0].status = (
             PackagePublishingStatus.DELETED)
 
-        serieses = self.archive.series_with_sources
-        serieses_names = [series.displayname for series in serieses]
+        series = self.archive.series_with_sources
+        series_names = [s.displayname for s in series]
 
-        self.assertContentEqual([u'Foo-series'], serieses_names)
+        self.assertContentEqual([u'Foo-series'], series_names)
 
     def test_series_with_sources_ordered_by_version(self):
         # The returned series are ordered by the distroseries version.
-        serieses = self.archive.series_with_sources
-        versions = [series.version for series in serieses]
+        series = self.archive.series_with_sources
+        versions = [s.version for s in series]
 
         # Latest version should be first
         self.assertEqual(
@@ -236,12 +285,462 @@ class TestSeriesWithSources(TestCaseWithFactory):
 
         # Update the version of breezyautotest and ensure that the
         # latest version is still first.
-        self.serieses[0].version = u'0.5'
-        serieses = self.archive.series_with_sources
-        versions = [series.version for series in serieses]
+        self.series[0].version = u'0.5'
+        series = self.archive.series_with_sources
+        versions = [s.version for s in series]
         self.assertEqual(
             [u'1.0', u'0.5'], versions,
             "The latest version was not first.")
+
+
+class TestGetSourcePackageReleases(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetSourcePackageReleases, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published binaries.
+        self.archive = self.factory.makeArchive()
+        binaries_foo = self.publisher.getPubBinaries(
+            archive=self.archive, binaryname="foo-bin")
+        binaries_bar = self.publisher.getPubBinaries(
+            archive=self.archive, binaryname="bar-bin")
+
+        # Collect the builds for reference.
+        self.builds_foo = [
+            binary.binarypackagerelease.build for binary in binaries_foo]
+        self.builds_bar = [
+            binary.binarypackagerelease.build for binary in binaries_bar]
+
+        # Collect the source package releases for reference.
+        self.sourcepackagereleases = [
+            self.builds_foo[0].sourcepackagerelease,
+            self.builds_bar[0].sourcepackagerelease,
+            ]
+
+    def test_getSourcePackageReleases_with_no_params(self):
+        # With no params all source package releases are returned.
+        sprs = self.archive.getSourcePackageReleases()
+
+        self.assertContentEqual(self.sourcepackagereleases, sprs)
+
+    def test_getSourcePackageReleases_with_buildstatus(self):
+        # Results are filtered by the specified buildstatus.
+
+        # Set the builds for one of the sprs to needs build.
+        for build in self.builds_foo:
+            build.buildstate = BuildStatus.NEEDSBUILD
+
+        result = self.archive.getSourcePackageReleases(
+            build_status=BuildStatus.NEEDSBUILD)
+
+        self.failUnlessEqual(1, result.count())
+        self.failUnlessEqual(
+            self.sourcepackagereleases[0], result[0])
+
+class TestCorrespondingDebugArchive(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCorrespondingDebugArchive, self).setUp()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+        # Create a debug archive, as there isn't one in the sample data.
+        self.debug_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG,
+            distribution=self.ubuntutest,
+            owner=self.ubuntutest.owner)
+
+        # Retrieve sample data archives of each type.
+        self.primary_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+        self.partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
+        self.copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
+        self.ppa = getUtility(IPersonSet).getByName('cprov').archive
+
+    def testPrimaryDebugArchiveIsDebug(self):
+        self.assertEquals(
+            self.primary_archive.debug_archive, self.debug_archive)
+
+    def testPartnerDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.partner_archive.debug_archive, self.partner_archive)
+
+    def testCopyDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.copy_archive.debug_archive, self.copy_archive)
+
+    def testDebugDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.debug_archive.debug_archive, self.debug_archive)
+
+    def testPPADebugArchiveIsSelf(self):
+        self.assertEquals(self.ppa.debug_archive, self.ppa)
+
+    def testMissingPrimaryDebugArchiveIsNone(self):
+        # Turn the DEBUG archive into a COPY archive to hide it.
+        removeSecurityProxy(self.debug_archive).purpose = ArchivePurpose.COPY
+
+        self.assertIs(
+            self.primary_archive.debug_archive, None)
+
+
+class TestArchiveEnableDisable(TestCaseWithFactory):
+    """Test the enable and disable methods of Archive."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        #XXX: rockstar - 12 Jan 2010 - Bug #506255 - Tidy up these tests!
+        super(TestArchiveEnableDisable, self).setUp()
+
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        sample_data = store.find(Build)
+        for build in sample_data:
+            build.buildstate = BuildStatus.FULLYBUILT
+        store.flush()
+
+        # We test builds that target a primary archive.
+        self.builds = []
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="postgres",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        # Set up the builds for test.
+        score = 1000
+        duration = 0
+        for build in self.builds:
+            score += 1
+            duration += 60
+            bq = build.buildqueue_record
+            bq.lastscore = score
+            bq.estimated_duration = timedelta(seconds=duration)
+
+    def _getBuildJobsByStatus(self, archive, status):
+        # Return the count for archive build jobs with the given status.
+        query = """
+            SELECT COUNT(Job.id)
+            FROM Build, BuildPackageJob, BuildQueue, Job
+            WHERE
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                AND Build.buildstate = %s
+                AND Job.status = %s;
+        """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.execute(query).get_one()[0]
+
+    def assertNoBuildJobsHaveStatus(self, archive, status):
+        # Check that that the jobs attached to this archive do not have this
+        # status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
+
+    def assertHasBuildJobsWithStatus(self, archive, status):
+        # Check that that there are jobs attached to this archive that have
+        # the specified status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 8)
+
+    def test_enableArchive(self):
+        # Enabling an archive should set all the Archive's suspended builds to
+        # WAITING.
+
+        # Disable the archive, because it's currently enabled.
+        self.archive.disable()
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.SUSPENDED)
+        self.archive.enable()
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
+        self.assertTrue(self.archive.enabled)
+
+    def test_enableArchiveAlreadyEnabled(self):
+        # Enabling an already enabled Archive should raise an AssertionError.
+        self.assertRaises(AssertionError, self.archive.enable)
+
+    def test_disableArchive(self):
+        # Disabling an archive should set all the Archive's pending bulds to
+        # SUSPENDED.
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.WAITING)
+        self.archive.disable()
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
+        self.assertFalse(self.archive.enabled)
+
+    def test_disableArchiveAlreadyDisabled(self):
+        # Disabling an already disabled Archive should raise an
+        # AssertionError.
+        self.archive.disable()
+        self.assertRaises(AssertionError, self.archive.disable)
+
+class TestCollectLatestPublishedSources(TestCaseWithFactory):
+    """Ensure that the private helper method works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestCollectLatestPublishedSources, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published sources. We'll store
+        # a reference to the naked archive so that we can call
+        # the private method which is not defined on the interface.
+        self.archive = self.factory.makeArchive()
+        self.naked_archive = removeSecurityProxy(self.archive)
+
+        self.pub_1 = self.publisher.getPubSource(
+            version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_2 = self.publisher.getPubSource(
+            version='0.5.11~ppa2', archive=self.archive, sourcename="foo",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.pub_3 = self.publisher.getPubSource(
+            version='0.9', archive=self.archive, sourcename="bar",
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_collectLatestPublishedSources_returns_latest(self):
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
+
+    def test_collectLatestPublishedSources_returns_published_only(self):
+        # Set the status of the latest pub to DELETED and ensure that it
+        # is not returned.
+        self.pub_2.status = PackagePublishingStatus.DELETED
+
+        pubs = self.naked_archive._collectLatestPublishedSources(
+            self.archive, ["foo"])
+        self.assertEqual(1, len(pubs))
+        self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestARMBuildsAllowed(TestCaseWithFactory):
+    """Ensure that ARM builds can be allowed and disallowed correctly."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestARMBuildsAllowed, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.archive = self.factory.makeArchive()
+        self.archive_arch_set = getUtility(IArchiveArchSet)
+        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+
+    def test_default(self):
+        """By default, ARM builds are not allowed."""
+        self.assertEquals(0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_get_uses_archivearch(self):
+        """Adding an entry to ArchiveArch for ARM and an archive will
+        enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive, self.arm)
+        self.assertTrue(self.archive.arm_builds_allowed)
+
+    def test_get_uses_arm_only(self):
+        """Adding an entry to ArchiveArch for something other than ARM
+        does not enable arm_builds_allowed for that archive."""
+        self.assertFalse(self.archive.arm_builds_allowed)
+        self.archive_arch_set.new(self.archive,
+            getUtility(IProcessorFamilySet).getByName('amd64'))
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+    def test_set(self):
+        """The property remembers its value correctly and sets ArchiveArch."""
+        self.archive.arm_builds_allowed = True
+        allowed_restricted_families = self.archive_arch_set.getByArchive(
+            self.archive, self.arm)
+        self.assertEquals(1, allowed_restricted_families.count())
+        self.assertEquals(self.arm,
+            allowed_restricted_families[0].processorfamily)
+        self.assertTrue(self.archive.arm_builds_allowed)
+        self.archive.arm_builds_allowed = False
+        self.assertEquals(0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertFalse(self.archive.arm_builds_allowed)
+
+
+class TestArchivePrivacySwitching(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a public and a private PPA."""
+        super(TestArchivePrivacySwitching, self).setUp()
+        self.public_ppa = self.factory.makeArchive()
+        self.private_ppa = self.factory.makeArchive()
+        self.private_ppa.buildd_secret = 'blah'
+        self.private_ppa.private = True
+
+    def make_ppa_private(self, ppa):
+        """Helper method to privatise a ppa."""
+        ppa.private = True
+        ppa.buildd_secret = "secret"
+
+    def make_ppa_public(self, ppa):
+        """Helper method to make a PPA public (and use for assertRaises)."""
+        ppa.private = False
+        ppa.buildd_secret = ''
+
+    def test_switch_privacy_no_pubs_succeeds(self):
+        # Changing the privacy is fine if there are no publishing
+        # records.
+        self.make_ppa_private(self.public_ppa)
+        self.assertTrue(self.public_ppa.private)
+
+        self.private_ppa.private = False
+        self.assertFalse(self.private_ppa.private)
+
+    def test_switch_privacy_with_pubs_fails(self):
+        # Changing the privacy is not possible when the archive already
+        # has published sources.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        publisher.getPubSource(archive=self.public_ppa)
+        publisher.getPubSource(archive=self.private_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
+
+        self.assertRaises(
+            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
+
+
+class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
+    """Ensure that getBinaryPackageReleaseByFileName works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestGetBinaryPackageReleaseByFileName, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.archive = self.factory.makeArchive()
+        self.archive.require_virtualized = False
+
+        self.i386_pub, self.hppa_pub = self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.i386_indep_pub, self.hppa_indep_pub = (
+            self.publisher.getPubBinaries(
+                version="1.2.3-4", archive=self.archive, binaryname="bar-bin",
+                status=PackagePublishingStatus.PUBLISHED))
+
+    def test_returns_matching_binarypackagerelease(self):
+        # The BPR with a file by the given name should be returned.
+        self.assertEqual(
+            self.i386_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+    def test_returns_correct_architecture(self):
+        # The architecture is taken into account correctly.
+        self.assertEqual(
+            self.hppa_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_hppa.deb"))
+
+    def test_works_with_architecture_independent_binaries(self):
+        # Architecture independent binaries with multiple publishings
+        # are found properly.
+        self.assertEqual(
+            self.i386_indep_pub.binarypackagerelease,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "bar-bin_1.2.3-4_all.deb"))
+
+    def test_returns_none_for_source_file(self):
+        # None is returned if the file is a source component instead.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo_1.2.3-4.dsc"))
+
+    def test_returns_none_for_nonexistent_file(self):
+        # Non-existent files return None.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "this-is-not-real_1.2.3-4_all.deb"))
+
+    def test_returns_none_for_duplicate_file(self):
+        # In the unlikely case of multiple BPRs in this archive with the same
+        # name (hopefully impossible, but it still happens occasionally due
+        # to bugs), None is returned.
+
+        # Publish the same binaries again. Evil.
+        self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
+    def test_returns_none_from_another_archive(self):
+        # Cross-archive searches are not performed.
+        self.assertIs(
+            None,
+            self.factory.makeArchive().getBinaryPackageReleaseByFileName(
+                "foo-bin_1.2.3-4_i386.deb"))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

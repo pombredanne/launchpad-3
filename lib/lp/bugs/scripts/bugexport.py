@@ -8,7 +8,10 @@ __all__ = [
     ]
 
 import base64
-import cElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import cElementTree as ET
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities

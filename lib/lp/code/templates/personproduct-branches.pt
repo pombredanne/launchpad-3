@@ -3,21 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
 
 <body>
 
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
-  <h1 tal:content="view/heading">Bazaar branches</h1>
-
-  <div id="no-branch-message" tal:condition="not: view/has_branches">
+  <div id="no-branch-message" tal:condition="not: view/branch_count">
     <p tal:content="view/no_branch_message">
       There are no branches related to Eric the Viking today.
     </p>
@@ -25,7 +19,7 @@
 
   <tal:summary replace="structure context/@@+codesummary"/>
 
-  <tal:has-branches condition="view/has_branches">
+  <tal:has-branches condition="view/branch_count">
 
     <tal:branchlisting
         content="structure branches/@@+branch-listing" />

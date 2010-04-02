@@ -19,6 +19,7 @@ from lp.services.openid.interfaces.openidrpconfig import (
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Navigation, action,
     canonical_url, custom_widget)
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.image import ImageChangeWidget
 from lp.registry.interfaces.person import PersonCreationRationale
@@ -38,6 +39,11 @@ class OpenIDRPConfigSetNavigation(Navigation):
         return getUtility(IOpenIDRPConfigSet).get(config_id)
 
 
+class OpenIDRPConfigSetView(LaunchpadView):
+    page_title = 'OpenID Relying Party Configurations'
+    label = page_title
+
+
 class OpenIDRPConfigAddView(LaunchpadFormView):
     """View class for adding new RP configurations."""
 
@@ -47,6 +53,8 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
                    'auto_authorize']
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
     custom_widget('allowed_sreg', LabeledMultiCheckBoxWidget)
+    label = 'Add an OpenID Relying Party Configuration'
+    page_title = label
 
     initial_values = {
         'creation_rationale':
@@ -73,9 +81,17 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(getUtility(IOpenIDRPConfigSet))
 
+    cancel_url = next_url
+
 
 class OpenIDRPConfigEditView(LaunchpadEditFormView):
     """View class for editing or removing RP configurations."""
+
+    @property
+    def label(self):
+        return 'Edit Relying Party Configuration for %s' % (
+            self.context.displayname)
+    page_title = label
 
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
@@ -104,3 +120,5 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(getUtility(IOpenIDRPConfigSet))
+
+    cancel_url = next_url

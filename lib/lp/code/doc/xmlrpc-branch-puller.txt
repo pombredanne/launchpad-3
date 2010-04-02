@@ -18,29 +18,14 @@ branch_puller attribute of our private XMLRPC instance.
 
 The BranchPuller view provides the IBranchPuller XML-RPC API:
 
-    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codehosting import IBranchPuller
     >>> from lp.code.xmlrpc.codehosting import BranchPuller
 
     >>> branch_puller = BranchPuller(
-    ...     private_root.branch_puller, TestRequest())
+    ...     private_root.branch_puller, LaunchpadTestRequest())
     >>> verifyObject(IBranchPuller, branch_puller)
     True
 
 The IBranchPuller interface defines some methods, for which see the unit
-tests.  To allow a minimal test here, we call getBranchPullQueue,
-which will return an empty list.
-
-    >>> from lp.code.enums import BranchType
-    >>> branch_puller.getBranchPullQueue(BranchType.HOSTED.name)
-    []
-
-This remains true when it is accessed over XMLRPC.
-
-    >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
-    >>> puller = xmlrpclib.ServerProxy(
-    ...     'http://xmlrpc-private.launchpad.dev:8087/branch_puller',
-    ...     transport=XMLRPCTestTransport())
-    >>> puller.getBranchPullQueue(BranchType.HOSTED.name)
-    []
+tests.

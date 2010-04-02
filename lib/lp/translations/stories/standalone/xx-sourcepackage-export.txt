@@ -12,10 +12,10 @@ translations."
 
 Mark is a qualified user.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> download = browser.getLink('Download')
+    >>> download = browser.getLink('download a full tarball')
     >>> download_url = download.url
     >>> download.click()
     >>> print browser.url
@@ -42,7 +42,7 @@ reasonable level.
     ...         'http://translations.launchpad.dev/'
     ...         'ubuntu/hoary/+source/mozilla/')
     ...     try:
-    ...         browser.getLink('Download').click()
+    ...         browser.getLink('download a full tarball').click()
     ...     except LinkNotFoundError:
     ...         see_link = False
     ...     else:
@@ -97,7 +97,7 @@ admin or expert, but he is one of the owners of a translation group.
     >>> oofy = factory.makePerson(email='oofy@drones.example.com',
     ...     name='oofy', password='test', displayname='Oofy Prosser')
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(oofy, carlos)
+    >>> ignored = rosetta_admins.addMember(oofy, carlos)
 
     >>> gussie = factory.makePerson(email='gussie@drones.example.com',
     ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')
@@ -158,8 +158,8 @@ export format, and request the download.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/mozilla/+export')
-    >>> print browser.title
-    Download translations for mozilla in Ubuntu Hoary
+    >>> browser.title
+    'Download : \xe2\x80\x9cmozilla...
 
     >>> browser.getControl('Request Download').click()
 

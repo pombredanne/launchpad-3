@@ -11,9 +11,10 @@ __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
     'DenyingServer',
-    'ensure_base',
     'get_branch_stacked_on_url',
+    'get_vfs_format_classes',
     'HttpAsLocalTransport',
+    'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
     'remove_exception_logging_hook',
@@ -22,12 +23,10 @@ __all__ = [
 import os
 import sys
 
-from bzrlib import config
+from bzrlib import config, trace
 from bzrlib.errors import (
-    NoSuchFile, NotStacked, UnstackableBranchFormat,
-    UnstackableRepositoryFormat)
-from bzrlib.remote import RemoteBzrDir
-from bzrlib import trace
+    NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
+from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
 
@@ -102,30 +101,6 @@ def get_branch_stacked_on_url(a_bzrdir):
     if not stacked_on_url:
         raise NotStacked(a_bzrdir.root_transport.base)
     return stacked_on_url
-
-
-# XXX: JonathanLange 2007-06-13 bugs=120135:
-# This should probably be part of bzrlib.
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        # transport.create_prefix was added in Bazaar 1.15, and _create_prefix
-        # was removed. Check to see if transport has a create_prefix method
-        # and use the old _create_prefix if it's not there.
-        #
-        # This can be removed once Bazaar 1.15 has landed on Launchpad.
-        create_prefix = getattr(transport, 'create_prefix', None)
-        if create_prefix is not None:
-            create_prefix()
-        else:
-            from bzrlib.builtins import _create_prefix
-            _create_prefix(transport)
 
 
 _exception_logging_hooks = []
@@ -242,13 +217,13 @@ class DenyingServer:
         """
         self.schemes = schemes
 
-    def setUp(self):
+    def start_server(self):
         """Prevent transports being created for specified schemes."""
         for scheme in self.schemes:
             register_transport(scheme, self._deny)
         self._is_set_up = True
 
-    def tearDown(self):
+    def stop_server(self):
         """Re-enable creation of transports for specified schemes."""
         if not self._is_set_up:
             return
@@ -260,3 +235,34 @@ class DenyingServer:
         """Prevent creation of transport for 'url'."""
         raise AssertionError(
             "Creation of transport for %r is currently forbidden" % url)
+
+
+def get_vfs_format_classes(branch):
+    """Return the vfs classes of the branch, repo and bzrdir formats.
+
+    'vfs' here means that it will return the underlying format classes of a
+    remote branch.
+    """
+    if isinstance(branch, RemoteBranch):
+        branch._ensure_real()
+        branch = branch._real_branch
+    repository = branch.repository
+    if isinstance(repository, RemoteRepository):
+        repository._ensure_real()
+        repository = repository._real_repository
+    bzrdir = branch.bzrdir
+    if isinstance(bzrdir, RemoteBzrDir):
+        bzrdir._ensure_real()
+        bzrdir = bzrdir._real_bzrdir
+    return (
+        branch._format.__class__,
+        repository._format.__class__,
+        bzrdir._format.__class__,
+        )
+
+
+def identical_formats(branch_one, branch_two):
+    """Check if two branches have the same bzrdir, repo, and branch formats.
+    """
+    return (get_vfs_format_classes(branch_one) ==
+            get_vfs_format_classes(branch_two))

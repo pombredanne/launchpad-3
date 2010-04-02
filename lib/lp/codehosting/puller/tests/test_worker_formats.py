@@ -12,17 +12,11 @@ from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
-try:
-    from bzrlib.tests.repository_implementations.test_repository import (
-                TestCaseWithRepository)
-except ImportError:
-    from bzrlib.tests.per_repository import TestCaseWithRepository
-
+from bzrlib.tests.per_repository import TestCaseWithRepository
 
 from lp.codehosting.puller.tests import PullerWorkerMixin
 from lp.codehosting.tests.helpers import LoomTestMixin
 from lazr.uri import URI
-from canonical.testing import reset_logging
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
@@ -35,10 +29,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.worker = self.makePullerWorker(
             self.get_url(self._source_branch_path),
             self.get_url('dest-path'))
-
-    def tearDown(self):
-        TestCaseWithRepository.tearDown(self)
-        reset_logging()
 
     def _createSourceBranch(self, repository_format, bzrdir_format,
                             branch_format=None):

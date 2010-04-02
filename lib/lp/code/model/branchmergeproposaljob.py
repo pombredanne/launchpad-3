@@ -1,20 +1,29 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
 """Job classes related to BranchMergeProposals are in here.
 
 This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
 
+
+from __future__ import with_statement
+
+
 __metaclass__ = type
+
+
 __all__ = [
     'BranchMergeProposalJob',
     'CreateMergeProposalJob',
     'MergeProposalCreatedJob',
+    'UpdatePreviewDiffJob',
     ]
 
-from email.Utils import parseaddr
+import contextlib
+from email.utils import parseaddr
 import transaction
 
 from lazr.delegates import delegates
@@ -27,10 +36,12 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
@@ -38,12 +49,15 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, ICreateMergeProposalJob,
-    ICreateMergeProposalJobSource, IMergeProposalCreatedJob)
+    ICreateMergeProposalJobSource, IMergeProposalCreatedJob,
+    IUpdatePreviewDiffJobSource,
+    )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import StaticDiff
-from lp.codehosting.vfs import get_multi_server
+from lp.code.model.diff import PreviewDiff
+from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
+from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
 
 
@@ -55,6 +69,12 @@ class BranchMergeProposalJobType(DBEnumeratedType):
 
         This job generates the review diff for a BranchMergeProposal if
         needed, then sends mail to all interested parties.
+        """)
+
+    UPDATE_PREVIEW_DIFF = DBItem(1, """
+        Update the preview diff for the BranchMergeProposal.
+
+        This job generates the preview diff for a BranchMergeProposal.
         """)
 
 
@@ -141,11 +161,28 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     def __init__(self, job):
         self.context = job
 
-    def __eq__(self, job):
-        return (self.__class__ is job.__class__ and self.job == job.job)
+    @classmethod
+    def create(cls, bmp):
+        """See `IMergeProposalCreationJob`."""
+        job = BranchMergeProposalJob(
+            bmp, cls.class_job_type, {})
+        return cls(job)
 
-    def __ne__(self, job):
-        return not (self == job)
+    @classmethod
+    def get(cls, job_id):
+        """Get a job by id.
+
+        :return: the BranchMergeProposalJob with the specified id, as the
+            current BranchMergeProposalJobDereived subclass.
+        :raises: SQLObjectNotFound if there is no job with the specified id,
+            or its job_type does not match the desired subclass.
+        """
+        job = BranchMergeProposalJob.get(job_id)
+        if job.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No object found with id %d and type %s' % (job_id,
+                cls.class_job_type.title))
+        return cls(job)
 
     @classmethod
     def iterReady(klass):
@@ -157,6 +194,8 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
+                BranchMergeProposalJob.branch_merge_proposal
+                    == BranchMergeProposal.id,
                 BranchMergeProposal.source_branch == Branch.id,
                 # A proposal isn't considered ready if it has no revisions,
                 # or if it is hosted but pending a mirror.
@@ -164,11 +203,18 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 Or(Branch.next_mirror_time == None,
                    Branch.branch_type != BranchType.HOSTED)
                 ))
-        jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
-
-
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars =  BaseRunnableJob.getOopsVars(self)
+        bmp = self.context.branch_merge_proposal
+        vars.extend([
+            ('branchmergeproposal_job_id', self.context.id),
+            ('branchmergeproposal_job_type', self.context.job_type.title),
+            ('source_branch', bmp.source_branch.unique_name),
+            ('target_branch', bmp.target_branch.unique_name)])
+        return vars
 
 class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     """See `IMergeProposalCreatedJob`."""
@@ -177,42 +223,17 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
-    @classmethod
-    def create(klass, bmp):
-        """See `IMergeProposalCreationJob`."""
-        job = BranchMergeProposalJob(
-            bmp, klass.class_job_type, {})
-        return klass(job)
-
-    def run(self):
+    def run(self, _create_preview=True):
         """See `IMergeProposalCreatedJob`."""
-        if self.branch_merge_proposal.review_diff is None:
-            self.branch_merge_proposal.review_diff = self._makeReviewDiff()
+        # _create_preview can be set False for testing purposes.
+        if _create_preview:
+            preview_diff = PreviewDiff.fromBranchMergeProposal(
+                self.branch_merge_proposal)
+            self.branch_merge_proposal.preview_diff = preview_diff
             transaction.commit()
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
-        return self.branch_merge_proposal.review_diff
-
-    def _makeReviewDiff(self):
-        """Return a StaticDiff to be used as a review diff."""
-        cleanups = []
-        def get_branch(branch):
-            bzr_branch = branch.getBzrBranch()
-            bzr_branch.lock_read()
-            cleanups.append(bzr_branch.unlock)
-            return bzr_branch
-        try:
-            bzr_source = get_branch(self.branch_merge_proposal.source_branch)
-            bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._findRevisions(
-                bzr_source, bzr_target)
-            diff = StaticDiff.acquire(
-                lca, source_revision, bzr_source.repository)
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        return diff
 
     @staticmethod
     def _findRevisions(bzr_source, bzr_target):
@@ -230,6 +251,35 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
         return ('notifying people about the proposal to merge %s into %s' %
             (self.branch_merge_proposal.source_branch.bzr_identity,
              self.branch_merge_proposal.target_branch.bzr_identity))
+
+
+class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
+    """A job to update the preview diff for a branch merge proposal.
+
+    Provides class methods to create and retrieve such jobs.
+    """
+
+    implements(IRunnableJob)
+
+    classProvides(IUpdatePreviewDiffJobSource)
+
+    class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IUpdatePreviewDiffJobSource`."""
+        errorlog.globalErrorUtility.configure('update_preview_diffs')
+        server = get_scanner_server()
+        server.start_server()
+        yield
+        server.stop_server()
+
+    def run(self):
+        """See `IRunnableJob`"""
+        preview = PreviewDiff.fromBranchMergeProposal(
+            self.branch_merge_proposal)
+        self.branch_merge_proposal.preview_diff = preview
 
 
 class CreateMergeProposalJob(BaseRunnableJob):
@@ -276,23 +326,25 @@ class CreateMergeProposalJob(BaseRunnableJob):
         """See `ICreateMergeProposalJob`."""
         # Avoid circular import
         from lp.code.mail.codehandler import CodeHandler
-        message = self.getMessage()
-        # Since the message was checked as signed before it was saved in the
-        # Librarian, just create the principle from the sender and setup the
-        # interaction.
-        name, email_addr = parseaddr(message['From'])
-        authutil = getUtility(IPlacelessAuthUtility)
-        principal = authutil.getPrincipalByLogin(email_addr)
-        if principal is None:
-            raise AssertionError('No principal found for %s' % email_addr)
-        setupInteraction(principal, email_addr)
+        url = self.context.message_bytes.getURL()
+        with errorlog.globalErrorUtility.oopsMessage('Mail url: %r' % url):
+            message = self.getMessage()
+            # Since the message was checked as signed before it was saved in
+            # the Librarian, just create the principal from the sender and set
+            # up the interaction.
+            name, email_addr = parseaddr(message['From'])
+            authutil = getUtility(IPlacelessAuthUtility)
+            principal = authutil.getPrincipalByLogin(email_addr)
+            if principal is None:
+                raise AssertionError('No principal found for %s' % email_addr)
+            setupInteraction(principal, email_addr)
 
-        server = get_multi_server(write_hosted=True)
-        server.setUp()
-        try:
-            return CodeHandler().processMergeProposal(message)
-        finally:
-            server.tearDown()
+            server = get_multi_server(write_hosted=True)
+            server.start_server()
+            try:
+                return CodeHandler().processMergeProposal(message)
+            finally:
+                server.stop_server()
 
     def getOopsRecipients(self):
         message = self.getMessage()

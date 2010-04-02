@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
@@ -17,7 +14,7 @@
   <tal:script
     replace="structure
     string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-    YUI().use('node', 'lp.milestoneoverlay', function (Y) {
+    LPS.use('node', 'registry.milestoneoverlay', function (Y) {
 
         // This is a value for the SELECT OPTION which is passed with
         // the SELECT's "change" event. It includes some symbols that are not
@@ -32,12 +29,12 @@
         // to be escaped.
 
         var get_by_id = function(id) {
-            return Y.get(Y.DOM.byId(id));
+            return Y.one(Y.DOM.byId(id));
         };
 
         var add_milestone_to_menu = function(parameters) {
             var select_menu = get_by_id('field.milestone_for_release');
-            var new_milestone_option = Y.get(
+            var new_milestone_option = Y.one(
                 new Option(parameters.name + '*', parameters.name));
             select_menu.appendChild(new_milestone_option);
             var children = select_menu.get('children');
@@ -60,7 +57,7 @@
                 activate_node: create_milestone_link
                 };
             if (!Y.UA.ie) {
-                Y.lp.milestoneoverlay.attach_widget(config);
+                Y.registry.milestoneoverlay.attach_widget(config);
             }
         });
     });
@@ -86,4 +83,3 @@
 
 </body>
 </html>
-

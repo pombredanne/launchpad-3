@@ -3,98 +3,199 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-  <metal:portlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-structural-subscribers" />
-    <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-latestquestions" />
-  </metal:portlets>
+<metal:block fill-slot="head_epilogue">
+  <tal:devmode condition="devmode">
+    <tal:archive_js define="lp_js string:${icingroot}/build">
+      <script type="text/javascript"
+              tal:attributes="src string:${lp_js}/soyuz/base.js"></script>
+    </tal:archive_js>
+  </tal:devmode>
+</metal:block>
 
-<div metal:fill-slot="main">
+<tal:side metal:fill-slot="side">
+    <tal:menu replace="structure view/@@+global-actions" />
 
-  <h1>
-    &ldquo;<span tal:replace="context/name" />&rdquo; source package in
-    <span tal:replace="context/distribution/displayname" />
-  </h1>
+    <tal:involved replace="structure context/@@+get-involved" />
 
-  <p class="error message"
-     tal:condition="view/errors"
-     tal:content="view/error_count" />
-  <p class="error message"
-     tal:repeat="form_wide_error view/form_wide_errors"
-     tal:content="structure form_wide_error">
-     Schema validation errors.
-  </p>
-  <p class="error message"
-     tal:define="error python:view.getFieldError('packaging')"
-     tal:condition="error"
-     tal:content="structure error">
-     Field specific error for the hidden packaging field.
-  </p>
+    <tal:subscribers
+      replace="structure context/@@+portlet-structural-subscribers"/>
+</tal:side>
 
-  <h2>Published versions and upstream associations</h2>
+<tal:main metal:fill-slot="main">
+  <div class="top-portlet" id="bugs-and-questions-summary"
+       tal:define="newbugs context/new_bugtasks/count;
+                   open_questions view/open_questions/count">
+    This package has
+    <a tal:attributes="href view/menu:overview/new_bugs/url">
+      <strong class="bugs-stat">
+        <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
+      </strong>
+    </a>
+    and
+    <a tal:attributes="href view/menu:overview/open_questions/url">
+    <strong class="answers-stat">
+      <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
+      </strong>
+    </a>
+  </div>
 
-  <table id="packaging" class="listing">
-    <thead>
-      <tr>
-        <th colspan="5">
-          <span tal:replace="context/distribution/displayname" /> version
-        </th>
-        <th>Upstream version</th>
+  <div class="yui-g">
+
+    <div class="yui-u first" tal:define="current context/currentrelease">
+      <div class="portlet" tal:condition="current" id="current">
+        <h2>Package information</h2>
+        <div class="two-column-list">
+          <dl>
+            <dt>Maintainer:</dt>
+            <dd>
+               <a tal:replace="structure current/maintainer/fmt:link">Foo Bar</a>
+            </dd>
+          </dl>
+          <dl>
+            <dt>Urgency:<sup>*</sup></dt>
+            <dd tal:content="current/urgency/title"/>
+          </dl>
+          <dl style="clear:both">
+            <dt>Component:<sup>*</sup></dt>
+            <dd tal:content="current/component/name"/>
+          </dl>
+          <dl>
+            <dt>Architectures:<sup>*</sup></dt>
+            <dd tal:content="current/architecturehintlist"/>
+          </dl>
+          <dl style="clear:both">
+            <dt>Latest upload:</dt>
+            <dd><a tal:content="current/version"
+                   tal:attributes="href current/fmt:url">3.2.1-3</a>
+            </dd>
+          </dl>
+        </div>
+        <p style="font-size: 80%;">
+          <sup>*</sup>actual publishing details may vary in this distribution, these are just the package defaults.
+        </p>
+      </div><!--portlet-->
+      <div class="portlet" tal:condition="not: current" id="current">
+        There is no current release for this source package in
+        <span tal:replace="context/distribution/displayname">ubuntu</span>.
+      </div>
+    </div><!--yui-u-->
+
+    <div class="yui-u">
+      <div class="portlet" id="upstream">
+        <tal:project define="project context/upstream_product">
+          <div tal:condition="project">
+            <h2>Upstream</h2>
+            <div style="float:left; padding:0 1em 1em 0;">
+              <a
+                tal:attributes="href project/fmt:url"
+                tal:content="structure project/image:logo" />
+            </div>
+            <div> 
+              <a 
+                tal:attributes="href project/fmt:url"
+                tal:content="project/displayname" />
+            </div>
+            <div tal:content="structure project/summary" />
+          </div>
+          <tal:noproject condition="not: project">
+              This package is not linked to an upstream product.
+          </tal:noproject>
+        </tal:project>
+      </div><!--portlet -->
+    </div><!--yui-u -->
+
+  </div><!--yui-g -->
+
+
+  <div class="yui-u"
+       tal:define="archive context/latest_overall_publication/archive|nothing">
+
+    <table class="listing" id="packages_list">
+      <tal:rows repeat="row view/version_table">
+
+      <tal:title_row condition="row/title_row">
+      <tr class="section-heading shaded" style="vertical-align: middle">
+        <td colspan="3">
+          <img tal:replace="structure context/distribution/image:icon"/>
+          <a tal:attributes="href row/series_package/fmt:url"
+             tal:content="row/distroseries/title"/>
+          (<span tal:replace="row/distroseries/status/title/lower"/>)
+          <div style="float:right; white-space: nowrap">
+            <a tal:condition="not: row/packaging"
+               tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
+            <tal:has_packaging condition="row/packaging">
+              <img tal:replace="structure row/packaging/productseries/image:icon"/>
+              <a tal:replace="structure row/packaging/productseries/fmt:link"/>
+              <a tal:replace="structure row/series_package/menu:overview/edit_packaging/fmt:icon"/>
+              <a tal:replace="structure row/series_package/menu:overview/remove_packaging/fmt:icon" />
+            </tal:has_packaging>
+          </div><!--float right-->
+        </td>
       </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="row view/version_listing">
-        <td><span tal:condition="row/series"
-                  tal:content="row/series/name">hoary</span></td>
-        <td><span tal:condition="row/series"
-                  tal:content="row/series/status/name/fmt:lower" /></td>
-        <td><span tal:condition="row/package"
-                  tal:content="row/package/component/name/fmt:lower" /></td>
-        <td tal:content="row/pocket">release</td>
-        <td><a tal:content="row/package/version"
-               tal:attributes="href row/package/fmt:url">2.2.1-1</a>
+      </tal:title_row>
+
+      <tal:package_row condition="row/data_row">
+      <tal:define define="pubid row/publication/id">
+
+      <tr class="archive_package_row">
+        <td style="white-space: nowrap">
+          <a class="expander"
+             tal:attributes="id string:pub${pubid}-expander;
+                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
+            <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
+                 alt="Show details" title="Show details"
+                 tal:attributes="id string:pub${pubid}-arrow"/>
+          </a>
+          <a tal:attributes="href row/version">
+            <img src="/@@/package-source" />
+            <tal:version content="row/version"/>
+          </a>
         </td>
         <td>
-          <tal:distroseries_row condition="row/series">
-            <span tal:condition="row/packaging"
-                  tal:replace="row/packaging/productseries/title" />
-            <tal:no_direct condition="not: row/packaging">
-              None defined
-            </tal:no_direct>
-            <a tal:attributes="
-               href string:${row/sourcepackage/fmt:url}/+edit-packaging"
-               title="Edit upstream association">
-              <img src="/@@/edit" />
-            </a>
-            <form tal:condition="row/packaging_field"
-                  style="display: inline"
-                  action=""
-                  method="POST"
-                  tal:attributes="action request/URL;
-                                  id row/delete_packaging_form_id">
-              <tal:hidden replace="structure row/packaging_field" />
-              <tal:action
-                  replace="structure view/renderDeletePackagingAction" />
-            </form>
-          </tal:distroseries_row>
+          <tal:pockets content="row/pockets/lower"/>
+          (<tal:component content="row/component"/>)
+        </td>
+        <td>
+          <tal:last_published condition="row/published_since">
+            <span tal:replace="row/published_since/fmt:approximateduration"/>
+            ago
+          </tal:last_published>
+          <tal:not_published
+               condition="not: row/published_since"
+               content="string:(not published)"/>
         </td>
       </tr>
-    </tbody>
-  </table>
-  <p style="text-align: right">
-    <a href="+publishinghistory">See full publishing history...</a>
-  </p>
+      <tr tal:attributes="id string:pub${pubid}" style="display: none">
+        <td colspan="3">
+          <div class="package-details"
+               tal:attributes="id string:pub${pubid}-container" />
+        </td>
+      </tr>
 
-  <div tal:define="ppa_versions view/related_ppa_versions"
+      </tal:define>
+      </tal:package_row>
+
+      <tal:blank_row condition="row/blank_row">
+        <tr><td colspan="3" style="padding-bottom: 1em; border-top: 0" /></tr>
+      </tal:blank_row>
+
+      </tal:rows>
+    </table>
+    <script
+       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
+    <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
+
+  </div>
+
+  <div class="yui-u">
+  <div class="portlet"
+       tal:define="ppa_versions view/related_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">
     <div id="slide-trigger">
       <div class="widget-hd">
@@ -103,7 +204,7 @@
       </div>
     </div>
     <div class="widget-bd">
-      <p>The following <strong>unsupported</strong> and 
+      <p>The following <strong>unsupported</strong> and
          <strong>untrusted</strong> Personal Archives (PPAs) provide
          packages of
          '<span tal:replace="context/name" />':</p>
@@ -131,7 +232,7 @@
 
       <p>You can also search for
          <a tal:attributes="href view/further_ppa_versions_url">
-           more untrusted versions of
+           other untrusted versions of
            '<span tal:replace="context/name" />'</a>.
       </p>
     </div>
@@ -144,11 +245,11 @@ YUI({
     // XXX Michael Nelson 20090702 bug=340497 This slider
     // needs an integration test.
     // Collapse the body of the slider widget initially.
-    Y.get('#related-ppa-versions .widget-bd').addClass('lazr-closed');
+    Y.one('#related-ppa-versions .widget-bd').addClass('lazr-closed');
 
     // Ensure that the widget header uses the correct sprite icon
     // and gets the styling for javascript actions applied.
-    var widget_header = Y.get('#related-ppa-versions .widget-hd');
+    var widget_header = Y.one('#related-ppa-versions .widget-hd');
     widget_header.addClass('sprite');
     widget_header.addClass('treeCollapsed');
     widget_header.addClass('js-action');
@@ -171,14 +272,9 @@ YUI({
 </script>
 
   </div>
+  </div>
 
-  <h2>Version history</h2>
+</tal:main>
 
-  <tal:block
-    repeat="dspr view/releases"
-    replace="structure dspr/@@+changes">
-  </tal:block>
-
-</div>
 </body>
 </html>

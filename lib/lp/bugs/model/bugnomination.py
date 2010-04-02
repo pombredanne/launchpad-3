@@ -33,7 +33,8 @@ from lp.bugs.adapters.bugchange import BugTaskAdded
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.bugs.interfaces.bugnomination import (
-    BugNominationStatus, IBugNomination, IBugNominationSet)
+    BugNominationStatus, BugNominationStatusError, IBugNomination,
+    IBugNominationSet)
 from lp.registry.interfaces.person import validate_public_person
 
 class BugNomination(SQLBase):
@@ -66,6 +67,9 @@ class BugNomination(SQLBase):
 
     def approve(self, approver):
         """See IBugNomination."""
+        if self.isApproved():
+            # Approving an approved nomination is a no-op.
+            return
         self.status = BugNominationStatus.APPROVED
         self.decider = approver
         self.date_decided = datetime.now(pytz.timezone('UTC'))
@@ -91,6 +95,9 @@ class BugNomination(SQLBase):
 
     def decline(self, decliner):
         """See IBugNomination."""
+        if self.isApproved():
+            raise BugNominationStatusError(
+                "Cannot decline an approved nomination.")
         self.status = BugNominationStatus.DECLINED
         self.decider = decliner
         self.date_decided = datetime.now(pytz.timezone('UTC'))

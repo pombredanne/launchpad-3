@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 import os
+import re
 import sys
 import thread
 import threading
@@ -36,6 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
@@ -62,6 +64,18 @@ __all__ = [
 classImplements(TimeoutError, IRequestExpired)
 
 
+class LaunchpadTimeoutError(TimeoutError):
+    """A variant of TimeoutError that reports the original PostgreSQL error.
+    """
+
+    def __init__(self, statement, params, original_error):
+        super(LaunchpadTimeoutError, self).__init__(statement, params)
+        self.original_error = original_error
+
+    def __str__(self):
+        return ('Statement: %r\nParameters:%r\nOriginal error: %r'
+                % (self.statement, self.params, self.original_error))
+
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
     from canonical.ftests.pgsql import ConnectionWrapper
@@ -78,13 +92,35 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
 
 _local = threading.local()
 
-def set_request_started(starttime=None):
+
+class CommitLogger:
+    def __init__(self, txn):
+        self.txn = txn
+
+    def newTransaction(self, txn):
+        pass
+
+    def beforeCompletion(self, txn):
+        pass
+
+    def afterCompletion(self, txn):
+        now = time()
+        _log_statement(
+            now, now, None, 'Transaction completed, status: %s' % txn.status)
+
+
+def set_request_started(starttime=None, request_statements=None, txn=None):
     """Set the start time for the request being served by the current
     thread.
 
-    If the argument is given, it is used as the start time for the
-    request, as returned by time().  If it is not given, the
-    current time is used.
+    :param start_time: The start time of the request. If given, it is used as
+        the start time for the request, as returned by time().  If it is not
+        given, the current time is used.
+    :param request_statements; The sequence used to store the logged SQL
+        statements.
+    :type request_statements: mutable sequence.
+    :param txn: The current transaction manager. If given, txn.commit() and
+        txn.abort() calls are logged too.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
@@ -93,9 +129,14 @@ def set_request_started(starttime=None):
     if starttime is None:
         starttime = time()
     _local.request_start_time = starttime
-    _local.request_statements = []
+    if request_statements is None:
+        _local.request_statements = []
+    else:
+        _local.request_statements = request_statements
     _local.current_statement_timeout = None
-
+    if txn is not None:
+        _local.commit_logger = CommitLogger(txn)
+        txn.registerSynch(_local.commit_logger)
 
 def clear_request_started():
     """Clear the request timer.  This function should be called when
@@ -106,6 +147,10 @@ def clear_request_started():
 
     _local.request_start_time = None
     _local.request_statements = []
+    commit_logger = getattr(_local, 'commit_logger', None)
+    if commit_logger is not None:
+        _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
+        del _local.commit_logger
 
 
 def summarize_requests():
@@ -134,7 +179,7 @@ def store_sql_statements_and_request_duration(event):
 def get_request_statements():
     """Get the list of executed statements in the request.
 
-    The list is composed of (starttime, endtime, statement) tuples.
+    The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
@@ -165,7 +210,14 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    # A string containing no whitespace that lets us identify which Store
+    # is being used.
+    if connection_wrapper is not None:
+        database_identifier = connection_wrapper._database.name
+    else:
+        database_identifier = None
+    _local.request_statements.append(
+        (starttime, endtime, database_identifier, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -261,11 +313,13 @@ class ReadOnlyModeConnection(PostgresConnection):
             # is raised when an attempt is made to make changes when
             # the connection has been put in read-only mode.
             if exception.pgcode == '25006':
-                raise ReadOnlyModeViolation, None, sys.exc_info()[2]
+                raise ReadOnlyModeViolation(None, sys.exc_info()[2])
             raise
 
 
 class LaunchpadDatabase(Postgres):
+
+    _dsn_user_re = re.compile('user=[^ ]*')
 
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
@@ -274,6 +328,15 @@ class LaunchpadDatabase(Postgres):
         # opinion on what uri is.
         # pylint: disable-msg=W0231
         self._uri = uri
+        # A unique name for this database connection.
+        self.name = uri.database
+
+    @property
+    def dsn_without_user(self):
+        """This database's dsn without the 'user=...' bit."""
+        assert self._dsn is not None, (
+            'Must not be called before self._dsn has been set.')
+        return self._dsn_user_re.sub('', self._dsn)
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -341,12 +404,15 @@ class LaunchpadDatabase(Postgres):
         If we are running in read-only mode, returns a
         ReadOnlyModeConnection. Otherwise it returns the Storm default.
         """
-        if config.launchpad.read_only:
+        if is_read_only():
             return ReadOnlyModeConnection
         return super(LaunchpadDatabase, self).connection_factory
 
 
 class LaunchpadSessionDatabase(Postgres):
+
+    # A unique name for this database connection.
+    name = 'session'
 
     def raw_connect(self):
         self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
@@ -411,7 +477,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             return
         if isinstance(error, QueryCanceledError):
             OpStats.stats['timeouts'] += 1
-            raise TimeoutError(statement, params)
+            raise LaunchpadTimeoutError(statement, params, error)
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
@@ -458,8 +524,11 @@ class LaunchpadStatementTracer:
             connection, raw_cursor, statement, params)
 
 
-install_tracer(LaunchpadTimeoutTracer())
+# The LaunchpadTimeoutTracer needs to be installed last, as it raises
+# TimeoutError exceptions. When this happens, tracers installed later
+# are not invoked.
 install_tracer(LaunchpadStatementTracer())
+install_tracer(LaunchpadTimeoutTracer())
 
 
 class StoreSelector:

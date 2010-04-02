@@ -1,16 +1,19 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-__all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
+__all__ = [
+    'Publisher',
+    'suffixpocket',
+    'getPublisher',
+    ]
 
 __metaclass__ = type
 
-import apt_pkg
-from datetime import datetime
+import hashlib
 import logging
-from md5 import md5
 import os
-from sha import sha
+
+from datetime import datetime
 
 from zope.component import getUtility
 
@@ -24,12 +27,13 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
 from lp.archivepublisher.utils import (
     RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import (
-    pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.librarian.client import LibrarianClient
 
@@ -53,23 +57,6 @@ Origin: %s
 Label: %s
 Architecture: %s
 """
-
-class sha256:
-    """Encapsulates apt_pkg.sha256sum as expected by publishing.
-
-    It implements '__init__' and 'hexdigest' methods from PEP-247, which are
-    the only ones required in soyuz-publishing-system.
-
-    It's a work around for broken Crypto.Hash.SHA256. See further information
-    in bug #131503.
-    """
-    def __init__(self, content):
-        self._sum = apt_pkg.sha256sum(content)
-
-    def hexdigest(self):
-        """Return the hexdigest produced by apt_pkg.sha256sum."""
-        return self._sum
-
 
 def reorder_components(components):
     """Return a list of the components provided.
@@ -211,7 +198,7 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket, suffix in pocketsuffix.items():
                 if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
@@ -251,7 +238,7 @@ class Publisher(object):
         # added to the dirty_pockets set.
 
         # Loop for each pocket in each distroseries:
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket, suffix in pocketsuffix.items():
                 if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
@@ -287,7 +274,7 @@ class Publisher(object):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
         judgejudy = Dominator(self.log, self.archive)
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not force_domination:
                     if not self.isDirty(distroseries, pocket):
@@ -305,7 +292,7 @@ class Publisher(object):
     def C_writeIndexes(self, is_careful):
         """Write Index files (Packages & Sources) using LP information.
 
-        Iterates over all distroserieses and its pockets and components.
+        Iterates over all distroseries and its pockets and components.
         """
         self.log.debug("* Step C': write indexes directly from DB")
         for distroseries in self.distro:
@@ -432,6 +419,17 @@ class Publisher(object):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
+    def _getLabel(self):
+        """Return the contents of the Release file Label field.
+
+        :return: a text that should be used as the value of the Release file
+            'Label' field.
+        """
+        if self.archive.is_ppa:
+            return self.archive.displayname
+        else:
+            return self.distro.displayname
+
     def _getOrigin(self):
         """Return the contents of the Release file Origin field.
 
@@ -487,27 +485,28 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        stanza = DISTRORELEASE_STANZA % (
+        stanza = (DISTRORELEASE_STANZA % (
                     self._getOrigin(),
-                    self.distro.displayname,
+                    self._getLabel(),
                     full_name,
                     distroseries.version,
                     distroseries.name,
                     datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
                     " ".join(sorted(list(all_architectures))),
-                    " ".join(reorder_components(all_components)), drsummary)
+                    " ".join(reorder_components(all_components)),
+                    drsummary)).encode("utf-8")
         f.write(stanza)
 
         f.write("MD5Sum:\n")
         all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, md5)
+            self._writeSumLine(full_name, f, file_name, hashlib.md5)
         f.write("SHA1:\n")
         for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, sha)
+            self._writeSumLine(full_name, f, file_name, hashlib.sha1)
         f.write("SHA256:\n")
         for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, sha256)
+            self._writeSumLine(full_name, f, file_name, hashlib.sha256)
 
         f.close()
 
@@ -561,13 +560,13 @@ class Publisher(object):
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
 
-        stanza = DISTROARCHRELEASE_STANZA % (
+        stanza = (DISTROARCHRELEASE_STANZA % (
                 full_name,
                 distroseries.version,
                 component,
                 self._getOrigin(),
-                self.distro.displayname,
-                clean_architecture)
+                self._getLabel(),
+                unicode(clean_architecture))).encode("utf-8")
         f.write(stanza)
         f.close()
 
@@ -590,16 +589,8 @@ class Publisher(object):
 
         in_file = open(full_name, 'r')
         try:
-            # XXX cprov 20080704 bug=243630,269014: Workaround for hardy's
-            # python-apt. If it receives a file object as an argument instead
-            # of the file contents as a string, it will generate the correct
-            # SHA256.
-            if sum_form == sha256:
-                contents = in_file
-                length = os.stat(full_name).st_size
-            else:
-                contents = in_file.read()
-                length = len(contents)
+            contents = in_file.read()
+            length = len(contents)
             checksum = sum_form(contents).hexdigest()
         finally:
             in_file.close()

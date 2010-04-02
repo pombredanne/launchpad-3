@@ -6,8 +6,10 @@
 
 __metaclass__ = type
 
+from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.mail import get_msgid
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchMergeProposalDelta
@@ -32,8 +34,12 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are updated."""
     if event.user is None:
         return
+    if isinstance(event.user, UnauthenticatedPrincipal):
+        from_person = None
+    else:
+        from_person = IPerson(event.user)
     mailer = BMPMailer.forModification(
-        event.object_before_modification, merge_proposal, IPerson(event.user))
+        event.object_before_modification, merge_proposal, from_person)
     if mailer is not None:
         mailer.sendAll()
 
@@ -61,7 +67,7 @@ class BMPMailer(BranchMailer):
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
-                 requested_reviews=None, comment=None, review_diff=None,
+                 requested_reviews=None, preview_diff=None,
                  direct_email=False):
         BranchMailer.__init__(
             self, subject, template_name, recipients, from_address, delta,
@@ -70,8 +76,7 @@ class BMPMailer(BranchMailer):
         if requested_reviews is None:
             requested_reviews = []
         self.requested_reviews = requested_reviews
-        self.comment = comment
-        self.review_diff = review_diff
+        self.preview_diff = preview_diff
         self.template_params = self._generateTemplateParams()
         self.direct_email = direct_email
 
@@ -100,28 +105,31 @@ class BMPMailer(BranchMailer):
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address, message_id=get_msgid(),
             requested_reviews=merge_proposal.votes,
-            comment=merge_proposal.root_comment,
-            review_diff=merge_proposal.review_diff)
+            preview_diff=merge_proposal.preview_diff)
 
     @classmethod
-    def forModification(cls, old_merge_proposal, merge_proposal, from_user):
+    def forModification(cls, old_merge_proposal, merge_proposal,
+                        from_user=None):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
         :param from_user: The user that the creation notification should
-            come from.
+            come from.  Optional.
         """
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        assert from_user.preferredemail is not None, (
-            'The sender must have an email address.')
-        from_address = cls._format_user_address(from_user)
+        if from_user is not None:
+            assert from_user.preferredemail is not None, (
+                'The sender must have an email address.')
+            from_address = cls._format_user_address(from_user)
+        else:
+            from_address = config.canonical.noreply_from_address
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         if delta is None:
             return None
         return cls(
-            '%(proposal_title)s updated',
+            '%(proposal_title)s',
             'branch-merge-proposal-updated.txt', recipients,
             merge_proposal, from_address, delta, get_msgid())
 
@@ -130,17 +138,11 @@ class BMPMailer(BranchMailer):
         """Return a mailer for a request to review a BranchMergeProposal."""
         from_address = cls._format_user_address(from_user)
         recipients = {reason.subscriber: reason}
-        comment = None
-        if (merge_proposal.root_comment is not None and
-            (merge_proposal.root_comment.message.owner ==
-             merge_proposal.registrant)):
-            comment = merge_proposal.root_comment
         return cls(
-            'Request to review proposed merge of %(source_branch)s into '
-            '%(target_branch)s', 'review-requested.txt', recipients,
+            '%(proposal_title)s',
+            'review-requested.txt', recipients,
             merge_proposal, from_address, message_id=get_msgid(),
-            comment=comment, review_diff=merge_proposal.review_diff,
-            direct_email=True)
+            preview_diff=merge_proposal.preview_diff, direct_email=True)
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
@@ -174,26 +176,36 @@ class BMPMailer(BranchMailer):
         return headers
 
     def _addAttachments(self, ctrl, email):
-        if self.review_diff is not None:
-            # Using .txt as a file extension makes Gmail display it inline.
-            ctrl.addAttachment(
-                self.review_diff.diff.text, content_type='text/x-diff',
-                inline=True, filename='review-diff.txt')
+        if self.preview_diff is not None:
+            reason, rationale = self._recipients.getReason(email)
+            if reason.review_level == CodeReviewNotificationLevel.FULL:
+                # Using .txt as a file extension makes Gmail display it
+                # inline.
+                ctrl.addAttachment(
+                    self.preview_diff.text, content_type='text/x-diff',
+                    inline=True, filename='review-diff.txt')
 
     def _generateTemplateParams(self):
         """For template params that don't change, calcualte just once."""
+        proposal = self.merge_proposal
         params = {
-            'proposal_registrant': self.merge_proposal.registrant.displayname,
-            'source_branch': self.merge_proposal.source_branch.bzr_identity,
-            'target_branch': self.merge_proposal.target_branch.bzr_identity,
-            'proposal_title': self.merge_proposal.title,
-            'proposal_url': canonical_url(self.merge_proposal),
+            'proposal_registrant': proposal.registrant.displayname,
+            'source_branch': proposal.source_branch.bzr_identity,
+            'target_branch': proposal.target_branch.bzr_identity,
+            'prerequisite': '',
+            'proposal_title': proposal.title,
+            'proposal_url': canonical_url(proposal),
             'edit_subscription': '',
             'comment': '',
             'gap': '',
             'reviews': '',
             'whiteboard': '', # No more whiteboard.
+            'diff_cutoff_warning': '',
             }
+
+        if proposal.prerequisite_branch is not None:
+            prereq_url = proposal.prerequisite_branch.bzr_identity
+            params['prerequisite'] = ' with %s as a prerequisite' % prereq_url
 
         requested_reviews = []
         for review in self.requested_reviews:
@@ -206,13 +218,58 @@ class BMPMailer(BranchMailer):
                                 review.review_type))
         if len(requested_reviews) > 0:
             requested_reviews.insert(0, 'Requested reviews:')
-            params['reviews'] = ('\n    '.join(requested_reviews))
+            params['reviews'] = (''.join('    %s\n' % review
+                                 for review in requested_reviews))
 
-        if self.comment is not None:
-            params['comment'] = (self.comment.message.text_contents)
+        if proposal.description is not None:
+            params['comment'] = (proposal.description)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
+
+        if (self.preview_diff is not None and self.preview_diff.oversized):
+            params['diff_cutoff_warning'] = (
+                "The attached diff has been truncated due to its size.")
+
+        params['reviews'] = self._getRequestedReviews()
+        params['related_bugs'] = self._getRelatedBugs()
         return params
+
+    def _formatExtraInformation(self, heading, chunks):
+        """Consistently indent the chunks with the heading.
+
+        Used to provide consistent indentation for requested reviews and
+        related bugs.
+        """
+        if len(chunks) == 0:
+            return ''
+        else:
+            info = ''.join('  %s\n' % value for value in chunks)
+            return '%s\n%s' % (heading, info)
+
+    def _getRequestedReviews(self):
+        """Return a string describing the requested reviews, if any."""
+        requested_reviews = []
+        for review in self.requested_reviews:
+            reviewer = review.reviewer
+            if review.review_type is None:
+                requested_reviews.append(reviewer.unique_displayname)
+            else:
+                requested_reviews.append(
+                    "%s: %s" % (reviewer.unique_displayname,
+                                review.review_type))
+        return self._formatExtraInformation(
+            'Requested reviews:', requested_reviews)
+
+    def _getRelatedBugs(self):
+        """Return a string describing related bugs, if any.
+
+        Related bugs are provided by `IBranchMergeProposal.related_bugs`
+        """
+        bug_chunks = []
+        for bug in self.merge_proposal.related_bugs:
+            bug_chunks.append('#%d %s' % (bug.id, bug.title))
+            bug_chunks.append(canonical_url(bug))
+        return self._formatExtraInformation('Related bugs:', bug_chunks)
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""

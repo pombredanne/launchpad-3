@@ -13,8 +13,8 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.scripts import FakeLogger
 from lp.soyuz.scripts.changeoverride import (

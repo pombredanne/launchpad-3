@@ -258,12 +258,12 @@ listed as a reviewer for the membership to go through.
 
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> nopriv = getUtility(ILaunchBag).user
-    >>> sabdfl = personset.getByName('sabdfl')
+    >>> mark = personset.getByName('mark')
     >>> nopriv.join(ubuntu_team)
 
     # Login as the team's owner in order to be able to change its memberships.
     >>> login(ubuntu_team.teamowner.preferredemail.email)
-    >>> ubuntu_team.setMembershipData(nopriv, TeamMembershipStatus.APPROVED, sabdfl)
+    >>> ubuntu_team.setMembershipData(nopriv, TeamMembershipStatus.APPROVED, mark)
     >>> login('no-priv@canonical.com')
 
     >>> flush_database_updates()

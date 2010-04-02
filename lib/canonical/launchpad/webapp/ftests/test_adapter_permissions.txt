@@ -28,6 +28,7 @@ If a SLAVE_FLAVOR store is requested, it should trap all writes.
 
 Test this once more to ensure the settings stick across transactions.
 
+    >>> transaction.abort()
     >>> t = transaction.begin()
     >>> main_slave.find(Person, name='janitor').one().displayname = 'BenD'
     >>> transaction.commit()

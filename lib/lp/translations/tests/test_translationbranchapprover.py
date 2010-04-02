@@ -5,15 +5,26 @@
 
 __metaclass__ = type
 
+import transaction
 from unittest import TestLoader
+
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.validators.name import valid_name
+from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
-from canonical.testing import LaunchpadZopelessLayer
+
+
+def become_the_approver(layer):
+    """Switch to the branch-approver's database user identity."""
+    transaction.commit()
+    layer.switchDbUser('translationsbranchscanner')
+
 
 class TestTranslationBranchApprover(TestCaseWithFactory):
 
@@ -30,10 +41,12 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
             self.factory.getUniqueString(), True, self.series.owner,
             productseries=self.series)
 
-    def _create_template(self, path, domain):
+    def _create_template(self, path, domain, productseries=None):
         # Create a template in the database
+        if productseries is None:
+            productseries = self.series
         return self.factory.makePOTemplate(
-            productseries=self.series,
+            productseries=productseries,
             name=domain.replace('_', '-'),
             translation_domain=domain,
             path=path)
@@ -51,6 +64,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         entry = self._upload_file(template_path)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
 
@@ -60,6 +75,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         template_path = u'messages.pot'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
 
@@ -68,6 +85,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         path = u'eo.po'
         entry = self._upload_file(path)
         approver = self._create_approver(path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry.status)
 
@@ -78,6 +97,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         template_path = translation_domain + u'.pot'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(
             translation_domain, entry.potemplate.translation_domain)
@@ -88,19 +109,24 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         template_path = translation_domain + '/en-US.xpi'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(
             translation_domain, entry.potemplate.translation_domain)
 
     def test_template_name(self):
-        # The name should not contain underscores any more.
-        translation_domain = ('translation_domain_with_underscores')
-        template_name = translation_domain.replace('_', '-')
+        # The name is derived from the file name and must be a valid name.
+        translation_domain = (u'Invalid-Name_with illegal#Characters')
         template_path = translation_domain + u'.pot'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
-        self.assertEqual(template_name, entry.potemplate.name)
+        self.assertTrue(valid_name(entry.potemplate.name))
+        self.assertEqual(u'invalid-name-withillegalcharacters',
+                         entry.potemplate.name)
 
     def test_replace_existing_approved(self):
         # Template files that replace existing entries are approved.
@@ -109,6 +135,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         self._create_template(template_path, translation_domain)
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
 
@@ -120,6 +148,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         potemplate = self._create_template(template_path, translation_domain)
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(potemplate, entry.potemplate)
 
@@ -132,6 +162,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         template_path = self.factory.getUniqueString() + u'.pot'
         entry = self._upload_file(template_path)
         approver = self._create_approver(template_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
         self.assertEqual(potemplate, entry.potemplate)
@@ -145,6 +177,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         potemplate = self._create_template(generic_path, translation_domain)
         entry = self._upload_file(generic_path)
         approver = self._create_approver(generic_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
 
@@ -156,6 +190,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         potemplate = self._create_template(generic_path, translation_domain)
         entry = self._upload_file(generic_path)
         approver = self._create_approver(generic_path)
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(
             translation_domain, entry.potemplate.translation_domain)
@@ -170,6 +206,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         new_path = u"%s/%s.pot" % (new_domain, new_domain)
         entry = self._upload_file(new_path)
         approver = self._create_approver((existing_path, new_path))
+
+        become_the_approver(self.layer)
         approver.approve(entry)
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
         self.assertEqual(new_domain, entry.potemplate.translation_domain)
@@ -182,6 +220,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         entry1 = self._upload_file(pot_path1)
         entry2 = self._upload_file(pot_path2)
         approver = self._create_approver((pot_path1, pot_path2))
+
+        become_the_approver(self.layer)
         approver.approve(entry1)
         self.assertEqual(RosettaImportStatus.APPROVED, entry1.status)
         approver.approve(entry2)
@@ -195,10 +235,58 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         entry1 = self._upload_file(pot_path1)
         entry2 = self._upload_file(pot_path2)
         approver = self._create_approver((pot_path1, pot_path2))
+
+        become_the_approver(self.layer)
         approver.approve(entry1)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry1.status)
         approver.approve(entry2)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry2.status)
+
+    def test_approve_only_if_needs_review(self):
+        # If an entry is not in NEEDS_REVIEW state, it must not be approved.
+        pot_path = self.factory.getUniqueString() + ".pot"
+        entry = self._upload_file(pot_path)
+        entry.potemplate = self.factory.makePOTemplate()
+        not_approve_status = (
+            RosettaImportStatus.IMPORTED,
+            RosettaImportStatus.DELETED,
+            RosettaImportStatus.FAILED,
+            RosettaImportStatus.BLOCKED,
+            )
+        for status in not_approve_status:
+            entry.setStatus(
+                status, getUtility(ILaunchpadCelebrities).rosetta_experts)
+            approver = self._create_approver(pot_path)
+            approver.approve(entry)
+            self.assertEqual(status, entry.status)
+
+    def test_approveNewSharingTemplate(self):
+        # When the approver creates a new template, the new template
+        # gets copies of any existing POFiles for templates that it will
+        # share translations with.
+        domain = self.factory.getUniqueString()
+        pot_path = domain + ".pot"
+        trunk = self.series.product.getSeries('trunk')
+        trunk_template = self._create_template(
+            pot_path, domain=domain, productseries=trunk)
+        dutch_pofile = self.factory.makePOFile(
+            'nl', potemplate=trunk_template)
+        entry = self._upload_file(pot_path)
+        approver = self._create_approver(pot_path)
+
+        become_the_approver(self.layer)
+        approver.approve(entry)
+
+        # This really did create a new template.
+        self.assertNotEqual(None, entry.potemplate)
+        self.assertNotEqual(trunk_template, entry.potemplate)
+        self.assertEqual(trunk_template.name, entry.potemplate.name)
+
+        # The new template also has a Dutch translation of its own.
+        new_dutch_pofile = entry.potemplate.getPOFileByLang('nl')
+        self.assertNotEqual(None, new_dutch_pofile)
+        self.assertNotEqual(dutch_pofile, new_dutch_pofile)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

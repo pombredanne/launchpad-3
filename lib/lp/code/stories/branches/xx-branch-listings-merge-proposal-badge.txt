@@ -29,9 +29,9 @@
     /~bob/firefox/review
     Has a merge proposal
     /~bob/firefox/target
-    /~name12/firefox/main
-    Linked to a bug 
-    /~sabdfl/firefox/release--0.9.1
-    /~sabdfl/firefox/release-0.8
-    /~sabdfl/firefox/release-0.9
+    /~mark/firefox/release--0.9.1
+    /~mark/firefox/release-0.8
+    /~mark/firefox/release-0.9
+    /~mark/firefox/release-0.9.2
+    Linked to a bug
 

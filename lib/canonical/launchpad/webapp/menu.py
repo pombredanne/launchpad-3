@@ -185,6 +185,11 @@ class MenuLink:
         return getMultiAdapter(
             (self, get_current_browser_request()), name="+inline")()
 
+    @property
+    def path(self):
+        """See `ILink`."""
+        return self.url.path
+
 
 class FacetLink(MenuLink):
     """Adapter from ILinkData to IFacetLink."""
@@ -197,6 +202,8 @@ class FacetLink(MenuLink):
 # Marker object that means 'all links are to be enabled'.
 ALL_LINKS = object()
 
+MENU_ANNOTATION_KEY = 'canonical.launchpad.webapp.menu.links'
+
 
 class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
@@ -204,12 +211,13 @@ class MenuBase(UserAttributeCache):
     implements(IMenuBase)
 
     links = None
+    extra_attributes = None
     enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
     _initialized = False
     _forbiddenlinknames = set(
         ['user', 'initialize', 'links', 'enable_only', 'isBetaUser',
-         'iterlinks'])
+         'iterlinks', 'extra_attributes'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
@@ -220,12 +228,33 @@ class MenuBase(UserAttributeCache):
         """Override this in subclasses to do initialization."""
         pass
 
-    def _get_link(self, name):
-        method = getattr(self, name)
+    def _buildLink(self, name):
+        method = getattr(self, name, None)
+        # Since Zope traversals hides the root cause of an AttributeError,
+        # an AssertionError is raised explaining what went wrong.
+        if method is None:
+            raise AssertionError(
+                '%r does not define %r method.' % (self, name))
         linkdata = method()
         # The link need only provide ILinkData.  We need an ILink so that
         # we can set attributes on it like 'name' and 'url' and 'linked'.
         return ILink(linkdata)
+
+    def _get_link(self, name):
+        request = get_current_browser_request()
+        if request is not None:
+            # We must not use a weak ref here because if we do so and
+            # templates do stuff like "context/menu:bugs/foo", then there
+            # would be no reference to the Link object, which would allow it
+            # to be garbage collected during the course of the request.
+            cache = request.annotations.setdefault(MENU_ANNOTATION_KEY, {})
+            key = (self.__class__, self.context, name)
+            link = cache.get(key)
+            if link is None:
+                link = self._buildLink(name)
+                cache[key] = link
+            return link
+        return self._buildLink(name)
 
     def _rootUrlForSite(self, site):
         """Return the root URL for the given site."""

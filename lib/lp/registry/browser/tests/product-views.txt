@@ -21,14 +21,14 @@ for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import ANONYMOUS
     >>> login('foo.bar@canonical.com')
-    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
 
 Neither Mozilla nor Firefox has a driver set.
 
@@ -44,7 +44,7 @@ Thus the effective driver for Firefox is None.
 
 Setting the driver for the Mozilla project trickles down to Firefox.
 
-    >>> mozilla.driver = sabdfl
+    >>> mozilla.driver = mark
 
 But since the effective_driver is a cached property it will not show
 up on this view instance.
@@ -56,14 +56,14 @@ Creating a new view shows the new driver.
 
     >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
-    sabdfl
+    mark
 
 Setting the driver for Firefox shows that it is used for the product,
 after a new view is obtained.
 
     >>> firefox.driver = cprov
     >>> print view.effective_driver.name
-    sabdfl
+    mark
     >>> view = create_initialized_view(firefox, name='+index')
     >>> print view.effective_driver.name
     cprov
@@ -132,7 +132,7 @@ cannot access the page.
 
 Mark is in the registry admins team and is allowed to access the page.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
     Review project
@@ -142,7 +142,7 @@ Adding the Commercial Admin to the registry experts team will allow him access.
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
     >>> registry_experts = getUtility(IPersonSet).getByName('registry')
-    >>> registry_experts.addMember(commercial_member, reviewer=sabdfl)
+    >>> ignored = registry_experts.addMember(commercial_member, reviewer=mark)
     >>> login('commercial-member@canonical.com')
     >>> view = create_initialized_view(firefox, name='+review-license')
     >>> print view.label
@@ -176,6 +176,35 @@ The reviewer can deactivate a project if he concludes it is bogus.
 
 The reviewer can enable privileged features like private bugs. He can
 also reactivate the project at the same time.
+
+    >>> firefox.private_bugs
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.private_bugs': 'on',
+    ...     'field.reviewer_whiteboard': 'Reinstated old project',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
+
+He encounters an error, though, as the project does not have a bug
+supervisor set, which is required for turning on private bugs.
+
+    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> for error in view.errors:
+    ...     print extract_text(error)
+    Set a bug supervisor for this project first.
+
+    >>> firefox.bug_supervisor is None
+    True
+
+After setting the bug supervisor the project can have private bugs enabled.
+
+    >>> login('mark@example.com')
+    >>> firefox.setBugSupervisor(cprov, mark)
+    >>> login('commercial-member@canonical.com')
 
     >>> firefox.private_bugs
     False
@@ -333,9 +362,47 @@ Drivers, which include project driver and owners can access the
     >>> check_permission('launchpad.Driver', view)
     True
 
+The +addseries view provides a label and a page_title. There is a cancel_url
+too.
+
+    >>> print view.label
+    Register a new Mozilla Firefox release series
+
+    >>> print view.page_title
+    Register a new Mozilla Firefox release series
+
+    >>> print view.cancel_url
+    http://launchpad.dev/firefox
+
+The view allows the driver to set series name, summary, branch and
+releasefileglob fields.
+
+    >>> view.field_names
+    ['name', 'summary', 'branch', 'releasefileglob']
+
+    >>> form = {
+    ...     'field.name': 'master',
+    ...     'field.summary': 'The primary development series.',
+    ...     'field.releasefileglob': 'ftp://mozilla.org/firefox.*bz2',
+    ...     'field.branch': '',
+    ...     'field.actions.add': 'Register Series',
+    ...     }
+    >>> view = create_initialized_view(firefox, name='+addseries', form=form)
+    >>> print view.series.name
+    master
+
+    >>> print view.series.summary
+    The primary development series.
+
+    >>> print view.series.releasefileglob
+    ftp://mozilla.org/firefox.*bz2
+
+
+Product index view
+==================
 
 Programming languages
-=====================
+---------------------
 
 When the product has no programming languages specified, nothing is displayed
 on the index page.
@@ -363,3 +430,126 @@ owner will see the list.
     >>> view = create_initialized_view(firefox, name='+index')
     >>> view.show_programming_languages
     True
+
+
++index portlets
+---------------
+
+The index page of a product only shows the application portlets that it
+officially supports.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> product = factory.makeProduct(name='tomato', title='Tomato')
+    >>> owner = product.owner
+    >>> login_person(owner)
+    >>> question = factory.makeQuestion(target=product)
+    >>> faq = factory.makeFAQ(target=product)
+    >>> bug = factory.makeBug(product=product)
+    >>> blueprint = factory.makeSpecification(product=product)
+
+    >>> view = create_initialized_view(
+    ...     product, name='+index', principal=owner)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print find_tag_by_id(content, 'portlet-latest-faqs')
+    None
+    >>> print find_tag_by_id(content, 'portlet-latest-questions')
+    None
+    >>> print find_tag_by_id(content, 'portlet-latest-bugs')
+    None
+    >>> print find_tag_by_id(content, 'portlet-blueprints')
+    None
+
+The portlet are rendered when a product officially uses the Launchpad
+Answers, Blueprints, and Bugs applications.
+
+    >>> product.official_answers = True
+    >>> product.official_blueprints = True
+    >>> product.official_malone = True
+
+    >>> view = create_initialized_view(
+    ...     product, name='+index', principal=owner)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print find_tag_by_id(content, 'portlet-latest-faqs')['id']
+    portlet-latest-faqs
+    >>> print find_tag_by_id(content, 'portlet-latest-questions')['id']
+    portlet-latest-questions
+    >>> print find_tag_by_id(content, 'portlet-latest-bugs')['id']
+    portlet-latest-bugs
+    >>> print find_tag_by_id(content, 'portlet-blueprints')['id']
+    portlet-blueprints
+
+
++portlet-packages
+-----------------
+
+When the product is not linked to a source package in Ubuntu the
++portlet-packages will show suggestions on potential matches and ask
+the user to make the connection.
+
+    >>> product = factory.makeProduct(name="bingo")
+    >>> login_person(product.owner)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
+    >>> print view.suggestions
+    []
+
+    >>> content = find_tag_by_id(view.render(), 'portlet-packages')
+    >>> print extract_text(content)
+    All packages
+    Packages in Ubuntu
+    Launchpad doesn't know which Ubuntu packages this project
+    provides. Links from distribution packages to upstream projects
+    let distribution and upstream maintainers share bugs, patches, and
+    translations efficiently.
+    There are no unlinked source packages that are a good match.
+    Can you suggest one?
+    Link to Ubuntu package
+
+    >>> spn = factory.makeSourcePackageName(name="bingo")
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> distro_package = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename=spn, distribution=ubuntu)
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
+
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
+    >>> print view.suggestions
+    []
+
+    >>> distro_package = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename=spn, distribution=ubuntu)
+
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
+    >>> print view.suggestions
+    []
+
+    >>> import transaction
+    >>> #transaction.commit()
+    >>> from canonical.launchpad.scripts import QuietFakeLogger
+    >>> logger = QuietFakeLogger()
+    >>> from canonical.testing.layers import reconnect_stores
+    >>> from canonical.config import config
+    >>> # Switch to the statistician user who is the only user with
+    >>> # write permission to the source package cache tables.
+    >>> reconnect_stores(config.statistician.dbuser)
+    >>> # LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> updated = ubuntu.updateCompleteSourcePackageCache(
+    ...     archive=ubuntu.main_archive, log=logger, ztm=transaction)
+    >>> transaction.commit()
+    >>> reconnect_stores('launchpad')
+    >>> login(ANONYMOUS)
+    >>> product = getUtility(IProductSet)['bingo']
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
+    >>> print view.suggestions
+    []

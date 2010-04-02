@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import httplib
+import os
 import socket
 import tempfile
 import urllib2
@@ -142,7 +143,7 @@ class TestErrorCatching(unittest.TestCase):
             urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED,
                 'Authorization Required', 'some headers',
-                open(tempfile.mkstemp()[1])))
+                os.fdopen(tempfile.mkstemp()[0])))
         self.assertEqual("Authentication required.", msg)
 
     def testSocketErrorHandling(self):

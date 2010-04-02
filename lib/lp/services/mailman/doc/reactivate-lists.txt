@@ -1,4 +1,6 @@
-= Re-activating mailing lists =
+===========================
+Re-activating mailing lists
+===========================
 
 A team administrator may re-activate a previously deactivated mailing list
 without the need for approval from a Launchpad administrator.  When the
@@ -48,7 +50,7 @@ As far as Mailman is concerned, the mailing list no longer exists.
 
 Now the team owner reactivates the list.
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink('Create a mailing list').click()
     >>> browser.getControl('Reactivate this Mailing List').click()
     >>> xmlrpc_watcher.wait_for_reactivation('itest-one')
 

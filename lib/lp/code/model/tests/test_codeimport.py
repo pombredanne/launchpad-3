@@ -17,68 +17,59 @@ from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
-from lp.code.interfaces.codeimportresult import CodeImportResultStatus
 from lp.testing import (
     login, login_person, logout, TestCaseWithFactory, time_counter)
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)
 
 
-class TestCodeImportCreation(unittest.TestCase):
+class TestCodeImportCreation(TestCaseWithFactory):
     """Test the creation of CodeImports."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self.factory = LaunchpadObjectFactory()
-        login('no-priv@canonical.com')
-
-    def tearDown(self):
-        logout()
 
     def test_new_svn_import(self):
         """A new subversion code import should have NEW status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
-            svn_branch_url=self.factory.getUniqueURL())
+            url=self.factory.getUniqueURL())
         self.assertEqual(
             CodeImportReviewStatus.NEW,
             code_import.review_status)
         # No job is created for the import.
-        self.assertTrue(code_import.import_job is None)
+        self.assertIs(None, code_import.import_job)
 
     def test_reviewed_svn_import(self):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
-            svn_branch_url=self.factory.getUniqueURL(),
+            url=self.factory.getUniqueURL(),
             review_status=CodeImportReviewStatus.REVIEWED)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # A job is created for the import.
-        self.assertTrue(code_import.import_job is not None)
+        self.assertIsNot(None, code_import.import_job)
 
     def test_new_cvs_import(self):
         """A new CVS code import should have NEW status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -87,13 +78,13 @@ class TestCodeImportCreation(unittest.TestCase):
             CodeImportReviewStatus.NEW,
             code_import.review_status)
         # No job is created for the import.
-        self.assertTrue(code_import.import_job is None)
+        self.assertIs(None, code_import.import_job)
 
     def test_reviewed_cvs_import(self):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            product=self.factory.makeProduct(),
+            target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -103,22 +94,43 @@ class TestCodeImportCreation(unittest.TestCase):
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # A job is created for the import.
-        self.assertTrue(code_import.import_job is not None)
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_git_import_reviewed(self):
+        """A new git import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.GIT,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_hg_import_reviewed(self):
+        """A new hg import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # No job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
 
 
-class TestCodeImportDeletion(unittest.TestCase):
+class TestCodeImportDeletion(TestCaseWithFactory):
     """Test the deletion of CodeImports."""
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self.factory = LaunchpadObjectFactory()
-        # Log in a vcs import member.
-        login('david.allouche@canonical.com')
-
-    def tearDown(self):
-        logout()
 
     def test_delete(self):
         """Ensure CodeImport objects can be deleted via CodeImportSet."""
@@ -128,6 +140,7 @@ class TestCodeImportDeletion(unittest.TestCase):
     def test_deleteIncludesJob(self):
         """Ensure deleting CodeImport objects deletes associated jobs."""
         code_import = self.factory.makeCodeImport()
+        login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
         code_import_job = self.factory.makeCodeImportJob(code_import)
         job_id = code_import_job.id
         CodeImportJobSet().getById(job_id)
@@ -183,7 +196,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
 
     def makeApprovedImportWithRunningJob(self):
         code_import = self.makeApprovedImportWithPendingJob()
-        job = CodeImportJobSet().getJobForMachine('machine')
+        job = CodeImportJobSet().getJobForMachine('machine', 10)
         self.assertEqual(code_import.import_job, job)
         return code_import
 
@@ -288,18 +301,17 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
             CodeImportReviewStatus.FAILING, code_import.review_status)
 
 
-class TestCodeImportResultsAttribute(unittest.TestCase):
+class TestCodeImportResultsAttribute(TestCaseWithFactory):
     """Test the results attribute of a CodeImport."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
-        login('no-priv@canonical.com')
-        self.factory = LaunchpadObjectFactory()
+        TestCaseWithFactory.setUp(self)
         self.code_import = self.factory.makeCodeImport()
 
     def tearDown(self):
+        super(TestCodeImportResultsAttribute, self).tearDown()
         logout()
 
     def test_no_results(self):
@@ -383,11 +395,15 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.FAILURE, None)
 
-    def succeedImport(self, code_import):
+    def succeedImport(self, code_import,
+                      status=CodeImportResultStatus.SUCCESS):
         """Create if necessary a job for `code_import` and have it succeed."""
+        if status not in CodeImportResultStatus.successes:
+            raise AssertionError(
+                "succeedImport() should be called with a successful status!")
         running_job = self.makeRunningJob(code_import)
         getUtility(ICodeImportJobWorkflow).finishJob(
-            running_job, CodeImportResultStatus.SUCCESS, None)
+            running_job, status, None)
 
     def test_consecutive_failure_count_zero_initially(self):
         # A new code import has a consecutive_failure_count of 0.
@@ -396,7 +412,7 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
 
     def test_consecutive_failure_count_succeed(self):
         # A code import that has succeeded once has a
-        # consecutive_failure_count of 1.
+        # consecutive_failure_count of 0.
         code_import = self.factory.makeCodeImport()
         self.succeedImport(code_import)
         self.assertEqual(0, code_import.consecutive_failure_count)
@@ -407,6 +423,24 @@ class TestConsecutiveFailureCount(TestCaseWithFactory):
         code_import = self.factory.makeCodeImport()
         self.failImport(code_import)
         self.assertEqual(1, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_succeed_succeed_no_changes(self):
+        # A code import that has succeeded then succeeded with no changes has
+        # a consecutive_failure_count of 0.
+        code_import = self.factory.makeCodeImport()
+        self.succeedImport(code_import)
+        self.succeedImport(
+            code_import, CodeImportResultStatus.SUCCESS_NOCHANGE)
+        self.assertEqual(0, code_import.consecutive_failure_count)
+
+    def test_consecutive_failure_count_succeed_succeed_partial(self):
+        # A code import that has succeeded then succeeded with no changes has
+        # a consecutive_failure_count of 0.
+        code_import = self.factory.makeCodeImport()
+        self.succeedImport(code_import)
+        self.succeedImport(
+            code_import, CodeImportResultStatus.SUCCESS_NOCHANGE)
+        self.assertEqual(0, code_import.consecutive_failure_count)
 
     def test_consecutive_failure_count_fail_fail(self):
         # A code import that has failed twice has a consecutive_failure_count
@@ -520,7 +554,7 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
 def make_active_import(factory, project_name=None, product_name=None,
                        branch_name=None, svn_branch_url=None,
                        cvs_root=None, cvs_module=None, git_repo_url=None,
-                       last_update=None):
+                       hg_repo_url=None, last_update=None, rcs_type=None):
     """Make a new CodeImport for a new Product, maybe in a new Project.
 
     The import will be 'active' in the sense used by
@@ -532,10 +566,11 @@ def make_active_import(factory, project_name=None, product_name=None,
         project = None
     product = factory.makeProduct(
         name=product_name, displayname=product_name, project=project)
-    code_import = factory.makeCodeImport(
+    code_import = factory.makeProductCodeImport(
         product=product, branch_name=branch_name,
         svn_branch_url=svn_branch_url, cvs_root=cvs_root,
-        cvs_module=cvs_module, git_repo_url=git_repo_url)
+        cvs_module=cvs_module, git_repo_url=git_repo_url,
+        hg_repo_url=hg_repo_url, rcs_type=None)
     make_import_active(factory, code_import, last_update)
     return code_import
 
@@ -544,9 +579,10 @@ def make_import_active(factory, code_import, last_update=None):
     """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
     from zope.security.proxy import removeSecurityProxy
     naked_import = removeSecurityProxy(code_import)
-    naked_import.updateFromData(
-        {'review_status': CodeImportReviewStatus.REVIEWED},
-        factory.makePerson())
+    if naked_import.review_status != CodeImportReviewStatus.REVIEWED:
+        naked_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            factory.makePerson())
     if last_update is None:
         # If last_update is not specfied, presumably we don't care what it is
         # so we just use some made up value.
@@ -602,10 +638,10 @@ class TestGetActiveImports(TestCaseWithFactory):
         # Deactivating a product means that code imports associated to it are
         # no longer returned.
         code_import = make_active_import(self.factory)
-        self.failUnless(code_import.product.active)
+        self.failUnless(code_import.branch.product.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product)
+        deactivate(code_import.branch.product)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -614,10 +650,10 @@ class TestGetActiveImports(TestCaseWithFactory):
         # products in it are no longer returned.
         code_import = make_active_import(
             self.factory, project_name="whatever")
-        self.failUnless(code_import.product.project.active)
+        self.failUnless(code_import.branch.product.project.active)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [code_import])
-        deactivate(code_import.product.project)
+        deactivate(code_import.branch.product.project)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(list(results), [])
 
@@ -627,8 +663,8 @@ class TestGetActiveImports(TestCaseWithFactory):
             self.factory, product_name='prod1', branch_name='a')
         prod2_a = make_active_import(
             self.factory, product_name='prod2', branch_name='a')
-        prod1_b = self.factory.makeCodeImport(
-            product=prod1_a.product, branch_name='b')
+        prod1_b = self.factory.makeProductCodeImport(
+            product=prod1_a.branch.product, branch_name='b')
         make_import_active(self.factory, prod1_b)
         results = getUtility(ICodeImportSet).getActiveImports()
         self.assertEquals(

@@ -11,15 +11,16 @@ __all__ = [
     'DistroSeriesTranslationsAdminView',
     'DistroSeriesTranslationsMenu',
     'DistroSeriesView',
+    'check_distroseries_translations_viewable',
     ]
 
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import action
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.webapp.launchpadform import LaunchpadEditFormView
 from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
@@ -27,20 +28,26 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
     schema = IDistroSeries
-
+    page_title = "Settings"
+    label = "Translation settings"
     field_names = ['hide_all_translations', 'defer_translation_imports']
 
-    def initialize(self):
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Change translation options of %s' % self.context.title
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     @action("Change")
     def change_action(self, action, data):
@@ -48,13 +55,12 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-        self.next_url = canonical_url(self.context)
-
 
 class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     """Browser view to manage used language packs."""
     schema = IDistroSeries
-    label = ""
+    label = "Language packs"
+    page_title = "Language packs"
 
     def is_langpack_admin(self, action=None):
         """Find out if the current user is a Language Packs Admin.
@@ -62,7 +68,7 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         This group of users have launchpad.LanguagePacksAdmin rights on
         the DistroSeries but are not general Rosetta admins.
 
-        :returns: True if the user is a Language Pack Admin (but not a 
+        :returns: True if the user is a Language Pack Admin (but not a
             Rosetta admin)."""
         return (check_permission("launchpad.LanguagePacksAdmin",
                                  self.context) and not
@@ -97,13 +103,11 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
-        self.page_title = "Language packs for %s" % self.displayname
         if self.is_langpack_admin():
             self.adminlabel = 'Request a full language pack export of %s' % (
                 self.displayname)
         else:
             self.adminlabel = 'Settings for language packs'
-
 
     @cachedproperty
     def unused_language_packs(self):
@@ -155,20 +159,17 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
             [canonical_url(self.context), '+language-packs'])
 
 
-class DistroSeriesTemplatesView(LaunchpadView):
+class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
     """Show a list of all templates for the DistroSeries."""
 
-    is_distroseries = True
-
-    def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context)
-
-    def can_administer(self, template):
-        return check_permission('launchpad.Admin', template)
+    def initialize(self):
+        super(DistroSeriesTemplatesView, self).initialize(
+            series=self.context, is_distroseries=True)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
+
+    label = "Translation status by language"
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -176,34 +177,11 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
             self.context.version)
 
     def checkTranslationsViewable(self):
-        """Check that these translations are visible to the current user.
+        """ Check if user can view translations for this `IDistroSeries`"""
 
-        Launchpad admins, Translations admins, and users with admin
-        rights on the `DistroSeries` are always allowed.  For others
-        this delegates to `IDistroSeries.checkTranslationsViewable`,
-        which raises `TranslationUnavailable` if the translations are
-        set to be hidden.
-
-        :return: Returns normally if this series' translations are
-            viewable to the current user.
-        :raise TranslationUnavailable: if this series' translations are
-            hidden and the user is not one of the limited caste that is
-            allowed to access them.
-        """
-        if check_permission('launchpad.Admin', self.context):
-            # Anyone with admin rights on this series passes.  This
-            # includes Launchpad admins.
-            return
-
-        user = self.user
-        experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if user is not None and user.inTeam(experts):
-            # Translations admins also pass.
-            return
-
-        # Everyone else passes only if translations are viewable to the
-        # public.
-        self.context.checkTranslationsViewable()
+        # Is user allowed to see translations for this distroseries?
+        # If not, raise TranslationUnavailable.
+        check_distroseries_translations_viewable(self.context)
 
     def distroserieslanguages(self):
         """Produces a list containing a DistroSeriesLanguage object for
@@ -231,9 +209,22 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)
 
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
+
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
+
+    @property
+    def is_translation_focus(self):
+        """Is this DistroSeries the translation focus."""
+        return self.context.distribution.translation_focus == self.context
 
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
@@ -259,3 +250,47 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     def language_packs(self):
         return Link('+language-packs', 'Language packs')
+
+
+def check_distroseries_translations_viewable(distroseries):
+    """Check that these distribution series translations are visible.
+
+    Launchpad admins, Translations admins, and users with admin
+    rights on the `IDistroSeries` are always allowed.
+
+    Checks the `hide_all_translations` flag.  If it is set, these
+    translations are not to be shown to the public. In that case an
+    appropriate message is composed based on the series' `status`,
+    and a `TranslationUnavailable` exception is raised.
+
+    :return: Returns normally if this series' translations are
+        viewable to the current user.
+    :raise TranslationUnavailable: if this series' translations are
+        hidden and the user is not one of the limited caste that is
+        allowed to access them.
+    """
+
+    if not distroseries.hide_all_translations:
+        # Yup, viewable.
+        return
+
+    if check_permission(
+        'launchpad.TranslationsAdmin', distroseries):
+        return
+
+    future = [
+        SeriesStatus.EXPERIMENTAL,
+        SeriesStatus.DEVELOPMENT,
+        SeriesStatus.FUTURE,
+        ]
+    if distroseries.status in future:
+        raise TranslationUnavailable(
+            "Translations for this release series are not available yet.")
+    elif distroseries.status == SeriesStatus.OBSOLETE:
+        raise TranslationUnavailable(
+            "This release series is obsolete.  Its translations are no "
+            "longer available.")
+    else:
+        raise TranslationUnavailable(
+            "Translations for this release series are not currently "
+            "available.  Please come back soon.")

@@ -15,10 +15,11 @@ import pytz, datetime
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from zope.interface import implements
 
-from lp.registry.interfaces.announcement import IAnnouncement, IAnnouncementSet
+from lp.registry.interfaces.announcement import (
+    IAnnouncement, IAnnouncementSet)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -88,7 +89,7 @@ class Announcement(SQLBase):
             self.distribution = target
             self.project = None
             self.product = None
-        elif IProject.providedBy(target):
+        elif IProjectGroup.providedBy(target):
             self.project = target
             self.distribution = None
             self.product = None
@@ -101,7 +102,7 @@ class Announcement(SQLBase):
         self.active = False
         self.date_last_modified = UTC_NOW
 
-    def set_publication_date(self, publication_date):
+    def setPublicationDate(self, publication_date):
         """See `IAnnouncement`."""
         self.date_announced = publication_date
         self.date_last_modified = None
@@ -139,7 +140,7 @@ class HasAnnouncements:
             return None
         return announcement
 
-    def announcements(self, limit=5, published_only=True):
+    def getAnnouncements(self, limit=5, published_only=True):
         """See IHasAnnouncements."""
 
         # Create the SQL query.
@@ -159,7 +160,7 @@ class HasAnnouncements:
                 query += """ AND
                     (Announcement.product = %s OR Announcement.project = %s)
                     """ % sqlvalues(self.id, self.project)
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             query += """ AND
                 (Announcement.project = %s OR Announcement.product IN
                     (SELECT id FROM Product WHERE project = %s))
@@ -186,7 +187,7 @@ class MakesAnnouncements(HasAnnouncements):
         project = product = distribution = None
         if IProduct.providedBy(self):
             product = self
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             project = self
         elif IDistribution.providedBy(self):
             distribution = self
@@ -204,7 +205,7 @@ class MakesAnnouncements(HasAnnouncements):
             distribution = distribution
             )
 
-        announcement.set_publication_date(publication_date)
+        announcement.setPublicationDate(publication_date)
         return announcement
 
 

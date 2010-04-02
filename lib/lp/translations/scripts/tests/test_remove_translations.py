@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#! /usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -45,6 +45,7 @@ class TestRemoveTranslationsConstraints(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslationsConstraints, self).setUp()
         # Acquire privileges to delete TranslationMessages.  We won't
         # actually do that here, but we'll go through all the motions.
         self.layer.switchDbUser('postgres')
@@ -155,6 +156,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslationsOptionsHandling, self).setUp()
         self.factory = LaunchpadObjectFactory()
 
     def test_WithNativeArgs(self):
@@ -222,6 +224,7 @@ class TestRemoveTranslations(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslations, self).setUp()
         # Acquire privileges to delete TranslationMessages.  That's not
         # something we normally do.  Actually we should test under
         # rosettaadmin, but that user does not have all the privileges
@@ -553,6 +556,7 @@ class TestRemoveTranslationsUnmasking(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslationsUnmasking, self).setUp()
         self.layer.switchDbUser('postgres')
 
         # Set up a template with a Laotian translation file.  There's

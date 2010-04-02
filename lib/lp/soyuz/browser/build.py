@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildBreadcrumb',
     'BuildContextMenu',
     'BuildNavigation',
     'BuildRecordsView',
@@ -14,6 +15,7 @@ __all__ = [
     'BuildView',
     ]
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -21,21 +23,22 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
-from canonical.lazr.utils import safe_hasattr
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild, IBuildRescoreForm)
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.webapp import (
     action, canonical_url, enabled_with_permission, ContextMenu,
     GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lazr.delegates import delegates
+from canonical.lazr.utils import safe_hasattr
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.build import IBuild, IBuildRescoreForm
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 class BuildUrl:
@@ -106,21 +109,135 @@ class BuildContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry build'
-        return Link('+retry', text, icon='edit',
-                    enabled=self.context.can_be_retried)
+        text = 'Retry this build'
+        return Link(
+            '+retry', text, icon='retry',
+            enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         """Only enabled for pending build records."""
         text = 'Rescore build'
-        return Link('+rescore', text, icon='edit',
-                    enabled=self.context.can_be_rescored)
+        return Link(
+            '+rescore', text, icon='edit',
+            enabled=self.context.can_be_rescored)
+
+
+class BuildBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IBuild`."""
+
+    @property
+    def text(self):
+        # If this is a PPA or copy archive build, include the source
+        # name and version. But for distro archives there are already
+        # breadcrumbs for both, so we omit them.
+        if self.context.archive.is_ppa or self.context.archive.is_copy:
+            return '%s build of %s %s' % (
+                self.context.arch_tag,
+                self.context.sourcepackagerelease.sourcepackagename.name,
+                self.context.sourcepackagerelease.version)
+        else:
+            return '%s build' % self.context.arch_tag
 
 
 class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def user_can_retry_build(self):
+        """Return True if the user is permitted to Retry Build.
+
+        The build must be re-tryable.
+        """
+        return (check_permission('launchpad.Edit', self.context)
+            and self.context.can_be_retried)
+
+    @cachedproperty
+    def package_upload(self):
+        """Return the corresponding package upload for this build."""
+        return self.context.package_upload
+
+    @cachedproperty
+    def has_published_binaries(self):
+        """Whether or not binaries were already published for this build."""
+        # Binaries imported by gina (missing `PackageUpload` record)
+        # are always published.
+        imported_binaries = (
+            self.package_upload is None and
+            self.context.binarypackages.count() > 0)
+        # Binaries uploaded from the buildds are published when the
+        # corresponding `PackageUpload` status is DONE.
+        uploaded_binaries = (
+            self.package_upload is not None and
+            self.package_upload.status == PackageUploadStatus.DONE)
+
+        if imported_binaries or uploaded_binaries:
+            return True
+
+        return False
+
+    @property
+    def changesfile(self):
+        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
+        changesfile = self.context.upload_changesfile
+        if changesfile is None:
+            return None
+
+        return ProxiedLibraryFileAlias(changesfile, self.context)
+
+    @cachedproperty
+    def is_ppa(self):
+        return self.context.archive.is_ppa
+
+    @cachedproperty
+    def buildqueue(self):
+        return self.context.buildqueue_record
+
+    @cachedproperty
+    def component(self):
+        return self.context.current_component
+
+    @cachedproperty
+    def files(self):
+        """Return `LibraryFileAlias`es for files produced by this build."""
+        if not self.context.was_built:
+            return None
+
+        files = []
+        for package in self.context.binarypackages:
+            for file in package.files:
+                if file.libraryfile.deleted is False:
+                    alias = ProxiedLibraryFileAlias(
+                        file.libraryfile, self.context)
+                    files.append(alias)
+
+        return files
+
+    @property
+    def dispatch_time_estimate_available(self):
+        """True if a dispatch time estimate is available for this build.
+
+        The build must be in state NEEDSBUILD and the associated job must be
+        in state WAITING.
+        """
+        return (
+            self.context.buildstate == BuildStatus.NEEDSBUILD and
+            self.context.buildqueue_record.job.status == JobStatus.WAITING)
+
+
+class BuildRetryView(BuildView):
+    """View class for retrying `IBuild`s"""
+
+    __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
 
     def retry_build(self):
         """Check user confirmation and perform the build record retry."""
@@ -139,56 +256,15 @@ class BuildView(LaunchpadView):
 
         self.request.response.redirect(canonical_url(self.context))
 
-    @property
-    def user_can_retry_build(self):
-        """Return True if the user is permitted to Retry Build.
-
-        The build must be re-tryable.
-        """
-        return (check_permission('launchpad.Edit', self.context)
-            and self.context.can_be_retried)
-
-    @property
-    def has_done_upload(self):
-        """Return True if this build's package upload is done."""
-        package_upload = self.context.package_upload
-
-        if package_upload is None:
-            return False
-
-        if package_upload.status == PackageUploadStatus.DONE:
-            return True
-
-        return False
-
-    @property
-    def changesfile(self):
-        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
-        changesfile = self.context.upload_changesfile
-        if changesfile is None:
-            return None
-
-        return ProxiedLibraryFileAlias(changesfile, self.context)
-
-    @cachedproperty
-    def files(self):
-        """Return `LibraryFileAlias`es for files produced by this build."""
-        if not self.context.was_built:
-            return None
-
-        files = []
-        for package in self.context.binarypackages:
-            for file in package.files:
-                files.append(
-                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
-
-        return files
-
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.
@@ -246,10 +322,10 @@ def setupCompleteBuilds(batch):
     prefetched_data = dict()
     build_ids = [build.id for build in builds]
     results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
-    for (buildqueue, builder) in results:
+    for (buildqueue, _builder, build_job) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.
-        prefetched_data[buildqueue.build.id] = buildqueue
+        prefetched_data[build_job.build.id] = buildqueue
 
     complete_builds = []
     for build in builds:
@@ -268,6 +344,12 @@ class BuildRecordsView(LaunchpadView):
     DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
     __used_for__ = IHasBuildRecords
+
+    page_title = 'Builds'
+
+    @property
+    def label(self):
+        return 'Builds for %s' % self.context.displayname
 
     def setupBuildList(self):
         """Setup a batched build records list.
@@ -311,7 +393,7 @@ class BuildRecordsView(LaunchpadView):
     def architecture_options(self):
         """Return the architecture options for the context."""
         # Guard against contexts that cannot tell us the available
-        # distroarchserieses.
+        # distroarchseries.
         if safe_hasattr(self.context, 'architectures') is False:
             return []
 
@@ -443,4 +525,3 @@ class BuildRecordsView(LaunchpadView):
     @property
     def no_results(self):
         return self.form_submitted and not self.complete_builds
-

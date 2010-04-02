@@ -3,32 +3,23 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+<tal:main metal:fill-slot="main"
+          define="overview_menu context/menu:overview;
+                  has_records view/probe_records/currentBatch">
+  <div class="top-portlet">
+    <h1 tal:content="view/page_title">Foo mirror prober logs</h1>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Prober logs for
-    "<tal:mirror replace="context/title">foobar</tal:mirror>"
-  </h1>
-</metal:heading>
-
-<div metal:fill-slot="main">
-
-  <p tal:condition="not: view/probe_records/currentBatch">
-    This mirror has never been probed.
-  </p>
-
-  <tal:logs condition="view/probe_records/currentBatch">
+    <p tal:condition="not: has_records">
+      This mirror has never been probed.
+    </p>
+  </div>
+  <tal:logs condition="has_records">
     <tal:navigation replace="structure view/probe_records/@@+navigation-links-upper" />
     <table class="listing">
       <thead>
@@ -52,8 +43,11 @@
     </table>
     <tal:navigation replace="structure view/probe_records/@@+navigation-links-lower" />
   </tal:logs>
+</tal:main>
 
-</div>
+<tal:side metal:fill-slot="side">
+  <tal:menu replace="structure context/@@+global-actions" />
+</tal:side>
 
 </body>
 </html>

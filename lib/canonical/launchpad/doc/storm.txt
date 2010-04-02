@@ -1,3 +1,8 @@
+Note: A more readable version of this is in db-policy.txt. Most of this
+doctest will disappear soon when the auth replication set is collapsed
+back into the main replication set as part of login server seperation.
+-- StuartBishop 20100222
+
 In addition to what Storm provides, we also have some Launchpad
 specific Storm tools to cope with our master and slave store arrangement.
 
@@ -76,16 +81,17 @@ from a store other than the correct Master.
     >>> auth_slave = ISlaveStore(Account)
     >>> t = transaction.begin()
     >>> account = auth_slave.find(
-    ...     Account, openid_identifier='sabdfl_oid').one()
+    ...     Account, openid_identifier='mark_oid').one()
     >>> account.displayname = 'Cannot change'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
     InternalError: transaction is read-only
 
+    >>> transaction.abort()
     >>> t = transaction.begin()
     >>> account = auth_slave.find(
-    ...     Account, openid_identifier='sabdfl_oid').one()
+    ...     Account, openid_identifier='mark_oid').one()
     >>> IMasterObject(account).displayname = 'Can change'
     >>> transaction.commit()
 

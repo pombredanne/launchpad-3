@@ -19,12 +19,10 @@ from canonical.launchpad.webapp.testing import verifyObject
 class TestDirectoryMailBox(TestCase):
 
     def setUp(self):
+        super(TestDirectoryMailBox, self).setUp()
         # Create a temp directory.
         self.email_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        # Delete the directory.
-        rmtree(self.email_dir)
+        self.addCleanup(rmtree, self.email_dir)
 
     def test_verify_interface(self):
         # Make sure that the object actually implements the interface.

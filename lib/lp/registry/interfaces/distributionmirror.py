@@ -7,6 +7,9 @@ __metaclass__ = type
 
 __all__ = [
 'IDistributionMirror',
+'IDistributionMirrorAdminRestricted',
+'IDistributionMirrorEditRestricted',
+'IDistributionMirrorPublic',
 'IMirrorDistroArchSeries',
 'IMirrorDistroSeriesSource',
 'IMirrorProbeRecord',
@@ -27,6 +30,9 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (
+    export_as_webservice_entry, export_read_operation, exported)
+from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -34,6 +40,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
+from lp.services.worlddata.interfaces.country import ICountry
 
 
 # The number of hours before we bother probing a mirror again
@@ -186,7 +193,7 @@ class MirrorFreshness(DBEnumeratedType):
         """)
 
     UNKNOWN = DBItem(8, """
-        Unknown freshness
+        Last update unknown
 
         We couldn't determine when this mirror's content was last updated.
         """)
@@ -277,92 +284,115 @@ class DistroMirrorRsyncURIField(DistroMirrorURIField):
     def getMirrorByURI(self, url):
         return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
 
+class IDistributionMirrorAdminRestricted(Interface):
+    """IDistributionMirror properties requiring launchpad.Admin permission."""
 
-class IDistributionMirror(Interface):
-    """A mirror of a given distribution."""
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
+    date_reviewed = exported(Datetime(
+        title=_('Date reviewed'), required=False, readonly=True,
+        description=_(
+            "The date on which this mirror was last reviewed by a mirror admin.")))
+
+
+class IDistributionMirrorEditRestricted(Interface):
+    """IDistributionMirror properties requiring launchpad.Edit permission."""
+    
+    official_candidate = exported(Bool(
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=True))
+    whiteboard = exported(Whiteboard(
+        title=_('Whiteboard'), required=False, readonly=False,
+        description=_("Notes on the current status of the mirror (only "
+                      "visible to admins and the mirror's registrant).")))
+
+
+class IDistributionMirrorPublic(Interface):
+    """Public IDistributionMirror properties."""
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=False, readonly=True,
-        vocabulary='ValidOwner')
-    reviewer = PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam')
-    distribution = Attribute(_("The distribution that is mirrored"))
-    name = DistributionMirrorNameField(
+    owner = exported(PublicPersonChoice(
+        title=_('Owner'), readonly=False, vocabulary='ValidOwner',
+        required=True, description=_(
+            "The person who is set as the current administrator of this mirror.")))
+    distribution = exported(
+        Reference(
+            Interface,
+            # Really IDistribution, circular import fixed in
+            # _schema_circular_imports.
+            title=_("Distribution"), required=True, readonly=True,
+            description=_("The distribution that is mirrored")))
+    name = exported(DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
         description=_('A short and unique name for this mirror.'),
-        constraint=name_validator)
-    displayname = TextLine(
+        constraint=name_validator))
+    displayname = exported(TextLine(
         title=_('Organisation'), required=False, readonly=False,
-        description=_('The name of the organization hosting this mirror.'))
-    description = TextLine(
-        title=_('Description'), required=False, readonly=False)
-    http_base_url = DistroMirrorHTTPURIField(
+        description=_('The name of the organization hosting this mirror.')))
+    description = exported(TextLine(
+        title=_('Description'), required=False, readonly=False))
+    http_base_url = exported(DistroMirrorHTTPURIField(
         title=_('HTTP URL'), required=False, readonly=False,
         allowed_schemes=['http'], allow_userinfo=False,
         allow_query=False, allow_fragment=False, trailing_slash=True,
-        description=_('e.g.: http://archive.ubuntu.com/ubuntu/'))
-    ftp_base_url = DistroMirrorFTPURIField(
+        description=_('e.g.: http://archive.ubuntu.com/ubuntu/')))
+    ftp_base_url = exported(DistroMirrorFTPURIField(
         title=_('FTP URL'), required=False, readonly=False,
         allowed_schemes=['ftp'], allow_userinfo=False,
         allow_query=False, allow_fragment=False, trailing_slash=True,
-        description=_('e.g.: ftp://archive.ubuntu.com/ubuntu/'))
-    rsync_base_url = DistroMirrorRsyncURIField(
+        description=_('e.g.: ftp://archive.ubuntu.com/ubuntu/')))
+    rsync_base_url = exported(DistroMirrorRsyncURIField(
         title=_('Rsync URL'), required=False, readonly=False,
         allowed_schemes=['rsync'], allow_userinfo=False,
         allow_query=False, allow_fragment=False, trailing_slash=True,
-        description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/'))
-    enabled = Bool(
+        description=_('e.g.: rsync://archive.ubuntu.com/ubuntu/')))
+    enabled = exported(Bool(
         title=_('This mirror was probed successfully.'),
-        required=False, readonly=False, default=False)
-    speed = Choice(
+        required=False, readonly=True, default=False))
+    speed = exported(Choice(
         title=_('Link Speed'), required=True, readonly=False,
-        vocabulary=MirrorSpeed)
-    country = Choice(
-        title=_('Location'), required=True, readonly=False,
-        vocabulary='CountryName')
-    content = Choice(
+        vocabulary=MirrorSpeed))
+    country = exported(ReferenceChoice(
+        title=_('Location'), description=_(
+            "The country in which this mirror is based."),
+        required=True, readonly=False,
+        vocabulary='CountryName', schema=ICountry))
+    content = exported(Choice(
         title=_('Content'), required=True, readonly=False,
         description=_(
             'Choose "CD Image" if this mirror contains CD images of '
             'this distribution. Choose "Archive" if this is a '
             'mirror of packages for this distribution.'),
-        vocabulary=MirrorContent)
-    official_candidate = Bool(
-        title=_('Apply to be an official mirror of this distribution'),
-        required=False, readonly=False, default=True)
-    status = Choice(
+        vocabulary=MirrorContent))
+    status = exported(Choice(
         title=_('Status'), required=True, readonly=False,
-        vocabulary=MirrorStatus)
+        vocabulary=MirrorStatus,
+        description=_("The current status of a mirror's registration.")))
 
     title = Attribute('The title of this mirror')
-    cdimage_serieses = Attribute(
-        'All MirrorCDImageDistroSerieses of this mirror')
-    source_serieses = Attribute(
+    cdimage_series = Attribute(
+        'All MirrorCDImageDistroSeries of this mirror')
+    source_series = Attribute(
         'All MirrorDistroSeriesSources of this mirror')
-    arch_serieses = Attribute('All MirrorDistroArchSerieses of this mirror')
+    arch_series = Attribute('All MirrorDistroArchSeries of this mirror')
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
-        title=_('Does this mirror have a ftp or rsync base URL?'))
+        title=_('Does this mirror have a FTP or Rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
-    date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_reviewed = Datetime(
-        title=_('Date reviewed'), required=False, readonly=False)
-    whiteboard = Whiteboard(
-        title=_('Whiteboard'), required=False,
-        description=_("Notes on the current status of the mirror (only "
-                      "visible to admins and the mirror's registrant)."))
+    date_created = exported(Datetime(
+        title=_('Date Created'), required=True, readonly=True,
+        description=_("The date on which this mirror was registered.")))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
         if not (mirror.http_base_url or mirror.ftp_base_url):
             raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
-    def getSummarizedMirroredSourceSerieses():
+    def getSummarizedMirroredSourceSeries():
         """Return a summarized list of this distribution_mirror's
         MirrorDistroSeriesSource objects.
 
@@ -371,7 +401,7 @@ class IDistributionMirror(Interface):
         each distroseries of this distribution mirror.
         """
 
-    def getSummarizedMirroredArchSerieses():
+    def getSummarizedMirroredArchSeries():
         """Return a summarized list of this distribution_mirror's
         MirrorDistroArchSeries objects.
 
@@ -380,6 +410,7 @@ class IDistributionMirror(Interface):
         each distro_arch_series of this distribution mirror.
         """
 
+    @export_read_operation()
     def getOverallFreshness():
         """Return this mirror's overall freshness.
 
@@ -392,6 +423,7 @@ class IDistributionMirror(Interface):
         contain one or more ISO images.
         """
 
+    @export_read_operation()
     def isOfficial():
         """Return True if this is an official mirror."""
 
@@ -399,7 +431,7 @@ class IDistributionMirror(Interface):
         """Should this mirror be marked disabled?
 
         If this is a RELEASE mirror then expected_file_count must not be None,
-        and it should be disabled if the number of cdimage_serieses it
+        and it should be disabled if the number of cdimage_series it
         contains is smaller than the given expected_file_count.
 
         If this is an ARCHIVE mirror, then it should be disabled only if it
@@ -470,7 +502,7 @@ class IDistributionMirror(Interface):
         series and flavour, in case it exists.
         """
 
-    def deleteAllMirrorCDImageSerieses():
+    def deleteAllMirrorCDImageSeries():
         """Delete all MirrorCDImageDistroSeriess of this mirror."""
 
     def getExpectedPackagesPaths():
@@ -488,6 +520,11 @@ class IDistributionMirror(Interface):
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
+
+class IDistributionMirror(IDistributionMirrorAdminRestricted,
+        IDistributionMirrorEditRestricted, IDistributionMirrorPublic):
+    """A mirror of a given distribution."""
+    export_as_webservice_entry()
 
 
 class UnableToFetchCDImageFileList(Exception):
@@ -610,4 +647,3 @@ class IMirrorProbeRecord(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     log_file = Attribute(_("The log of this probing."))
-

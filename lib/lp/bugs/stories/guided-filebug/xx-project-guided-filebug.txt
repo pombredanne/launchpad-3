@@ -6,7 +6,7 @@ it's still possible to file a bug from a project's main page.
     >>> user_browser.open('http://launchpad.dev/gnome')
     >>> user_browser.getLink(url='+filebug').click()
     >>> user_browser.url
-    'http://launchpad.dev/gnome/+filebug'
+    'http://bugs.launchpad.dev/gnome/+filebug'
 
 The Project filebug page is like a Product's filebug page, except that
 it also asks for a Product. Only Products that are using Bugs are
@@ -144,9 +144,10 @@ message:
     >>> for message in find_tags_by_class(admin_browser.contents,
     ...     'warning message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group. <br />
-    You need to <a href="+newproduct">register another project that is
-    part of Test Group</a> or associate an existing project with it.
+    There are no projects registered for Test Group. <br /> You need
+    to <a href="/test-group/+newproduct">register another project that
+    is part of Test Group</a> or associate an existing project with
+    it.
 
 
 == Projects With no Products Using Launchpad Bugs ==
@@ -204,6 +205,18 @@ The user will also be presented with a link to the product's overview page:
 If we set up an external bug tracker for Testy Product, this will be reflected
 in the Test Group's filebug page.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
+    >>> logout()
+
     >>> admin_browser.open('http://launchpad.dev/testy/+edit')
     >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
@@ -229,7 +242,7 @@ And on the filebug page...
 Finally, we add Testy Product to a source package:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl(name='ubuntupkg').value = 'thunderbird'
+    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
     >>> admin_browser.getControl('Update').click()
 
 And this is also shown on the filebug page:

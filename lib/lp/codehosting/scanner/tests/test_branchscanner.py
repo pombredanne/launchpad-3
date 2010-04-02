@@ -74,7 +74,7 @@ class TestErrorHandling(TestCaseWithFactory):
         log = logging.Logger(self.factory.getUniqueString())
         self._log_records = []
         log.addHandler(AppendingHandler(self._log_records))
-        self.scanner = BranchScanner(None, log)
+        self.scanner = BranchScanner(log)
         # Used as an OOPS id in log messages. Assign to this variable to
         # change the OOPS ID used.
         self._oopsid = None
@@ -236,6 +236,7 @@ class TestErrorHandling(TestCaseWithFactory):
         self.scanner.logScanFailure(failing_branch, 'message')
         self.assertLogged(
             [(logging.ERROR, "Couldn't get unique_name"),
+             (logging.ERROR, "Couldn't get canonical_url"),
              (logging.INFO, 'OOPS-FOO: message (UNKNOWN)')])
 
     def test_branch_url_fail(self):

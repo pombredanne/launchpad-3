@@ -1,22 +1,31 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
     'BranchJob',
+    'BranchScanJob',
+    'BranchJobDerived',
+    'BranchJobType',
+    'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
     'RosettaUploadJob',
 ]
 
+import contextlib
+import operator
 import os
 import shutil
 from StringIO import StringIO
+import tempfile
 
-from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchFile
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -36,27 +45,29 @@ from zope.interface import classProvides, implements
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp import canonical_url
-from lp.code.bzr import (
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
+from canonical.launchpad.webapp import canonical_url, errorlog
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.vfs import branch_id_to_path
+from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
+    get_scanner_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
-from lp.registry.model.productseries import ProductSeries
+from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
-    IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionsAddedJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchScanJob,
+    IBranchScanJobSource, IBranchUpgradeJob, IBranchUpgradeJobSource,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionsAddedJob,
+    IRevisionMailJob, IRevisionMailJobSource, IRosettaUploadJob,
+    IRosettaUploadJobSource)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -113,6 +124,17 @@ class BranchJobType(DBEnumeratedType):
         from disk.
         """)
 
+    TRANSLATION_TEMPLATES_BUILD = DBItem(6, """
+        Generate translation templates
+
+        This job generates translations templates from a source branch.
+        """)
+
+    SCAN_BRANCH = DBItem(7, """
+        Scan Branch
+
+        This job scans a branch for new revisions.
+        """)
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -182,13 +204,23 @@ class BranchJobDerived(BaseRunnableJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars = BaseRunnableJob.getOopsVars(self)
+        vars.extend([
+            ('branch_job_id', self.context.id),
+            ('branch_job_type', self.context.job_type.title)])
+        if self.context.branch is not None:
+            vars.append(('branch_name', self.context.branch.unique_name))
+        return vars
+
 
 class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
-
     classProvides(IBranchDiffJobSource)
+
     @classmethod
     def create(cls, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
@@ -227,41 +259,105 @@ class BranchDiffJob(BranchJobDerived):
         return static_diff
 
 
+class BranchScanJob(BranchJobDerived):
+    """A Job that scans a branch for new revisions."""
+
+    implements(IBranchScanJob)
+
+    classProvides(IBranchScanJobSource)
+    class_job_type = BranchJobType.SCAN_BRANCH
+    server = None
+
+    @classmethod
+    def create(cls, branch):
+        """See `IBranchScanJobSource`."""
+        branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchScanJob`."""
+        from canonical.launchpad.scripts import log
+        bzrsync = BzrSync(self.branch, log)
+        bzrsync.syncBranchAndClose()
+
+    @classmethod
+    @contextlib.contextmanager
+    def contextManager(cls):
+        """See `IBranchScanJobSource`."""
+        errorlog.globalErrorUtility.configure('branchscanner')
+        cls.server = get_scanner_server()
+        cls.server.start_server()
+        yield
+        cls.server.stop_server()
+
+
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
 
     implements(IBranchUpgradeJob)
 
     classProvides(IBranchUpgradeJobSource)
+    class_job_type = BranchJobType.UPGRADE_BRANCH
+
     @classmethod
     def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
+        if not branch.needs_upgrading:
+            raise AssertionError('Branch does not need upgrading.')
+        if branch.upgrade_pending:
+            raise AssertionError('Branch already has upgrade pending.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IBranchUpgradeJobSource`."""
+        errorlog.globalErrorUtility.configure('upgrade_branches')
+        server = get_multi_server(write_hosted=True)
+        server.start_server()
+        yield
+        server.stop_server()
+
     def run(self):
         """See `IBranchUpgradeJob`."""
-        branch = self.branch.getBzrBranch()
-        to_format = self.upgrade_format
-        upgrade(branch.base, to_format)
+        # Set up the new branch structure
+        upgrade_branch_path = tempfile.mkdtemp()
+        try:
+            upgrade_transport = get_transport(upgrade_branch_path)
+            upgrade_transport.mkdir('.bzr')
+            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                upgrade_transport.clone('.bzr'))
+            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
-    @property
-    def upgrade_format(self):
-        """See `IBranch`."""
-        format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
-            self.branch.branch_format)
-        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.branch.repository_format)
-        if branch_format is None or repository_format is None:
-            branch = self.branch.getBzrBranch()
-            if branch_format is None:
-                branch_format = type(branch._format)
-            if repository_format is None:
-                repository_format = type(branch.repository._format)
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repository_format())
-        return format
+            # Perform the upgrade.
+            upgrade(upgrade_branch.base)
+
+            # Re-open the branch, since its format has changed.
+            upgrade_branch = BzrBranch.open_from_transport(
+                upgrade_transport)
+            source_branch = BzrBranch.open_from_transport(
+                source_branch_transport)
+
+            source_branch.lock_write()
+            upgrade_branch.pull(source_branch)
+            upgrade_branch.fetch(source_branch)
+            source_branch.unlock()
+
+            # Move the branch in the old format to backup.bzr
+            try:
+                source_branch_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            source_branch_transport.rename('.bzr', 'backup.bzr')
+            source_branch_transport.mkdir('.bzr')
+            upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                source_branch_transport.clone('.bzr'))
+
+            self.branch.requestMirror()
+        finally:
+            shutil.rmtree(upgrade_branch_path)
 
 
 class RevisionMailJob(BranchDiffJob):
@@ -384,7 +480,7 @@ class RevisionsAddedJob(BranchJobDerived):
         history = self.bzr_branch.revision_history()
         for num, revid in enumerate(history):
             if revid in added_revisions:
-                yield repository.get_revision(revid), num+1
+                yield repository.get_revision(revid), num + 1
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -504,13 +600,35 @@ class RevisionsAddedJob(BranchJobDerived):
         Only proposals whose source branch last-scanned-id is in the set of
         revision-ids and whose target_branch is the BranchJob branch are
         returned.
+
+        Only return the most recent proposal for any given source branch.
+
+        :param revision_ids: A list of revision-ids to look for.
+        :param include_superseded: If true, include merge proposals that are
+            superseded in the results.
         """
         store = Store.of(self.branch)
-        result = store.find(BranchMergeProposal,
-                            BranchMergeProposal.target_branch==self.branch.id,
-                            BranchMergeProposal.source_branch==Branch.id,
-                            Branch.last_scanned_id.is_in(revision_ids))
-        return result
+        result = store.find(
+            (BranchMergeProposal, Branch),
+            BranchMergeProposal.target_branch == self.branch.id,
+            BranchMergeProposal.source_branch == Branch.id,
+            Branch.last_scanned_id.is_in(revision_ids),
+            (BranchMergeProposal.queue_status !=
+             BranchMergeProposalStatus.SUPERSEDED))
+
+        proposals = {}
+        for proposal, source in result:
+            # Only show the must recent proposal for any given source.
+            date_created = proposal.date_created
+            source_id = source.id
+
+            if (source_id not in proposals or
+                date_created > proposals[source_id][1]):
+                proposals[source_id] = (proposal, date_created)
+
+        return sorted(
+            [proposal for proposal, date_created in proposals.itervalues()],
+            key=operator.attrgetter('date_created'), reverse=True)
 
     def getRevisionMessage(self, revision_id, revno):
         """Return the log message for a revision.
@@ -543,7 +661,7 @@ class RevisionsAddedJob(BranchJobDerived):
                 if len(pretty_authors) > 5:
                     outf.write('...\n')
                 outf.write('\n')
-            bmps = list(self.findRelatedBMP(merged_revisions))
+            bmps = self.findRelatedBMP(merged_revisions)
             if len(bmps) > 0:
                 outf.write('Related merge proposals:\n')
             for bmp in bmps:
@@ -604,41 +722,11 @@ class RosettaUploadJob(BranchJobDerived):
         return self.metadata['force_translations_upload']
 
     @classmethod
-    def _get_any_product_series(cls, branch, force_translations_upload):
-        """Find an affected product series.
-
-        This is used to check if any product series is related to the branch
-        in order to decide if a job needs to be created.
-
-        :param branch: The IBranch that is being scanned.
-        :param force_translations_upload: Flag to override the settings in the
-            product series and upload all translation files.
-        :returns: a list of IProductSeries objects.
-        """
-        return cls._find_product_series(branch,
-                                        force_translations_upload).any()
-
-    @staticmethod
-    def _find_product_series(branch, force_translations_upload):
-        """Find affected product series.
-
-        :param branch: The IBranch that is being scanned.
-        :param force_translations_upload: Flag to override the settings in the
-            product series and upload all translation files.
-        :returns: a list of IProductSeries objects.
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        if force_translations_upload:
-            productseries = store.find(
-                (ProductSeries),
-                ProductSeries.branch == branch)
-        else:
-            productseries = store.find(
-                (ProductSeries),
-                ProductSeries.branch == branch,
-                ProductSeries.translations_autoimport_mode !=
-                   TranslationsBranchImportMode.NO_IMPORT)
-        return productseries
+    def providesTranslationFiles(cls, branch):
+        """See `IRosettaUploadJobSource`."""
+        productseries = getUtility(
+            IProductSeriesSet).findByTranslationsImportBranch(branch)
+        return not productseries.is_empty()
 
     @classmethod
     def create(cls, branch, from_revision_id,
@@ -646,11 +734,11 @@ class RosettaUploadJob(BranchJobDerived):
         """See `IRosettaUploadJobSource`."""
         if branch is None:
             return None
+
         if from_revision_id is None:
             from_revision_id = NULL_REVISION
-        productseries = cls._get_any_product_series(branch,
-                                                    force_translations_upload)
-        if productseries is not None:
+
+        if force_translations_upload or cls.providesTranslationFiles(branch):
             metadata = cls.getMetadata(from_revision_id,
                                        force_translations_upload)
             branch_job = BranchJob(
@@ -735,6 +823,8 @@ class RosettaUploadJob(BranchJobDerived):
                     file_path, file_name, file_type = afile[:3]
                     if file_type != 'file':
                         continue
+                    if importer.isHidden(file_path):
+                        continue
                     if importer.isTemplateName(file_name):
                         append_to = self.template_file_names
                     elif importer.isTranslationName(file_name):
@@ -747,6 +837,9 @@ class RosettaUploadJob(BranchJobDerived):
                 for file_names, changed_files in self._iter_all_lists():
                     for changed_file in to_tree.iter_changes(
                             from_tree, specific_files=file_names):
+                        (from_kind, to_kind) = changed_file[6]
+                        if to_kind != 'file':
+                            continue
                         file_id, (from_path, to_path) = changed_file[:2]
                         changed_files.append((
                             to_path, to_tree.get_file_text(file_id)))
@@ -781,7 +874,8 @@ class RosettaUploadJob(BranchJobDerived):
         self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
-        productseries = self._find_product_series(
+        productseriesset = getUtility(IProductSeriesSet)
+        productseries = productseriesset.findByTranslationsImportBranch(
             self.branch, self.force_translations_upload)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:
@@ -807,19 +901,22 @@ class RosettaUploadJob(BranchJobDerived):
                 BranchJob.job == Job.id,
                 BranchJob.branch == Branch.id,
                 Branch.last_mirrored_id == Branch.last_scanned_id,
-                Job.id.is_in(Job.ready_jobs)))
+                Job.id.is_in(Job.ready_jobs))).order_by(BranchJob.id)
         return (RosettaUploadJob(job) for job in jobs)
 
     @staticmethod
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job).find((BranchJob), And(
-            Job.id == BranchJob.id,
+        match = And(
+            Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
             BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
             Job._status != JobStatus.COMPLETED,
-            Job._status != JobStatus.FAILED))
+            Job._status != JobStatus.FAILED)
+        if since is not None:
+            match = And(match, Job.date_created > since)
+        jobs = store.using(BranchJob, Job).find((BranchJob), match)
         return jobs
 
 
@@ -858,4 +955,3 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
             shutil.rmtree(mirrored_path)
         if os.path.exists(hosted_path):
             shutil.rmtree(hosted_path)
-

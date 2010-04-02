@@ -52,10 +52,10 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
     @property
     def title(self):
-        return '%s translations of applications in %s, %s' % (
+        return '%s translations of %s %s' % (
             self.language.englishname,
             self.distroseries.distribution.displayname,
-            self.distroseries.title)
+            self.distroseries.displayname)
 
     @property
     def pofiles(self):
@@ -158,10 +158,10 @@ class DummyDistroSeriesLanguage(RosettaStats):
         self.dateupdated = datetime.now(tz=pytz.timezone('UTC'))
         self.translator_count = 0
         self.contributor_count = 0
-        self.title = '%s translations of applications in %s, %s' % (
+        self.title = '%s translations of %s %s' % (
             self.language.englishname,
             self.distroseries.distribution.displayname,
-            self.distroseries.title)
+            self.distroseries.displayname)
 
     @property
     def pofiles(self):

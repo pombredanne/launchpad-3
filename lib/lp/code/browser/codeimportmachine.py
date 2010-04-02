@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportMachineSetBreadcrumbBuilder',
+    'CodeImportMachineSetBreadcrumb',
     'CodeImportMachineSetNavigation',
     'CodeImportMachineSetView',
     'CodeImportMachineView',
@@ -26,7 +26,7 @@ from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from canonical.launchpad.webapp import (
     action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lazr.delegates import delegates
 
 
@@ -39,7 +39,7 @@ class CodeImportMachineSetNavigation(Navigation):
         return self.context.getByHostname(hostname)
 
 
-class CodeImportMachineSetBreadcrumbBuilder(BreadcrumbBuilder):
+class CodeImportMachineSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ICodeImportMachineSet`."""
     text = u'Machines'
 

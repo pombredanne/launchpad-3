@@ -13,10 +13,11 @@ from zope.component import getUtility
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingPocket, PackageUploadStatus)
+    IDistributionSet, PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
@@ -66,7 +67,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         6. Clean log messages.
         7. Commit transaction, so the upload source can be seen.
         """
-        TestUploadProcessorBase.setUp(self)
+        super(TestStagedBinaryUploadBase, self).setUp()
         self.options.context = self.policy
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
@@ -163,7 +164,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
 
     def setUp(self):
         """Setup base class and create the required new distroarchseries."""
-        TestStagedBinaryUploadBase.setUp(self)
+        super(TestStagedSecurityUploads, self).setUp()
         distribution = getUtility(IDistributionSet).getByName(
             self.distribution_name)
         distroseries = distribution[self.distroseries.name]

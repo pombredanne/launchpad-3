@@ -2,31 +2,31 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-upstream" />
-</metal:rightportlets>
-
-
 <div metal:fill-slot="main">
 
-  <h1>Package upstream link</h1>
-
-  <p>Links from distribution packages to upstream project series let
-    distribution and upstream maintainers share bugs, patches, and translations
-    efficiently.</p>
-
   <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info">
+      <h2 class="legend" id="step-title">Step
+        <tal:step_number tal:replace="view/step_number"/>
+        (of <tal:total_steps tal:replace="view/total_steps"/>):
+        <tal:step_description tal:replace="view/step_description"/>
+      </h2>
+      <p>
+        Links from distribution packages to upstream project series let
+        distribution and upstream maintainers share bugs, patches, and
+        translations efficiently.
+      </p>
+    </div>
+
+    <div metal:fill-slot="extra_bottom" tal:condition="view/product">
+      If you need a new series created, contact the owner of
+      <a tal:content="structure view/product/fmt:link"/>.
+    </div>
   </div>
 
 </div>

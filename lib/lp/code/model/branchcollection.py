@@ -8,19 +8,19 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
+from storm.expr import And, Count, Desc, LeftJoin, Join, Or, Select, Union
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranch)
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Owner, Person
@@ -72,6 +72,16 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self.getBranches().count()
 
+    def ownerCounts(self):
+        """See `IBranchCollection`."""
+        is_team = Person.teamowner != None
+        branch_owners = self._getBranchIdQuery()
+        branch_owners.columns = (Branch.ownerID,)
+        counts = dict(self.store.find(
+            (is_team, Count(Person.id)),
+            Person.id.is_in(branch_owners)).group_by(is_team))
+        return (counts.get(False, 0), counts.get(True, 0))
+
     @property
     def store(self):
         # Although you might think we could set the default value for store in
@@ -107,10 +117,7 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
-        # decorated set, so we get at the underlying set so we can get at the
-        # private and juicy _get_select.
-        select = self.getBranches().result_set._get_select()
+        select = self.getBranches()._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -122,13 +129,10 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
-        results = self.store.using(*tables).find(Branch, *expressions)
-        def identity(x):
-            return x
-        # Decorate the result set to work around bug 217644.
-        return DecoratedResultSet(results, identity)
+        return self.store.using(*tables).find(Branch, *expressions)
 
-    def getMergeProposals(self, statuses=None, for_branches=None):
+    def getMergeProposals(self, statuses=None, for_branches=None,
+                          target_branch=None):
         """See `IBranchCollection`."""
         expressions = [
             BranchMergeProposal.source_branchID.is_in(
@@ -138,6 +142,9 @@ class GenericBranchCollection:
             branch_ids = [branch.id for branch in for_branches]
             expressions.append(
                 BranchMergeProposal.source_branchID.is_in(branch_ids))
+        if target_branch is not None:
+            expressions.append(
+                BranchMergeProposal.target_branch == target_branch)
         expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
             expressions.append(
@@ -150,6 +157,14 @@ class GenericBranchCollection:
         Used primarily by the visibility check for target branches.
         """
         return []
+
+    def getMergeProposalsForPerson(self, person, status=None):
+        """See `IBranchCollection`."""
+        # We want to limit the proposals to those where the source branch is
+        # limited by the defined collection.
+        owned = self.ownedBy(person).getMergeProposals(status)
+        reviewing = self.getMergeProposalsForReviewer(person, status)
+        return owned.union(reviewing)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
@@ -224,6 +239,18 @@ class GenericBranchCollection:
              Branch.sourcepackagename == sourcepackagename],
             table=Distribution,
             join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
+
+    def officialBranches(self, pocket=None):
+        """See `IBranchCollection`"""
+        if pocket is None:
+            expressions = []
+        else:
+            expressions = [SeriesSourcePackageBranch.pocket == pocket]
+        return self._filterBy(
+            expressions,
+            table=SeriesSourcePackageBranch,
+            join=Join(SeriesSourcePackageBranch,
+                      SeriesSourcePackageBranch.branch == Branch.id))
 
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
@@ -388,7 +415,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             store=store, branch_filter_expressions=branch_filter_expressions,
             tables=tables, exclude_from_search=exclude_from_search)
         self._user = user
-        self._user_visibility_expression = self._getVisibilityExpression()
+        self._private_branch_ids = self._getPrivateBranchSubQuery()
 
     def _filterBy(self, expressions, table=None, join=None,
                   exclude_from_search=None):
@@ -412,40 +439,50 @@ class VisibleBranchCollection(GenericBranchCollection):
             tables,
             self._exclude_from_search + exclude_from_search)
 
-    def _getVisibilityExpression(self):
+    def _getPrivateBranchSubQuery(self):
+        """Return a subquery to get the private branches the user can see.
+
+        If the user is None (which is used for anonymous access), then there
+        is no subquery.  Otherwise return the branch ids for the private
+        branches that the user owns or is subscribed to.
+        """
         # Everyone can see public branches.
         person = self._user
-        public_branches = Select(Branch.id, Branch.private == False)
-
         if person is None:
             # Anonymous users can only see the public branches.
-            visible_branches = public_branches
-        else:
-            # A union is used here rather than the more simplistic simple
-            # joins due to the query plans generated.  If we just have a
-            # simple query then we are joining across TeamParticipation and
-            # BranchSubscription.  This creates a bad plan, hence the use of a
-            # union.
-            visible_branches = Union(
-                public_branches,
-                # Branches the person owns (or a team the person is in).
-                Select(Branch.id,
-                       And(Branch.owner == TeamParticipation.teamID,
-                           TeamParticipation.person == person)),
-                # Private branches the person is subscribed to, either
-                # directly or indirectly.
-                Select(Branch.id,
-                       And(BranchSubscription.branch == Branch.id,
-                           BranchSubscription.person ==
-                               TeamParticipation.teamID,
-                           TeamParticipation.person == person,
-                           Branch.private == True)))
-        return visible_branches
+            return None
+
+        # A union is used here rather than the more simplistic simple joins
+        # due to the query plans generated.  If we just have a simple query
+        # then we are joining across TeamParticipation and BranchSubscription.
+        # This creates a bad plan, hence the use of a union.
+        private_branches = Union(
+            # Private branches the person owns (or a team the person is in).
+            Select(Branch.id,
+                   And(Branch.owner == TeamParticipation.teamID,
+                       TeamParticipation.person == person,
+                       Branch.private == True)),
+            # Private branches the person is subscribed to, either directly or
+            # indirectly.
+            Select(Branch.id,
+                   And(BranchSubscription.branch == Branch.id,
+                       BranchSubscription.person ==
+                       TeamParticipation.teamID,
+                       TeamParticipation.person == person,
+                       Branch.private == True)))
+        return private_branches
 
     def _getBranchExpressions(self):
         """Return the where expressions for this collection."""
-        return self._branch_filter_expressions + [
-            Branch.id.is_in(self._user_visibility_expression)]
+        public_branches = Branch.private == False
+        if self._private_branch_ids is None:
+            # Public only.
+            return self._branch_filter_expressions + [public_branches]
+        else:
+            public_or_private = Or(
+                public_branches,
+                Branch.id.is_in(self._private_branch_ids))
+            return self._branch_filter_expressions + [public_or_private]
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -460,6 +497,13 @@ class VisibleBranchCollection(GenericBranchCollection):
 
         Used primarily by the visibility check for target branches.
         """
+        if self._private_branch_ids is None:
+            # Public only.
+            visible_branches = Select(Branch.id, Branch.private == False)
+        else:
+            visible_branches = Select(
+                Branch.id,
+                Or(Branch.private == False,
+                   Branch.id.is_in(self._private_branch_ids)))
         return [
-            BranchMergeProposal.target_branchID.is_in(
-                self._user_visibility_expression)]
+            BranchMergeProposal.target_branchID.is_in(visible_branches)]

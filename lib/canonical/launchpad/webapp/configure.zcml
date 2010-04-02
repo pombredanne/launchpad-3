@@ -20,8 +20,6 @@
           canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
-      <allow
-        interface="zope.component.interfaces.IPresentationRequest" />
     </class>
 
     <class class="canonical.launchpad.webapp.publisher.RedirectionView">
@@ -48,7 +46,7 @@
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
@@ -351,7 +349,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProject"
+        for="canonical.launchpad.interfaces.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -361,6 +359,13 @@
         for="canonical.launchpad.interfaces.IDistribution"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.DistroSeriesFormatterAPI"
         name="fmt"
         />
 
@@ -414,16 +419,16 @@
         />
 
     <adapter
-        for="lp.code.interfaces.diff.IPreviewDiff"
+        for="lp.code.interfaces.codeimport.ICodeImport"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
 
     <adapter
-        for="lp.code.interfaces.codeimport.ICodeImport"
+        for="lp.buildmaster.interfaces.buildbase.IBuildBase"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.BuildBaseFormatterAPI"
         name="fmt"
         />
 
@@ -504,6 +509,24 @@
         for="canonical.launchpad.webapp.interfaces.ILink"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.translations.interfaces.translationgroup.ITranslationGroup"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.TranslationGroupFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.services.worlddata.interfaces.language.ILanguage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LanguageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.translations.interfaces.pofile.IPOFile"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.POFileFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -662,6 +685,12 @@
         />
 
     <adapter
+        for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
         factory="canonical.launchpad.webapp.snapshot.snapshot_sql_result" />
     <!-- It also works for the legacy SQLObject interface. -->
     <adapter
@@ -702,12 +731,20 @@
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
 
-    <!-- the SIGUSR1 handler -->
-
+    <!-- Signal handlers -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
 
     <!-- Confirm the database is the correct revision level -->
     <subscriber
@@ -719,12 +756,6 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
-        />
-
-    <!-- Make sure that the config is sane for references debugging. -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <!-- Set the default timeout function. -->
@@ -759,7 +790,17 @@
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="canonical.launchpad.fields.PublicPersonChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.popup.PersonPickerWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by fields that use BranchVocabularyBase. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice

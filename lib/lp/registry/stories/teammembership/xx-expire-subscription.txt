@@ -7,7 +7,7 @@ value for the year 2000 is not available in HTML, but we can encode the
 variables:
 
     >>> import urllib
-    >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> browser = setupBrowser(auth="Basic mark@example.com:test")
     >>> browser.open("http://launchpad.dev/~name20/+member/name12",
     ...              urllib.urlencode({
     ...                   "admin": "no",
@@ -32,7 +32,7 @@ Let's do it under the wraps:
     ...     personID=sampleperson.id, teamID=team.id)
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS) # login() because we need a zope interaction.
-    >>> tm.setStatus(TeamMembershipStatus.EXPIRED, team.teamowner)
+    >>> ignored = tm.setStatus(TeamMembershipStatus.EXPIRED, team.teamowner)
     >>> logout()
 
 Persist the change:

@@ -76,9 +76,9 @@ preferred e-mail address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
-    >>> reporter_email_adresses = getUtility(IEmailAddressSet).getByPerson(
+    >>> reporter_email_addresses = getUtility(IEmailAddressSet).getByPerson(
     ...     bug.owner)
-    >>> for email_address in reporter_email_adresses:
+    >>> for email_address in reporter_email_addresses:
     ...     print "%s: %s" % (email_address.email, email_address.status.name)
     joe.bloggs@example.com: NEW
     >>> print bug.owner.preferredemail
@@ -125,6 +125,7 @@ the script gets notified about it.
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '5')
     WARNING:...:Unknown debian package (#5 at http://...): no-such-package
+    (OOPS-...)
 
     >>> [added_task] = bug.bugtasks
     >>> added_task.distribution.name

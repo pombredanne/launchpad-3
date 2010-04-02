@@ -14,8 +14,14 @@ Anyone logged in is able to register a new bug tracker.
   >>> user_browser.url
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
 
-  >>> user_browser.title
-  'Register an external bug tracker'
+  >>> print user_browser.title
+  Register an external bug tracker...
+
+In case the user gets cold feet, there is always a cancel link that
+takes them back to the bug tracker listing page.
+
+  >>> user_browser.getLink('Cancel').url
+  'http://bugs.launchpad.dev/bugs/bugtrackers'
 
 Supported external bug tracker types include Bugzilla, Debbugs,
 Roundup, SourceForge and Trac. We don't provide all of these as
@@ -99,8 +105,8 @@ to the bug tracker page.
   >>> user_browser.url
   'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis'
 
-  >>> user_browser.title
-  'Bug tracker \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d'
+  >>> print user_browser.title
+  Test Mantis Tracker : Bug trackers
 
   >>> 'Test Mantis Tracker' in user_browser.contents
   True
@@ -133,7 +139,7 @@ bugtracker without them is acceptable.
   >>> user_browser.getControl('Location').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/test-bugzilla'
 
   >>> login('test@canonical.com')
   >>> bugtrackerset = getUtility(IBugTrackerSet)
@@ -167,16 +173,21 @@ We can edit the details of the newly added bugtracker.
   >>> user_browser.getLink('Change details').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testmantis/+edit'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
 
-  >>> user_browser.title
-  'Change details for \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d bug tracker'
+  >>> print user_browser.title
+  Change details for the...
 
   >>> user_browser.getControl('Name').value = 'testbugzilla'
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Bugzilla').click()
   >>> user_browser.getControl(
   ...     'Summary').value = 'This is used to be a test TRAC bug tracker.'
+
+There is a cancel link if we change our mind:
+
+  >>> user_browser.getLink('Cancel').url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis'
 
 It's not possible to change the base URL to something that another bug
 tracker uses.
@@ -186,7 +197,7 @@ tracker uses.
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testmantis/+edit'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
@@ -221,7 +232,7 @@ the bugtracker name is reflected in the url.
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testbugzilla'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testbugzilla'
 
 And now the test tracker should have been updated:
 
@@ -345,13 +356,13 @@ Being brand-new and pristine, there will be nothing to prevent its
 deletion yet:
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/freddy'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/freddy'
 
   >>> user_browser.getLink('Change details').click()
   >>> user_browser.getControl('Delete').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers'
+  'http://bugs.launchpad.dev/bugs/bugtrackers'
 
   >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
@@ -454,7 +465,7 @@ But admins can.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
-    >>> admin_browser.getControl(name='field.active').value = ['off']
+    >>> admin_browser.getControl(name='field.active').value = ['Off']
     >>> admin_browser.getControl('Change').click()
 
     >>> message = find_tag_by_id(admin_browser.contents, 'inactive-message')
@@ -492,7 +503,7 @@ The admin can re-activate the bug tracker.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
-    >>> admin_browser.getControl(name='field.active').value = ['on']
+    >>> admin_browser.getControl(name='field.active').value = ['On']
     >>> admin_browser.getControl('Change').click()
 
     >>> message = find_tag_by_id(user_browser.contents, 'inactive-message')
@@ -653,10 +664,11 @@ projects portlet on the bug tracker page:
   >>> print extract_text(find_portlet(
   ...     admin_browser.contents, 'Related projects'))
   Related projects
-    You can link a registered bug tracker with a registered project in
-    Launchpad:
-      The Mozilla Project
-      Jokosher Audio Editor
+  You can link a registered project to a
+  registered bug tracker in the project's &ldquo;Change
+  details&rdquo; page.
+  the Mozilla Project
+  Jokosher (Unspecified)
 
 
 == Info portlet ==
@@ -666,16 +678,13 @@ the bug tracker page.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
   >>> print extract_text(find_portlet(
-  ...     user_browser.contents, 'Email bugtracker'))
-  Email bugtracker
+  ...     user_browser.contents, 'Details'))
+  Details
   Location:
   mailto:bugs@example.com
-  Tracker Type:
+  Tracker type:
   Email Address
-  Number of watches:
-  1
-  Contact Details:
-  Creator:
+  Created by:
   Foo Bar
 
 If the user is not logged in, email addresses in the Location field
@@ -683,8 +692,25 @@ above are obfuscated:
 
   >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/email')
   >>> print extract_text(find_portlet(
-  ...     anon_browser.contents, 'Email bugtracker'))
-  Email bugtracker
+  ...     anon_browser.contents, 'Details'))
+  Details
   Location:
   mailto:&lt;email address hidden&gt;
   ...
+
+If the bug tracker has contact details, they will be shown:
+
+  >>> anon_browser.open(
+  ...     'http://bugs.launchpad.dev/bugs/bugtrackers/gnome-bugzilla')
+  >>> print extract_text(find_portlet(
+  ...     anon_browser.contents, 'Details'))
+  Details
+  Location:
+  http://bugzilla.gnome.org/bugs
+  http://alias.example.com/ (Alias)
+  Tracker type:
+  Bugzilla
+  Contact details:
+  Jeff Waugh, in his pants.
+  Created by:
+  Foo Bar

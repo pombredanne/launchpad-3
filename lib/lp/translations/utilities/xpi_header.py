@@ -7,7 +7,10 @@ __all__ = [
     'XpiHeader',
     ]
 
-import cElementTree
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 from email.Utils import parseaddr
 from StringIO import StringIO
 

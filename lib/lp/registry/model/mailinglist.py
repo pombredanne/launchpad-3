@@ -46,7 +46,6 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -171,7 +170,7 @@ class MailingList(SQLBase):
     date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED,
+                     default=MailingListStatus.APPROVED,
                      notNull=True)
 
     # Use a trailing underscore because SQLObject/importfascist doesn't like
@@ -207,25 +206,6 @@ class MailingList(SQLBase):
     def __repr__(self):
         return '<MailingList for team "%s"; status=%s at %#x>' % (
             self.team.name, self.status.name, id(self))
-
-    def review(self, reviewer, status):
-        """See `IMailingList`."""
-        # Only mailing lists which are in the REGISTERED state may be
-        # reviewed.  This is the state for newly requested mailing lists.
-        assert self.status == MailingListStatus.REGISTERED, (
-            'Only unreviewed mailing lists may be reviewed')
-        # A registered mailing list may only transition to either APPROVED or
-        # DECLINED state.
-        assert status in (MailingListStatus.APPROVED,
-                          MailingListStatus.DECLINED), (
-            'Reviewed lists may only be approved or declined')
-        # The reviewer must be a Launchpad administrator.
-        assert reviewer is not None and reviewer.hasParticipationEntryFor(
-            getUtility(ILaunchpadCelebrities).mailing_list_experts), (
-            'Reviewer must be a member of the Mailing List Experts team')
-        self.reviewer = reviewer
-        self.status = status
-        self.date_reviewed = UTC_NOW
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -322,12 +302,6 @@ class MailingList(SQLBase):
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
 
-    def cancelRegistration(self):
-        """See `IMailingList`."""
-        assert self.status == MailingListStatus.REGISTERED, (
-            "Only mailing lists in the REGISTERED state can be canceled.")
-        self.destroySelf()
-
     @property
     def is_public(self):
         """See `IMailingList`."""
@@ -358,8 +332,7 @@ class MailingList(SQLBase):
             # been changed on an active list.
             self.status = MailingListStatus.MODIFIED
         else:
-            raise AssertionError(
-                'Only registered or usable mailing lists may be modified')
+            raise AssertionError('Only usable mailing lists may be modified')
         self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
@@ -614,8 +587,20 @@ class MailingListSet:
             existing_list.reviewer = None
             existing_list.date_reviewed = None
             existing_list.date_activated = None
+            # This is a little wacky, but it's this way for historical
+            # purposes.  When mailing lists required approval before being
+            # created, it was okay to change the welcome message while in the
+            # REGISTERED state.  Now that we don't use REGISTERED any more,
+            # resurrecting a purged mailing list means setting it directly to
+            # the APPROVED state, but we're not allowed to change the welcome
+            # message in that state because it will get us out of sync with
+            # Mailman.  We really don't want to change _set_welcome_message()
+            # because that will have other consequences, so set to REGISTERED
+            # just long enough to set the welcome message, then set to
+            # APPROVED.  Mailman will catch up correctly.
             existing_list.status = MailingListStatus.REGISTERED
             existing_list.welcome_message = None
+            existing_list.status = MailingListStatus.APPROVED
             return existing_list
 
     def get(self, team_name):
@@ -793,11 +778,6 @@ class MailingListSet:
         for team_name, address_set in by_team.items():
             results[team_name] = list(address_set)
         return results
-
-    @property
-    def registered_lists(self):
-        """See `IMailingListSet`."""
-        return MailingList.selectBy(status=MailingListStatus.REGISTERED)
 
     @property
     def approved_lists(self):

@@ -14,7 +14,7 @@ the question's description and the title is empty.
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
   >>> createLink.click()
   >>> print browser.title
-  Create bug report based on...
+  Create bug report based on question #2...
   >>> browser.getControl('Summary').value
   ''
   >>> browser.getControl('Description').value
@@ -45,8 +45,9 @@ and description and redirects the user to the bug page.
   >>> for tag in soup('h1'):
   ...     print extract_text(tag)
   W3C SVG demo doesn't work in Firefox
-  >>> print extract_text(find_tag_by_id(browser.contents, 'bug-description'))
-  Browsing to the W3C SVG demo results in a blank page...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'edit-description'))
+  Bug Description
+  Browsing to the W3C SVG demo results in a blank page.
 
 The bug page will display a link to the originating question in the 'Related
 questions' portlet:

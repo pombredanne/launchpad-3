@@ -16,7 +16,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, get_linked_branch, ICanHasLinkedBranch)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import run_with_login, TestCaseWithFactory
 
 

@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'CommandLineArgumentProcessing',
-    'ServersToStart'
+    'ServersToStart',
     ]
 
 
@@ -20,9 +20,8 @@ import lp.testing
 
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
-    get_services_to_run, SERVICES, process_config_arguments,
+    SERVICES, get_services_to_run, process_config_arguments,
     split_out_runlaunchpad_arguments)
-
 
 
 class CommandLineArgumentProcessing(lp.testing.TestCase):
@@ -69,11 +68,11 @@ class CommandLineArgumentProcessing(lp.testing.TestCase):
             split_out_runlaunchpad_arguments(['-o', 'foo', '--bar=baz']))
 
 
-
 class TestDefaultConfigArgument(lp.testing.TestCase):
     """Tests for the processing of the -C argument."""
 
     def setUp(self):
+        super(TestDefaultConfigArgument, self).setUp()
         self.config_root = tempfile.mkdtemp('configs')
         self.saved_instance = config.instance_name
         self.saved_config_roots = canonical.config.CONFIG_ROOT_DIRS
@@ -131,6 +130,8 @@ class ServersToStart(unittest.TestCase):
             launch: False
             [codehosting]
             launch: False
+            [launchpad]
+            launch: False
             """
         config.push('launch_data', launch_data)
 
@@ -163,6 +164,9 @@ class ServersToStart(unittest.TestCase):
         """
         services = get_services_to_run(['sftp'])
         self.assertEqual([SERVICES['sftp']], services)
+
+    def test_launchpad_systems_red(self):
+        self.failIf(config.launchpad.launch)
 
 
 def test_suite():

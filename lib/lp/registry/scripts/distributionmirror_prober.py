@@ -8,6 +8,8 @@ import os
 import urllib2
 import urlparse
 
+from datetime import datetime
+
 from zope.component import getUtility
 
 from twisted.internet import defer, protocol, reactor
@@ -47,6 +49,23 @@ PER_HOST_REQUESTS = 2
 # them from stalling and timing out before they even get a chance to
 # start connecting.
 OVERALL_REQUESTS = 100
+
+__metaclass__ = type
+
+
+class LoggingMixin:
+    """Common logging class for archive and releases mirror messages."""
+
+    def _getTime(self):
+        """Return the current UTC time."""
+        return datetime.utcnow()
+
+    def logMessage(self, message):
+        """Append a UTC timestamp to the message returned by the mirror
+        prober.
+        """
+        timestamp = datetime.ctime(self._getTime())
+        self.log_file.write(timestamp + ": " + message)
 
 
 class RequestManager:
@@ -373,7 +392,7 @@ class UnknownURLScheme(ProberError):
                 "URLs: %s" % self.url)
 
 
-class ArchiveMirrorProberCallbacks(object):
+class ArchiveMirrorProberCallbacks(LoggingMixin):
 
     expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
@@ -407,7 +426,7 @@ class ArchiveMirrorProberCallbacks(object):
                % (self.mirror_class_name,
                   self._getSeriesPocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
-        self.log_file.write(msg)
+        self.logMessage(msg)
         failure.trap(*self.expected_failures)
 
     def ensureMirrorSeries(self, http_status):
@@ -421,7 +440,7 @@ class ArchiveMirrorProberCallbacks(object):
         mirror = self.ensureMethod(
             self.series, self.pocket, self.component)
 
-        self.log_file.write(msg)
+        self.logMessage(msg)
         return mirror
 
     def updateMirrorFreshness(self, arch_or_source_mirror):
@@ -477,7 +496,7 @@ class ArchiveMirrorProberCallbacks(object):
                    '%s.\n' % (url, self.mirror_class_name,
                               self._getSeriesPocketAndComponentDescription(),
                               freshness.title))
-            self.log_file.write(msg)
+            self.logMessage(msg)
             arch_or_source_mirror.freshness = freshness
 
     def _getSeriesPocketAndComponentDescription(self):
@@ -502,7 +521,7 @@ class ArchiveMirrorProberCallbacks(object):
                % (failure.getErrorMessage(), url,
                   self._getSeriesPocketAndComponentDescription()))
         if failure.check(*self.expected_failures) is not None:
-            self.log_file.write(msg)
+            self.logMessage(msg)
         else:
             # This is not an error we expect from an HTTP server, so we log it
             # using the cronscript's logger and wait for kiko to complain
@@ -512,7 +531,7 @@ class ArchiveMirrorProberCallbacks(object):
         return None
 
 
-class MirrorCDImageProberCallbacks(object):
+class MirrorCDImageProberCallbacks(LoggingMixin):
 
     expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
@@ -547,13 +566,13 @@ class MirrorCDImageProberCallbacks(object):
 
         mirror = self.mirror.ensureMirrorCDImageSeries(
             self.distroseries, self.flavour)
-        self.log_file.write(
+        self.logMessage(
             "Found all ISO images for series %s and flavour %s.\n"
             % (self.distroseries.title, self.flavour))
         return mirror
 
     def logMissingURL(self, failure, url):
-        self.log_file.write(
+        self.logMessage(
             "Failed %s: %s\n" % (url, failure.getErrorMessage()))
         return failure
 
@@ -660,7 +679,7 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     # don't want to keep records for files a mirror doesn't need to have
     # anymore, so we delete all records before start probing. This also fixes
     # https://launchpad.net/bugs/46662
-    mirror.deleteAllMirrorCDImageSerieses()
+    mirror.deleteAllMirrorCDImageSeries()
     try:
         cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:

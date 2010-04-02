@@ -24,7 +24,6 @@ __all__ = [
 
 
 import re
-import sets
 
 from textwrap import dedent
 
@@ -37,8 +36,11 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ProductBugTracker, ProductNameField, PublicPersonChoice,
-    Summary, Title, URIField)
+    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PublicPersonChoice, Summary, Title, URIField)
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -47,7 +49,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot,IHasSecurityContact, ILaunchpadUsage)
+    IHasLogo, IHasMugshot, IHasSecurityContact, ILaunchpadUsage)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -58,17 +60,16 @@ from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.translations.interfaces.translationgroup import (
-    IHasTranslationGroup)
+    ITranslationPolicy)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
@@ -177,8 +178,8 @@ class License(DBEnumeratedType):
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
-        'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2', 'GNU_GPL_V3',
+        'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
         'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
@@ -270,11 +271,21 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
+    def newSeries(owner, name, summary, branch=None, releasefileglob=None):
+        """Creates a new `IProductSeries` for this `IProduct`.
+
+        :param owner: The registrant of this series.
+        :param name: The unique name of this series.
+        :param summary: The summary of the purpose and focus of development
+            of this series.
+        :param branch: The bazaar branch that contains the code for
+            this series.
+        :param releasefileglob: The public URL pattern where release files can
+            be automatically downloaded from and linked to this series.
+        """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
@@ -326,7 +337,7 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    IHasTranslationGroup, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
     """Public IProduct properties."""
 
@@ -340,7 +351,7 @@ class IProductPublic(
             title=_('Part of'),
             required=False,
             vocabulary='Project',
-            schema=IProject,
+            schema=IProjectGroup,
             description=_(
                 'Super-project. In Launchpad, we can setup a special '
                 '"project group" that is an overarching initiative that '
@@ -353,7 +364,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -370,7 +381,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -392,8 +403,7 @@ class IProductPublic(
             description=_(
                 "At least one lowercase letter or number, followed by "
                 "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above."
-                )))
+                "Keep this name short; it is used in URLs as shown above.")))
 
     displayname = exported(
         TextLine(
@@ -410,14 +420,17 @@ class IProductPublic(
     summary = exported(
         Summary(
             title=_('Summary'),
-            description=_("The summary should be a single short paragraph.")))
+            description=_(
+                "A short paragraph to introduce the project's work.")))
 
     description = exported(
         Description(
             title=_('Description'),
             required=False,
-            description=_("""Include information on how to get involved with
-                development. Don't repeat anything from the Summary.""")))
+            description=_(
+                "Details about the project's work, highlights, goals, and "
+                "how to contribute. Use plain text, paragraphs are preserved "
+                "and URLs are linked in pages. Don't repeat the Summary.")))
 
     datecreated = exported(
         Datetime(
@@ -554,9 +567,8 @@ class IProductPublic(
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)),
-        exported_as='series')
+    series = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)))
 
     development_focus = exported(
         ReferenceChoice(
@@ -575,7 +587,13 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    bounties = Attribute(_("The bounties that are related to this product."))
+    translation_focus = exported(
+        ReferenceChoice(
+            title=_("Translation Focus"), required=False,
+            vocabulary='FilteredProductSeries',
+            schema=IProductSeries,
+            description=_(
+                'The ProductSeries where translations are focused.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
@@ -639,7 +657,8 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
-        :param current_datetime: Current time.  Will be datetime.now() if not specified.
+        :param current_datetime: Current time.  Will be datetime.now() if not
+            specified.
         :return: None
         """
 
@@ -669,17 +688,6 @@ class IProductPublic(
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this product. Return None.
-        """
-
-    def getCustomLanguageCode(language_code):
-        """Look up `ICustomLanguageCode` for `language_code`, if any.
-
-        Products may override language code definitions for translation
-        import purposes.
-        """
-
     def userCanEdit(user):
         """Can the user edit this product?"""
 
@@ -701,7 +709,8 @@ class IProductPublic(
 
 
 class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic):
+               IProductDriverRestricted, IProductPublic, IRootContext,
+               IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -713,15 +722,8 @@ class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
     export_as_webservice_entry('project')
 
 # Fix cyclic references.
-IProject['products'].value_type = Reference(IProduct)
+IProjectGroup['products'].value_type = Reference(IProduct)
 IProductRelease['product'].schema = IProduct
-
-# Patch the official_bug_tags field to make sure that it's
-# writable from the API, and not readonly like its definition
-# in IHasBugs.
-writable_obt_field = copy_field(IProduct['official_bug_tags'])
-writable_obt_field.readonly = False
-IProduct._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IProductSet(Interface):
@@ -809,8 +811,7 @@ class IProductSet(Interface):
         subscription_modified_after=Date(
             title=_("Subscription modified after")),
         subscription_modified_before=Date(
-            title=_("Subscription modified before"))
-        )
+            title=_("Subscription modified before")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
     @export_operation_as('licensing_search')
@@ -840,7 +841,6 @@ class IProductSet(Interface):
         description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
-
 
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)
@@ -882,10 +882,6 @@ class IProductSet(Interface):
     def count_translatable():
         """Return a count of the number of products that have
         upstream-oriented translations configured in Rosetta."""
-
-    def count_bounties():
-        """Return a number of products that have bounties registered in the
-        Launchpad for them."""
 
     def count_buggy():
         """Return the number of products that have bugs associated with them
@@ -949,15 +945,13 @@ class IProductReviewSearch(Interface):
         title=_('Description of additional licenses'),
         description=_('Either this field or any one of the selected licenses'
                       ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=False)
+        vocabulary=emptiness_vocabulary, required=False, default=None)
 
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        # Zope requires sets.Set() instead of the builtin set().
-        default=sets.Set(
-            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+        default=set())
 
     has_zero_licenses = Choice(
         title=_('Or has no license specified'),
@@ -991,7 +985,7 @@ class InvalidProductName(LaunchpadValidationError):
     def __init__(self, name):
         self.name = name
         LaunchpadValidationError.__init__(
-            self, "Invalid name for product: %s." % (name,))
+            self, "Invalid name for product: %s." % (name, ))
 
 
 # Fix circular imports.

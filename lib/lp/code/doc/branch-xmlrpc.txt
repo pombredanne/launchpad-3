@@ -414,11 +414,11 @@ followed by an arbitrary path:
 
 Launchpad will still resolve the branch even if it doesn't exist:
 
-    >>> results = branchset_api.resolve_lp_path('~sabdfl/+junk/doesntexist')
+    >>> results = branchset_api.resolve_lp_path('~mark/+junk/doesntexist')
     >>> for url in results['urls']:
     ...     print url
-    bzr+ssh://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
-    http://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
+    bzr+ssh://bazaar.launchpad.dev/~mark/%2Bjunk/doesntexist
+    http://bazaar.launchpad.dev/~mark/%2Bjunk/doesntexist
 
 
 But if the project or the user doesn't exist, Launchpad will return a fault:
@@ -428,7 +428,7 @@ But if the project or the user doesn't exist, Launchpad will return a fault:
     ...
     Fault: <Fault 200: 'No such person or team: doesntexist'>
 
-    >>> branchset_api.resolve_lp_path('~sabdfl/doesntexist/trunk')
+    >>> branchset_api.resolve_lp_path('~mark/doesntexist/trunk')
     Traceback (most recent call last):
     ...
     Fault: <Fault 10: 'No such project: doesntexist'>

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -108,7 +108,7 @@ def service_is_available(timeout=2.0):
         sock.close() # Clean up.
 
 
-def wait_for_service(timeout=10.0):
+def wait_for_service(timeout=15.0):
     """Poll the service and BLOCK until we can connect to it.
 
     :param timeout: The socket should timeout after this many seconds.

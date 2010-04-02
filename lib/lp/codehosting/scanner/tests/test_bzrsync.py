@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -21,6 +21,7 @@ from bzrlib.tests import TestCaseWithTransport
 import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.translations.interfaces.translations import (
@@ -29,11 +30,10 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL, schedule_translation_upload)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
+    BzrSync, InvalidStackedBranchURL)
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -71,7 +71,7 @@ class FakeTransportServer:
         self._url_prefix = url_prefix
         self._chroot_server = None
 
-    def setUp(self):
+    def start_server(self):
         """Activate the transport URL."""
         # The scanner tests assume that branches live on a Launchpad virtual
         # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
@@ -79,11 +79,11 @@ class FakeTransportServer:
         # transport do the work.
         register_transport(self._url_prefix, self._transportFactory)
         self._chroot_server = ChrootServer(self._transport)
-        self._chroot_server.setUp()
+        self._chroot_server.start_server()
 
-    def tearDown(self):
+    def stop_server(self):
         """Deactivate the transport URL."""
-        self._chroot_server.tearDown()
+        self._chroot_server.stop_server()
         unregister_transport(self._url_prefix, self._transportFactory)
 
     def _transportFactory(self, url):
@@ -109,8 +109,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # Here we set up a fake so that we can test without worrying about
         # authservers and the like.
         server = FakeTransportServer(self.get_transport())
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -125,7 +125,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        ensure_base(self.get_transport(db_branch.unique_name))
+        self.get_transport(db_branch.unique_name).create_prefix()
         return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
     def makeDatabaseBranch(self, *args, **kwargs):
@@ -181,7 +181,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
+        return BzrSync(db_branch)
 
     def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -361,7 +361,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
+        bzrsync = BzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertCounts(
             counts, new_revisions=1, new_numbers=1, new_authors=1)
@@ -597,9 +597,6 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(schedule_translation_upload)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
 
     def _makeProductSeries(self, mode = None):
         """Switch to the Launchpad db user to create and configure a
@@ -646,6 +643,29 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
         job = ready_jobs[0]
         # The right job will have our branch.
         self.assertEqual(self.db_branch, job.branch)
+
+
+class TestUpdatePreviewDiffJob(BzrSyncTestCase):
+    """Test the scheduling of jobs to update preview diffs."""
+
+    def setUp(self):
+        """Set up `schedule_diff_updates` to handle tip changes."""
+        BzrSyncTestCase.setUp(self)
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_create_on_new_revision(self):
+        """When branch tip changes, a job is created."""
+        revision_id = self.commitRevision()
+        bmp = self.factory.makeBranchMergeProposal(
+            source_branch=self.db_branch)
+        removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        jobs = list(getUtility(IUpdatePreviewDiffJobSource).iterReady())
+        self.assertEqual(1, len(jobs))
+        self.assertEqual(
+            bmp, removeSecurityProxy(jobs[0]).branch_merge_proposal)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

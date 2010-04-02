@@ -8,6 +8,7 @@ from datetime import datetime
 import pytz
 
 from zope.component import getUtility
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -16,6 +17,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
+from lazr.lifecycle.snapshot import Snapshot
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
@@ -24,13 +26,16 @@ from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.person import Person
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.systemdocs import create_initialized_view
+from lp.testing.views import create_initialized_view
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -216,12 +221,13 @@ class TestPerson(TestCaseWithFactory):
             self.assertEqual(
                 str(exc),
                 'This team cannot be converted to Private Membership since '
-                'it is referenced by a bug, a bugaffectsperson, '
-                'a bugnotificationrecipient, a bugsubscription, '
-                'a bugtask and a message.')
+                'it is referenced by a bug, a bugactivity, '
+                'a bugaffectsperson, a bugnotificationrecipient, '
+                'a bugsubscription, a bugtask and a message.')
 
     def test_visibility_validator_product_subscription(self):
-        self.bzr.addSubscription(self.otherteam, self.guadamen)
+        self.bzr.addSubscription(
+            self.otherteam, getUtility(IPersonSet).getByName('name16'))
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:
@@ -284,6 +290,10 @@ class TestPerson(TestCaseWithFactory):
     def test_visibility_validator_team_mailinglist_public_purged(self):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        mailinglist.startConstructing()
+        mailinglist.transitionToStatus(MailingListStatus.ACTIVE)
+        mailinglist.deactivate()
+        mailinglist.transitionToStatus(MailingListStatus.INACTIVE)
         mailinglist.purge()
         self.otherteam.visibility = PersonVisibility.PUBLIC
         self.assertEqual(self.otherteam.visibility, PersonVisibility.PUBLIC)
@@ -400,10 +410,27 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_private_purged(self):
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        mailinglist.startConstructing()
+        mailinglist.transitionToStatus(MailingListStatus.ACTIVE)
+        mailinglist.deactivate()
+        mailinglist.transitionToStatus(MailingListStatus.INACTIVE)
         mailinglist.purge()
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         self.assertEqual(self.otherteam.visibility,
                          PersonVisibility.PRIVATE_MEMBERSHIP)
+
+    def test_person_snapshot(self):
+        omitted = (
+            'activemembers', 'adminmembers', 'allmembers', 'approvedmembers',
+            'deactivatedmembers', 'expiredmembers', 'inactivemembers',
+            'invited_members', 'member_memberships', 'pendingmembers',
+            'proposedmembers', 'unmapped_participants',
+            )
+        snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
+        for name in omitted:
+            self.assertFalse(
+                hasattr(snap, name),
+                "%s should be omitted from the snapshot but is not." % name)
 
 
 class TestPersonSet(unittest.TestCase):
@@ -468,6 +495,106 @@ class TestCreatePersonAndEmail(unittest.TestCase):
             InvalidName, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN,
             name='/john')
+
+
+class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedBugTaskSearch, self).setUp()
+        self.user = self.factory.makePerson(displayname="User")
+        self.context = self.factory.makePerson(displayname="Context")
+
+    def checkUserFields(
+        self, params, assignee=None, bug_subscriber=None,
+        owner=None, bug_commenter=None, bug_reporter=None):
+        self.failUnlessEqual(assignee, params.assignee)
+        # fromSearchForm() takes a bug_subscriber parameter, but saves
+        # it as subscriber on the parameter object.
+        self.failUnlessEqual(bug_subscriber, params.subscriber)
+        self.failUnlessEqual(owner, params.owner)
+        self.failUnlessEqual(bug_commenter, params.bug_commenter)
+        self.failUnlessEqual(bug_reporter, params.bug_reporter)
+
+    def test_get_related_bugtasks_search_params(self):
+        # With no specified options, get_related_bugtasks_search_params()
+        # returns 4 BugTaskSearchParams objects, each with a different
+        # user field set.
+        search_params = get_related_bugtasks_search_params(self.user, self.context)
+        self.assertEqual(len(search_params), 4)
+        self.checkUserFields(
+            search_params[0], assignee=self.context)
+        self.checkUserFields(
+            search_params[1], bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[2], owner=self.context, bug_reporter=self.context)
+        self.checkUserFields(
+            search_params[3], bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_with_assignee(self):
+        # With assignee specified, get_related_bugtasks_search_params() returns
+        # 3 BugTaskSearchParams objects.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, assignee=self.user)
+        self.assertEqual(len(search_params), 3)
+        self.checkUserFields(
+            search_params[0], assignee=self.user, bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[1], assignee=self.user, owner=self.context,
+            bug_reporter=self.context)
+        self.checkUserFields(
+            search_params[2], assignee=self.user, bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_with_owner(self):
+        # With owner specified, get_related_bugtasks_search_params() returns
+        # 3 BugTaskSearchParams objects.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, owner=self.user)
+        self.assertEqual(len(search_params), 3)
+        self.checkUserFields(
+            search_params[0], owner=self.user, assignee=self.context)
+        self.checkUserFields(
+            search_params[1], owner=self.user, bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[2], owner=self.user, bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_with_bug_reporter(self):
+        # With bug reporter specified, get_related_bugtasks_search_params()
+        # returns 4 BugTaskSearchParams objects, but the bug reporter
+        # is overwritten in one instance.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, bug_reporter=self.user)
+        self.assertEqual(len(search_params), 4)
+        self.checkUserFields(
+            search_params[0], bug_reporter=self.user,
+            assignee=self.context)
+        self.checkUserFields(
+            search_params[1], bug_reporter=self.user,
+            bug_subscriber=self.context)
+        # When a BugTaskSearchParams is prepared with the owner filled
+        # in, the bug reporter is overwritten to match.
+        self.checkUserFields(
+            search_params[2], bug_reporter=self.context,
+            owner=self.context)
+        self.checkUserFields(
+            search_params[3], bug_reporter=self.user,
+            bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_illegal(self):
+        self.assertRaises(
+            IllegalRelatedBugTasksParams,
+            get_related_bugtasks_search_params, self.user, self.context,
+            assignee=self.user, owner=self.user, bug_commenter=self.user,
+            bug_subscriber=self.user)
+
+    def test_get_related_bugtasks_search_params_illegal_context(self):
+        # in case the `context` argument is not  of type IPerson an
+        # AssertionError is raised
+        self.assertRaises(
+            AssertionError,
+            get_related_bugtasks_search_params, self.user, "Username",
+            assignee=self.user)
 
 
 def test_suite():

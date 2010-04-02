@@ -92,15 +92,15 @@ and the triggers will have reset the value in the cache.
 
 If we update the submissin, the cache is updated
 
-    >>> sabdfl_id = 1
+    >>> mark_id = 1
     >>> cur.execute("""
-    ...     UPDATE TranslationMessage SET submitter=%(sabdfl_id)s
+    ...     UPDATE TranslationMessage SET submitter=%(mark_id)s
     ...     WHERE id = %(new_posubmission_id)s
     ...     """, vars())
-    >>> sabdfl_posubmission_id, date_touched = pofiletranslator(
-    ...     sabdfl_id, pofile_id)
+    >>> mark_posubmission_id, date_touched = pofiletranslator(
+    ...     mark_id, pofile_id)
     >>> stub_posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
-    >>> sabdfl_posubmission_id == stub_posubmission_id
+    >>> mark_posubmission_id == stub_posubmission_id
     False
 
 

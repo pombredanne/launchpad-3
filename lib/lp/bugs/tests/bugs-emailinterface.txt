@@ -668,7 +668,7 @@ be subscribed. Examples:
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     True
-    >>> submit_commands(bug_four, 'subscribe sabdfl')
+    >>> submit_commands(bug_four, 'subscribe mark')
     >>> 'Mark Shuttleworth' in [subscription.person.displayname
     ...                         for subscription in bug_four.subscriptions]
     True
@@ -708,7 +708,7 @@ unsubscribed. Examples:
 If the user sending the email does not have permission to perform
 the unsubscribe request, an error message wil be sent.
 
-    >>> submit_commands(bug_four, 'unsubscribe sabdfl')
+    >>> submit_commands(bug_four, 'unsubscribe mark')
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
@@ -1600,7 +1600,7 @@ which bug task to edit:
     ...     print bug_notification.message.text_contents
     1
     ** Changed in: firefox
-         Assignee: Mark Shuttleworth (sabdfl) => Sample Person (name12)
+         Assignee: Mark Shuttleworth (mark) => Sample Person (name12)
     1
     ** Changed in: firefox
            Status: New => Confirmed...

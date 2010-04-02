@@ -23,7 +23,7 @@ person icon in front of the name.
     >>> assignee_field = IBugTask['assignee'].bind(firefox_bugtask)
     >>> assignee_widget = AssigneeDisplayWidget(assignee_field, None, None)
     >>> print assignee_widget()
-    <a href="http://.../~sabdfl"><img
+    <a href="http://.../~mark"><img
         style="padding-bottom: 2px" alt="" src="/@@/person" />
       Mark Shuttleworth</a>
 

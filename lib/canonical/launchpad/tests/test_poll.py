@@ -15,7 +15,7 @@ class TestPoll(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_getWinners_handle_polls_with_only_spoilt_votes(self):
-        login('mark@hbd.com')
+        login('mark@example.com')
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner)
         poll = self.factory.makePoll(team, 'name', 'title', 'proposition')

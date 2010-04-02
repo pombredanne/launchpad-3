@@ -12,18 +12,19 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import get_transport
 from bzrlib import urlutils
 from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
 from canonical.config import config
+from canonical.launchpad.webapp import errorlog
+
+from lp.codehosting.bzrutils import identical_formats
+from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.vfs.branchfs import (
     BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
-from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.code.enums import BranchType
-from canonical.launchpad.webapp import errorlog
 from lazr.uri import InvalidURIError
 
 
@@ -31,13 +32,11 @@ __all__ = [
     'BranchMirrorer',
     'BranchLoopError',
     'BranchReferenceForbidden',
-    'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol',
     'StackedOnBranchNotFound',
-    'URLChecker',
     ]
 
 
@@ -104,8 +103,8 @@ class PullerWorkerProtocol:
         # success or failure.
         self.sendEvent('mirrorDeferred')
 
-    def mirrorSucceeded(self, last_revision):
-        self.sendEvent('mirrorSucceeded', last_revision)
+    def mirrorSucceeded(self, revid_before, revid_after):
+        self.sendEvent('mirrorSucceeded', revid_before, revid_after)
 
     def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
@@ -117,37 +116,6 @@ class PullerWorkerProtocol:
 
     def log(self, fmt, *args):
         self.sendEvent('log', fmt % args)
-
-
-def get_vfs_format_classes(branch):
-    """Return the vfs classes of the branch, repo and bzrdir formats.
-
-    'vfs' here means that it will return the underlying format classes of a
-    remote branch.
-    """
-    if isinstance(branch, RemoteBranch):
-        branch._ensure_real()
-        branch = branch._real_branch
-    repository = branch.repository
-    if isinstance(repository, RemoteRepository):
-        repository._ensure_real()
-        repository = repository._real_repository
-    bzrdir = branch.bzrdir
-    if isinstance(bzrdir, RemoteBzrDir):
-        bzrdir._ensure_real()
-        bzrdir = bzrdir._real_bzrdir
-    return (
-        branch._format.__class__,
-        repository._format.__class__,
-        bzrdir._format.__class__,
-        )
-
-
-def identical_formats(branch_one, branch_two):
-    """Check if two branches have the same bzrdir, repo, and branch formats.
-    """
-    return (get_vfs_format_classes(branch_one) ==
-            get_vfs_format_classes(branch_two))
 
 
 class BranchMirrorer(object):
@@ -307,7 +275,7 @@ class BranchMirrorer(object):
         """
         try:
             branch = Branch.open(destination_url)
-        except errors.NotBranchError:
+        except (errors.NotBranchError, errors.IncompatibleRepositories):
             # Make a new branch in the same format as the source branch.
             return self.createDestinationBranch(
                 source_branch, destination_url)
@@ -331,7 +299,8 @@ class BranchMirrorer(object):
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
         except (errors.UnstackableRepositoryFormat,
-                errors.UnstackableBranchFormat):
+                errors.UnstackableBranchFormat,
+                errors.IncompatibleRepositories):
             stacked_on_url = None
         except errors.NotBranchError:
             raise StackedOnBranchNotFound()
@@ -351,10 +320,11 @@ class BranchMirrorer(object):
         # over from previous puller worker runs. We will block on other
         # locks and fail if they are not broken before the timeout expires
         # (currently 5 minutes).
+        revid_before = branch.last_revision()
         if branch.get_physical_lock_status():
             branch.break_lock()
         self.updateBranch(source_branch, branch)
-        return branch
+        return branch, revid_before
 
 
 class PullerWorker:
@@ -391,8 +361,8 @@ class PullerWorker:
             stacked-on branch for the product of the branch we are mirroring.
             None or '' if there is no such branch.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not passed,
-            one will be chosen based on the value of `branch_type`.
+        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not
+            passed, one will be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
         """
@@ -440,17 +410,21 @@ class PullerWorker:
         reporting protocol -- a "naked mirror", if you will. This is
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
+
+        :return: ``(branch, revid_before)``, where ``branch`` is the
+            destination branch and ``revid_before`` was the tip revision
+            *before* the mirroring process ran.
         """
         # Avoid circular import
         from lp.codehosting.vfs import get_puller_server
 
         server = get_puller_server()
-        server.setUp()
+        server.start_server()
         try:
             source_branch = self.branch_mirrorer.open(self.source)
             return self.branch_mirrorer.mirror(source_branch, self.dest)
         finally:
-            server.tearDown()
+            server.stop_server()
 
     def mirror(self):
         """Open source and destination branches and pull source into
@@ -458,7 +432,7 @@ class PullerWorker:
         """
         self.protocol.startMirroring()
         try:
-            dest_branch = self.mirrorWithoutChecks()
+            dest_branch, revid_before = self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
@@ -529,8 +503,8 @@ class PullerWorker:
             raise
 
         else:
-            last_rev = dest_branch.last_revision()
-            self.protocol.mirrorSucceeded(last_rev)
+            revid_after = dest_branch.last_revision()
+            self.protocol.mirrorSucceeded(revid_before, revid_after)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
@@ -542,6 +516,7 @@ class PullerWorker:
 
 WORKER_ACTIVITY_PROGRESS_BAR = 'progress bar'
 WORKER_ACTIVITY_NETWORK = 'network'
+
 
 class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""

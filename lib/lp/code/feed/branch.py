@@ -37,7 +37,7 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 def revision_feed_id(revision):
@@ -174,7 +174,7 @@ class ProductBranchFeed(BranchListingFeed):
 class ProjectBranchFeed(BranchListingFeed):
     """Feed for all branches on a product."""
 
-    usedfor = IProject
+    usedfor = IProjectGroup
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
@@ -348,7 +348,7 @@ class ProductRevisionFeed(ProjectRevisionFeedBase):
 class ProjectRevisionFeed(ProjectRevisionFeedBase):
     """Feed for a project's revisions."""
 
-    usedfor = IProject
+    usedfor = IProjectGroup
 
     def _getRevisionCache(self):
         """See `RevisionListingFeed`."""

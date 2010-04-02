@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -28,7 +28,7 @@ class StatUpdater(LaunchpadCronScript):
         # objects are responsible for committing.
         distroset = getUtility(IDistributionSet)
         for distro in distroset:
-            for distroseries in distro.serieses:
+            for distroseries in distro.series:
                 distroseries.updateStatistics(self.txn)
 
         launchpad_stats = getUtility(ILaunchpadStatisticSet)

@@ -1,6 +1,6 @@
 = TranslationsPerson =
 
-Adapting IPerson to an ITranslationsPerson yields a TranslationPerson
+Adapting IPerson to an ITranslationsPerson yields a TranslationsPerson
 object which provides translatable languages and translation history.
 
     >>> from zope.component import getUtility

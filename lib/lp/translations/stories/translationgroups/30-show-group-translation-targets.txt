@@ -9,15 +9,14 @@ group has been assigned as the translator for.
     >>> def find_projects_portlet(browser):
     ...     """Find the portlet with projects/distros this group works with.
     ...     """
-    ...     return find_portlet(
-    ...         browser.contents, "This group supervises translations for")
+    ...     return find_tag_by_id(browser.contents, "related-projects")
 
     >>> portlet = find_projects_portlet(browser)
     >>> for link in portlet.findAll('a'):
     ...     print '%s: %s' % (link.find(text=True), link['href'])
-    Ubuntu: /ubuntu
-    NetApplet: http://translations.launchpad.dev/netapplet
-    GNOME: /gnome
+    Ubuntu: http://launchpad.dev/ubuntu
+    GNOME: http://launchpad.dev/gnome
+    NetApplet: http://launchpad.dev/netapplet
 
 If we disable some of these projects...
 
@@ -43,7 +42,7 @@ They disappear from the listing:
     >>> portlet = find_projects_portlet(browser)
     >>> for link in portlet.findAll('a'):
     ...     print '%s: %s' % (link.string, link['href'])
-    Ubuntu: /ubuntu
+    Ubuntu: http://launchpad.dev/ubuntu
 
 Let's undo this so we don't get in trouble with other tests in this
 story!

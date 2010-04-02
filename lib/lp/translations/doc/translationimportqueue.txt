@@ -4,6 +4,14 @@ The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
+    >>> from lp.translations.model.translationimportqueue import (
+    ...     TranslationImportQueueEntry)
+
+    >>> def clear_queue(queue):
+    ...     """Remove all entries off the import queue."""
+    ...     store = IStore(TranslationImportQueueEntry)
+    ...     store.find(TranslationImportQueueEntry).remove()
 
 
 == getGuessedPOFile ==
@@ -125,13 +133,18 @@ And the date_status_changed is newer
     True
 
 Let's change now its status to imported and see what happens. To do it,
-we need to be logged in as an admin.
+we need to be logged in as an admin and set an import target.
 
     >>> login('carlos@canonical.com')
-    >>> entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> entry.pofile = factory.makePOFile('sr')
+    >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
 
-Need to update our saved date_status_changed to detect if it changes now.
+The status change updates date_status_changed as well.
 
+    >>> entry.date_status_changed > previous_date_status_changed
+    True
+
+    >>> transaction.commit()
     >>> previous_date_status_changed = entry.date_status_changed
 
 Do the new upload. It will be a published upload.
@@ -144,15 +157,15 @@ Do the new upload. It will be a published upload.
 
 And the new status is
 
-    >>> po_sr_entry.status.title
-    'Needs Review'
+    >>> print po_sr_entry.status.title
+    Needs Review
 
 The dateimported remains the same as it was already waiting to be imported.
 
     >>> po_sr_entry.dateimported > previous_dateimported
     True
 
-And the date_status_changed is newer
+However the date_status_changed is still updated.
 
     >>> po_sr_entry.date_status_changed > previous_date_status_changed
     True
@@ -190,7 +203,8 @@ to be imported.
 
 But if that entry is imported, the guessing algorithm works.
 
-    >>> pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> pot_entry.potemplate = factory.makePOTemplate()
+    >>> pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> guessed_pofile = po_sr_entry.getGuessedPOFile()
     >>> guessed_pofile is None
     False
@@ -264,7 +278,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> kde_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> kde_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file from kde-i18n-es
@@ -330,7 +344,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> kde_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> kde_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file from kde-i18n-es
@@ -390,7 +404,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> koffice_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> koffice_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file from koffice-l10n
@@ -488,7 +502,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> adept_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> adept_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -539,7 +553,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> ktorrent_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> ktorrent_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -592,7 +606,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> zope_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> zope_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -644,7 +658,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> k3b_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> k3b_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -694,7 +708,7 @@ Create the template name and attach this new import to it.
 
 And set this entry as already imported.
 
-    >>> k3b_pot_entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> k3b_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
@@ -770,7 +784,7 @@ First, let's check the status of the existing entries.
 
 We need it blocked for this test.
 
-    >>> entry5.setStatus(RosettaImportStatus.BLOCKED)
+    >>> entry5.setStatus(RosettaImportStatus.BLOCKED, rosetta_experts)
 
 Let's see how many entries are blocked.
 
@@ -861,7 +875,7 @@ directory that a given entry.
 For the third entry, we have one .pot file on that directory, which is already
 in sample data.
 
-    >>> entry3.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+    >>> entry3.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
     >>> entries = entry3.getTemplatesOnSameDirectory()
     >>> entries.count()
     1
@@ -872,7 +886,7 @@ in sample data.
 
 For the fourth entry, we have one.
 
-    >>> entry4.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+    >>> entry4.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
     >>> entries = entry4.getTemplatesOnSameDirectory()
     >>> entries.count()
     1
@@ -886,7 +900,7 @@ And finally, the .pot entry doesn't have other .pot in the same directory and
 obviously, we are not returning it as being at the same directory as it makes
 no sense at all.
 
-    >>> entry5.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+    >>> entry5.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
     >>> entries = entry5.getTemplatesOnSameDirectory()
     >>> entries.count()
     0
@@ -955,10 +969,19 @@ approved any.
     NEEDS_REVIEW
 
 Now we approve these entries (we need to be Rosetta administrator to do this).
+We also need to set an import target.
 
     >>> login('carlos@canonical.com')
-    >>> entry1.setStatus(RosettaImportStatus.APPROVED)
-    >>> entry2.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry1.potemplate = factory.makePOTemplate(
+    ...     name=u"evolution",
+    ...     distroseries=hoary_distroseries,
+    ...     sourcepackagename=evolution_sourcepackagename)
+    >>> entry1.pofile = factory.makePOFile('sr', potemplate=entry1.potemplate)
+    >>> entry1.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
+    >>> entry2.potemplate = factory.makePOTemplate(
+    ...     name=u"firefox",
+    ...     productseries=productseries)
+    >>> entry2.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
     >>> flush_database_updates()
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
@@ -1088,8 +1111,8 @@ Current entries in the queue are:
 
     >>> queue = getUtility(ITranslationImportQueue)
     >>> print_queue_entries(queue)
-    hoary evolution | None               | po/sr.po
-    firefox         | None               | foo/bar.pot
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
@@ -1109,8 +1132,8 @@ product. There will be three new entries from the tarball.
 And those new entries in the queue appear in the list.
 
     >>> print_queue_entries(queue)
-    hoary evolution | None               | po/sr.po
-    firefox         | None               | foo/bar.pot
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
@@ -1292,6 +1315,15 @@ bug 138650 for an example).
 If such bad requests do end up on the import queue, the import queue code will
 raise errors about them.
 
+    >>> def print_import_failures(import_script):
+    ...     """List failures recorded in an import script instance."""
+    ...     for reason, entries in script.failures.iteritems():
+    ...         print reason
+    ...         for entry in entries:
+    ...             print "-> " + entry
+
+    >>> clear_queue(translationimportqueue)
+
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_experts,
     ...      productseries=evolution_productseries)
@@ -1299,15 +1331,33 @@ raise errors about them.
     >>> entry.import_into is None
     True
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+Set the entry to approved, which is only possible if we don't use setStatus.
+    >>> removeSecurityProxy(entry).status = RosettaImportStatus.APPROVED
 
     >>> import logging
-    >>> from lp.translations.scripts.po_import import ImportProcess
-    >>> ImportProcess(transaction, logging).run()
-    Traceback (most recent call last):
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.translations.scripts.po_import import TranslationsImport
+
+    >>> script = TranslationsImport('poimport', test_args=[])
+    >>> script.logger = FakeLogger()
+    >>> script.main()
+    DEBUG Starting...
+    ERROR Entry is approved but has no place to import to.
     ...
-    AssertionError: Broken translation import queue entry 4 (for evolution):
-    ...
+    DEBUG Finished the import process.
+
+    >>> print_import_failures(script)
+    Entry is approved but has no place to import to.
+    -> 'po/sr.po' (id ...) in Evolution trunk series
+
+The entry is marked as Failed.
+
+    >>> print entry.status.name
+    FAILED
+
+This happens for distribution packages as well as products.
+
+    >>> clear_queue(translationimportqueue)
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/th.po', 'bar', False, rosetta_experts,
@@ -1317,26 +1367,23 @@ raise errors about them.
     >>> entry.import_into is None
     True
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+Set the entry to approved, which is only possible if we don't use setStatus.
+    >>> removeSecurityProxy(entry).status = RosettaImportStatus.APPROVED
 
-    >>> ImportProcess(transaction, logging).run()
-    Traceback (most recent call last):
-    ...
-    AssertionError: Broken translation import queue entry 4 (for evolution):
-    ...
+    >>> script = TranslationsImport('poimport', test_args=[])
+    >>> script.logger.setLevel(logging.FATAL)
+    >>> script.main()
+    >>> print_import_failures(script)
+    Entry is approved but has no place to import to.
+    -> 'po/th.po' (id ...) in ubuntu Hoary package evolution
+
+    >>> print entry.status.name
+    FAILED
+
+    >>> clear_queue(translationimportqueue)
 
 
 == getRequestTargets output ordering ==
-
-TranslationImportQueue.getRequestTargets first lists distro series
-(ordered by distro name and series name), followed by products (ordered
-by name).
-
-    >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
-    ubuntu/hoary    Hoary
-    evolution       Evolution
-    firefox         Mozilla Firefox
-
 
 The queue is populated with a wild mix of requests: for packages in
 different release series of Ubuntu, for packages in different distros,
@@ -1348,11 +1395,13 @@ upstream, some were produced right here in Launchpad.
     ...     distro = distroset[distro_name]
     ...     series = distro.getSeries(series_name)
     ...     package = packageset['pmount']
+    ...     template = factory.makePOTemplate(distroseries=series,
+    ...                                       sourcepackagename=package)
     ...     # In a completely arbitrary move, we make all import requests for
     ...     # distro series imported.
     ...     return translationimportqueue.addOrUpdateEntry('messages.pot',
     ...         'dummy file', True, rosetta_experts, distroseries=series,
-    ...         sourcepackagename=package)
+    ...         sourcepackagename=package, potemplate=template)
 
     >>> def create_product_request(product_name, template_name):
     ...     """Enqueue an import request for given product and template."""
@@ -1369,44 +1418,39 @@ upstream, some were produced right here in Launchpad.
 
     >>> # Populate import queue with wild mix of requests.
     >>> entry = create_product_request('evolution', 'evolution-2.2')
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry = create_distro_request('debian', 'sarge')
-    >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+    >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
     >>> entry = create_product_request('alsa-utils', 'alsa-utils')
-    >>> entry.setStatus(RosettaImportStatus.FAILED)
+    >>> entry.setStatus(RosettaImportStatus.FAILED, rosetta_experts)
     >>> entry = create_distro_request('ubuntu', 'grumpy')
-    >>> entry.setStatus(RosettaImportStatus.BLOCKED)
+    >>> entry.setStatus(RosettaImportStatus.BLOCKED, rosetta_experts)
     >>> entry = create_distro_request('kubuntu', 'krunch')
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry = create_product_request('evolution', 'evolution-2.2-test')
-    >>> entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> entry = create_distro_request('debian', 'woody')
-    >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+    >>> entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, rosetta_experts)
     >>> flush_database_updates()
 
-
-The targets (distro series or products) that these requests are for are
-always listed in the same, predictable order.
+TranslationImportQueue.getRequestTargets first lists distro series
+(ordered by distro name and series name), followed by products (ordered
+by name).
 
     >>> print_list(get_target_names())
     debian/sarge        Sarge
     debian/woody        Woody
     kubuntu/krunch      Krunch
     ubuntu/grumpy       Grumpy
-    ubuntu/hoary        Hoary
     alsa-utils          alsa-utils
     evolution           Evolution
-    firefox             Mozilla Firefox
-    netapplet           NetApplet
 
     >>> for status in RosettaImportStatus.items:
     ...     print "%s:" % status.name
     ...     print_list(get_target_names(status))
     APPROVED:
     kubuntu/krunch      Krunch
-    ubuntu/hoary        Hoary
     evolution           Evolution
-    firefox             Mozilla Firefox
     IMPORTED:
     evolution           Evolution
     DELETED:
@@ -1415,18 +1459,20 @@ always listed in the same, predictable order.
     NEEDS_REVIEW:
     debian/sarge        Sarge
     debian/woody        Woody
-    ubuntu/hoary        Hoary
-    evolution           Evolution
-    firefox             Mozilla Firefox
-    netapplet           NetApplet
     BLOCKED:
     ubuntu/grumpy       Grumpy
+    NEEDS_INFORMATION:
+
+You can also select by status.
+
+    >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
+    kubuntu/krunch      Krunch
+    evolution           Evolution
 
 
 == cleanUpQueue ==
 
-The queue is cleaned up regularly.  This removes entries that are either
-DELETED or IMPORTED and get too old.
+The queue is cleaned up regularly.
 
 Here we start out with an empty queue.
 
@@ -1441,49 +1487,26 @@ nothing to purge, it returns zero.
     0
 
 
-=== Deleted Entries ===
+=== State and Age ===
 
-The user requests an upload, then marks the request as DELETED.
+Entries can be cleaned up because they have been in a specific state for
+at least a specified period of time.
 
-    >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
-    ...      productseries=evolution_productseries)
-    >>> entry.setStatus(RosettaImportStatus.DELETED)
-
-The entry stays on the queue long enough to make it a candidate for
-purging.
-
-    >>> now = datetime.datetime.now(UTC)
-    >>> stale = now - datetime.timedelta(4)
-    >>> entry.date_status_changed = stale
-    >>> flush_database_updates()
-    >>> print_queue_entries(translationimportqueue)
-    evolution   | None        | po/nl.po
-
-The entry is deleted as part of the next cleanup.
-
-    >>> translationimportqueue.cleanUpQueue()
-    1
-
-    >>> print_queue_entries(translationimportqueue)
-
-
-=== Imported Entries ===
-
-The user re-uploads the file after fixing some problem.  This time it is
-imported successfully, ending up in the IMPORTED state.
+For instance, successfully imported entries are cleaned up after a few
+days.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/nl.po', 'hoi', True, rosetta_experts,
     ...      productseries=evolution_productseries)
-    >>> entry.setStatus(RosettaImportStatus.IMPORTED)
+    >>> entry.pofile = factory.makePOFile('nl')
+    >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> print_queue_entries(translationimportqueue)
     evolution   | None        | po/nl.po
 
-This request, too, is deleted when left in this state for longer than a
-few days.
+Such requests are deleted after a few days.
 
-    >>> entry.date_status_changed = stale
+    >>> delta = datetime.timedelta(days=4)
+    >>> entry.date_status_changed = datetime.datetime.now(UTC) - delta
     >>> flush_database_updates()
     >>> translationimportqueue.cleanUpQueue()
     1
@@ -1492,6 +1515,9 @@ few days.
 
 
 === Deactivated Products ===
+
+Another reason for deleting entries is that they belong to products that
+have been deactivated.
 
 A user sets up Jokosher for translation, and uploads a template.
 

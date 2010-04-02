@@ -121,3 +121,23 @@ Long descriptions will be truncated.
         ],
         "total_size": 1
     }
+
+Hidden email addresses should also be hidden when IPerson objects are
+retrieved through vocabularies.
+
+    >>> form = dict(name='ValidPersonOrTeam', search_text='name12',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "api_uri": "/~name12",
+                "css": "sprite person",
+                "description": "<email address hidden>",
+                "title": "Sample Person",
+                "value": "name12"
+            }
+        ],
+        "total_size": 1
+    }

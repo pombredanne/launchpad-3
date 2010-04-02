@@ -19,11 +19,9 @@ from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.browser.bugcomment import (
     should_display_remote_comments)
 from canonical.launchpad.fields import URIField
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)
@@ -41,6 +39,12 @@ class BugWatchView(LaunchpadView):
     schema = IBugWatch
 
     @property
+    def page_title(self):
+        return 'Comments imported to bug #%d from %s bug #%s' % (
+            self.context.bug.id, self.context.bugtracker.title,
+            self.context.remotebug)
+
+    @property
     def comments(self):
         """Return the comments to be displayed for a bug watch.
 
@@ -48,7 +52,6 @@ class BugWatchView(LaunchpadView):
         team, no comments will be returned.
         """
         user = getUtility(ILaunchBag).user
-        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
         if not should_display_remote_comments(user):
             return []
 
@@ -85,6 +88,13 @@ class BugWatchEditView(LaunchpadFormView):
     custom_widget('url', URIWidget)
 
     @property
+    def page_title(self):
+        """The page title."""
+        return 'Edit bug watch for bug %s in %s on bug #%d' % (
+            self.context.remotebug, self.context.bugtracker.title,
+            self.context.bug.id)
+
+    @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
         return {'url' : self.context.url}
@@ -108,7 +118,7 @@ class BugWatchEditView(LaunchpadFormView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        return self.context.bugtasks.count() == 0
+        return len(self.context.bugtasks) == 0
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):
@@ -124,3 +134,5 @@ class BugWatchEditView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(getUtility(ILaunchBag).bug)
+
+    cancel_url = next_url

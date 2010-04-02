@@ -11,7 +11,7 @@ in the left column.
     ...     browser.contents, 'three column left')[0]
     >>> print extract_text(left_column)
     Translatable operating systems
-    Ubuntu 5.04
+    Ubuntu Hoary (5.04)
 
 The middle lists translatable products, Evolution is one of most
 translated projects.
@@ -33,14 +33,13 @@ in the right column.
     >>> right_column = find_tags_by_class(
     ...     browser.contents, 'three column right')[0]
     >>> print extract_text(right_column)
-    Preferred languages
+    Your preferred languages
     Afrikaans
     Sotho, Southern
     Xhosa
     Zulu
     ...
-    Change your preferred language...
+    Change your preferred languages...
 
     >>> right_column.findAll('a')[-1]
-    <a href="/+editmylanguages">
-    ...Change your preferred language...
+    <a href="/+editmylanguages"...Change your preferred languages...

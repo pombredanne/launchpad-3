@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime
+from zope.schema import Bool, Choice, Datetime
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 
@@ -33,4 +33,9 @@ class ISprintAttendance(Interface):
         "Please ensure the time reflects accurately "
         "when you will no longer be available for sessions at this event, to "
         "assist those planning the schedule."))
-
+    is_physical = Bool(
+        title=_("How will you be attending?"),
+        description=_(
+            "True, you will be physically present, "
+            "or false, you will be remotely present."),
+        required=False, readonly=False, default=True)

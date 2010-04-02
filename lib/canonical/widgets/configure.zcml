@@ -6,33 +6,6 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <!-- XXX: StuartBishop 2004-11-12: This stanza might not be necessary. -->
-    <class class="canonical.widgets.SinglePopupWidget">
-        <allow interface="canonical.widgets.ISinglePopupWidget" />
-    </class>
-
-    <!-- Define the views needed by the popup widget
-       XXX: StuartBishop 2004-11-12:
-       These should probably just be attached to the add and edit forms.
-    -->
-    <browser:page
-        for="*"
-        class="canonical.widgets.popup.SinglePopupView"
-        allowed_interface="canonical.widgets.popup.ISinglePopupView"
-        permission="zope.Public"
-        name="popup-window"
-        template="templates/popup-window.pt"
-        />
-
-    <browser:page
-        for="*"
-        class="canonical.widgets.popup.SearchForUpstreamPopupView"
-        allowed_interface="canonical.widgets.popup.ISinglePopupView"
-        permission="zope.Public"
-        name="popup-search-upstream"
-        template="templates/popup-window.pt"
-        />
-
     <!--
         XXX: anonymous 2004-08-14: Feed back into Zope3.
         The Zope3 WidgetInputError does not handle lists of validation

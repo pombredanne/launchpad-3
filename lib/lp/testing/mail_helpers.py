@@ -22,7 +22,7 @@ def pop_notifications(sort_key=None, commit=True):
     :param sort_key: define sorting function.  sort_key specifies a
     function of one argument that is used to extract a comparison key from
     each list element.  (See the sorted() Python built-in.)
-    :param commit: whether to commit before reading email (defauls to False).
+    :param commit: whether to commit before reading email (defaults to True).
     """
     if commit:
         transaction.commit()
@@ -41,7 +41,7 @@ def pop_notifications(sort_key=None, commit=True):
 
 
 def print_emails(include_reply_to=False, group_similar=False,
-                 notifications=None):
+                 include_rationale=False, notifications=None):
     """Pop all messages from stub.test_emails and print them with
      their recipients.
 
@@ -52,8 +52,12 @@ def print_emails(include_reply_to=False, group_similar=False,
     the email body.  (The line with "Hello Foo," which is likely
     distinct for each recipient.)
 
-    If notifications are supplied, the stack will not be popped and only those
-    notifications will be displayed.
+    :param include_reply_to: Include the reply-to header if True.
+    :param group_similar: Group messages sent to multiple recipients if True.
+    :param include_rationale: Include the X-Launchpad-Message-Rationale
+        header.
+    :param notifications: Use the provided list of notifications instead of
+        the stack.
     """
     distinct_bodies = {}
     if notifications is None:
@@ -78,12 +82,16 @@ def print_emails(include_reply_to=False, group_similar=False,
         print 'To:', ", ".join(sorted(recipients))
         if include_reply_to:
             print 'Reply-To:', message['Reply-To']
+        rationale_header = 'X-Launchpad-Message-Rationale'
+        if include_rationale and rationale_header in message:
+            print (
+                '%s: %s' % (rationale_header, message[rationale_header]))
         print 'Subject:', message['Subject']
         print body
         print "-"*40
 
-
-def print_distinct_emails(include_reply_to=False):
+def print_distinct_emails(include_reply_to=False, include_rationale=True):
     """A convenient shortcut for `print_emails`(group_similar=True)."""
     return print_emails(group_similar=True,
-                        include_reply_to=include_reply_to)
+                        include_reply_to=include_reply_to,
+                        include_rationale=include_rationale)

@@ -35,7 +35,7 @@ class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):
     id = Int(title=_("Bug Branch #"))
     bug = exported(
         BugField(
-            title=_("The bug that is linked to."),
+            title=_("Bug #"),
             required=True, readonly=True))
     branch = exported(
         ReferenceChoice(

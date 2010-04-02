@@ -7,11 +7,11 @@
 __metaclass__ = type
 
 
-from lp.code.enums import CodeReviewNotificationLevel
-from canonical.launchpad.mail import format_address
-from canonical.launchpad.mailout import append_footer
-from lp.code.mail.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
+
+from lp.code.enums import CodeReviewNotificationLevel
+from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.services.mail.sendmail import append_footer, format_address
 
 
 def send(comment, event):
@@ -52,7 +52,8 @@ class CodeReviewCommentMailer(BMPMailer):
                 else:
                     content_type = part['content-type']
                 if (filename, content_type) in include_attachments:
-                    self.attachments.append(part)
+                    self.attachments.append(
+                        (part.get_payload(), filename, content_type))
         self._generateBodyBits()
 
     @classmethod
@@ -132,6 +133,7 @@ class CodeReviewCommentMailer(BMPMailer):
     def _addAttachments(self, ctrl, email):
         """Add the attachments from the original message."""
         # Only reattach the display_aliases.
-        for attachment in self.attachments:
+        for content, filename, content_type in self.attachments:
             # Append directly to the controller's list.
-            ctrl.attachments.append(attachment)
+            ctrl.addAttachment(
+                content, content_type=content_type, filename=filename)

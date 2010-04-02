@@ -9,7 +9,7 @@ __all__ = [
     'MockBuilder',
     'SaneBuildingSlave',
     'SaneWaitingSlave',
-    'InsaneWatingSlave',
+    'InsaneWaitingSlave',
     'LostBuildingSlave',
     'LostWaitingSlave',
     'LostBuildingBrokenSlave',
@@ -26,10 +26,17 @@ import subprocess
 import xmlrpclib
 
 from canonical.config import config
+from lp.buildmaster.interfaces.builder import CannotFetchFile
+from lp.buildmaster.model.builder import (rescueBuilderIfLost,
+    updateBuilderStatus)
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior)
 
 
 class MockBuilder:
     """Emulates a IBuilder class."""
+
+    current_build_behavior = BinaryPackageBuildBehavior(None)
 
     def __init__(self, name, slave):
         self.slave = slave
@@ -40,12 +47,15 @@ class MockBuilder:
         self.name = name
         self.virtualized = True
 
-    def failbuilder(self, reason):
+    def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
 
     def slaveStatusSentence(self):
         return self.slave.status()
+
+    def verifySlaveBuildID(self, slave_build_id):
+        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
 
     def cleanSlave(self):
         return self.slave.clean()
@@ -59,8 +69,14 @@ class MockBuilder:
     def checkSlaveAlive(self):
         pass
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
+    def checkSlaveArchitecture(self):
         pass
+
+    def rescueIfLost(self, logger=None):
+        rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        updateBuilderStatus(self, logger)
 
 
 class SaneBuildingSlave:
@@ -77,6 +93,10 @@ class SaneBuildingSlave:
 
     def info(self):
         return ['1.0', 'i386', ['debian']]
+
+    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
+        return ('BuildStatus.Building', buildid)
+
 
 class SaneWaitingSlave:
     """A mock slave that is currently waiting.
@@ -142,7 +162,12 @@ class BrokenSlave:
 
 
 class OkSlave:
-    """An idle mock slave that prints information about itself."""
+    """An idle mock slave that prints information about itself.
+
+    The architecture tag can be customised during initialisation."""
+
+    def __init__(self, arch_tag='i386'):
+        self.arch_tag = arch_tag
 
     def status(self):
         return ('BuilderStatus.IDLE', '')
@@ -175,7 +200,7 @@ class OkSlave:
         pass
 
     def info(self):
-        return ('1.0', 'i386', 'debian')
+        return ('1.0', self.arch_tag, 'debian')
 
     def resume(self):
         resume_argv = config.builddmaster.vm_resume_command.split()
@@ -184,6 +209,16 @@ class OkSlave:
         stdout, stderr = resume_process.communicate()
 
         return (stdout, stderr, resume_process.returncode)
+
+    def sendFileToSlave(self, sha1, url, username="", password=""):
+        present, info = self.ensurepresent(sha1, url, username, password)
+        if not present:
+            raise CannotFetchFile(url, info)
+
+    def cacheFile(self, logger, libraryfilealias):
+        self.sendFileToSlave(
+            libraryfilealias.content.sha1, libraryfilealias.http_url)
+
 
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
@@ -210,6 +245,7 @@ class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
     def __init__(self, state, dependencies=None):
+        super(WaitingSlave, self).__init__()
         self.state = state
         self.dependencies = dependencies
 

@@ -26,9 +26,9 @@ process. Matsubara's account was created during a code import.
     None
 
 The account can only be activated by the user who is claiming
-the profile. Mark cannot claim it.
+the profile. Sample Person cannot claim it.
 
-    >>> login('mark@hbd.com')
+    >>> login('test@canonical.com')
     >>> matsubara.account.activate(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     Traceback (most recent call last):
@@ -123,7 +123,7 @@ will cause this spec to be reassigned.
 The deactivateAccount method is restricted to the user himself --not
 even launchpad admins can use it.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> foobar.deactivateAccount(comment)
     Traceback (most recent call last):
     ...
@@ -131,6 +131,7 @@ even launchpad admins can use it.
 
     >>> login('foo.bar@canonical.com')
     >>> foobar.deactivateAccount(comment)
+    >>> transaction.commit()
 
 Deactivating an account changes many of the person's attributes.  It
 adds a '-deactivatedaccount' suffix to the person's name...

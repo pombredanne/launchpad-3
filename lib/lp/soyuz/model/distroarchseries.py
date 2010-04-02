@@ -23,15 +23,15 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
-from canonical.launchpad.interfaces._schema_circular_imports import (
-    IHasBuildRecords)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries, IDistroArchSeriesSet, IPocketChroot)
 from lp.soyuz.interfaces.publishing import (
-    ICanPublishPackages, PackagePublishingPocket, PackagePublishingStatus)
+    ICanPublishPackages, PackagePublishingStatus)
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
@@ -135,6 +135,14 @@ class DistroArchSeries(SQLBase):
             return default
 
         return pocket_chroot.chroot
+
+    @property
+    def chroot_url(self):
+        """See `IDistroArchSeries`."""
+        chroot = self.getChroot()
+        if chroot is None:
+            return None
+        return chroot.http_url
 
     def addOrUpdateChroot(self, chroot):
         """See `IDistroArchSeries`."""

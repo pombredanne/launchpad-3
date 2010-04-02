@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,12 +10,11 @@ This script is useful to recover from breakages after importing bad
 .po files like the one reported at #32610.
 """
 
+import _pythonpath
 
 import sys
 import logging
 from optparse import OptionParser
-
-import _pythonpath
 
 from zope.component import getUtility
 

@@ -50,7 +50,7 @@ the target.
 
 If no_priv unsubscribes, he is still set as the bug supervisor.
 
-    >>> target.removeBugSubscription(no_priv)
+    >>> target.removeBugSubscription(no_priv, no_priv)
     >>> print target.bug_supervisor.preferredemail.email
     no-priv@canonical.com
     >>> no_priv in bug.getIndirectSubscribers()

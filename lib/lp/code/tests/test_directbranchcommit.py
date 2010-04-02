@@ -23,8 +23,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
-        self.db_branch, tree = self.create_branch_and_tree(
-            db_branch=self.db_branch, hosted=True)
+        self.db_branch, self.tree = self.create_branch_and_tree(hosted=True)
 
         self.series.translations_branch = self.db_branch
 
@@ -38,7 +37,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
 
         self.committer = DirectBranchCommit(self.db_branch)
         if update_last_scanned_id:
-            self.db_branch.last_scanned_id = (
+            self.committer.last_scanned_id = (
                 self.committer.bzrbranch.last_revision())
 
     def _tearDownCommitter(self):
@@ -55,10 +54,27 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
 
     layer = ZopelessDatabaseLayer
 
-    def test_DirectBranchCommit_commits_no_changes(self):
-        # Committing to an empty branch leaves an empty branch empty.
+    def test_DirectBranchCommit_empty_initial_commit_noop(self):
+        # An empty initial commit to a branch is a no-op.
+        self.assertEqual('null:', self.tree.branch.last_revision())
         self.committer.commit('')
         self.assertEqual({}, self._getContents())
+        self.assertEqual('null:', self.tree.branch.last_revision())
+
+    def _addInitialCommit(self):
+        self.committer._getDir('')
+        rev_id = self.committer.commit('Commit creation of root dir.')
+        self._setUpCommitter()
+        return rev_id
+
+    def test_DirectBranchCommit_commits_no_changes(self):
+        # Committing nothing to an empty branch leaves its tree empty.
+        self.assertEqual('null:', self.tree.branch.last_revision())
+        old_rev_id = self.tree.branch.last_revision()
+        self._addInitialCommit()
+        self.committer.commit('')
+        self.assertEqual({}, self._getContents())
+        self.assertNotEqual(old_rev_id, self.tree.branch.last_revision())
 
     def test_DirectBranchCommit_rejects_change_after_commit(self):
         # Changes are not accepted after commit.
@@ -70,6 +86,13 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
         self.committer.writeFile('file.txt', 'contents')
         self.committer.commit('')
         self.assertEqual({'file.txt': 'contents'}, self._getContents())
+
+    def test_commit_returns_revision_id(self):
+        # DirectBranchCommit.commit returns the new revision_id.
+        self.committer.writeFile('file.txt', 'contents')
+        revision_id = self.committer.commit('')
+        branch_revision_id = self.committer.bzrbranch.last_revision()
+        self.assertEqual(branch_revision_id, revision_id)
 
     def test_DirectBranchCommit_aborts_cleanly(self):
         # If a DirectBranchCommit is not committed, its changes do not
@@ -204,6 +227,24 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         # If a directory was newly created, _getDir will reuse its id.
         dir_id = self.committer._getDir('foo/bar')
         self.assertEqual(dir_id, self.committer._getDir('foo/bar'))
+
+
+class TestDirectBranchCommitMirror(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_direct_branch_commit_respects_to_mirror(self):
+        # The "to_mirror" argument causes the commit to apply to the mirrored
+        # copy of the branch.
+        self.useBzrBranches()
+        branch = self.factory.makeBranch()
+        bzr_branch = self.createBzrBranch(branch)
+        dbc = DirectBranchCommit(branch, to_mirror=True)
+        try:
+            dbc.writeFile('path', 'contents')
+            dbc.commit('making commit to mirrored area.')
+        finally:
+            dbc.unlock()
 
 
 def test_suite():

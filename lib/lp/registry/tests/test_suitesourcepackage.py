@@ -10,7 +10,7 @@ import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
 

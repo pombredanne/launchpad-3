@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
         IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
+        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
         BugTaskStatus, UserCannotUnsubscribePerson)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
@@ -498,7 +498,7 @@ class AffectsEmailCommand(EmailCommand):
 
         # We can't check for IBugTarget, since Project is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"
@@ -604,15 +604,19 @@ class AffectsEmailCommand(EmailCommand):
             # A series task has to have a corresponding
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:

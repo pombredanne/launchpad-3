@@ -3,23 +3,29 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
+<div metal:fill-slot="heading">
+  <h1 tal:content="view/page_title"/>
+</div>
+
 <div metal:fill-slot="main">
+  <div class="top-portlet">
+    <tal:navlinks replace="structure context/@@+related-software-navlinks"/>
+  </div>
+
   <div id="packages">
 
   <tal:maintained-packages
     define="sourcepackagereleases view/get_latest_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
-  <h1>Maintained packages</h1>
+  <div class="top-portlet">
+  <h2>Maintained packages</h2>
 
   <tal:message replace="view/maintained_packages_header_message"/>
   <table class="listing">
@@ -38,13 +44,15 @@
     <div metal:use-macro="context/@@+person-macros/sourcepackagerelease-rows" />
     </tbody>
   </table>
+  </div>
   </tal:maintained-packages>
 
   <tal:uploaded-packages
     define="sourcepackagereleases view/get_latest_uploaded_but_not_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
-  <h1>Uploaded packages</h1>
+  <div class="top-portlet">
+  <h2>Uploaded packages</h2>
 
   <tal:message replace="view/uploaded_packages_header_message"/>
   <table class="listing">
@@ -62,13 +70,15 @@
 
     <div metal:use-macro="context/@@+person-macros/sourcepackagerelease-rows" />
   </table>
+  </div>
   </tal:uploaded-packages>
 
   <tal:ppa-packages
     define="sourcepackagereleases view/get_latest_uploaded_ppa_packages_with_stats"
     condition="sourcepackagereleases">
 
-  <h1>PPA packages</h1>
+  <div class="top-portlet">
+  <h2>PPA packages</h2>
 
   <tal:message replace="view/ppa_packages_header_message"/>
   <table class="listing">
@@ -86,13 +96,14 @@
 
     <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
   </table>
+  </div>
   </tal:ppa-packages>
 
-  </div>
+  </div><!--id packages-->
 
-  <div id="projects">
+  <div id="projects" class="top-portlet">
     <a name="projects" />
-    <h1>Related projects</h1>
+    <h2>Related projects</h2>
 
     <span id="limit-encountered"
           tal:content="view/projects_header_message" />

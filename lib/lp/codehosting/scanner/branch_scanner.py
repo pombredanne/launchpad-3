@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -14,16 +14,13 @@ import sys
 
 from bzrlib.errors import NotBranchError, ConnectionError
 # This non-standard import is necessary to hook up the event system.
-import zope.component.event
 from zope.component import getUtility
 
 from lp.code.interfaces.branchscanner import IBranchScanner
 from lp.codehosting.vfs import get_scanner_server
-from lp.codehosting.scanner import buglinks, email, mergedetection
-from lp.codehosting.scanner.bzrsync import (
-    BzrSync, schedule_translation_upload)
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.scanner.fixture import (
-    Fixtures, make_zope_event_fixture, run_with_fixture)
+    run_with_fixture, ServerFixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -33,8 +30,7 @@ class BranchScanner:
     This class is used by cronscripts/branch-scanner.py to perform its task.
     """
 
-    def __init__(self, ztm, log):
-        self.ztm = ztm
+    def __init__(self, log):
         self.log = log
 
     def _failsafe(self, log_message, default, function, *args, **kwargs):
@@ -92,15 +88,8 @@ class BranchScanner:
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
-        event_handlers = [
-            email.queue_tip_changed_email_jobs,
-            buglinks.got_new_revision,
-            mergedetection.auto_merge_branches,
-            mergedetection.auto_merge_proposals,
-            schedule_translation_upload,
-            ]
         server = get_scanner_server()
-        fixture = Fixtures([server, make_zope_event_fixture(*event_handlers)])
+        fixture = ServerFixture(server)
         self.log.info('Starting branch scanning')
         branches = getUtility(IBranchScanner).getBranchesToScan()
         run_with_fixture(fixture, self.scanBranches, branches)
@@ -109,7 +98,7 @@ class BranchScanner:
     def scanOneBranch(self, branch):
         """Run BzrSync on a single branch and handle expected exceptions."""
         try:
-            bzrsync = BzrSync(self.ztm, branch, self.log)
+            bzrsync = BzrSync(branch, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
             self._failsafe(

@@ -354,7 +354,7 @@ class FakePackager:
             'Selected upstream directory does not exist: %s' % (
                 os.path.basename(self.upstream_directory)))
 
-        debuild_options = ['-S']
+        debuild_options = ['--no-conf', '-S']
 
         if not signed:
             debuild_options.extend(['-uc', '-us'])

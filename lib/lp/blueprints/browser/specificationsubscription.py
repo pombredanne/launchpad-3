@@ -44,3 +44,7 @@ class SpecificationSubscriptionEditView(LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context.specification)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context.specification)

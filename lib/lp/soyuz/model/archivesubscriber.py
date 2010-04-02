@@ -20,8 +20,8 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from lp.soyuz.model.archiveauthtoken import (
-    ArchiveAuthToken, IArchiveAuthTokenSet)
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 from lp.registry.model.teammembership import TeamParticipation

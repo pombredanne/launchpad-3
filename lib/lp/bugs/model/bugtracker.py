@@ -30,7 +30,8 @@ from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, sqlvalues)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators.email import valid_email
@@ -178,7 +179,7 @@ class BugTracker(SQLBase):
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
         BugTrackerType.GOOGLE_CODE: (
-            "%(base_url)s/entry?summary=%(summary)s&amp;"
+            "%(base_url)s/entry?summary=%(summary)s&"
             "comment=%(description)s"),
         BugTrackerType.MANTIS: (
             "%(base_url)s/bug_report_advanced_page.php"
@@ -484,6 +485,13 @@ class BugTracker(SQLBase):
         bugtracker_person = self.linkPersonToSelf(display_name, person)
 
         return person
+
+    def resetWatches(self):
+        """See `IBugTracker`."""
+        store = Store.of(self)
+        store.execute(
+            "UPDATE BugWatch SET lastchecked = NULL WHERE bugtracker = %s" %
+            sqlvalues(self))
 
 
 class BugTrackerSet:

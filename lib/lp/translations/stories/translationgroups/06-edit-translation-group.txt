@@ -20,7 +20,7 @@ Navigate to the one we are going to rename.
 
 And select to edit its details.
 
-    >>> admin_browser.getLink('Edit translation group details').click()
+    >>> admin_browser.getLink('Change details').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/+groups/testing-translation-team/+edit
 
@@ -52,7 +52,7 @@ Choosing another name should work though.
 
 You can also edit the generic translation instructions for the team
 
-    >>> admin_browser.getLink('Edit translation group details').click()
+    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getControl('Translation instructions').value = (
     ...     u'https://help.launchpad.net/Translations/RenamedGroup')
     >>> admin_browser.getControl('Change').click()

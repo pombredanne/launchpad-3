@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -47,7 +47,7 @@ class PackageCacheUpdater(LaunchpadCronScript):
         PPA archives caches are consolidated in a Archive row to optimize
         searches across PPAs.
         """
-        for distroseries in distribution.serieses:
+        for distroseries in distribution.series:
             self.updateDistroSeriesCache(distroseries, archive)
 
         distribution.removeOldCacheItems(archive, log=self.logger)

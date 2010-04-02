@@ -19,7 +19,7 @@ from canonical.launchpad import _
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class ISuiteSourcePackage(Interface):

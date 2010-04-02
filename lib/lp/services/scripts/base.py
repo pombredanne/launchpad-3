@@ -92,7 +92,7 @@ class LaunchpadScript:
     lockfilepath = None
     loglevel = logging.INFO
 
-    def __init__(self, name, dbuser=None, test_args=None):
+    def __init__(self, name=None, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -104,7 +104,11 @@ class LaunchpadScript:
         Specify test_args when you want to override sys.argv.  This is
         useful in test scripts.
         """
-        self.name = name
+        if name is None:
+            self.name = self.__class__.__name__.lower()
+        else:
+            self.name = name
+
         self.dbuser = dbuser
 
         # The construction of the option parser is a bit roundabout, but

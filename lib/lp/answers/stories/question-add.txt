@@ -6,7 +6,13 @@ which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
     >>> print browser.title
-    Questions for Ubuntu
+    Questions : Ubuntu
+
+The user sees an involvement link to ask a question.
+
+    >>> link = find_tag_by_id(browser.contents, 'involvement').a
+    >>> print extract_text(link)
+    Ask a question
 
 Asking a new question requires logging in:
 
@@ -16,8 +22,8 @@ Asking a new question requires logging in:
     Unauthorized...
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> user_browser.getLink('Ask a question').click()
-    >>> user_browser.title
-    'Ask a question about Ubuntu'
+    >>> print user_browser.title
+    Ask a question...
 
 
 == Get Help Online ==
@@ -31,11 +37,12 @@ associated with the source package of the used application.
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
-    >>> user_browser.title
-    'Help and support options for ...mozilla-firefox...'
-    >>> user_browser.getLink('Submit your question').click()
-    >>> user_browser.title
-    'Ask a question about mozilla-firefox in Ubuntu Hoary'
+    >>> print user_browser.title
+    Help and support...
+
+    >>> user_browser.getLink('Ask a question').click()
+    >>> print user_browser.title
+    Ask a question...
 
 
 == Searching for Similar FAQs and Questions ==
@@ -94,9 +101,9 @@ mouse is left over the question's title.
     ennvironment plugin is requested.
     <BLANKLINE>
     1) The plugin finder service indicates that JRE is available
-    2) next screen indicates JRE &quot;not available&quot; and requests
-    &quot;manual install&quot;
-    3) clicking on &quot;manual install&quot; open java web site.......
+    2) next screen indicates JRE "not available" and requests
+    "manual install"
+    3) clicking on "manual install" open java web site.......
 
 Similarly, the beginning of the FAQ's content appears when the mouse
 hovers on the FAQ's title:
@@ -122,7 +129,7 @@ summary he provided.
 
 If the user doesn't provide details, he'll get an error message:
 
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
@@ -132,7 +139,7 @@ And if he decides to remove the title, he'll be brought back to the
 first step:
 
     >>> user_browser.getControl('Summary').value = ''
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There are 2 errors.
@@ -150,22 +157,20 @@ redirect the user to the question page.
     ... "http://java.com/en/download/help/testvm.xml, the page loads ok and\n"
     ... "shows my java version. But if I move the mouse on the page, firefox\n"
     ... "crashes.\n")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
-    >>> user_browser.title
-    'mozilla-firefox in ubuntu question #...Visiting a web page...'
+    >>> print user_browser.title
+    Question #... : Questions : ...mozilla-firefox... package : Ubuntu
+
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'registration'))
+    Asked by No Privileges Person on ...
     >>> contents = find_main_content(user_browser.contents)
-    >>> heading = contents.find('div', 'pageheading')
-    >>> heading.findChild(name='div')
-    <div...>Open<... Question #..., asked...by...No Privileges Person...
-    >>> contents.find('div', 'report')
-    <div class="report"><p>I use Ubuntu on AMD64 ...</div>
+    >>> print extract_text(contents.find('div', 'report'))
+    I use Ubuntu on AMD64 ...
 
 The user automatically got subscribed to this new question.
 
-    >>> find_tag_by_id(user_browser.contents, 'portlet-subscribers')
-    <div class="portlet" id="portlet-subscribers">
-    ...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
-    </div>
-
+    >>> find_tag_by_id(user_browser.contents, 'subscribers')
+    <div ...No Privileges Person...

@@ -29,6 +29,9 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
     add/edit metaphor.
     """
 
+    label = "Set feature goals"
+    page_title = "Feature goals"
+
     @cachedproperty
     def spec_filter(self):
         """This page always filters for specs which have been proposed

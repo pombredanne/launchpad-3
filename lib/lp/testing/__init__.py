@@ -1,115 +1,204 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
+__all__ = [
+    'ANONYMOUS',
+    'capture_events',
+    'FakeTime',
+    'get_lsb_information',
+    'is_logged_in',
+    'login',
+    'login_person',
+    'logout',
+    'map_branch_contents',
+    'normalize_whitespace',
+    'record_statements',
+    'run_with_login',
+    'run_with_storm_debug',
+    'run_script',
+    'TestCase',
+    'TestCaseWithFactory',
+    'test_tales',
+    'time_counter',
+    # XXX: This really shouldn't be exported from here. People should import
+    # it from Zope.
+    'verifyObject',
+    'validate_mock_class',
+    'WindmillTestCase',
+    'with_anonymous_login',
+    'ZopeTestInSubProcess',
+    ]
 
-from datetime import datetime, timedelta
-from pprint import pformat
 import copy
+from datetime import datetime, timedelta
+from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
+from pprint import pformat
 import shutil
 import subprocess
+import subunit
+import sys
 import tempfile
-import unittest
+import time
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 
 import pytz
+from storm.expr import Variable
 from storm.store import Store
+from storm.tracer import install_tracer, remove_tracer_type
 
+import testtools
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
+
+from windmill.authoring import WindmillTestClient
+
 from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
+from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from lp.codehosting.bzrutils import ensure_base
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from canonical.launchpad.webapp import errorlog
 from canonical.config import config
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
 from lp.testing._login import (
     ANONYMOUS, is_logged_in, login, login_person, logout)
+# canonical.launchpad.ftests expects test_tales to be imported from here.
+# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 
-from twisted.python.util import mergeFunctionMetadata
+# zope.exception demands more of frame objects than twisted.python.failure
+# provides in its fake frames.  This is enough to make it work with them
+# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+from twisted.python.failure import _Frame
+_Frame.f_locals = property(lambda self: {})
 
 
 class FakeTime:
-    """Provides a controllable implementation of time.time()."""
+    """Provides a controllable implementation of time.time().
 
-    def __init__(self, start):
+    You can either advance the time manually using advance() or have it done
+    automatically using next_now(). The amount of seconds to advance the
+    time by is set during initialization but can also be changed for single
+    calls of advance() or next_now().
+
+    >>> faketime = FakeTime(1000)
+    >>> print faketime.now()
+    1000
+    >>> print faketime.now()
+    1000
+    >>> faketime.advance(10)
+    >>> print faketime.now()
+    1010
+    >>> print faketime.next_now()
+    1011
+    >>> print faketime.next_now(100)
+    1111
+    >>> faketime = FakeTime(1000, 5)
+    >>> print faketime.next_now()
+    1005
+    >>> print faketime.next_now()
+    1010
+    """
+
+    def __init__(self, start=None, advance=1):
         """Set up the instance.
 
         :param start: The value that will initially be returned by `now()`.
+            If None, the current time will be used.
+        :param advance: The value in secounds to advance the clock by by
+            default.
         """
-        self._now = start
+        if start is not None:
+            self._now = start
+        else:
+            self._now = time.time()
+        self._advance = advance
 
-    def advance(self, amount):
-        """Advance the value that will be returned by `now()` by 'amount'."""
-        self._now += amount
+    def advance(self, amount=None):
+        """Advance the value that will be returned by `now()`.
+
+        :param amount: The amount of seconds to advance the value by.
+            If None, the configured default value will be used.
+        """
+        if amount is None:
+            self._now += self._advance
+        else:
+            self._now += amount
 
     def now(self):
         """Use this bound method instead of time.time in tests."""
         return self._now
 
+    def next_now(self, amount=None):
+        """Read the current time and advance it.
 
-class TestCase(unittest.TestCase):
+        Calls advance() and returns the current value of now().
+        :param amount: The amount of seconds to advance the value by.
+            If None, the configured default value will be used.
+        """
+        self.advance(amount)
+        return self.now()
+
+
+class StormStatementRecorder:
+    """A storm tracer to count queries."""
+
+    def __init__(self):
+        self.statements = []
+
+    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
+        """Increment the counter.  We don't care about the args."""
+
+        raw_params = []
+        for param in params:
+            if isinstance(param, Variable):
+                raw_params.append(param.get())
+            else:
+                raw_params.append(param)
+        raw_params = tuple(raw_params)
+        self.statements.append("%r, %r" % (statement, raw_params))
+
+
+def record_statements(function, *args, **kwargs):
+    """Run the function and record the sql statements that are executed.
+
+    :return: a tuple containing the return value of the function,
+        and a list of sql statements.
+    """
+    recorder = StormStatementRecorder()
+    try:
+        install_tracer(recorder)
+        ret = function(*args, **kwargs)
+    finally:
+        remove_tracer_type(StormStatementRecorder)
+    return (ret, recorder.statements)
+
+
+def run_with_storm_debug(function, *args, **kwargs):
+    """A helper function to run a function with storm debug tracing on."""
+    from storm.tracer import debug
+    debug(True)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        debug(False)
+
+
+class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
-
-    def __init__(self, *args, **kwargs):
-        unittest.TestCase.__init__(self, *args, **kwargs)
-        self._cleanups = []
-
-    def __str__(self):
-        """Return the fully qualified Python name of the test.
-
-        Zope uses this method to determine how to print the test in the
-        runner. We use the test's id in order to make the test easier to find,
-        and also so that modifications to the id will show up. This is
-        particularly important with bzrlib-style test multiplication.
-        """
-        return self.id()
-
-    def _runCleanups(self, result):
-        """Run the cleanups that have been added with addCleanup.
-
-        See the docstring for addCleanup for more information.
-
-        Returns True if all cleanups ran without error, False otherwise.
-        """
-        ok = True
-        while self._cleanups:
-            function, arguments, keywordArguments = self._cleanups.pop()
-            try:
-                function(*arguments, **keywordArguments)
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self.__exc_info())
-                ok = False
-        return ok
-
-    def addCleanup(self, function, *arguments, **keywordArguments):
-        """Add a cleanup function to be called before tearDown.
-
-        Functions added with addCleanup will be called in reverse order of
-        adding after the test method and before tearDown.
-
-        If a function added with addCleanup raises an exception, the error
-        will be recorded as a test error, and the next cleanup will then be
-        run.
-
-        Cleanup functions are always called before a test finishes running,
-        even if setUp is aborted by an exception.
-        """
-        self._cleanups.append((function, arguments, keywordArguments))
 
     def installFixture(self, fixture):
         """Install 'fixture', an object that has a `setUp` and `tearDown`.
@@ -122,6 +211,12 @@ class TestCase(unittest.TestCase):
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+
+    def makeTemporaryDirectory(self):
+        """Create a temporary directory, and return its path."""
+        tempdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tempdir)
+        return tempdir
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -176,6 +271,14 @@ class TestCase(unittest.TestCase):
                                  ', '.join([repr(event) for event in events]))
         return result
 
+    def assertNoNewOops(self, old_oops):
+        """Assert that no oops has been recorded since old_oops."""
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        if old_oops is None:
+            self.assertIs(None, oops)
+        else:
+            self.assertEqual(oops.id, old_oops.id)
+
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
 
@@ -195,7 +298,7 @@ class TestCase(unittest.TestCase):
         sql_class = type(sql_object)
         store = Store.of(sql_object)
         found_object = store.find(
-            sql_class, **({'id': sql_object.id, attribute_name: date}))
+            sql_class, **({'id': sql_object.id, attribute_name: date})).one()
         if found_object is None:
             self.fail(
                 "Expected %s to be %s, but it was %s."
@@ -219,26 +322,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
 
-    def assertIs(self, expected, observed):
-        """Assert that `expected` is the same object as `observed`."""
-        self.assertTrue(expected is observed,
-                        "%r is not %r" % (expected, observed))
-
     def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""
         if msg is None:
             msg = "%r is %r" % (expected, observed)
         self.assertTrue(expected is not observed, msg)
-
-    def assertIn(self, needle, haystack):
-        """Assert that 'needle' is in 'haystack'."""
-        self.assertTrue(
-            needle in haystack, '%r not in %r' % (needle, haystack))
-
-    def assertNotIn(self, needle, haystack):
-        """Assert that 'needle' is not in 'haystack'."""
-        self.assertFalse(
-            needle in haystack, '%r in %r' % (needle, haystack))
 
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
@@ -247,28 +335,6 @@ class TestCase(unittest.TestCase):
         self.assertEqual(
             list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
 
-    def assertRaises(self, excClass, callableObj, *args, **kwargs):
-        """Assert that a callable raises a particular exception.
-
-        :param excClass: As for the except statement, this may be either an
-            exception class, or a tuple of classes.
-        :param callableObj: A callable, will be passed ``*args`` and
-            ``**kwargs``.
-
-        Returns the exception so that you can examine it.
-        """
-        try:
-            callableObj(*args, **kwargs)
-        except excClass, e:
-            return e
-        else:
-            if getattr(excClass, '__name__', None) is not None:
-                excName = excClass.__name__
-            else:
-                # probably a tuple
-                excName = str(excClass)
-            raise self.failureException, "%s not raised" % excName
-
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
         """Check if the given exception is raised with given content.
@@ -276,15 +342,8 @@ class TestCase(unittest.TestCase):
         If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
-        exception_name = str(exception).split('.')[-1]
-
-        try:
-            func(*args)
-        except exception, err:
-            self.assertEqual(str(err), exception_content)
-        else:
-            raise AssertionError(
-                "'%s' was not raised" % exception_name)
+        err = self.assertRaises(exception, func, *args)
+        self.assertEqual(exception_content, str(err))
 
     def assertBetween(self, lower_bound, variable, upper_bound):
         """Assert that 'variable' is strictly between two boundaries."""
@@ -298,53 +357,33 @@ class TestCase(unittest.TestCase):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s"%(k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
-    def run(self, result=None):
-        if result is None:
-            result = self.defaultTestResult()
-        result.startTest(self)
-        testMethod = getattr(self, self.__testMethodName)
-        try:
-            try:
-                self.setUp()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self.__exc_info())
-                self._runCleanups(result)
-                return
-
-            ok = False
-            try:
-                testMethod()
-                ok = True
-            except self.failureException:
-                result.addFailure(self, self.__exc_info())
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self.__exc_info())
-
-            cleanupsOk = self._runCleanups(result)
-            try:
-                self.tearDown()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self.__exc_info())
-                ok = False
-            if ok and cleanupsOk:
-                result.addSuccess(self)
-        finally:
-            result.stopTest(self)
-
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+
+    def assertStatementCount(self, expected_count, function, *args, **kwargs):
+        """Assert that the expected number of SQL statements occurred.
+
+        :return: Returns the result of calling the function.
+        """
+        ret, statements = record_statements(function, *args, **kwargs)
+        if len(statements) != expected_count:
+            self.fail(
+                "Expected %d statements, got %d:\n%s"
+                % (expected_count, len(statements), "\n".join(statements)))
+        return ret
+
+    def useTempDir(self):
+        """Use a temporary directory for this test."""
+        tempdir = self.makeTemporaryDirectory()
+        cwd = os.getcwd()
+        os.chdir(tempdir)
+        self.addCleanup(os.chdir, cwd)
 
 
 class TestCaseWithFactory(TestCase):
@@ -356,14 +395,6 @@ class TestCaseWithFactory(TestCase):
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
-
-    def useTempDir(self):
-        """Use a temporary directory for this test."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tempdir))
-        cwd = os.getcwd()
-        os.chdir(tempdir)
-        self.addCleanup(lambda: os.chdir(cwd))
 
     def getUserBrowser(self, url=None):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -381,7 +412,24 @@ class TestCaseWithFactory(TestCase):
             browser.open(url)
         return browser
 
-    def create_branch_and_tree(self, tree_location='.', product=None,
+    def createBranchAtURL(self, branch_url, format=None):
+        """Create a branch at the supplied URL.
+
+        The branch will be scheduled for deletion when the test terminates.
+        :param branch_url: The URL to create the branch at.
+        :param format: The format of branch to create.
+        """
+        if format is not None and isinstance(format, basestring):
+            format = format_registry.get(format)()
+        transport = get_transport(branch_url)
+        if not self.real_bzr_server:
+            # for real bzr servers, the prefix always exists.
+            transport.create_prefix()
+        self.addCleanup(transport.delete_tree, '.')
+        return BzrDir.create_branch_convenience(
+            branch_url, format=format)
+
+    def create_branch_and_tree(self, tree_location=None, product=None,
                                hosted=False, db_branch=None, format=None,
                                **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
@@ -394,9 +442,6 @@ class TestCaseWithFactory(TestCase):
         :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir, format_registry
-        if format is not None and isinstance(format, basestring):
-            format = format_registry.get(format)()
         if db_branch is None:
             if product is None:
                 db_branch = self.factory.makeAnyBranch(**kwargs)
@@ -408,15 +453,23 @@ class TestCaseWithFactory(TestCase):
             branch_url = db_branch.warehouse_url
         if self.real_bzr_server:
             transaction.commit()
-        transport = get_transport(branch_url)
-        if not self.real_bzr_server:
-            transport.clone('../..').ensure_base()
-            transport.clone('..').ensure_base()
-        self.addCleanup(transport.delete_tree, '.')
-        bzr_branch = BzrDir.create_branch_convenience(
-            branch_url, format=format)
+        bzr_branch = self.createBranchAtURL(branch_url, format=format)
+        if tree_location is None:
+            tree_location = tempfile.mkdtemp()
+            self.addCleanup(lambda: shutil.rmtree(tree_location))
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
+
+    def createBzrBranch(self, db_branch, parent=None):
+        """Create a bzr branch for a database branch.
+
+        :param db_branch: The database branch to create the branch for.
+        :param parent: If supplied, the bzr branch to use as a parent.
+        """
+        bzr_branch = self.createBranchAtURL(db_branch.warehouse_url)
+        if parent:
+            bzr_branch.pull(parent)
+        return bzr_branch
 
     @staticmethod
     def getBranchPath(branch, base):
@@ -429,7 +482,7 @@ class TestCaseWithFactory(TestCase):
         # This is a work-around for some failures on PQM, arguably caused by
         # relying on test set-up that is happening in the Makefile rather than
         # the actual test set-up.
-        ensure_base(get_transport(base))
+        get_transport(base).create_prefix()
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def createMirroredBranchAndTree(self):
@@ -446,19 +499,9 @@ class TestCaseWithFactory(TestCase):
 
         :return: a `Branch` and a workingtree.
         """
-        from bzrlib.bzrdir import BzrDir
         db_branch = self.factory.makeAnyBranch()
-        transport = get_transport(
-            self.getBranchPath(
+        bzr_branch = self.createBranchAtURL(self.getBranchPath(
                 db_branch, config.codehosting.internal_branch_by_id_root))
-        # Ensure the parent directories exist so that we can stick a branch
-        # in them.
-        transport.clone('../../..').ensure_base()
-        transport.clone('../..').ensure_base()
-        transport.clone('..').ensure_base()
-        bzr_branch = BzrDir.create_branch_convenience(
-            transport.base, possible_transports=[transport])
-        self.addCleanup(lambda: transport.delete_tree('.'))
         return db_branch, bzr_branch.bzrdir.open_workingtree()
 
     def useTempBzrHome(self):
@@ -473,7 +516,7 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self, real_server=False):
+    def useBzrBranches(self, real_server=False, direct_database=False):
         """Prepare for using bzr branches.
 
         This sets up support for lp-hosted and lp-mirrored URLs,
@@ -487,19 +530,127 @@ class TestCaseWithFactory(TestCase):
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:
-            server = get_multi_server(write_hosted=True, write_mirrored=True)
-            server.setUp()
+            server = get_multi_server(
+                write_hosted=True, write_mirrored=True,
+                direct_database=direct_database)
+            server.start_server()
             self.addCleanup(server.destroy)
         else:
             os.mkdir('lp-mirrored')
             mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
-            mirror_server.setUp()
-            self.addCleanup(mirror_server.tearDown)
+            mirror_server.start_server()
+            self.addCleanup(mirror_server.stop_server)
             os.mkdir('lp-hosted')
             hosted_server = FakeTransportServer(
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
-            hosted_server.setUp()
-            self.addCleanup(hosted_server.tearDown)
+            hosted_server.start_server()
+            self.addCleanup(hosted_server.stop_server)
+
+
+class WindmillTestCase(TestCaseWithFactory):
+    """A TestCase class for Windmill tests.
+
+    It provides a WindmillTestClient (self.client) with Launchpad's front
+    page loaded.
+    """
+
+    suite_name = ''
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.client = WindmillTestClient(self.suite_name)
+        # Load the front page to make sure we don't get fooled by stale pages
+        # left by the previous test. (For some reason, when you create a new
+        # WindmillTestClient you get a new session and everything, but if you
+        # do anything before you open() something you'd be operating on the
+        # page that was last accessed by the previous test, which is the cause
+        # of things like https://launchpad.net/bugs/515494)
+        self.client.open(url=u'http://launchpad.dev:8085')
+
+
+class WindmillTestCase(TestCaseWithFactory):
+    """A TestCase class for Windmill tests.
+
+    It provides a WindmillTestClient (self.client) with Launchpad's front
+    page loaded.
+    """
+
+    suite_name = ''
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.client = WindmillTestClient(self.suite_name)
+        # Load the front page to make sure we don't get fooled by stale pages
+        # left by the previous test. (For some reason, when you create a new
+        # WindmillTestClient you get a new session and everything, but if you
+        # do anything before you open() something you'd be operating on the
+        # page that was last accessed by the previous test, which is the cause
+        # of things like https://launchpad.net/bugs/515494)
+        self.client.open(url=u'http://launchpad.dev:8085')
+
+
+class ZopeTestInSubProcess:
+    """Run tests in a sub-process, respecting Zope idiosyncrasies.
+
+    Use this as a mixin with an interesting `TestCase` to isolate
+    tests with side-effects. Each and every test *method* in the test
+    case is run in a new, forked, sub-process. This will slow down
+    your tests, so use it sparingly. However, when you need to, for
+    example, start the Twisted reactor (which cannot currently be
+    safely stopped and restarted in process) it is invaluable.
+
+    This is basically a reimplementation of subunit's
+    `IsolatedTestCase` or `IsolatedTestSuite`, but adjusted to work
+    with Zope. In particular, Zope's TestResult object is responsible
+    for calling testSetUp() and testTearDown() on the selected layer.
+    """
+
+    def run(self, result):
+        # The result must be an instance of Zope's TestResult because
+        # we construct a super() of it later on. Other result classes
+        # could be supported with a more general approach, but it's
+        # unlikely that any one approach is going to work for every
+        # class. It's better to fail early and draw attention here.
+        assert isinstance(result, ZopeTestResult), (
+            "result must be a Zope result object, not %r." % (result,))
+        pread, pwrite = os.pipe()
+        pid = os.fork()
+        if pid == 0:
+            # Child.
+            os.close(pread)
+            fdwrite = os.fdopen(pwrite, 'w', 1)
+            # Send results to both the Zope result object (so that
+            # layer setup and teardown are done properly, etc.) and to
+            # the subunit stream client so that the parent process can
+            # obtain the result.
+            result = testtools.MultiTestResult(
+                result, subunit.TestProtocolClient(fdwrite))
+            super(ZopeTestInSubProcess, self).run(result)
+            fdwrite.flush()
+            sys.stdout.flush()
+            sys.stderr.flush()
+            # Exit hard to avoid running onexit handlers and to avoid
+            # anything that could suppress SystemExit; this exit must
+            # not be prevented.
+            os._exit(0)
+        else:
+            # Parent.
+            os.close(pwrite)
+            fdread = os.fdopen(pread, 'rU')
+            # Skip all the Zope-specific result stuff by using a
+            # super() of the result. This is because the Zope result
+            # object calls testSetUp() and testTearDown() on the
+            # layer, and handles post-mortem debugging. These things
+            # do not make sense in the parent process. More
+            # immediately, it also means that the results are not
+            # reported twice; they are reported on stdout by the child
+            # process, so they need to be suppressed here.
+            result = super(ZopeTestResult, result)
+            # Accept the result from the child process.
+            protocol = subunit.TestProtocolServer(result)
+            protocol.readFrom(fdread)
+            fdread.close()
+            os.waitpid(pid, 0)
 
 
 def capture_events(callable_obj, *args, **kwargs):
@@ -523,6 +674,8 @@ def capture_events(callable_obj, *args, **kwargs):
         zope.event.subscribers[:] = old_subscribers
 
 
+# XXX: This doesn't seem like a generically-useful testing function. Perhaps
+# it should go in a sub-module or something? -- jml
 def get_lsb_information():
     """Returns a dictionary with the LSB host information.
 
@@ -620,6 +773,8 @@ def normalize_whitespace(string):
     return " ".join(string.split())
 
 
+# XXX: This doesn't seem to be a generically useful testing function. Perhaps
+# it should go into a sub-module? -- jml
 def map_branch_contents(branch_url):
     """Return all files in branch at `branch_url`.
 
@@ -643,3 +798,70 @@ def map_branch_contents(branch_url):
         tree.unlock()
 
     return contents
+
+
+def validate_mock_class(mock_class):
+    """Validate method signatures in mock classes derived from real classes.
+
+    We often use mock classes in tests which are derived from real
+    classes.
+
+    This function ensures that methods redefined in the mock
+    class have the same signature as the corresponding methods of
+    the base class.
+
+    >>> class A:
+    ...
+    ...     def method_one(self, a):
+    ...         pass
+
+    >>>
+    >>> class B(A):
+    ...     def method_one(self, a):
+    ...        pass
+    >>> validate_mock_class(B)
+
+    If a class derived from A defines method_one with a different
+    signature, we get an AssertionError.
+
+    >>> class C(A):
+    ...     def method_one(self, a, b):
+    ...        pass
+    >>> validate_mock_class(C)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Different method signature for method_one:...
+
+    Even a parameter name must not be modified.
+
+    >>> class D(A):
+    ...     def method_one(self, b):
+    ...        pass
+    >>> validate_mock_class(D)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Different method signature for method_one:...
+
+    If validate_mock_class() for anything but a class, we get an
+    AssertionError.
+
+    >>> validate_mock_class('a string')
+    Traceback (most recent call last):
+    ...
+    AssertionError: validate_mock_class() must be called for a class
+    """
+    assert isclass(mock_class), (
+        "validate_mock_class() must be called for a class")
+    base_classes = getmro(mock_class)
+    for name, obj in getmembers(mock_class):
+        if ismethod(obj):
+            for base_class in base_classes[1:]:
+                if name in base_class.__dict__:
+                    mock_args = getargspec(obj)
+                    real_args = getargspec(base_class.__dict__[name])
+                    if mock_args != real_args:
+                        raise AssertionError(
+                            'Different method signature for %s: %r %r' % (
+                            name, mock_args, real_args))
+                    else:
+                        break

@@ -22,7 +22,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.registry.interfaces.person import IPerson
 from lp.bugs.interfaces.bugtracker import IBugTracker
 
 from lazr.restful.declarations import (
@@ -134,7 +133,7 @@ class IBugWatch(IHasBug):
         exported_as='date_created')
     owner = exported(
         Reference(title=_('Owner'), required=True,
-                  readonly=True, schema=IPerson))
+                  readonly=True, schema=Interface))
 
     # Useful joins.
     bugtasks = exported(
@@ -266,6 +265,19 @@ class IBugWatchSet(Interface):
         extracted, but no such bug tracker is registered in Launchpad.
 
         If no bug tracker type can be guessed, None is returned.
+        """
+
+    def getBugWatchesForRemoteBug(self, remote_bug, bug_watch_ids=None):
+        """Returns bug watches referring to the given remote bug.
+
+        Returns a set of those bug watches, optionally limited to
+        those with IDs in `bug_watch_ids`, that refer to `remote_bug`.
+
+        :param remote_bug_id: The ID of the remote bug.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
+
+        :param bug_watch_ids: A collection of `BugWatch` IDs.
+        :type bug_watch_ids: An iterable of `int`s, or `None`.
         """
 
 

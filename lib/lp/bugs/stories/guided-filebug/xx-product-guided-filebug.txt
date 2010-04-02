@@ -7,14 +7,6 @@ already been reported.
     >>> user_browser.open("http://bugs.launchpad.dev/firefox")
     >>> user_browser.getLink('Report a bug').click()
 
-On this page and the user is shown a table of the most common bugs in
-the current context.
-
-    >>> from lp.bugs.tests.bug import print_bugs_table
-
-    >>> print_bugs_table(user_browser.contents, "most-common-bugs")
-    5 Firefox install instructions should be complete
-
 If no title is entered, the user is asked to supply one.
 
     >>> user_browser.getControl('Summary').value

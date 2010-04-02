@@ -18,8 +18,8 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, active_publishing_status)
@@ -64,10 +64,10 @@ class TestRemovePackageScript(unittest.TestCase):
         # Count the DELETED records in SSPPH and SBPPH to check later
         # that they increased according to the script action.
         num_src_deleted_before = (
-            SecureSourcePackagePublishingHistory.selectBy(
+            SourcePackagePublishingHistory.selectBy(
                 status=PackagePublishingStatus.DELETED).count())
         num_bin_deleted_before = (
-            SecureBinaryPackagePublishingHistory.selectBy(
+            BinaryPackagePublishingHistory.selectBy(
                 status=PackagePublishingStatus.DELETED).count())
 
         returncode, out, err = self.runRemovePackage(
@@ -84,9 +84,9 @@ class TestRemovePackageScript(unittest.TestCase):
         # in other tests.
         self.layer.txn.abort()
 
-        num_src_deleted_after = SecureSourcePackagePublishingHistory.selectBy(
+        num_src_deleted_after = SourcePackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.DELETED).count()
-        num_bin_deleted_after = SecureBinaryPackagePublishingHistory.selectBy(
+        num_bin_deleted_after = BinaryPackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.DELETED).count()
 
         self.assertEqual(num_src_deleted_before + 1, num_src_deleted_after)
@@ -101,7 +101,7 @@ class TestPackageRemover(unittest.TestCase):
     Perform tests directly on the script class.
     """
     layer = LaunchpadZopelessLayer
-    user_name = 'sabdfl'
+    user_name = 'mark'
     removal_comment = 'fooooooo'
 
     def getRemover(self, name='foo', version=None,
@@ -193,8 +193,8 @@ class TestPackageRemover(unittest.TestCase):
     def compareRemovals(self, removed, expected):
         """Check if the removed set contains the expected data.
 
-        :param removed: a list of `SecureSourcePackagePublishingHistory` or
-            `SecureBinaryPackagePublishingHistory` returned by the
+        :param removed: a list of `SourcePackagePublishingHistory` or
+            `BinaryPackagePublishingHistory` returned by the
             `PackageRemover` instance.
         :param expected: a list of `SourcePackagePublishingHistory` or
             `BinaryPackagePublishingHistory` usually assembled at the call
@@ -209,7 +209,7 @@ class TestPackageRemover(unittest.TestCase):
             sorted([pub.id for pub in expected]))
 
         for pub in expected:
-            self.assertDeleted(pub.secure_record)
+            self.assertDeleted(pub)
 
     def getTestPublisher(self):
         """Return a initialized `SoyuzTestPublisher` object.
@@ -282,7 +282,7 @@ class TestPackageRemover(unittest.TestCase):
 
         # Binaries remained published.
         for pub in binaries:
-            self.assertPublished(pub.secure_record)
+            self.assertPublished(pub)
 
     def testRemoveBinaryOnly(self):
         """Check how PackageRemoval behaves on binary-only removals.
@@ -313,12 +313,12 @@ class TestPackageRemover(unittest.TestCase):
         self.compareRemovals(removals, removal_candidates)
 
         # Source and other binaries than 'foo-bin' remained published
-        self.assertPublished(source.secure_record)
+        self.assertPublished(source)
         remained_binaries = [
             pub for pub in binaries
             if pub.binarypackagerelease.name != 'foo-bin']
         for pub in remained_binaries:
-            self.assertPublished(pub.secure_record)
+            self.assertPublished(pub)
 
     def testRemoveBinaryOnlySpecificArch(self):
         """Check binary-only removals in a specific architecture.
@@ -342,12 +342,12 @@ class TestPackageRemover(unittest.TestCase):
         self.compareRemovals(removals, removal_candidates)
 
         # Source and non-i386 binaries remained published.
-        self.assertPublished(source.secure_record)
+        self.assertPublished(source)
         remained_binaries = [
             pub for pub in binaries
             if pub.distroarchseries.architecturetag != 'i386']
         for pub in remained_binaries:
-            self.assertPublished(pub.secure_record)
+            self.assertPublished(pub)
 
     def testRemoveFromPartner(self):
         """Source and binary package removal for Partner archive."""

@@ -78,9 +78,7 @@ The Spanish translations now show up as suggestions.  For example, where
 
     >>> print extract_text(find_main_content(
     ...     browser.contents)).encode('ASCII', 'backslashreplace')
-    Description...
-    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
-    Translating into Catalan
+    Translating into Catalan...
     ...
     English: cards
     ...
@@ -122,8 +120,6 @@ languages are defined.  Suggestions just work for anonymous users.
 
     >>> print extract_text(find_main_content(
     ...     anon_browser.contents)).encode('ASCII', 'backslashreplace')
-    Description...
-    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
     Browsing Catalan translation
     ...
     English: cards
@@ -252,7 +248,7 @@ control is unset.
     ...     '?field.alternative_language=zh')
     >>> content = find_main_content(browser.contents)
     >>> content.h1
-    <h1>... Translating into Chuang; Zhuang...</h1>
+    <h1>Translating into Chuang; Zhuang</h1>
 
     >>> browser.getControl(
     ...     name='field.alternative_language').displayValue

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ['InvalidTransition', 'Job', 'JobStatus']
 
 
+from calendar import timegm
 import datetime
 import time
 
@@ -59,13 +60,16 @@ class Job(SQLBase):
     # List of the valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:
-            (JobStatus.RUNNING,),
+            (JobStatus.RUNNING,
+             JobStatus.SUSPENDED),
         JobStatus.RUNNING:
             (JobStatus.COMPLETED,
              JobStatus.FAILED,
              JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
+        JobStatus.SUSPENDED:
+            (JobStatus.WAITING,),
     }
 
     def _set_status(self, status):
@@ -83,6 +87,15 @@ class Job(SQLBase):
         expiry = datetime.datetime.fromtimestamp(time.time() + duration,
             UTC)
         self.lease_expires = expiry
+
+    def getTimeout(self):
+        """Return the number of seconds until the job should time out.
+
+        Jobs timeout when their leases expire.  If the lease for this job has
+        already expired, return 0.
+        """
+        expiry = timegm(self.lease_expires.timetuple())
+        return max(0,  expiry - time.time())
 
     def start(self):
         """See `IJob`."""
@@ -105,6 +118,16 @@ class Job(SQLBase):
         """See `IJob`."""
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+
+    def suspend(self):
+        """See `IJob`."""
+        self._set_status(JobStatus.SUSPENDED)
+
+    def resume(self):
+        """See `IJob`."""
+        if self.status is not JobStatus.SUSPENDED:
+            raise InvalidTransition(self._status, JobStatus.WAITING)
+        self._set_status(JobStatus.WAITING)
 
 
 Job.ready_jobs = Select(

@@ -1,4 +1,6 @@
-= Batch Navigation =
+================
+Batch Navigation
+================
 
 Most of the test for this behavior is in the lazr.batchnavigation package.
 
@@ -44,22 +46,26 @@ Some sample data.
   >>> reindeer = ['Dasher', 'Dancer', 'Prancer', 'Vixen', 'Comet',
   ...     'Cupid', 'Donner', 'Blitzen', 'Rudolph']
 
-== Performance with SQLObject ==
 
-This section demonstrates that batching generates sensible SQL queries when used
-with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
+Performance with SQLObject
+==========================
 
-Imports:
+This section demonstrates that batching generates sensible SQL queries when
+used with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
+
+Imports and initialization:
 
   >>> from canonical.launchpad.database import EmailAddress
   >>> from canonical.ftests.pgsql import CursorWrapper
+  >>> from canonical.launchpad.interfaces import IStore
+  >>> ignore = IStore(EmailAddress) # Prime the database connection.
+  ... # (Priming is important if this test is run in isolation).
   >>> CursorWrapper.record_sql = True
 
 Prepare a query, and create a batch of the results:
 
   >>> select_results = EmailAddress.select(orderBy='id')
-  >>> batch_nav = BatchNavigator(select_results, build_request(),
-  ...                            size=10)
+  >>> batch_nav = BatchNavigator(select_results, build_request(), size=10)
   >>> email_batch = batch_nav.currentBatch()
   >>> batch_items = list(email_batch)
 
@@ -85,7 +91,17 @@ COUNTs are issued:
   True
 
 
-== Maximum batch size ==
+Multiple pages
+==============
+
+The batch navigator tells us whether multiple pages will be used.
+
+    >>> batch_nav.has_multiple_pages
+    True
+
+
+Maximum batch size
+==================
 
 Since the batch size is exposed in the URL, it's possible for users to
 tweak the batch parameter to retrieve more results. Since that may
@@ -108,7 +124,8 @@ InvalidBatchSizeError is raised.
     >>> ignored = config.pop('max-batch-size')
 
 
-== Batch views ==
+Batch views
+===========
 
 A view is often used with a BatchNavigator to determine when to
 display the current batch.
