@@ -878,6 +878,8 @@ ssoopenidrpconfig_id_seq TO ubuntu_sso;
 -- Permissions on the lpmirror tables (mirrors of relevant Launchpad
 -- information, available even when Launchpad database upgrades are in
 -- progress).
-GRANT SELECT ON TABLE lp_person, lp_personlocation, lp_teamparticipation
+GRANT SELECT
+ON TABLE
+    lp_person, lp_personlocation, lp_teamparticipation, lp_account
 TO ubuntu_sso;
 
