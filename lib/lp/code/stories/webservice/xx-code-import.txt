@@ -126,6 +126,10 @@ We can create an import using the API by calling a method on the project.
     >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='new-import', rcs_type='Git',
     ...    url=new_remote_url)
+    >>> print response.status
+    201
+    >>> location = response.getHeader('Location')
+    >>> response = import_webservice.get(location)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
     http://.../~import-owner/scruff/new-import/+code-import
@@ -149,6 +153,10 @@ If we must we can create a CVS import.
     >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='cvs-import', rcs_type='Concurrent Versions System',
     ...    cvs_root=new_remote_url, cvs_module="foo")
+    >>> print response.status
+    201
+    >>> location = response.getHeader('Location')
+    >>> response = import_webservice.get(location)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
     http://.../~import-owner/scruff/cvs-import/+code-import
@@ -174,6 +182,10 @@ We can also create an import targetting a source package.
     >>> response = import_webservice.named_post(source_package_url,
     ...    'newCodeImport', branch_name='new-import', rcs_type='Mercurial',
     ...    url=new_remote_url)
+    >>> print response.status
+    201
+    >>> location = response.getHeader('Location')
+    >>> response = import_webservice.get(location)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
     http://.../~import-owner/scruffbuntu/manic/scruff/new-import/+code-import
@@ -197,6 +209,10 @@ If we wish to create a branch owned by a team we are part of then we can.
     >>> response = import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='team-import', rcs_type='Git',
     ...    url=new_remote_url, owner=team_url)
+    >>> print response.status
+    201
+    >>> location = response.getHeader('Location')
+    >>> response = import_webservice.get(location)
     >>> representation = response.jsonBody()
     >>> print representation['self_link']
     http://.../~import-owner-team/scruff/team-import/+code-import

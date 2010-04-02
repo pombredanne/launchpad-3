@@ -20,9 +20,8 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeProposalStatus, RevisionControlSystems)
 
 from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry)
+    REQUEST_USER, call_with, export_factory_operation, export_read_operation,
+    operation_parameters, operation_returns_collection_of)
 from lazr.restful.fields import Reference
 
 
@@ -134,10 +133,9 @@ class IHasCodeImports(Interface):
             schema=Interface)
         )
     @call_with(registrant=REQUEST_USER)
-    @operation_returns_entry(Interface) # Really IBranchMergeProposal.
-    @export_write_operation()
+    @export_factory_operation(Interface, []) # Really IBranchMergeProposal.
     def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
-            url=None, cvs_root=None, cvs_module=None, owner=None):
+                      url=None, cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import.
 
         :param registrant: The IPerson to record as the registrant of the
