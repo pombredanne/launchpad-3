@@ -809,7 +809,8 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         except AttributeError:
             current_value = vocab.BZR.value
         self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
-        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value, 'SVN')
+        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
+                                   'SVN')
         self.rcs_type_git = render(widget, vocab.GIT, current_value)
         self.rcs_type_hg = render(widget, vocab.HG, current_value)
         self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
