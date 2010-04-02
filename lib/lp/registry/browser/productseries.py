@@ -914,8 +914,9 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
             self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
                                'branch_name', 'branch_owner'], False)
         elif branch_type == CREATE_NEW:
-            self._setRequired(['branch_location', 'rcs_type', 'cvs_module'],
-                              False)
+            self._setRequired(
+                ['branch_location', 'repo_url', 'rcs_type', 'cvs_module'],
+                False)
         elif branch_type == IMPORT_EXTERNAL:
             rcs_type = data.get('rcs_type')
 
@@ -1010,7 +1011,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                         url = data.get('repo_url')
                     rcs_item = RevisionControlSystems.items[rcs_type.name]
                     code_import = getUtility(ICodeImportSet).new(
-                        registrant=self.user,
+                        registrant=branch_owner,
                         target=self.target,
                         branch_name=branch_name,
                         rcs_type=rcs_item,
