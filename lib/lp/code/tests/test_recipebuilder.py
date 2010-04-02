@@ -59,7 +59,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         somebranch = self.factory.makeBranch(owner=requester, name="pkg",
             product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(requester, requester,
-             distroseries, spn, u"recept", somebranch)
+             distroseries, spn, u"recept", u"Recipe description", somebranch)
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, recipe=recipe, requester=requester)
         job = spb.makeJob()
