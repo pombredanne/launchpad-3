@@ -71,7 +71,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         args = self._extraBuildArgs(self.build)
         status, info = self._builder.slave.build(
-            buildid, "debian", chroot_sha1, filemap, args)
+            buildid, "binarypackage", chroot_sha1, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
