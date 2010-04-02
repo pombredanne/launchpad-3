@@ -18,6 +18,7 @@ __all__ = [
 import apt_pkg
 import tempfile
 import os
+from collections import defaultdict
 
 from canonical.launchpad.scripts import log
 from lp.soyuz.scripts.gina import call
@@ -185,7 +186,7 @@ class PackagesMap:
 
     def create_maps(self, arch_component_items):
         # Create the maps
-        self.src_map = {}
+        self.src_map = defaultdict(list)
         self.bin_map = {}
 
         # Iterate over ArchComponentItems instance to cover
@@ -207,7 +208,7 @@ class PackagesMap:
                     log.exception("Invalid Sources stanza in %s" %
                                   info_set.sources_tagfile)
                     continue
-                self.src_map[src_name] = src_tmp
+                self.src_map[src_name].append(src_tmp)
 
             # Check if it's in source-only mode, if so, skip binary index
             # mapping.
