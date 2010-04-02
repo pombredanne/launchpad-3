@@ -790,7 +790,8 @@
                        getImportDetailsForDisplay"/>
     <require
        permission="launchpad.AnyPerson"
-       attributes="tryFailingImportAgain"/>
+       attributes="tryFailingImportAgain
+                   requestImport"/>
     <require
        permission="launchpad.Edit"
        attributes="updateFromData"/>

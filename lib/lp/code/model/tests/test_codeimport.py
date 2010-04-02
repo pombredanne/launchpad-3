@@ -12,6 +12,9 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
+from lp.code.errors import (
+    CodeImportAlreadyRunning, CodeImportNotInReviewedState)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
@@ -20,7 +23,8 @@ from lp.code.interfaces.branch import BranchCreatorNotMemberOfOwnerTeam
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
+    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
+    RevisionControlSystems)
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.testing import (
     login, login_person, logout, TestCaseWithFactory, time_counter)
@@ -618,6 +622,62 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         code_import.tryFailingImportAgain(requester)
         self.assertEqual(
             requester, code_import.import_job.requesting_user)
+
+
+class TestRequestImport(TestCaseWithFactory):
+    """Tests for `ICodeImport.requestImport`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # We have to be logged in to request imports
+        TestCaseWithFactory.setUp(self)
+        login('no-priv@canonical.com')
+
+    def test_requestsJob(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        old_date = code_import.import_job.date_due
+        code_import.requestImport(requester)
+        self.assertEqual(requester, code_import.import_job.requesting_user)
+        self.assertTrue(code_import.import_job.date_due <= old_date)
+
+    def test_noop_if_already_requested(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        code_import.requestImport(requester)
+        old_date = code_import.import_job.date_due
+        code_import.requestImport(requester)
+        # The checks don't matter so much, it's more that we don't get
+        # an exception.
+        self.assertEqual(requester, code_import.import_job.requesting_user)
+        self.assertEqual(old_date, code_import.import_job.date_due)
+
+    def test_exception_on_disabled(self):
+        # get an SVN request, which isn't reviewed by default
+        code_import = self.factory.makeCodeImport()
+        requester = self.factory.makePerson()
+        # which leads to an exception if we try and ask for an import
+        self.assertRaises(
+            CodeImportNotInReviewedState, code_import.requestImport,
+            requester)
+
+    def test_exception_if_already_running(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        unsafe_job = removeSecurityProxy(code_import.import_job)
+        unsafe_job.state = CodeImportJobState.RUNNING
+        unsafe_job.machine = machine
+        unsafe_job.heartbeat = UTC_NOW
+        unsafe_job.logtail = "logtail"
+        unsafe_job.date_started = UTC_NOW
+        requester = self.factory.makePerson()
+        self.assertRaises(
+            CodeImportAlreadyRunning, code_import.requestImport,
+            requester)
 
 
 def test_suite():

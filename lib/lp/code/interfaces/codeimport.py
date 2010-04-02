@@ -177,6 +177,9 @@ class ICodeImport(Interface):
         :param user: the user who is requesting the import be tried again.
         """
 
+    def requestImport(requester):
+        """Request that an import be tried soon."""
+
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""

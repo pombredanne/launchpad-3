@@ -8,6 +8,8 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalExists',
+    'CodeImportAlreadyRunning',
+    'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
@@ -67,3 +69,12 @@ class WrongBranchMergeProposal(Exception):
 
 class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
+
+
+class CodeImportNotInReviewedState(Exception):
+    """Raised when the user requests an import of a non-automatic import."""
+    webservice_error(400)
+
+class CodeImportAlreadyRunning(Exception):
+    """Raised when the user requests an import that is already running."""
+    webservice_error(400)

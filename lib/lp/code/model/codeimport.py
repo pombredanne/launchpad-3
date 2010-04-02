@@ -37,6 +37,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, RevisionControlSystems)
+from lp.code.errors import (
+    CodeImportAlreadyRunning, CodeImportNotInReviewedState)
 from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
@@ -195,6 +197,25 @@ class CodeImport(SQLBase):
         self.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED}, user)
         getUtility(ICodeImportJobWorkflow).requestJob(self.import_job, user)
+
+    def requestImport(self, requester):
+        """See `ICodeImport`."""
+        if self.import_job is None: # not in automatic mode
+           raise CodeImportNotInReviewedState("This code import is %s, and "
+                   "must be Reviewed for you to call requestImport.")
+        if (self.import_job.state !=
+              CodeImportJobState.PENDING):
+            assert (self.import_job.state ==
+                    CodeImportJobState.RUNNING)
+            # Already running
+            raise CodeImportAlreadyRunning("This code import is already "
+                    "running.")
+        elif self.import_job.requesting_user is not None:
+            # Already requested
+            pass
+        else:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.import_job, requester)
 
 
 class CodeImportSet:
