@@ -1019,6 +1019,9 @@ class ProductPackagesPortletView(LaunchpadFormView):
             description = """<a href="%s">%s</a>""" % (
                 item_url, escape(package.name))
             vocab_terms.append(SimpleTerm(package, package.name, description))
+        if len(self.suggestions) == 0:
+            # There is nothing to do.
+            return
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
@@ -1026,6 +1029,11 @@ class ProductPackagesPortletView(LaunchpadFormView):
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
+
+    @action(_('This is Not Packaged in Ubuntu'), name='not-packaged')
+    def not_packaged(self, action, data):
+        self.context.date_last_packaging_check = datetime.now(tz=pytz.UTC)
+        self.next_url = self.request.getURL()
 
     @action(_('Link to this Ubuntu Package'), name='link')
     def link(self, action, data):

@@ -47,9 +47,11 @@
       <div metal:use-macro="context/@@launchpad_form/form">
         <div class="actions" metal:fill-slot="buttons">
           <input tal:replace="structure view/link/render"/>
+          <input tal:replace="structure view/not_packaged/render"/>
               &nbsp;or&nbsp;
-              <a tal:replace="structure
-                              context/development_focus/menu:overview/ubuntupkg/fmt:link" />
+          <a
+            tal:define="menu context/development_focus/menu:overview"
+            tal:replace="structure menu/ubuntupkg/fmt:link" />
         </div>
       </div>
     </div>
@@ -59,8 +61,15 @@
         There are no unlinked source packages that are a good match.
         Can you suggest one?
       </p>
-      <a tal:replace="structure
-                      context/development_focus/menu:overview/ubuntupkg/fmt:link" />
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div class="actions" metal:fill-slot="buttons">
+          <input tal:replace="structure view/not_packaged/render"/>
+          &nbsp;or&nbsp;
+          <a
+            tal:define="menu context/development_focus/menu:overview"
+            tal:replace="structure menu/ubuntupkg/fmt:link" />
+          </div>
+      </div>
     </div>
 
   </tal:has_no_packages>

@@ -61,7 +61,7 @@ appropriate message asking to suggest a match.
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
     There are no unlinked source packages that are a good match. Can you
-    suggest one?
+    suggest one? ...
     Link to Ubuntu package
 
 A distribution source package in a distribution other than ubuntu will
@@ -80,7 +80,8 @@ not be suggested.
     []
 
 A source package that does NOT have a publishing history
-for the current Ubuntu series will NOT be suggested.
+for the current Ubuntu series will NOT be suggested. The view does not
+have any form_fields.
 
     >>> warty = ubuntu.getSeries('warty')
     >>> warty == ubuntu.currentseries
@@ -94,8 +95,12 @@ for the current Ubuntu series will NOT be suggested.
     >>> for dsp in view.suggestions:
     ...     print dsp.name
 
+    >>> len(view.form_fields)
+    0
+
 A source package that does have a publishing history for the current
-Ubuntu series will be suggested.
+Ubuntu series will be suggested. The view as a distributionsourcepackage
+field.
 
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
@@ -106,6 +111,10 @@ Ubuntu series will be suggested.
     >>> for dsp in view.suggestions:
     ...     print dsp.name
     bingo
+
+    >>> for field in view.form_fields:
+    ...     print field.__name__
+    distributionsourcepackage
 
 And the user is presented with a form to select the distribution
 source package.
@@ -261,7 +270,23 @@ is None or the date is more than one year ago.
     >>> view.can_show_portlet
     True
 
-The user can choose a package to create a Packaging link.
+The +portlet-packages view can set the product date_last_packaging_check
+attribute so that suggestions are disabled.
+
+    >>> product.date_last_packaging_check = None
+
+    >>> form = {
+    ...     'field.actions.not-packaged': 'This is Not Packaged in Ubuntu',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> print product.date_last_packaging_check is not None
+    True
+
+The +portlet-packages view can create a Packaging link.
 
     >>> product.sourcepackages
     []
