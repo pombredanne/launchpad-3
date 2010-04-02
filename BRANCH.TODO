@@ -5,7 +5,6 @@
 
 TODO:
 
-* validation errors give misleading messages
 * uncaught constraint error on duplicate of code import URL
 * code.lp.dev/proj/series displays the overview page but it should
     direct away from the code vhost

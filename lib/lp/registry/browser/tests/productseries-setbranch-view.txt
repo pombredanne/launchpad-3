@@ -1,23 +1,23 @@
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
-
 Set branch
 ----------
 
 The productseries +setbranch view allows the user to set a branch for
-this series.  The branch can one that already exists in Launchpad, or
-a new branch in Launchpad can be defined, or it can be a repository
+this series.  The branch can be one that already exists in Launchpad,
+or a new branch in Launchpad can be defined, or it can be a repository
 that exists externally in a variety of version control systems.
 
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
     >>> product = factory.makeProduct(name="chevy")
     >>> series = factory.makeProductSeries(name="impala", product=product)
     >>> transaction.commit()
     >>> login_person(product.owner)
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner)
     >>> print find_tag_by_id(view.render(), 'maincontent')
     <div...
-    Link to a Bazaar branch already in Launchpad...
-    Create a new, empty branch in Launchpad and link to this series...
-    Import a branch hosted somewhere else...
+    ...Link to a Bazaar branch already on Launchpad...
+    ...Create a new, empty branch in Launchpad and link to this series...
+    ...Import a branch hosted somewhere else...
     ...Branch name:...
     ...Branch owner:...
 
@@ -25,13 +25,15 @@ that exists externally in a variety of version control systems.
 Linking to an existing branch
 -----------------------------
 
-If linking to an existing branch is selected then the branch location must be provided.
+If linking to an existing branch is selected then the branch location
+must be provided.
 
     >>> form = {
     ...     'field.branch_type': 'link-lp-bzr',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     The branch location must be set.
@@ -44,23 +46,25 @@ validation error.
     ...     'field.branch_location': 'foo',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     ('Invalid value', InvalidValue("token 'foo' not found in vocabulary"))
-    The branch location must be set.
 
 Providing a valid branch results in a successful linking.
 
     >>> series.branch is None
     True
-    >>> branch = factory.makeBranch(name='impala-branch', owner=product.owner, product=product)
+    >>> branch = factory.makeBranch(name='impala-branch',
+    ...                             owner=product.owner, product=product)
     >>> form = {
     ...     'field.branch_type': 'link-lp-bzr',
     ...     'field.branch_location': branch.unique_name,
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -152,7 +156,6 @@ For Bazaar branches the scheme may only be http or https.
     ...     print error
     ('repo_url'...The URI scheme "bzr" is not allowed.  Only URIs with the following schemes may be
     used: http, https'))
-    You must set the external repository URL.
 
 A correct URL is accepted.
 
@@ -190,7 +193,6 @@ Git branches cannnot use svn.
     ...     print error
     ('repo_url'...'The URI scheme "svn" is not allowed.  Only
     URIs with the following schemes may be used: git, http, https'))
-    You must set the external repository URL.
 
 But Git branches may use git.
 
@@ -230,7 +232,6 @@ But Subversion branches cannnot use git.
     ...     print error
     ('repo_url'...'The URI scheme "git" is not allowed.  Only
     URIs with the following schemes may be used: http, https, svn'))
-    You must set the external repository URL.
 
 But Subversion branches may use svn as the scheme.
 
@@ -287,7 +288,8 @@ CVS module field specified.
     ...     'field.repo_url': 'https://cvs.com/branch',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     >>> for error in view.errors:
@@ -303,7 +305,8 @@ CVS module field specified.
     ...     'field.cvs_module': 'root',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:

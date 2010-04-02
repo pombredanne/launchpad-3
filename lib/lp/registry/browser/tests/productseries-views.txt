@@ -463,34 +463,3 @@ The view reports all the reason why a series cannot be deleted.
     You cannot delete a series that is linked to packages in distributions.
     You can remove the links from the <a ...>project packaging</a> page.
     This series cannot be deleted because it has translations.
-
-
-Set branch
-----------
-
-The productseries +setbranch view allows the user to set a branch for
-this series.  The branch can one that already exists in Launchpad, or
-a new branch in Launchpad can be defined, or it can be a repository
-that exists externally in a variety of version control systems.
-
-    >>> product = factory.makeProduct(name="roomba")
-    >>> series = factory.makeProductSeries(name="rumba", product=product)
-    >>> login_person(product.owner)
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner)
-    >>> print find_tag_by_id(view.render(), 'maincontent')
-    <div...
-    Link to a Bazaar branch already in Launchpad...
-    Create a new, empty branch in Launchpad and link to this series...
-    Import a branch hosted somewhere else...
-    ...Branch name:...
-    ...Branch owner:...
-
-    >>> form = {
-    ...     'field.branch_type': 'link-lp-bzr'
-    ...     'field.action.update' 'Update'
-    ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
-    >>> for error in view.errors:
-    ...     print error

@@ -801,7 +801,6 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                           name=widget.name,
                           cssClass='')
 
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         widget = self.widgets['rcs_type']
         vocab = widget.vocabulary
         form_value = widget._getFormValue()
@@ -838,7 +837,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         """Validate data for create new case."""
         self._validateBranch(data)
 
-    def validateImportExternal(self, data):
+    def _validateImportExternal(self, data):
         """Validate data for import external case."""
         rcs_type = data.get('rcs_type')
         repo_url = data.get('repo_url')
@@ -896,7 +895,6 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
     def validate_widgets(self, data, names=None):
         """See `LaunchpadFormView`."""
         names = ['branch_type', 'rcs_type']
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         super(ProductSeriesSetBranchView, self).validate_widgets(data, names)
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
@@ -924,9 +922,13 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        # If widget validation returned errors then there is no need to
+        # continue as we'd likely just override the errors reported there.
+        if len(self.errors) > 0:
+            return
         branch_type = data['branch_type']
         if branch_type == IMPORT_EXTERNAL:
-            self.validateImportExternal(data)
+            self._validateImportExternal(data)
         elif branch_type == LINK_LP_BZR:
             self._validateLinkLpBzr(data)
         elif branch_type == CREATE_NEW:
