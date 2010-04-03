@@ -73,6 +73,9 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
+        # In dry-run mode we use a fake transaction manager with a no-op
+        # commit(), so we avoid partial commits that are performed by some of
+        # our methods.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):
@@ -83,13 +86,13 @@ class QueueBuilder(LaunchpadCronScript):
             self.txn = _FakeZTM()
 
         sorted_distroseries = self.calculateDistroseries()
-        archserieses = []
+        archseries = []
         # Initialize the relevant architectures (those with chroots).
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
-            for archseries in series.architectures:
-                if archseries.getChroot():
-                    archserieses.append(archseries)
+            for das in series.architectures:
+                if das.getChroot():
+                    archseries.append(das)
 
         if not self.options.score_only:
             # For each distroseries we care about, scan for
@@ -101,13 +104,13 @@ class QueueBuilder(LaunchpadCronScript):
 
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
-        self.addMissingBuildQueueEntries(archserieses)
-        self.scoreCandidates(archserieses)
+        self.addMissingBuildQueueEntries(archseries)
+        self.scoreCandidates(archseries)
 
         self.txn.commit()
 
     def createMissingBuilds(self, distroseries):
-        """Ensure that each published package is completly built."""
+        """Ensure that each published package is completely built."""
         self.logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroseries with no nominatedarchindep
         # they can't build architecture independent packages properly.

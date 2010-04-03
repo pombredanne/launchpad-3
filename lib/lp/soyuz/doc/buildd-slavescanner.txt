@@ -64,42 +64,6 @@ list applies, otherwise the passed list is used.  This behavior is required
 in build slaves because some jobs may only depend on certain archives and
 hence certain package dependencies.
 
-    >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
-
-    >>> builder2 = MockBuilder('Idle Slave', OkSlave())
-
-    >>> builder3 = MockBuilder(
-    ...    'Package Failed', WaitingSlave('BuildStatus.PACKAGEFAIL'))
-
-    >>> builder4 = MockBuilder(
-    ...     'Missing Dependency build',
-    ...     WaitingSlave('BuildStatus.DEPFAIL', 'baz (>= 1.0.1)'))
-
-    >>> builder5 = MockBuilder(
-    ...     'Bad Chroot', WaitingSlave('BuildStatus.CHROOTFAIL'))
-
-    >>> builder6 = MockBuilder(
-    ...     'I am out of order', WaitingSlave('BuildStatus.BUILDERFAIL'))
-
-    >>> builder7 = MockBuilder('I am busy', BuildingSlave())
-
-    >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
-
-    >>> builder9 = MockBuilder(
-    ...     'I am trying to terminate the child process', AbortingSlave())
-
-    >>> builder10 = MockBuilder(
-    ...     'Package Successfully Built',
-    ...      WaitingSlave('BuildStatus.OK'))
-
-    >>> builder11 = MockBuilder(
-    ...     'I am giving this job back',
-    ...     WaitingSlave('BuildStatus.GIVENBACK'))
-
-    >>> unused_builders_why_why_why = [
-    ...     builder1, builder2, builder3, builder4, builder5, builder6,
-    ...     builder7, builder8, builder9, builder10, builder11]
-
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
 
@@ -593,12 +557,16 @@ Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
 in our filesystem.
 
+    >>> built_builder = MockBuilder(
+    ...     'Package Successfully Built',
+    ...      WaitingSlave('BuildStatus.OK'))
+
     >>> import gzip, tempfile
     >>> fd, fname = tempfile.mkstemp()
     >>> tmp = os.fdopen(fd, 'wb')
     >>> tmp.write(logfile.read())
     >>> tmp.close()
-    >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+    >>> gzip.open(fname).read() == built_builder.slave.getFile('buildlog').read()
     True
 
 This also happens with urllib instance, we need to download it to the
@@ -609,7 +577,7 @@ filesystem before decompress.
     >>> tmp = open(fname, 'wb')
     >>> tmp.write(from_web.read())
     >>> tmp.close()
-    >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+    >>> gzip.open(fname).read() == built_builder.slave.getFile('buildlog').read()
     True
 
 Both access methods work as expected, remove the temporary file used here.
