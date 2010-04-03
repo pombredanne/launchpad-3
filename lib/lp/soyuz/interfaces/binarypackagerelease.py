@@ -11,17 +11,20 @@ __all__ = [
     'BinaryPackageFileType',
     'BinaryPackageFormat',
     'IBinaryPackageRelease',
+    'IBinaryPackageReleaseDownloadCount',
     'IBinaryPackageReleaseSet',
     ]
 
-from zope.schema import Bool, Int, Text, TextLine, Datetime
+from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import exported, export_as_webservice_entry
+from lazr.restful.fields import Reference, ReferenceChoice
+from zope.schema import Bool, Date, Int, Text, TextLine, Datetime
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-
 from canonical.launchpad.validators.version import valid_debian_version
-
-from lazr.enum import DBEnumeratedType, DBItem
+from lp.soyuz.interfaces.archive import IArchive
+from lp.services.worlddata.interfaces.country import ICountry
 
 
 class IBinaryPackageRelease(Interface):
@@ -79,6 +82,7 @@ class IBinaryPackageRelease(Interface):
         argument remains untouched.
         """
 
+
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
 
@@ -89,6 +93,35 @@ class IBinaryPackageReleaseSet(Interface):
 
     def getByNameInDistroSeries(distroseries, name):
         """Get an BinaryPackageRelease in a DistroSeries by its name"""
+
+
+class IBinaryPackageReleaseDownloadCount(Interface):
+    """Daily download count of a binary package release in an archive."""
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    archive = exported(Reference(
+        title=_('Archive'), schema=IArchive, required=True,
+        readonly=True))
+    binary_package_release = Reference(
+        title=_('The binary package release'), schema=IBinaryPackageRelease,
+        required=True, readonly=True)
+    binary_package_name = exported(
+        TextLine(
+            title=_("Binary package name"),
+            required=False, readonly=True))
+    binary_package_version = exported(
+        TextLine(
+            title=_("Binary package version"),
+            required=False, readonly=True))
+    day = exported(
+        Date(title=_('Day of the downloads'), required=True, readonly=True))
+    count = exported(
+        Int(title=_('Number of downloads'), required=True, readonly=True))
+    country = exported(
+        ReferenceChoice(
+            title=_('Country'), required=False, readonly=True,
+            vocabulary='CountryName', schema=ICountry))
 
 
 class BinaryPackageFileType(DBEnumeratedType):

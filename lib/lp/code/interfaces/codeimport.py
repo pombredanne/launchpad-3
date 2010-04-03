@@ -22,9 +22,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
+from lp.code.interfaces.branch import IBranch
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
+from lazr.restful.fields import ReferenceChoice
 
 
 def validate_cvs_root(cvsroot):
@@ -70,10 +72,11 @@ class ICodeImport(Interface):
         title=_("Date Created"), required=True, readonly=True)
 
     branch = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Branch'), required=True, readonly=True,
-            vocabulary='Branch',
-            description=_("The Bazaar branch produced by the import system.")))
+            vocabulary='Branch', schema=IBranch,
+            description=_("The Bazaar branch produced by the "
+                "import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
