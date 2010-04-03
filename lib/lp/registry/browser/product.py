@@ -21,6 +21,7 @@ __all__ = [
     'ProductNavigationMenu',
     'ProductOverviewMenu',
     'ProductPackagesView',
+    'ProductPackagesPortletView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesView',
@@ -37,6 +38,7 @@ __all__ = [
     ]
 
 
+from cgi import escape
 from operator import attrgetter
 
 from zope.component import getUtility
@@ -45,6 +47,9 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleVocabulary, SimpleTerm)
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -81,7 +86,6 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -95,13 +99,15 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, sorted_version_numbers,
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, sorted_version_numbers, StandardLaunchpadFacets,
     stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -446,7 +452,7 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'bugsupervisor',
         'securitycontact',
         'cve',
-        'subscribe'
+        'subscribe',
         )
 
     def filebug(self):
@@ -897,17 +903,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(PackagingDeleteView):
+class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
     label = 'Linked packages'
-
-    @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for series in self.context.series:
-            for packaging in series.packagings:
-                yield packaging
+    page_title = label
 
     @cachedproperty
     def series_packages(self):
@@ -921,23 +921,11 @@ class ProductPackagesView(PackagingDeleteView):
                 field: '<input type=''hidden' ...>},
                 }]
         """
-        # This method is a superset of all_packaging. While all_packaging will
-        # be called several times as data is mutated, series_packages should
-        # only be called during render().
         packaged_series = []
         for series in self.context.series:
             packagings = []
             for packaging in series.packagings:
-                form_id = 'delete-%s-%s-%s' % (
-                    packaging.distroseries.name,
-                    packaging.sourcepackagename.name,
-                    packaging.productseries.name,
-                    )
-                packaging_field = dict(
-                    packaging=packaging,
-                    form_id=form_id,
-                    field=self._renderHiddenPackagingField(packaging))
-                packagings.append(packaging_field)
+                packagings.append(packaging)
             packaged_series.append(dict(
                 series=series, packagings=packagings))
         return packaged_series
@@ -979,6 +967,70 @@ class ProductPackagesView(PackagingDeleteView):
         distro_names.sort(cmp=_cmp_distros)
         results = [distros[name] for name in distro_names]
         return results
+
+
+class ProductPackagesPortletView(LaunchpadFormView):
+    """View class for product packaging portlet."""
+
+    schema = Interface
+    custom_widget(
+        'distributionsourcepackage', LaunchpadRadioWidget,
+        orientation='vertical')
+    suggestions = None
+
+    @cachedproperty
+    def sourcepackages(self):
+        """The project's latest source packages."""
+        current_packages = [
+            sp for sp in self.context.sourcepackages
+            if sp.currentrelease is not None]
+        current_packages.reverse()
+        return current_packages[0:5]
+
+    @cachedproperty
+    def can_show_portlet(self):
+        """Are there packages, or can packages be suggested."""
+        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductPackagesPortletView, self).setUpFields()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        source_packages = ubuntu.searchSourcePackages(
+            self.context.name, has_packaging=False,
+            publishing_distroseries=ubuntu.currentseries)
+        # Based upon the matches, create a new vocabulary with
+        # term descriptions that include a link to the source package.
+        self.suggestions = []
+        vocab_terms = []
+        for package in source_packages[:20]:
+            self.suggestions.append(package)
+            item_url = canonical_url(package)
+            description = """<a href="%s">%s</a>""" % (
+                item_url, escape(package.name))
+            vocab_terms.append(SimpleTerm(package, package.name, description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        self.form_fields = form.Fields(
+            Choice(__name__='distributionsourcepackage',
+                   title=_('Ubuntu packages'),
+                   default=None,
+                   vocabulary=vocabulary,
+                   required=True))
+
+    @action(_('Link to this Ubuntu Package'), name='link')
+    def link(self, action, data):
+        product = self.context
+        dsp = data.get('distributionsourcepackage')
+        assert dsp is not None, "distributionsourcepackage was not specified"
+        product_series = product.development_focus
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        product_series.setPackaging(ubuntu.currentseries,
+                                    dsp.sourcepackagename,
+                                    self.user)
+        self.request.response.addInfoNotification(
+            'This project was linked to the source package "%s"' %
+            dsp.displayname)
+        self.next_url = self.request.getURL()
 
 
 class SeriesReleasePair:
@@ -1262,7 +1314,8 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin,
+                               ProductEditView, EditPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1301,26 +1354,6 @@ class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
-        referrer = self.request.form.get('next_url')
-        if referrer is None:
-            referrer = self.request.getHeader('referer')
-
-        if (referrer is not None
-            and referrer.startswith(self.request.getApplicationURL())):
-            return referrer
-        else:
-            return canonical_url(self.context)
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1613,7 +1646,7 @@ class ProjectAddStepOne(StepView):
         self.request.form['summary'] = data['summary']
 
 
-class ProjectAddStepTwo(StepView, ProductLicenseMixin):
+class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
@@ -1724,8 +1757,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
-            project=project
-            )
+            project=project)
 
     def main_action(self, data):
         """See `MultiStepView`."""

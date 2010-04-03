@@ -205,7 +205,7 @@ Buildlog, upload_log and binary changesfile are served via the Build
 
     >>> no_priv_browser.getLink('i386').click()
     >>> print no_priv_browser.title
-    PPA named p3a for No Privileges Person : No Privileges Person
+    i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person : No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')

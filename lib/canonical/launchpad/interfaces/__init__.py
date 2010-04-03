@@ -45,7 +45,6 @@ from lp.bugs.interfaces.bugwatch import *
 from lp.soyuz.interfaces.build import *
 from lp.buildmaster.interfaces.builder import *
 from lp.soyuz.interfaces.buildrecords import *
-from lp.soyuz.interfaces.buildqueue import *
 from lp.registry.interfaces.codeofconduct import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *

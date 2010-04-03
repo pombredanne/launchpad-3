@@ -486,7 +486,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         """Claiming a review works for members of the requested team."""
         review = self.makeTeamReview()
         albert = self.factory.makePerson()
-        albert.join(review.reviewer)
+        removeSecurityProxy(albert).join(review.reviewer)
         login_person(albert)
         view = create_initialized_view(self.bmp, '+index')
         view.claim_action.success({'review_id': review.id})

@@ -45,7 +45,7 @@ page. It's title briefly describes the build.
 
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(anon_browser.title)
-    \u201ctesting\u201d package : ubuntutest
+    i386 build : 1.0 : \u201ctesting\u201d package : ubuntutest
 
 In the page body readers can see 2 sections, 'Build status' and 'Build
 details'.
@@ -146,7 +146,7 @@ messages.
     # build with an known buildlog 'tail'.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.database.constants import UTC_NOW
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> in_progress_build.buildqueue_record.reset()
     >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'
@@ -446,7 +446,7 @@ navigate to packages.
     >>> anon_browser.open(ppa_build_url)
 
     >>> print anon_browser.title
-    PPA for Celso Providelo : Celso Providelo
+    i386 build of ppa-test 1.0 : PPA for Celso Providelo : Celso Providelo
 
 The 'Build status' section is identical for PPAs.
 
@@ -542,7 +542,7 @@ record always link to its binaries.
     >>> anon_browser.open(imported_build_url)
 
     >>> print backslashreplace(anon_browser.title)
-    \u201cimported\u201d package : ubuntutest
+    i386 build : 666 : \u201cimported\u201d package : ubuntutest
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'binaries'))

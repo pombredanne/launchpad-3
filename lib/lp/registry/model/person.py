@@ -837,16 +837,6 @@ class Person(
         """No-op, to satisfy a requirement of HasBugsBase."""
         pass
 
-    @property
-    def max_bug_heat(self):
-        """Return None as this attribute is not implemented for a person.
-
-        XXX deryck 2010-02-28 bug=529846
-        This requires a DB patch to be done correctly, and we're
-        near release and tests are failing.
-        """
-        return None
-
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
         if search_params is None and len(args) == 0:
@@ -2187,20 +2177,20 @@ class Person(
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def pendinggpgkeys(self):
+    def pending_gpg_keys(self):
         """See `IPerson`."""
         logintokenset = getUtility(ILoginTokenSet)
         return sorted(set(token.fingerprint for token in
                       logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
-    def inactivegpgkeys(self):
+    def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
 
     @property
-    def gpgkeys(self):
+    def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)

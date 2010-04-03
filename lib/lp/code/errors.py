@@ -17,6 +17,8 @@ __all__ = [
     'WrongBranchMergeProposal',
 ]
 
+from lazr.restful.declarations import webservice_error
+
 
 class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
@@ -39,6 +41,7 @@ class InvalidBranchMergeProposal(Exception):
 
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
+    webservice_error(400) #Bad request.
 
 
 class ReviewNotPending(Exception):

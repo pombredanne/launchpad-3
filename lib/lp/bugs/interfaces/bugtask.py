@@ -39,7 +39,6 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -304,9 +303,6 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
 
-UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES = (
-    UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,))
-
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
@@ -502,11 +498,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
-    task_age = exported(
-        Int(title=_("Age of the bug task"),
+    task_age = Int(title=_("Age of the bug task"),
             description=_("The age of this task in seconds, a delta between "
-                         "now and the date the bug task was created."),
-            readonly=True))
+                         "now and the date the bug task was created."))
     owner = exported(
         Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
@@ -828,10 +822,10 @@ class IBugTaskSearchBase(Interface):
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
     has_branches = Bool(
-        title=_('Show only bugs with linked branches'), required=False,
+        title=_('Show bugs with linked branches'), required=False,
         default=True)
     has_no_branches = Bool(
-        title=_('Show only bugs without linked branches'), required=False,
+        title=_('Show bugs without linked branches'), required=False,
         default=True)
 
 

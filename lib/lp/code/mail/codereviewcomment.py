@@ -7,11 +7,11 @@
 __metaclass__ = type
 
 
-from lp.code.enums import CodeReviewNotificationLevel
-from canonical.launchpad.mail import format_address
-from canonical.launchpad.mailout import append_footer
-from lp.code.mail.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import canonical_url
+
+from lp.code.enums import CodeReviewNotificationLevel
+from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.services.mail.sendmail import append_footer, format_address
 
 
 def send(comment, event):

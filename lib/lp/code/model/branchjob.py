@@ -20,6 +20,7 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchFile
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -55,7 +56,7 @@ from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
-from lp.registry.model.productseries import ProductSeries
+from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
@@ -269,7 +270,7 @@ class BranchScanJob(BranchJobDerived):
 
     @classmethod
     def create(cls, branch):
-        """See `IBranchUpgradeJobSource`."""
+        """See `IBranchScanJobSource`."""
         branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
         return cls(branch_job)
 
@@ -324,8 +325,10 @@ class BranchUpgradeJob(BranchJobDerived):
         upgrade_branch_path = tempfile.mkdtemp()
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
+            upgrade_transport.mkdir('.bzr')
             source_branch_transport = get_transport(self.branch.getPullURL())
-            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            source_branch_transport.clone('.bzr').copy_tree_to_transport(
+                upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
@@ -343,9 +346,14 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            upgrade_transport.delete_tree('backup.bzr')
+            try:
+                source_branch_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
             source_branch_transport.rename('.bzr', 'backup.bzr')
-            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+            source_branch_transport.mkdir('.bzr')
+            upgrade_transport.clone('.bzr').copy_tree_to_transport(
+                source_branch_transport.clone('.bzr'))
 
             self.branch.requestMirror()
         finally:
@@ -716,20 +724,9 @@ class RosettaUploadJob(BranchJobDerived):
     @classmethod
     def providesTranslationFiles(cls, branch):
         """See `IRosettaUploadJobSource`."""
-        return not cls.findProductSeries(branch).is_empty()
-
-    @staticmethod
-    def findProductSeries(branch, force_translations_upload=False):
-        """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-        conditions = [ProductSeries.branch == branch]
-        if not force_translations_upload:
-            import_mode = ProductSeries.translations_autoimport_mode
-            conditions.append(
-                import_mode != TranslationsBranchImportMode.NO_IMPORT)
-
-        return store.find(ProductSeries, And(*conditions))
+        productseries = getUtility(
+            IProductSeriesSet).findByTranslationsImportBranch(branch)
+        return not productseries.is_empty()
 
     @classmethod
     def create(cls, branch, from_revision_id,
@@ -877,7 +874,8 @@ class RosettaUploadJob(BranchJobDerived):
         self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
-        productseries = self.findProductSeries(
+        productseriesset = getUtility(IProductSeriesSet)
+        productseries = productseriesset.findByTranslationsImportBranch(
             self.branch, self.force_translations_upload)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:

@@ -34,12 +34,13 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import (
+    SourcePackageType, SourcePackageUrgency)
 from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -51,9 +52,8 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
 from lp.soyuz.scripts.queue import QueueActionError
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.sourcepackage import (
-    SourcePackageType, SourcePackageUrgency)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -100,6 +100,7 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
+    changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')

@@ -197,8 +197,8 @@ class cmd_test(EC2Command):
             'email', short_name='e', argname='EMAIL', type=str,
             help=('Email address to which results should be mailed.  '
                   'Defaults to the email address from `bzr whoami`. May be '
-                  'supplied multiple times. The first supplied email address '
-                  'will be used as the From: address.')),
+                  'supplied multiple times. `bzr whoami` will be used as '
+                  'the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),

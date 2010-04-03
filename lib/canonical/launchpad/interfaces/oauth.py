@@ -16,6 +16,7 @@ __all__ = [
     'IOAuthNonce',
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
+    'IOAuthSignedRequest',
     'NonceAlreadyUsed',
     'TimestampOrderingError',
     'ClockSkew',
@@ -246,6 +247,11 @@ class IOAuthNonce(Interface):
         title=_('Date issued'), required=True, readonly=True)
     access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
+
+
+class IOAuthSignedRequest(Interface):
+    """Marker interface for a request signed with OAuth credentials."""
+
 
 # Note that these three exceptions are converted to Unauthorized (equating to
 # 401 status) in webapp/servers.py, WebServicePublication.getPrincipal.

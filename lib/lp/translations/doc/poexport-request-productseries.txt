@@ -35,11 +35,12 @@ to the product series.
 Now we request that the queue be processed.
 
     >>> import logging
-    >>> from lp.testing.faketransaction import FakeTransaction
+    >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> logger = MockLogger()
     >>> logger.setLevel(logging.DEBUG)
-    >>> process_queue(FakeTransaction(), logger)
+    >>> transaction.commit()
+    >>> process_queue(transaction, logger)
     log> Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in

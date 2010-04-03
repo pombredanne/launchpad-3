@@ -24,7 +24,6 @@ from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
    collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
@@ -62,13 +61,13 @@ from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
-
 class IDistributionMirrorMenuMarker(Interface):
     """Marker interface for Mirror navigation."""
 
 
 class DistributionNameField(PillarNameField):
     """The pillar for a distribution."""
+
     @property
     def _content_iface(self):
         """Return the interface of this pillar object."""
@@ -115,8 +114,8 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "The distribution summary. A short paragraph "
-                "describing the goals and highlights of the distro."),
+                "A short paragraph to introduce the the goals and highlights "
+                "of the distribution."),
             required=True))
     homepage_content = exported(
         Text(
@@ -153,7 +152,11 @@ class IDistributionPublic(
     description = exported(
         Description(
             title=_("Description"),
-            description=_("The distro's description."),
+            description=_(
+                "Details about the distributions's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages. Don't repeat the "
+                "Summary."),
             required=True))
     domainname = exported(
         TextLine(
@@ -213,7 +216,6 @@ class IDistributionPublic(
             value_type=Reference(schema=Interface)))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
-    bugCounter = Attribute("The distro bug counter")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
@@ -221,7 +223,8 @@ class IDistributionPublic(
     # properties
     currentseries = exported(
         Reference(
-            Interface, # Really IDistroSeries, see _schema_circular_imports.py.
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            Interface,
             title=_("Current series"),
             description=_(
                 "The current development series of this distribution. "
@@ -407,17 +410,26 @@ class IDistributionPublic(
     # _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def searchSourcePackages(text):
+    def searchSourcePackages(
+        text, has_packaging=None, publishing_distroseries=None):
         """Search for source packages that correspond to the given text.
 
         This method just decorates the result of searchSourcePackageCaches()
         to return DistributionSourcePackages.
         """
 
-    def searchSourcePackageCaches(text):
+    def searchSourcePackageCaches(
+        text, has_packaging=None, publishing_distroseries=None):
         """Search for source packages that correspond to the given text.
 
         :param text: The text that will be matched.
+        :param has_packaging: If True, it will filter out
+            packages with no packaging (i.e. no link to the upstream
+            project). False will do the reverse filtering, and None
+            will do no filtering on this field.
+        :param publishing_distroseries: If it is not None, then
+            it will filter out source packages that do not have a
+            publishing history for the given distroseries.
         :return: A result set containing
             (DistributionSourcePackageCache, SourcePackageName, rank) tuples
             ordered by rank.
@@ -591,4 +603,4 @@ class NoPartnerArchive(Exception):
     def __init__(self, distribution):
         Exception.__init__(
             self, "Partner archive for distro '%s' not found"
-            % (distribution.name,))
+            % (distribution.name, ))

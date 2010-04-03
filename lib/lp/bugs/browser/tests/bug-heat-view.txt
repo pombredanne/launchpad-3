@@ -9,8 +9,8 @@ bugtask_heat_html is used to render the flames.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from BeautifulSoup import BeautifulSoup
     >>> from lp.bugs.browser.bugtask import bugtask_heat_html
-    >>> def print_flames(bugtask):
-    ...     html = bugtask_heat_html(bugtask)
+    >>> def print_flames(bugtask, target=None):
+    ...     html = bugtask_heat_html(bugtask, target=target)
     ...     soup = BeautifulSoup(html)
     ...     for img in soup.span.contents:
     ...         print img['src']
@@ -45,6 +45,31 @@ A heat of less than a quarter of the maximum will display no coloured flames.
     /@@/bug-heat-0.png
     0 out of 4 heat flames
     Heat: 500
+
+
+== Specifying the target ==
+
+Some bugs can be viewed in a context different from their task's target. For
+example, bugs with tasks on packages can be viewed in the context of the entire
+distribution. In such cases, we want to explicitly specify the target, rather
+than use the bugtask's. We can do that by passing the target as a keyword
+parameter.
+
+    >>> bug = factory.makeBug()
+    >>> distro = factory.makeDistribution()
+    >>> dsp = factory.makeDistributionSourcePackage(distribution=distro)
+    >>> dsp_task = bug.addTask(bug.owner, dsp)
+    >>> removeSecurityProxy(distro).max_bug_heat = MAX_HEAT
+    >>> removeSecurityProxy(dsp).max_bug_heat = MAX_HEAT / 2
+    >>> removeSecurityProxy(bug).heat = MAX_HEAT / 4
+    >>> print_flames(dsp_task)
+    /@@/bug-heat-2.png
+    2 out of 4 heat flames
+    Heat: 1250
+    >>> print_flames(dsp_task, target=distro)
+    /@@/bug-heat-0.png
+    0 out of 4 heat flames
+    Heat: 1250
 
     >>> logout()
 

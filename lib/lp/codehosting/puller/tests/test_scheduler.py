@@ -16,27 +16,27 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error, reactor, task
+from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
-from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
-from lp.codehosting.puller.tests import PullerBranchTestCase
-from lp.codehosting.puller.worker import (
-    get_canonical_url_for_branch_name)
 from canonical.config import config
-from lp.code.enums import BranchType
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
-from canonical.twistedsupport.tests.test_processmonitor import (
+from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
+from lp.codehosting.puller.tests import PullerBranchTestCase
+from lp.codehosting.puller.worker import (
+    get_canonical_url_for_branch_name)
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
+from lp.testing.factory import ObjectFactory
 
 
 class FakePullerEndpointProxy:
@@ -662,11 +662,6 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.

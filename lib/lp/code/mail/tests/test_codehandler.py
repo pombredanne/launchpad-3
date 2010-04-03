@@ -183,8 +183,16 @@ class TestCodeHandler(TestCaseWithFactory):
         """When a non-existant address is supplied, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')
         self.switchDbUser(config.processmail.dbuser)
-        self.assertFalse(self.code_handler.process(mail,
+        self.assertTrue(self.code_handler.process(mail,
             'mp+0@code.launchpad.dev', None))
+        notification = pop_notifications()[0]
+        self.assertEqual('Submit Request Failure', notification['subject'])
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        self.assertIn(
+            "There is no merge proposal at mp+0@code.launchpad.dev\n",
+            message.get_payload(decode=True))
 
     def test_processBadVote(self):
         """process handles bad votes properly."""
@@ -436,6 +444,35 @@ class TestCodeHandler(TestCaseWithFactory):
         comment, md2 = code_handler.findMergeDirectiveAndComment(message)
         self.assertEqual('', comment)
         transaction.commit()
+
+    def test_findMergeDirectiveAndComment_no_content_type(self):
+        """Parts with no content-type are treated as text/plain."""
+        md = self.factory.makeMergeDirective()
+        message = self.factory.makeSignedMessage(
+            body='', attachment_contents=''.join(md.to_lines()))
+        body = message.get_payload()[0]
+        del body['Content-type']
+        body.set_payload('body')
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual('body', comment)
+
+    def test_findMergeDirectiveAndComment_case_insensitive(self):
+        """findMergeDirectiveAndComment uses case-insensitive content-type."""
+        md = self.factory.makeMergeDirective()
+        message = self.factory.makeSignedMessage(
+            body='', attachment_contents=''.join(md.to_lines()))
+        body = message.get_payload()[0]
+        # Unlike dicts, messages append when you assign to a key.  So
+        # we must delete the first Content-type before adding another.
+        del body['Content-type']
+        body['Content-type'] = 'Text/Plain'
+        body.set_payload('body')
+        self.switchDbUser(config.processmail.dbuser)
+        code_handler = CodeHandler()
+        comment, md2 = code_handler.findMergeDirectiveAndComment(message)
+        self.assertEqual('body', comment)
 
     def test_findMergeDirectiveAndCommentUnicodeBody(self):
         """findMergeDirectiveAndComment returns unicode comments."""

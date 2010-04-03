@@ -52,8 +52,7 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
@@ -1313,7 +1312,7 @@ class BugsPatchesView(LaunchpadView):
         return BatchNavigator(
             self.context.searchTasks(
                 None, user=self.user, order_by=orderby,
-                status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
+                status=UNRESOLVED_BUGTASK_STATUSES,
                 omit_duplicates=True, has_patch=True),
             self.request)
 

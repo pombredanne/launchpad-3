@@ -355,7 +355,8 @@ are building as well as the number of packages waiting to build.
 
 Let's set some builds appropriately to see the results.
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.soyuz.interfaces.build import IBuildSet
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
     >>> ignore = source.sourcepackagerelease.createBuild(

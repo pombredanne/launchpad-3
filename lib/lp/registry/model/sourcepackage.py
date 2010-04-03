@@ -12,19 +12,21 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.model.build import Build, BuildSet
@@ -48,7 +50,6 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -157,7 +158,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin,
+                    HasBugHeatMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -166,8 +168,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
-        IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        IHasTranslationTemplates, IQuestionTarget)
 
     classProvides(ISourcePackageFactory)
 
@@ -477,10 +479,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
-            Packaging(distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            productseries=productseries, owner=user,
-            packaging=PackagingType.PRIME)
+            Packaging(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=productseries, owner=user,
+                packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
 
@@ -568,6 +571,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             include_status=[PackagePublishingStatus.PUBLISHED])
         if latest_publishing is not None:
             return latest_publishing.component
+        else:
+            return None
+
+    @property
+    def latest_published_component_name(self):
+        """See `ISourcePackage`."""
+        if self.latest_published_component is not None:
+            return self.latest_published_component.name
         else:
             return None
 

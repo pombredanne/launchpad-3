@@ -86,7 +86,7 @@ The page title and other wording in the page reflects the contents.
     Main heading: Patch attachments in Patchy 1
 
 After creating some more bugs, with some non-patch and some patch
-attachments...
+attachments, and various statuses...
 
     >>> bug_b = factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bug,
@@ -98,6 +98,11 @@ attachments...
     ...     title="bug_c title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXCOMMITTED)
+    >>> bug_d = factory.doAsUser(
+    ...     'foo.bar@canonical.com', make_bug,
+    ...     title="bug_d title", product=patchy_product,
+    ...     importance=BugTaskImportance.WISHLIST,
+    ...     status=BugTaskStatus.FIXRELEASED)
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch b",
@@ -132,8 +137,15 @@ attachments...
     ...     filename="patch_f.diff", owner=patch_submitter,
     ...     description="description of patch f", bug=bug_c, is_patch=True)
     <BugAttachment at...
+    >>> factory.doAsUser(
+    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    ...     comment="comment about patch g",
+    ...     filename="patch_g.diff", owner=patch_submitter,
+    ...     description="description of patch g", bug=bug_d, is_patch=True)
+    <BugAttachment at...
 
-...the youngest patch on each bug is visible in the patch report.
+...the youngest patch on each bug is visible in the patch report
+(except for bugs in "Fix Released" state, which aren't shown):
 
     >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -265,7 +277,7 @@ package when viewed via a distribution.
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
     ...     target='evolution', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.MEDIUM,
-    ...     status=BugTaskStatus.FIXRELEASED)
+    ...     status=BugTaskStatus.FIXCOMMITTED)
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
     ...     target='a52dec', target_is_spkg_name=True,
@@ -279,7 +291,7 @@ package when viewed via a distribution.
     Bug #18: bug_c title       High       Triaged    a52dec  ...second...
     From: Patchy Person
     Link: patch_f.diff description of patch f
-    Bug #16: bug_a title       Medium   Fix Released   evolution  ...second...
+    Bug #16: bug_a title       Medium   Fix Committed  evolution  ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
 
@@ -353,7 +365,7 @@ target package column in that case, because the package is implied.
     ...     'http://bugs.launchpad.dev/ubuntu/+source/evolution/+patches')
     >>> show_patches_view(anon_browser.contents)
     Bug                       Importance   Status     Patch Age
-    Bug #16: bug_a title       Medium   Fix Released  ...second...
+    Bug #16: bug_a title       Medium   Fix Committed ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
 
@@ -371,9 +383,11 @@ Patches View by Person and Team
 
 The patches view works for people and teams.
 
+    # Must remove the security proxy because IPerson.name is protected.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> submitter_name = removeSecurityProxy(patch_submitter).name
     >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/~%s/+patches' % (
-    ...         patch_submitter.name,))
+    ...     'http://bugs.launchpad.dev/~%s/+patches' % submitter_name)
 
     >>> show_patches_view(anon_browser.contents)
     Bug                  Importance  Status        Project          Patch Age
@@ -424,9 +438,9 @@ The patches view is linked to from a portlet on the product bugs page.
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'patchy-product-1')
     3 Open bugs
-    1 Critical bugs
+    1 Critical bug
     0 Bugs fixed elsewhere
-    1 New bugs
+    1 New bug
     0 Open CVE bugs - CVE reports
     3 Bugs need forwarding upstream
     3 Bugs with patches
@@ -434,9 +448,9 @@ The patches view is linked to from a portlet on the product bugs page.
 It's also linked to from a portlet on the source package bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/+source/a52dec')
-    1 Open bugs
+    1 Open bug
     0 Critical bugs
-    1 Bugs fixed elsewhere
+    1 Bug fixed elsewhere
     0 New bugs
     0 Open CVE bugs
     1 Bug with a patch
@@ -448,14 +462,14 @@ And from a portlet on the distro series bugs page:
     0 Critical bugs
     0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bugs - CVE reports
+    1 Open CVE bug - CVE report
     0 Incomplete bugs (can expire)
     1 Bug with a patch
 
 And from a portlet on the distro bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu')
-    8 Open bugs
+    9 Open bugs
     0 Critical bugs
     2 Bugs fixed elsewhere
     6 New bugs
@@ -483,7 +497,7 @@ bugs too.
     From: Patchy Person
     Link: patch_c.diff
     description of patch c
-    Bug #16: bug_a title         Medium    Fix Released evolution ...second...
+    Bug #16: bug_a title         Medium  Fix Committed evolution  ...second...
     From: Patchy Person
     Link: patch_a.diff
     description of patch a

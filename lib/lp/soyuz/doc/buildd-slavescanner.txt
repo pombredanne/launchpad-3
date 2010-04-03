@@ -88,15 +88,16 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.rescueIfLost(logger)
-    WARNING:root:Builder 'Lost Building Slave' rescued from
-    '1000-10000': 'Object not found'
+    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
 
 Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> lostwaiting_builder.rescueIfLost(logger)
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'Object not found'
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000':
+    'Build 1000 is not available: 'Object not found''
 
 Both got rescued, as expected.
 
@@ -143,42 +144,6 @@ exist in the apt sources.list.  If nothing is passed, the chroot's default
 list applies, otherwise the passed list is used.  This behavior is required
 in build slaves because some jobs may only depend on certain archives and
 hence certain package dependencies.
-
-    >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
-
-    >>> builder2 = MockBuilder('Idle Slave', OkSlave())
-
-    >>> builder3 = MockBuilder(
-    ...    'Package Failed', WaitingSlave('BuildStatus.PACKAGEFAIL'))
-
-    >>> builder4 = MockBuilder(
-    ...     'Missing Dependency build',
-    ...     WaitingSlave('BuildStatus.DEPFAIL', 'baz (>= 1.0.1)'))
-
-    >>> builder5 = MockBuilder(
-    ...     'Bad Chroot', WaitingSlave('BuildStatus.CHROOTFAIL'))
-
-    >>> builder6 = MockBuilder(
-    ...     'I am out of order', WaitingSlave('BuildStatus.BUILDERFAIL'))
-
-    >>> builder7 = MockBuilder('I am busy', BuildingSlave())
-
-    >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
-
-    >>> builder9 = MockBuilder(
-    ...     'I am trying to terminate the child process', AbortingSlave())
-
-    >>> builder10 = MockBuilder(
-    ...     'Package Successfully Built',
-    ...      WaitingSlave('BuildStatus.OK'))
-
-    >>> builder11 = MockBuilder(
-    ...     'I am giving this job back',
-    ...     WaitingSlave('BuildStatus.GIVENBACK'))
-
-    >>> unused_builders_why_why_why = [
-    ...     builder1, builder2, builder3, builder4, builder5, builder6,
-    ...     builder7, builder8, builder9, builder10, builder11]
 
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
@@ -276,7 +241,7 @@ Do the test execution:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
     >>> a_builder.updateBuild(bqItem4)
-    CRITICAL:root:***** bob is MANUALDEPWAIT *****
+    CRITICAL:slave-scanner:***** bob is MANUALDEPWAIT *****
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -305,7 +270,7 @@ builder, but right state stored in Build entry:
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
     >>> a_builder.updateBuild(bqItem5)
-    CRITICAL:root:***** bob is CHROOTWAIT *****
+    CRITICAL:slave-scanner:***** bob is CHROOTWAIT *****
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -331,7 +296,7 @@ Create a mock slave so the builder can operate - one with a builder error.
     ...     WaitingSlave('BuildStatus.BUILDERFAIL'))
 
     >>> a_builder.updateBuild(bqItem6)
-    WARNING:root:***** bob has failed *****
+    WARNING:slave-scanner:***** bob has failed *****
 
     >>> from canonical.launchpad.ftests import sync
     >>> sync(a_builder)
@@ -395,6 +360,8 @@ next build round:
     >>> a_builder.updateBuild(bqItem8)
     >>> bqItem8.builder is None
     True
+    >>> print bqItem8.specific_job.build.buildstate.name
+    NEEDSBUILD
 
 Cleanup in preparation for the next test:
 
@@ -451,6 +418,7 @@ FAILEDTOUPLOAD:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
     >>> a_builder.updateBuild(bqItem10)
+    WARNING:slave-scanner:Build ... upload failed.
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -486,7 +454,7 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://launchpad.dev/.../buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt.gz
+    * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
     INFO    creating lockfile
@@ -536,7 +504,7 @@ Create a mock slave so the builder gets the right responses for this test.
 Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognize this build record as a
@@ -574,7 +542,7 @@ Create a mock slave so the builder gets the right responses for this test.
     >>> bqItem11.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
     >>> a_builder.updateBuild(bqItem11)
-    WARNING:root:***** 1-1 is GIVENBACK by bob *****
+    WARNING:slave-scanner:***** 1-1 is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
 can't be sure if logtail will contain any information, because it
@@ -670,12 +638,16 @@ Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
 in our filesystem.
 
+    >>> built_builder = MockBuilder(
+    ...     'Package Successfully Built',
+    ...      WaitingSlave('BuildStatus.OK'))
+
     >>> import gzip, tempfile
     >>> fd, fname = tempfile.mkstemp()
     >>> tmp = os.fdopen(fd, 'wb')
     >>> tmp.write(logfile.read())
     >>> tmp.close()
-    >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+    >>> gzip.open(fname).read() == built_builder.slave.getFile('buildlog').read()
     True
 
 This also happens with urllib instance, we need to download it to the
@@ -686,7 +658,7 @@ filesystem before decompress.
     >>> tmp = open(fname, 'wb')
     >>> tmp.write(from_web.read())
     >>> tmp.close()
-    >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+    >>> gzip.open(fname).read() == built_builder.slave.getFile('buildlog').read()
     True
 
 Both access methods work as expected, remove the temporary file used here.
@@ -1252,6 +1224,7 @@ the restricted librarian.
     >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> a_builder.updateBuild(candidate)
+    WARNING:slave-scanner:Build ... upload failed.
     >>> local_transaction.commit()
 
     >>> build.archive.private

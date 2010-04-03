@@ -201,7 +201,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         file.close()
 
         # Write the same contents in a temp file.
-        fd, temp_filename = tempfile.mkstemp()
+        fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         file = os.fdopen(fd, "w")
         file.write(FILE_CONTENT)
         file.close()

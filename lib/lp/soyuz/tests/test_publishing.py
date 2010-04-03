@@ -14,34 +14,34 @@ import unittest
 import pytz
 from zope.component import getUtility
 
-from lp.archivepublisher.config import Config
-from lp.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.testing import LaunchpadZopelessLayer
+from lp.archivepublisher.config import Config
+from lp.archivepublisher.diskpool import DiskPool
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority, PackagePublishingStatus)
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.scripts import FakeLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class SoyuzTestPublisher:
@@ -133,7 +133,7 @@ class SoyuzTestPublisher:
                          changes_file_name="foo_666_source.changes",
                          changes_file_content="fake changes file content",
                          upload_status=PackageUploadStatus.DONE):
-        signing_key =  self.person.gpgkeys[0]
+        signing_key =  self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, changes_file_name, changes_file_content, archive,
             signing_key)
@@ -197,10 +197,11 @@ class SoyuzTestPublisher:
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
+            changelog=None,
             changelog_entry=None,
             dsc=None,
             copyright='placeholder ...',
-            dscsigningkey=self.person.gpgkeys[0],
+            dscsigningkey=self.person.gpg_keys[0],
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -219,14 +220,14 @@ class SoyuzTestPublisher:
             upload_status=upload_status)
         package_upload.addSource(spr)
 
-        if spr_only:
-            return spr
-
         if filename is None:
             filename = "%s_%s.dsc" % (sourcename, version)
         alias = self.addMockFile(
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
+
+        if spr_only:
+            return spr
 
         if status == PackagePublishingStatus.PUBLISHED:
             datepublished = UTC_NOW
@@ -259,8 +260,12 @@ class SoyuzTestPublisher:
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
                        scheduleddeletiondate=None, dateremoved=None,
-                       distroseries=None, archive=None,
-                       pub_source=None, builder=None):
+                       distroseries=None,
+                       archive=None,
+                       pub_source=None,
+                       version='666',
+                       architecturespecific=False,
+                       builder=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -270,9 +275,15 @@ class SoyuzTestPublisher:
 
         if pub_source is None:
             sourcename = "%s" % binaryname.split('-')[0]
+            if architecturespecific:
+                architecturehintlist = 'any'
+            else:
+                architecturehintlist = 'all'
+
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
-                archive=archive, distroseries=distroseries)
+                archive=archive, distroseries=distroseries,
+                version=version, architecturehintlist=architecturehintlist)
         else:
             archive = pub_source.archive
 
@@ -405,7 +416,7 @@ class SoyuzTestPublisher:
         """File with given name fragment in directory tree starting at top."""
         for root, dirs, files in os.walk(top, topdown=False):
             for name in files:
-                if (name.endswith('.changes') and 
+                if (name.endswith('.changes') and
                     name.find(name_fragment) > -1):
                     return os.path.join(root, name)
         return None

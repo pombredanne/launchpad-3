@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
+# pylint: disable-msg=W0231,E1002
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -50,7 +50,8 @@ from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
     IFeedsApplication, IPrivateApplication, IWebServiceApplication)
 from canonical.launchpad.interfaces.oauth import (
-    ClockSkew, IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError)
+    ClockSkew, IOAuthConsumerSet, IOAuthSignedRequest, NonceAlreadyUsed,
+    TimestampOrderingError)
 import canonical.launchpad.layers
 
 from canonical.launchpad.webapp.adapter import (
@@ -60,10 +61,10 @@ from canonical.launchpad.webapp.authorization import (
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
+    IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
-    IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
-    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
-    IPlacelessLoginSource, OAuthPermission)
+    INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
+    IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -578,6 +579,10 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def isRedirectInhibited(self):
+        """Returns True if edge redirection has been inhibited."""
+        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     @cachedproperty
     def form_ng(self):
@@ -1224,6 +1229,7 @@ class WebServicePublication(WebServicePublicationMixin,
             # auto-creating a token for the anonymous user the first
             # time, passing it through the OAuth verification step,
             # and using it on all subsequent anonymous requests.
+            alsoProvides(request, IOAuthSignedRequest)
             auth_utility = getUtility(IPlacelessAuthUtility)
             return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
@@ -1245,6 +1251,7 @@ class WebServicePublication(WebServicePublicationMixin,
         else:
             # Everything is fine, let's return the principal.
             pass
+        alsoProvides(request, IOAuthSignedRequest)
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.account.id, access_level=token.permission,
             scope=token.context)

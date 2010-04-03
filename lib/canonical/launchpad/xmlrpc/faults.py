@@ -27,6 +27,7 @@ __all__ = [
     'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
+    'NoSuchCodeImportJob',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -474,3 +475,12 @@ class NoSuchSourcePackageName(LaunchpadFault):
         self.sourcepackagename = sourcepackagename
         LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
 
+
+class NoSuchCodeImportJob(LaunchpadFault):
+    """Raised by `ICodeImportScheduler` methods when a job is not found."""
+
+    error_code = 360
+    msg_template = 'Job %(job_id)d not found.'
+
+    def __init__(self, job_id):
+        LaunchpadFault.__init__(self, job_id=job_id)

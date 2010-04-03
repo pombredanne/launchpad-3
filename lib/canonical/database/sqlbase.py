@@ -427,6 +427,16 @@ class ZopelessTransactionManager(object):
         """Abort the current transaction."""
         transaction.abort()
 
+    @staticmethod
+    def registerSynch(synch):
+        """Register an ISynchronizer."""
+        transaction.manager.registerSynch(synch)
+
+    @staticmethod
+    def unregisterSynch(synch):
+        """Unregister an ISynchronizer."""
+        transaction.manager.unregisterSynch(synch)
+
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache. SQLObject compatibility - DEPRECATED.

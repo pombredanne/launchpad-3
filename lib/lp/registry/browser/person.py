@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,C0322
 
 """Person-related view classes."""
 
@@ -102,7 +102,7 @@ from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import adapts, getUtility
+from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -116,7 +116,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
-from lazr.restful.interface import copy_field, use_template
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
@@ -175,8 +175,8 @@ from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.build import IBuildSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
@@ -221,7 +221,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import get_current_view
@@ -429,11 +428,23 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return None
         return irc_nick
 
-    @stepthrough('+archivesubscriptions')
-    def traverse_archive_subscription(self, archive_id):
+    @stepto('+archivesubscriptions')
+    def traverse_archive_subscription(self):
         """Traverse to the archive subscription for this person."""
-        return traverse_archive_subscription_for_subscriber(
-            self.context, archive_id)
+        if self.context.is_team:
+            raise NotFoundError
+
+        if self.request.stepstogo:
+            # In which case we assume it is the archive_id (for the
+            # moment, archive name will be an option soon).
+            archive_id = self.request.stepstogo.consume()
+            return traverse_archive_subscription_for_subscriber(
+                self.context, archive_id)
+        else:
+            # Otherwise we return the normal view for a person's
+            # archive subscriptions.
+            return queryMultiAdapter(
+                (self.context, self.request), name ="+archivesubscriptions")
 
 
 class TeamNavigation(PersonNavigation):
@@ -754,7 +765,7 @@ class PersonBugsMenu(NavigationMenu):
         return Link('+assignedbugs', text, site='bugs', summary=summary)
 
     def softwarebugs(self):
-        text = 'Show package report'
+        text = 'List subscribed packages'
         summary = (
             'A summary report for packages where %s is a bug supervisor.'
             % self.context.displayname)
@@ -1198,7 +1209,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         mailing_list = self.person.mailing_list
-        if mailing_list is not None and mailing_list.is_usable:
+        if mailing_list is not None:
             text = 'Configure mailing list'
             icon = 'edit'
         else:
@@ -1392,7 +1403,6 @@ class PersonAddView(LaunchpadFormView):
 
 
 class DeactivateAccountSchema(Interface):
-    use_template(IPerson, include=['password'])
     comment = copy_field(
         IPerson['account_status_comment'], readonly=False, __name__='comment')
 
@@ -1402,19 +1412,6 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     schema = DeactivateAccountSchema
     label = "Deactivate your Launchpad account"
     custom_widget('comment', TextAreaWidget, height=5, width=60)
-
-    def validate(self, data):
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(
-            self.user.preferredemail.email)
-        assert principal is not None, "User must be logged in at this point."
-        # The widget will transform '' into a special marker value.
-        password = data.get('password')
-        if password is self.schema['password'].UNCHANGED_PASSWORD:
-            password = u''
-        if not principal.validate(password):
-            self.setFieldError('password', 'Incorrect password.')
-            return
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
@@ -2683,7 +2680,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         It's shown when the person has OpenPGP keys registered or has rights
         to register new ones.
         """
-        return bool(self.context.gpgkeys) or (
+        return bool(self.context.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
 
     @cachedproperty

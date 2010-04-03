@@ -30,9 +30,9 @@ database/sampledata/newsampledata.sql
 database/sampledata/newsampledata-dev.sql
 database/sampledata/lintdata.sql
 database/sampledata/lintdata-dev.sql
-lib/canonical/launchpad/apidoc/index.html
+lib/canonical/launchpad/apidoc/*.html
 xxx-report.*
-lib/canonical/launchpad/apidoc/wadl-development.xml
+lib/canonical/launchpad/apidoc/wadl-development-*.xml
 lib/canonical/launchpad/apidoc/wadl-test-playground.xml
 lib/canonical/launchpad/icing/build/*
 lib/canonical/launchpad/icing/combo.css
@@ -60,3 +60,9 @@ lib/canonical/buildd/launchpad-files
 .testrepository
 .memcache.pid
 ./pipes
+lib/canonical/launchpad/apidoc/wadl-development-*.xml
+tags.new
+lp-clustered.dot
+lp-clustered.sfood
+lp-clustered.svg
+lp.sfood

@@ -24,8 +24,29 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     path_override = "api"
     active_versions = ["beta", "1.0", "devel"]
+    last_version_with_mutator_named_operations = "beta"
     view_permission = "launchpad.View"
     set_hop_by_hop_headers = True
+
+    service_description = """The Launchpad web service allows automated
+        clients to access most of the functionality available on the
+        Launchpad web site. For help getting started, see
+        <a href="https://help.launchpad.net/API/">the help wiki.</a>"""
+
+    version_descriptions = {
+        "beta": """This is the first version of the web service ever
+        published. Its end-of-life date is April 2011, the same as the
+        Ubuntu release "Karmic Koala".""",
+
+        "1.0": """This version of the web service removes unnecessary
+        named operations. It was introduced in March 2010, and its
+        end-of-life date is April 2015, the same as the server version
+        of the Ubuntu release "Lucid Lynx".""",
+
+        "devel": """This version of the web service reflects the most
+        recent changes made. It may abruptly change without
+        warning. Periodically, these changes are bundled up and given a
+        permanent version number.""" }
 
     @property
     def use_https(self):

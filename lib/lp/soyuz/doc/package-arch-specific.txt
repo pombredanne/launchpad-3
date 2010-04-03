@@ -95,7 +95,7 @@ Hoary has only 'hppa' and 'i386' architectures.
 See if the code which determines archs to build does the right thing for
 each of these options:
 
-    >>> from lp.soyuz.model.pas import (
+    >>> from lp.soyuz.pas import (
     ...     BuildDaemonPackagesArchSpecific, determineArchitecturesToBuild)
 
     >>> def print_build_architectures(pub, pas_verify=None):

@@ -1412,13 +1412,16 @@
             facet="overview"
             template="../templates/product-portlet-license-missing.pt"/>
         <browser:page
-            name="+portlet-packages"
-            facet="overview"
-            template="../templates/product-portlet-packages.pt"/>
-        <browser:page
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        name="+portlet-packages"
+        facet="overview"
+        class="lp.registry.browser.product.ProductPackagesPortletView"
+        template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductSeriesView"
@@ -1946,6 +1949,14 @@
         facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
         template="../templates/sourcepackage-portlet-associations.pt"/>
+
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
+        name="+upstream-connections"
+        facet="overview"
+        class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
+        template="../templates/sourcepackage-upstream-connections.pt"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
@@ -2122,6 +2133,14 @@
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="launchpad.AnyPerson"
+        class="lp.registry.browser.sourcepackage.SourcePackageRemoveUpstreamView"
+        name="+remove-packaging"
+        facet="overview"
+        template="../templates/sourcepackage-remove-packaging.pt"
+        />
 
     <browser:page
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
@@ -2153,4 +2172,17 @@
         classes="
             PersonProductFacets"
         module="lp.registry.browser.personproduct"/>
+
+    <browser:url
+        for="lp.registry.interfaces.ssh.ISSHKey"
+        path_expression="string:+ssh-keys/${id}"
+        rootsite="api"
+        attribute_to_parent="person" />
+
+    <browser:url
+        for="lp.registry.interfaces.gpg.IGPGKey"
+        path_expression="string:+gpg-keys/${keyid}"
+        rootsite="api"
+        attribute_to_parent="owner" />
+
 </configure>

@@ -107,6 +107,11 @@ The view provides access to the latest release if it has one.
     >>> print view.latest_release_with_download_files.version
     0.9.2
 
+The view also provides a link to register a new code import.
+
+    >>> print view.request_import_link
+    http://launchpad.dev/firefox/+new-import
+
 
 Edit ProductSeries
 ------------------

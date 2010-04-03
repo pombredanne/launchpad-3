@@ -62,10 +62,20 @@ class FakeStore:
         expected_value = kwargs[attribute]
         branch = self._object_set.get(branch_id)
         if branch is None:
-            return None
+            return FakeResult(None)
         if expected_value is getattr(branch, attribute):
-            return branch
+            return FakeResult(branch)
         return None
+
+
+class FakeResult:
+    """As with FakeStore, just enough of a result to pass tests."""
+
+    def __init__(self, branch):
+        self._branch = branch
+
+    def one(self):
+        return self._branch
 
 
 class FakeDatabaseObject:

@@ -37,7 +37,7 @@
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
-           canonical.launchpad.event.interfaces.IReviewerNominatedEvent"
+           lp.code.interfaces.event.IReviewerNominatedEvent"
       handler="lp.code.mail.branchmergeproposal.send_review_requested_notifications"/>
 
   <!-- CodeImportMachine -->
@@ -279,7 +279,7 @@
   </class>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
+           lp.code.interfaces.event.INewBranchMergeProposalEvent"
       handler="lp.code.mail.branchmergeproposal.send_merge_proposal_created_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
@@ -287,11 +287,11 @@
       handler="lp.code.mail.branchmergeproposal.send_merge_proposal_modified_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
+           lp.code.interfaces.event.INewBranchMergeProposalEvent"
       handler="canonical.launchpad.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           canonical.launchpad.event.interfaces.IBranchMergeProposalStatusChangeEvent"
+           lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
       handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed"/>
   <adapter
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -701,11 +701,11 @@
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
+           lp.code.interfaces.event.INewCodeReviewCommentEvent"
       handler="lp.code.mail.codereviewcomment.send"/>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
+           lp.code.interfaces.event.INewCodeReviewCommentEvent"
       handler="canonical.launchpad.subscribers.karma.code_review_comment_added"/>
   <adapter
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
@@ -1010,7 +1010,7 @@
     <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe"/>
+       set_attributes="builder_recipe build_daily"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

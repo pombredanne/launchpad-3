@@ -21,7 +21,7 @@ from zope.schema import Int, Object
 from canonical.launchpad import _
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -79,17 +79,12 @@ class ISourcePackageRecipeBuildSource(Interface):
         """
 
 
-class ISourcePackageRecipeBuildJob(IBuildFarmJob):
+class ISourcePackageRecipeBuildJob(IBuildFarmBuildJob):
     """A read-only interface for recipe build jobs."""
 
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
         description=_("Data common to all job types."))
-
-    build = Reference(
-        ISourcePackageRecipeBuild, title=_("Build"),
-        required=True, readonly=True,
-        description=_("Build record associated with this job."))
 
 
 class ISourcePackageRecipeBuildJobSource(Interface):

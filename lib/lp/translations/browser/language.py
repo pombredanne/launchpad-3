@@ -34,7 +34,6 @@ from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -214,8 +213,32 @@ class LanguageView(TranslationsMixin, LaunchpadView):
                 })
         return translation_teams
 
-    def getTopContributors(self):
-        return self.context.translators[:20]
+    @property
+    def top_contributors(self):
+        """
+        Get the top 20 contributors for a language.
+
+        If an account has been merged, the account into which it was
+        merged will be returned.
+        """
+        translators = []
+        for translator in reversed(list(self.context.translators)):
+            # Get only the top 20 contributors
+            if (len(translators) >= 20):
+                break
+
+            # For merged account add the target account
+            if translator.merged != None:
+                translator_target = translator.merged
+            else:
+                translator_target = translator
+
+            # Add translator only if it was not previouly added as a
+            # merged account
+            if translator_target not in translators:
+                translators.append(translator_target)
+
+        return translators
 
     @property
     def friendly_plural_forms(self):

@@ -17,14 +17,15 @@ from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.pas import BuildDaemonPackagesArchSpecific
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now
@@ -73,6 +74,9 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
+        # In dry-run mode we use a fake transaction manager with a no-op
+        # commit(), so we avoid partial commits that are performed by some of
+        # our methods.
         class _FakeZTM:
             """A fake transaction manager."""
             def commit(self):
@@ -83,13 +87,13 @@ class QueueBuilder(LaunchpadCronScript):
             self.txn = _FakeZTM()
 
         sorted_distroseries = self.calculateDistroseries()
-        archserieses = []
+        archseries = []
         # Initialize the relevant architectures (those with chroots).
         # it's needed even for 'score-only' mode.
         for series in sorted_distroseries:
-            for archseries in series.architectures:
-                if archseries.getChroot():
-                    archserieses.append(archseries)
+            for das in series.architectures:
+                if das.getChroot():
+                    archseries.append(das)
 
         if not self.options.score_only:
             # For each distroseries we care about, scan for
@@ -101,13 +105,13 @@ class QueueBuilder(LaunchpadCronScript):
 
         # Ensure all NEEDSBUILD builds have a buildqueue entry
         # and re-score them.
-        self.addMissingBuildQueueEntries(archserieses)
-        self.scoreCandidates(archserieses)
+        self.addMissingBuildQueueEntries(archseries)
+        self.scoreCandidates(archseries)
 
         self.txn.commit()
 
     def createMissingBuilds(self, distroseries):
-        """Ensure that each published package is completly built."""
+        """Ensure that each published package is completely built."""
         self.logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroseries with no nominatedarchindep
         # they can't build architecture independent packages properly.

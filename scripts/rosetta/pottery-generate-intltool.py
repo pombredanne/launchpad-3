@@ -8,7 +8,7 @@
 import _pythonpath
 
 
-from lp.translations.pottery.buildd import generate_pots
+from canonical.buildd.pottery.intltool import generate_pots
 
 
 if __name__ == "__main__":
