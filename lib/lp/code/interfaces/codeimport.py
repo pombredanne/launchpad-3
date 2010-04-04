@@ -180,7 +180,7 @@ class ICodeImport(Interface):
 
     @call_with(requester=REQUEST_USER)
     @export_write_operation()
-    def requestImport(requester):
+    def requestImport(requester, error_if_already_requested=False):
         """Request that an import be tried soon."""
 
 

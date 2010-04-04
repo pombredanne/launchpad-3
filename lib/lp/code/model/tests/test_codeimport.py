@@ -14,7 +14,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from lp.code.errors import (
-    CodeImportAlreadyRunning, CodeImportNotInReviewedState)
+    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
@@ -654,6 +655,16 @@ class TestRequestImport(TestCaseWithFactory):
         # an exception.
         self.assertEqual(requester, code_import.import_job.requesting_user)
         self.assertEqual(old_date, code_import.import_job.date_due)
+
+    def test_optional_error_if_already_requested(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        code_import.requestImport(requester)
+        old_date = code_import.import_job.date_due
+        self.assertRaises(
+            CodeImportAlreadyRequested, code_import.requestImport, requester,
+            error_if_already_requested=True)
 
     def test_exception_on_disabled(self):
         # get an SVN request, which isn't reviewed by default
