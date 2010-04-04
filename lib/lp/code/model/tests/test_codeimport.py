@@ -662,9 +662,10 @@ class TestRequestImport(TestCaseWithFactory):
         requester = self.factory.makePerson()
         code_import.requestImport(requester)
         old_date = code_import.import_job.date_due
-        self.assertRaises(
+        e = self.assertRaises(
             CodeImportAlreadyRequested, code_import.requestImport, requester,
             error_if_already_requested=True)
+        self.assertEqual(requester, e.requesting_user)
 
     def test_exception_on_disabled(self):
         # get an SVN request, which isn't reviewed by default

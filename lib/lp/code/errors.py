@@ -80,6 +80,10 @@ class CodeImportNotInReviewedState(Exception):
 class CodeImportAlreadyRequested(Exception):
     """Raised when the user requests an import that is already requested."""
 
+    def __init__(self, msg, requesting_user):
+        super(CodeImportAlreadyRequested, self).__init__(msg)
+        self.requesting_user = requesting_user
+
 
 class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""

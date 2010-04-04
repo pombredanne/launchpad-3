@@ -213,7 +213,8 @@ class CodeImport(SQLBase):
         elif self.import_job.requesting_user is not None:
             if error_if_already_requested:
                 raise CodeImportAlreadyRequested("This code import has "
-                    "already been requested to run.")
+                    "already been requested to run.",
+                    self.import_job.requesting_user)
         else:
             getUtility(ICodeImportJobWorkflow).requestJob(
                 self.import_job, requester)
