@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'BrowserWindowDimensions',
     'DoesNotExistView',
     'Hierarchy',
     'IcingContribFolder',
@@ -994,13 +993,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
     def scope_error(self):
         """The error message for the scope widget."""
         return self.getFieldError('scope')
-
-
-class BrowserWindowDimensions(LaunchpadView):
-    """Allow capture of browser window dimensions."""
-
-    def render(self):
-        return u'Thanks.'
 
 
 class LaunchpadGraphics(LaunchpadView):
