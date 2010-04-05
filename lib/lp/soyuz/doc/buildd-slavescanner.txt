@@ -32,10 +32,10 @@ standard output with noisily output.
 Import MockBuilder and a series of MockSlaves to be used in this test.
 
     >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
-    ...    AbortedSlave, AbortingSlave, BrokenSlave, BuildingSlave,
-    ...    InsaneWaitingSlave, LostBuildingBrokenSlave,
-    ...    LostBuildingSlave, LostWaitingSlave, MockBuilder, OkSlave,
-    ...    SaneBuildingSlave, SaneWaitingSlave, WaitingSlave)
+    ...    AbortedSlave, AbortingSlave, BuildingSlave, InsaneWaitingSlave,
+    ...    LostBuildingBrokenSlave, LostBuildingSlave, LostWaitingSlave,
+    ...    MockBuilder, OkSlave, SaneBuildingSlave, SaneWaitingSlave,
+    ...    WaitingSlave)
 
 Let's play with a Builder method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
