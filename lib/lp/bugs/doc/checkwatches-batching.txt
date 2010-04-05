@@ -17,7 +17,7 @@ Basics
 ------
 
     >>> class BasicRemoteSystem:
-    ...     pass
+    ...     sync_comments = False
 
     >>> remote = BasicRemoteSystem()
 
@@ -72,6 +72,7 @@ asked which of a list of bugs have been modified since a given date.
     >>> from zope.security.proxy import removeSecurityProxy
 
     >>> class QueryableRemoteSystem:
+    ...     sync_comments = False
     ...     def getModifiedRemoteBugs(self, remote_bug_ids, timestamp):
     ...         print "getModifiedRemoteBugs(%r, %r)" % (
     ...             remote_bug_ids, timestamp)

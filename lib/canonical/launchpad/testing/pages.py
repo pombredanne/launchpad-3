@@ -29,8 +29,6 @@ from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
 
-from launchpadlib.launchpad import Launchpad
-
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
     TeamMembershipStatus)
@@ -727,9 +725,6 @@ def setUpGlobs(test):
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', '')
-    test.globs['launchpad'] = Launchpad.login(
-        'launchpad-library', 'salgado-change-anything', 'test',
-        service_root='http://api.launchpad.dev/', version="devel")
     test.globs['setupBrowser'] = setupBrowser
     test.globs['setupDTCBrowser'] = setupDTCBrowser
     test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser

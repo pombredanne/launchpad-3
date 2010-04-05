@@ -11,6 +11,7 @@ __all__ = [
     'CheckWatchesCronScript',
     'CheckWatchesErrorUtility',
     'externalbugtracker',
+    'report_oops',
     'SerialScheduler',
     'TooMuchTimeSkew',
     'TwistedThreadScheduler',
@@ -86,9 +87,12 @@ _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
    (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
    (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnparseableBugTrackerVersion,
+    BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
    (InvalidBugId, BugWatchActivityStatus.INVALID_BUG_ID),
    (BugNotFound, BugWatchActivityStatus.BUG_NOT_FOUND),
    (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
@@ -314,13 +318,13 @@ class BugWatchUpdater(object):
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
         with self.transaction:
-            ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
+            ubuntu_bugzilla = (
+                getUtility(ILaunchpadCelebrities).ubuntu_bugzilla)
             # Save the name, so we can use it in other transactions.
             ubuntu_bugzilla_name = ubuntu_bugzilla.name
             # Get all bug tracker names if none have been specified.
             if bug_tracker_names is None:
-                bug_tracker_names = [
-                    tracker.name for tracker in getUtility(IBugTrackerSet)]
+                bug_tracker_names = sorted(getUtility(IBugTrackerSet).names)
 
         def make_updater(bug_tracker_name, bug_tracker_id):
             """Returns a function that can update the given bug tracker."""
@@ -484,7 +488,7 @@ class BugWatchUpdater(object):
                 break
             with self.transaction:
                 watches_left = (
-                    bug_tracker.getBugWatchesNeedingUpdate().count())
+                    bug_tracker.watches_needing_update.count())
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
@@ -549,7 +553,7 @@ class BugWatchUpdater(object):
         """Updates the given bug trackers's bug watches."""
         with self.transaction:
             bug_watches_to_update = (
-                bug_tracker.getBugWatchesNeedingUpdate())
+                bug_tracker.watches_needing_update)
             bug_watches_need_updating = (
                 bug_watches_to_update.count() > 0)
 
@@ -666,7 +670,8 @@ class BugWatchUpdater(object):
             else:
                 oldest_lastchecked = min(
                     bug_watch.lastchecked for bug_watch in old_bug_watches)
-                # Adjust for possible time skew, and some more, just to be safe.
+                # Adjust for possible time skew, and some more, just to be
+                # safe.
                 oldest_lastchecked -= (
                     self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
             # Collate the remote IDs.
@@ -675,9 +680,14 @@ class BugWatchUpdater(object):
             remote_new_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in bug_watches
                 if bug_watch not in old_bug_watches))
-            remote_ids_with_comments = sorted(
-                bug_watch.remotebug for bug_watch in bug_watches
-                if bug_watch.unpushed_comments.any() is not None)
+            # If the remote system is not configured to sync comments,
+            # don't bother checking for any to push.
+            if remotesystem.sync_comments:
+                remote_ids_with_comments = sorted(
+                    bug_watch.remotebug for bug_watch in bug_watches
+                    if bug_watch.unpushed_comments.any() is not None)
+            else:
+                remote_ids_with_comments = []
 
         # We only make the call to getModifiedRemoteBugs() if there
         # are actually some bugs that we're interested in so as to
@@ -1070,7 +1080,8 @@ class BugWatchUpdater(object):
                 comment_message = external_bugtracker.getMessageForComment(
                     remote_bug_id, comment_id, poster)
 
-                bug_message = bug_watch.addComment(comment_id, comment_message)
+                bug_message = bug_watch.addComment(
+                    comment_id, comment_message)
                 imported_comments.append(bug_message)
 
             if len(imported_comments) > 0:
