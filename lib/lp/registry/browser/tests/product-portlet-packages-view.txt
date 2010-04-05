@@ -27,7 +27,7 @@ does not happen automatically.
     ...     transaction.commit()
     ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     updated = ubuntu.updateCompleteSourcePackageCache(
+    ...     ignore = ubuntu.updateCompleteSourcePackageCache(
     ...         archive=ubuntu.main_archive, log=logger, ztm=transaction)
     ...     transaction.commit()
     ...     reconnect_stores('launchpad')
