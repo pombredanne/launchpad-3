@@ -93,21 +93,11 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             queue.addOrUpdateEntriesFromTarball(
                 tarball, False, branch.owner, productseries=series)
 
-    def slaveStatus(self, raw_slave_status):
+    def updateSlaveStatus(self, raw_slave_status, status):
         """See `IBuildFarmJobBehavior`."""
-        builder_status = raw_slave_status[0]
-
-        if builder_status == 'BuilderStatus.WAITING':
-            extra_info = {
-                'build_status': raw_slave_status[1],
-                'build_id': raw_slave_status[2],
-                }
-            if len(raw_slave_status) >= 3:
-                extra_info['filemap'] = raw_slave_status[3]
-            return extra_info
-        else:
-            # Nothing special to do for other states.
-            return {}
+        if status['builder_status'] == 'BuilderStatus.WAITING':
+            if len(raw_slave_status) >= 4:
+                status['filemap'] = raw_slave_status[3]
 
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.
@@ -133,7 +123,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     build_id))
             else:
                 logger.debug("Uploading translation templates tarball.")
-                self._uploadTarball(tarball, logger)
+                self._uploadTarball(queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
         queue_item.builder.cleanSlave()

@@ -18,6 +18,8 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp import urlsplit
+from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
@@ -25,7 +27,8 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
-from lp.bugs.scripts.checkwatches.scheduler import BugWatchScheduler
+from lp.bugs.scripts.checkwatches.scheduler import (
+    BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.registry.interfaces.person import IPersonSet
 
 from lp.testing import TestCaseWithFactory
@@ -379,10 +382,95 @@ class TestBugWatchBugTasks(TestCaseWithFactory):
             self.bug_watch.bugtasks, list)
 
 
+class TestBugWatchActivityPruner(TestCaseWithFactory):
+    """TestCase for the BugWatchActivityPruner."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBugWatchActivityPruner, self).setUp(
+            'foo.bar@canonical.com')
+        self.bug_watch = self.factory.makeBugWatch()
+        for i in range(MAX_SAMPLE_SIZE + 1):
+            self.bug_watch.addActivity()
+
+        self.pruner = BugWatchActivityPruner(QuietFakeLogger())
+        transaction.commit()
+
+    def test_getPrunableBugWatchIds(self):
+        # BugWatchActivityPruner.getPrunableBugWatchIds() will return a
+        # set containing the IDs of BugWatches whose activity can be
+        # pruned.
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+        self.assertEqual(1, len(prunable_ids))
+        self.failUnless(
+            self.bug_watch.id in prunable_ids,
+            "BugWatch ID not present in prunable_ids.")
+
+        # Even if we specify a bigger chunk size, only one result will
+        # be returned.
+        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
+        self.assertEqual(1, len(prunable_ids))
+
+        # If we add another BugWatch with prunable activity, it too will
+        # be returned.
+        new_watch = self.factory.makeBugWatch()
+        for i in range(10):
+            new_watch.addActivity()
+
+        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
+        self.assertEqual(2, len(prunable_ids))
+
+    def test_pruneBugWatchActivity(self):
+        # BugWatchActivityPruner.pruneBugWatchActivity() will prune the
+        # activity for all the BugWatches whose IDs are passed to it.
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+
+        self.layer.switchDbUser('garbo')
+        self.pruner.pruneBugWatchActivity(prunable_ids)
+
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+        self.assertEqual(0, len(prunable_ids))
+
+    def test_call_prunes_activity(self):
+        # BugWatchActivityPruner is a callable object. Calling it will
+        # cause it to prune the BugWatchActivity of prunable watches.
+        self.layer.switchDbUser('garbo')
+        self.pruner(chunk_size=1)
+
+        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
+        self.assertEqual(0, len(prunable_ids))
+
+    def test_isDone(self):
+        # BugWatchActivityPruner.isDone() returns True when there are no
+        # more prunable BugWatches. Until then, it returns False.
+        self.layer.switchDbUser('garbo')
+        self.assertFalse(self.pruner.isDone())
+        self.pruner(chunk_size=1)
+        self.assertTrue(self.pruner.isDone())
+
+    def test_pruneBugWatchActivity_leaves_most_recent(self):
+        # BugWatchActivityPruner.pruneBugWatchActivity() will delete all
+        # but the n most recent BugWatchActivity items for a bug watch,
+        # where n is determined by checkwatches.scheduler.MAX_SAMPLE_SIZE.
+        for i in range(5):
+            self.bug_watch.addActivity(message="Activity %s" % i)
+        transaction.commit()
+
+        self.layer.switchDbUser('garbo')
+        self.assertEqual(MAX_SAMPLE_SIZE + 6, self.bug_watch.activity.count())
+        self.pruner.pruneBugWatchActivity([self.bug_watch.id])
+        self.assertEqual(MAX_SAMPLE_SIZE, self.bug_watch.activity.count())
+
+        messages = [activity.message for activity in self.bug_watch.activity]
+        for i in range(MAX_SAMPLE_SIZE):
+            self.failUnless("Activity %s" % i in messages)
+
+
 class TestBugWatchScheduler(TestCaseWithFactory):
     """Tests for the BugWatchScheduler, which runs as part of garbo."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugWatchScheduler, self).setUp('foo.bar@canonical.com')
@@ -390,10 +478,9 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         # they've been scheduled so that only our watch gets scheduled.
         for watch in getUtility(IBugWatchSet).search():
             watch.next_check = datetime.now(utc)
-
         self.bug_watch = self.factory.makeBugWatch()
-        transaction.commit()
         self.scheduler = BugWatchScheduler(QuietFakeLogger())
+        transaction.commit()
 
     def test_scheduler_schedules_unchecked_watches(self):
         # The BugWatchScheduler will schedule a BugWatch that has never
