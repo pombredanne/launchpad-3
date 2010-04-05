@@ -414,14 +414,14 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateEditView"
             permission="launchpad.Edit"
-            template="../../app/templates/generic-edit-next-url.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
             permission="launchpad.TranslationsAdmin"
-            template="../../app/templates/generic-edit-next-url.pt"
+            template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
             name="+export"

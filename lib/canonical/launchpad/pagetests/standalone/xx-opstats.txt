@@ -236,8 +236,6 @@ to somewhere that doesn't exist.
     ...     [database]
     ...     rw_main_master: dbname=nonexistant
     ...     rw_main_slave: dbname=nonexistant
-    ...     auth_master: dbname=nonexistant
-    ...     auth_slave: dbname=nonexistant
     ...
     ...     [launchpad_session]
     ...     dbname: nonexistant

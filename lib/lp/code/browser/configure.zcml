@@ -714,6 +714,11 @@
             template="../templates/codeimport-new.pt"
             permission="launchpad.AnyPerson"/>
     </facet>
+    <browser:url
+        for="lp.code.interfaces.codeimport.ICodeImport"
+        attribute_to_parent="branch"
+        path_expression="string:+code-import"
+        rootsite="code"/>
     <browser:navigation
         module="lp.code.browser.codeimport"
         classes="

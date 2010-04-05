@@ -7,6 +7,7 @@ web service versions, and links to version-specific documents.
     >>> browser.open('http://launchpad.dev/+apidoc')
     >>> print extract_text(browser.contents)
     Launchpad Web Service API
+    ...
     Launchpad web service API documentation
     ...
     Active versions

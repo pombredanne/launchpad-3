@@ -172,6 +172,28 @@ archives are published on disk.
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
 
+'status' tracks the status of an Archive.  Its current values are only
+ACTIVE and DELETING.  ACTIVE is the normal value; DELETING is set when
+the user has requested the PPA to be deleted.  The actual deletion is done
+some time later in a zopeless script.
+
+It is only editable by someone with launchpad.Edit permissions:
+
+    >>> print cprov_archive.status.name
+    ACTIVE
+
+    >>> from lp.soyuz.interfaces.archive import ArchiveStatus
+    >>> cprov_archive.status = ArchiveStatus.DELETING
+    >>> print cprov_archive.status.name
+    DELETING
+
+    >>> login(ANONYMOUS)
+    >>> cprov_archive.status = ArchiveStatus.ACTIVE
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+
 'name' is only editable by an LP administrator and only exposed via
 the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
 using default names.
@@ -1262,26 +1284,6 @@ Attempts to remove a non-existent dependency results in a AssertionError.
     Traceback (most recent call last):
     ...
     AssertionError: This dependency does not exist.
-
-Since the 'dependency' property only returns explicitly recorded
-archive dependencies and we usually need the expanded list when
-inspecting the build domain we have also implemented the
-'expanded_archive_dependencies' property. It returns implicit
-dependencies, including the archive itself and the PRIMARY archive
-dependency for PPAs.
-
-    >>> def print_expanded_archive_dependencies(archive):
-    ...     for dep in archive.expanded_archive_dependencies:
-    ...         print dep.displayname
-
-    >>> print_expanded_archive_dependencies(ubuntu.main_archive)
-    Primary Archive for Ubuntu Linux
-
-    >>> print_expanded_archive_dependencies(cprov.archive)
-    Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
-    PPA for Mark Shuttleworth
-
 
 == Find binary package dependency candidates ==
 
@@ -2771,3 +2773,47 @@ already created accordingly.
 
     >>> ppa_with_key.signing_key == cprov.archive.signing_key
     True
+
+
+== Download counts ==
+
+Counts of downloads per binary package release, day and country are kept
+up to date by a log-processing script. Archives have a method to get the
+total number of downloads for a particular binary package release.
+
+    >>> login('mark@example.com')
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     architecturespecific=True)
+    >>> archive = binaries[0].archive
+    >>> binary0, binary1 = (b.binarypackagerelease for b in binaries)
+
+The new packages have no downloads yet.
+
+    >>> print archive.getPackageDownloadTotal(binary0)
+    0
+    >>> print archive.getPackageDownloadTotal(binary1)
+    0
+
+We will fake some package downloads.
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+    >>> uk = getUtility(ICountrySet)['GB']
+
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 21), None, 10)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 22), uk, 5)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 22), australia, 4)
+
+    >>> archive.updatePackageDownloadCount(
+    ...     binary1, date(2010, 2, 21), australia, 2)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary1, date(2010, 2, 21), uk, 1)
+
+    >>> print archive.getPackageDownloadTotal(binary0)
+    19
+    >>> print archive.getPackageDownloadTotal(binary1)
+    3

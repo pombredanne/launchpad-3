@@ -104,32 +104,11 @@
       </tal:buildernok>
     </tal:no_job>
 
-    <tal:comment replace="nothing">
-      In the very near future, 'job' will not just be a Build job.
-      The template needs to cope with that as and when new job types are
-      added.
-    </tal:comment>
-    <tal:job condition="job">
+    <tal:job-header condition="job">
       <span class="sortkey" tal:content="job/id" />
-      <tal:build define="build job/specific_job/build">
-        <tal:visible condition="build/required:launchpad.View">
-          <tal:icon replace="structure build/image:icon" />
-          Building
-          <a tal:attributes="href build/fmt:url"
-             tal:content="build/title"
-            >i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE</a>
-          <tal:ppa condition="build/archive/is_ppa"
-                   define="ppa build/archive;">
-            <span tal:replace="string: [${ppa/owner/name}/${ppa/name}]"
-              >[cprov/ppa]</span>
-          </tal:ppa>
-        </tal:visible>
-        <tal:restricted condition="not: build/required:launchpad.View">
-          <img src="/@@/processing" alt="[building]" />
-          Building private source
-        </tal:restricted>
-      </tal:build>
-    </tal:job>
+      <img src="/@@/processing" alt="[building]" />
+      <tal:specific-job replace="structure job/specific_job/@@+current" />
+    </tal:job-header>
 
   </metal:macro>
 
@@ -147,7 +126,7 @@
         </span>
       Current status</h2>
 
-      <p tal:define="builder context">
+      <p tal:define="builder context" id="current-build-summary">
         <metal:summary use-macro="template/macros/status-summary" />
       </p>
 
@@ -156,27 +135,7 @@
                           context/failnotes/fmt:text-to-html" />
       </tal:buildernok>
 
-      <tal:job condition="job">
-        <p class="sprite">Started
-          <span tal:attributes="title job/job/date_started/fmt:datetime"
-                tal:content="view/current_build_duration/fmt:exactduration"
-            /> ago.</p>
-        <tal:visible
-           define="build job/specific_job/build"
-           condition="build/required:launchpad.View">
-          <tal:logtail condition="job/logtail">
-            <h3>Buildlog</h3>
-            <div tal:content="structure job/logtail/fmt:text-to-html"
-                 id="buildlog-tail" class="logtail">
-              Things are crashing and burning all over the place.
-            </div>
-            <p class="discreet" tal:condition="view/user">
-              Updated on
-              <span tal:replace="structure view/user/fmt:local-time"/>
-            </p>
-          </tal:logtail>
-        </tal:visible>
-      </tal:job>
+      <tal:job condition="job" replace="structure job/@@+current" />
     </div>
 
   </metal:macro>

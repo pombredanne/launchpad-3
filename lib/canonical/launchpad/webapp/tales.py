@@ -1494,12 +1494,12 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(target)s: %(branch)s')
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {'product': self._context.product.displayname,
+        return {'target': self._context.branch.target.displayname,
                 'branch': self._context.branch.bzr_identity,
                }
 
@@ -1512,6 +1512,26 @@ class CodeImportFormatterAPI(CustomizableFormatter):
             self._context.branch, path_only_if_possible=True,
             view_name=view_name)
         return url
+
+
+class BuildBaseFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IBuildBase` objects."""
+    def _composeArchiveReference(self, archive):
+        if archive.is_ppa:
+            return " [%s/%s]" % (
+                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+        else:
+            return ""
+
+    def link(self, view_name, rootsite=None):
+        build = self._context
+        if not check_permission('launchpad.View', build):
+            return 'private source'
+
+        url = self.url(view_name=view_name, rootsite=rootsite)
+        title = cgi.escape(build.title)
+        archive = self._composeArchiveReference(build.archive)
+        return '<a href="%s">%s</a>%s' % (url, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):

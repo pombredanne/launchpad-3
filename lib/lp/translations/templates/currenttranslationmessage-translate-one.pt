@@ -42,6 +42,7 @@
       <a href=""
          tal:condition="not:context/potmsgset/is_translation_credit"
          tal:attributes="
+           id string:${view/html_id}_singular_copy_text;
            onClick string:
              javascript:copyInnerHTMLById(
                '${view/html_id}_singular',
@@ -172,7 +173,7 @@
   <tal:translation-dictionaries
        repeat="translation_dictionary view/translation_dictionaries">
   <tal:plural-form define="plural_index translation_dictionary/plural_index">
-    <tr class="secondary translation">
+    <tr tal:attributes="class string:secondary translation ${view/html_id}">
       <th colspan="3">
         <label class="language-code">Current
           <span tal:replace="context/pofile/language/englishname">
@@ -321,9 +322,10 @@
         </td>
       </tal:locked>
     </tr>
-      <tr class="secondary confirm_and_dismiss"
-          tal:define="name_id string:${view/html_id}_dismiss"
-          tal:condition="view/can_confirm_and_dismiss">
+      <tr tal:define="name_id string:${view/html_id}_dismiss"
+          tal:condition="view/can_confirm_and_dismiss"
+          tal:attributes="
+            class string:secondary confirm_and_dismiss ${view/html_id}">
         <td colspan="4"></td>
         <td>
           <label class="fuzzy-checkbox" tal:attributes="for name_id">
@@ -504,8 +506,6 @@
               lang context/pofile/language/dashedcode;
               dir context/pofile/language/abbreviated_text_dir;
               value translation_dictionary/submitted_translation;
-              onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-              onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
             "
             class="translate expandable"
           />
@@ -528,8 +528,6 @@
                   name string:${translation_dictionary/html_id_translation}_new;
                   lang context/pofile/language/dashedcode;
                   dir context/pofile/language/abbreviated_text_dir;
-                  onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-                  onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                 ">
 <tal:content replace="translation_dictionary/submitted_translation" /></textarea>
             </tal:with-content>
@@ -548,8 +546,6 @@
                   name string:${translation_dictionary/html_id_translation}_new;
                   lang context/pofile/language/dashedcode;
                   dir context/pofile/language/abbreviated_text_dir;
-                  onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-                  onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                 "></textarea>
             </tal:without-content>
           </tal:multi-line>
@@ -595,7 +591,8 @@
              value="force_suggestion"
              tal:attributes="
                checked view/force_suggestion;
-               name string:${view/html_id}_${language_code}_needsreview"
+               name string:${view/html_id}_${language_code}_needsreview;
+               id string:${view/html_id}_force_suggestion;"
              />
            <tal:block condition="not:view/is_plural">
              Someone should review this translation

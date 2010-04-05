@@ -151,10 +151,8 @@ We'll create two new accounts to demonstrate this.
     >>> language_code = 'es'
     >>> pofile = factory.makePOFile(language_code, potemplate=template)
     >>> potmsgset = factory.makePOTMsgSet(template)
-    >>> potmsgset.setSequence(template, 1)
     >>> translation = factory.makeTranslationMessage(pofile=pofile,
     ...     translator=merged_translator, potmsgset=potmsgset)
-    >>> potmsgset.setSequence(template, 2)
     >>> translation = factory.makeTranslationMessage(pofile=pofile,
     ...     translator=translator, potmsgset=potmsgset)
     >>> from zope.security.proxy import removeSecurityProxy
@@ -165,10 +163,13 @@ We'll create two new accounts to demonstrate this.
     ...     ("http://translations.launchpad.dev/"
     ...     "ubuntu/hoary/+source/%s/+pots/%s/%s/+details") % (
     ...     package.name, template.name, language_code))
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> main_text = extract_text(find_main_content(browser.contents))
+    >>> print main_text
     Details for ...
     Contributors to this translation
     The following people have made some contribution to this specific
     translation:
     Poly Glot (filter)
 
+    >>> u'Mere Pere' in main_text
+    False

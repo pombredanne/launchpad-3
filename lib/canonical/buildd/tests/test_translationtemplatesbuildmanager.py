@@ -8,6 +8,7 @@ import os
 from unittest import TestLoader
 
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 from canonical.buildd.translationtemplates import (
     TranslationTemplatesBuildManager, TranslationTemplatesBuildState)
@@ -41,6 +42,8 @@ class FakeSlave:
 
     def wasCalled(self, name):
         return name in self._was_called
+
+    addWaitingFile = FakeMethod()
 
 
 class MockBuildManager(TranslationTemplatesBuildManager):
@@ -102,10 +105,19 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
         self.assertEqual(
             TranslationTemplatesBuildState.GENERATE, self.getState())
         expected_command = [
-            'generatepath', 'generatepath', self.buildid, url,
+            'generatepath', 'generatepath', self.buildid, url, 'resultarchive'
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
         self.assertFalse(self.slave.wasCalled('chrootFail'))
+
+        outfile_path = os.path.join(
+            self.chrootdir, self.buildmanager.home[1:],
+            self.buildmanager._resultname)
+        os.makedirs(os.path.dirname(outfile_path))
+
+        outfile = open(outfile_path, 'w')
+        outfile.write("I am a template tarball. Seriously.")
+        outfile.close()
 
         # The control returns to the DebianBuildManager in the REAP state.
         self.buildmanager.iterate(0)
@@ -116,6 +128,8 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
             TranslationTemplatesBuildState.REAP, self.getState())
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
         self.assertFalse(self.slave.wasCalled('buildFail'))
+        self.assertEqual(
+            [((outfile_path,), {})], self.slave.addWaitingFile.calls)
 
     def test_iterate_fail_INSTALL(self):
         # See that a failing INSTALL is handled properly.

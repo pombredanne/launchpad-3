@@ -19,10 +19,12 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
+    BuildFarmJobType, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.code.interfaces.branchjob import IBranchJob, IRosettaUploadJobSource
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
@@ -34,7 +36,7 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(IBranchJob, IBuildFarmJob)
+    implements(IBuildFarmBranchJob)
 
     class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
 
@@ -61,7 +63,8 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     def getName(self):
         """See `IBuildFarmJob`."""
-        return '%s-%d' % (self.branch.name, self.job.id)
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+        return '%s-%d' % (self.branch.name, buildqueue.id)
 
     def getTitle(self):
         """See `IBuildFarmJob`."""
@@ -101,7 +104,7 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         """See `ITranslationTemplatesBuildJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-        # We don't have any JSON metadata for this BranchJob type.
+        # Pass public HTTP URL for the branch.
         metadata = {'branch_url': branch.composePublicURL()}
         branch_job = BranchJob(
             branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)

@@ -11,7 +11,7 @@
     </style>
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
-    <script type="text/javascript" src="/+icing/rev5/build/lp/lp.js" />
+    <script type="text/javascript" src="/+icing/rev5/build/lp/lp.js"></script>
   </head>
   <body>
     <div class="yui-d0">

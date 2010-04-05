@@ -56,8 +56,6 @@ class UnauthorizedView(SystemErrorView):
     read_only_page = ViewPageTemplateFile(
         '../templates/launchpad-readonlyfailure.pt')
 
-    notification_message = _('To continue, you must log in to Launchpad.')
-
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
         # security policy when write permissions are requested. We need
@@ -105,8 +103,6 @@ class UnauthorizedView(SystemErrorView):
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(
-                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
@@ -288,7 +284,6 @@ class OpenIDCallbackView(OpenIDLogin):
     def render(self):
         if self.openid_response.status == SUCCESS:
             identifier = self.openid_response.identity_url.split('/')[-1]
-            account_set = getUtility(IAccountSet)
             should_update_last_write = False
             # Force the use of the master database to make sure a lagged slave
             # doesn't fool us into creating a Person/Account when one already
@@ -315,15 +310,23 @@ class OpenIDCallbackView(OpenIDLogin):
                 # the master DB and thus see the changes we've just made.
                 session_data = ISession(self.request)['lp.dbpolicy']
                 session_data['last_write'] = datetime.utcnow()
-            target = self.request.form.get('starting_url')
-            if target is None:
-                target = self.getApplicationURL()
-            self.request.response.redirect(target, temporary_if_possible=True)
+            self._redirect()
             # No need to return anything as we redirect above.
             retval = None
         else:
-            retval = OpenIDLoginErrorView(
-                self.context, self.request, self.openid_response)()
+            if self.account is not None:
+                # The authentication failed (or was canceled), but the user is
+                # already logged in, so we just add a notification message and
+                # redirect.
+                self.request.response.addNoticeNotification(
+                    _(u'Your authentication failed but you were already '
+                       'logged into Launchpad.'))
+                self._redirect()
+                # No need to return anything as we redirect above.
+                retval = None
+            else:
+                retval = OpenIDLoginErrorView(
+                    self.context, self.request, self.openid_response)()
 
         # The consumer.complete() call above will create entries in
         # OpenIDConsumerNonce to prevent replay attacks, but since this will
@@ -332,6 +335,12 @@ class OpenIDCallbackView(OpenIDLogin):
         transaction.commit()
 
         return retval
+
+    def _redirect(self):
+        target = self.request.form.get('starting_url')
+        if target is None:
+            target = self.getApplicationURL()
+        self.request.response.redirect(target, temporary_if_possible=True)
 
 
 class OpenIDLoginErrorView(LaunchpadView):

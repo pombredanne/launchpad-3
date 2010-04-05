@@ -20,15 +20,14 @@ from twisted.conch.ssh.keys import Key
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.internet import defer
 from twisted.protocols.policies import TimeoutFactory
-from twisted.python import log
 from twisted.web.xmlrpc import Proxy
 
 from zope.event import notify
 
+from canonical.config import config
 from lp.codehosting.sshserver import accesslog
 from lp.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
-from canonical.config import config
-from canonical.twistedsupport import gatherResults
+from lp.services.twistedsupport import gatherResults
 
 
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):

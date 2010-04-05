@@ -145,6 +145,23 @@ Which is the one we wanted.
     >>> translationmessage_view.context.translations
     [u'libreta de direcciones de Evolution']
 
+To help the JavaScript key navigation the view is exposing the autofocus
+field and a list of all translation fields ordered by the way they are
+listed in the page.
+
+    >>> for translationmessage_view in (
+    ...     pofile_view.translationmessage_views):
+    ...     translationmessage_view.initialize()
+    >>> print pofile_view.autofocus_html_id
+    msgset_130_es_translation_0_new
+    >>> print pofile_view.translations_order
+    msgset_130_es_translation_0_new msgset_131_es_translation_0_new
+    msgset_132_es_translation_0_new msgset_133_es_translation_0_new
+    msgset_134_es_translation_0_new msgset_135_es_translation_0_new
+    msgset_136_es_translation_0_new msgset_137_es_translation_0_new
+    msgset_138_es_translation_0_new msgset_139_es_translation_0_new
+    msgset_130_es_translation_0_new
+
 It's time to check the submission of translations and the IPOFile statistics
 update.
 
@@ -403,7 +420,8 @@ given POFile instead of the one given with the submit.
 
 = POFileNavigation =
 
-This class is used to traverse from IPOFile objects to ITranslationMessage ones.
+This class is used to traverse from IPOFile objects to ITranslationMessage
+ones.
 
     >>> from zope.security.proxy import isinstance
     >>> from lp.translations.browser.pofile import POFileNavigation
@@ -483,4 +501,4 @@ index page.
 And we are redirected to the index page, as expected:
 
     >>> print pofile_view.request.response.getHeader('Location')
-    http://translations.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es

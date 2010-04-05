@@ -3,7 +3,7 @@
 
 """Test Archive features."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import pytz
 import unittest
 
@@ -19,13 +19,17 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archive import (
     IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -562,6 +566,105 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
 
 
+class TestUpdatePackageDownloadCount(TestCaseWithFactory):
+    """Ensure that updatePackageDownloadCount works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestUpdatePackageDownloadCount, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+
+        self.archive = self.factory.makeArchive()
+        self.bpr_1 = self.publisher.getPubBinaries(
+                archive=self.archive)[0].binarypackagerelease
+        self.bpr_2 = self.publisher.getPubBinaries(
+                archive=self.archive)[0].binarypackagerelease
+
+        country_set = getUtility(ICountrySet)
+        self.australia = country_set['AU']
+        self.new_zealand = country_set['NZ']
+
+    def assertCount(self, count, archive, bpr, day, country):
+        self.assertEqual(count, self.store.find(
+            BinaryPackageReleaseDownloadCount,
+            archive=archive, binary_package_release=bpr,
+            day=day, country=country).one().count)
+
+    def test_creates_new_entry(self):
+        # The first update for a particular archive, package, day and
+        # country will create a new BinaryPackageReleaseDownloadCount
+        # entry.
+        day = date(2010, 2, 20)
+        self.assertIs(None, self.store.find(
+            BinaryPackageReleaseDownloadCount,
+            archive=self.archive, binary_package_release=self.bpr_1,
+            day=day, country=self.australia).one())
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+
+    def test_reuses_existing_entry(self):
+        # A second update will simply add to the count on the existing
+        # BPRDC.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 3)
+        self.assertCount(13, self.archive, self.bpr_1, day, self.australia)
+
+    def test_differentiates_between_countries(self):
+        # A different country will cause a new entry to be created.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.new_zealand, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(3, self.archive, self.bpr_1, day, self.new_zealand)
+
+    def test_country_can_be_none(self):
+        # The country can be None, indicating that it is unknown.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, None, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(3, self.archive, self.bpr_1, day, None)
+
+    def test_differentiates_between_days(self):
+        # A different date will also cause a new entry to be created.
+        day = date(2010, 2, 20)
+        another_day = date(2010, 2, 21)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, another_day, self.australia, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(
+            3, self.archive, self.bpr_1, another_day, self.australia)
+
+    def test_differentiates_between_bprs(self):
+        # And even a different package will create a new entry.
+        day = date(2010, 2, 20)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_1, day, self.australia, 10)
+        self.archive.updatePackageDownloadCount(
+            self.bpr_2, day, self.australia, 3)
+
+        self.assertCount(10, self.archive, self.bpr_1, day, self.australia)
+        self.assertCount(3, self.archive, self.bpr_2, day, self.australia)
+
+
 class TestARMBuildsAllowed(TestCaseWithFactory):
     """Ensure that ARM builds can be allowed and disallowed correctly."""
 
@@ -656,6 +759,87 @@ class TestArchivePrivacySwitching(TestCaseWithFactory):
 
         self.assertRaises(
             CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
+
+
+class TestGetBinaryPackageRelease(TestCaseWithFactory):
+    """Ensure that getBinaryPackageRelease works as expected."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Setup an archive with relevant publications."""
+        super(TestGetBinaryPackageRelease, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.archive = self.factory.makeArchive()
+        self.archive.require_virtualized = False
+
+        self.i386_pub, self.hppa_pub = self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.i386_indep_pub, self.hppa_indep_pub = (
+            self.publisher.getPubBinaries(
+                version="1.2.3-4", archive=self.archive, binaryname="bar-bin",
+                status=PackagePublishingStatus.PUBLISHED))
+
+        self.bpns = getUtility(IBinaryPackageNameSet)
+
+    def test_returns_matching_binarypackagerelease(self):
+        # The BPR with a file by the given name should be returned.
+        self.assertEqual(
+            self.i386_pub.binarypackagerelease,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'i386'))
+
+    def test_returns_correct_architecture(self):
+        # The architecture is taken into account correctly.
+        self.assertEqual(
+            self.hppa_pub.binarypackagerelease,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'hppa'))
+
+    def test_works_with_architecture_independent_binaries(self):
+        # Architecture independent binaries with multiple publishings
+        # are found properly.
+        # We use 'i386' as the arch tag here, since what we have in the DB
+        # is the *build* arch tag, not the one in the filename ('all').
+        self.assertEqual(
+            self.i386_indep_pub.binarypackagerelease,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['bar-bin'], '1.2.3-4', 'i386'))
+
+    def test_returns_none_for_nonexistent_binary(self):
+        # Non-existent files return None.
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['cdrkit'], '1.2.3-4', 'i386'))
+
+    def test_returns_none_for_duplicate_file(self):
+        # In the unlikely case of multiple BPRs in this archive with the same
+        # name (hopefully impossible, but it still happens occasionally due
+        # to bugs), None is returned.
+
+        # Publish the same binaries again. Evil.
+        self.publisher.getPubBinaries(
+            version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
+
+        self.assertIs(
+            None,
+            self.archive.getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'i386'))
+
+    def test_returns_none_from_another_archive(self):
+        # Cross-archive searches are not performed.
+        self.assertIs(
+            None,
+            self.factory.makeArchive().getBinaryPackageRelease(
+                self.bpns['foo-bin'], '1.2.3-4', 'i386'))
 
 
 class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):

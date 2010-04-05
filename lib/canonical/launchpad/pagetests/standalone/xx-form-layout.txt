@@ -60,8 +60,9 @@ A multi-line text widget is displayed with the label above it:
         <label for="field.teamdescription">Team Description:</label>
         <span ...
         <div><textarea ... name="field.teamdescription" ...></textarea></div>
-        <p class="formHelp">Include information on how to get involved with
-          development. Use plain text; URLs will be linkified.</p>
+        <p class="formHelp">Details about the team's work, highlights, goals,
+          and how to contribute. Use plain text, paragraphs are preserved and
+          URLs are linked in pages.</p>
       </td>
     </tr>
     ...
@@ -76,8 +77,9 @@ right of the label:
         <label for="field.teamdescription">Team Description:</label>
         <span class="fieldRequired">(Optional)</span>
         <div><textarea ... name="field.teamdescription" ...></textarea></div>
-        <p class="formHelp">Include information on how to get involved with
-          development. Use plain text; URLs will be linkified.</p>
+        <p class="formHelp">Details about the team's work, highlights, goals,
+          and how to contribute. Use plain text, paragraphs are preserved and
+          URLs are linked in pages.</p>
       </td>
     </tr>
     ...

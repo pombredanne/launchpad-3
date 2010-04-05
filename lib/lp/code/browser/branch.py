@@ -181,6 +181,11 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to the `ICodeImport` for the branch."""
+        return self.context.code_import
+
 
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
