@@ -337,9 +337,13 @@ since that's the error that was raised during the update.
 If a bug tracker doesn't have any watches to update, forceUpdateAll()
 will ignore it.
 
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('test@canonical.com')
     >>> empty_tracker = factory.makeBugTracker(
     ...     'http://example.com', BugTrackerType.ROUNDUP)
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> empty_tracker_name = empty_tracker.name
     >>> update_all(empty_tracker_name)
     INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
