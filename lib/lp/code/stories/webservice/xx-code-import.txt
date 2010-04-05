@@ -229,9 +229,11 @@ If we wish to create a branch owned by a team we are part of then we can.
     >>> print representation['date_last_successful']
     None
 
+
 == Exceptions ==
 
-We can't pick just any team to own the branch.
+Picking a team you aren't a member of to own a branch gets you a 400
+response,
 
     >>> other_team_url = import_webservice.getAbsoluteUrl('/~other-team')
     >>> new_remote_url = factory.getUniqueURL()
@@ -242,7 +244,7 @@ We can't pick just any team to own the branch.
     BranchCreatorNotMemberOfOwnerTeam: Import-owner is not a member of
     Other Team...
 
-And we can't choose another user.
+as does choosing another user,
 
     >>> other_person_url = import_webservice.getAbsoluteUrl('/~other-person')
     >>> print import_webservice.named_post(product_url, 'newCodeImport',
@@ -252,7 +254,8 @@ And we can't choose another user.
     BranchCreatorNotOwner: Import-owner cannot create branches owned by
     Other-person...
 
-We can't choose a branch name that has already been taken.
+and choosing a branch name that already exists for the implied branch
+namespace.
 
     >>> print import_webservice.named_post(product_url, 'newCodeImport',
     ...    branch_name='import', rcs_type='Git', url=new_remote_url)
