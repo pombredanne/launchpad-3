@@ -61,8 +61,9 @@ appropriate message asking to suggest a match.
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
     There are no unlinked source packages that are a good match. Can you
-    suggest one? ...
-    Link to Ubuntu package
+    suggest one?
+    Ubuntu Hoary packages:
+    An unlisted package
 
 A distribution source package in a distribution other than ubuntu will
 not be suggested.
@@ -80,8 +81,7 @@ not be suggested.
     []
 
 A source package that does NOT have a publishing history
-for the current Ubuntu series will NOT be suggested. The view does not
-have any form_fields.
+for the current Ubuntu series will NOT be suggested.
 
     >>> warty = ubuntu.getSeries('warty')
     >>> warty == ubuntu.currentseries
@@ -92,11 +92,8 @@ have any form_fields.
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
-    >>> for dsp in view.suggestions:
-    ...     print dsp.name
-
-    >>> len(view.form_fields)
-    0
+    >>> view.suggestions
+    []
 
 A source package that does have a publishing history for the current
 Ubuntu series will be suggested. The view as a distributionsourcepackage
@@ -129,7 +126,7 @@ source package.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     bingo...
 
 A distribution series with a matching name in the Ubuntu current
@@ -172,7 +169,7 @@ If multiple source packages match they will all be displayed.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     bingo
     ba-bingo...
 
@@ -312,6 +309,23 @@ The +portlet-packages view can create a Packaging link.
     ...     product.development_focus,
     ...     getUtility(ISourcePackageNameSet)['bingo'],
     ...     ubuntu.currentseries)
+
+Choosing the other_package option issues a redirect to the +ubuntupkg.
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'OTHER_PACKAGE',
+    ...     'field.actions.link': 'Link to this Ubuntu Package',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> product.sourcepackages
+    []
+
+    >>> print view.next_url
+    http://launchpad.dev/bingo/trunk/+ubuntupkg
 
 The view's sourcepackages property filters out obsolete packages and
 reverses the order so that the latest packages for the current ubuntu
