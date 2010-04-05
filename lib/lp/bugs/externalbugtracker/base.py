@@ -29,9 +29,11 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.bugs.adapters import treelookup
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
-    IExternalBugTracker)
+    IExternalBugTracker, ISupportsBackLinking, ISupportsCommentImport,
+    ISupportsCommentPushing)
 
 
 # The user agent we send in our requests
@@ -134,11 +136,16 @@ class ExternalBugTracker:
     batch_size = 100
     batch_query_threshold = config.checkwatches.batch_query_threshold
     comment_template = 'default_remotecomment_template.txt'
-    sync_comments = config.checkwatches.sync_comments
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
+        self.sync_comments = (
+            config.checkwatches.sync_comments and (
+                ISupportsCommentPushing.providedBy(self) or
+                ISupportsCommentImport.providedBy(self) or
+                ISupportsBackLinking.providedBy(self)))
 
+    @ensure_no_transaction
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 
