@@ -29,7 +29,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Choice, Datetime, Int, TextLine, Text
+from zope.schema import Choice, Date, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -37,6 +37,8 @@ from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount)
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
@@ -854,6 +856,35 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 
         :return: a list of `IBinaryPackagePublishingHistory` records
             representing the binaries copied to the destination location.
+        """
+
+    @export_read_operation()
+    def getDownloadCount():
+        """Get the download count of this binary package in this archive.
+
+        This is currently only meaningful for PPAs."""
+
+    @operation_parameters(
+        start_date=Date(title=_("Start date"), required=False),
+        end_date=Date(title=_("End date"), required=False))
+    @operation_returns_collection_of(IBinaryPackageReleaseDownloadCount)
+    @export_read_operation()
+    def getDownloadCounts(start_date=None, end_date=None):
+        """Get detailed download counts for this binary.
+
+        :param start_date: The optional first date to return.
+        :param end_date: The optional last date to return.
+        """
+
+    @operation_parameters(
+        start_date=Date(title=_("Start date"), required=False),
+        end_date=Date(title=_("End date"), required=False))
+    @export_read_operation()
+    def getDailyDownloadTotals(start_date=None, end_date=None):
+        """Get the daily download counts for this binary.
+
+        :param start_date: The optional first date to return.
+        :param end_date: The optional last date to return.
         """
 
 
