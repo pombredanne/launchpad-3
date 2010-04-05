@@ -321,7 +321,7 @@ class EC2TestRunner:
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir .bazaar')
+            as_user('[ -d .bazaar ] || mkdir .bazaar')
             bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(

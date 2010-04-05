@@ -51,8 +51,6 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
-    sync_comments = config.checkwatches.sync_debbugs_comments
-
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
@@ -65,6 +63,11 @@ class DebBugs(ExternalBugTracker):
 
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)
+        # debbugs syncing can be enabled/disabled separately.
+        self.sync_comments = (
+            self.sync_comments and
+            config.checkwatches.sync_debbugs_comments)
+
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
