@@ -845,13 +845,19 @@ moderator approval.
     >>> config.mailman.soft_max_size
     40000
 
-    >>> from email.MIMENonMultipart import MIMENonMultipart
-    >>> big_message = MIMENonMultipart('application', 'octet-stream')
-    >>> big_message.set_payload('\n'.join(['x' * 50] * 1000))
+    >>> from email.mime.multipart import MIMEMultipart
+    >>> from email.mime.application import MIMEApplication
+    >>> from email.mime.text import MIMEText
+
+    >>> big_message = MIMEMultipart()
     >>> big_message['From'] = 'anne.person@example.com'
     >>> big_message['To'] = 'itest-one@lists.launchpad.dev'
     >>> big_message['Subject'] = 'A huge message'
     >>> big_message['Message-ID'] = '<puma>'
+    >>> big_message.attach(
+    ...     MIMEText('look at this pdf.', 'plain'))
+    >>> big_message.attach(
+    ...     MIMEApplication('\n'.join(['x' * 50] * 1000), 'octet-stream'))
     >>> inject('itest-one', big_message.as_string())
 
     >>> vette_watcher.wait_for_hold('itest-one', 'puma')
@@ -888,12 +894,15 @@ discarded.
     >>> config.mailman.hard_max_size
     1000000
 
-    >>> huge_message = MIMENonMultipart('application', 'octet-stream')
-    >>> huge_message.set_payload('\n'.join(['x' * 50] * 20000))
+    >>> huge_message = MIMEMultipart()
     >>> huge_message['From'] = 'anne.person@example.com'
     >>> huge_message['To'] = 'itest-one@lists.launchpad.dev'
     >>> huge_message['Subject'] = 'A huge message'
     >>> huge_message['Message-ID'] = '<quahog>'
+    >>> huge_message.attach(
+    ...     MIMEText('look at this huge pdf.', 'plain'))
+    >>> huge_message.attach(
+    ...     MIMEApplication('\n'.join(['x' * 50] * 20000), 'octet-stream'))
     >>> inject('itest-one', huge_message.as_string())
 
     >>> vette_watcher.wait_for_discard('quahog')
@@ -920,7 +929,7 @@ the mailing list.
     ...
     ... Watch out for badgers! \xa9
     ... """)
-    
+
 However, because Cate is not a member of the mailing list, her message gets
 held for moderator approval.
 
