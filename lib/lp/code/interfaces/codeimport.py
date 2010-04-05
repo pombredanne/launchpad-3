@@ -22,9 +22,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
+from lp.code.interfaces.branch import IBranch
 
 from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
+from lazr.restful.fields import ReferenceChoice
 
 
 def validate_cvs_root(cvsroot):
@@ -70,36 +72,16 @@ class ICodeImport(Interface):
         title=_("Date Created"), required=True, readonly=True)
 
     branch = exported(
-        Choice(
+        ReferenceChoice(
             title=_('Branch'), required=True, readonly=True,
-            vocabulary='Branch',
-            description=_("The Bazaar branch produced by the import system.")))
+            vocabulary='Branch', schema=IBranch,
+            description=_("The Bazaar branch produced by the "
+                "import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
-
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The community contact for this import."))
-
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person in charge of handling this import."))
-
-    product = Choice(
-        title=_("Project"), required=True,
-        readonly=True, vocabulary='Product',
-        description=_("The project this code import belongs to."))
-
-    series = Choice(
-        title=_("Series"),
-        readonly=True, vocabulary='ProductSeries',
-        description=_("The series this import is registered as the "
-                      "code for, or None if there is no such series."))
 
     review_status = exported(
         Choice(
@@ -199,9 +181,12 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, product, branch_name, rcs_type, url=None,
+    def new(registrant, target, branch_name, rcs_type, url=None,
             cvs_root=None, cvs_module=None, review_status=None):
-        """Create a new CodeImport."""
+        """Create a new CodeImport.
+
+        :param target: An `IBranchTarget` that the code is associated with.
+        """
 
     def getActiveImports(text=None):
         """Return an iterable of all 'active' CodeImport objects.

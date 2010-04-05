@@ -27,6 +27,8 @@ import xmlrpclib
 
 from canonical.config import config
 from lp.buildmaster.interfaces.builder import CannotFetchFile
+from lp.buildmaster.model.builder import (rescueBuilderIfLost,
+    updateBuilderStatus)
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
 
@@ -67,8 +69,14 @@ class MockBuilder:
     def checkSlaveAlive(self):
         pass
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
+    def checkSlaveArchitecture(self):
         pass
+
+    def rescueIfLost(self, logger=None):
+        rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        updateBuilderStatus(self, logger)
 
 
 class SaneBuildingSlave:
@@ -154,7 +162,12 @@ class BrokenSlave:
 
 
 class OkSlave:
-    """An idle mock slave that prints information about itself."""
+    """An idle mock slave that prints information about itself.
+
+    The architecture tag can be customised during initialisation."""
+
+    def __init__(self, arch_tag='i386'):
+        self.arch_tag = arch_tag
 
     def status(self):
         return ('BuilderStatus.IDLE', '')
@@ -187,7 +200,7 @@ class OkSlave:
         pass
 
     def info(self):
-        return ('1.0', 'i386', 'debian')
+        return ('1.0', self.arch_tag, 'debian')
 
     def resume(self):
         resume_argv = config.builddmaster.vm_resume_command.split()
@@ -232,6 +245,7 @@ class WaitingSlave(OkSlave):
     """A mock slave that looks like it's currently waiting."""
 
     def __init__(self, state, dependencies=None):
+        super(WaitingSlave, self).__init__()
         self.state = state
         self.dependencies = dependencies
 

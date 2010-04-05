@@ -41,7 +41,7 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from lp.poppy.tests import PoppyTestSetup, SoyuzUploadError
+  >>> from lp.poppy.tests.helpers import PoppyTestSetup, SoyuzUploadError
   >>> poppy = PoppyTestSetup(incoming_dir)
   >>> poppy.startPoppy()
 
@@ -75,7 +75,7 @@ session.
   >>> import time
   >>>
   >>> test_files_dir = os.path.join(config.root,
-  ...                               "lib/canonical/launchpad/scripts/"
+  ...                               "lib/lp/soyuz/scripts/"
   ...                               "tests/upload_test_files/")
   ...
   >>> changes = sorted(glob.glob(test_files_dir + "*.changes"))
@@ -186,7 +186,7 @@ of these files match the uploaded ones.
 Right, that's all we need from the FTP server. We don't need it anymore,
 so we'll just kill the process.
 
-  >>> poppy.killPoppy()
+  >>> status = poppy.killPoppy()
 
 Finally, we'll just create an entirely empty upload folder. We rely for
 our tests on a poppy-like naming system, ie. that the upload folder
@@ -244,7 +244,7 @@ do uploads:
   >>> assert uploader_team is not None
 
   >>> login("foo.bar@canonical.com")
-  >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
+  >>> unused = uploader_team.addMember(user, reviewer=uploader_team.teamowner)
   >>> login("test@canonical.com")
 
 
@@ -323,8 +323,8 @@ Now continue with the real upload.
 
 Let's check if packages were uploaded correctly.
 
-  >>> from canonical.launchpad.database import (
-  ...     SourcePackageRelease, SourcePackageName)
+  >>> from lp.registry.model.sourcepackagename import SourcePackageName 
+  >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease 
   >>> from pprint import pprint
   >>> spn = SourcePackageName.selectOneBy(name="drdsl")
   >>> spn.name
@@ -412,7 +412,7 @@ Also check the upload folders contain all the files we uploaded.
 Now let's see if all of the valid uploads are in the Upload queue marked
 as NEW and RELEASE.
 
-  >>> from canonical.launchpad.database import PackageUploadSource
+  >>> from lp.soyuz.model.queue import PackageUploadSource
   >>> for name in package_names:
   ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
@@ -431,9 +431,9 @@ The processing of NEW-queue-entries checks the integrity of uploads
 candidates and promote them to ACCEPTED, the failures are kept
 as NEW
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, QueueInconsistentStateError)
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.interfaces.queue import (
+  ...     PackageUploadStatus, QueueInconsistentStateError)
 
 Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
@@ -558,7 +558,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   <BLANKLINE>
   >>> print stderr
   DEBUG   Initialising zopeless.
-  INFO      Distribution: ubuntutest
+  DEBUG     Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz from library
@@ -655,7 +655,7 @@ already on disk, verify the contents are as expected.
 
   >>> print stderr
   DEBUG   Initialising zopeless.
-  INFO      Distribution: ubuntutest
+  DEBUG     Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
   DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
