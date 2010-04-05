@@ -338,7 +338,7 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             @classmethod
             def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
-                expected_config.configure('update_preview_diffs')
+                expected_config.configure('merge_proposal_jobs')
                 self.assertEqual(
                     errorlog.globalErrorUtility.oops_prefix,
                     expected_config.oops_prefix)
@@ -348,7 +348,7 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             incomplete_jobs = []
 
         class JobCronScriptSubclass(JobCronScript):
-            config_name = 'update_preview_diffs'
+            config_name = 'merge_proposal_jobs'
             source_interface = IUpdatePreviewDiffJobSource
 
             def __init__(self):
