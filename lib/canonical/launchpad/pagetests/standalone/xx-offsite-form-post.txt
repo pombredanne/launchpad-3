@@ -98,6 +98,12 @@ To support apport, we allow it for +storeblob.
   >>> browser.post('http://launchpad.dev/+storeblob', 'x=1')
   MONKEYPATCH ACTIVATED
 
+Similary, we exempt the URL /+hwdb/+submit in order to allow checkbox
+to submit HWDB reports.
+
+  >>> browser.post('http://launchpad.dev/+hwdb/+submit', 'x=1')
+  MONKEYPATCH ACTIVATED
+
 To support old versions of launchpadlib, we also let POST requests
 without a REFERER header go through to +request-token and
 +access-token.
