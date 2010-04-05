@@ -136,6 +136,7 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     Raised when a user is attempting to create a branch and set the owner of
     the branch to a team that they are not a member of.
     """
+
     webservice_error(400)
 
 
@@ -160,6 +161,7 @@ class BranchCreatorNotOwner(BranchCreationException):
     Raised when a user is attempting to create a branch and set the owner of
     the branch to another user.
     """
+
     webservice_error(400)
 
 

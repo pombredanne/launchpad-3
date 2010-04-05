@@ -24,8 +24,6 @@ from zope.security.interfaces import Unauthorized
 from lp.code.enums import BranchType
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from lazr.restful.declarations import (
-    export_write_operation, operation_returns_entry)
 from lazr.restful.fields import Reference
 
 
@@ -119,8 +117,6 @@ class IBranchTarget(IPrimaryContext):
     def getBugTask(bug):
         """Get the BugTask for a given bug related to the branch target."""
 
-    @operation_returns_entry(Interface) # really ICodeImport
-    @export_write_operation()
     def newCodeImport(registrant, branch_name, rcs_type, url=None,
                       cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import for this target.

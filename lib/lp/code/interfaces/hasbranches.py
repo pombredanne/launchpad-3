@@ -133,7 +133,7 @@ class IHasCodeImports(Interface):
             schema=Interface)
         )
     @call_with(registrant=REQUEST_USER)
-    @export_factory_operation(Interface, []) # Really IBranchMergeProposal.
+    @export_factory_operation(Interface, []) # Really ICodeImport.
     def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
                       url=None, cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import.
