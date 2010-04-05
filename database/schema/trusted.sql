@@ -1352,6 +1352,16 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Account (id, openid_identifier)
+    VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
 -- UPDATE triggers
 CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
@@ -1430,6 +1440,19 @@ BEGIN
         verbose_bugnotifications = NEW.verbose_bugnotifications,
         account = NEW.account
     WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
+        UPDATE lp_Account
+        SET id = NEW.id, openid_identifier = NEW.openid_identifier
+        WHERE id = OLD.id;
+    END IF;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
