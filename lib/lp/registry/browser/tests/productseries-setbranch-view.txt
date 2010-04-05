@@ -197,7 +197,6 @@ Git branches cannnot use svn.
 But Git branches may use git.
 
     >>> series = factory.makeProductSeries(name="chevette", product=product)
-    >>> chevette = series
     >>> transaction.commit()
     >>> form = {
     ...     'field.branch_type': 'import-external',
@@ -328,7 +327,8 @@ in an error.
     ...     'field.repo_url': 'git://github.com/chevette',
     ...     'field.actions.update': 'Update',
     ...     }
-    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
     <BLANKLINE>

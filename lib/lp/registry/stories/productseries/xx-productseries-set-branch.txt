@@ -52,7 +52,7 @@ A brand new, empty branch on Launchpad can be created and set as the
 series branch.
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/+setbranch')
-    >>> browser.getControl('Create a new, empty branch in Launchpad and link to this series').click()
+    >>> browser.getControl('Create a new, empty branch in Launchpad').click()
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
@@ -64,7 +64,7 @@ specified.  The owner is a pre-populated dropdown list so the default
 can be used.
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/+setbranch')
-    >>> browser.getControl('Create a new, empty branch in Launchpad and link to this series').click()
+    >>> browser.getControl('Create a new, empty branch in Launchpad').click()
     >>> browser.getControl(name='field.branch_name').value = 'new-firefox-branch'
     >>> browser.getControl('Update').click()
     >>> for message in get_feedback_messages(browser.contents):

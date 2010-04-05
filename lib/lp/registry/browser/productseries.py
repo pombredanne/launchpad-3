@@ -753,48 +753,19 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         'branch_type': LINK_LP_BZR,
         }
 
-    def xsetUpWidgets(self):
-        super(ProductSeriesSetBranchView, self).setUpWidgets()
-
-        # Extract the radio buttons from the rcs_type widget, so we can
-        # display them separately in the form.
-        soup = BeautifulSoup(self.widgets['rcs_type']())
-        fields = soup.findAll('input')
-        [cvs_button, svn_button, git_button, hg_button,
-         bzr_button, empty_marker] = [
-            field for field in fields
-            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG',
-                                      'BZR', '1']]
-        # The following attributes are used only in the page template.
-        self.rcs_type_cvs = str(cvs_button)
-        self.rcs_type_svn = str(svn_button)
-        self.rcs_type_git = str(git_button)
-        self.rcs_type_hg = str(hg_button)
-        self.rcs_type_bzr = str(bzr_button)
-        self.rcs_type_emptymarker = str(empty_marker)
-
-        soup = BeautifulSoup(self.widgets['branch_type']())
-        fields = soup.findAll('input')
-        (link_button, create_button, import_button, emptymarker) = fields
-        self.branch_type_link = str(link_button)
-        self.branch_type_create = str(create_button)
-        self.branch_type_import = str(import_button)
-        self.branch_type_emptymarker = str(emptymarker)
-
     def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
 
-        def render(widget, term, current_value, label=None):
+        def render(widget, term_value, current_value, label=None):
+            term = widget.vocabulary.getTerm(term_value)
             if term.value == current_value:
                 render = widget.renderSelectedItem
             else:
                 render = widget.renderItem
             if label is None:
                 label = term.title
-            try:
-                value = term.name
-            except AttributeError:
-                value = term.value
+            value = term.token
             return render(index=term.value,
                           text=label,
                           value=value,
@@ -803,11 +774,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
 
         widget = self.widgets['rcs_type']
         vocab = widget.vocabulary
-        form_value = widget._getFormValue()
-        try:
-            current_value = form_value.value
-        except AttributeError:
-            current_value = vocab.BZR.value
+        current_value = widget._getFormValue()
         self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
         self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
                                    'SVN')
@@ -823,9 +790,8 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         (self.branch_type_link,
          self.branch_type_create,
          self.branch_type_import) = [
-            render(widget, vocab.by_value[value], current_value)
+            render(widget, value, current_value)
             for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
-
 
     def _validateLinkLpBzr(self, data):
         """Validate data for link-lp-bzr case."""
