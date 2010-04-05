@@ -129,35 +129,22 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 
-    def slaveStatus(self, raw_slave_status):
-        """Parse and return the binary build specific status info.
+    def updateSlaveStatus(self, raw_slave_status, status):
+        """Parse the binary build specific status info into the status dict.
 
         This includes:
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
-        * filename => dictionary or None
+        * filemap => dictionary or None
         * dependencies => string or None
         """
-        builder_status = raw_slave_status[0]
-        extra_info = {}
-        if builder_status == 'BuilderStatus.WAITING':
-            extra_info['build_status'] = raw_slave_status[1]
-            extra_info['build_id'] = raw_slave_status[2]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if extra_info['build_status'] in build_status_with_files:
-                extra_info['filemap'] = raw_slave_status[3]
-                extra_info['dependencies'] = raw_slave_status[4]
-        else:
-            extra_info['build_id'] = raw_slave_status[1]
-            if builder_status == 'BuilderStatus.BUILDING':
-                extra_info['logtail'] = raw_slave_status[2]
-
-        return extra_info
+        build_status_with_files = (
+            'BuildStatus.OK',
+            'BuildStatus.PACKAGEFAIL',
+            'BuildStatus.DEPFAIL',
+            )
+        if (status['builder_status'] == 'BuilderStatus.WAITING' and
+            status['build_status'] in build_status_with_files):
+            status['filemap'] = raw_slave_status[3]
+            status['dependencies'] = raw_slave_status[4]
 
     def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.
@@ -184,8 +171,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
-            self._builder.slave._sendFileToSlave(
-                url, sha1, "buildd", archive.buildd_secret)
+            self._builder.slave.sendFileToSlave(
+                sha1, url,  "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):
         """

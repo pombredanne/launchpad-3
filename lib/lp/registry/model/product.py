@@ -16,10 +16,9 @@ import operator
 import datetime
 import calendar
 import pytz
-import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from storm.locals import And, Desc, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Int, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -35,10 +34,11 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, OfficialBugTagTargetMixin)
+    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
@@ -170,13 +170,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
+              HasBugHeatMixin):
 
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
-        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
+        IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
+        IQuestionTarget)
 
     _table = 'Product'
 
@@ -232,6 +234,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
+    translation_focus = ForeignKey(
+        dbName='translation_focus', foreignKey='ProductSeries',
+        notNull=False, default=None)
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
@@ -247,6 +252,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
+    max_bug_heat = Int()
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -746,11 +752,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         targetseries = ubuntu.currentseries
         product_series = self.translatable_series
 
-        # First, go with development focus branch
-        if product_series and self.development_focus in product_series:
-            return self.development_focus
-        # Next, go with the latest product series that has templates:
         if product_series:
+            # First, go with translation focus
+            if self.translation_focus in product_series:
+                return self.translation_focus
+            # Next, go with development focus
+            if self.development_focus in product_series:
+                return self.development_focus
+            # Next, go with the latest product series that has templates:
             return product_series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
@@ -1084,7 +1093,7 @@ class ProductSet:
         if registrant is None:
             registrant = owner
         if licenses is None:
-            licenses = sets.Set()
+            licenses = set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
@@ -1132,8 +1141,10 @@ class ProductSet:
             conditions.append(Product.active == active)
 
         if search_text is not None and search_text.strip() != '':
-            conditions.append(SQL(
-                'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
+            conditions.append(SQL('''
+                Product.fti @@ ftq(%(text)s) OR
+                Product.name = lower(%(text)s)
+                ''' % sqlvalues(text=search_text)))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime

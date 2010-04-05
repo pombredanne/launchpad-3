@@ -101,7 +101,7 @@ class MilestoneOverlayMixin:
             }
         return """
             YUI().use(
-                'node', 'lp.milestoneoverlay', 'lp.milestonetable',
+                'node', 'registry.milestoneoverlay', 'registry.milestonetable',
                 function (Y) {
 
                 var series_uri = '%(series_api_uri)s';
@@ -116,15 +116,15 @@ class MilestoneOverlayMixin:
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.lp.milestonetable.get_milestone_row,
+                        next_step: Y.registry.milestonetable.get_milestone_row,
                         activate_node: create_milestone_link
                         };
-                    Y.lp.milestoneoverlay.attach_widget(config);
+                    Y.registry.milestoneoverlay.attach_widget(config);
                     var table_config = {
                         milestone_row_uri_template: milestone_row_uri,
                         milestone_rows_id: milestone_rows_id
                         }
-                    Y.lp.milestonetable.setup(table_config);
+                    Y.registry.milestonetable.setup(table_config);
                 });
             });
             """ % uris

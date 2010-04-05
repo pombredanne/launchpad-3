@@ -4,14 +4,14 @@ ProductSeries series page
     # There are no obsolete series in the data, create one.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login('test@canonical.com')
     >>> productset = getUtility(IProductSet)
     >>> firefox = productset.getByName('firefox')
     >>> series = factory.makeProductSeries(
     ...     name='xxx', product=firefox, summary='Use true GTK UI.')
-    >>> series.status = DistroSeriesStatus.OBSOLETE
+    >>> series.status = SeriesStatus.OBSOLETE
     >>> transaction.commit()
     >>> logout()
 

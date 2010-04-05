@@ -8,12 +8,10 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.uuid import generate_uuid
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
@@ -22,13 +20,14 @@ ADD_COMMENT_BUTTON = (
     u'//input[@id="field.actions.save" and @class="button js-action"]')
 
 
-class TestBugCommenting(TestCaseWithFactory):
+class TestBugCommenting(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Bug commenting'
 
     def test_bug_commenting(self):
         """Test commenting on bugs."""
-        client = WindmillTestClient('Bug commenting')
+        client = self.client
         lpuser.NO_PRIV.ensure_login(client)
 
         client.open(url='http://bugs.launchpad.dev:8085/bugs/1')

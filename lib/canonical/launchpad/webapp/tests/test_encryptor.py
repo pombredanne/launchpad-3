@@ -3,14 +3,18 @@
 
 __metaclass__ = type
 
-import unittest
-import sha
+
 import binascii
+import hashlib
+import unittest
+
 from zope.component import getUtility
 from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
+
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import IPasswordEncryptor
+
 
 class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):
 
@@ -26,7 +30,7 @@ class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):
         self.failIfEqual(encrypted1, encrypted2)
         salt = encrypted1[20:]
         v = binascii.b2a_base64(
-            sha.new('motorhead' + salt).digest() + salt
+            hashlib.sha1('motorhead' + salt).digest() + salt
             )[:-1]
         return (v == encrypted1)
 
@@ -41,8 +45,9 @@ class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):
         encrypted2 = encryptor.encrypt(u'motorhead')
         self.failIfEqual(encrypted1, encrypted2)
         salt = encrypted1[20:]
-        v = binascii.b2a_base64(sha.new('motorhead' + salt).digest() + salt)[:-1]
-        return (v == encrypted1)
+        v = binascii.b2a_base64(
+            hashlib.sha1('motorhead' + salt).digest() + salt)[:-1]
+        return v == encrypted1
 
     def test_unicode_validate(self):
         encryptor = getUtility(IPasswordEncryptor)

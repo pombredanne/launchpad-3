@@ -10,19 +10,19 @@ import transaction
 import unittest
 
 import windmill
-from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.constants import (
     FOR_ELEMENT, PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestBranchStatus(TestCaseWithFactory):
+class TestBranchStatus(WindmillTestCase):
     """Test setting branch status."""
 
     layer = CodeWindmillLayer
+    suite_name = "Branch status setting"
 
     def test_inline_branch_status_setting(self):
         """Set the status of a branch."""
@@ -32,7 +32,7 @@ class TestBranchStatus(TestCaseWithFactory):
         branch = self.factory.makeBranch(owner=eric)
         transaction.commit()
 
-        client = WindmillTestClient("Branch status setting")
+        client = self.client
 
         start_url = (
             windmill.settings['TEST_URL'] + branch.unique_name)

@@ -10,7 +10,6 @@ import _pythonpath
 
 from itertools import chain
 import os
-import sets
 import sys
 
 import psycopg2
@@ -291,7 +290,7 @@ def reset_permissions(con, config, options):
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
     # forgotten about.
-    found = sets.Set()
+    found = set()
 
     # Set permissions as per config file
     for username in config.sections():
@@ -383,7 +382,7 @@ def reset_permissions(con, config, options):
 
     # Raise an error if we have database objects lying around that have not
     # had permissions assigned.
-    forgotten = sets.Set()
+    forgotten = set()
     for obj in schema.values():
         if obj not in found:
             forgotten.add(obj)

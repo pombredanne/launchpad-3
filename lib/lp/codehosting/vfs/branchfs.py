@@ -340,7 +340,7 @@ class TransportDispatch:
             configured to use the given default stacked-on location.
         """
         memory_server = MemoryServer()
-        memory_server.setUp()
+        memory_server.start_server()
         transport = get_transport(memory_server.get_url())
         if default_stack_on == '':
             return transport
@@ -368,17 +368,21 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         path on that transport.
     """
 
-    def __init__(self, scheme, authserver, user_id):
+    def __init__(self, scheme, authserver, user_id,
+                 seen_new_branch_hook=None):
         """Construct a LaunchpadServer.
 
         :param scheme: The URL scheme to use.
         :param authserver: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
+        :param seen_new_branch_hook: A callable that will be called once for
+            each branch accessed via this server.
         """
         AsyncVirtualServer.__init__(self, scheme)
-        self._authserver = BranchFileSystemClient(authserver, user_id)
-        self._is_set_up = False
+        self._authserver = BranchFileSystemClient(
+            authserver, user_id, seen_new_branch_hook=seen_new_branch_hook)
+        self._is_start_server = False
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.
@@ -429,8 +433,8 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
             scheme, authserver, LAUNCHPAD_SERVICES)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
-    def setUp(self):
-        super(LaunchpadInternalServer, self).setUp()
+    def start_server(self):
+        super(LaunchpadInternalServer, self).start_server()
         try:
             self._transport_dispatch.base_transport.ensure_base()
         except TransportNotPossible:
@@ -439,7 +443,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tearDown()
+        self.stop_server()
 
 
 class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
@@ -448,8 +452,8 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
         AsyncVirtualServer.__init__(self, scheme)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
-    def setUp(self):
-        super(DirectDatabaseLaunchpadServer, self).setUp()
+    def start_server(self):
+        super(DirectDatabaseLaunchpadServer, self).start_server()
         try:
             self._transport_dispatch.base_transport.ensure_base()
         except TransportNotPossible:
@@ -458,7 +462,7 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tearDown()
+        self.stop_server()
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.
@@ -556,7 +560,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
     asyncTransportFactory = AsyncLaunchpadTransport
 
     def __init__(self, authserver, user_id, hosted_transport,
-                 mirror_transport):
+                 mirror_transport, seen_new_branch_hook=None):
         """Construct a `LaunchpadServer`.
 
         See `_BaseLaunchpadServer` for more information.
@@ -575,9 +579,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :param mirror_transport: A Bazaar `Transport` that points to the
             "mirrored" area of Launchpad. See module docstring for more
             information.
+        :param seen_new_branch_hook: A callable that will be called once for
+            each branch accessed via this server.
         """
         scheme = 'lp-%d:///' % id(self)
-        super(LaunchpadServer, self).__init__(scheme, authserver, user_id)
+        super(LaunchpadServer, self).__init__(
+            scheme, authserver, user_id, seen_new_branch_hook)
         mirror_transport = get_readonly_transport(mirror_transport)
         self._transport_dispatch = TransportDispatch(
             hosted_transport, mirror_transport)
@@ -612,7 +619,10 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # parent directories", which is just misleading.
             fault = trap_fault(
                 failure, faults.NotFound, faults.PermissionDenied)
-            raise PermissionDenied(virtual_url_fragment, fault.faultString)
+            faultString = fault.faultString
+            if isinstance(faultString, unicode):
+                faultString = faultString.encode('utf-8')
+            raise PermissionDenied(virtual_url_fragment, faultString)
 
         return deferred.addErrback(translate_fault)
 
@@ -638,7 +648,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
 
 def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
-                  mirror_directory=None):
+                  mirror_directory=None, seen_new_branch_hook=None):
     """Create a Launchpad server.
 
     :param user_id: A unique database ID of the user whose branches are
@@ -646,6 +656,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     :param branchfs_endpoint_url: URL for the branch file system end-point.
     :param hosted_directory: Where the branches are uploaded to.
     :param mirror_directory: Where all Launchpad branches are mirrored.
+    :param seen_new_branch_hook:
     :return: A `LaunchpadServer`.
     """
     # Get the defaults from the config.
@@ -664,7 +675,7 @@ def get_lp_server(user_id, branchfs_endpoint_url=None, hosted_directory=None,
     mirror_transport = get_chrooted_transport(mirror_url)
     lp_server = LaunchpadServer(
         BlockingProxy(branchfs_client), user_id,
-        hosted_transport, mirror_transport)
+        hosted_transport, mirror_transport, seen_new_branch_hook)
     return lp_server
 
 

@@ -34,7 +34,6 @@ from lp.code.enums import BranchType
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lazr.uri import URI
-from canonical.testing import reset_logging
 
 
 def get_netstrings(line):
@@ -737,13 +736,12 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
-        reset_logging()
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
         server = HttpServer()
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
         # The gc.collect allows the threads behind any HTTP requests to exit.
         self.addCleanup(gc.collect)
         return server

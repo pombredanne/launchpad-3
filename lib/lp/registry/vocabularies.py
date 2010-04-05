@@ -101,13 +101,14 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
-from lp.registry.interfaces.milestone import IMilestoneSet, IProjectMilestone
+from lp.registry.interfaces.milestone import (
+    IMilestoneSet, IProjectGroupMilestone)
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillarName
 from lp.registry.interfaces.product import IProduct, IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.distribution import Distribution
@@ -227,7 +228,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 # XXX kiko 2007-01-18: any reason why this can't be an
 # NamedSQLObjectHugeVocabulary?
 class ProjectVocabulary(SQLObjectVocabularyBase):
-    """All `IProject` objects vocabulary."""
+    """All `IProjectGroup` objects vocabulary."""
     implements(IHugeVocabulary)
 
     _table = Project
@@ -275,7 +276,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 def project_products_vocabulary_factory(context):
     """Return a SimpleVocabulary containing the project's products."""
     assert context is not None
-    project = IProject(context)
+    project = IProjectGroup(context)
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products])
@@ -1115,7 +1116,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.distroseries
         elif ISpecification.providedBy(milestone_context):
             target = milestone_context.target
-        elif (IProject.providedBy(milestone_context) or
+        elif (IProjectGroup.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
               IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
@@ -1142,7 +1143,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem
         # should be revisited after we've unblocked users.
         if target is not None:
-            if IProject.providedBy(target):
+            if IProjectGroup.providedBy(target):
                 milestones = shortlist(
                     (milestone for product in target.products
                      for milestone in product.milestones),
@@ -1211,7 +1212,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(milestone)
 
     def __contains__(self, obj):
-        if IProjectMilestone.providedBy(obj):
+        if IProjectGroupMilestone.providedBy(obj):
             # Project milestones are pseudo content objects
             # which aren't really a part of this vocabulary,
             # but sometimes we want to pass them to fields
@@ -1444,12 +1445,12 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 
 
 class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
-    """Active `IProduct`, `IProject` or `IDistribution` objects vocabulary."""
+    """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
     _filter = PillarName.q.active == True
 
     def __contains__(self, obj):
-        if IProduct.providedBy(obj) or IProject.providedBy(obj):
+        if IProduct.providedBy(obj) or IProjectGroup.providedBy(obj):
             # Only active products and projects are in the vocabulary.
             return obj.active
         else:

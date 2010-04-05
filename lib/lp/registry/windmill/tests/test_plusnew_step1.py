@@ -8,24 +8,19 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 BACKSPACE = u'\x08'
 
 
-class TestNewProjectStep1(TestCaseWithFactory):
+class TestNewProjectStep1(WindmillTestCase):
     """Test form for creating a new project."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        super(TestNewProjectStep1, self).setUp()
-        self.client = WindmillTestClient('TestNewProjectStep1')
+    suite_name = 'TestNewProjectStep1'
 
     def test_projects_plusnew_text_fields(self):
         """Test the text fields on step 1 of projects/+new page.

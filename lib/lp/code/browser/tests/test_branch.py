@@ -33,6 +33,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import (
     login, login_person, logout, ANONYMOUS, TestCaseWithFactory)
+from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -231,6 +232,34 @@ class TestBranchView(TestCaseWithFactory):
         view = BranchView(branch, self.request)
         view.initialize()
         self.assertEqual(list(view.translations_sources()), [trunk])
+
+    def test_user_can_upload(self):
+        # A user can upload if they have edit permissions.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login_person(branch.owner)
+        self.assertTrue(view.user_can_upload)
+
+    def test_user_can_upload_admins_can(self):
+        # Admins can upload to any hosted branch.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login('admin@canonical.com')
+        self.assertTrue(view.user_can_upload)
+
+    def test_user_can_upload_non_owner(self):
+        # Someone not associated with the branch cannot upload
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        login_person(self.factory.makePerson())
+        self.assertFalse(view.user_can_upload)
+
+    def test_user_can_upload_mirrored(self):
+        # Even the owner of a mirrored branch can't upload.
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        view = create_initialized_view(branch, '+index')
+        login_person(branch.owner)
+        self.assertFalse(view.user_can_upload)
 
 
 class TestBranchAddView(TestCaseWithFactory):

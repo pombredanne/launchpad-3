@@ -21,8 +21,8 @@ from canonical.database.sqlbase import sqlvalues
 
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
-    ISecureBinaryPackagePublishingHistory,
-    ISecureSourcePackagePublishingHistory)
+    IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.publishing import (
     MissingSymlinkInPool, NotInPool)
 
@@ -150,30 +150,30 @@ class DeathRow:
         """Check if given (filename, MD5) can be removed from the pool.
 
         Check the archive reference-counter implemented in:
-        `SecureSourcePackagePublishingHistory` or
-        `SecureBinaryPackagePublishingHistory`.
+        `SourcePackagePublishingHistory` or
+        `BinaryPackagePublishingHistory`.
 
         Only allow removal of unnecessary files.
         """
         clauses = []
         clauseTables = []
 
-        if ISecureSourcePackagePublishingHistory.implementedBy(
+        if ISourcePackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureSourcePackagePublishingHistory.archive = %s AND
-                SecureSourcePackagePublishingHistory.dateremoved is NULL AND
-                SecureSourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackagePublishingHistory.archive = %s AND
+                SourcePackagePublishingHistory.dateremoved is NULL AND
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageReleaseFile.sourcepackagerelease AND
                 SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
             """ % sqlvalues(self.archive))
             clauseTables.append('SourcePackageReleaseFile')
-        elif ISecureBinaryPackagePublishingHistory.implementedBy(
+        elif IBinaryPackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureBinaryPackagePublishingHistory.archive = %s AND
-                SecureBinaryPackagePublishingHistory.dateremoved is NULL AND
-                SecureBinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackagePublishingHistory.archive = %s AND
+                BinaryPackagePublishingHistory.dateremoved is NULL AND
+                BinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease AND
                 BinaryPackageFile.libraryfile = LibraryFileAlias.id
             """ % sqlvalues(self.archive))
@@ -268,8 +268,8 @@ class DeathRow:
         def check_source(pub_record):
             # Avoid circular imports.
             from lp.soyuz.model.publishing import (
-                SecureSourcePackagePublishingHistory)
-            checkPubRecord(pub_record, SecureSourcePackagePublishingHistory)
+                SourcePackagePublishingHistory)
+            checkPubRecord(pub_record, SourcePackagePublishingHistory)
 
         process_in_batches(
             condemned_source_files, check_source, self.logger,
@@ -278,8 +278,8 @@ class DeathRow:
         def check_binary(pub_record):
             # Avoid circular imports.
             from lp.soyuz.model.publishing import (
-                SecureBinaryPackagePublishingHistory)
-            checkPubRecord(pub_record, SecureBinaryPackagePublishingHistory)
+                BinaryPackagePublishingHistory)
+            checkPubRecord(pub_record, BinaryPackagePublishingHistory)
 
         process_in_batches(
             condemned_binary_files, check_binary, self.logger,

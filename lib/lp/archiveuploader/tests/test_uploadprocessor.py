@@ -26,6 +26,7 @@ from lp.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -38,7 +39,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
@@ -489,12 +490,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.secure_record.status = PackagePublishingStatus.PUBLISHED
-        pubrec.secure_record.datepublished = UTC_NOW
+        pubrec.status = PackagePublishingStatus.PUBLISHED
+        pubrec.datepublished = UTC_NOW
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        self.breezy.status = DistroSeriesStatus.FROZEN
+        self.breezy.status = SeriesStatus.FROZEN
         self.layer.txn.commit()
 
         # Upload a newer version of bar.
@@ -540,6 +541,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
         bar_source_pub = self._publishPackage('bar', '1.0-1')
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
+        # Move the source from the accepted queue.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar")
+        queue_item.setDone()
+
+        # Upload and accept a binary for the primary archive source.
+        shutil.rmtree(upload_dir)
+        self.options.context = 'buildd'
+        self.options.buildid = bar_original_build.id
+        self.layer.txn.commit()
+        upload_dir = self.queueUpload("bar_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.is_rejected, False)
+        bar_bin_pubs = self._publishPackage('bar', '1.0-1', source=False)
+        # Mangle its publishing component to "restricted" so we can check
+        # the copy archive ancestry override later.
+        restricted = getUtility(IComponentSet)["restricted"]
+        for pub in bar_bin_pubs:
+            pub.component = restricted
+
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
         copy_archive = getUtility(IArchiveSet).new(
@@ -567,6 +591,23 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             uploadprocessor.last_processed_upload.is_rejected, False)
 
+        # The upload should also be auto-accepted even though there's no
+        # ancestry.  This means items should go to ACCEPTED and not NEW.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-1",
+            name="bar",
+            archive=copy_archive)
+        self.assertEqual(
+            queue_items.count(), 1,
+            "Binary upload was not accepted when it should have been.")
+
+        # The copy archive binary published component should have been
+        # inherited from the main archive's.
+        copy_bin_pubs = queue_items[0].realiseUpload()
+        for pub in copy_bin_pubs:
+            self.assertEqual(pub.component.name, restricted.name)
+
     def testCopyArchiveUploadToCurrentDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
 
@@ -577,7 +618,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         See bug 369512.
         """
         self._checkCopyArchiveUploadToDistro(
-            PackagePublishingPocket.RELEASE, DistroSeriesStatus.CURRENT)
+            PackagePublishingPocket.RELEASE, SeriesStatus.CURRENT)
 
     def testCopyArchiveUploadToSupportedDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
@@ -589,7 +630,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         See bug 369512.
         """
         self._checkCopyArchiveUploadToDistro(
-            PackagePublishingPocket.RELEASE, DistroSeriesStatus.SUPPORTED)
+            PackagePublishingPocket.RELEASE, SeriesStatus.SUPPORTED)
 
     def testDuplicatedBinaryUploadGetsRejected(self):
         """The upload processor rejects duplicated binary uploads.
@@ -965,7 +1006,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testPartnerUploadToProposedPocket(self):
         """Upload a partner package to the proposed pocket."""
         self.setupBreezy()
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -984,7 +1025,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         distroseries is allowed.
         """
         self.setupBreezy()
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -1030,21 +1071,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check unstable states:
 
-        self.breezy.status = DistroSeriesStatus.DEVELOPMENT
+        self.breezy.status = SeriesStatus.DEVELOPMENT
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-        self.breezy.status = DistroSeriesStatus.EXPERIMENTAL
+        self.breezy.status = SeriesStatus.EXPERIMENTAL
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
         # Check stable states:
 
-        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.breezy.status = SeriesStatus.CURRENT
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
-        self.breezy.status = DistroSeriesStatus.SUPPORTED
+        self.breezy.status = SeriesStatus.SUPPORTED
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
@@ -1621,6 +1662,38 @@ class TestUploadProcessor(TestUploadProcessorBase):
             in raw_msg,
             "Source was not rejected properly:\n%s" % raw_msg)
 
+    def testUploadToWrongPocketIsRejected(self):
+        # Uploads to the wrong pocket are rejected.
+        self.setupBreezy()
+        breezy = self.ubuntu['breezy']
+        breezy.status = SeriesStatus.CURRENT
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        rejection_message = (
+            uploadprocessor.last_processed_upload.rejection_message)
+        self.assertEqual(
+            "Not permitted to upload to the RELEASE pocket in a series in "
+            "the 'CURRENT' state.",
+            rejection_message)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Not permitted to upload to the RELEASE pocket in a series "
+            "in the 'CURRENT' state.",
+            "If you don't understand why your files were rejected",
+            "http://answers.launchpad.net/soyuz",
+            "You are receiving this email because you are the "
+               "uploader, maintainer or",
+            "signer of the above package.",
+            ]
+        recipients = [
+            'Foo Bar <foo.bar@canonical.com>',
+            'Daniel Silverstone <daniel.silverstone@canonical.com>',
+            ]
+        self.assertEmail(contents, recipients=recipients)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

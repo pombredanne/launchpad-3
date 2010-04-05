@@ -47,7 +47,7 @@ class ICodeImportMachine(Interface):
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
-    def shouldLookForJob():
+    def shouldLookForJob(worker_limit):
         """Should we look for a job to run on this machine?
 
         There are three reasons we might not look for a job:

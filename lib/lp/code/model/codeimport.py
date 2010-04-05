@@ -31,6 +31,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.launchpad.interfaces import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -66,16 +67,6 @@ class CodeImport(SQLBase):
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False, default=None)
-
-    @property
-    def product(self):
-        """See `ICodeImport`."""
-        return self.branch.product
-
-    @property
-    def series(self):
-        """See `ICodeImport`."""
-        return ProductSeries.selectOneBy(branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -160,7 +151,8 @@ class CodeImport(SQLBase):
             "coalesce",
             Select(
                 CodeImportResult.id,
-                And(CodeImportResult.status == CodeImportResultStatus.SUCCESS,
+                And(CodeImportResult.status.is_in(
+                        CodeImportResultStatus.successes),
                     CodeImportResult.code_import == self),
                 order_by=Desc(CodeImportResult.id),
                 limit=1),
@@ -213,7 +205,7 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, registrant, product, branch_name, rcs_type,
+    def new(self, registrant, target, branch_name, rcs_type,
             url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
@@ -237,7 +229,7 @@ class CodeImportSet:
             else:
                 review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        namespace = get_branch_namespace(registrant, product)
+        namespace = target.getNamespace(registrant)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)
@@ -263,10 +255,6 @@ class CodeImportSet:
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
-
-    def getAll(self):
-        """See `ICodeImportSet`."""
-        return CodeImport.select()
 
     def getActiveImports(self, text=None):
         """See `ICodeImportSet`."""
@@ -333,6 +321,11 @@ class CodeImportSet:
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
 
-    def search(self, review_status):
+    def search(self, review_status=None, rcs_type=None):
         """See `ICodeImportSet`."""
-        return CodeImport.selectBy(review_status=review_status)
+        clauses = []
+        if review_status is not None:
+            clauses.append(CodeImport.review_status == review_status)
+        if rcs_type is not None:
+            clauses.append(CodeImport.rcs_type == rcs_type)
+        return IStore(CodeImport).find(CodeImport, *clauses)

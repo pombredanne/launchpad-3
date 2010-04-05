@@ -12,9 +12,9 @@ from canonical.launchpad.windmill.testing.widgets import (
     FormPickerWidgetTest)
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
-class TestProductEditPeople(TestCaseWithFactory):
+class TestProductEditPeople(WindmillTestCase):
     """Test picker +edit-people page."""
 
     layer = RegistryWindmillLayer

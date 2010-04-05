@@ -115,6 +115,9 @@ A FAILEDTOUPLOAD build obviously has no binaries:
   >>> failedtoupload_candidate.binarypackages.count()
   0
 
+  >>> failedtoupload_candidate.verifySuccessfulUpload()
+  False
+
 But once the person responsible have received the information about
 the binary upload failure via build notification, or accessing the
 build page, he will be aware of:
@@ -186,4 +189,6 @@ And contains the associated binaries.
 
   >>> failedtoupload_candidate.binarypackages.count()
   1
+  >>> failedtoupload_candidate.verifySuccessfulUpload()
+  True
 

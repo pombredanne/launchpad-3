@@ -1203,9 +1203,13 @@ def notify_new_ppa_subscription(subscription, event):
     """Notification that a new PPA subscription can be activated."""
     non_active_subscribers = subscription.getNonActiveSubscribers()
 
+    archive = subscription.archive
     registrant_name = subscription.registrant.displayname
-    ppa_name = subscription.archive.displayname
-    subject = 'PPA access granted for ' + ppa_name
+    ppa_displayname = archive.displayname
+    ppa_reference = "ppa:%s/%s" % (
+        archive.owner.name, archive.name)
+    ppa_description = archive.description
+    subject = 'PPA access granted for ' + ppa_displayname
 
     template = get_email_template('ppa-subscription-new.txt')
 
@@ -1222,7 +1226,9 @@ def notify_new_ppa_subscription(subscription, event):
             'recipient_name': person.displayname,
             'registrant_name': registrant_name,
             'registrant_profile_url': canonical_url(subscription.registrant),
-            'ppa_name': ppa_name,
+            'ppa_displayname': ppa_displayname,
+            'ppa_reference': ppa_reference,
+            'ppa_description': ppa_description,
             'recipient_subscriptions_url': recipient_subscriptions_url,
             }
         body = MailWrapper(72).format(template % replacements,

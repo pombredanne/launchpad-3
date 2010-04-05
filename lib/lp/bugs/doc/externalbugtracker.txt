@@ -22,25 +22,14 @@ transaction, since it doesn't need DB access.
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestExternalBugTracker)
     >>> class InitializingExternalBugTracker(TestExternalBugTracker):
-    ...
     ...     def initializeRemoteBugDB(self, remote_bug_ids):
     ...         print "initializeRemoteBugDB() called: %r" % (
     ...             remote_bug_ids, )
 
-    >>> class FakeTransaction:
-    ...     """Transaction class to track transaction boundaries."""
-    ...     def commit(self):
-    ...         print "COMMIT"
-    ...     def abort(self):
-    ...         print "ABORT"
-    ...     def begin(self):
-    ...         print "BEGIN"
-
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
+    >>> bug_watch_updater = BugWatchUpdater(transaction)
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
-    COMMIT
     initializeRemoteBugDB() called: []
 
 
@@ -79,13 +68,14 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
     ...     bug_tracker_to_use = Bugzilla
     ...
     ...     def getExternalBugTrackerToUse(self):
-    ...         print "Getting external bugtracker to use..."
+    ...         print "Getting external bugtracker to use"
     ...         return self.bug_tracker_to_use(self.baseurl)
 
 We'll create a helper method to allow us to avoid having to connect to a
 remote server.
 
     >>> def get_trackers_and_watches(bugtracker, watches):
+    ...     transaction.commit()
     ...     try:
     ...         BUG_TRACKER_CLASSES[BugTrackerType.BUGZILLA] = (
     ...             NonConnectingBugzilla)
@@ -99,7 +89,7 @@ remote server.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     standard_bugzilla, [])
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -118,7 +108,7 @@ parameter. For most calls, this remains unaltered and only one
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     standard_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -154,7 +144,7 @@ doesn't have the Launchpad plugin installed.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
 
     >>> len(trackers_and_watches)
     1
@@ -182,6 +172,7 @@ connect to any servers.
     ...         }
     ...
     ...     def getProductsForRemoteBugs(self, bug_ids):
+    ...         print "Getting products for remote bugs"
     ...         mappings = {}
     ...         for bug_id in bug_ids:
     ...             if int(bug_id) in self.remote_bug_products:
@@ -208,12 +199,12 @@ constructor.
 
     >>> from lp.bugs.scripts import checkwatches
     >>> (bug_watch_updater._syncable_gnome_products ==
-    ...     checkwatches.SYNCABLE_GNOME_PRODUCTS)
+    ...     checkwatches.updater.SYNCABLE_GNOME_PRODUCTS)
     True
 
     >>> syncable_products = ['HeartOfGold']
     >>> bug_watch_updater = BugWatchUpdater(
-    ...     FakeTransaction(), syncable_gnome_products=syncable_products)
+    ...     transaction, syncable_gnome_products=syncable_products)
 
     >>> bug_watches = [
     ...     factory.makeBugWatch(
@@ -228,7 +219,8 @@ another BugzillaAPI instance which has syncing disabled.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
+    Getting products for remote bugs
 
     >>> len(trackers_and_watches)
     2
@@ -265,11 +257,12 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
     ...     'InfiniteImprobabilityDrive',
     ...     ]
     >>> bug_watch_updater = BugWatchUpdater(
-    ...     FakeTransaction(), syncable_gnome_products=syncable_products)
+    ...     transaction, syncable_gnome_products=syncable_products)
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
-    Getting external bugtracker to use...
+    Getting external bugtracker to use
+    Getting products for remote bugs
 
     >>> len(trackers_and_watches)
     2
@@ -298,6 +291,19 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
     ...     print watch.remotebug
     4
 
+If there are no syncable GNOME products, only one batch is returned,
+and the remote system is never asked about product information.
+
+    >>> bug_watch_updater = BugWatchUpdater(
+    ...     transaction, syncable_gnome_products=[])
+
+    >>> trackers_and_watches = get_trackers_and_watches(
+    ...     gnome_bugzilla, bug_watches)
+    Getting external bugtracker to use
+
+    >>> len(trackers_and_watches)
+    1
+
 
 === Checking the server DB time ===
 
@@ -314,7 +320,6 @@ the time is.
 
     >>> bug_watch_updater.updateBugWatches(
     ...     TimeUnknownExternalBugTracker(), [])
-    COMMIT
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
 
@@ -367,7 +372,6 @@ If it's only a little skewed, it won't raise an error.
     ...         return utc_now + timedelta(minutes=1)
     >>> bug_watch_updater.updateBugWatches(
     ...     CorrectTimeExternalBugTracker(), [], now=utc_now)
-    COMMIT
 
 If the timezone is known, the local time time should be returned, rather
 than the UTC time.
@@ -379,7 +383,6 @@ than the UTC time.
     ...         return local_time + timedelta(minutes=1)
     >>> bug_watch_updater.updateBugWatches(
     ...     LocalTimeExternalBugTracker(), [], now=utc_now)
-    COMMIT
 
 If the remote server time is unknown, we will refuse to import any
 comments from it. Bug watches will still be updated, but a warning is
@@ -392,14 +395,16 @@ logged saying that comments won't be imported.
     ...     sync_comments = True
     >>> bug_watch_updater.updateBugWatches(
     ...     CommentImportExternalBugTracker(), [], now=utc_now)
-    COMMIT
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
     WARNING:...:Comment importing supported, but server time can't be
-                trusted. No comments will be imported.
+                trusted. No comments will be imported. (OOPS-...)
 
 
 === Limiting which bug watches to update ===
+
+XXX: GavinPanella 2010-01-13 bug=507205: Move this section to
+checkwatches-batching.txt.
 
 In order to reduce the amount of data we have to transfer over the
 network, each IExternalBugTracker has the ability to filter out bugs
@@ -446,7 +451,6 @@ watches, the getModifiedRemoteBugs() method won't be called.
     ...     getUtility(IBugWatchSet).createBugWatch(
     ...         example_bug, sample_person, example_bug_tracker, bug_id)
     ...     for bug_id in ['1', '2', '3', '4']]
-    >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> [bug_watch.lastchecked for bug_watch in bug_watches
     ...  if bug_watch.lastchecked is not None]
     []
@@ -469,7 +473,9 @@ _getRemoteIdsToCheck(), which returns a dict containing three lists:
  * unmodified_remote_ids: The subset of all_remote_ids that haven't changed
    on the remote server and so don't need to be checked.
 
-    >>> external_bugtracker =  CheckModifiedExternalBugTracker(
+    >>> transaction.commit()
+
+    >>> external_bugtracker = CheckModifiedExternalBugTracker(
     ...     'http://example.com/')
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
@@ -485,20 +491,11 @@ to the ExternalBugTracker's initializeRemoteBugDB() method.
 
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugtracker, bug_watches)
-    COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
-    COMMIT
 
 If the bug watches have the lastchecked attribute set, they will be
 passed to getModifiedRemoteBugs(). Only the bugs that have been modified
@@ -506,12 +503,9 @@ will then be passed on to initializeRemoteBugDB().
 
     >>> some_time_ago = datetime(
     ...     2007, 03, 17, 16, 00, tzinfo=pytz.timezone('UTC'))
-    >>> bug_watches = [
-    ...     getUtility(IBugWatchSet).get(bug_watch_id)
-    ...     for bug_watch_id in bug_watch_ids]
     >>> for bug_watch in bug_watches:
     ...     bug_watch.lastchecked = some_time_ago
-    >>> flush_database_updates()
+    >>> transaction.commit()
 
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
@@ -526,25 +520,15 @@ will then be passed on to initializeRemoteBugDB().
 
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugtracker, bug_watches)
-    COMMIT
     last_checked: 2007-03-17 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
     initializeRemoteBugDB() called: [u'1', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
-    COMMIT
-    BEGIN
-    BEGIN
 
 The bug watches that are deemed as not being modified are still marked
 as being checked.
 
-    >>> bug_watches = [
-    ...     getUtility(IBugWatchSet).get(bug_watch_id)
-    ...     for bug_watch_id in bug_watch_ids]
     >>> for bug_watch in bug_watches:
     ...     if bug_watch.lastchecked > some_time_ago:
     ...         print "Bug %s was marked checked" % bug_watch.remotebug
@@ -563,7 +547,7 @@ then some more just to be safe.
     >>> bug_watches[1].lastchecked = some_time_ago + timedelta(days=1)
     >>> bug_watches[2].lastchecked = some_time_ago - timedelta(hours=1)
     >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
-    >>> flush_database_updates()
+    >>> transaction.commit()
 
     >>> bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
@@ -578,25 +562,16 @@ initializeRemoteBugDB() since we do need to update them.
     >>> bug_watches[1].lastchecked = None
     >>> bug_watches[2].lastchecked = None
     >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
-    >>> flush_database_updates()
+    >>> transaction.commit()
     >>> bug_watch_updater.updateBugWatches(
     ...     CheckModifiedExternalBugTracker(), bug_watches)
-    COMMIT
     last_checked: 2007-03-16 15:...:...
     getModifiedRemoteBugs() called: [u'1', u'4']
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
-    COMMIT
 
 As mentioned earlier, getModifiedRemoteBugs() is only called if we can
 get the current time of the remote system. If the time is unknown, we
@@ -607,23 +582,13 @@ always update all the bug watches.
     ...         return None
     >>> for bug_watch in bug_watches:
     ...     bug_watch.lastchecked = some_time_ago
-    >>> flush_database_updates()
     >>> bug_watch_updater.updateBugWatches(
     ...     TimeUnknownExternalBugTracker(), bug_watches)
-    COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
-    BEGIN
     getRemoteStatus() called: u'1'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'2'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'3'
-    COMMIT
-    BEGIN
     getRemoteStatus() called: u'4'
-    COMMIT
 
 The only exception to the rule of only updating modified bugs is the set
 of bug watches which have comments that need to be pushed to the remote
@@ -639,6 +604,7 @@ possible.
     ...         return []
 
     >>> external_bugtracker = DummyExternalBugTracker('http://example.com')
+    >>> external_bugtracker.sync_comments = True
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
@@ -653,6 +619,8 @@ possible.
     ...     owner=sample_person)
     >>> bug_message = bug_watches[-1].addComment(None, comment_message)
 
+    >>> transaction.commit()
+
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
@@ -663,6 +631,7 @@ Once the comment has been pushed it will no longer appear in the list of
 IDs to be updated.
 
     >>> bug_message.remote_comment_id = '1'
+    >>> transaction.commit()
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
@@ -702,7 +671,7 @@ warning.
 
     >>> status = bug_watch_updater._convertRemoteStatus(
     ...     StatusConvertingExternalBugTracker(), 'spam')
-    WARNING...Unknown remote status 'spam'.
+    WARNING...Unknown remote status 'spam'. (OOPS-...)
     >>> print status.title
     Unknown
 
@@ -936,7 +905,7 @@ capable of dealing with multiple remote products.
 
 == Prioritisation of watches ==
 
-_getRemoteIdsToCheck() prioritises the IDs it returns. Bug watches which have
+_getRemoteIdsToCheck() prioritizes the IDs it returns. Bug watches which have
 comments to push or which have never been checked will always be returned in
 the remote_ids_to_check list, limited only by the batch_size of the bug
 tracker (see "Batched BugWatch Updating" in doc/checkwatches.txt).
@@ -949,6 +918,7 @@ comments to push in order to demonstrate this.
     ...     batch_size = 5
     >>> external_bugtracker = SmallBatchExternalBugTracker(
     ...     'http://example.com')
+    >>> external_bugtracker.sync_comments = True
 
 The watches on remote bugs 0 - 4 haven't been checked.
 
@@ -976,6 +946,8 @@ be included. This is because it's less important to deal with bug
 watches that have never been updated than it is to push comments to the
 remote server.
 
+    >>> transaction.commit()
+
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker,
     ...     unchecked_watches + watches_with_comments,
@@ -998,6 +970,8 @@ checked again.
     ...         bug=example_bug, owner=sample_person)
     ...     watch.lastchecked = some_time_ago
     ...     old_watches.append(watch)
+
+    >>> transaction.commit()
 
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker,
@@ -1100,6 +1074,7 @@ external_bugtracker.
 
     >>> bug_watch_updater = NonConnectingBugWatchUpdater(
     ...     transaction, QuietFakeLogger())
+    >>> transaction.commit()
     >>> bug_watch_updater._updateBugTracker(
     ...     standard_bugzilla, batch_size=2)
     initializeRemoteBugDB() called: [u'5', u'6']
@@ -1110,110 +1085,3 @@ The default entry point into BugWatchUpdater for the checkwatches script is
 the updateBugTrackers() method. This, too, takes a batch_size parameter, which
 allows it to be passed as a command-line option when the checkwatches script
 is run.
-
-Before going further, we must abort the current transaction to avoid
-deadlock; updateBugTrackers() runs updateBugTracker() in a different
-thread.
-
-    >>> transaction.abort()
-
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
-    >>> bug_watch_updater = NonConnectingBugWatchUpdater(
-    ...     transaction, FakeLogger())
-    >>> bug_watch_updater.updateBugTrackers(
-    ...     bug_tracker_names=[standard_bugzilla.name], batch_size=2)
-    DEBUG Using a global batch size of 2
-    INFO Updating 2 watches for 2 bugs on http://example.com
-    initializeRemoteBugDB() called: [u'5', u'6']
-    getRemoteStatus() called: u'5'
-    getRemoteStatus() called: u'6'
-
-    >>> # We should log in again because updateBugTrackers() logs out.
-    >>> login('test@canonical.com')
-
-By default, the updateBugTrackers() only spawns one thread, but it can
-spawn as many as required.
-
-    >>> import threading
-
-    >>> class OutputFileForThreads:
-    ...     def __init__(self):
-    ...         self.output = {}
-    ...         self.lock = threading.Lock()
-    ...     def write(self, data):
-    ...         thread_name = threading.currentThread().getName()
-    ...         self.lock.acquire()
-    ...         try:
-    ...             if thread_name in self.output:
-    ...                 self.output[thread_name].append(data)
-    ...             else:
-    ...                 self.output[thread_name] = [data]
-    ...         finally:
-    ...             self.lock.release()
-
-    >>> output_file = OutputFileForThreads()
-
-    >>> class ExternalBugTrackerForThreads(TestExternalBugTracker):
-    ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
-    ...         print >> output_file, (
-    ...             "getModifiedRemoteBugs(\n"
-    ...             "    remote_bug_ids=%r,\n"
-    ...             "    last_checked=%r)" % (remote_bug_ids, last_checked))
-    ...         return [remote_bug_ids[0], remote_bug_ids[-1]]
-    ...     def getRemoteStatus(self, bug_id):
-    ...         print >> output_file, (
-    ...             "getRemoteStatus(bug_id=%r)" % bug_id)
-    ...         return 'UNKNOWN'
-    ...     def getCurrentDBTime(self):
-    ...         return None
-
-    >>> class BugWatchUpdaterForThreads(BugWatchUpdater):
-    ...     def _getExternalBugTrackersAndWatches(
-    ...         self, bug_trackers, bug_watches):
-    ...         return [(ExternalBugTrackerForThreads(), bug_watches)]
-
-    >>> threaded_bug_watch_updater = BugWatchUpdaterForThreads(
-    ...     transaction, FakeLogger(output_file))
-    >>> threaded_bug_watch_updater.updateBugTrackers(
-    ...     batch_size=5, num_threads=10)
-
-
-    >>> for thread_name in sorted(output_file.output):
-    ...     print '== %s ==' % thread_name
-    ...     print "".join(output_file.output[thread_name]),
-    == MainThread ==
-    DEBUG Using a global batch size of 5
-    DEBUG Skipping updating Ubuntu Bugzilla watches.
-    == auto-generic-string4.example.com ==
-    INFO Updating 5 watches for 5 bugs on http://example.com
-    getRemoteStatus(bug_id=u'1')
-    getRemoteStatus(bug_id=u'101')
-    getRemoteStatus(bug_id=u'5')
-    getRemoteStatus(bug_id=u'6')
-    getRemoteStatus(bug_id=u'7')
-    == debbugs ==
-    INFO Updating 5 watches for 5 bugs on http://example.com
-    getRemoteStatus(bug_id=u'280883')
-    getRemoteStatus(bug_id=u'304014')
-    getRemoteStatus(bug_id=u'308994')
-    getRemoteStatus(bug_id=u'327452')
-    getRemoteStatus(bug_id=u'327549')
-    == email ==
-    DEBUG No watches to update on mailto:bugs@example.com
-    == example-bugs ==
-    DEBUG No watches to update on http://bugs.example.com
-    == gnome-bugs ==
-    DEBUG No watches to update on http://bugzilla.gnome.org/
-    == gnome-bugzilla ==
-    INFO Updating 2 watches for 2 bugs on http://example.com
-    getRemoteStatus(bug_id=u'304070')
-    getRemoteStatus(bug_id=u'3224')
-    == mozilla.org ==
-    INFO Updating 4 watches for 3 bugs on http://example.com
-    getRemoteStatus(bug_id=u'123543')
-    getRemoteStatus(bug_id=u'2000')
-    getRemoteStatus(bug_id=u'42')
-    == savannah ==
-    DEBUG No watches to update on http://savannah.gnu.org/
-    == sf ==
-    DEBUG No watches to update on http://sourceforge.net/

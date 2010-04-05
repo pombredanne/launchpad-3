@@ -50,7 +50,7 @@ HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
 # given database ($1) into an SQL file ($2).
 build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 	echo $(HEADER) > $(2); \
-    pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
+    pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
     | $(PYTHON) sort_sql.py >> $(2); \
     $(PYTHON) fti.py --force -d ${1} -q
@@ -122,6 +122,8 @@ create:
 		echo "* Installing PL/PgSQL"; \
 	    	createlang -d ${EMPTY_DBNAME} plpgsql; \
 	fi
+	@ echo "* Creating todrop schema"
+	@ psql -d ${EMPTY_DBNAME} -q -c "CREATE SCHEMA todrop;"
 	@ echo "* Creating functions"
 	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
 	@ psql -d ${EMPTY_DBNAME} -f testfuncs.sql | grep : | cat

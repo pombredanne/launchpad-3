@@ -928,27 +928,25 @@ class POFileTranslateView(BaseTranslationView):
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
 
+    def _messages_html_id(self):
+        order = []
+        for message in self.translationmessage_views:
+            if (message.form_is_writeable):
+                for dictionary in message.translation_dictionaries:
+                    order.append(
+                        dictionary['html_id_translation'] + '_new')
+        return order
+
     @property
     def autofocus_html_id(self):
-        try:
-            first_message = self.translationmessage_views[0]
-            first_field = first_message.translation_dictionaries[0]
-            return first_field['html_id_translation']
-        except IndexError:
+        if (len(self._messages_html_id()) > 0):
+            return self._messages_html_id()[0]
+        else:
             return ""
 
     @property
     def translations_order(self):
-        try:
-            order = []
-            for message in self.translationmessage_views:
-                for dictionary in message.translation_dictionaries:
-                    order.append(
-                        dictionary['html_id_translation'] + '_new')
-            return ' '.join(order)
-
-        except IndexError:
-            return ""
+        return ' '.join(self._messages_html_id())
 
 
 class POExportView(BaseExportView):

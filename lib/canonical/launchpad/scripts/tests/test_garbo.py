@@ -29,11 +29,11 @@ from lp.code.enums import CodeImportResultStatus
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
-    OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
+    OpenIDConsumerAssociationPruner)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 from lp.bugs.model.bugnotification import (
@@ -219,12 +219,12 @@ class TestGarbo(TestCaseWithFactory):
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
 
-    def test_OpenIDAssociationPruner(self, pruner=OpenIDAssociationPruner):
-        store_name = pruner.store_name
+    def test_OpenIDConsumerAssociationPruner(self):
+        pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(store_name, MASTER_FLAVOR)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -247,7 +247,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        store = store_selector.get(store_name, MASTER_FLAVOR)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -262,9 +262,6 @@ class TestGarbo(TestCaseWithFactory):
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
-
-    def test_OpenIDConsumerAssociationPruner(self):
-        self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
 
     def test_RevisionAuthorEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -373,6 +370,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # If we remove the email address that was subscribed, the
         # garbage collector removes the subscription.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
         Store.of(email).remove(email)
         transaction.commit()
         self.runDaily()
@@ -550,16 +548,19 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
-        db_branch = self.factory.makeAnyBranch()
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
 
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
-        branch_job_newer = BranchUpgradeJob.create(db_branch)
-        job_id_newer = branch_job_newer.job.id
+        db_branch2 = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        branch_job2 = BranchUpgradeJob.create(db_branch2)
+        job_id_newer = branch_job2.job.id
         transaction.commit()
 
         collector = self.runDaily()

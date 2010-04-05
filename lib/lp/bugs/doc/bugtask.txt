@@ -1234,10 +1234,12 @@ multiple bug tasks in one go.
     Properties for bug 2:
      has_branch: False
      has_mentoring_offer: False
+     has_patch: False
      has_specification: False
     Properties for bug 3:
      has_branch: False
      has_mentoring_offer: False
+     has_patch: False
      has_specification: False
 
 If a mentoring offer gets made...
@@ -1268,10 +1270,12 @@ If a mentoring offer gets made...
     Properties for bug 2:
      has_branch: False
      has_mentoring_offer: True
+     has_patch: False
      has_specification: True
     Properties for bug 3:
      has_branch: True
      has_mentoring_offer: False
+     has_patch: False
      has_specification: False
 
 

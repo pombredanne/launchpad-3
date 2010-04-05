@@ -21,6 +21,7 @@ __all__ = [
     'POTemplateUploadView',
     'POTemplateView',
     'POTemplateViewPreferred',
+    'BaseSeriesTemplatesView',
     ]
 
 import cgi
@@ -31,6 +32,7 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.lazr.utils import smartquote
 
@@ -58,6 +60,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -173,21 +176,21 @@ class POTemplateMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload'
-        return Link('+upload', text)
+        return Link('+upload', text, icon='add')
 
     def download(self):
         text = 'Download'
-        return Link('+export', text)
+        return Link('+export', text, icon='download')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Settings'
-        return Link('+edit', text)
+        text = 'Edit'
+        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def administer(self):
         text = 'Administer'
-        return Link('+admin', text)
+        return Link('+admin', text, icon='edit')
 
 
 class POTemplateSubsetView:
@@ -256,7 +259,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
     @property
     def group_parent(self):
-        """Return a parent object implementing `IHasTranslationGroups`."""
+        """Return a parent object implementing `ITranslationPolicy`."""
         if self.context.productseries is not None:
             return self.context.productseries.product
         else:
@@ -291,7 +294,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 # SourcePackageName is needed to avoid hardcoding this URL.
                 url = (canonical_url(
                     self.context.distroseries, rootsite="translations") +
-                    "/+source/" + self.context.sourcepackagename.name + 
+                    "/+source/" + self.context.sourcepackagename.name +
                     "/+translations")
             else:
                 url = canonical_url(
@@ -508,11 +511,11 @@ class POTemplateViewPreferred(POTemplateView):
         return POTemplateView.pofiles(self, preferred_only=True)
 
 
-class POTemplateEditView(LaunchpadEditFormView):
+class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
-    field_names = ['name', 'translation_domain', 'description', 'priority',
+    field_names = ['translation_domain', 'description', 'priority',
         'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
@@ -529,19 +532,16 @@ class POTemplateEditView(LaunchpadEditFormView):
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         if old_translation_domain != context.translation_domain:
-            # We only update date_last_updated when translation_domain field
-            # is changed because is the only significative change that,
-            # somehow, affects the content of the potemplate.
-            UTC = pytz.timezone('UTC')
-            context.date_last_updated = datetime.datetime.now(UTC)
+            # We only change date_last_updated when the translation_domain
+            # field is changed because it is the only relevant field we
+            # care about regarding the date of last update.
+            naked_context = removeSecurityProxy(context)
+            naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
+        return "name"
 
 
 class POTemplateAdminView(POTemplateEditView):
@@ -554,6 +554,58 @@ class POTemplateAdminView(POTemplateEditView):
         'date_last_updated']
     label = 'Administer translation template'
     page_title = "Administer"
+
+    def validateName(self, name, similar_templates):
+        """Form submission changes template name.  Validate it."""
+        if name == self.context.name:
+            # Not changed.
+            return
+
+        if similar_templates.getPOTemplateByName(name) is not None:
+            self.setFieldError('name', "Name is already in use.")
+            return
+
+    def validateDomain(self, domain, similar_templates):
+        if domain == self.context.translation_domain:
+            # Not changed.
+            return
+
+        other_template = similar_templates.getPOTemplateByTranslationDomain(
+            domain)
+        if other_template is not None:
+            self.setFieldError(
+                'translation_domain', "Domain is already in use.")
+            return
+
+    def validate(self, data):
+        distroseries = data.get('distroseries')
+        sourcepackagename = data.get('sourcepackagename')
+        productseries = data.get('productseries')
+
+        if distroseries is not None and productseries is not None:
+            message = ("Choose a distribution release series or a project "
+                "release series, but not both.")
+        elif distroseries is None and productseries is None:
+            message = ("Choose either a distribution release series or a "
+                "project release series.")
+        else:
+            message = None
+
+        if message is not None:
+            self.addError(message)
+            return
+
+        # Validate name and domain; they should be unique within the
+        # template's translation target (productseries or source
+        # package).  Validate against the target selected by the form,
+        # not the template's existing target; the form may change the
+        # template's target as well.
+        similar_templates = getUtility(IPOTemplateSet).getSubset(
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            productseries=productseries)
+
+        self.validateName(data.get('name'), similar_templates)
+        self.validateDomain(data.get('translation_domain'), similar_templates)
 
 
 class POTemplateExportView(BaseExportView):
@@ -713,7 +765,7 @@ class POTemplateSubsetNavigation(Navigation):
             raise AssertionError('Unknown context for %s' % potemplate.title)
 
         if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.Edit', self.context)):
+            check_permission('launchpad.Edit', potemplate)):
             # The target is using officially Launchpad Translations and the
             # template is available to be translated, or the user is a is a
             # Launchpad administrator in which case we show everything.
@@ -728,3 +780,40 @@ class POTemplateBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return smartquote('Template "%s"' % self.context.name)
+
+
+class BaseSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the Series."""
+
+    is_distroseries = True
+    distroseries = None
+    productseries = None
+    label = "Translation templates"
+    page_title = "All templates"
+
+    def initialize(self, series, is_distroseries=True):
+        self.is_distroseries = is_distroseries
+        if is_distroseries:
+            self.distroseries = series
+        else:
+            self.productseries = series
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(
+            productseries=self.productseries,
+            distroseries=self.distroseries,
+            ordered_by_names=True)
+
+    def rowCSSClass(self, template):
+        if template.iscurrent:
+            return "active-template"
+        else:
+            return "inactive-template"
+
+    def isVisible(self, template):
+        if (template.iscurrent or
+            check_permission('launchpad.Edit', template)):
+            return True
+        else:
+            return False

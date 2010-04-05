@@ -27,10 +27,8 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lp.registry.interfaces.person import IPerson
 
 from lazr.delegates import delegates
 from lazr.restful.fields import CollectionField, Reference
@@ -57,7 +55,7 @@ class IMessage(Interface):
     # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
     owner = exported(
-        Reference(title=_('Person'), schema=IPerson,
+        Reference(title=_('Person'), schema=Interface,
                   required=False, readonly=True))
 
     # Schema is really IMessage, but this cannot be declared here. It's
@@ -181,7 +179,7 @@ class IMessageSet(Interface):
 
 class IIndexedMessage(Interface):
     """An `IMessage` decorated with its index and context."""
-    inside = Reference(title=_('Inside'), schema=IBugTask,
+    inside = Reference(title=_('Inside'), schema=Interface,
                        description=_("The bug task which is "
                                      "the context for this message."),
                        required=True, readonly=True)
@@ -227,12 +225,12 @@ class IUserToUserEmail(Interface):
     """User to user direct email communications."""
 
     sender = Object(
-        schema=IPerson,
+        schema=Interface,
         title=_("The message sender"),
         required=True, readonly=True)
 
     recipient = Object(
-        schema=IPerson,
+        schema=Interface,
         title=_("The message recipient"),
         required=True, readonly=True)
 

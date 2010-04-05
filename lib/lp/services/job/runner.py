@@ -15,30 +15,30 @@ __all__ = [
     ]
 
 
+from calendar import timegm
 import contextlib
+import logging
 import os
 from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
-from twisted.internet import defer, error, reactor, stdio
+import transaction
+from twisted.internet import defer, reactor
 from twisted.protocols import amp
-from twisted.python import log, reflect
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from lazr.delegates import delegates
 
 from canonical.config import config
-from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
-from lazr.delegates import delegates
-import transaction
-
-from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
-from lp.services.mail.sendmail import MailController
+from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
+from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
+from lp.services.mail.sendmail import MailController
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 
 
 class BaseRunnableJob:
@@ -53,6 +53,17 @@ class BaseRunnableJob:
     delegates(IJob, 'job')
 
     user_error_types = ()
+
+    # We redefine __eq__ and __ne__ here to prevent the security proxy
+    # from mucking up our comparisons in tests and elsewhere.
+
+    def __eq__(self, job):
+        return (
+            self.__class__ is removeSecurityProxy(job.__class__)
+            and self.job == job.job)
+
+    def __ne__(self, job):
+        return not (self == job)
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
@@ -123,6 +134,8 @@ class BaseJobRunner(object):
     def __init__(self, logger=None, error_utility=None):
         self.completed_jobs = []
         self.incomplete_jobs = []
+        if logger is None:
+            logger = logging.getLogger()
         self.logger = logger
         self.error_utility = error_utility
         if self.error_utility is None:
@@ -131,11 +144,16 @@ class BaseJobRunner(object):
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
+
+        self.logger.debug(
+            'Running job in status %s' % (job.status.title,))
+        job.start()
+        transaction.commit()
+
         try:
-            job.start()
-            transaction.commit()
             job.run()
-        except Exception:
+        except Exception, e:
+            self.logger.error(e)
             transaction.abort()
             job.fail()
             # Record the failure.
@@ -197,8 +215,11 @@ class JobRunner(BaseJobRunner):
         return cls(job_class.iterReady(), logger)
 
     @classmethod
-    def runFromSource(cls, job_source, logger):
-        """Run all ready jobs provided by the specified source."""
+    def runFromSource(cls, job_source, dbuser, logger):
+        """Run all ready jobs provided by the specified source.
+
+        The dbuser parameter is ignored.
+        """
         with removeSecurityProxy(job_source.contextManager()):
             logger.info("Running synchronously.")
             runner = cls.fromReady(job_source, logger)
@@ -209,9 +230,13 @@ class JobRunner(BaseJobRunner):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
             job = IRunnableJob(job)
+            self.logger.debug(
+                'Trying to acquire lease for job in state %s' % (
+                    job.status.title,))
             try:
                 job.acquireLease()
             except LeaseHeld:
+                self.logger.debug('Could not acquire lease for job')
                 self.incomplete_jobs.append(job)
                 continue
             # Commit transaction to clear the row lock.
@@ -230,9 +255,26 @@ class RunJobCommand(amp.Command):
 class JobRunnerProcess(child.AMPChild):
     """Base class for processes that run jobs."""
 
-    def __init__(self):
+    def __init__(self, job_source_name, dbuser):
         child.AMPChild.__init__(self)
-        self.context_manager = self.job_class.contextManager()
+        module, name = job_source_name.rsplit('.', 1)
+        source_module = __import__(module, fromlist=[name])
+        self.job_source = getattr(source_module, name)
+        self.context_manager = self.job_source.contextManager()
+        # icky, but it's really a global value anyhow.
+        self.__class__.dbuser = dbuser
+
+    @classmethod
+    def __enter__(cls):
+        def handler(signum, frame):
+            raise TimeoutError
+        scripts.execute_zcml_for_scripts(use_web_security=False)
+        signal(SIGHUP, handler)
+        initZopeless(dbuser=cls.dbuser)
+
+    @staticmethod
+    def __exit__(exc_type, exc_val, exc_tb):
+        pass
 
     def makeConnection(self, transport):
         """The Job context is entered on connect."""
@@ -246,9 +288,9 @@ class JobRunnerProcess(child.AMPChild):
 
     @RunJobCommand.responder
     def runJobCommand(self, job_id):
-        """Run a job of this job_class according to its job id."""
+        """Run a job from this job_source according to its job id."""
         runner = BaseJobRunner()
-        job = self.job_class.get(job_id)
+        job = self.job_source.get(job_id)
         oops = runner.runJobHandleError(job)
         if oops is None:
             oops_id = ''
@@ -257,28 +299,24 @@ class JobRunnerProcess(child.AMPChild):
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
-class HUPProcessPool(pool.ProcessPool):
-    """A ProcessPool that kills with HUP."""
-
-    def _handleTimeout(self, child):
-        try:
-            child.transport.signalProcess(SIGHUP)
-        except error.ProcessExitedAlready:
-            pass
-
-
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
-    def __init__(self, job_source, job_amp, logger=None, error_utility=None):
+    def __init__(self, job_source, dbuser, logger=None, error_utility=None):
+        env = {'PYTHONPATH': os.environ['PYTHONPATH'],
+               'PATH': os.environ['PATH']}
+        lp_config = os.environ.get('LPCONFIG')
+        if lp_config is not None:
+            env['LPCONFIG'] = lp_config
         starter = main.ProcessStarter(
-            bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
-            env={'PYTHONPATH': os.environ['PYTHONPATH'],
-            'PATH': os.environ['PATH'],
-            'LPCONFIG': os.environ['LPCONFIG']})
+            packages=('twisted', 'ampoule'), env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        self.pool = HUPProcessPool(job_amp, starter=starter, min=0)
+        import_name = '%s.%s' % (
+            removeSecurityProxy(job_source).__module__, job_source.__name__)
+        self.pool = pool.ProcessPool(
+            JobRunnerProcess, ampChildArgs=[import_name, str(dbuser)],
+            starter=starter, min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
         """Run the job_class with the specified id in the process pool.
@@ -292,12 +330,9 @@ class TwistedJobRunner(BaseJobRunner):
             self.incomplete_jobs.append(job)
             return
         job_id = job.id
-        timeout = job.getTimeout()
-        # work around ampoule bug
-        if timeout == 0:
-            timeout = 0.0000000000001
+        deadline = timegm(job.lease_expires.timetuple())
         deferred = self.pool.doWork(
-            RunJobCommand, job_id = job_id, _timeout=timeout)
+            RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
@@ -324,7 +359,10 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        consumer = ParallelLimitedTaskConsumer(1)
+        logger = logging.getLogger('gloop')
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+        logger.setLevel(logging.DEBUG)
+        consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
@@ -344,11 +382,13 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, logger, error_utility=None):
-        """Run all ready jobs provided by the specified source."""
+    def runFromSource(cls, job_source, dbuser, logger):
+        """Run all ready jobs provided by the specified source.
+
+        The dbuser parameter is not ignored.
+        """
         logger.info("Running through Twisted.")
-        runner = cls(job_source, removeSecurityProxy(job_source).amp, logger,
-                     error_utility)
+        runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
         handler = getsignal(SIGCHLD)
         try:
@@ -361,14 +401,17 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self, runner_class=JobRunner):
-        dbuser = getattr(config, self.config_name).dbuser
-        super(JobCronScript, self).__init__(self.config_name, dbuser)
+    def __init__(self, runner_class=JobRunner, test_args=None):
+        self.dbuser = getattr(config, self.config_name).dbuser
+        super(JobCronScript, self).__init__(
+            self.config_name, self.dbuser, test_args)
         self.runner_class = runner_class
 
     def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
-        runner = self.runner_class.runFromSource(job_source, self.logger)
+        runner = self.runner_class.runFromSource(
+            job_source, self.dbuser, self.logger)
         self.logger.info(
             'Ran %d %s jobs.',
             len(runner.completed_jobs), self.source_interface.__name__)
@@ -381,22 +424,3 @@ class TimeoutError(Exception):
 
     def __init__(self):
         Exception.__init__(self, "Job ran too long.")
-
-
-BOOTSTRAP = """\
-import sys
-from twisted.application import reactors
-reactors.installReactor(sys.argv[-2])
-from lp.services.job.runner import bootstrap
-bootstrap(sys.argv[-1])
-"""
-
-def bootstrap(ampChildPath):
-    def handler(signum, frame):
-        raise TimeoutError
-    signal(SIGHUP, handler)
-    log.startLogging(sys.stderr)
-    ampChild = reflect.namedAny(ampChildPath)
-    stdio.StandardIO(ampChild(), 3, 4)
-    scripts.execute_zcml_for_scripts(use_web_security=False)
-    reactor.run()

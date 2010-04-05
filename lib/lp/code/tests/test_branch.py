@@ -15,9 +15,10 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.code.xmlrpc.branch import PublicCodehostingAPI
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
@@ -247,7 +248,7 @@ class TestWriteToBranch(PermissionTest):
         # Make sure the (distroseries, pocket) combination used allows us to
         # upload to it.
         stable_states = (
-            DistroSeriesStatus.SUPPORTED, DistroSeriesStatus.CURRENT)
+            SeriesStatus.SUPPORTED, SeriesStatus.CURRENT)
         if branch.distroseries.status in stable_states:
             pocket = PackagePublishingPocket.BACKPORTS
         else:
@@ -346,6 +347,52 @@ class TestWriteToBranch(PermissionTest):
             getUtility(ILaunchpadCelebrities).vcs_imports,
             getUtility(ILaunchpadCelebrities).vcs_imports)
         self.assertCanEdit(registrant, branch)
+
+
+class TestComposePublicURL(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestComposePublicURL, self).setUp('admin@canonical.com')
+
+    def test_composePublicURL_accepts_supported_schemes(self):
+        # composePublicURL accepts all schemes that PublicCodehostingAPI
+        # supports.
+        branch = self.factory.makeAnyBranch()
+
+        url_pattern = '%%s://bazaar.launchpad.dev/~%s/%s/%s' % (
+            branch.owner.name, branch.product.name, branch.name)
+        for scheme in PublicCodehostingAPI.supported_schemes:
+            public_url = branch.composePublicURL(scheme)
+            self.assertEqual(url_pattern % scheme, public_url)
+
+        # sftp support is also grandfathered in.
+        sftp_url = branch.composePublicURL('sftp')
+        self.assertEqual(url_pattern % 'sftp', sftp_url)
+
+    def test_composePublicURL_default_http(self):
+        # The default scheme for composePublicURL is http.
+        branch = self.factory.makeAnyBranch()
+        prefix = 'http://'
+        public_url = branch.composePublicURL()
+        self.assertEqual(prefix, public_url[:len(prefix)])
+
+    def test_composePublicURL_unknown_scheme(self):
+        # Schemes that aren't known to be supported are not accepted.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, branch.composePublicURL, 'irc')
+
+    def test_composePublicURL_http_private(self):
+        # Private branches don't have public http URLs.
+        branch = self.factory.makeAnyBranch(private=True)
+        self.assertRaises(AssertionError, branch.composePublicURL, 'http')
+
+    def test_composePublicURL_no_https(self):
+        # There's no https support.  If there were, it should probably
+        # not work for private branches.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, branch.composePublicURL, 'https')
 
 
 def test_suite():

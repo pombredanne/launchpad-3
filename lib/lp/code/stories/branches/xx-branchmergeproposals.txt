@@ -100,7 +100,7 @@ commit message can be set.
     ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
-    >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit-message')
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit_message')
     Commit Message
     Add more &lt;b&gt;mojo&lt;/b&gt;
 
@@ -614,10 +614,25 @@ Create merge proposal with a preview diff, and go to its index page.
     ...    return find_tag_by_id(nopriv_browser.contents, 'review-diff')
 
 The text of the review diff is in the page.
+
     >>> print repr(extract_text(get_review_diff()))
     u'Preview Diff\nDownload diff\n1\n...Fake Diff\u1010'
 
+There is also a link to the diff URL, which is the preview diff URL plus
+"+files/preview.diff"
+
+    >>> link = get_review_diff().find('a')
+    >>> print link['href']
+    http.../+preview-diff/+files/preview.diff
+    >>> nopriv_browser.open(str(link['href']))
+    >>> print nopriv_browser.contents
+    ---
+    +++
+    @@ -1,0 +1,1 @@
+    +Fake Diff...
+
 If no diff is present, nothing is shown.
+
     >>> login('admin@canonical.com')
     >>> removeSecurityProxy(bmp).preview_diff = None
     >>> logout()

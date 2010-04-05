@@ -131,6 +131,7 @@ even launchpad admins can use it.
 
     >>> login('foo.bar@canonical.com')
     >>> foobar.deactivateAccount(comment)
+    >>> transaction.commit()
 
 Deactivating an account changes many of the person's attributes.  It
 adds a '-deactivatedaccount' suffix to the person's name...

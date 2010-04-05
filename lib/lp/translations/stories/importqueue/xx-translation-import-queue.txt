@@ -8,7 +8,7 @@ template uploads.
     >>> ff_owner_browser.open(
     ...     'http://translations.launchpad.dev/firefox/1.0/'
     ...     '+translations-upload')
-    >>> 'Upload either a single file' in ff_owner_browser.contents
+    >>> 'Here you can upload translation files' in ff_owner_browser.contents
     True
 
 The upload consists of a tarball containing templates and/or

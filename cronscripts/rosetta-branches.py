@@ -32,11 +32,11 @@ class RunRosettaBranchJobs(LaunchpadCronScript):
         runner = JobRunner.fromReady(
             getUtility(IRosettaUploadJobSource), self.logger)
         server = get_scanner_server()
-        server.setUp()
+        server.start_server()
         try:
             runner.runAll()
         finally:
-            server.tearDown()
+            server.stop_server()
         self.logger.info('Ran %d RosettaBranchJobs.',
                          len(runner.completed_jobs))
 

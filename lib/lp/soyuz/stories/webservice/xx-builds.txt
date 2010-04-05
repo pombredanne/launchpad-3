@@ -174,7 +174,7 @@ If the build cannot be retried, then a 400 code is returned.  Let's
 alter the buildstate to one that cannot be retried:
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FAILEDTOUPLOAD
     >>> logout()
 

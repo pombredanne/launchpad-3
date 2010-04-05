@@ -23,36 +23,59 @@ from bzrlib.urlutils import join as urljoin
 
 from CVS import Repository, tree as CVSTree
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
 
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
+    BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
     ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
-    ImportWorker, get_default_bazaar_branch_store)
+    ImportWorker, CSCVSImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCase
 
 import pysvn
+
+
+class ForeignBranchPluginLayer(BaseLayer):
+    """Ensure only specific tests are run with foreign branch plugins loaded.
+    """
+
+    @classmethod
+    def setUp(cls):
+        pass
+
+    @classmethod
+    def tearDown(cls):
+        # Raise NotImplementedError to signal that this layer cannot be torn
+        # down.  This means that the test runner will run subsequent tests in
+        # a different process.
+        raise NotImplementedError
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
 
 
 default_format = BzrDirFormat.get_default_format()
 
 
-class WorkerTest(TestCaseWithTransport):
+class WorkerTest(TestCaseWithTransport, TestCase):
     """Base test case for things that test the code import worker.
 
     Provides Bazaar testing features, access to Launchpad objects and
     factories for some code import objects.
     """
 
-    layer = BaseLayer
+    layer = ForeignBranchPluginLayer
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
@@ -69,10 +92,6 @@ class WorkerTest(TestCaseWithTransport):
                 yield path[len(directory):]
         self.assertEqual(
             sorted(list_files(directory1)), sorted(list_files(directory2)))
-
-    @cachedproperty
-    def factory(self):
-        return LaunchpadObjectFactory()
 
     def makeTemporaryDirectory(self):
         directory = tempfile.mkdtemp()
@@ -234,6 +253,31 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             store._getMirrorURL(self.arbitrary_branch_id),
             sftp_prefix_noslash + '/' + '%08x' % self.arbitrary_branch_id)
+
+    def test_all_revisions_saved(self):
+        # All revisions in the branch's repo are transferred, not just those
+        # in the ancestry of the tip.
+        # Consider a branch with two heads in its repo:
+        #            revid
+        #           /     \
+        #       revid1   revid2 <- branch tip
+        # A naive push/pull would just store 'revid' and 'revid2' in the
+        # branch store -- we need to make sure all three revisions are stored
+        # and retrieved.
+        builder = self.make_branch_builder('tree')
+        revid = builder.build_snapshot(
+            None, None, [('add', ('', 'root-id', 'directory', ''))])
+        revid1 = builder.build_snapshot(None, [revid], [])
+        revid2 = builder.build_snapshot(None, [revid], [])
+        branch = builder.get_branch()
+        source_tree = branch.bzrdir.create_workingtree()
+        store = self.makeBranchStore()
+        store.push(self.arbitrary_branch_id, source_tree, default_format)
+        retrieved_tree = store.pull(
+            self.arbitrary_branch_id, 'pulled', default_format)
+        self.assertEqual(
+            set([revid, revid1, revid2]),
+            set(retrieved_tree.branch.repository.all_revision_ids()))
 
 
 class TestImportDataStore(WorkerTest):
@@ -710,6 +754,28 @@ class TestActualImportMixin:
         self.assertEqual(
             self.foreign_commit_count, len(branch.revision_history()))
 
+    def test_script_exit_codes(self):
+        # After a successful import that imports revisions, the worker exits
+        # with a code of CodeImportWorkerExitCode.SUCCESS.  After a successful
+        # import that does not import revisions, the worker exits with a code
+        # of CodeImportWorkerExitCode.SUCCESS_NOCHANGE.
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')])
+
+        clean_up_default_stores_for_import(source_details)
+
+        script_path = os.path.join(
+            config.root, 'scripts', 'code-import-worker.py')
+        output = tempfile.TemporaryFile()
+        retcode = subprocess.call(
+            [script_path] + source_details.asArguments(),
+            stderr=output, stdout=output)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS)
+        retcode = subprocess.call(
+            [script_path] + source_details.asArguments(),
+            stderr=output, stdout=output)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS_NOCHANGE)
+
 
 class CSCVSActualImportMixin(TestActualImportMixin):
 
@@ -751,8 +817,8 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
         """
         cvs_server = CVSServer(self.makeTemporaryDirectory())
-        cvs_server.setUp()
-        self.addCleanup(cvs_server.tearDown)
+        cvs_server.start_server()
+        self.addCleanup(cvs_server.stop_server)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
 
@@ -782,8 +848,8 @@ class SubversionImportHelpers:
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
         """
         svn_server = SubversionServer(self.makeTemporaryDirectory())
-        svn_server.setUp()
-        self.addCleanup(svn_server.tearDown)
+        svn_server.start_server()
+        self.addCleanup(svn_server.stop_server)
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
@@ -830,8 +896,33 @@ class PullingImportWorkerTests:
         self.assertRaises(NotBranchError, worker.run)
 
 
+class PartialTest:
+    """A test case for incremental imports.
+
+    When all foreign branch plugins support incremental imports, this can go
+    into PullingImportWorkerTests.  For now though, bzr-hg still lacks the
+    needed support.
+    """
+
+    def test_partial(self):
+        # Only config.codeimport.revisions_import_limit will be imported in a
+        # given run.  When bzr-svn and bzr-hg support revision import limits,
+        # this test case can be moved up to PullingImportWorkerTests.
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')]))
+        self.makeForeignCommit(worker.source_details)
+        self.assertTrue(self.foreign_commit_count > 1)
+        self.pushConfig(
+            'codeimport', revisions_import_limit=self.foreign_commit_count-1)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+
+
+
 class TestGitImport(WorkerTest, TestActualImportMixin,
-                    PullingImportWorkerTests):
+                    PullingImportWorkerTests, PartialTest):
 
     rcstype = 'git'
 
@@ -875,14 +966,15 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """
         repository_path = self.makeTemporaryDirectory()
         git_server = GitServer(repository_path)
-        git_server.setUp()
-        self.addCleanup(git_server.tearDown)
+        git_server.start_server()
+        self.addCleanup(git_server.stop_server)
 
         git_server.makeRepo(files)
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', url=repository_path)
+
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
@@ -926,8 +1018,8 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         """
         repository_path = self.makeTemporaryDirectory()
         hg_server = MercurialServer(repository_path)
-        hg_server.setUp()
-        self.addCleanup(hg_server.tearDown)
+        hg_server.start_server()
+        self.addCleanup(hg_server.stop_server)
 
         hg_server.makeRepo(files)
         self.foreign_commit_count = 1
@@ -937,7 +1029,8 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
-                       TestActualImportMixin, PullingImportWorkerTests):
+                       TestActualImportMixin, PullingImportWorkerTests,
+                       PartialTest):
 
     rcstype = 'bzr-svn'
 

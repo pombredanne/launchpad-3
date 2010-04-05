@@ -1,10 +1,37 @@
-= Introduction =
+************
+Introduction
+************
 
 Some standard behavior is defined by the web service itself, not by
 the individual resources.
 
+Multiple versions
+=================
 
-== No beta team redirection ==
+The Launchpad web service defines three versions: 'beta', '1.0', and
+'devel'.
+
+    >>> def me_link_for_version(version):
+    ...     response = webservice.get("/", api_version=version)
+    ...     print response.jsonBody()['me_link']
+
+    >>> me_link_for_version('beta')
+    http://api.launchpad.dev/beta/people/+me
+
+    >>> me_link_for_version('1.0')
+    http://api.launchpad.dev/1.0/people/+me
+
+    >>> me_link_for_version('devel')
+    http://api.launchpad.dev/devel/people/+me
+
+No other versions are available.
+
+    >>> print webservice.get("/", api_version="nosuchversion")
+    HTTP/1.1 404 Not Found
+    ...
+
+No beta team redirection
+========================
 
 Members of the beta team aren't redirected to the beta site on API call.
 
@@ -46,17 +73,18 @@ But not a request to the web service:
 
     >>> ignored = config.pop('beta_data')
 
+Resources not exposed on the web service
+========================================
 
-== Resources not exposed on the web service ==
-
-Soyuz build set (exposed on the web at builders) are not available on the
+Soyuz build set (exposed on the web at /builders) are not available on the
 web service:
 
     >>> print webservice.get("/builders")
     HTTP/1.1 404 Not Found
     ...
 
-== Anonymous requests ==
+Anonymous requests
+==================
 
 A properly signed web service request whose OAuth token key is empty
 is treated as an anonymous request.
@@ -128,7 +156,8 @@ Anonymous requests can't change the dataset.
     (<Person at...>, 'displayname', 'launchpad.Edit')
     ...
 
-== API Requests to other hosts ==
+API Requests to other hosts
+===========================
 
 JavaScript working with the API must deal with the browser's Same Origin
 Policy - requests may only be made to the host that the page was loaded
@@ -144,15 +173,15 @@ The URLs in the returned representations point to the current host,
 rather than the api host.  The canonical_url() function also returns
 links to the current host.
 
-The ServiceRoot for http://bugs.launchpad.dev/api/beta/ is the same as a
+The ServiceRoot for http://bugs.launchpad.dev/api/devel/ is the same as a
 request to http://api.launchpad.net/beta/, but with the links pointing
 to a different host.
 
     >>> webservice.domain = 'bugs.launchpad.dev'
     >>> root = webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/').jsonBody()
+    ...     'http://bugs.launchpad.dev/api/devel/').jsonBody()
     >>> print root['people_collection_link']
-    http://bugs.launchpad.dev/api/beta/people
+    http://bugs.launchpad.dev/api/devel/people
 
 Requests on these hosts also honor the standard Launchpad authorization
 scheme (and don't require OAuth).
@@ -163,11 +192,11 @@ scheme (and don't require OAuth).
     ...     domain='bugs.launchpad.dev')
     >>> sample_auth = 'Basic %s' % 'test@canonical.com:test'.encode('base64')
     >>> print noauth_webservice.get(
-    ...     'http://bugs.launchpad.dev/api/beta/people/+me',
+    ...     'http://bugs.launchpad.dev/api/devel/people/+me',
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 303 See Other
     ...
-    Location: http://bugs.launchpad.dev/api/beta/~name12...
+    Location: http://bugs.launchpad.dev/api/devel/~name12...
     ...
 
 But the regular authentication still doesn't work on the normal API

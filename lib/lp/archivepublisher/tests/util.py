@@ -8,7 +8,7 @@ __metaclass__ = type
 # Utility functions/classes for testing the archive publisher.
 
 from lp.archivepublisher.tests import datadir
-from canonical.launchpad.interfaces import DistroSeriesStatus
+from canonical.launchpad.interfaces import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 __all__ = ['FakeLogger']
@@ -44,7 +44,7 @@ class FakeDistroSeries:
         self.distribution = distro
         self.architectures = [FakeDistroArchSeries(self, "i386"),
                               FakeDistroArchSeries(self, "powerpc")]
-        self.status = DistroSeriesStatus.DEVELOPMENT
+        self.status = SeriesStatus.DEVELOPMENT
         self.distribution.registerSeries(self)
 
 

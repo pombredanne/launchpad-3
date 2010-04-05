@@ -23,6 +23,7 @@ from zope.component import adapter
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import Attribute, implements, Interface
 from zope.app.form.interfaces import MissingInputError
+from zope.security.interfaces import Unauthorized
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 
@@ -42,7 +43,7 @@ from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 # This limits the output to one line of text, since the sprite class
 # cannot clip the background image effectively for vocabulary items
 # with more than single line description below the title.
-MAX_DESCRIPTION_LENGTH = 55
+MAX_DESCRIPTION_LENGTH = 120
 
 
 class IPickerEntry(Interface):
@@ -83,7 +84,10 @@ def person_to_pickerentry(person):
     """Adapts IPerson to IPickerEntry."""
     extra = default_pickerentry_adapter(person)
     if person.preferredemail is not None:
-        extra.description = person.preferredemail.email
+        try:
+            extra.description = person.preferredemail.email
+        except Unauthorized:
+            extra.description = '<email address hidden>'
     return extra
 
 @implementer(IPickerEntry)

@@ -61,7 +61,7 @@ Set IBuilder.builderok of all present builders:
 
 Clean up previous BuildQueue results from sampledata:
 
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> lost_job = getUtility(IBuildQueueSet).get(1)
     >>> lost_job.builder.name
     u'bob'
@@ -187,7 +187,7 @@ buildqueue record, so the build was eliminated:
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()
@@ -205,7 +205,7 @@ Create a new Build record of the same source targeted for a PPA archive:
 
 Create BuildQueue record and inspect some parameters:
 
-    >>> ppa_job = ppa_build.createBuildQueueEntry()
+    >>> ppa_job = ppa_build.queueBuild()
     >>> ppa_job.id
     3
     >>> ppa_job.builder == None
@@ -321,7 +321,7 @@ architecture and SECURITY pocket:
 
 Create BuildQueue record and inspect some parameters:
 
-    >>> sec_job = sec_build.createBuildQueueEntry()
+    >>> sec_job = sec_build.queueBuild()
     >>> sec_job.id
     4
     >>> print sec_job.builder
@@ -356,7 +356,7 @@ check if legitimate pending candidates will remain valid.
 
     >>> pending_build = sprf.sourcepackagerelease.createBuild(
     ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
-    >>> pending_job = pending_build.createBuildQueueEntry()
+    >>> pending_job = pending_build.queueBuild()
 
 We increase the score of the security job to ensure it is considered
 before the legitimate job.

@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -16,6 +17,7 @@ __all__ = [
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
+    'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
@@ -26,6 +28,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
     'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
@@ -60,7 +63,6 @@ from lp.bugs.interfaces.bugwatch import (
 from lp.soyuz.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -272,6 +274,20 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
 
 
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
+
+    The possible values to search for bugs having branches attached
+    or not having branches attched.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
 # XXX: Brad Bollenbach 2005-12-02 bugs=5320:
 # In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
 # semantics of our current reports would break if it were added to the
@@ -304,6 +320,11 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
     BugTaskStatusSearch.FIXCOMMITTED)
+
+DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
+    BugTaskStatusSearchDisplay.items.mapping[item.value]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES
+    ]
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
@@ -339,6 +360,13 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
+
+
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwrite all relevant parameters
+    in a search for related bug tasks"""
+    webservice_error(400) #Bad request.
+
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -470,8 +498,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
+    task_age = Int(title=_("Age of the bug task"),
+            description=_("The age of this task in seconds, a delta between "
+                         "now and the date the bug task was created."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+        Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
         readonly=True,
@@ -788,6 +819,14 @@ class IBugTaskSearchBase(Interface):
     subscriber = Choice(
         title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
         required=False)
+    affects_me = Bool(
+        title=_('Show only bugs affecting me'), required=False)
+    has_branches = Bool(
+        title=_('Show bugs with linked branches'), required=False,
+        default=True)
+    has_no_branches = Bool(
+        title=_('Show bugs without linked branches'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -818,6 +857,11 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
@@ -966,14 +1010,15 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None, hardware_bus=None,
+                 bug_commenter=None, omit_targeted=False, date_closed=None,
+                 affected_user=None, affects_me=False, hardware_bus=None,
                  hardware_vendor_id=None, hardware_product_id=None,
                  hardware_driver_name=None, hardware_driver_package_name=None,
                  hardware_owner_is_bug_reporter=None,
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
-                 hardware_is_linked_to_bug=False
+                 hardware_is_linked_to_bug=False,
+                 linked_branches=None
                  ):
 
         self.bug = bug
@@ -1005,6 +1050,7 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
+        self.affects_me = affects_me
         self.hardware_bus = hardware_bus
         self.hardware_vendor_id = hardware_vendor_id
         self.hardware_product_id = hardware_product_id
@@ -1016,6 +1062,7 @@ class BugTaskSearchParams:
         self.hardware_owner_is_subscribed_to_bug = (
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
+        self.linked_branches = linked_branches
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1074,7 +1121,8 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       affected_user=None, has_patch=None, has_cve=None,
+                       affected_user=None, affects_me=False,
+                       has_patch=None, has_cve=None,
                        distribution=None, tags=None,
                        tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
@@ -1087,7 +1135,7 @@ class BugTaskSearchParams:
                        hardware_owner_is_bug_reporter=None,
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
-                       hardware_is_linked_to_bug=False):
+                       hardware_is_linked_to_bug=False, linked_branches=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1154,6 +1202,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
+        search_params.linked_branches=linked_branches
 
         return search_params
 

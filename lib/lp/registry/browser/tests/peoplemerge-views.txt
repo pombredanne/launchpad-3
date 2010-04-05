@@ -6,9 +6,17 @@ There are a number of views for merging people and teams.
 Team Merges
 -----------
 
+Create a member of the registry team that is not a member of the admins
+team.
+
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
-    >>> registry_expert = person_set.getByName('mark')
+    >>> registry_expert = factory.makePerson()
+    >>> login_person(registry_experts.teamowner)
+    >>> ignored = registry_experts.addMember(
+    ...     registry_expert, registry_experts.teamowner)
     >>> login_person(registry_expert)
 
 A team (name21) can be merged into another (ubuntu-team).
@@ -39,6 +47,7 @@ restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
     >>> parent_team = factory.makeTeam()
     >>> child_team = factory.makeTeam(name='child-team')
     >>> random_team = factory.makeTeam()
+    >>> login('foo.bar@canonical.com')
     >>> ignored = parent_team.addMember(
     ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
     >>> form = {'field.dupe_person': child_team.name,
@@ -112,10 +121,8 @@ Delete team
 Users with launchpad.Moderate such as team admins and registry experts
 can delete teams.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
-    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> team_owner = factory.makePerson()
     >>> team_member = factory.makePerson()
     >>> deletable_team = factory.makeTeam(owner=team_owner, name='deletable')
@@ -127,7 +134,7 @@ can delete teams.
     >>> check_permission('launchpad.Moderate', view)
     False
 
-    >>> login_person(registry_experts.teamowner)
+    >>> login_person(registry_expert)
     >>> check_permission('launchpad.Moderate', view)
     True
 
@@ -241,3 +248,26 @@ A team with a mailing list cannot be deleted.
 
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
+
+The registry experts should be able to delete a team with an
+validated email address, which will be invisible, since only
+preferred email addresses are shown for teams.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> login_person(registry_expert)
+    >>> admin = getUtility(ILaunchpadCelebrities).admin
+    >>> registry_expert.inTeam(admin)
+    False
+    >>> deletable_team = factory.makeTeam(email="del@example.com")
+    >>> deletable_team.setContactAddress(None)
+    >>> for email in getUtility(IEmailAddressSet).getByPerson(deletable_team):
+    ...     print email.email, email.status.title
+    del@example.com Validated Email Address
+    >>> form = {'field.actions.delete': 'Delete'}
+    >>> view = create_initialized_view(deletable_team, '+delete', form=form)
+    >>> view.errors
+    []
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Team deleted.

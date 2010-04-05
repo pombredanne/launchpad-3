@@ -21,24 +21,21 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
-class CannotUploadToArchive:
+class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
     def __init__(self, **args):
         """Construct a `CannotUploadToArchive`."""
-        self._message = self._fmt % args
-
-    def __str__(self):
-        return self._message
+        Exception.__init__(self, self._fmt % args)
 
 
-class CannotUploadToPocket:
+class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
-        super(CannotUploadToPocket, self).__init__(
+        Exception.__init__(self,
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
 
@@ -73,7 +70,7 @@ class NoRightsForComponent(CannotUploadToArchive):
         "Signer is not permitted to upload to the component '%(component)s'.")
 
     def __init__(self, component):
-        super(NoRightsForComponent, self).__init__(component=component.name)
+        CannotUploadToArchive.__init__(self, component=component.name)
 
 
 class InvalidPocketForPPA(CannotUploadToArchive):
@@ -86,6 +83,15 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
     """Partner archives only support some pockets."""
 
     _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
+
+
+class ArchiveDisabled(CannotUploadToArchive):
+    """Uploading to a disabled archive is not allowed."""
+
+    _fmt = ("%(archive_name)s is disabled.")
+
+    def __init__(self, archive_name):
+        CannotUploadToArchive.__init__(self, archive_name=archive_name)
 
 
 def components_valid_for(archive, person):
@@ -202,6 +208,9 @@ def verify_upload(person, sourcepackagename, archive, component,
     :return: CannotUploadToArchive if 'person' cannot upload to the archive,
         None otherwise.
     """
+    if not archive.enabled:
+        return ArchiveDisabled(archive.displayname)
+
     # For PPAs...
     if archive.is_ppa:
         if not archive.canUpload(person):

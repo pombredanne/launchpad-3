@@ -94,14 +94,14 @@ class UpdateStackedBranches(LaunchpadScript):
 
     def main(self):
         server = get_server(self.options.dry_run)
-        server.setUp()
+        server.start_server()
         if self.options.dry_run:
             self.logger.debug('Running read-only')
         self.logger.debug('Beginning processing')
         try:
             self.updateBranches(self.parseFromStream(sys.stdin))
         finally:
-            server.tearDown()
+            server.stop_server()
         self.logger.info('Done')
 
     def updateStackedOn(self, branch_id, bzr_branch_url, stacked_on_location):

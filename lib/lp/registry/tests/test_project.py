@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import login
 from canonical.testing import LaunchpadFunctionalLayer
 
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import TestCaseWithFactory
 
 
@@ -28,7 +28,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
         self.project3 = self.factory.makeProject(
             name="razzle-dazzle", owner=self.person,
             description="Giving 110% at all times.")
-        self.projectset = getUtility(IProjectSet)
+        self.projectset = getUtility(IProjectGroupSet)
         login(self.person.preferredemail.email)
 
     def testSearchNoMatch(self):

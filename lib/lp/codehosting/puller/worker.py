@@ -419,12 +419,12 @@ class PullerWorker:
         from lp.codehosting.vfs import get_puller_server
 
         server = get_puller_server()
-        server.setUp()
+        server.start_server()
         try:
             source_branch = self.branch_mirrorer.open(self.source)
             return self.branch_mirrorer.mirror(source_branch, self.dest)
         finally:
-            server.tearDown()
+            server.stop_server()
 
     def mirror(self):
         """Open source and destination branches and pull source into

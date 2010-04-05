@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'compose_public_url',
     ]
 
 from datetime import datetime
+import os.path
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
@@ -27,6 +29,8 @@ from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
 
+from lazr.uri import URI
+
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -42,8 +46,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
@@ -74,6 +78,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
@@ -310,7 +315,7 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, review_requests=None,
+                         description=None, review_requests=None,
                          review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
@@ -364,11 +369,8 @@ class Branch(SQLBase):
             date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message)
-
-        if initial_comment is not None:
-            bmp.createComment(
-                registrant, None, initial_comment, _notify_listeners=False)
+            commit_message=commit_message,
+            description=description)
 
         for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
@@ -392,14 +394,15 @@ class Branch(SQLBase):
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
             registrant, target_branch, prerequisite_branch,
-            needs_review=needs_review, initial_comment=initial_comment,
+            needs_review=needs_review, description=initial_comment,
             commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets]
+                for target in self.active_landing_targets
+                if target.target_branch.last_scanned_id is not None]
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
@@ -475,6 +478,14 @@ class Branch(SQLBase):
         else:
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)
+
+    def composePublicURL(self, scheme='http'):
+        """See `IBranch`."""
+        # Not all protocols work for private branches.
+        public_schemes = ['http']
+        assert not (self.private and scheme in public_schemes), (
+            "Private branch %s has no public URL." % self.unique_name)
+        return compose_public_url(scheme, self.unique_name)
 
     @property
     def warehouse_url(self):
@@ -596,7 +607,7 @@ class Branch(SQLBase):
 
         for bugbranch in self.bug_branches:
             deletion_operations.append(
-                DeletionCallable(bugbranch,
+                DeletionCallable(bugbranch.bug.default_bugtask,
                 _('This bug is linked to this branch.'),
                 bugbranch.destroySelf))
         for spec_link in self.spec_links:
@@ -998,10 +1009,27 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
-            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
-            return True
-        return False
+        if self.branch_type is not BranchType.HOSTED:
+            return False
+        if self.upgrade_pending:
+            return False
+        return not (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+
+    @property
+    def upgrade_pending(self):
+        """See `IBranch`."""
+        from lp.code.model.branchjob import BranchJob, BranchJobType
+        store = Store.of(self)
+        jobs = store.find(
+            BranchJob,
+            BranchJob.branch == self,
+            Job.id == BranchJob.jobID,
+            Job._status != JobStatus.COMPLETED,
+            Job._status != JobStatus.FAILED,
+            BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
+        return jobs.count() > 0
 
     def requestUpgrade(self):
         """See `IBranch`."""
@@ -1268,3 +1296,18 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def compose_public_url(scheme, unique_name, suffix=None):
+    # Avoid circular imports.
+    from lp.code.xmlrpc.branch import PublicCodehostingAPI
+
+    # Accept sftp as a legacy protocol.
+    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
+    accepted_schemes.add('sftp')
+    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+    host = URI(config.codehosting.supermirror_root).host
+    path = '/' + urlutils.escape(unique_name)
+    if suffix is not None:
+        path = os.path.join(path, suffix)
+    return str(URI(scheme=scheme, host=host, path=path))

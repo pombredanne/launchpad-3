@@ -222,6 +222,15 @@ if __name__ == '__main__':
     # with the default value in the loop below.
     options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
     local_options = options.get_options(args=args)
+    if os.getenv("SUBUNIT_FORMATTER"):
+        try:
+            from subunit import get_default_formatter
+        except ImportError:
+            # Not a new enough subunit
+            pass
+        else:
+            stream = get_default_formatter()
+            patch_zope_testresult(TestProtocolClient(stream))
     # Set our default options, if the options aren't specified.
     for name, value in defaults.items():
         parsed_option = getattr(local_options, name)

@@ -13,7 +13,6 @@ import pytz
 import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
-from zope.interface import implements
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -21,18 +20,22 @@ from canonical.database import postgresql
 from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.hwdb import HWSubmission
+from lp.hardwaredb.model.hwdb import HWSubmission
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from canonical.launchpad.utilities.looptuner import (
+    DBLoopTuner, TunableLoop)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.scripts.bugheat import BugHeatCalculator
+from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.scripts.checkwatches.scheduler import (
+    BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -45,29 +48,6 @@ from lp.services.scripts.base import (
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-class TunableLoop:
-    implements(ITunableLoop)
-
-    goal_seconds = 4
-    minimum_chunk_size = 1
-    maximum_chunk_size = None # Override
-    cooldown_time = 0
-
-    def __init__(self, log, abort_time=None):
-        self.log = log
-        self.abort_time = abort_time
-
-    def run(self):
-        assert self.maximum_chunk_size is not None, (
-            "Did not override maximum_chunk_size.")
-        DBLoopTuner(
-            self, self.goal_seconds,
-            minimum_chunk_size = self.minimum_chunk_size,
-            maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -141,19 +121,17 @@ class OpenIDConsumerNoncePruner(TunableLoop):
         transaction.commit()
 
 
-class OpenIDAssociationPruner(TunableLoop):
+class OpenIDConsumerAssociationPruner(TunableLoop):
     minimum_chunk_size = 3500
     maximum_chunk_size = 50000
 
-    table_name = 'OpenIDAssociation'
-    store_name = AUTH_STORE
+    table_name = 'OpenIDConsumerAssociation'
 
     _num_removed = None
 
     def __init__(self, log, abort_time=None):
-        super(OpenIDAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(
-            self.store_name, MASTER_FLAVOR)
+        super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     def __call__(self, chunksize):
         result = self.store.execute("""
@@ -170,11 +148,6 @@ class OpenIDAssociationPruner(TunableLoop):
 
     def isDone(self):
         return self._num_removed == 0
-
-
-class OpenIDConsumerAssociationPruner(OpenIDAssociationPruner):
-    table_name = 'OpenIDConsumerAssociation'
-    store_name = MAIN_STORE
 
 
 class RevisionCachePruner(TunableLoop):
@@ -698,18 +671,22 @@ class BugHeatUpdater(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    def __init__(self, log, abort_time=None):
+    def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
         self.transaction = transaction
+        self.total_processed = 0
+        self.is_done = False
         self.offset = 0
-        self.total_updated = 0
+        if max_heat_age is None:
+            max_heat_age = config.calculate_bug_heat.max_heat_age
+        self.max_heat_age = max_heat_age
 
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more Bugs to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.offset is None
+        return self.is_done
 
     def __call__(self, chunk_size):
         """Retrieve a batch of Bugs and update their heat.
@@ -721,23 +698,23 @@ class BugHeatUpdater(TunableLoop):
         #     trying to slice using floats or anything similarly
         #     foolish. We shouldn't have to do this.
         chunk_size = int(chunk_size)
-
         start = self.offset
         end = self.offset + chunk_size
 
         transaction.begin()
-        # XXX 2010-01-08 gmb bug=505850:
-        #     This method call should be taken out and shot as soon as
-        #     we have a proper permissions system for scripts.
-        bugs = getUtility(IBugSet).dangerousGetAllBugs()[start:end]
+        bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+            self.max_heat_age)[start:end]
 
-        self.offset = None
         bug_count = bugs.count()
         if bug_count > 0:
             starting_id = bugs.first().id
-            self.log.debug("Updating %i Bugs (starting id: %i)" %
+            self.log.debug(
+                "Adding CalculateBugHeatJobs for %i Bugs (starting id: %i)" %
                 (bug_count, starting_id))
+        else:
+            self.is_done = True
 
+        self.offset = None
         for bug in bugs:
             # We set the starting point of the next batch to the Bug
             # id after the one we're looking at now. If there aren't any
@@ -745,12 +722,64 @@ class BugHeatUpdater(TunableLoop):
             # will remain set to None.
             start += 1
             self.offset = start
-            self.log.debug("Updating heat for bug %s" % bug.id)
-            bug_heat_calculator = BugHeatCalculator(bug)
-            heat = bug_heat_calculator.getBugHeat()
-            bug.setHeat(heat)
-            self.total_updated += 1
+            self.log.debug("Adding CalculateBugHeatJob for bug %s" % bug.id)
+            getUtility(ICalculateBugHeatJobSource).create(bug)
+            self.total_processed += 1
         transaction.commit()
+
+
+class BugWatchActivityPruner(TunableLoop):
+    """A TunableLoop to prune BugWatchActivity entries."""
+
+    maximum_chunk_size = 1000
+
+    def getPrunableBugWatchIds(self, chunk_size):
+        """Return the set of BugWatch IDs whose activity is prunable."""
+        query = """
+            SELECT
+                watch_activity.id
+            FROM (
+                SELECT
+                    BugWatch.id AS id,
+                    COUNT(BugWatchActivity.id) as activity_count
+                FROM BugWatch, BugWatchActivity
+                WHERE BugWatchActivity.bug_watch = BugWatch.id
+                GROUP BY BugWatch.id) AS watch_activity
+            WHERE watch_activity.activity_count > %s
+            LIMIT %s;
+        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
+        store = IMasterStore(BugWatch)
+        results = store.execute(query)
+        return set(result[0] for result in results)
+
+    def pruneBugWatchActivity(self, bug_watch_ids):
+        """Prune the BugWatchActivity for bug_watch_ids."""
+        query = """
+            DELETE FROM BugWatchActivity
+            WHERE id IN (
+                SELECT id
+                FROM BugWatchActivity
+                WHERE bug_watch = %s
+                ORDER BY id DESC
+                OFFSET %s);
+        """
+        store = IMasterStore(BugWatch)
+        for bug_watch_id in bug_watch_ids:
+            results = store.execute(
+                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
+            self.log.debug(
+                "Pruned %s BugWatchActivity entries for watch %s" %
+                (results.rowcount, bug_watch_id))
+
+    def __call__(self, chunk_size):
+        transaction.begin()
+        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
+        self.pruneBugWatchActivity(prunable_ids)
+        transaction.commit()
+
+    def isDone(self):
+        """Return True if there are no watches left to prune."""
+        return len(self.getPrunableBugWatchIds(1)) == 0
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
@@ -768,7 +797,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     def __init__(self, test_args=None):
         super(BaseDatabaseGarbageCollector, self).__init__(
             self.script_name,
-            dbuser=self.script_name.replace('-','_'),
+            dbuser=self.script_name.replace('-', '_'),
             test_args=test_args)
 
     def add_my_options(self):
@@ -833,9 +862,10 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
-        OpenIDAssociationPruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
+        BugHeatUpdater,
+        BugWatchScheduler,
         ]
     experimental_tunable_loops = []
 
@@ -857,7 +887,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
-        BugHeatUpdater,
+        BugWatchActivityPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

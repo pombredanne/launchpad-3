@@ -34,15 +34,13 @@ to the product series.
 
 Now we request that the queue be processed.
 
-    >>> class MockTransactionManager:
-    ...     def commit(self):
-    ...         pass
-
     >>> import logging
+    >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> logger = MockLogger()
     >>> logger.setLevel(logging.DEBUG)
-    >>> process_queue(MockTransactionManager(), logger)
+    >>> transaction.commit()
+    >>> process_queue(transaction, logger)
     log> Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in

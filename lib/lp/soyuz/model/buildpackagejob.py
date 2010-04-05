@@ -12,28 +12,24 @@ import pytz
 
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import classProvides, implements
+from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(Storm, BuildFarmJob):
+class BuildPackageJob(PackageBuildFarmJob, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
-    classProvides(IBuildFarmJobDispatchEstimation)
 
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
@@ -158,57 +154,6 @@ class BuildPackageJob(Storm, BuildFarmJob):
         """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
 
-    def getTitle(self):
-        """See `IBuildPackageJob`."""
-        return self.build.title
-
-    def jobStarted(self):
-        """See `IBuildPackageJob`."""
-        self.build.buildstate = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        if self.build.date_first_dispatched is None:
-            self.build.date_first_dispatched = UTC_NOW
-
-    def jobReset(self):
-        """See `IBuildPackageJob`."""
-        self.build.buildstate = BuildStatus.NEEDSBUILD
-
-    def jobAborted(self):
-        """See `IBuildPackageJob`."""
-        # XXX, al-maisan, Thu, 12 Nov 2009 16:38:52 +0100
-        # The setting below was "inherited" from the previous code. We
-        # need to investigate whether and why this is really needed and
-        # fix it.
-        self.build.buildstate = BuildStatus.BUILDING
-
-    @staticmethod
-    def composePendingJobsQuery(min_score, processor, virtualized):
-        """See `IBuildFarmJob`."""
-        return """
-            SELECT
-                BuildQueue.job,
-                BuildQueue.lastscore,
-                BuildQueue.estimated_duration,
-                Build.processor AS processor,
-                Archive.require_virtualized AS virtualized
-            FROM
-                BuildQueue, Build, BuildPackageJob, Archive, Job
-            WHERE
-                BuildQueue.job_type = %s
-                AND BuildPackageJob.job = BuildQueue.job
-                AND BuildPackageJob.job = Job.id
-                AND Job.status = %s
-                AND BuildPackageJob.build = Build.id
-                AND Build.buildstate = %s
-                AND Build.archive = Archive.id
-                AND Archive.enabled = TRUE
-                AND BuildQueue.lastscore >= %s
-                AND Build.processor = %s
-                AND Archive.require_virtualized = %s
-        """ % sqlvalues(
-            BuildFarmJobType.PACKAGEBUILD, JobStatus.WAITING,
-            BuildStatus.NEEDSBUILD, min_score, processor, virtualized)
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""
@@ -233,8 +178,8 @@ class BuildPackageJob(Storm, BuildFarmJob):
         sub_query = """
             SELECT TRUE FROM Archive, Build, BuildPackageJob, DistroArchSeries
             WHERE
-            BuildPackageJob.job = Job.id AND 
-            BuildPackageJob.build = Build.id AND 
+            BuildPackageJob.job = Job.id AND
+            BuildPackageJob.build = Build.id AND
             Build.distroarchseries = DistroArchSeries.id AND
             Build.archive = Archive.id AND
             ((Archive.private IS TRUE AND

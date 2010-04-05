@@ -21,6 +21,7 @@ __all__ = [
     'ProductNavigationMenu',
     'ProductOverviewMenu',
     'ProductPackagesView',
+    'ProductPackagesPortletView',
     'ProductRdfView',
     'ProductReviewLicenseView',
     'ProductSeriesView',
@@ -37,6 +38,7 @@ __all__ = [
     ]
 
 
+from cgi import escape
 from operator import attrgetter
 
 from zope.component import getUtility
@@ -45,6 +47,9 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleVocabulary, SimpleTerm)
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -66,7 +71,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
@@ -81,7 +86,6 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
@@ -95,13 +99,15 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, sorted_version_numbers,
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, sorted_version_numbers, StandardLaunchpadFacets,
     stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
@@ -174,6 +180,7 @@ class ProductLicenseMixin:
     Requires the "product" attribute be set in the child
     classes' action handler.
     """
+
     def validate(self, data):
         """Validate 'licenses' and 'license_info'.
 
@@ -221,6 +228,7 @@ class ProductLicenseMixin:
                 "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
+
             def indent(text):
                 text = '\n    '.join(line for line in text.split('\n'))
                 text = '    ' + text
@@ -444,7 +452,7 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'bugsupervisor',
         'securitycontact',
         'cve',
-        'subscribe'
+        'subscribe',
         )
 
     def filebug(self):
@@ -524,7 +532,6 @@ class SortSeriesMixin:
         series_list.insert(0, self.product.development_focus)
         return series_list
 
-
     @property
     def sorted_series_list(self):
         """Return a sorted list of series.
@@ -540,7 +547,7 @@ class SortSeriesMixin:
         # Callback for the filter which only allows series that have not been
         # marked obsolete.
         def check_active(series):
-            return series.status != DistroSeriesStatus.OBSOLETE
+            return series.status != SeriesStatus.OBSOLETE
         return self._sorted_filtered_list(check_active)
 
 
@@ -618,7 +625,7 @@ class SeriesWithReleases:
         """The highlighted, unhighlighted, or dimmed CSS class."""
         if self.is_development_focus:
             return 'highlighted'
-        elif self.status == DistroSeriesStatus.OBSOLETE:
+        elif self.status == SeriesStatus.OBSOLETE:
             return 'dimmed'
         else:
             return 'unhighlighted'
@@ -712,10 +719,11 @@ class ProductDownloadFileMixin:
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None
-        self.delete_ids = [int(value) for key, value in self.form.items()
-                           if key.startswith('checkbox')]
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
+                self.delete_ids = [
+                    int(value) for key, value in self.form.items()
+                    if key.startswith('checkbox')]
                 del(self.form['delete_files'])
                 releases = self.getReleases()
                 del_count = self.deleteFiles(releases)
@@ -895,17 +903,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(PackagingDeleteView):
+class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
 
     label = 'Linked packages'
-
-    @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for series in self.context.series:
-            for packaging in series.packagings:
-                yield packaging
+    page_title = label
 
     @cachedproperty
     def series_packages(self):
@@ -919,23 +921,11 @@ class ProductPackagesView(PackagingDeleteView):
                 field: '<input type=''hidden' ...>},
                 }]
         """
-        # This method is a superset of all_packaging. While all_packaging will
-        # be called several times as data is mutated, series_packages should
-        # only be called during render().
         packaged_series = []
         for series in self.context.series:
             packagings = []
             for packaging in series.packagings:
-                form_id = 'delete-%s-%s-%s' % (
-                    packaging.distroseries.name,
-                    packaging.sourcepackagename.name,
-                    packaging.productseries.name,
-                    )
-                packaging_field = dict(
-                    packaging=packaging,
-                    form_id=form_id,
-                    field=self._renderHiddenPackagingField(packaging))
-                packagings.append(packaging_field)
+                packagings.append(packaging)
             packaged_series.append(dict(
                 series=series, packagings=packagings))
         return packaged_series
@@ -979,11 +969,89 @@ class ProductPackagesView(PackagingDeleteView):
         return results
 
 
+class ProductPackagesPortletView(LaunchpadFormView):
+    """View class for product packaging portlet."""
+
+    schema = Interface
+    custom_widget(
+        'distributionsourcepackage', LaunchpadRadioWidget,
+        orientation='vertical')
+    suggestions = None
+
+    @cachedproperty
+    def sourcepackages(self):
+        """The project's latest source packages."""
+        current_packages = [
+            sp for sp in self.context.sourcepackages
+            if sp.currentrelease is not None]
+        current_packages.reverse()
+        return current_packages[0:5]
+
+    @cachedproperty
+    def can_show_portlet(self):
+        """Are there packages, or can packages be suggested."""
+        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(ProductPackagesPortletView, self).setUpFields()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        source_packages = ubuntu.searchSourcePackages(
+            self.context.name, has_packaging=False,
+            publishing_distroseries=ubuntu.currentseries)
+        # Based upon the matches, create a new vocabulary with
+        # term descriptions that include a link to the source package.
+        self.suggestions = []
+        vocab_terms = []
+        for package in source_packages[:20]:
+            self.suggestions.append(package)
+            item_url = canonical_url(package)
+            description = """<a href="%s">%s</a>""" % (
+                item_url, escape(package.name))
+            vocab_terms.append(SimpleTerm(package, package.name, description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        self.form_fields = form.Fields(
+            Choice(__name__='distributionsourcepackage',
+                   title=_('Ubuntu packages'),
+                   default=None,
+                   vocabulary=vocabulary,
+                   required=True))
+
+    @action(_('Link to this Ubuntu Package'), name='link')
+    def link(self, action, data):
+        product = self.context
+        dsp = data.get('distributionsourcepackage')
+        assert dsp is not None, "distributionsourcepackage was not specified"
+        product_series = product.development_focus
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        product_series.setPackaging(ubuntu.currentseries,
+                                    dsp.sourcepackagename,
+                                    self.user)
+        self.request.response.addInfoNotification(
+            'This project was linked to the source package "%s"' %
+            dsp.displayname)
+        self.next_url = self.request.getURL()
+
+
+class SeriesReleasePair:
+    """Class for holding a series and release.
+
+    Replaces the use of a (series, release) tuple so that it can be more
+    clearly addressed in the view class.
+    """
+
+    def __init__(self, series, release):
+        self.series = series
+        self.release = release
+
+
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
+
+    batch_size = config.launchpad.download_batch_size
 
     @property
     def page_title(self):
@@ -1001,6 +1069,24 @@ class ProductDownloadFilesView(LaunchpadView,
         for series in self.product.series:
             releases.update(series.releases)
         return releases
+
+    @cachedproperty
+    def series_and_releases_batch(self):
+        """Get a batch of series and release
+
+        Each entry returned is a tuple of (series, release).
+        """
+        series_and_releases = []
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if len(release.files) > 0:
+                    pair = SeriesReleasePair(series, release)
+                    if pair not in series_and_releases:
+                        series_and_releases.append(pair)
+        batch = BatchNavigator(series_and_releases, self.request,
+                               size=self.batch_size)
+        batch.setHeadings("release", "releases")
+        return batch
 
     @cachedproperty
     def has_download_files(self):
@@ -1165,6 +1251,7 @@ class EditPrivateBugsMixin:
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
+
 class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
@@ -1227,7 +1314,8 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin,
+                               ProductEditView, EditPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1266,26 +1354,6 @@ class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
-        referrer = self.request.form.get('next_url')
-        if referrer is None:
-            referrer = self.request.getHeader('referer')
-
-        if (referrer is not None
-            and referrer.startswith(self.request.getApplicationURL())):
-            return referrer
-        else:
-            return canonical_url(self.context)
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1578,7 +1646,7 @@ class ProjectAddStepOne(StepView):
         self.request.form['summary'] = data['summary']
 
 
-class ProjectAddStepTwo(StepView, ProductLicenseMixin):
+class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
     _field_names = ['displayname', 'name', 'title', 'summary',
@@ -1661,7 +1729,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     # StepView requires that its validate() method not be overridden, so make
     # sure this calls the right method.  validateStep() will call the license
     # validation code.
-
     def validate(self, data):
         """See `MultiStepView`."""
         StepView.validate(self, data)
@@ -1690,8 +1757,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
             description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
-            project=project
-            )
+            project=project)
 
     def main_action(self, data):
         """See `MultiStepView`."""

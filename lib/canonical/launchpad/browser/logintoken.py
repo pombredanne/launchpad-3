@@ -18,7 +18,6 @@ __all__ = [
     'ValidateGPGKeyView',
     ]
 
-from itertools import chain
 import cgi
 import pytz
 import urllib
@@ -31,9 +30,18 @@ from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IMasterObject
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthToken, LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGVerificationError,
+    IGPGHandler)
+from canonical.launchpad.interfaces.logintoken import (
+    IGPGKeyValidationForm, ILoginTokenSet)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPrincipal
@@ -42,17 +50,11 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
+from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 
 from lp.registry.browser.team import HasRenewalPolicyMixin
 from lp.registry.interfaces.person import (
-    INewPersonForm, PersonCreationRationale)
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
-from canonical.launchpad.interfaces.authtoken import IAuthToken
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
-    GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
-    IGPGKeyValidationForm, ILoginTokenSet, IPerson, IPersonSet,
-    ITeam, LoginTokenType)
+    INewPersonForm, IPerson, IPersonSet, ITeam, PersonCreationRationale)
 
 
 UTC = pytz.UTC
@@ -249,7 +251,6 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
         else:
             naked_account.password = data.get('password')
 
-        person = self.context.requester
         self.context.consume()
         self.logInPrincipalByEmail(self.context.email)
 
@@ -444,49 +445,29 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
         # We compare the word-splitted content to avoid failures due
         # to whitepace differences.
-        if signature.plain_data.split() != self.validationphrase.split():
+        if signature.plain_data.split() != self.context.validation_phrase.split():
             self.addError(_(
                 'The signed content does not match the message found '
                 'in the email.'))
             return
 
     def _activateGPGKey(self, key, can_encrypt):
-        gpgkeyset = getUtility(IGPGKeySet)
+        person_url = canonical_url(self.context.requester)
+        lpkey, new, created, owned_by_others = self.context.activateGPGKey(
+            key, can_encrypt)
 
-        fingerprint = key.fingerprint
-        requester = self.context.requester
-        person_url = canonical_url(requester)
-
-        # Is it a revalidation ?
-        lpkey = gpgkeyset.getByFingerprint(fingerprint)
-
-        if lpkey:
-            lpkey.active = True
-            lpkey.can_encrypt = can_encrypt
+        if not new:
             msgid = _(
                 'Key ${lpkey} successfully reactivated. '
                 '<a href="${url}/+editpgpkeys">See more Information'
                 '</a>',
                 mapping=dict(lpkey=lpkey.displayname, url=person_url))
             self.request.response.addInfoNotification(structured(msgid))
-            self.context.consume()
             return
 
-        # Otherwise prepare to add
-        ownerID = self.context.requester.id
-        keyid = key.keyid
-        keysize = key.keysize
-        algorithm = GPGKeyAlgorithm.items[key.algorithm]
-
-        # Add new key in DB. See IGPGKeySet for further information
-        lpkey = gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm,
-                              can_encrypt=can_encrypt)
-
-        self.context.consume()
         self.request.response.addInfoNotification(_(
             "The key ${lpkey} was successfully validated. ",
             mapping=dict(lpkey=lpkey.displayname)))
-        created, owned_by_others = self._createEmailAddresses(key.emails)
 
         if len(created):
             msgid = _(
@@ -506,55 +487,6 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 mapping=dict(emails=', '.join(owned_by_others)))
             self.request.response.addInfoNotification(structured(msgid))
 
-    def _createEmailAddresses(self, uids):
-        """Create EmailAddresses for the GPG UIDs that do not exist yet.
-
-        For each of the given UIDs, check if it is already registered and, if
-        not, register it.
-
-        Return a tuple containing the list of newly created emails (as
-        strings) and the emails that exist and are already assigned to another
-        person (also as strings).
-        """
-        emailset = getUtility(IEmailAddressSet)
-        requester = self.context.requester
-        account = self.context.requester_account
-        emails = chain(requester.validatedemails, [requester.preferredemail])
-        # Must remove the security proxy because the user may not be logged in
-        # and thus won't be allowed to view the requester's email addresses.
-        emails = [
-            removeSecurityProxy(email).email.lower() for email in emails]
-
-        created = []
-        existing_and_owned_by_others = []
-        for uid in uids:
-            # Here we use .lower() because the case of email addresses's chars
-            # don't matter to us (e.g. 'foo@baz.com' is the same as
-            # 'Foo@Baz.com').  However, note that we use the original form
-            # when creating a new email.
-            if uid.lower() not in emails:
-                # EmailAddressSet.getByEmail() is not case-sensitive, so
-                # there's no need to do uid.lower() here.
-                if emailset.getByEmail(uid) is not None:
-                    # This email address is registered but does not belong to
-                    # our user.
-                    existing_and_owned_by_others.append(uid)
-                else:
-                    # The email is not yet registered, so we register it for
-                    # our user.
-                    email = emailset.new(uid, requester, account=account)
-                    created.append(uid)
-
-        return created, existing_and_owned_by_others
-
-    @property
-    def validationphrase(self):
-        """The phrase used to validate sign-only GPG keys"""
-        utctime = self.context.date_created.astimezone(UTC)
-        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
-            self.context.fingerprint, self.context.requester.name,
-            utctime.strftime('%Y-%m-%d %H:%M:%S'))
-
     def _getGPGKey(self):
         """Look up the OpenPGP key for this login token.
 
@@ -570,22 +502,21 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
         person_url = canonical_url(requester)
         try:
-            key = gpghandler.retrieveKey(fingerprint)
+            key = gpghandler.retrieveActiveKey(fingerprint)
         except GPGKeyNotFoundError:
             self.addError(
                 structured(_(
-                'Launchpad could not import this OpenPGP key, because '
-                '${key}. Check that you published it correctly in the '
+                'Launchpad could not import the OpenPGP key %{fingerprint}. '
+                'Check that you published it correctly in the '
                 'global key ring (using <kbd>gpg --send-keys '
                 'KEY</kbd>) and that you entered the fingerprint '
                 'correctly (as produced by <kbd>gpg --fingerprint '
                 'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
                 'cancel your request</a>.',
-                mapping=dict(key=key, url=person_url))))
-            return None
-
-        # If key is globally revoked, skip the import and consume the token.
-        if key.revoked:
+                mapping=dict(fingerprint=fingerprint, url=person_url))))
+        except GPGKeyRevoked, e:
+            # If key is globally revoked, skip the import and consume the
+            # token.
             self.addError(
                     structured(_(
                 'The key ${key} cannot be validated because it has been '
@@ -593,20 +524,17 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
                 'process to <a href="${url}/+editpgpkeys">find and '
                 'import</a> the new key.',
-                mapping=dict(key=key.keyid, url=person_url))))
-            return None
-
-        if key.expired:
+                mapping=dict(key=e.key.keyid, url=person_url))))
+        except GPGKeyExpired, e:
             self.addError(
                         structured(_(
                 'The key ${key} cannot be validated because it has expired. '
                 'Change the expiry date (in a terminal, enter '
                 '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
                 'then enter <kbd>expire</kbd>), and try again.',
-                mapping=dict(key=key.keyid))))
-            return None
-
-        return key
+                mapping=dict(key=e.key.keyid))))
+        else:
+            return key
 
 
 class ValidateEmailView(BaseTokenView, LaunchpadFormView):

@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSeries
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup, IProjectGroupSeries)
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationSort)
 from lp.blueprints.interfaces.specificationtarget import (
@@ -134,12 +135,12 @@ class HasSpecificationsView(LaunchpadView):
             self.is_target = True
             self.is_pillar = True
             self.show_series = True
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
             self.show_target = True
             self.show_series = True
-        elif IProjectSeries.providedBy(self.context):
+        elif IProjectGroupSeries.providedBy(self.context):
             self.show_milestone = True
             self.show_target = True
             self.show_series = True
@@ -348,7 +349,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.definition_status):
+            if spec.definition_status in categories:
                 category = categories[spec.definition_status]
             else:
                 category = {}
@@ -360,8 +361,10 @@ class HasSpecificationsView(LaunchpadView):
         return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
-        """Return <quantity> latest specs created for this target. This
-        is used by the +portlet-latestspecs view.
+        """Return <quantity> latest specs created for this target.
+
+        Only ACCEPTED specifications are returned.  This list is used by the
+        +portlet-latestspecs view.
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
@@ -424,4 +427,3 @@ class RegisterABlueprintButtonView:
 class BlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
     text = 'Blueprints'
-

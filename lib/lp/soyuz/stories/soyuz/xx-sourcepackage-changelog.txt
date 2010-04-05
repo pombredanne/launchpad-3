@@ -88,8 +88,8 @@ address is linkified to point to the person's profile page.  Here,
   ...     "commercialpackage/+changelog")
   >>> changelog = find_tag_by_id(
   ...     user_browser.contents, 'commercialpackage_1.0-1')
-  >>> changelog.find('a')
-  <a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>
+  >>> print extract_text(changelog.find('a'))
+  foo.bar@canonical.com
 
 Browsing the individual sourcepackage changelog.
 

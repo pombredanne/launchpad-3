@@ -7,7 +7,6 @@ import warnings
 from datetime import datetime
 import re
 from textwrap import dedent
-
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
@@ -272,7 +271,6 @@ class ZopelessTransactionManager(object):
         # This is only used by scripts, so we must connect to the read-write
         # DB here -- that's why we use rw_main_master directly.
         main_connection_string = dbconfig.rw_main_master
-        auth_connection_string = dbconfig.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
@@ -291,7 +289,7 @@ class ZopelessTransactionManager(object):
             match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
-        return main_connection_string, auth_connection_string, dbname, dbhost
+        return main_connection_string, dbname, dbhost
 
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
@@ -299,7 +297,7 @@ class ZopelessTransactionManager(object):
         # Connect to the auth master store as well, as some scripts might need
         # to create EmailAddresses and Accounts.
 
-        main_connection_string, auth_connection_string, dbname, dbhost = (
+        main_connection_string, dbname, dbhost = (
             cls._get_zopeless_connection_config(dbname, dbhost))
 
         assert dbuser is not None, '''
@@ -316,7 +314,6 @@ class ZopelessTransactionManager(object):
         overlay = dedent("""\
             [database]
             rw_main_master: %(main_connection_string)s
-            auth_master: %(auth_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
 
@@ -427,6 +424,16 @@ class ZopelessTransactionManager(object):
     def abort():
         """Abort the current transaction."""
         transaction.abort()
+
+    @staticmethod
+    def registerSynch(synch):
+        """Register an ISynchronizer."""
+        transaction.manager.registerSynch(synch)
+
+    @staticmethod
+    def unregisterSynch(synch):
+        """Unregister an ISynchronizer."""
+        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():
@@ -758,6 +765,17 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
+    con = psycopg2.connect(connect_string(user, dbname))
+    con.set_isolation_level(isolation)
+    return con
+
+
+def connect_string(user, dbname=None):
+    """Return a PostgreSQL connection string.
+
+    Allows you to pass the generated connection details to external
+    programs like pg_dump or embed in slonik scripts.
+    """
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
@@ -780,10 +798,7 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
         con_str_overrides.append('dbname=%s' % dbname)
 
     con_str = ' '.join([con_str] + con_str_overrides)
-
-    con = psycopg2.connect(con_str)
-    con.set_isolation_level(isolation)
-    return con
+    return con_str
 
 
 class cursor:

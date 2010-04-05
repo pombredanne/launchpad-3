@@ -25,7 +25,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class IInvolved(Interface):
@@ -77,7 +77,7 @@ class PillarView(LaunchpadView):
         self.official_rosetta = False
         self.official_codehosting = False
         pillar = nearest(self.context, IPillar)
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
             # Projectgroups do not support submit code, override the

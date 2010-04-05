@@ -128,6 +128,7 @@ is used by the decorator.
     <BugTask ...>
         has_branch: False
         has_mentoring_offer: False
+        has_patch: False
         has_specification: False
 
     >>> view.bugtasks[0].last_significant_change_date

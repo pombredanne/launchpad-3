@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -48,13 +48,23 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def slaveStatus(raw_slave_status):
-        """Return a dict of custom slave status values for this behavior.
+    def updateSlaveStatus(raw_slave_status, status):
+        """Update the slave status dict with custom values for this behavior.
 
         :param raw_slave_status: The value returned by the build slave's
            status() method.
-        :return: a dict of extra key/values to be included in the result
-            of IBuilder.slaveStatus().
+        :param status: A dict of the processed slave status values provided
+           by all types: builder_status, build_id, and optionally build_status
+           or logtail. This should have any behaviour-specific values
+           added to it.
+        """
+
+    def verifySlaveBuildID(slave_build_id):
+        """Verify that a slave's build ID shows no signs of corruption.
+
+        :param slave_build_id: The slave's build ID, as specified in
+           dispatchBuildToSlave.
+        :raises CorruptBuildID: if the build ID is determined to be corrupt.
         """
 
     def updateBuild(queueItem):

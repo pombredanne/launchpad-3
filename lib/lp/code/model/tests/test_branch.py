@@ -315,24 +315,67 @@ class TestBranch(TestCaseWithFactory):
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
 
+
+class TestBranchUpgrade(TestCaseWithFactory):
+    """Test the upgrade functionalities of branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_needsUpgrading_empty_formats(self):
+        branch = self.factory.makePersonalBranch()
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_mirrored_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.MIRRORED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_remote_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.REMOTE,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrade_import_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.IMPORTED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        self.assertFalse(branch.needs_upgrading)
+
+    def test_needsUpgrading_already_requested(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If the format is
+        # unrecognized, we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertFalse(branch.needs_upgrading)
+
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.UNRECOGNIZED)
+            branch_format=BranchFormat.UNRECOGNIZED,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_not_needed(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # a branch needs to be upgraded or not.  If a branch is up-to-date, it
         # doesn't need to be upgraded.
-        #
-        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
-        # time Bazaar adds a new branch format. Surely we can think of a
-        # better way of testing this?
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_8)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
@@ -340,7 +383,8 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  If a branch doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_6)
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertTrue(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_unrecognized(self):
@@ -348,6 +392,7 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  In the repo format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)
 
@@ -356,7 +401,8 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the repo format is up to
         # date, there's no need to upgrade it.
         branch = self.factory.makePersonalBranch(
-            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_upgrade_needed(self):
@@ -364,6 +410,7 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the format doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
@@ -371,12 +418,69 @@ class TestBranch(TestCaseWithFactory):
         # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         job = removeSecurityProxy(branch.requestUpgrade())
 
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
             [job,])
+
+    def test_requestUpgrade_no_upgrade_needed(self):
+        # If a branch doesn't need to be upgraded, requestUpgrade raises an
+        # AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
+    def test_requestUpgrade_upgrade_pending(self):
+        # If there is a pending upgrade already requested, requestUpgrade
+        # raises an AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
+    def test_upgradePending(self):
+        # If there is a BranchUpgradeJob pending for the branch, return True.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertTrue(branch.upgrade_pending)
+
+    def test_upgradePending_no_upgrade_requested(self):
+        # If the branch never had an upgrade requested, return False.
+        branch = self.factory.makeAnyBranch()
+
+        self.assertFalse(branch.upgrade_pending)
+
+    def test_upgradePending_old_job_exists(self):
+        # If the branch had an upgrade pending, but then the job was
+        # completed, then upgrade_pending should return False.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch_job = removeSecurityProxy(branch.requestUpgrade())
+        branch_job.job.start()
+        branch_job.job.complete()
+
+        self.assertFalse(branch.upgrade_pending)
 
 
 class TestBzrIdentity(TestCaseWithFactory):
@@ -762,7 +866,7 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
         bug.linkBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.linked_branches[0]:
+        self.assertEqual({bug.default_bugtask:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
@@ -1133,16 +1237,14 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
-        whiteboard = u"Some whiteboard"
         commit_message = u'Some commit message'
         proposal = self.source.addLandingTarget(
-            self.user, self.target, self.prerequisite, whiteboard,
+            self.user, self.target, self.prerequisite,
             commit_message=commit_message)
         self.assertEqual(proposal.registrant, self.user)
         self.assertEqual(proposal.source_branch, self.source)
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.prerequisite_branch, self.prerequisite)
-        self.assertEqual(proposal.whiteboard, whiteboard)
         self.assertEqual(proposal.commit_message, commit_message)
 
     def test__createMergeProposal_with_reviewers(self):
@@ -1630,6 +1732,7 @@ class TestBranchBugLinks(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson()
+        login_person(self.user)
 
     def test_bug_link(self):
         # Branches can be linked to bugs through the Branch interface.
@@ -1911,6 +2014,8 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
         bmp1 = self.factory.makeBranchMergeProposal()
         bmp2 = self.factory.makeBranchMergeProposal(
             source_branch=bmp1.source_branch)
+        removeSecurityProxy(bmp1).target_branch.last_scanned_id = 'rev1'
+        removeSecurityProxy(bmp2).target_branch.last_scanned_id = 'rev2'
         jobs = bmp1.source_branch.scheduleDiffUpdates()
         self.assertEqual(2, len(jobs))
         bmps_to_update = set(
@@ -1921,14 +2026,21 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
         """Diffs for proposals in final states aren't updated."""
         source_branch = self.factory.makeBranch()
         for state in FINAL_STATES:
-            self.factory.makeBranchMergeProposal(
+            bmp = self.factory.makeBranchMergeProposal(
                 source_branch=source_branch, set_state=state)
+            removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
         # Creating a superseded proposal has the side effect of creating a
         # second proposal.  Delete the second proposal.
         for bmp in source_branch.landing_targets:
             if bmp.queue_status not in FINAL_STATES:
                 removeSecurityProxy(bmp).deleteProposal()
         jobs = source_branch.scheduleDiffUpdates()
+        self.assertEqual(0, len(jobs))
+
+    def test_scheduleDiffUpdates_ignores_unpushed_target(self):
+        """Diffs aren't updated if target has no revisions."""
+        bmp = self.factory.makeBranchMergeProposal()
+        jobs = bmp.source_branch.scheduleDiffUpdates()
         self.assertEqual(0, len(jobs))
 
 

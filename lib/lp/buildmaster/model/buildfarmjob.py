@@ -10,7 +10,6 @@ from zope.interface import classProvides, implements
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, IBuildFarmCandidateJobSelection,
     ISpecificBuildFarmJobClass)
@@ -19,7 +18,8 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
-    classProvides(IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
+    classProvides(
+        IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -27,7 +27,7 @@ class BuildFarmJob:
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
-        raise NotImplementedError
+        return 'buildlog.txt'
 
     def getName(self):
         """See `IBuildFarmJob`."""
@@ -77,3 +77,4 @@ class BuildFarmJob:
     def postprocessCandidate(job, logger):
         """See `IBuildFarmCandidateJobSelection`."""
         return True
+

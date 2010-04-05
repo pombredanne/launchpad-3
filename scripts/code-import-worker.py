@@ -8,7 +8,7 @@
 By 'processing a code import' we mean importing or updating code from a
 remote, non-Bazaar, repository.
 
-This script is usually run by the code-import-worker-db.py script that
+This script is usually run by the code-import-worker-monitor.py script that
 communicates progress and results to the database.
 """
 
@@ -19,6 +19,7 @@ __metaclass__ = type
 import _pythonpath
 
 from optparse import OptionParser
+import sys
 
 from bzrlib.transport import get_transport
 
@@ -30,6 +31,20 @@ from lp.codehosting.codeimport.worker import (
 from canonical.launchpad import scripts
 
 
+def force_bzr_to_use_urllib():
+    """Prevent bzr from using pycurl to connect to http: urls.
+
+    We want this because pycurl rejects self signed certificates, which
+    prevents a significant number of import branchs from updating.  Also see
+    https://bugs.edge.launchpad.net/bzr/+bug/516222.
+    """
+    from bzrlib.transport import register_lazy_transport
+    register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+    register_lazy_transport('https://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+
+
 class CodeImportWorker:
 
     def __init__(self):
@@ -39,6 +54,7 @@ class CodeImportWorker:
         self.logger = scripts.logger(options, 'code-import-worker')
 
     def main(self):
+        force_bzr_to_use_urllib()
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
             load_optional_plugin('git')
@@ -58,9 +74,9 @@ class CodeImportWorker:
             source_details,
             get_transport(config.codeimport.foreign_tree_store),
             get_default_bazaar_branch_store(), self.logger)
-        import_worker.run()
+        return import_worker.run()
 
 
 if __name__ == '__main__':
     script = CodeImportWorker()
-    script.main()
+    sys.exit(script.main())

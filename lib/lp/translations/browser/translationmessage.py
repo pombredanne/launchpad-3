@@ -829,26 +829,28 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
         self._redirectToNextPage()
         return True
 
+    def _messages_html_id(self):
+        order = []
+        message = self.translationmessage_view
+        # If we don't know about plural forms, or there are some other
+        # reason that prevent translations, translationmessage_view is
+        # not created
+        if ((message is not None) and (message.form_is_writeable)):
+            for dictionary in message.translation_dictionaries:
+                order.append(
+                    dictionary['html_id_translation'] + '_new')
+        return order
+
     @property
     def autofocus_html_id(self):
-        try:
-            first_message = self.translationmessage_view
-            first_field = first_message.translation_dictionaries[0]
-            return first_field['html_id_translation']
-        except IndexError:
+        if (len(self._messages_html_id()) > 0):
+            return self._messages_html_id()[0]
+        else:
             return ""
 
     @property
     def translations_order(self):
-        try:
-            order = []
-            message = self.translationmessage_view
-            for dictionary in message.translation_dictionaries:
-                order.append(dictionary['html_id_translation'] + '_new')
-            return ' '.join(order)
-
-        except IndexError:
-            return ""
+        return ' '.join(self._messages_html_id())
 
 
 class CurrentTranslationMessageView(LaunchpadView):

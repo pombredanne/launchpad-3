@@ -45,7 +45,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
         target_branch = BzrBranch.open(target_tree.branch.base)
         self.assertEqual(
             target_branch.repository._format.get_format_string(),
-            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
     def test_upgrade_branches_packagebranch(self):
         """Test that upgrade_branches can upgrade package branches."""
@@ -73,4 +73,4 @@ class TestUpgradeBranches(TestCaseWithFactory):
         target_branch = BzrBranch.open(target_tree.branch.base)
         self.assertEqual(
             target_branch.repository._format.get_format_string(),
-            'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')

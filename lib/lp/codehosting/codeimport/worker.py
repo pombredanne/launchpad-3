@@ -9,6 +9,7 @@ __all__ = [
     'BzrSvnImportWorker',
     'CSCVSImportWorker',
     'CodeImportSourceDetails',
+    'CodeImportWorkerExitCode',
     'ForeignTreeStore',
     'GitImportWorker',
     'HgImportWorker',
@@ -20,7 +21,7 @@ __all__ = [
 import os
 import shutil
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, InterBranch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
@@ -29,18 +30,27 @@ from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
+from lp.code.enums import RevisionControlSystems
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from lp.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from canonical.config import config
-from lp.code.enums import RevisionControlSystems
 
 from cscvs.cmds import totla
 import cscvs
 import CVS
 import SCM
+
+
+class CodeImportWorkerExitCode:
+    """Exit codes used by the code import worker script."""
+
+    SUCCESS = 0
+    FAILURE = 1
+    SUCCESS_NOCHANGE = 2
+    SUCCESS_PARTIAL = 3
 
 
 class BazaarBranchStore:
@@ -61,23 +71,33 @@ class BazaarBranchStore:
         """
         remote_url = self._getMirrorURL(db_branch_id)
         try:
-            bzr_dir = BzrDir.open(remote_url)
+            remote_bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(
                 target_path, required_format)
         # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
         # branches disabled.  Need an orderly upgrade process.
-        if False and bzr_dir.needs_format_conversion(format=required_format):
+        if False and remote_bzr_dir.needs_format_conversion(
+            format=required_format):
             try:
-                bzr_dir.root_transport.delete_tree('backup.bzr')
+                remote_bzr_dir.root_transport.delete_tree('backup.bzr')
             except NoSuchFile:
                 pass
             upgrade(remote_url, required_format)
-        bzr_dir.sprout(target_path)
-        return BzrDir.open(target_path).open_workingtree()
+        local_bzr_dir = remote_bzr_dir.sprout(target_path)
+        # Because of the way we do incremental imports, there may be revisions
+        # in the branch's repo that are not in the ancestry of the branch tip.
+        # We need to transfer them too.
+        local_bzr_dir.open_repository().fetch(
+            remote_bzr_dir.open_repository())
+        return local_bzr_dir.open_workingtree()
 
     def push(self, db_branch_id, bzr_tree, required_format):
-        """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
+        """Push up `bzr_tree` as the Bazaar branch for `code_import`.
+
+        :return: A boolean that is true if the push was non-trivial
+            (i.e. actually transferred revisions).
+        """
         self.transport.create_prefix()
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch_id)
@@ -86,7 +106,12 @@ class BazaarBranchStore:
         except NotBranchError:
             branch_to = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
-        branch_to.pull(branch_from, overwrite=True)
+        pull_result = branch_to.pull(branch_from, overwrite=True)
+        # Because of the way we do incremental imports, there may be revisions
+        # in the branch's repo that are not in the ancestry of the branch tip.
+        # We need to transfer them too.
+        branch_to.repository.fetch(branch_from.repository)
+        return pull_result.old_revid != pull_result.new_revid
 
 
 def get_default_bazaar_branch_store():
@@ -356,8 +381,11 @@ class ImportWorker:
             self.required_format)
 
     def pushBazaarWorkingTree(self, bazaar_tree):
-        """Push the updated Bazaar working tree to the server."""
-        self.bazaar_branch_store.push(
+        """Push the updated Bazaar working tree to the server.
+
+        :return: True if revisions were transferred.
+        """
+        return self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
 
     def getWorkingDirectory(self):
@@ -390,12 +418,16 @@ class ImportWorker:
         saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
-            self._doImport()
+            return self._doImport()
         finally:
             shutil.rmtree(working_directory)
             os.chdir(saved_pwd)
 
     def _doImport(self):
+        """Perform the import.
+
+        :return: True if the import actually imported some new revisions.
+        """
         raise NotImplementedError()
 
 
@@ -470,8 +502,12 @@ class CSCVSImportWorker(ImportWorker):
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
-        self.pushBazaarWorkingTree(bazaar_tree)
+        non_trivial = self.pushBazaarWorkingTree(bazaar_tree)
         self.foreign_tree_store.archive(foreign_tree)
+        if non_trivial:
+            return CodeImportWorkerExitCode.SUCCESS
+        else:
+            return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
 
 
 class PullingImportWorker(ImportWorker):
@@ -484,6 +520,15 @@ class PullingImportWorker(ImportWorker):
     def format_classes(self):
         """The format classes that should be tried for this import."""
         raise NotImplementedError
+
+    def getExtraPullArgs(self):
+        """Return extra arguments to `InterBranch.pull`.
+
+        This method only really exists because only bzr-git and bzr-svn
+        support the 'limit' argument to this method.  When bzr-hg plugin does
+        too, this method can go away.
+        """
+        return {}
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
@@ -503,10 +548,21 @@ class PullingImportWorker(ImportWorker):
             else:
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
-            bazaar_tree.branch.pull(foreign_branch, overwrite=True)
+            foreign_branch_tip = foreign_branch.last_revision()
+            inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
+            pull_result = inter_branch.pull(
+                overwrite=True, **self.getExtraPullArgs())
+            self.pushBazaarWorkingTree(bazaar_tree)
+            last_imported_revison = bazaar_tree.branch.last_revision()
+            if last_imported_revison == foreign_branch_tip:
+                if pull_result.old_revid != pull_result.new_revid:
+                    return CodeImportWorkerExitCode.SUCCESS
+                else:
+                    return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+            else:
+                return CodeImportWorkerExitCode.SUCCESS_PARTIAL
         finally:
             bzrlib.ui.ui_factory = saved_factory
-        self.pushBazaarWorkingTree(bazaar_tree)
 
 
 class GitImportWorker(PullingImportWorker):
@@ -522,6 +578,10 @@ class GitImportWorker(PullingImportWorker):
         from bzrlib.plugins.git import (
             LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
         return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
+
+    def getExtraPullArgs(self):
+        """See `PullingImportWorker.getExtraPullArgs`."""
+        return {'limit': config.codeimport.revisions_import_limit}
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -542,9 +602,11 @@ class GitImportWorker(PullingImportWorker):
         that bzr-git will have created at .bzr/repository/bzr.git into the
         import data store.
         """
-        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
+            self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
+        return non_trivial
 
 
 class HgImportWorker(PullingImportWorker):
@@ -581,13 +643,19 @@ class HgImportWorker(PullingImportWorker):
         that bzr-hg will have created at .bzr/repository/hg-v2.db into the
         import data store.
         """
-        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
+            self, bazaar_tree)
         self.import_data_store.put(
             self.db_file, bazaar_tree.branch.repository._transport)
+        return non_trivial
 
 
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
+
+    def getExtraPullArgs(self):
+        """See `PullingImportWorker.getExtraPullArgs`."""
+        return {'limit': config.codeimport.revisions_import_limit}
 
     @property
     def format_classes(self):

@@ -91,6 +91,10 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/distroseries-details.pt"/>
+        <browser:page
+            name="+portlet-package-summary"
+            facet="overview"
+            template="../templates/distroseries-portlet-packaging.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -99,6 +103,13 @@
         name="+packaging"
         facet="overview"
         template="../templates/distroseries-packaging.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesNeedsPackagesView"
+        permission="zope.Public"
+        name="+needs-packaging"
+        facet="overview"
+        template="../templates/distroseries-needs-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Admin"
@@ -259,17 +270,17 @@
         facet="answers">
         <browser:page
             name="+addquestion"
-            for="lp.registry.interfaces.project.IProject"
+            for="lp.registry.interfaces.projectgroup.IProjectGroup"
             class="lp.registry.browser.project.ProjectAddQuestionView"
             permission="launchpad.AnyPerson"/>
         <browser:renamed-page
             name="+addticket"
-            for="lp.registry.interfaces.project.IProject"
+            for="lp.registry.interfaces.projectgroup.IProjectGroup"
             new_name="+addquestion"
             rootsite="answers"/>
         <browser:page
             name="+ask-a-question-button"
-            for="lp.registry.interfaces.project.IProject"
+            for="lp.registry.interfaces.projectgroup.IProjectGroup"
             class="canonical.launchpad.browser.AskAQuestionButtonView"
             permission="zope.Public"/>
     </facet>
@@ -278,22 +289,22 @@
         classes="
             ProjectNavigation"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+index"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+bugs"
         layer="canonical.launchpad.layers.BugsLayer"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         name="+questions"
         layer="canonical.launchpad.layers.AnswersLayer"/>
     <browser:pages
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectView"
         permission="zope.Public">
         <browser:page
@@ -312,14 +323,14 @@
             template="../templates/project-details.pt"/>
     </browser:pages>
     <browser:page
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectRdfView"
         facet="overview"
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"/>
     <browser:pages
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         permission="launchpad.Edit"
         facet="overview"
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
@@ -329,50 +340,50 @@
     </browser:pages>
     <browser:page
         name="+register-a-blueprint-button"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="canonical.launchpad.browser.RegisterABlueprintButtonView"
         permission="zope.Public"/>
     <browser:page
         name="+edit"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectEditView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"/>
     <browser:page
         name="+branding"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectBrandingView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/object-branding.pt"/>
     <browser:page
         name="+review"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.registry.browser.project.ProjectReviewView"
         facet="overview"
         permission="launchpad.Admin"
         template="../templates/project-edit.pt"/>
     <browser:page
         name="+newproduct"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         facet="overview"
         class="lp.registry.browser.project.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-new.pt"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProjectSet"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         name="+index"/>
     <browser:navigation
         module="lp.registry.browser.project"
         classes="
             ProjectSetNavigation"/>
     <browser:url
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
     <browser:pages
-        for="lp.registry.interfaces.project.IProjectSet"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         facet="overview"
         permission="zope.Public"
         class="lp.registry.browser.project.ProjectSetView">
@@ -385,17 +396,17 @@
     </browser:pages>
     <browser:page
         name="+new"
-        for="lp.registry.interfaces.project.IProjectSet"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         class="lp.registry.browser.project.ProjectAddView"
         facet="overview"
         permission="launchpad.ProjectReview"
         template="../../app/templates/generic-edit.pt"/>
     <browser:url
-        for="lp.registry.interfaces.project.IProjectSeries"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
         path_expression="string:+series/${name}"
         attribute_to_parent="project"/>
     <browser:defaultView
-        for="lp.registry.interfaces.project.IProjectSeries"
+        for="lp.registry.interfaces.projectgroup.IProjectGroupSeries"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"/>
     <browser:menus
@@ -778,12 +789,6 @@
             class="lp.registry.browser.person.PersonClaimView"
             permission="zope.Public"
             template="../templates/person-claim.pt"/>
-        <browser:page
-            name="+changepassword"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonChangePasswordView"
-            permission="launchpad.Edit"
-            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+editlanguages"
             for="lp.registry.interfaces.person.IPerson"
@@ -1283,7 +1288,7 @@
         template="../templates/productseries-milestone-table-row.pt"/>
     <browser:page
         name="+pillar-table-row"
-        for="lp.registry.interfaces.milestone.IProjectMilestone"
+        for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
         class="lp.registry.browser.milestone.MilestoneView"
         facet="overview"
         permission="zope.Public"
@@ -1407,13 +1412,16 @@
             facet="overview"
             template="../templates/product-portlet-license-missing.pt"/>
         <browser:page
-            name="+portlet-packages"
-            facet="overview"
-            template="../templates/product-portlet-packages.pt"/>
-        <browser:page
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        name="+portlet-packages"
+        facet="overview"
+        class="lp.registry.browser.product.ProductPackagesPortletView"
+        template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductSeriesView"
@@ -1594,19 +1602,12 @@
             template="../templates/productseries-table-releases.pt"/>
     </browser:pages>
     <browser:page
-        name="+addpackage"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.packaging.PackagingAddView"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/productseries-packaging.pt"/>
-    <browser:page
         name="+ubuntupkg"
         facet="overview"
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
-        permission="launchpad.View"/>
+        permission="launchpad.AnyPerson"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
@@ -1944,6 +1945,21 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
+        name="+portlet-associations"
+        facet="overview"
+        class="lp.registry.browser.sourcepackage.SourcePackageAssociationPortletView"
+        template="../templates/sourcepackage-portlet-associations.pt"/>
+
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
+        name="+upstream-connections"
+        facet="overview"
+        class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
+        template="../templates/sourcepackage-upstream-connections.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="zope.Public"
         class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
         name="+gethelp"
         facet="answers"
@@ -2117,6 +2133,14 @@
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        permission="launchpad.AnyPerson"
+        class="lp.registry.browser.sourcepackage.SourcePackageRemoveUpstreamView"
+        name="+remove-packaging"
+        facet="overview"
+        template="../templates/sourcepackage-remove-packaging.pt"
+        />
 
     <browser:page
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
@@ -2135,4 +2159,30 @@
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
         path_expression="string:+subscription/${subscriber/name}"
         attribute_to_parent="target"/>
+
+    <browser:url
+        for="lp.registry.interfaces.personproduct.IPersonProduct"
+        path_expression="product/name"
+        attribute_to_parent="person"/>
+    <browser:navigation
+        module="lp.registry.browser.personproduct"
+        classes="
+            PersonProductNavigation"/>
+    <browser:menus
+        classes="
+            PersonProductFacets"
+        module="lp.registry.browser.personproduct"/>
+
+    <browser:url
+        for="lp.registry.interfaces.ssh.ISSHKey"
+        path_expression="string:+ssh-keys/${id}"
+        rootsite="api"
+        attribute_to_parent="person" />
+
+    <browser:url
+        for="lp.registry.interfaces.gpg.IGPGKey"
+        path_expression="string:+gpg-keys/${keyid}"
+        rootsite="api"
+        attribute_to_parent="owner" />
+
 </configure>

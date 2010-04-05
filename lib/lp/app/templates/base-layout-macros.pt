@@ -52,6 +52,16 @@
     do any initialization.
   </tal:comment>
 
+  <tal:comment replace="nothing">
+    XXX mars 2010-01-21
+    We have to load MochiKit outside of the main javascript rollup so that the
+    rollup's size does not exceed 512Kb.  That magic number triggers a bug
+    somewhere in the automated test system that will prevent Windmill from
+    executing.
+  </tal:comment>
+  <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+
   <tal:devmode condition="devmode">
 
     <tal:comment replace="nothing">
@@ -80,7 +90,7 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+            tal:attributes="src string:${yui}/event/event-key.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
@@ -133,8 +143,6 @@
             tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
@@ -158,6 +166,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/lp.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/lp/lp-mochi.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/picker.js"></script>
@@ -165,6 +175,8 @@
             tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
     <script type="text/javascript"
@@ -175,16 +187,32 @@
             tal:attributes="src string:${lp_js}/client/client.js"></script>
 
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchmergeproposal.js">
+            tal:attributes="src string:${lp_js}/code/branch.bugspeclinks.js">
     </script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/codereview.js"></script>
+            tal:attributes="src string:${lp_js}/code/branch.status.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.diff.js">
+      </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branch.subscription.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.status.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.reviewcomment.js"></script>
+
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/errors.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/team.js"></script>
+
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">
@@ -323,15 +351,15 @@
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
-          <a href="/+tour">Take the tour</a>
+          <a tal:attributes="href string:${rooturl}+tour">Take the tour</a>
           &nbsp;&bull;&nbsp;
           <a href="https://help.launchpad.net/">Read the guide</a>
           &nbsp;
           <form id="globalsearch" method="get" accept-charset="UTF-8"
-            class="sprite-after search-icon"
             tal:condition="view/macro:pagehas/globalsearch"
             tal:attributes="action string:${rooturl}+search">
             <input type="search" id="search-text" name="field.text" />
+            <input type="submit" value="" class="icon-only sprite search-icon" />
           </form>
         </div>
         <metal:site-message
@@ -342,7 +370,7 @@
       &copy; 2004-2010
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
-      <a href="/legal">Terms of use</a>
+      <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
       <a href="https://help.launchpad.net/Feedback"
         >Contact us</a>
@@ -367,18 +395,33 @@
       This site is running pre-release code.
     </tal:site_message>
     <tal:edge_only condition="is_edge">
-      <tal:beta_user condition="view/macro:isbetauser">
-        <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-           tal:condition="not:view/isRedirectInhibited">
-          Disable edge redirect.
-        </a>
-        <a href="#" class="js-action" onclick="setBetaRedirect(true)"
-           tal:condition="view/isRedirectInhibited">
-          Enable edge redirect.
-        </a>
-      </tal:beta_user>
+      <a href="#" class="js-action" onclick="setBetaRedirect(false)"
+         tal:condition="not:request/isRedirectInhibited">
+        Disable edge redirect.
+      </a>
+      <a href="#" class="js-action" onclick="setBetaRedirect(true)"
+         tal:condition="request/isRedirectInhibited">
+        Enable edge redirect.
+      </a>
     </tal:edge_only>
   </div>
 </metal:site-message>
 
+<metal:plural-msg define-macro="plural-message">
+  <tal:comment condition="nothing">
+    Expected variables to be defined in a containing tag or global:
+    count - value to check to determine plural form
+    singluar - string to use when count == 1
+    plural - string to use when count > 1.  If no plural is given it defaults
+    to the singular value + 's'.
+  </tal:comment>
+  <tal:singular
+    condition="python: count == 1"
+    replace="singular" />
+  <tal:plural
+     define="l_default string:s;
+             l_plural plural | string:$singular$l_default;"
+    condition="python: count != 1"
+    replace="l_plural" />
+</metal:plural-msg>
 </macros>
