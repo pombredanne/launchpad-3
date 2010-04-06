@@ -204,3 +204,52 @@ Now we are redirected to the main bug page...
   ...   print li_tag.a.renderContents()
   A fix for this bug.
   A better icon for foo
+
+We expect Launchpad to believe us (that is, not ask for confirmation)
+when we tell it that plain text files whose names end in ".diff",
+".debdiff", or ".patch" are patch attachments:
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
+  >>> foo_file.seek(0)
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo3.diff')
+  >>> user_browser.getControl('Description').value = 'the foo3 patch'
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected = True
+  >>> user_browser.getControl(
+  ...     name="field.comment").value = 'Add foo3.diff as a patch.'
+  >>> user_browser.getControl('Post Comment').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
+  >>> foo_file.seek(0)
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo4.debdiff')
+  >>> user_browser.getControl('Description').value = 'the foo4 patch'
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected = True
+  >>> user_browser.getControl(
+  ...     name="field.comment").value = 'Add foo4.debdiff as a patch.'
+  >>> user_browser.getControl('Post Comment').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
+  >>> foo_file.seek(0)
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo5.patch')
+  >>> user_browser.getControl('Description').value = 'the foo5 patch'
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected = True
+  >>> user_browser.getControl(
+  ...     name="field.comment").value = 'Add foo5.patch as a patch.'
+  >>> user_browser.getControl('Post Comment').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
