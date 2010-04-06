@@ -38,8 +38,8 @@ from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
-    IPlacelessAuthUtility, IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
@@ -376,24 +376,6 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-
-
-def logInPrincipalAndMaybeCreatePerson(request, principal, email):
-    """Log the principal in, creating a Person if necessary.
-
-    If the given principal has no associated person, we create a new
-    person, fetch a new principal and set it in the request.
-
-    Password validation must be done in callsites.
-    """
-    logInPrincipal(request, principal, email)
-    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
-        person = principal.account.createPerson(
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            principal.id)
-        assert ILaunchpadPrincipal.providedBy(new_principal)
-        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
