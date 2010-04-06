@@ -4,9 +4,10 @@
 """Tests for BranchMergeProposal mailings"""
 
 from difflib import unified_diff
-from unittest import TestLoader
+import operator
 from textwrap import dedent
 import transaction
+from unittest import TestLoader
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -339,7 +340,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         job, subscriber = self.makeProposalUpdatedEmailJob()
         pop_notifications()
         job.run()
-        emails = pop_notifications()
+        emails = pop_notifications(
+            sort_key=operator.itemgetter('x-launchpad-message-rationale'))
         self.assertEqual(3, len(emails),
                          'There should be three emails sent out.  One to the '
                          'explicit subscriber above, and one each to the '
@@ -363,7 +365,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             change description
             --\x20
             %s
-            You are subscribed to branch lp://dev/~bob/super-product/fix-foo-for-bar.
+            You are the owner of lp://dev/~bob/super-product/fix-foo-for-bar.
             """) % canonical_url(job.branch_merge_proposal)
         self.assertEqual(expected, email.get_payload(decode=True))
 
