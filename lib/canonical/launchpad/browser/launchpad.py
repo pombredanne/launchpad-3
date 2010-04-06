@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'ApplicationButtons',
-    'BrowserWindowDimensions',
     'DoesNotExistView',
     'Hierarchy',
     'IcingContribFolder',
@@ -100,7 +99,6 @@ from lp.registry.interfaces.karma import IKarmaActionSet
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.registry.interfaces.product import (
@@ -578,7 +576,6 @@ class LaunchpadRootNavigation(Navigation):
         'translations': IRosettaApplication,
         'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
-        '+rpconfig': IOpenIDRPConfigSet,
         'temporary-blobs': ITemporaryStorageManager,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
@@ -996,13 +993,6 @@ class AppFrontPageSearchView(LaunchpadFormView):
     def scope_error(self):
         """The error message for the scope widget."""
         return self.getFieldError('scope')
-
-
-class BrowserWindowDimensions(LaunchpadView):
-    """Allow capture of browser window dimensions."""
-
-    def render(self):
-        return u'Thanks.'
 
 
 class LaunchpadGraphics(LaunchpadView):
