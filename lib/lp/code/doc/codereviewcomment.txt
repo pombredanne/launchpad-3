@@ -48,19 +48,11 @@ Comments can be marked as replies to particular comments.
 When comments are added, a job is created to send the emails to the
 subscribers of the merge proposal.
 
-    >>> from lp.code.interfaces.branchmergeproposal import (
-    ...     ICodeReviewCommentEmailJobSource)
     >>> # Needed for now to make the iterReady show the jobs.
     >>> factory.makeRevisionsForBranch(merge_proposal.source_branch)
-    >>> jobs = list(getUtility(ICodeReviewCommentEmailJobSource).iterReady())
-    >>> print len(jobs)
-    3
-
-Since we don't care about these, let's mark them as done.
-
-    >>> for job in jobs:
-    ...     job.start()
-    ...     job.complete()
+    >>> factory.makeRevisionsForBranch(merge_proposal.target_branch)
+    >>> from lp.code.tests.helpers import mark_all_merge_proposal_jobs_done
+    >>> mark_all_merge_proposal_jobs_done()
 
 If there is a subscriber to any of the branches involved in the merge,
 a notification is produced when the comment is created.
@@ -84,7 +76,9 @@ a notification is produced when the comment is created.
 
 Now run the pending job to send the email.
 
-    >>> [job] = list(getUtility(ICodeReviewCommentEmailJobSource).iterReady())
+    >>> from lp.code.interfaces.branchmergeproposal import (
+    ...     IBranchMergeProposalJobSource)
+    >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
     >>> job.run()
 
     >>> notifications = pop_notifications()
