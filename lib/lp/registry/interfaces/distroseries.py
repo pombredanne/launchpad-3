@@ -25,7 +25,7 @@ from lazr.restful.declarations import (
     export_factory_operation, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference
+from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -44,6 +44,7 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IHasBugs, IHasOfficialBugTags)
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -194,23 +195,23 @@ class IDistroSeriesPublic(
     datereleased = exported(
         Datetime(title=_("Date released")))
     parent_series = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
-            required=True,
+            required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'))
     owner = exported(
         PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Driver"),
             description=_(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted to this series of the "
                 "distribution."),
-            required=False, vocabulary='ValidPersonOrTeam'))
+            required=False, vocabulary='ValidPersonOrTeam', schema=IPerson))
     changeslist = exported(
         TextLine(
             title=_("E-mail changes to"), required=True,
@@ -570,9 +571,10 @@ class IDistroSeriesPublic(
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
-        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        build_conflicts, build_conflicts_indep, dateuploaded=None,
+        changelog, changelog_entry, dsc, dscsigningkey, section,
+        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+        dsc_binaries, archive, copyright, build_conflicts,
+        build_conflicts_indep, dateuploaded=None,
         source_package_recipe_build=None):
         """Create an uploads `SourcePackageRelease`.
 
@@ -592,7 +594,8 @@ class IDistroSeriesPublic(
          :param dscsigningkey: IGPGKey used to sign the DSC file
          :param dsc: string, original content of the dsc file
          :param copyright: string, the original debian/copyright content
-         :param changelog: string, changelog extracted from the changesfile
+         :param changelog: LFA ID of the debian/changelog file in librarian
+         :param changelog_entry: string, changelog extracted from the changesfile
          :param architecturehintlist: string, DSC architectures
          :param builddepends: string, DSC build dependencies
          :param builddependsindep: string, DSC architecture independent build

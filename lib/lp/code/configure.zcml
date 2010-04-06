@@ -1018,7 +1018,7 @@
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe"/>
+       set_attributes="builder_recipe build_daily"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

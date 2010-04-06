@@ -1306,7 +1306,7 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed
 COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
 COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
-
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The LibraryFileAlias ID of changelog associated with this sourcepackage.  Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/changelog.Debian.gz';
 
 -- SourcePackageName
 
@@ -1340,9 +1340,15 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The 
 COMMENT ON TABLE SourcePackageRecipe IS 'A recipe for assembling a source package from branches.';
 COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this recipe.';
 COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
-COMMENT ON COLUMN SourcePackageRecipe.distroseries IS 'The distroseries this recipe builds a package for.';
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
+COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
+
+-- SourcePackageRecipeDistroSeries
+
+COMMENT ON TABLE SourcePackageRecipeDistroSeries IS 'Link table for sourcepackagerecipe and distroseries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.distroseries IS 'The primary key of the DistroSeries.';
+COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The primary key of the SourcePackageRecipe.';
 
 -- SourcePackageRecipeBuild
 

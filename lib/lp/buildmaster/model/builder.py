@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'Builder',
     'BuilderSet',
+    'rescueBuilderIfLost',
+    'updateBuilderStatus',
     ]
 
 import httplib
@@ -40,7 +42,8 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
+    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
+    ProtocolVersionMismatch)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -154,6 +157,71 @@ class BuilderSlave(xmlrpclib.ServerProxy):
             raise BuildSlaveFailure(info)
 
 
+# This is a separate function since MockBuilder needs to use it too.
+# Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
+def rescueBuilderIfLost(builder, logger=None):
+    """See `IBuilder`."""
+    status_sentence = builder.slaveStatusSentence()
+
+    # 'ident_position' dict relates the position of the job identifier
+    # token in the sentence received from status(), according the
+    # two status we care about. See see lib/canonical/buildd/slave.py
+    # for further information about sentence format.
+    ident_position = {
+        'BuilderStatus.BUILDING': 1,
+        'BuilderStatus.WAITING': 2
+        }
+
+    # Isolate the BuilderStatus string, always the first token in
+    # see lib/canonical/buildd/slave.py and
+    # IBuilder.slaveStatusSentence().
+    status = status_sentence[0]
+
+    # If slave is not building nor waiting, it's not in need of rescuing.
+    if status not in ident_position.keys():
+        return
+
+    slave_build_id = status_sentence[ident_position[status]]
+
+    try:
+        builder.verifySlaveBuildID(slave_build_id)
+    except CorruptBuildID, reason:
+        if status == 'BuilderStatus.WAITING':
+            builder.cleanSlave()
+        else:
+            builder.requestAbort()
+        if logger:
+            logger.warn(
+                "Builder '%s' rescued from '%s': '%s'" %
+                (builder.name, slave_build_id, reason))
+
+
+def updateBuilderStatus(builder, logger=None):
+    """See `IBuilder`."""
+    if logger:
+        logger.debug('Checking %s' % builder.name)
+
+    try:
+        builder.checkSlaveAlive()
+        builder.checkSlaveArchitecture()
+        builder.rescueIfLost(logger)
+    # Catch only known exceptions.
+    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+    # disturbing in this context. We should spend sometime sanitizing the
+    # exceptions raised in the Builder API since we already started the
+    # main refactoring of this area.
+    except (ValueError, TypeError, xmlrpclib.Fault,
+            BuildDaemonError), reason:
+        builder.failBuilder(str(reason))
+        if logger:
+            logger.warn(
+                "%s (%s) marked as failed due to: %s",
+                builder.name, builder.url, builder.failnotes, exc_info=True)
+    except socket.error, reason:
+        error_message = str(reason)
+        builder.handleTimeout(logger, error_message)
+
+
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
@@ -215,9 +283,9 @@ class Builder(SQLBase):
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
-    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
-        """See IBuilder."""
-        # XXX cprov 2007-06-15:
+    def checkSlaveArchitecture(self):
+        """See `IBuilder`."""
+        # XXX cprov 2007-06-15 bug=545839:
         # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
         # architecturetag) which matches the distro_arch_series. In reality,
@@ -226,22 +294,38 @@ class Builder(SQLBase):
         # distro specific and potentially different for radically different
         # distributions - its not the right thing to be comparing.
 
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
         # query the slave for its active details.
         # XXX cprov 2007-06-15: Why is 'mechanisms' ignored?
         builder_vers, builder_arch, mechanisms = self.slave.info()
         # we can only understand one version of slave today:
         if builder_vers != '1.0':
             raise ProtocolVersionMismatch("Protocol version mismatch")
-        # check the slave arch-tag against the distro_arch_series.
-        if builder_arch != distro_arch_series.architecturetag:
+
+        # Find a distroarchseries with the returned arch tag.
+        # This is ugly, sick and wrong, but so is the whole concept. See the
+        # XXX above and its bug for details.
+        das = Store.of(self).find(
+            DistroArchSeries, architecturetag=builder_arch,
+            processorfamily=self.processor.family).any()
+
+        if das is None:
             raise BuildDaemonError(
-                "Architecture tag mismatch: %s != %s"
-                % (builder_arch, distro_arch_series.architecturetag))
+                "Bad slave architecture tag: %s (registered family: %s)" %
+                    (builder_arch, self.processor.family.name))
 
     def checkSlaveAlive(self):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
             raise BuildDaemonError("Failed to echo OK")
+
+    def rescueIfLost(self, logger=None):
+        """See `IBuilder`."""
+        rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
@@ -354,8 +438,17 @@ class Builder(SQLBase):
         status_sentence = self.slave.status()
 
         status = {'builder_status': status_sentence[0]}
-        status.update(
-            self.current_build_behavior.slaveStatus(status_sentence))
+
+        # Extract detailed status, ID and log information if present.
+        if status['builder_status'] == 'BuilderStatus.WAITING':
+            status['build_status'] = status_sentence[1]
+            status['build_id'] = status_sentence[2]
+        else:
+            status['build_id'] = status_sentence[1]
+            if status['builder_status'] == 'BuilderStatus.BUILDING':
+                status['logtail'] = status_sentence[2]
+
+        self.current_build_behavior.updateSlaveStatus(status_sentence, status)
         return status
 
     def slaveStatusSentence(self):

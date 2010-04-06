@@ -28,6 +28,7 @@ instance here:
     123543:
     42: FUBAR
     42: FUBAR
+    >>> transaction.commit()
     >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> bug_watch_updater.updateBugWatches(
     ...     issuezilla, mozilla_bugzilla.watches)

@@ -38,8 +38,8 @@ from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
-    IPlacelessAuthUtility, IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
@@ -284,7 +284,6 @@ class OpenIDCallbackView(OpenIDLogin):
     def render(self):
         if self.openid_response.status == SUCCESS:
             identifier = self.openid_response.identity_url.split('/')[-1]
-            account_set = getUtility(IAccountSet)
             should_update_last_write = False
             # Force the use of the master database to make sure a lagged slave
             # doesn't fool us into creating a Person/Account when one already
@@ -311,15 +310,23 @@ class OpenIDCallbackView(OpenIDLogin):
                 # the master DB and thus see the changes we've just made.
                 session_data = ISession(self.request)['lp.dbpolicy']
                 session_data['last_write'] = datetime.utcnow()
-            target = self.request.form.get('starting_url')
-            if target is None:
-                target = self.getApplicationURL()
-            self.request.response.redirect(target, temporary_if_possible=True)
+            self._redirect()
             # No need to return anything as we redirect above.
             retval = None
         else:
-            retval = OpenIDLoginErrorView(
-                self.context, self.request, self.openid_response)()
+            if self.account is not None:
+                # The authentication failed (or was canceled), but the user is
+                # already logged in, so we just add a notification message and
+                # redirect.
+                self.request.response.addNoticeNotification(
+                    _(u'Your authentication failed but you were already '
+                       'logged into Launchpad.'))
+                self._redirect()
+                # No need to return anything as we redirect above.
+                retval = None
+            else:
+                retval = OpenIDLoginErrorView(
+                    self.context, self.request, self.openid_response)()
 
         # The consumer.complete() call above will create entries in
         # OpenIDConsumerNonce to prevent replay attacks, but since this will
@@ -328,6 +335,12 @@ class OpenIDCallbackView(OpenIDLogin):
         transaction.commit()
 
         return retval
+
+    def _redirect(self):
+        target = self.request.form.get('starting_url')
+        if target is None:
+            target = self.getApplicationURL()
+        self.request.response.redirect(target, temporary_if_possible=True)
 
 
 class OpenIDLoginErrorView(LaunchpadView):
@@ -363,24 +376,6 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-
-
-def logInPrincipalAndMaybeCreatePerson(request, principal, email):
-    """Log the principal in, creating a Person if necessary.
-
-    If the given principal has no associated person, we create a new
-    person, fetch a new principal and set it in the request.
-
-    Password validation must be done in callsites.
-    """
-    logInPrincipal(request, principal, email)
-    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
-        person = principal.account.createPerson(
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            principal.id)
-        assert ILaunchpadPrincipal.providedBy(new_principal)
-        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,

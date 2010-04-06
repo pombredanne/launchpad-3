@@ -136,6 +136,9 @@ class IBugWatch(IHasBug):
         Reference(title=_('Owner'), required=True,
                   readonly=True, schema=Interface))
     activity = Attribute('The activity history of this BugWatch.')
+    next_check = exported(
+        Datetime(title=_('Next Check')),
+        exported_as='date_next_checked')
 
     # Useful joins.
     bugtasks = exported(

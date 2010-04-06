@@ -67,7 +67,6 @@ class IBuildView(IBuildBase):
             required=False, readonly=True,
             description=_("The current source publication for this build.")))
 
-    title = exported(Text(title=_("Build Title"), required=False))
     distroseries = Attribute("Direct parent needed by CanonicalURL")
     was_built = Attribute("Whether or not modified by the builddfarm.")
     arch_tag = exported(

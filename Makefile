@@ -60,7 +60,7 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(API_INDEX): $(BZR_VERSION_INFO)
-	mkdir $(APIDOC_DIR).tmp
+	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
 	rmdir $(APIDOC_DIR).tmp
@@ -149,6 +149,7 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
 		$(shell $(HERE)/utilities/yui-deps.py) \
+		$(shell $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 	${SHHH} bin/jssize
 
@@ -177,7 +178,8 @@ buildonce_eggs: $(PY)
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
-                --ez_setup-source=ez_setup.py \
+		--ez_setup-source=ez_setup.py \
+		--version=1.5.0dev-gary-r108342 \
 		--download-base=download-cache/dist --eggs=eggs
 
 # This builds bin/py and all the other bin files except bin/buildout.
@@ -323,11 +325,7 @@ clean: clean_js
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
 	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
