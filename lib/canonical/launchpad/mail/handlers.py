@@ -1,11 +1,11 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import re
 from urlparse import urlunparse
 
-from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
@@ -14,170 +14,28 @@ from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IBranchMergeProposalGetter, IBugAttachmentSet,
+    BugAttachmentType,
+    CreatedBugWithNoBugTasksError, EmailProcessingError,
+    IBugAttachmentSet,
     IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
-    IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
-    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
-    IWeaklyAuthenticatedPrincipal, QuestionStatus)
-from canonical.launchpad.mail.commands import emailcommands, get_error_message
-from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
+    IBugTaskEditEmailCommand, IBugTaskEmailCommand,
+    ILaunchBag, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet,
+    QuestionStatus)
+from lp.code.mail.codehandler import CodeHandler
+from canonical.launchpad.mail.commands import (
+    BugEmailCommands, get_error_message)
+from canonical.launchpad.mail.helpers import (
+    ensure_not_weakly_authenticated, get_main_body, guess_bugtask,
+    IncomingEmailError, parse_commands, reformat_wiki_text)
+from lp.services.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     MailWrapper, send_process_error_notification)
-from canonical.launchpad.webapp import canonical_url, urlparse
-from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.launchpad.webapp import urlparse
 
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent)
-
-
-def get_main_body(signed_msg):
-    """Returns the first text part of the email."""
-    msg = signed_msg.signedMessage
-    if msg is None:
-        # The email wasn't signed.
-        msg = signed_msg
-    if msg.is_multipart():
-        for part in msg.get_payload():
-            if part.get_content_type() == 'text/plain':
-                return part.get_payload(decode=True)
-    else:
-        return msg.get_payload(decode=True)
-
-
-def get_bugtask_type(bugtask):
-    """Returns the specific IBugTask interface the the bugtask provides.
-
-        >>> from canonical.launchpad.interfaces import (
-        ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
-        >>> from zope.interface import classImplementsOnly
-        >>> class BugTask:
-        ...     pass
-
-    :bugtask: has to provide a specific bugtask interface:
-
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ...
-        AssertionError...
-
-    When it does, the specific interface is returned:
-
-        >>> classImplementsOnly(BugTask, IUpstreamBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IUpstreamBugTask>
-
-        >>> classImplementsOnly(BugTask, IDistroBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroBugTask>
-
-        >>> classImplementsOnly(BugTask, IDistroSeriesBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroSeriesBugTask>
-    """
-    bugtask_interfaces = [
-        IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask
-        ]
-    for interface in bugtask_interfaces:
-        if interface.providedBy(bugtask):
-            return interface
-    # The bugtask didn't provide any specific interface.
-    raise AssertionError(
-        'No specific bugtask interface was provided by %r' % bugtask)
-
-
-def guess_bugtask(bug, person):
-    """Guess which bug task the person intended to edit.
-
-    Return None if no bug task could be guessed.
-    """
-    if len(bug.bugtasks) == 1:
-        return bug.bugtasks[0]
-    else:
-        for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
-                # Is the person an upstream maintainer?
-                if person.inTeam(bugtask.product.owner):
-                    return bugtask
-            elif IDistroBugTask.providedBy(bugtask):
-                # Is the person a member of the distribution?
-                if person.inTeam(bugtask.distribution.members):
-                    return bugtask
-                else:
-                    # Is the person one of the package subscribers?
-                    bug_sub = bugtask.target.getSubscription(person)
-                    if bug_sub is not None:
-                        if (bug_sub.bug_notification_level >
-                            BugNotificationLevel.NOTHING):
-                            # The user is subscribed to bug notifications
-                            # for this package
-                            return bugtask
-    return None
-
-
-class IncomingEmailError(Exception):
-    """Indicates that something went wrong processing the mail."""
-
-    def __init__(self, message, failing_command=None):
-        Exception.__init__(self, message)
-        self.message = message
-        self.failing_command = failing_command
-
-
-def reformat_wiki_text(text):
-    """Transform moin formatted raw text to readable text."""
-
-    # XXX Tom Berger 2008-02-20 bug=193646:
-    # This implementation is neither correct nor complete.
-
-    # Strip macros (anchors, TOC, etc'...)
-    re_macro = re.compile('\[\[.*?\]\]')
-    text = re_macro.sub('', text)
-
-    # sterilize links
-    re_link = re.compile('\[(.*?)\]')
-    text = re_link.sub(
-        lambda match: ' '.join(match.group(1).split(' ')[1:]), text)
-
-    # Strip comments
-    re_comment = re.compile('^#.*?$', re.MULTILINE)
-    text = re_comment.sub('', text)
-
-    return text
-
-def parse_commands(content, command_names):
-    """Extract indented commands from email body.
-
-    All commands must be indented using either spaces or tabs.  They must be
-    listed in command_names -- if not, they are silently ignored.
-
-    The special command 'done' terminates processing.  It takes no arguments.
-    Any commands that follow it will be ignored.  'done' should not be listed
-    in command_names.
-
-    While this syntax is the Launchpad standard, bug #29572 says it should be
-    changed to only accept commands at the beginning and to not require
-    indentation.
-
-    A list of (command, args) tuples is returned.
-    """
-    commands = []
-    for line in content.splitlines():
-        # All commands have to be indented.
-        if line.startswith(' ') or line.startswith('\t'):
-            command_string = line.strip()
-            if command_string == 'done':
-                # If the 'done' statement is encountered,
-                # stop reading any more commands.
-                break
-            words = command_string.split(' ')
-            if len(words) > 0 and words[0] in command_names:
-                commands.append((words[0], words[1:]))
-    return commands
+from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
 
 class MaloneHandler:
@@ -195,8 +53,9 @@ class MaloneHandler:
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        return [emailcommands.get(name=name, string_args=args) for
-                name, args in parse_commands(content, emailcommands.names())]
+        return [BugEmailCommands.get(name=name, string_args=args) for
+                name, args in parse_commands(content,
+                                             BugEmailCommands.names())]
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
@@ -206,24 +65,11 @@ class MaloneHandler:
 
         try:
             if len(commands) > 0:
-                cur_principal = get_current_principal()
-                # The security machinery doesn't know about
-                # IWeaklyAuthenticatedPrincipal yet, so do a manual
-                # check. Later we can rely on the security machinery to
-                # cause Unauthorized errors.
-                if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
-                    if signed_msg.signature is None:
-                        error_message = get_error_message('not-signed.txt')
-                    else:
-                        import_url = canonical_url(
-                            getUtility(ILaunchBag).user) + '/+editpgpkeys'
-                        error_message = get_error_message(
-                            'key-not-registered.txt', import_url=import_url)
-                    raise IncomingEmailError(error_message)
+                ensure_not_weakly_authenticated(signed_msg, 'bug report')
 
             if user.lower() == 'new':
                 # A submit request.
-                commands.insert(0, emailcommands.get('bug', ['new']))
+                commands.insert(0, BugEmailCommands.get('bug', ['new']))
                 if signed_msg.signature is None:
                     raise IncomingEmailError(
                         get_error_message('not-gpg-signed.txt'))
@@ -234,7 +80,7 @@ class MaloneHandler:
                 # handle the possible errors that can occur while getting
                 # the bug.
                 add_comment_to_bug = True
-                commands.insert(0, emailcommands.get('bug', [user]))
+                commands.insert(0, BugEmailCommands.get('bug', [user]))
             elif user.lower() == 'help':
                 from_user = getUtility(ILaunchBag).user
                 if from_user is not None:
@@ -258,9 +104,15 @@ class MaloneHandler:
                 try:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
-                            notify(bug_event)
+                            try:
+                                notify(bug_event)
+                            except CreatedBugWithNoBugTasksError:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                         if (bugtask_event is not None and
-                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            not IObjectCreatedEvent.providedBy(bug_event)):
                             notify(bugtask_event)
                         bugtask = None
                         bugtask_event = None
@@ -293,15 +145,14 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(
                                 message, bug_watch)
 
-                            notify(SQLObjectCreatedEvent(bugmessage))
+                            notify(ObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
                         else:
                             message = bug.initial_message
                         self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
-                            if not ISQLObjectCreatedEvent.providedBy(
-                                bug_event):
+                            if not IObjectCreatedEvent.providedBy(bug_event):
                                 notify(bugtask_event)
                             bugtask_event = None
                         bugtask, bugtask_event = command.execute(bug)
@@ -309,6 +160,11 @@ class MaloneHandler:
                         bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
+                            if len(bug.bugtasks) == 0:
+                                rollback()
+                                raise IncomingEmailError(
+                                    get_error_message(
+                                        'no-affects-target-on-submit.txt'))
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
@@ -341,7 +197,7 @@ class MaloneHandler:
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
-                if not ISQLObjectCreatedEvent.providedBy(bug_event):
+                if not IObjectCreatedEvent.providedBy(bug_event):
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
@@ -494,128 +350,6 @@ class AnswerTrackerHandler:
         else:
             # In the other states, only a comment can be added.
             question.addComment(message.owner, message)
-
-
-class BadBranchMergeProposalAddress(Exception):
-    """The user-supplied address is not an acceptable value."""
-
-class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
-    """The user-supplied address is not an acceptable value."""
-
-class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
-    """The BranchMergeProposal specified by the address does not exist."""
-
-class InvalidVoteString(Exception):
-    """The user-supplied vote is not an acceptable value."""
-
-
-class CodeHandler:
-    """Mail handler for the code domain."""
-
-    addr_pattern = re.compile(r'(mp\+)([^@]+).*')
-    allow_unknown_users = False
-
-    _vote_alias = {
-        '+1': CodeReviewVote.APPROVE,
-        '+0': CodeReviewVote.ABSTAIN,
-        '0': CodeReviewVote.ABSTAIN,
-        '-0': CodeReviewVote.ABSTAIN,
-        '-1': CodeReviewVote.DISAPPROVE,
-        }
-
-    def process(self, mail, email_addr, file_alias):
-        """Process an email and create a CodeReviewComment.
-
-        The only mail command understood is 'vote', which takes 'approve',
-        'disapprove', or 'abstain' as values.  Specifically, it takes
-        any CodeReviewVote item value, case-insensitively.
-        :return: True.
-        """
-        try:
-            merge_proposal = self.getBranchMergeProposal(email_addr)
-        except BadBranchMergeProposalAddress:
-            return False
-        messageset = getUtility(IMessageSet)
-        try:
-            vote, vote_tag = self._getVote(mail)
-        except InvalidVoteString, e:
-            valid_strings = ', '.join(
-                sorted(v.name.lower() for v in CodeReviewVote.items.items))
-            simple_sendmail(
-                'noreply@launchpad.net', [self._getReplyAddress(mail)],
-                'Unsupported vote',
-                'Your comment was not accepted because the string "%s" is not'
-                ' a supported voting value.  The following values are'
-                ' supported: %s.' % (e.args[0], valid_strings))
-            return True
-        message = messageset.fromEmail(
-            mail.parsed_string,
-            owner=getUtility(ILaunchBag).user,
-            filealias=file_alias,
-            parsed_message=mail)
-        comment = merge_proposal.createCommentFromMessage(
-            message, vote, vote_tag)
-        return True
-
-    @staticmethod
-    def _getVote(message):
-        """Scan message content and find vote commands.
-
-        :param message: a SignedMessage
-        :return: (vote, vote_tag), where vote is a CodeReviewVote, and
-            vote_tag is a string.  vote_tag or vote may also be None.
-        """
-        content = get_main_body(message)
-        if content is None:
-            return None, None
-        commands = parse_commands(content, ['vote'])
-        if len(commands) == 0:
-            return None, None
-        args = commands[0][1]
-        if len(args) == 0:
-            return None, None
-        else:
-            vote_string = args[0]
-        vote_tag_list = args[1:]
-        try:
-            vote = CodeReviewVote.items[vote_string.upper()]
-        except KeyError:
-            # If the word doesn't match, check aliases that we allow.
-            vote = CodeHandler._vote_alias.get(vote_string)
-            if vote is None:
-                raise InvalidVoteString(vote_string)
-        if len(vote_tag_list) == 0:
-            vote_tag = None
-        else:
-            vote_tag = ' '.join(vote_tag_list)
-        return vote, vote_tag
-
-    @staticmethod
-    def _getReplyAddress(mail):
-        """The address to use for automatic replies."""
-        return mail.get('Reply-to', mail['From'])
-
-    @classmethod
-    def getBranchMergeProposal(klass, email_addr):
-        """Return branch merge proposal designated by email_addr.
-
-        Addresses are of the form mp+5@code.launchpad.net, where 5 is the
-        database id of the related branch merge proposal.
-
-        The inverse operation is BranchMergeProposal.address.
-        """
-        match = klass.addr_pattern.match(email_addr)
-        if match is None:
-            raise InvalidBranchMergeProposalAddress(email_addr)
-        try:
-            merge_proposal_id = int(match.group(2))
-        except ValueError:
-            raise InvalidBranchMergeProposalAddress(email_addr)
-        getter = getUtility(IBranchMergeProposalGetter)
-        try:
-            return getter.get(merge_proposal_id)
-        except SQLObjectNotFound:
-            raise NonExistantBranchMergeProposalAddress(email_addr)
 
 
 class SpecificationHandler:

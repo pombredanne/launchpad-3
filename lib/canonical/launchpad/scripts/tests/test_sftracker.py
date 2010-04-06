@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,6 +8,7 @@ import datetime
 import unittest
 
 import pytz
+import transaction
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, IEmailAddressSet,
@@ -178,6 +180,9 @@ class PersonMappingTestCase(unittest.TestCase):
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
         person = importer.get_person('foo')
+        # Changes were just made to two different Stores, so commit
+        # to make the changes visible to the subsequent tests.
+        transaction.commit()
         self.assertNotEqual(person, None)
         self.assertEqual(person.guessedemails.count(), 1)
         self.assertEqual(person.guessedemails[0].email,
@@ -237,13 +242,18 @@ class PersonMappingTestCase(unittest.TestCase):
         person = getUtility(IPersonSet).ensurePerson(
             'foo@users.sourceforge.net', None,
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        email = getUtility(IEmailAddressSet).new('foo@example.com', person.id)
+        transaction.commit()
+        self.failIf(person.account is None, 'Person must have an account.')
+        email = getUtility(IEmailAddressSet).new(
+            'foo@example.com', person, account=person.account)
         person.setPreferredEmail(email)
+        transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
 
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product, verify_users=True)
         person = importer.get_person('foo')
+        transaction.commit()
         self.assertNotEqual(person.preferredemail, None)
         self.assertEqual(person.preferredemail.email, 'foo@example.com')
 
@@ -261,6 +271,10 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         product = getUtility(IProductSet).getByName('netapplet')
         importer = sftracker.TrackerImporter(product)
         bug = importer.importTrackerItem(item)
+        # Creating a user makes changes to two different Stores, so we have
+        # to commit to make these changes visible (or we have to pull this
+        # information from the correct stores, which is a more tedious fix).
+        transaction.commit()
         bugtask = bug.bugtasks[0]
 
         self.assertEqual(bug.name, 'sf1278591')
@@ -313,11 +327,19 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         self.assertEqual(attachment.libraryfile.filename, 'hello.txt')
         self.assertEqual(attachment.libraryfile.mimetype, 'text/plain')
 
-        self.assertEqual(bug.activity.count(), 1)
+        self.assertEqual(bug.activity.count(), 2)
+
+        # Activity record for bug creation.
         self.assertEqual(bug.activity[0].person,
                          getUtility(ILaunchpadCelebrities).bug_importer)
         self.assertEqual(bug.activity[0].whatchanged, 'bug')
-        self.assertEqual(bug.activity[0].message,
+        self.assertEqual(bug.activity[0].message, 'added bug')
+
+        # Activity record for importing.
+        self.assertEqual(bug.activity[1].person,
+                         getUtility(ILaunchpadCelebrities).bug_importer)
+        self.assertEqual(bug.activity[1].whatchanged, 'bug')
+        self.assertEqual(bug.activity[1].message,
                          'Imported SF tracker item #1278591')
 
 

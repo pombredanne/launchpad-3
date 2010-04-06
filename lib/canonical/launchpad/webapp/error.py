@@ -1,6 +1,17 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'InvalidBatchSizeView',
+    'NotFoundView',
+    'ProtocolErrorView',
+    'ReadOnlyErrorView',
+    'RequestExpiredView',
+    'SystemErrorView',
+    'TranslationUnavailableView',
+    ]
+
 
 import sys
 import traceback
@@ -9,22 +20,27 @@ from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.adapter import (
     clear_request_started, set_request_started)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
-class SystemErrorView:
+class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
     """
     implements(ISystemErrorView)
+
+    page_title = 'Error: Launchpad system error'
+    override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
         '../templates/oops-veryplain.pt')
@@ -49,8 +65,7 @@ class SystemErrorView:
     safe_to_show_in_restricted_mode = False
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(SystemErrorView, self).__init__(context, request)
         self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
@@ -151,7 +166,7 @@ class SystemErrorView:
     @property
     def layer_help(self):
         if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
-            return '''<a href="http://help.launchpad.net/Feeds">
+            return '''<a href="https://help.launchpad.net/Feeds">
                       Help with Launchpad feeds</a>'''
         else:
             return None
@@ -176,6 +191,9 @@ class ProtocolErrorView(SystemErrorView):
 
 class NotFoundView(SystemErrorView):
 
+    page_title = 'Error: Page not found'
+    override_title_breadcrumbs = True
+
     response_code = 404
 
     def __call__(self):
@@ -194,7 +212,16 @@ class NotFoundView(SystemErrorView):
             return None
 
 
+class GoneView(NotFoundView):
+    """The page is gone, such as a page belonging to a suspended user."""
+    page_title = 'Error: Page gone'
+    response_code = 410
+
+
 class RequestExpiredView(SystemErrorView):
+
+    page_title = 'Error: Timeout'
+    override_title_breadcrumbs = True
 
     response_code = 503
 
@@ -213,6 +240,9 @@ class RequestExpiredView(SystemErrorView):
 class InvalidBatchSizeView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
+    page_title = "Error: Invalid Batch Size"
+    override_title_breadcrumbs = True
+
     response_code = 400
 
     def isSystemError(self):
@@ -220,14 +250,41 @@ class InvalidBatchSizeView(SystemErrorView):
         return False
 
     @property
-    def max_batch_size(self):
-        """Return the maximum configured batch size."""
-        return config.launchpad.max_batch_size
+    def error_message(self):
+        """Return the error message from the exception."""
+        if len(self.context.args) > 0:
+            return self.context.args[0]
+        return ""
 
 
 class TranslationUnavailableView(SystemErrorView):
+
+    page_title = 'Error: Translation page is not available'
+    override_title_breadcrumbs = True
 
     response_code = 503
 
     def __call__(self):
         return self.index()
+
+
+class ReadOnlyErrorView(SystemErrorView):
+    """View rendered when an InvalidBatchSizeError is raised."""
+
+    page_title = "Error: you can't do this right now"
+    override_title_breadcrumbs = True
+
+    response_code = 503
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False
+
+    def __call__(self):
+        return self.index()
+
+
+class NoReferrerErrorView(SystemErrorView):
+    """View rendered when a POST request does not include a REFERER header."""
+
+    response_code = 403 # Forbidden.

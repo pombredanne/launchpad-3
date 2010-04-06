@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,W0611
 # XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
 
@@ -12,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
+from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -31,9 +34,7 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'ICrowd',
     'IFeedsApplication',
-    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -43,7 +44,6 @@ __all__ = [
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
-    'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
@@ -53,16 +53,16 @@ __all__ = [
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
+    'IPersonRoles',
     'IPrivateApplication',
     'IPrivateMaloneApplication',
+    'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IShipItApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWebServiceApplication',
@@ -104,43 +104,142 @@ class ILaunchpadCelebrities(Interface):
     bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    buildd_admin = Attribute("The Build Daemon administrator.")
     commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     english = Attribute("The English language.")
+    gnome_bugzilla = Attribute("The Gnome Bugzilla.")
+    hwdb_team = Attribute("The HWDB team.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
+    lp_translations = Attribute("The Launchpad Translations product.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
+    obsolete_junk = Attribute("The Obsolete Junk project.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+    registry_experts = Attribute("The Registry Administrators team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
-    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_branches = Attribute("The Ubuntu branches team")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_security = Attribute("The 'ubuntu-security' team.")
+    ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
-    lp_translations = Attribute("The Launchpad Translations product.")
 
-class ICrowd(Interface):
-
-    def __contains__(person_or_team_or_anything):
-        """Return True if person_or_team_or_anything is in the crowd.
-
-        Note that a particular crowd can choose to answer 'True' to this
-        question, if that is what it is supposed to do.  So, crowds that
-        contain other crowds will want to allow the other crowds the
-        opportunity to answer __contains__ before that crowd does.
+    def isCelebrityPerson(name):
+        """Return true if there is an IPerson celebrity with the given name.
         """
 
-    def __add__(crowd):
-        """Return a new ICrowd that is this crowd added to the given crowd.
 
-        The returned crowd contains the person or teams in
-        both this crowd and the given crowd.
+class IPersonRoles(Interface):
+    """What celebrity teams a person is member of and similar helpers.
+
+    Convenience methods that remove frequent calls to ILaunchpadCelebrities
+    and IPerson.inTeam from permission checkers. May also be used in model
+    or view code.
+
+    All person celebrities in ILaunchpadCelbrities must have a matching
+    in_ attribute here and vice versa.
+    """
+
+    person = Attribute("The IPerson object that these checks refer to.")
+
+    in_admin = Bool(
+        title=_("True if this person is a Launchpad admin."),
+        required=True, readonly=True)
+    in_bazaar_experts = Bool(
+        title=_("True if this person is a Bazaar expert."),
+        required=True, readonly=True)
+    in_bug_importer = Bool(
+        title=_("True if this person is a bug importer."),
+        required=True, readonly=True)
+    in_bug_watch_updater = Bool(
+        title=_("True if this person is a bug watch updater."),
+        required=True, readonly=True)
+    in_buildd_admin = Bool(
+        title=_("True if this person is a buildd admin."),
+        required=True, readonly=True)
+    in_commercial_admin = Bool(
+        title=_("True if this person is a commercial admin."),
+        required=True, readonly=True)
+    in_hwdb_team = Bool(
+        title=_("True if this person is on the hwdb team."),
+        required=True, readonly=True)
+    in_janitor = Bool(
+        title=_("True if this person is the janitor."),
+        required=True, readonly=True)
+    in_katie = Bool(
+        title=_("True if this person is Katie."),
+        required=True, readonly=True)
+    in_launchpad_beta_testers = Bool(
+        title=_("True if this person is a Launchpad beta tester."),
+        required=True, readonly=True)
+    in_launchpad_developers = Bool(
+        title=_("True if this person is a Launchpad developer."),
+        required=True, readonly=True)
+    in_mailing_list_experts = Bool(
+        title=_("True if this person is a mailing list expert."),
+        required=True, readonly=True)
+    in_ppa_key_guard = Bool(
+        title=_("True if this person is the ppa key guard."),
+        required=True, readonly=True)
+    in_registry_experts = Bool(
+        title=_("True if this person is a registry expert."),
+        required=True, readonly=True)
+    in_rosetta_experts = Bool(
+        title=_("True if this person is a rosetta expert."),
+        required=True, readonly=True)
+    in_shipit_admin = Bool(
+        title=_("True if this person is a ShipIt admin."),
+        required=True, readonly=True)
+    in_ubuntu_branches = Bool(
+        title=_("True if this person is on the Ubuntu branches team."),
+        required=True, readonly=True)
+    in_ubuntu_security = Bool(
+        title=_("True if this person is on the Ubuntu security team."),
+        required=True, readonly=True)
+    in_ubuntu_techboard = Bool(
+        title=_("True if this person is on the Ubuntu tech board."),
+        required=True, readonly=True)
+    in_vcs_imports = Bool(
+        title=_("True if this person is on the vcs-imports team."),
+        required=True, readonly=True)
+
+    def inTeam(team):
+        """Is this person a member or the owner of `team`?
+
+        Passed through to the same method in 'IPersonPublic'.
+        """
+
+    def isOwner(obj):
+        """Is this person the owner of the object?"""
+
+    def isDriver(obj):
+        """Is this person the driver of the object?"""
+
+    def isOneOfDrivers(obj):
+        """Is this person on of the drivers of the object?
+
+        Works on objects that implement 'IHasDrivers' but will default to
+        isDriver if it doesn't, i.e. check the driver attribute.
+        """
+
+    def isOneOf(obj, attributes):
+        """Is this person one of the roles in relation to the object?
+
+        Check if the person is inTeam of one of the given IPerson attributes
+        of the object.
+
+        :param obj: The object to check the relation to.
+        :param attributes: A list of attribute names to check with inTeam.
         """
 
 
@@ -182,16 +281,8 @@ class IRosettaApplication(ILaunchpadApplication):
         """Return the number of people who have given translations."""
 
 
-class IShipItApplication(ILaunchpadApplication):
-    """ShipIt application root."""
-
-
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
-
-
-class IOpenIDApplication(ILaunchpadApplication):
-    """Launchpad Login Service application root."""
 
 
 class IPrivateApplication(ILaunchpadApplication):
@@ -238,10 +329,6 @@ class IAuthApplication(Interface):
 
 class IFeedsApplication(ILaunchpadApplication):
     """Launchpad Feeds application root."""
-
-
-class IHWDBApplication(ILaunchpadApplication):
-    """Hardware database application application root."""
 
 
 class IPasswordResets(IPersistent):
@@ -296,7 +383,7 @@ class IReadZODBAnnotation(Interface):
         """Removes annotation at the given namespace."""
 
 
-class IWebServiceApplication(ILaunchpadApplication):
+class IWebServiceApplication(ILaunchpadApplication, IServiceRootResource):
     """Launchpad web service application root."""
 
 
@@ -308,12 +395,6 @@ class IWriteZODBAnnotation(Interface):
 
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
-
-
-class IHasOwner(Interface):
-    """An object that has an owner."""
-
-    owner = Attribute("The object's owner, which is an IPerson.")
 
 
 class IHasDrivers(Interface):
@@ -397,6 +478,16 @@ class IAging(Interface):
 
         Values returned are things like '2 minutes', '3 hours', '1 month', etc.
         """
+
+
+class IPrivacy(Interface):
+    """Something that can be private."""
+
+    private = Bool(
+        title=_("This is private"),
+        required=False,
+        description=_(
+            "Private objects are visible to members or subscribers."))
 
 
 class IHasDateCreated(Interface):
@@ -509,7 +600,7 @@ class INotificationRecipientSet(Interface):
         should be a short code that will appear in an
         X-Launchpad-Message-Rationale header for automatic filtering.
 
-        :param person_or_email: An `IPerson` or email adress that is in the
+        :param person_or_email: An `IPerson` or email address that is in the
             recipients list.
 
         :raises UnknownRecipientError: if the person or email isn't in the

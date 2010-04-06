@@ -1,17 +1,21 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Library functions for use in all scripts.
 
 """
 __metaclass__ = type
 
 __all__ = [
-    'execute_zcml_for_scripts',
-    'logger_options',
-    'logger',
-    'log',
     'db_options',
+    'execute_zcml_for_scripts',
+    'log',
+    'logger',
+    'logger_options',
+    'BufferLogger',
     'FakeLogger',
     'QuietFakeLogger',
+    'WatchedFileHandler',
     ]
 
 import atexit
@@ -21,6 +25,7 @@ import threading
 
 import zope.app.appsetup
 import zope.sendmail.delivery
+import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
 from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
@@ -32,7 +37,10 @@ from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log, FakeLogger, QuietFakeLogger)
+    # these are intentional re-exports, apparently, used by *many* files.
+    logger_options, logger, log, BufferLogger, FakeLogger, QuietFakeLogger)
+# Intentional re-export, following along the lines of the logger module.
+from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 
 # XXX StuartBishop 2005-06-02:
 # We should probably split out all the stuff in this directory that
@@ -97,16 +105,18 @@ def execute_zcml_for_scripts(use_web_security=False):
             Instead, your test should use the Zopeless layer.
             """
 
-    scriptzcmlfilename = os.path.normpath(
-        os.path.join(os.path.dirname(__file__),
-                     os.pardir, os.pardir, os.pardir, os.pardir,
-                     'script.zcml'))
+    if config.instance_name == 'testrunner':
+        scriptzcmlfilename = 'script-testing.zcml'
+    else:
+        scriptzcmlfilename = 'script.zcml'
 
-    scriptzcmlfilename = os.path.abspath(scriptzcmlfilename)
+    scriptzcmlfilename = os.path.abspath(
+        os.path.join(config.root, scriptzcmlfilename))
+
     from zope.configuration import xmlconfig
 
     # Hook up custom component architecture calls
-    zope.app.component.hooks.setHooks()
+    zope.site.hooks.setHooks()
 
     # Load server-independent site config
     context = CustomMachine()
@@ -140,8 +150,15 @@ def execute_zcml_for_scripts(use_web_security=False):
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
     # PermissiveSecurityPolicy set up in script.zcml.
+    # XXX gary 20-Oct-2008 bug 285808
+    # The wisdom of using a test fixture for production should be
+    # reconsidered.
     from canonical.launchpad.ftests import login
-    login('launchpad.anonymous')
+    # The Participation is used to specify that we do not want a
+    # LaunchpadTestRequest, which ftests normally use. shipit scripts, in
+    # particular, need to be careful, because of code in canonical_url.
+    from canonical.launchpad.webapp.interaction import Participation
+    login('launchpad.anonymous', Participation())
 
 
 def db_options(parser):

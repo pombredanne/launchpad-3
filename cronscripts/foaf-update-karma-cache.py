@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=C0103,W0403
 
 import _pythonpath
@@ -7,9 +10,10 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
+from canonical.database.sqlbase import (
+    ISOLATION_LEVEL_AUTOCOMMIT, flush_database_updates)
 from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class KarmaCacheUpdater(LaunchpadCronScript):
@@ -80,6 +84,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         scaling = self.calculate_scaling(results)
         for entry in results:
             self.update_one_karma_cache_entry(entry, scaling)
+        flush_database_updates()
 
         # Delete the entries we're going to replace.
         self.cur.execute("DELETE FROM KarmaCache WHERE category IS NULL")
@@ -241,15 +246,18 @@ class KarmaCacheUpdater(LaunchpadCronScript):
                 scaling[category] = 1
             else:
                 scaling[category] = float(largest_total) / float(points)
-            self.logger.debug('Scaling %s by a factor of %0.4f'
-                              % (categories[category], scaling[category]))
             max_scaling = config.karmacacheupdater.max_scaling
             if scaling[category] > max_scaling:
+                self.logger.info(
+                    'Scaling %s by a factor of %0.4f (capped to %0.4f)'
+                    % (categories[category], scaling[category], max_scaling))
                 scaling[category] = max_scaling
-                self.logger.debug('Reducing %s scaling to %d to avoid spikes' 
-                                  % (categories[category], max_scaling))
+            else:
+                self.logger.info(
+                    'Scaling %s by a factor of %0.4f'
+                    % (categories[category], scaling[category]))
         return scaling
-    
+
     def update_one_karma_cache_entry(self, entry, scaling):
         """Updates an individual (non-summed) KarmaCache entry.
 

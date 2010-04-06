@@ -1,0 +1,39 @@
+The `IProcessorFamilySet` utility allows the look-up of ProcessorFamily
+instances by name.
+
+    >>> from zope.component import getUtility
+    >>> from lp.soyuz.interfaces.processor import (
+    ...     IProcessorFamilySet)
+
+    >>> pfs = getUtility(IProcessorFamilySet)
+
+The attempt to access a non-existing processor family yields None.
+
+    >>> print pfs.getByName('this-processor-family-does-not-exist')
+    None
+
+Conversely, accessing an existing processor family yields the instance.
+
+    >>> family = pfs.getByName('x86')
+    >>> family.name
+    u'x86'
+    >>> family.title
+    u'Intel 386 compatible chips'
+    >>> family.description
+    u'Bring back the 8086!'
+
+It is also possible to get the processor family for a given processor.
+
+    >>> family = pfs.getByProcessorName('386')
+    >>> family.name
+    u'x86'
+    >>> family.title
+    u'Intel 386 compatible chips'
+    >>> family.description
+    u'Bring back the 8086!'
+
+In case where the user specifies a non-existent processor name the return
+value will be None.
+
+    >>> print pfs.getByProcessorName('wintel')
+    None

@@ -1,30 +1,36 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Error logging facilities."""
 
 __metaclass__ = type
 
-import threading
-import os
-import errno
-import re
+import contextlib
 import datetime
-import pytz
-import rfc822
+import errno
+from itertools import repeat
 import logging
+import os
+import re
+import rfc822
+import threading
 import types
 import urllib
 
-from zope.interface import implements
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-
+import pytz
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
+from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.traversing.namespace import view
 
+from lazr.restful.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_statements, get_request_duration,
     soft_timeout_expired)
@@ -33,6 +39,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
+
+LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -43,7 +51,7 @@ epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 _rate_restrict_pool = {}
 
 # The number of seconds that must elapse on average between sending two
-# exceptions of the same name into the the Event Log. one per minute.
+# exceptions of the same name into the Event Log. one per minute.
 _rate_restrict_period = datetime.timedelta(seconds=60)
 
 # The number of exceptions to allow in a burst before the above limit
@@ -126,7 +134,7 @@ class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, pageid, tb_text, username,
-                 url, duration, req_vars, db_statements):
+                 url, duration, req_vars, db_statements, informational):
         self.id = id
         self.type = type
         self.value = value
@@ -140,9 +148,10 @@ class ErrorReport:
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
         self.revno  = versioninfo.revno
+        self.informational = informational
 
     def __repr__(self):
-        return '<ErrorReport %s>' % self.id
+        return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def write(self, fp):
         fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
@@ -155,15 +164,16 @@ class ErrorReport:
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
         fp.write('URL: %s\n' % _normalise_whitespace(self.url))
         fp.write('Duration: %s\n' % self.duration)
+        fp.write('Informational: %s\n' % self.informational)
         fp.write('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
         fp.write('\n')
-        for (start, end, statement) in self.db_statements:
-            fp.write('%05d-%05d %s\n' % (start, end,
-                                         _normalise_whitespace(statement)))
+        for (start, end, database_id, statement) in self.db_statements:
+            fp.write('%05d-%05d@%s %s\n' % (
+                start, end, database_id, _normalise_whitespace(statement)))
         fp.write('\n')
         fp.write(self.tb_text)
 
@@ -178,6 +188,7 @@ class ErrorReport:
         username = msg.getheader('user')
         url = msg.getheader('url')
         duration = int(float(msg.getheader('duration', '-1')))
+        informational = msg.getheader('informational')
 
         # Explicitely use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
@@ -200,31 +211,39 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            startend, statement = line.split(' ', 1)
-            start, end = startend.split('-')
-            statements.append((int(start), int(end), statement))
+            start, end, db_id, statement = re.match(
+                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line).groups()
+            if db_id is not None:
+                db_id = intern(db_id) # This string is repeated lots.
+            statements.append(
+                (int(start), int(end), db_id, statement))
 
         # The rest is traceback.
         tb_text = ''.join(lines)
 
         return cls(id, exc_type, exc_value, date, pageid, tb_text,
-                   username, url, duration, req_vars, statements)
+                   username, url, duration, req_vars, statements,
+                   informational)
 
 
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['TranslationUnavailable'])
+    _ignored_exceptions = set([
+        'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
+        'TranslationUnavailable'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 
     lasterrordir = None
     lastid = 0
 
-
     def __init__(self):
         self.lastid_lock = threading.Lock()
         self.configure()
+        self._oops_messages = {}
+        self._oops_message_key_iter = (
+            index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None):
         """Configure the utility using the named section form the config.
@@ -367,10 +386,10 @@ class ErrorReportingUtility:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        # we look up the error directory before allocating a new ID,
+        # We look up the error directory before allocating a new ID,
         # because if the day has changed, errordir() will reset the ID
-        # counter to zero
-        errordir = self.errordir(now)
+        # counter to zero.
+        self.errordir(now)
         self.lastid_lock.acquire()
         try:
             self.lastid += 1
@@ -384,95 +403,145 @@ class ErrorReportingUtility:
         return oops, filename
 
     def raising(self, info, request=None, now=None):
-        """See IErrorReportingUtility.raising()"""
+        """See IErrorReportingUtility.raising()
+
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.  Not part of
+            IErrorReportingUtility).
+        """
+        self._raising(info, request=request, now=now, informational=False)
+
+    def _raising(self, info, request=None, now=None, informational=False):
+        """Private method used by raising() and handling()."""
+        entry = self._makeErrorReport(info, request, now, informational)
+        if entry is None:
+            return
+        # As a side-effect, _makeErrorReport updates self.lastid.
+        filename = self.getOopsFilename(self.lastid, entry.time)
+        entry.write(open(filename, 'wb'))
+        if request:
+            request.oopsid = entry.id
+            request.oops = entry
+
+        if self.copy_to_zlog:
+            self._do_copy_to_zlog(
+                entry.time, entry.type, entry.url, info, entry.id)
+
+    def _makeErrorReport(self, info, request=None, now=None,
+                         informational=False):
+        """Return an ErrorReport for the supplied data.
+
+        As a side-effect, self.lastid is updated to the integer oops id.
+        :param info: Output of sys.exc_info()
+        :param request: The IErrorReportRequest which provides context to the
+            info.
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        :param informational: If true, the report is flagged as informational
+            only.
+        """
         if now is not None:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        try:
-            tb_text = None
+        tb_text = None
 
-            strtype = str(getattr(info[0], '__name__', info[0]))
-            if strtype in self._ignored_exceptions:
-                return
+        strtype = str(getattr(info[0], '__name__', info[0]))
+        if strtype in self._ignored_exceptions:
+            return
 
-            if not isinstance(info[2], basestring):
-                tb_text = ''.join(format_exception(*info,
-                                                   **{'as_html': False}))
+        if not isinstance(info[2], basestring):
+            tb_text = ''.join(format_exception(*info,
+                                               **{'as_html': False}))
+        else:
+            tb_text = info[2]
+        tb_text = _safestr(tb_text)
+
+        url = None
+        username = None
+        req_vars = []
+        pageid = ''
+
+        if request:
+            # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+            #      undo. URL is just too HTTPRequest-specific.
+            if safe_hasattr(request, 'URL'):
+                url = request.URL
+
+            if WebServiceLayer.providedBy(request):
+                webservice_error = getattr(
+                    info[0], '__lazr_webservice_error__', 500)
+                if webservice_error / 100 != 5:
+                    request.oopsid = None
+                    # Return so the OOPS is not generated.
+                    return
+
+            missing = object()
+            principal = getattr(request, 'principal', missing)
+            if safe_hasattr(principal, 'getLogin'):
+                login = principal.getLogin()
+            elif principal is missing or principal is None:
+                # Request has no principal.
+                login = None
             else:
-                tb_text = info[2]
-            tb_text = _safestr(tb_text)
+                # Request has an UnauthenticatedPrincipal.
+                login = 'unauthenticated'
+                if strtype in (
+                    self._ignored_exceptions_for_unauthenticated_users):
+                    return
 
-            url = None
-            username = None
-            req_vars = []
-            pageid = ''
+            if principal is not None and principal is not missing:
+                username = _safestr(
+                    ', '.join([
+                            unicode(login),
+                            unicode(request.principal.id),
+                            unicode(request.principal.title),
+                            unicode(request.principal.description)]))
 
-            if request:
-                # XXX jamesh 2005-11-22: Temporary fix, which Steve should
-                #      undo. URL is just too HTTPRequest-specific.
-                if safe_hasattr(request, 'URL'):
-                    url = request.URL
+            if getattr(request, '_orig_env', None):
+                pageid = request._orig_env.get('launchpad.pageid', '')
 
-                missing = object()
-                principal = getattr(request, 'principal', missing)
-                if safe_hasattr(principal, 'getLogin'):
-                    login = principal.getLogin()
-                elif principal is missing or principal is None:
-                    # Request has no principal.
-                    login = None
+            for key, value in request.items():
+                if _is_sensitive(request, key):
+                    req_vars.append((_safestr(key), '<hidden>'))
                 else:
-                    # Request has an UnauthenticatedPrincipal.
-                    login = 'unauthenticated'
-                    if strtype in (
-                        self._ignored_exceptions_for_unauthenticated_users):
-                        return
+                    req_vars.append((_safestr(key), _safestr(value)))
+            if IXMLRPCRequest.providedBy(request):
+                args = request.getPositionalArguments()
+                req_vars.append(('xmlrpc args', _safestr(args)))
+        # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
+        # storage for oops messages.
+        req_vars.extend(
+            ('<oops-message-%d>' % key, str(message)) for key, message
+             in self._oops_messages.iteritems())
+        req_vars.sort()
+        strv = _safestr(info[1])
 
-                if principal is not None and principal is not missing:
-                    username = _safestr(
-                        ', '.join([
-                                unicode(login),
-                                unicode(request.principal.id),
-                                unicode(request.principal.title),
-                                unicode(request.principal.description)]))
+        strurl = _safestr(url)
 
-                if getattr(request, '_orig_env', None):
-                    pageid = request._orig_env.get('launchpad.pageid', '')
+        duration = get_request_duration()
 
-                req_vars = []
-                for key, value in request.items():
-                    if _is_sensitive(request, key):
-                        req_vars.append((_safestr(key), '<hidden>'))
-                    else:
-                        req_vars.append((_safestr(key), _safestr(value)))
-                if IXMLRPCRequest.providedBy(request):
-                    args = request.getPositionalArguments()
-                    req_vars.append(('xmlrpc args', _safestr(args)))
-                req_vars.sort()
-            strv = _safestr(info[1])
+        statements = sorted(
+            (start, end, _safestr(database_id), _safestr(statement))
+            for (start, end, database_id, statement)
+                in get_request_statements())
 
-            strurl = _safestr(url)
+        oopsid, filename = self.newOopsId(now)
+        return ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
+                           username, strurl, duration,
+                           req_vars, statements,
+                           informational)
 
-            duration = get_request_duration()
+    def handling(self, info, request=None, now=None):
+        """Flag ErrorReport as informational only.
 
-            statements = sorted((start, end, _safestr(statement))
-                                for (start, end, statement)
-                                    in get_request_statements())
-
-            oopsid, filename = self.newOopsId(now)
-
-            entry = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
-                                username, strurl, duration,
-                                req_vars, statements)
-            entry.write(open(filename, 'wb'))
-
-            if request:
-                request.oopsid = oopsid
-
-            if self.copy_to_zlog:
-                self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
-        finally:
-            info = None
+        :param info: Output of sys.exc_info()
+        :param request: The IErrorReportRequest which provides context to the
+            info.
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        """
+        self._raising(info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -496,6 +565,14 @@ class ErrorReportingUtility:
             except:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
+
+    @contextlib.contextmanager
+    def oopsMessage(self, message):
+        """Add an oops message to be included in oopses from this context."""
+        key = self._oops_message_key_iter.next()
+        self._oops_messages[key] = message
+        yield
+        del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()
@@ -543,6 +620,30 @@ class ScriptRequest(ErrorReportRequest):
         return dict(self.items())
 
 
+class OopsLoggingHandler(logging.Handler):
+    """Python logging handler that records OOPSes on exception."""
+
+    def __init__(self, error_utility=None, request=None):
+        """Construct an `OopsLoggingHandler`.
+
+        :param error_utility: The error utility to use to log oopses. If not
+            provided, defaults to `globalErrorUtility`.
+        :param request: The `IErrorReportRequest` these errors are associated
+            with.
+        """
+        logging.Handler.__init__(self, logging.ERROR)
+        if error_utility is None:
+            error_utility = globalErrorUtility
+        self._error_utility = error_utility
+        self._request = request
+
+    def emit(self, record):
+        """See `logging.Handler.emit`."""
+        info = record.exc_info
+        if info is not None:
+            self._error_utility.raising(info, self._request)
+
+
 class SoftRequestTimeout(Exception):
     """Soft request timeout expired"""
 
@@ -555,3 +656,34 @@ def end_request(event):
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+
+
+class UserRequestOops(Exception):
+    """A user requested OOPS to log statements."""
+
+
+def maybe_record_user_requested_oops():
+    """If an OOPS has been requested, report one.
+
+    :return: The oopsid of the requested oops.  Returns None if an oops was
+        not requested, or if there is already an OOPS.
+    """
+    request = get_current_browser_request()
+    # If there is no request, or there is an oops already, then return.
+    if (request is None or
+        request.oopsid is not None or
+        not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
+        return None
+    globalErrorUtility.handling(
+        (UserRequestOops, UserRequestOops(), None), request)
+    return request.oopsid
+
+
+class OopsNamespace(view):
+    """A namespace handle traversals with ++oops++."""
+
+    def traverse(self, name, ignored):
+        """Record that an oops has been requested and return the context."""
+        # Store the oops request in the request annotations.
+        self.request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
+        return self.context

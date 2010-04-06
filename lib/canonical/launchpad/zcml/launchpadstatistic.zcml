@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,14 +9,14 @@
   i18n_domain="launchpad">
 
   <!-- LaunchpadStatistic -->
-  <class class="canonical.launchpad.database.LaunchpadStatistic">
-    <allow interface="canonical.launchpad.interfaces.ILaunchpadStatistic" />
+  <class class="canonical.launchpad.database.launchpadstatistic.LaunchpadStatistic">
+    <allow interface="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatistic" />
   </class>
 
 
   <!-- LaunchpadStatisticSet -->
   <securedutility
-    class="canonical.launchpad.database.LaunchpadStatisticSet"
+    class="canonical.launchpad.database.launchpadstatistic.LaunchpadStatisticSet"
     provides="canonical.launchpad.interfaces.ILaunchpadStatisticSet">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadStatisticSet" />
   </securedutility>
@@ -31,6 +35,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
     facet="overview"
+    class="canonical.launchpad.browser.launchpadstatistic.LaunchpadStatisticSet"
     permission="launchpad.Admin">
     <browser:page
       name="+index"

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The webapp package contains infrastructure that is common across Launchpad
 that is to do with aspects such as security, menus, zcml, tales and so on.
@@ -18,8 +19,6 @@ __all__ = [
     'expand_numbers',
     'ExportedFolder',
     'FacetMenu',
-    'GeneralFormView',
-    'GeneralFormViewFactory',
     'GetitemNavigation',
     'LaunchpadEditFormView',
     'LaunchpadFormView',
@@ -46,9 +45,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.generalform import (
-    GeneralFormView, GeneralFormViewFactory
-    )
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
     safe_action)
@@ -125,15 +121,9 @@ class StandardLaunchpadFacets(FacetMenu):
         summary = 'Blueprints and specifications'
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'View related bounty offers'
-        return Link(target, text, summary)
-
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
-        text = 'Code'
+        text = 'Branches'
         summary = 'View related branches of code'
         return Link('', text, summary=summary)

@@ -1,4 +1,5 @@
--- Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 CREATE OR REPLACE FUNCTION assert_patch_applied(
     major integer, minor integer, patch integer) RETURNS boolean
@@ -48,10 +49,116 @@ $$;
 
 COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
 
+
+CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag max(st_lag_time) FROM _sl.sl_status;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag() IS
+'Returns the worst lag time in our cluster, or NULL if not a replicated installation. Only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION replication_lag(node_id integer) RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl')
+                AND st_received = node_id;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag(integer) IS
+'Returns the lag time of the lpmain replication set to the given node, or NULL if not a replicated installation. The node id parameter can be obtained by calling getlocalnodeid() on the relevant database. This function only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+    BEGIN
+        DELETE FROM DatabaseReplicationLag;
+        INSERT INTO DatabaseReplicationLag (node, lag)
+            SELECT st_received, st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl');
+        RETURN TRUE;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN FALSE;
+        WHEN undefined_table THEN
+            RETURN FALSE;
+    END;
+$$;
+
+COMMENT ON FUNCTION update_replication_lag_cache() IS
+'Updates the DatabaseReplicationLag materialized view.';
+
+
+CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_node_id integer;
+    BEGIN
+        SELECT INTO v_node_id _sl.getlocalnodeid('_sl');
+        RETURN v_node_id;
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION getlocalnodeid() IS
+'Return the replication node id for this node, or NULL if not a replicated installation.';
+
+
+CREATE OR REPLACE FUNCTION activity()
+RETURNS SETOF pg_catalog.pg_stat_activity
+LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+$$
+    SELECT
+        datid, datname, procpid, usesysid, usename,
+        CASE
+            WHEN current_query LIKE '<IDLE>%'
+                OR current_query LIKE 'autovacuum:%'
+                THEN current_query
+            ELSE
+                '<HIDDEN>'
+        END AS current_query,
+        waiting, xact_start, query_start,
+        backend_start, client_addr, client_port
+    FROM pg_catalog.pg_stat_activity;
+$$;
+
+COMMENT ON FUNCTION activity() IS
+'SECURITY DEFINER wrapper around pg_stat_activity allowing unprivileged users to access most of its information.';
+
+
 /* This is created as a function so the same definition can be used with
     many tables
 */
-
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
@@ -167,15 +274,17 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number a
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    from urlparse import urlparse
+    from urlparse import urlparse, uses_netloc
+    # Extend list of schemes that specify netloc. We can drop sftp
+    # with Python 2.5 in the DB.
+    if 'git' not in uses_netloc:
+        uses_netloc.insert(0, 'sftp')
+        uses_netloc.insert(0, 'bzr')
+        uses_netloc.insert(0, 'bzr+ssh')
+        uses_netloc.insert(0, 'ssh') # Mercurial
+        uses_netloc.insert(0, 'git')
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    # urlparse in the stdlib does not correctly parse the netloc from
-    # sftp and bzr+ssh schemes, so we have to manually check those
-    if scheme in ("sftp", "bzr+ssh"):
-        return 1
-    if not (scheme and netloc):
-        return 0
-    return 1
+    return bool(scheme and netloc)
 $$;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
@@ -342,175 +451,15 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
     'Trigger maintaining the PillarName table';
 
 
--- XXX StuartBishop 20080605 bug=237576: The stored procedures
--- maintaining the ValidPersonOrTeamCache materialized view can go
--- once we have made a new baseline. They only still exist to stop the
--- dev database build procedure from breaking.
-CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
-LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
-    # This trigger function could be simplified by simply issuing
-    # one DELETE followed by one INSERT statement. However, we want to minimize
-    # expensive writes so we use this more complex logic.
-    PREF = 4 # Constant indicating preferred email address
-
-    if not SD.has_key("delete_plan"):
-        param_types = ["int4"]
-
-        SD["delete_plan"] = plpy.prepare("""
-            DELETE FROM ValidPersonOrTeamCache WHERE id = $1
-            """, param_types)
-
-        SD["maybe_insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id)
-            SELECT Person.id
-            FROM Person
-                LEFT OUTER JOIN EmailAddress
-                    ON Person.id = EmailAddress.person AND status = %(PREF)d
-                LEFT OUTER JOIN ValidPersonOrTeamCache
-                    ON Person.id = ValidPersonOrTeamCache.id
-            WHERE Person.id = $1
-                AND ValidPersonOrTeamCache.id IS NULL
-                AND merged IS NULL
-                AND (teamowner IS NOT NULL OR EmailAddress.id IS NOT NULL)
-            """ % vars(), param_types)
-
-    new = TD["new"]
-    old = TD["old"]
-
-    # We should always have new, as this is not a DELETE trigger
-    assert new is not None, 'New is None'
-
-    person_id = new["id"]
-    query_params = [person_id] # All the same
-
-    # Short circuit if this is a new person (not team), as it cannot
-    # be valid until a status == 4 EmailAddress entry has been created
-    # (unless it is a team, in which case it is valid on creation)
-    if old is None:
-        if new["teamowner"] is not None:
-            plpy.execute(SD["maybe_insert_plan"], query_params)
-        return
-
-    # Short circuit if there are no relevant changes
-    if (new["teamowner"] == old["teamowner"]
-        and new["merged"] == old["merged"]):
-        return
-
-    # This function is only dealing with updates to the Person table.
-    # This means we do not have to worry about EmailAddress changes here
-
-    if (new["merged"] is not None or new["teamowner"] is None):
-        plpy.execute(SD["delete_plan"], query_params)
-    else:
-        plpy.execute(SD["maybe_insert_plan"], query_params)
-$$;
-
-COMMENT ON FUNCTION mv_validpersonorteamcache_person() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the Person table';
-
-
-CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_emailaddress()
-RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
-    # This trigger function keeps the ValidPersonOrTeamCache materialized
-    # view in sync when updates are made to the EmailAddress table.
-    # Note that if the corresponding person is a team, changes to this table
-    # have no effect.
-    PREF = 4 # Constant indicating preferred email address
-
-    if not SD.has_key("delete_plan"):
-        param_types = ["int4"]
-
-        SD["is_team"] = plpy.prepare("""
-            SELECT teamowner IS NOT NULL AS is_team FROM Person WHERE id = $1
-            """, param_types)
-
-        SD["delete_plan"] = plpy.prepare("""
-            DELETE FROM ValidPersonOrTeamCache WHERE id = $1
-            """, param_types)
-
-        SD["insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id) VALUES ($1)
-            """, param_types)
-
-        SD["maybe_insert_plan"] = plpy.prepare("""
-            INSERT INTO ValidPersonOrTeamCache (id)
-            SELECT Person.id
-            FROM Person
-                JOIN EmailAddress ON Person.id = EmailAddress.person
-                LEFT OUTER JOIN ValidPersonOrTeamCache
-                    ON Person.id = ValidPersonOrTeamCache.id
-            WHERE Person.id = $1
-                AND ValidPersonOrTeamCache.id IS NULL
-                AND status = %(PREF)d
-                AND merged IS NULL
-                -- AND password IS NOT NULL
-            """ % vars(), param_types)
-
-    def is_team(person_id):
-        """Return true if person_id corresponds to a team"""
-        if person_id is None:
-            return False
-        return plpy.execute(SD["is_team"], [person_id], 1)[0]["is_team"]
-
-    class NoneDict:
-        def __getitem__(self, key):
-            return None
-
-    old = TD["old"] or NoneDict()
-    new = TD["new"] or NoneDict()
-
-    #plpy.info("old.id     == %s" % old["id"])
-    #plpy.info("old.person == %s" % old["person"])
-    #plpy.info("old.status == %s" % old["status"])
-    #plpy.info("new.id     == %s" % new["id"])
-    #plpy.info("new.person == %s" % new["person"])
-    #plpy.info("new.status == %s" % new["status"])
-
-    # Short circuit if neither person nor status has changed
-    if old["person"] == new["person"] and old["status"] == new["status"]:
-        return
-
-    # Short circuit if we are not mucking around with preferred email
-    # addresses
-    if old["status"] != PREF and new["status"] != PREF:
-        return
-
-    # Note that we have a constraint ensuring that there is only one
-    # status == PREF email address per person at any point in time.
-    # This simplifies our logic, as we know that if old.status == PREF,
-    # old.person does not have any other preferred email addresses.
-    # Also if new.status == PREF, we know new.person previously did not
-    # have a preferred email address.
-
-    if old["person"] != new["person"]:
-        if old["status"] == PREF and not is_team(old["person"]):
-            # old.person is no longer valid, unless they are a team
-            plpy.execute(SD["delete_plan"], [old["person"]])
-        if new["status"] == PREF and not is_team(new["person"]):
-            # new["person"] is now valid, or unchanged if they are a team
-            plpy.execute(SD["insert_plan"], [new["person"]])
-
-    elif old["status"] == PREF and not is_team(old["person"]):
-        # No longer valid, or unchanged if they are a team
-        plpy.execute(SD["delete_plan"], [old["person"]])
-
-    elif new["status"] == PREF and not is_team(new["person"]):
-        # May now be valid, or unchanged if they are a team.
-        plpy.execute(SD["maybe_insert_plan"], [new["person"]])
-$$;
-
-COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
-
-
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
 RETURNS TRIGGER
 VOLATILE SECURITY DEFINER AS $$
 DECLARE
-    v_old_entry INTEGER;
     v_trash_old BOOLEAN;
 BEGIN
     -- If we are deleting a row, we need to remove the existing
     -- POFileTranslator row and reinsert the historical data if it exists.
-    -- We also treat UPDATEs that change the key (submitter, pofile) the same
+    -- We also treat UPDATEs that change the key (submitter) the same
     -- as deletes. UPDATEs that don't change these columns are treated like
     -- INSERTs below.
     IF TG_OP = 'INSERT' THEN
@@ -519,32 +468,51 @@ BEGIN
         v_trash_old := TRUE;
     ELSE -- UPDATE
         v_trash_old = (
-            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
+            OLD.submitter != NEW.submitter
             );
     END IF;
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
-        SELECT INTO v_old_entry id FROM POFileTranslator
+        -- If so, delete the entry for that change.
+        DELETE FROM POFileTranslator
         WHERE latest_message = OLD.id;
-
-        IF v_old_entry IS NOT NULL THEN
-            -- Delete the old record.
-            DELETE FROM POFileTranslator
-            WHERE POFileTranslator.id = v_old_entry;
-
-            -- Insert a past record if there is one.
+        IF FOUND THEN
+            -- We deleted the entry for somebody's latest contribution.
+            -- Find that person's latest remaining contribution and
+            -- create a new record for that.
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
-            SELECT DISTINCT ON (person, pofile)
-                submitter AS person,
-                pofile,
-                id,
-                greatest(date_created, date_reviewed)
-            FROM TranslationMessage
-            WHERE pofile = OLD.pofile AND submitter = OLD.submitter
-            ORDER BY submitter, pofile, date_created DESC, id DESC;
+            SELECT DISTINCT ON (person, pofile.id)
+                new_latest_message.submitter AS person,
+                pofile.id,
+                new_latest_message.id,
+                greatest(new_latest_message.date_created,
+                         new_latest_message.date_reviewed)
+              FROM POFile
+              JOIN TranslationTemplateItem AS old_template_item
+                ON OLD.potmsgset = old_template_item.potmsgset AND
+                   old_template_item.potemplate = pofile.potemplate AND
+                   pofile.language = OLD.language AND
+                   pofile.variant IS NOT DISTINCT FROM OLD.variant
+              JOIN TranslationTemplateItem AS new_template_item
+                ON (old_template_item.potemplate =
+                     new_template_item.potemplate)
+              JOIN TranslationMessage AS new_latest_message
+                ON new_latest_message.potmsgset =
+                       new_template_item.potmsgset AND
+                   new_latest_message.language = OLD.language AND
+                   new_latest_message.variant IS NOT DISTINCT FROM OLD.variant
+              LEFT OUTER JOIN POfileTranslator AS ExistingEntry
+                ON ExistingEntry.person = OLD.submitter AND
+                   ExistingEntry.pofile = POFile.id
+              WHERE
+                new_latest_message.submitter = OLD.submitter AND
+                ExistingEntry IS NULL
+              ORDER BY new_latest_message.submitter, pofile.id,
+                       new_latest_message.date_created DESC,
+                       new_latest_message.id DESC;
         END IF;
 
         -- No NEW with DELETE, so we can short circuit and leave.
@@ -559,14 +527,28 @@ BEGIN
         SET
             date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
             latest_message = NEW.id
-        WHERE person = NEW.submitter AND pofile = NEW.pofile;
+        FROM POFile, TranslationTemplateItem
+        WHERE person = NEW.submitter AND
+              TranslationTemplateItem.potmsgset=NEW.potmsgset AND
+              TranslationTemplateItem.potemplate=pofile.potemplate AND
+              pofile.language=NEW.language AND
+              pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+              POFileTranslator.pofile = pofile.id;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         END IF;
 
         BEGIN
             INSERT INTO POFileTranslator (person, pofile, latest_message)
-            VALUES (NEW.submitter, NEW.pofile, NEW.id);
+            SELECT DISTINCT ON (NEW.submitter, pofile.id)
+                NEW.submitter, pofile.id, NEW.id
+              FROM TranslationTemplateItem
+              JOIN POFile
+                ON pofile.language = NEW.language AND
+                   pofile.variant IS NOT DISTINCT FROM NEW.variant AND
+                   pofile.potemplate = translationtemplateitem.potemplate
+              WHERE
+                TranslationTemplateItem.potmsgset = NEW.potmsgset;
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
         EXCEPTION WHEN unique_violation THEN
             -- do nothing
@@ -979,3 +961,545 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugAffectsPerson maintaining the Bug.users_affected_count column';
+
+
+CREATE OR REPLACE FUNCTION set_bugtask_date_milestone_set() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- If the inserted row as a milestone set, set date_milestone_set.
+        IF NEW.milestone IS NOT NULL THEN
+            UPDATE BugTask
+            SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE BugTask.id = NEW.id;
+        END IF;
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.milestone IS NULL THEN
+            -- If there was no milestone set, check if the new row has a
+            -- milestone set and set date_milestone_set.
+            IF NEW.milestone IS NOT NULL THEN
+                UPDATE BugTask
+                SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                WHERE BugTask.id = NEW.id;
+            END IF;
+        ELSE
+            IF NEW.milestone IS NULL THEN
+                -- If the milestone was unset, clear date_milestone_set.
+                UPDATE BugTask
+                SET date_milestone_set = NULL
+                WHERE BugTask.id = NEW.id;
+            ELSE
+                -- Update date_milestone_set if the bug task was
+                -- targeted to another milestone.
+                IF NEW.milestone != OLD.milestone THEN
+                    UPDATE BugTask
+                    SET date_milestone_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    WHERE BugTask.id = NEW.id;
+                END IF;
+
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN NULL; -- Ignored - this is an AFTER trigger.
+END;
+$$;
+
+COMMENT ON FUNCTION set_bugtask_date_milestone_set() IS
+'Update BugTask.date_milestone_set when BugTask.milestone is changed.';
+
+CREATE OR REPLACE FUNCTION packageset_inserted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- A new package set was inserted; make it a descendent of itself in
+    -- the flattened package set inclusion table in order to facilitate
+    -- querying.
+    INSERT INTO flatpackagesetinclusion(parent, child)
+      VALUES (NEW.id, NEW.id);
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION packageset_inserted_trig() IS
+'Insert self-referencing DAG edge when a new package set is inserted.';
+
+CREATE OR REPLACE FUNCTION packageset_deleted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    DELETE FROM flatpackagesetinclusion
+      WHERE parent = OLD.id AND child = OLD.id;
+
+    -- A package set was deleted; it may have participated in package set
+    -- inclusion relations in a sub/superset role; delete all inclusion
+    -- relationships in which it participated.
+    DELETE FROM packagesetinclusion
+      WHERE parent = OLD.id OR child = OLD.id;
+    RETURN OLD;
+END;
+$$;
+
+COMMENT ON FUNCTION packageset_deleted_trig() IS
+'Remove any DAG edges leading to/from the deleted package set.';
+
+CREATE OR REPLACE FUNCTION packagesetinclusion_inserted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    DECLARE
+        parent_name text;
+        child_name text;
+        parent_distroseries text;
+        child_distroseries text;
+    BEGIN
+        -- Make sure that the package sets being associated here belong
+        -- to the same distro series.
+        IF (SELECT parent.distroseries != child.distroseries
+            FROM packageset parent, packageset child
+            WHERE parent.id = NEW.parent AND child.id = NEW.child)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            SELECT ds.name INTO parent_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.parent AND ps.distroseries = ds.id;
+            SELECT ds.name INTO child_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.child AND ps.distroseries = ds.id;
+            RAISE EXCEPTION 'Package sets % and % belong to different distro series (to % and % respectively) and thus cannot be associated.', child_name, parent_name, child_distroseries, parent_distroseries;
+        END IF;
+
+        IF EXISTS(
+            SELECT * FROM flatpackagesetinclusion
+            WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            RAISE EXCEPTION 'Package set % already includes %. Adding (% -> %) would introduce a cycle in the package set graph (DAG).', child_name, parent_name, parent_name, child_name;
+        END IF;
+    END;
+    -- A new package set inclusion relationship was inserted i.e. a set M
+    -- now includes another set N as a subset.
+    -- For an explanation of the queries below please see page 4 of
+    -- "Maintaining Transitive Closure of Graphs in SQL"
+    -- http://www.comp.nus.edu.sg/~wongls/psZ/dlsw-ijit97-16.ps
+    CREATE TEMP TABLE tmp_fpsi_new(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+
+    INSERT INTO tmp_fpsi_new (
+        SELECT
+            X.parent AS parent, NEW.child AS child
+        FROM flatpackagesetinclusion X WHERE X.child = NEW.parent
+      UNION
+        SELECT
+            NEW.parent AS parent, X.child AS child
+        FROM flatpackagesetinclusion X WHERE X.parent = NEW.child
+      UNION
+        SELECT
+            X.parent AS parent, Y.child AS child
+        FROM flatpackagesetinclusion X, flatpackagesetinclusion Y
+        WHERE X.child = NEW.parent AND Y.parent = NEW.child
+        );
+    INSERT INTO tmp_fpsi_new(parent, child) VALUES(NEW.parent, NEW.child);
+
+    INSERT INTO flatpackagesetinclusion(parent, child) (
+        SELECT
+            parent, child FROM tmp_fpsi_new
+        EXCEPT
+        SELECT F.parent, F.child FROM flatpackagesetinclusion F
+        );
+
+    DROP TABLE tmp_fpsi_new;
+
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION packagesetinclusion_inserted_trig() IS
+'Maintain the transitive closure in the DAG for a newly inserted edge leading to/from a package set.';
+
+CREATE OR REPLACE FUNCTION packagesetinclusion_deleted_trig() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- A package set inclusion relationship was deleted i.e. a set M
+    -- ceases to include another set N as a subset.
+    -- For an explanation of the queries below please see page 5 of
+    -- "Maintaining Transitive Closure of Graphs in SQL"
+    -- http://www.comp.nus.edu.sg/~wongls/psZ/dlsw-ijit97-16.ps
+    CREATE TEMP TABLE tmp_fpsi_suspect(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+    CREATE TEMP TABLE tmp_fpsi_trusted(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+    CREATE TEMP TABLE tmp_fpsi_good(
+        parent integer NOT NULL,
+        child integer NOT NULL);
+
+    INSERT INTO tmp_fpsi_suspect (
+        SELECT X.parent, Y.child
+        FROM flatpackagesetinclusion X, flatpackagesetinclusion Y
+        WHERE X.child = OLD.parent AND Y.parent = OLD.child
+      UNION
+        SELECT X.parent, OLD.child FROM flatpackagesetinclusion X
+        WHERE X.child = OLD.parent
+      UNION
+        SELECT OLD.parent, X.child FROM flatpackagesetinclusion X
+        WHERE X.parent = OLD.child
+      UNION
+        SELECT OLD.parent, OLD.child
+        );
+
+    INSERT INTO tmp_fpsi_trusted (
+        SELECT parent, child FROM flatpackagesetinclusion
+        EXCEPT
+        SELECT parent, child FROM tmp_fpsi_suspect
+      UNION
+        SELECT parent, child FROM packagesetinclusion psi
+        WHERE psi.parent != OLD.parent AND psi.child != OLD.child
+        );
+
+    INSERT INTO tmp_fpsi_good (
+        SELECT parent, child FROM tmp_fpsi_trusted
+      UNION
+        SELECT T1.parent, T2.child
+        FROM tmp_fpsi_trusted T1, tmp_fpsi_trusted T2
+        WHERE T1.child = T2.parent
+      UNION
+        SELECT T1.parent, T3.child
+        FROM tmp_fpsi_trusted T1, tmp_fpsi_trusted T2, tmp_fpsi_trusted T3
+        WHERE T1.child = T2.parent AND T2.child = T3.parent
+        );
+
+    DELETE FROM flatpackagesetinclusion fpsi
+    WHERE NOT EXISTS (
+        SELECT * FROM tmp_fpsi_good T
+        WHERE T.parent = fpsi.parent AND T.child = fpsi.child);
+
+    DROP TABLE tmp_fpsi_good;
+    DROP TABLE tmp_fpsi_trusted;
+    DROP TABLE tmp_fpsi_suspect;
+
+    RETURN OLD;
+END;
+$$;
+
+COMMENT ON FUNCTION packagesetinclusion_deleted_trig() IS
+'Maintain the transitive closure in the DAG when an edge leading to/from a package set is deleted.';
+
+
+CREATE OR REPLACE FUNCTION update_branch_name_cache() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+DECLARE
+    needs_update boolean := FALSE;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        needs_update := TRUE;
+    ELSIF (NEW.owner_name IS NULL
+        OR NEW.unique_name IS NULL
+        OR OLD.owner_name <> NEW.owner_name
+        OR OLD.unique_name <> NEW.unique_name
+        OR (NEW.target_suffix IS NULL <> OLD.target_suffix IS NULL)
+        OR COALESCE(OLD.target_suffix, '') <> COALESCE(NEW.target_suffix, '')
+        OR OLD.name <> NEW.name
+        OR OLD.owner <> NEW.owner
+        OR COALESCE(OLD.product, -1) <> COALESCE(NEW.product, -1)
+        OR COALESCE(OLD.distroseries, -1) <> COALESCE(NEW.distroseries, -1)
+        OR COALESCE(OLD.sourcepackagename, -1)
+            <> COALESCE(NEW.sourcepackagename, -1)) THEN
+        needs_update := TRUE;
+    END IF;
+
+    IF needs_update THEN   
+        SELECT
+            Person.name AS owner_name,
+            COALESCE(Product.name, SPN.name) AS target_suffix,
+            '~' || Person.name || '/' || COALESCE(
+                Product.name,
+                Distribution.name || '/' || Distroseries.name
+                    || '/' || SPN.name,
+                '+junk') || '/' || NEW.name AS unique_name
+        INTO NEW.owner_name, NEW.target_suffix, NEW.unique_name
+        FROM Person
+        LEFT OUTER JOIN DistroSeries ON NEW.distroseries = DistroSeries.id
+        LEFT OUTER JOIN Product ON NEW.product = Product.id
+        LEFT OUTER JOIN Distribution
+            ON Distroseries.distribution = Distribution.id
+        LEFT OUTER JOIN SourcepackageName AS SPN
+            ON SPN.id = NEW.sourcepackagename
+        WHERE Person.id = NEW.owner;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION update_branch_name_cache() IS
+'Maintain the cached name columns in Branch.';
+
+
+CREATE OR REPLACE FUNCTION mv_branch_person_update() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+DECLARE
+    v_branch RECORD;
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Person.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET owner_name = NEW.name WHERE owner = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION mv_branch_person_update() IS
+'Maintain Branch name cache when Person is modified.';
+
+
+CREATE OR REPLACE FUNCTION mv_branch_product_update() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+DECLARE
+    v_branch RECORD;
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Product.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET target_suffix = NEW.name WHERE product=NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION mv_branch_product_update() IS
+'Maintain Branch name cache when Product is modified.';
+
+
+CREATE OR REPLACE FUNCTION mv_branch_distroseries_update() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Distroseries.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET unique_name = NULL
+        WHERE Branch.distroseries = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION mv_branch_distroseries_update() IS
+'Maintain Branch name cache when Distroseries is modified.';
+
+
+CREATE OR REPLACE FUNCTION mv_branch_distribution_update() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id != NEW.id THEN
+        RAISE EXCEPTION 'Cannot change Distribution.id';
+    END IF;
+    IF OLD.name != NEW.name THEN
+        UPDATE Branch SET unique_name = NULL
+        FROM DistroSeries
+        WHERE Branch.distroseries = Distroseries.id
+            AND Distroseries.distribution = NEW.id;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION mv_branch_distribution_update() IS
+'Maintain Branch name cache when Distribution is modified.';
+
+
+-- Mirror tables for the login service.
+-- We maintain a duplicate of a few tables which are replicated
+-- in a seperate replication set.
+-- Insert triggers
+CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_TeamParticipation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_PersonLocation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Person SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Account (id, openid_identifier)
+    VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- UPDATE triggers
+CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_TeamParticipation
+    SET id = NEW.id,
+        team = NEW.team,
+        person = NEW.person
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_PersonLocation
+    SET id = NEW.id,
+        date_created = NEW.date_created,
+        person = NEW.person,
+        latitude = NEW.latitude,
+        longitude = NEW.longitude,
+        time_zone = NEW.time_zone,
+        last_modified_by = NEW.last_modified_by,
+        date_last_modified = NEW.date_last_modified,
+        visible = NEW.visible,
+        locked = NEW.locked
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_Person
+    SET id = NEW.id,
+        displayname = NEW.displayname,
+        teamowner = NEW.teamowner,
+        teamdescription = NEW.teamdescription,
+        name = NEW.name,
+        language = NEW.language,
+        fti = NEW.fti,
+        defaultmembershipperiod = NEW.defaultmembershipperiod,
+        defaultrenewalperiod = NEW.defaultrenewalperiod,
+        subscriptionpolicy = NEW.subscriptionpolicy,
+        merged = NEW.merged,
+        datecreated = NEW.datecreated,
+        addressline1 = NEW.addressline1,
+        addressline2 = NEW.addressline2,
+        organization = NEW.organization,
+        city = NEW.city,
+        province = NEW.province,
+        country = NEW.country,
+        postcode = NEW.postcode,
+        phone = NEW.phone,
+        homepage_content = NEW.homepage_content,
+        icon = NEW.icon,
+        mugshot = NEW.mugshot,
+        hide_email_addresses = NEW.hide_email_addresses,
+        creation_rationale = NEW.creation_rationale,
+        creation_comment = NEW.creation_comment,
+        registrant = NEW.registrant,
+        logo = NEW.logo,
+        renewal_policy = NEW.renewal_policy,
+        personal_standing = NEW.personal_standing,
+        personal_standing_reason = NEW.personal_standing_reason,
+        mail_resumption_date = NEW.mail_resumption_date,
+        mailing_list_auto_subscribe_policy 
+            = NEW.mailing_list_auto_subscribe_policy,
+        mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
+        visibility = NEW.visibility,
+        verbose_bugnotifications = NEW.verbose_bugnotifications,
+        account = NEW.account
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
+        UPDATE lp_Account
+        SET id = NEW.id, openid_identifier = NEW.openid_identifier
+        WHERE id = OLD.id;
+    END IF;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- Delete triggers
+CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+
+-- Update the (redundant) column bug.latest_patch_uploaded when a
+-- a bug attachment is added or removed or if its type is changed.
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer) RETURNS VOID
+    SECURITY DEFINER LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        UPDATE bug SET latest_patch_uploaded =
+            (SELECT max(message.datecreated)
+                FROM message, bugattachment
+                WHERE bugattachment.message=message.id AND
+                    bugattachment.bug=$1 AND
+                    bugattachment.type=1)
+            WHERE bug.id=$1;
+    END;
+    $$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update() RETURNS trigger
+    SECURITY DEFINER LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        PERFORM bug_update_latest_patch_uploaded(NEW.bug);
+        RETURN NULL; -- Ignored - this is an AFTER trigger
+    END;
+    $$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete() RETURNS trigger
+    SECURITY DEFINER LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        PERFORM bug_update_latest_patch_uploaded(OLD.bug);
+        RETURN NULL; -- Ignored - this is an AFTER trigger
+    END;
+    $$;

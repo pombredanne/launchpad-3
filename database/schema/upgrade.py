@@ -1,12 +1,15 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0403
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Apply all outstanding schema patches to an existing launchpad database
 """
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath # Sort PYTHONPATH
 
 from cStringIO import StringIO
@@ -77,7 +80,7 @@ def apply_patches_replicated():
     replication.helpers.sync(timeout=600)
 
     outf = StringIO()
-    
+
     # Start a transaction block.
     print >> outf, "try {"
 
@@ -89,7 +92,7 @@ def apply_patches_replicated():
         assert os.path.exists(full_path), "%s doesn't exist." % full_path
         print >> outf, dedent("""\
             execute script (
-                set id = @lpmain_set_id, event node = @master_id,
+                set id = @lpmain_set, event node = @master_node,
                 filename='%s'
                 );
             """ % full_path)
@@ -119,8 +122,9 @@ def apply_patches_replicated():
     # Apply comments.sql. Default slonik refuses to run it as one
     # 'execute script' because it contains too many statements, so chunk
     # it (we don't want to rebuild slony with a higher limit).
+    comments_path = os.path.join(os.path.dirname(__file__), 'comments.sql')
     comments = re.findall(
-            "(?ms).*?'\s*;\s*$", open('comments.sql', 'r').read())
+            "(?ms).*?'\s*;\s*$", open(comments_path, 'r').read())
     while comments:
         comment_file = NamedTemporaryFile(prefix="comments", suffix=".sql")
         print >> comment_file, '\n'.join(comments[:1000])
@@ -190,7 +194,7 @@ def apply_patches_replicated():
         print >> outf, dedent("""\
             try {
                 create set (
-                    id = @holding_set_id, origin = @master_id,
+                    id = @holding_set, origin = @master_node,
                     comment = 'Temporary set to merge'
                     );
             """)
@@ -204,7 +208,7 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Adding %s to holding set for lpmain merge.';
                 set add table (
-                    set id = @holding_set_id, origin = @master_id, id=%d,
+                    set id = @holding_set, origin = @master_node, id=%d,
                     fully qualified name = '%s',
                     comment = '%s'
                     );
@@ -218,36 +222,43 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Adding %s to holding set for lpmain merge.';
                 set add sequence (
-                    set id = @holding_set_id, origin = @master_id, id=%d,
+                    set id = @holding_set, origin = @master_node, id=%d,
                     fully qualified name = '%s',
                     comment = '%s'
                     );
                 """ % (seq, next_id, seq, seq))
             next_id += 1
 
-        # Subscribe the holding set to the replica.
+        print >> outf, dedent("""\
+            } on error {
+                echo 'Failed to create holding set! Aborting.';
+                exit 1;
+                }
+            """)
+
+        # Subscribe the holding set to all replicas.
         # TODO: Only subscribe the set if not already subscribed.
         # Close the transaction and sync. Important, or MERGE SET will fail!
         # Merge the sets.
         # Sync.
         # Drop the holding set.
+        for slave_node in replication.helpers.get_slave_nodes(con):
+            print >> outf, dedent("""\
+                echo 'Subscribing holding set to @node%d_node.';
+                subscribe set (
+                    id=@holding_set,
+                    provider=@master_node, receiver=@node%d_node, forward=yes);
+                echo 'Waiting for sync';
+                sync (id=1);
+                wait for event (
+                    origin=ALL, confirmed=ALL, wait on=@master_node, timeout=0
+                    );
+                """ % (slave_node.node_id, slave_node.node_id))
+
         print >> outf, dedent("""\
-            echo 'Subscribing holding set to slave.';
-            subscribe set (
-                id=@holding_set_id, provider=@master_id, receiver=@slave1_id,
-                forward=yes);
-            } on error {
-                echo 'Failed to create or subscribe holding set! Aborting.';
-                exit 1;
-                }
-            echo 'Waiting for sync';
-            sync (id=1);
-            wait for event (
-                origin=ALL, confirmed=ALL, wait on=@master_id
-                );
             echo 'Merging holding set to lpmain';
             merge set (
-                id=@lpmain_set_id, add id=@holding_set_id, origin=@master_id
+                id=@lpmain_set, add id=@holding_set, origin=@master_node
                 );
             """)
 
@@ -255,7 +266,6 @@ def apply_patches_replicated():
         if not replication.helpers.execute_slonik(outf.getvalue()):
             log.fatal("Aborting.")
         replication.helpers.sync(timeout=0)
-
 
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,
@@ -283,13 +293,13 @@ def apply_patches_replicated():
             if tab_id is not None:
                 print >> sk, dedent("""\
                     echo 'Removing %s from replication';
-                    set drop table (origin=@master_id, id=%d);
+                    set drop table (origin=@master_node, id=%d);
                     """ % (tab_name, tab_id))
             print >> sql, "DROP TABLE %s;" % tab_name
         sql.flush()
         print >> sk, dedent("""\
             execute script (
-                set id=@lpmain_set_id, event node=@master_id,
+                set id=@lpmain_set, event node=@master_node,
                 filename='%s'
                 );
             }
@@ -327,13 +337,13 @@ def apply_patches_replicated():
             if seq_id is not None:
                 print >> sk, dedent("""\
                     echo 'Removing %s from replication';
-                    set drop sequence (origin=@master_id, id=%d);
+                    set drop sequence (origin=@master_node, id=%d);
                     """ % (seq_name, seq_id))
             print >> sql, "DROP SEQUENCE %s;" % seq_name
         sql.flush()
         print >> sk, dedent("""\
             execute script (
-                set id=@lpmain_set_id, event node=@master_id,
+                set id=@lpmain_set, event node=@master_node,
                 filename='%s'
                 );
             }

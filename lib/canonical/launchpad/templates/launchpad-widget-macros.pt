@@ -82,5 +82,45 @@
     <div tal:condition="error" tal:content="structure error" />
   </div>
 </metal:display_raw_widget>
+
+<metal:yui2calendar-dependencies define-macro="yui2calendar-dependencies">
+    <tal:comment replace="nothing">
+        Javascript and CSS needed for using the yui2calendar-based
+        Date and DateTime widgets.
+    </tal:comment>
+    <tal:yui2resources
+      tal:define="yui2 string:${icingroot}/yui_2.7.0b/build;">
+
+        <tal:devmode condition="devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/yahoo/yahoo.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/event/event.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/dom/dom.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/calendar/calendar.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${lp_js}/lp/calendar.js"></script>
+        </tal:devmode>
+        <tal:nondevmode condition="not: devmode">
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/yahoo-dom-event/yahoo-dom-event.js"></script>
+        <script type="text/javascript"
+                tal:attributes="src string:${yui2}/calendar/calendar-min.js"></script>
+        </tal:nondevmode>
+
+        <link rel="stylesheet" type="text/css"
+            tal:attributes="href
+            string:${yui2}/calendar/assets/skins/sam/calendar.css" />
+    </tal:yui2resources>
+
+    <script type="text/javascript">
+        YUI().use('node', 'lp.calendar', function(Y) {
+            Y.lp.setup_calendar_widgets();
+        });
+    </script>
+</metal:yui2calendar-dependencies>
+
 </tal:root>
 

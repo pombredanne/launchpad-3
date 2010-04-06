@@ -1,10 +1,17 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """tales.py doctests."""
 
-
+from textwrap import dedent
 import unittest
 
 from zope.testing.doctestunit import DocTestSuite
+
+from canonical.launchpad.testing.pages import find_tags_by_class
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import TestCase
 
 
 def test_requestapi():
@@ -72,7 +79,7 @@ def test_cookie_scope():
 def test_dbschemaapi():
     """
     >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
-    >>> from canonical.launchpad.interfaces.branch import BranchType
+    >>> from lp.code.enums import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass
 
@@ -87,12 +94,12 @@ def test_dbschemaapi():
     ...
     KeyError: 99
 
-    Using a dbschema name that doesn't exist should give a TraversalError
+    Using a dbschema name that doesn't exist should give a LocationError
 
     >>> DBSchemaAPI(99).traverse('NotADBSchema', [])
     Traceback (most recent call last):
     ...
-    TraversalError: 'NotADBSchema'
+    LocationError: 'NotADBSchema'
 
     """
 
@@ -182,9 +189,85 @@ def test_break_long_words():
     """
 
 
+class TestDiffFormatter(TestCase):
+    """Test the string formtter fmt:diff."""
+    layer = DatabaseFunctionalLayer
+
+    def test_emptyString(self):
+        # An empty string gives an empty string.
+        self.assertEqual(
+            '', FormattersAPI('').format_diff())
+
+    def test_almostEmptyString(self):
+        # White space doesn't count as empty, and is formtted.
+        self.assertEqual(
+            '<table class="diff"><tr><td class="line-no">1</td>'
+            '<td class="text"> </td></tr></table>',
+            FormattersAPI(' ').format_diff())
+
+    def test_format_unicode(self):
+        # Sometimes the strings contain unicode, those should work too.
+        self.assertEqual(
+            u'<table class="diff"><tr><td class="line-no">1</td>'
+            u'<td class="text">Unicode \u1010</td></tr></table>',
+            FormattersAPI(u'Unicode \u1010').format_diff())
+
+    def test_cssClasses(self):
+        # Different parts of the diff have different css classes.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        html = FormattersAPI(diff).format_diff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1','2','3','4','5','6','7','8','9'],
+            [tag.renderContents() for tag in line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-comment text',
+             'diff-comment text'],
+            [str(tag['class']) for tag in text])
+
+    def test_config_value_limits_line_count(self):
+        # The config.diff.max_line_format contains the maximum number of lines
+        # to format.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        self.pushConfig("diff", max_format_lines=3)
+        html = FormattersAPI(diff).format_diff()
+        line_count = html.count('<td class="line-no">')
+        self.assertEqual(3, line_count)
+
+
 def test_suite():
-    """Return this module's doctest Suite. Unit tests are not run."""
-    suite = DocTestSuite()
+    """Return this module's doctest Suite. Unit tests are also run."""
+    suite = unittest.TestSuite()
+    suite.addTests(DocTestSuite())
+    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 
 

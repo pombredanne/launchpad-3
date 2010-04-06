@@ -1,0 +1,71 @@
+= FTPMASTER Tools =
+
+This test commits to the test database in subprocesses and so needs to
+force the DatabaseLayer to fully tear down and restore the database
+after this test.
+
+  >>> from canonical.testing.layers import DatabaseLayer
+  >>> DatabaseLayer.force_dirty_database()
+
+Queue Tool is a script designed to handle queue content.
+This test  will check its output, since the script itself would
+open a new connection, let's invoke it in dry-run mode.
+
+  >>> import subprocess
+  >>> import os
+  >>> import sys
+  >>> from canonical.config import config
+
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "queue")
+
+INFO
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-s", "breezy-autotest", "info"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info"
+  Listing ubuntu/breezy-autotest (NEW) 6/6
+  ---------|----|----------------------|----------------------|---------------
+         7 | -- | netapplet-1.0.0.tar. | -                    | ...
+           | * netapplet-1.0.0.tar.gz Format: DDTP_TARBALL
+         6 | -- | netapplet-1.0.0.tar. | -                    | ...
+           | * netapplet-1.0.0.tar.gz Format: DIST_UPGRADER
+         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
+           | * alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
+         3 | S- | netapplet            | 0.99.6-1             | ...
+           | * netapplet/0.99.6-1 Component: main Section: web
+         2 | -B | pmount (i386)        | 0.1-1                | ...
+           | N pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+         1 | -B | mozilla-firefox (i38 | 0.9                  | ...
+           | N mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
+  ---------|----|----------------------|----------------------|---------------
+                                                               6/6
+							       total
+
+
+Check the custom uploads presentation:
+
+  >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
+  ...                             "-s", "breezy-autotest-updates", "info"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue unapproved
+  Running: "info"
+  Listing ubuntu/breezy-autotest-updates (UNAPPROVED) 1/1
+  ---------|----|----------------------|----------------------|---------------
+         5 | -- | netapplet-1.0.0.tar. | -                    | ...
+           | * netapplet-1.0.0.tar.gz Format: ROSETTA_TRANSLATIONS
+  ---------|----|----------------------|----------------------|---------------
+  1/1 total
+  <BLANKLINE>
+

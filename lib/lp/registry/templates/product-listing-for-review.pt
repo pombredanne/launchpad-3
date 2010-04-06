@@ -1,0 +1,48 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+  <tr>
+    <td style="white-space: nowrap"
+        tal:content="structure context/fmt:link" />
+    <tal:XXX condition="nothing">
+     # XXX: Edwin Grubbs 2008-06-17 bug=240759
+     # The @@/yes and @@/no img tags could be handled by a tales formatter.
+    </tal:XXX>
+    <td style="text-align: center">
+      <img src="/@@/yes" tal:condition="context/active"/>
+      <img src="/@@/no" tal:condition="not: context/active"/>
+    </td>
+    <td style="text-align: center">
+      <img src="/@@/yes" tal:condition="context/license_reviewed"/>
+      <img src="/@@/no" tal:condition="not: context/license_reviewed"/>
+    </td>
+    <td style="text-align: center">
+      <img src="/@@/yes" tal:condition="context/license_approved"/>
+      <img src="/@@/no" tal:condition="not: context/license_approved"/>
+    </td>
+    <td style="white-space: nowrap">
+      <a tal:replace="structure context/owner/fmt:link">Foo Bar</a>
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
+    </td>
+    <td style="white-space: nowrap">
+      <span tal:condition="not: context/licenses">None<br/></span>
+      <tal:loop repeat="license context/licenses">
+        <tal:title tal:replace="license/title"/><br/>
+      </tal:loop>
+      (<a tal:attributes="href string:${context/fmt:url}/+review-license"
+        >Review</a>)
+    </td>
+    <td tal:content="structure context/license_info/fmt:shorten/80/fmt:text-to-html">
+        License info goes here
+    </td>
+    <td tal:condition="context/commercial_subscription"
+        tal:content="context/commercial_subscription/date_expires/fmt:date" />
+    <td tal:condition="not: context/commercial_subscription" />
+    <td tal:content="context/reviewer_whiteboard/fmt:shorten/80" />
+  </tr>
+</tal:root>

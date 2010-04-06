@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Support for browser-cookie sessions."""
 
 __metaclass__ = type
@@ -9,8 +11,9 @@ from zope.session.http import CookieClientIdManager
 
 from storm.zope.interfaces import IZStorm
 
+from lazr.uri import URI
+
 from canonical.config import config
-from canonical.launchpad.webapp.url import urlparse
 
 
 SECONDS = 1
@@ -38,6 +41,7 @@ def get_cookie_domain(request_domain):
             return dotted_domain
     return None
 
+ANNOTATION_KEY = 'canonical.launchpad.webapp.session.sid'
 
 class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
@@ -49,6 +53,23 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         self.cookieLifetime = 1 * YEARS
         self._secret = None
 
+    def getClientId(self, request):
+        sid = self.getRequestId(request)
+        if sid is None:
+            # XXX gary 21-Oct-2008 bug 285803
+            # Our session data container (see pgsession.py in the same
+            # directory) explicitly calls setRequestId the first time a
+            # __setitem__ is called. Therefore, we only generate one here,
+            # and do not set it. This keeps the session id out of anonymous
+            # sessions.  Unfortunately, it is also Rube-Goldbergian: we should
+            # consider switching to our own session/cookie machinery that
+            # suits us better.
+            sid = request.annotations.get(ANNOTATION_KEY)
+            if sid is None:
+                sid = self.generateUniqueId()
+                request.annotations[ANNOTATION_KEY] = sid
+        return sid
+
     def _get_secret(self):
         # Because our CookieClientIdManager is not persistent, we need to
         # pull the secret from some other data store - failing to do this
@@ -57,7 +78,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # Secret is looked up here rather than in __init__, because
         # we can't be sure the database connections are setup at that point.
         if self._secret is None:
-            store = getUtility(IZStorm).get('session')
+            store = getUtility(IZStorm).get('session', 'launchpad-session:')
             result = store.execute("SELECT secret FROM secret")
             self._secret = result.get_one()[0]
         return self._secret
@@ -79,22 +100,19 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
-        # XXX: SteveAlexander, 2007-04-01.
-        #      This is on the codepath where anon users get a session cookie
-        #      set unnecessarily.
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)
-        protocol, request_domain = urlparse(request.getURL())[:2]
+        uri = URI(request.getURL())
 
         # Set secure flag on cookie.
-        if protocol != 'http':
+        if uri.scheme != 'http':
             cookie['secure'] = True
         else:
             cookie['secure'] = False
 
         # Set domain attribute on cookie if vhosting requires it.
-        cookie_domain = get_cookie_domain(request_domain)
+        cookie_domain = get_cookie_domain(uri.host)
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 

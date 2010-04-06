@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for searching and working with results."""
@@ -11,7 +13,10 @@ __all__ = [
     'PageMatches',
     ]
 
-import cElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import cElementTree as ET
 import urllib
 from urlparse import urlunparse
 
@@ -19,9 +24,10 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
-    ISearchResult, ISearchResults, ISearchService, GoogleWrongGSPVersion)
+    ISearchResult, ISearchResults, ISearchService, GoogleResponseError,
+    GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
-from canonical.launchpad.webapp.uri import URI
+from lazr.uri import URI
 
 
 class PageMatch:
@@ -249,9 +255,13 @@ class GoogleSearchService:
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).
+        :raise: `GoogleResponseError` if the xml is incomplete.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
-        gsp_doc = ET.fromstring(gsp_xml)
+        try:
+            gsp_doc = ET.fromstring(gsp_xml)
+        except SyntaxError:
+            raise GoogleResponseError("The response was incomplete, no xml.")
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
         try:
@@ -292,9 +302,9 @@ class GoogleSearchService:
                 continue
             summary = summary.replace('<br>', '')
             page_matches.append(PageMatch(title, url, summary))
-        if len(page_matches) == 0:
-            # No viable page matches could be found in the set; the
-            # XML may be the wrong version.
+        if len(page_matches) == 0 and total > 20:
+            # No viable page matches could be found in the set and there
+            # are more possible matches; the XML may be the wrong version.
             raise GoogleWrongGSPVersion(
                 "Could not get any PageMatches from the GSP XML response.")
         return PageMatches(page_matches, start, total)

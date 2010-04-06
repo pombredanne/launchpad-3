@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns:browser="http://namespaces.zope.org/browser"
   i18n_domain="launchpad">
@@ -30,7 +34,7 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.INominationsReviewTableBatchNavigator"
-      class="canonical.launchpad.browser.NominationsReviewTableBatchNavigatorView"
+      class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
       name="+table-view-without-navlinks"
       template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
       permission="zope.Public" />

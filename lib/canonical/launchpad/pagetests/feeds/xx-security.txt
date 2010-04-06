@@ -31,7 +31,11 @@ There should be zero entries in these feeds, since all the bugs are private.
     []
 
     >>> from canonical.config import config
-    >>> config.launchpad.is_bug_search_feed_active = True
+    >>> bug_search_feed_data = """
+    ...     [launchpad]
+    ...     is_bug_search_feed_active: True
+    ...     """
+    >>> config.push('bug_search_feed_data', bug_search_feed_data)
     >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...        'field.searchtext=&search=Search+Bug+Reports&'
     ...        'field.scope=all&field.scope.target=')
@@ -91,4 +95,4 @@ these HTML feeds, since all the bugs are private.
 
 Revert configuration change after tests are finished.
 
-    >>> config.launchpad.is_bug_search_feed_active = False
+    >>> config_data = config.pop('bug_search_feed_data')

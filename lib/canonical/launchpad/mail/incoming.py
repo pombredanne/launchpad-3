@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Functions dealing with mails coming into Launchpad."""
 
 # pylint: disable-msg=W0631
@@ -7,8 +9,8 @@ __metaclass__ = type
 
 from logging import getLogger
 from cStringIO import StringIO as cStringIO
-from email.Utils import getaddresses, parseaddr
-import email.Errors
+from email.utils import getaddresses, parseaddr
+import email.errors
 import re
 import sys
 
@@ -27,7 +29,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
-from canonical.launchpad.mail.signedmessage import signed_message_from_string
+from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.librarian.interfaces import UploadFailed
@@ -103,7 +105,7 @@ def authenticateEmail(mail):
         # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
 
-    for gpgkey in person.gpgkeys:
+    for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == sig.fingerprint:
             break
     else:
@@ -175,6 +177,12 @@ def handleMail(trans=transaction):
                 msg)
         trans.commit()
 
+    def _handle_user_error(error, mail):
+        mailbox.delete(mail_id)
+        send_process_error_notification(
+            mail['From'], 'Submit Request Failure', str(error), mail)
+        trans.commit()
+
     log = getLogger('process-mail')
     mailbox = getUtility(IMailBox)
     log.info("Opening the mail box.")
@@ -238,14 +246,17 @@ def handleMail(trans=transaction):
                         "Got a multipart/report message.",
                         file_alias_url, notify=False)
                     continue
+                if 'precedence' in mail:
+                    _handle_error(
+                        "Got a message with a precedence header.",
+                        file_alias_url, notify=False
+                        )
+                    continue
 
                 try:
                     principal = authenticateEmail(mail)
                 except InvalidSignature, error:
-                    _handle_error(
-                        "Invalid signature for %s:\n    %s" % (mail['From'],
-                                                               str(error)),
-                        file_alias_url)
+                    _handle_user_error(error, mail)
                     continue
                 except InactiveAccount:
                     _handle_error(
@@ -254,19 +265,13 @@ def handleMail(trans=transaction):
                     continue
 
                 # Extract the domain the mail was sent to. Mails sent to
-                # Launchpad should have an X-Original-To header.
-                if mail.has_key('X-Original-To'):
-                    addresses = [mail['X-Original-To']]
-                else:
-                    log = getLogger('canonical.launchpad.mail')
-                    log.warn(
-                        "No X-Original-To header was present in email: %s" %
-                         file_alias_url)
-                    # Process all addresses found as a fall back.
-                    cc = mail.get_all('cc') or []
-                    to = mail.get_all('to') or []
-                    names_addresses = getaddresses(to + cc)
-                    addresses = [addr for name, addr in names_addresses]
+                # Launchpad should have an X-Original-To header, but
+                # it has an incorrect address.
+                # Process all addresses found as a fall back.
+                cc = mail.get_all('cc') or []
+                to = mail.get_all('to') or []
+                names_addresses = getaddresses(to + cc)
+                addresses = [addr for name, addr in names_addresses]
 
                 handler = None
                 for email_addr in addresses:

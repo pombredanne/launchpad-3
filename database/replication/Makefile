@@ -1,38 +1,204 @@
-HERE=`pwd`
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# This makefile is used for two task:
+#
+#  - Build a replicated development environment
+#  - Build and replicate the staging database
+#
+# To build a replicated development environment:
+#
+#  $ make -C database/replication devsetup
+#  $ make run
+#
+# To test the staging rebuild script:
+#
+#  $ cd database/replication
+#  $ pg_dump --format=c launchpad_dev > launchpad.dump
+#  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
+#  $ make stagingswitch STAGING_CONFIG=dev-staging
+#
+# To restore a dogfood database:
+#
+#  $ cd database/replication
+#  $ make dogfood DOGFOOD_DBNAME=launchpad_dogfood DOGFOOD_DUMP=launchpad.dump
+#
 
-DEVCONFIG=replicated-development
-LAG=10 seconds
+# This used to be 10 seconds, so we always ran staging lagged to detect
+# replication glitches more easily. However, this does not play well
+# with DBLoopTuner, as it correctly blocks when it detects lag.
+# We should put this back when DBLoopTuner is more intelligent, perhaps
+# pulling the allowable lag setting from a config file.
+LAG=0 seconds
+
+DEV_CONFIG=replicated-development
+NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
+STAGING_CONFIG=staging # For swapping fresh db into place.
+STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
+STAGING_TABLESPACE=pg_default # 'pg_default' for default
+DOGFOOD_DBNAME=launchpad_dogfood
+DOGFOOD_DUMP=launchpad.dump
+
+_CONFIG=overridden-on-command-line
+_SLAVE_TABLESPACE=pg_default
+
+PGMASSACRE=../../utilities/pgmassacre.py
+
+# Turn off silencing for now so we details on staging deployments.
+#SHHH=../../utilities/shhh.py
+SHHH=
+
+AUTHDB_TABLES=\
+	account accountpassword authkoken emailaddress \
+	openidassociation openidauthorization openidnonce openidrpsummary
 
 default:
 	echo Usage: make [start|stop|restart]
 
 start:
-	LPCONFIG=${DEVCONFIG} ./slon_ctl.py --lag="${LAG}" start
+	./slon_ctl.py --lag="${LAG}" start
 
 stop:
-	LPCONFIG=${DEVCONFIG} ./slon_ctl.py stop
+	./slon_ctl.py stop
 
 restart: stop start
 
 devsetup:
+	make _prelim LPCONFIG=${DEV_CONFIG} \
+	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
+	
+	# Build the master database
+	LPCONFIG=${DEV_CONFIG} make -C ../schema
+	
+	# Replicate it
+	make _replicate LPCONFIG=${DEV_CONFIG} \
+	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
+	
+	# Replicate it again, so we can test with multiple slaves.
+	-${PGMASSACRE} launchpad_dev_slave2
+	createdb --encoding=UTF8 launchpad_dev_slave2
+	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py start \
+		 node3_node 'dbname=launchpad_dev_slave2 user=slony'
+	LPCONFIG=${DEV_CONFIG} ./new-slave.py 3 launchpad_dev_slave2
+	LPCONFIG=${DEV_CONFIG} ../schema/security.py -d launchpad_dev_slave2
+	
+	# Regenerate the preamble for manual slonik(1) usage.
+	LPCONFIG=${DEV_CONFIG} ./preamble.py > preamble.sk
+
+	# Restart slon daemons with default lag setting.
+	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py stop
+	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py --lag="${LAG}" start
+
+
+# Build _new staging databases from a production dump.
+stagingsetup:
+	make _prelim LPCONFIG=${NEW_STAGING_CONFIG} \
+	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
+	    LAG="0 seconds"
+	# Create the DB with the desired default tablespace.
+	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
+	    lpmain_staging_new
+	# Restore the DB schema. We need to restore permissions, despite
+	# later running security.py, to pull in permissions granted on
+	# production to users not maintained by security.py.
+	pg_restore --dbname=lpmain_staging_new \
+	    --no-owner --exit-on-error ${STAGING_DUMP}
+	psql -q -d lpmain_staging_new -f authdb_drop.sql
+	psql -q -d lpmain_staging_new -f authdb_create.sql \
+	    2>&1 | grep -v _sl || true
+	# Restore the authdb data.
+	for table in ${AUTHDB_TABLES}; do \
+	    pg_restore --dbname=lpmain_staging_new \
+		--no-acl --no-owner --disable-triggers --data-only \
+		--table=$$table ${STAGING_DUMP}; \
+	done
+	psql -q -d lpmain_staging_new -f authdb_sequences.sql
+	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
+	# Slony-I installed isn't usable without this step.
+	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
+	# Setup replication
+	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
+	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
+	    _SLAVE_TABLESPACE=${STAGING_TABLESPACE}
+
+# Switch the _new staging databases into place.
+stagingswitch:
+	# Stop Slony-I daemons - don't confuse the poor darlings.
+	-LPCONFIG=${NEW_STAGING_CONFIG} ./slon_ctl.py stop
+	-LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py stop
+	# Kill the existing staging database if it exists.
+	-${PGMASSACRE} lpmain_staging
+	-${PGMASSACRE} lpmain_staging_slave
+	# Rename the newly build staging databases.
+	psql -d template1 -c \
+	    "ALTER DATABASE lpmain_staging_new RENAME TO lpmain_staging;"
+	psql -d template1 -c "\
+	    ALTER DATABASE lpmain_staging_slave_new \
+	    RENAME TO lpmain_staging_slave;"
+	# Fix the paths to match.
+	psql -d lpmain_staging -U slony -c \
+	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
+	psql -d lpmain_staging_slave -U slony -c \
+	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
+	# Start the slon daemons, with requested lag.
+	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
+
+dogfood:
+	createdb --encoding UTF8 ${DOGFOOD_DBNAME}
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --exit-on-error ${DOGFOOD_DUMP}
+	psql -q -d ${DOGFOOD_DBNAME} -f authdb_drop.sql
+	psql -q -d ${DOGFOOD_DBNAME} -f authdb_create.sql \
+	    2>&1 | grep -v _sl || true
+	for table in ${AUTHDB_TABLES}; do \
+	    pg_restore --dbname=${DOGFOOD_DBNAME} \
+		--no-acl --no-owner --disable-triggers --data-only \
+		--table=$$table ${DOGFOOD_DUMP}; \
+	done
+	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
+	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
+	../schema/fti.py -d ${DOGFOOD_DBNAME}
+	../schema/security.py -d ${DOGFOOD_DBNAME}
+
+_prelim:
+	@echo LPCONFIG currently ${LPCONFIG}
 	# Create the slony PostgreSQL superuser if necessary.
-	createuser --superuser slony || true
+	-createuser --superuser slony
 	# Stop the slon daemons and wait a bit for connections to drop.
-	LPCONFIG=${DEVCONFIG} make stop
+	-./slon_ctl.py stop
 	sleep 5
 	# Drop any existing databases if they exist
-	dropdb launchpad_dev || true
-	dropdb launchpad_dev_slave1 || true
-	# Build the master database
-	LPCONFIG=${DEVCONFIG} make -C ../schema
-	# Create the slave database, empty at this point.
-	createdb --encoding=UTF8 launchpad_dev_slave1
-	# Start the slon daemons with 0 lag for quick setup.
-	LPCONFIG=${DEVCONFIG} make start LAG="0 seconds"
-	# Generate a preamble for manual slonik(1) usage.
-	LPCONFIG=${DEVCONFIG} ./preamble.py > preamble.sk
-	# Turn the slave into a replica.
-	LPCONFIG=${DEVCONFIG} ./initialize.py
+	${PGMASSACRE} ${_MASTER}
+	${PGMASSACRE} ${_SLAVE}
+
+_replicate:
+	@echo LPCONFIG currently ${LPCONFIG}
+	# Start the slon daemon for the master.
+	./slon_ctl.py start \
+		 node1_node "dbname=${_MASTER} user=slony"
+	# Initialize the cluster and create replication sets.
+	./initialize.py
+	# Create the soon-to-be-slave database, empty at this point.
+	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
+	# Start the slon daemon for the slave
+	./slon_ctl.py start node2_node "dbname=${_SLAVE} user=slony"
+	# Setup the slave
+	./new-slave.py 2 "dbname=${_SLAVE}"
+	# Upgrade all databases in the cluster and reset security.
+	@echo Running upgrade.py `date`
+	${SHHH} ../schema/upgrade.py
+	@echo Running fti.py `date`
+	${SHHH} ../schema/fti.py
+	@echo Running security.py `date`
+	./slon_ctl.py stop # security.py can deadlock with slony
+	${SHHH} ../schema/security.py --cluster -U slony
+	./slon_ctl.py --lag="0 seconds" start
+	# Migrate tables to the authdb replication set, creating the set
+	# and subscribing nodes to it as necessary.
+	./populate_auth_replication_set.py -U slony
 	# Restart slon daemons with default lag setting.
-	LPCONFIG=${DEVCONFIG} make restart LAG="${LAG}"
+	./slon_ctl.py stop
+	./slon_ctl.py --lag="${LAG}" start
+	# Generate a preamble for manual slonik(1) usage.
+	./preamble.py > preamble.sk
 

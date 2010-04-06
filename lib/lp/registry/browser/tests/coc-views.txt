@@ -1,0 +1,12 @@
+======================
+Codes of conduct views
+======================
+
+The PersonCodeOfConductEditView controls ~person/+codesofconduct.  It displays
+the person's name in the page label.
+
+    >>> login('admin@canonical.com')
+    >>> geddy = factory.makePerson(displayname='Geddy Lee')
+    >>> view = create_initialized_view(geddy, '+codesofconduct')
+    >>> print view.label
+    Codes of Conduct for Geddy Lee

@@ -1,0 +1,42 @@
+<specification-give-feedback
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+
+  <div metal:fill-slot="main">
+    <div class="top-portlet">
+      <h2>Select the requests which you wish to remove from your queue</h2>
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div metal:fill-slot="extra_info">
+          <p>
+            Select the items that you have addressed in this
+            blueprint, and click "Save changes" to clear those
+            feedback requests from your queue.
+          </p>
+        </div>
+        <div metal:fill-slot="widgets">
+          <table class="form">
+            <tbody>
+              <tr tal:repeat="request view/requests">
+                <td colspan="2">
+                  <input type="checkbox" name="name"
+                         tal:attributes="value request/requester/name;
+                                         id string:req_${request/requester/name}" />
+                  <label tal:content="request/requester/displayname"
+                         tal:attributes="for string:req_${request/requester/name}" />
+                  <div tal:condition="request/queuemsg"
+                       tal:content="request/queuemsg"
+                       class="lesser" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</specification-give-feedback>

@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
 # This modules uses relative imports.
 # pylint: disable-msg=W0403
 
@@ -10,6 +13,7 @@ __metaclass__ = type
 
 import _pythonpath
 
+from distutils.version import LooseVersion
 import sys
 import os.path
 from optparse import OptionParser
@@ -284,9 +288,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
 
     # tsearch2 is out-of-the-box in 8.3+
-    v83 = get_pgversion(con).startswith('8.3')
-
-    assert v83, 'This script only supports PostgreSQL 8.3'
+    required = LooseVersion('8.3.0')
+    assert get_pgversion(con) >= required, (
+        'This script only supports PostgreSQL 8.3+')
 
     schema_exists = bool(execute(
         con, "SELECT COUNT(*) FROM pg_namespace WHERE nspname='ts2'",
@@ -382,6 +386,10 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Any remaining - characters are spurious
         query = query.replace('-','')
 
+        # Remove unpartnered bracket on the left and right
+        query = re.sub(r"(?ux) ^ ( [^(]* ) \)", r"(\1)", query)
+        query = re.sub(r"(?ux) \( ( [^)]* ) $", r"(\1)", query)
+
         # Remove spurious brackets
         query = re.sub(r"(?u)\(([^\&\|]*?)\)", r" \1 ", query)
         ## plpy.debug('5 query is %s' % repr(query))
@@ -428,7 +436,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ## plpy.debug('11 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.
-        query = re.sub(r"(?u)\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
+        query = re.sub(r"(?ux) \s* ( [\&\|\!] ) [\s\&\|]+", r"\1", query)
         ## plpy.debug('12 query is %s' % repr(query))
 
         # Leading & or |
@@ -601,18 +609,13 @@ def needs_refresh(con, table, columns):
 
 def get_pgversion(con):
     rows = execute(con, r"show server_version", results=True)
-    return rows[0][0]
+    return LooseVersion(rows[0][0])
 
 
 def get_tsearch2_sql_path(con):
-    pgversion = get_pgversion(con)
-    if pgversion.startswith('8.2.'):
-        path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.3.'):
-        path = os.path.join(PGSQL_BASE, '8.3', 'contrib', 'tsearch2.sql')
-    else:
-        raise RuntimeError('Unknown version %s' % pgversion)
-
+    major, minor = get_pgversion(con).version[:2]
+    path = os.path.join(
+        PGSQL_BASE, '%d.%d' % (major, minor), 'contrib', 'tsearch2.sql')
     assert os.path.exists(path), '%s does not exist' % path
     return path
 
@@ -697,8 +700,8 @@ def main():
         log.info("Executing generated SQL using slonik")
         if replication.helpers.execute_slonik("""
             execute script (
-                set id=@lpmain_set_id,
-                event node=@master_id,
+                set id=@lpmain_set,
+                event node=@master_node,
                 filename='%s');
             """ % slonik_sql.name, sync=0):
             return 0

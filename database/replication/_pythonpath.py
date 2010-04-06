@@ -1,1 +1,1 @@
-../schema/_pythonpath.py
+../../_pythonpath.py

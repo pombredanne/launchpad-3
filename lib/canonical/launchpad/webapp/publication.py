@@ -1,60 +1,75 @@
-# (c) Canonical Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'LoginRoot',
+    'LaunchpadBrowserPublication',
+    ]
 
-import gc
 import os
-from datetime import datetime
+import re
+import sys
 import thread
 import threading
-from time import strftime
 import traceback
 import urllib
 
 from cProfile import Profile
+from datetime import datetime
 
 import tickcount
-
-from psycopg2.extensions import TransactionRollbackError
-from storm.exceptions import DisconnectionError, IntegrityError
-from storm.zope.interfaces import IZStorm
 import transaction
 
-from zope.app import zapi  # used to get at the adapters service
+from psycopg2.extensions import TransactionRollbackError
+from storm.database import STATE_DISCONNECTED
+from storm.exceptions import DisconnectionError, IntegrityError
+from storm.zope.interfaces import IZStorm
+
+from zc.zservertracelog.interfaces import ITraceLog
 import zope.app.publication.browser
+from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
+from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
-
 from zope.publisher.interfaces import IPublishTraverse, Retry
-from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.interfaces.browser import (
+    IDefaultSkin, IBrowserRequest)
 from zope.publisher.publish import mapply
-
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
-from canonical.config import config
-from canonical.mem import (
-    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
-    resident)
 import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
+
+from canonical.config import config, dbconfig
+from canonical.mem import memory, resident
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
+from canonical.launchpad.readonly import is_read_only
+from lp.registry.interfaces.person import (
+    IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
-    IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
+    IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
+    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, SLAVE_FLAVOR)
+from canonical.launchpad.webapp.dbpolicy import (
+    DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
-__all__ = [
-    'LoginRoot',
-    'LaunchpadBrowserPublication'
-    ]
-
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
+
+
+class ProfilingOops(Exception):
+    """Fake exception used to log OOPS information when profiling pages."""
+
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -90,7 +105,6 @@ class LaunchpadBrowserPublication(
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
-        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -152,8 +166,29 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        self.thread_locals.db_policy = IDatabasePolicy(request)
-        self.thread_locals.db_policy.beforeTraversal()
+        db_policy = IDatabasePolicy(request)
+        if not isinstance(db_policy, DatabaseBlockedPolicy):
+            # Database access is not blocked, so make sure our stores point to
+            # the appropriate databases, according to the mode we're on.
+            main_master_store = getUtility(IStoreSelector).get(
+                MAIN_STORE, MASTER_FLAVOR)
+            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
+            # through private attributes to get to the store's database.
+            dsn = main_master_store._connection._database.dsn_without_user
+            if dsn.strip() != dbconfig.main_master.strip():
+                # Remove the stores from zstorm to force them to be
+                # re-created, thus using the correct databases for the mode
+                # we're on right now.
+                main_slave_store = getUtility(IStoreSelector).get(
+                    MAIN_STORE, SLAVE_FLAVOR)
+                zstorm = getUtility(IZStorm)
+                for store in [main_master_store, main_slave_store]:
+                    zstorm.remove(store)
+                    store.close()
+
+        # Now we are logged in, install the correct IDatabasePolicy for
+        # this request.
+        getUtility(IStoreSelector).push(db_policy)
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -167,20 +202,38 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+        self.maybeNotifyReadOnlyMode(request)
+
+    def maybeNotifyReadOnlyMode(self, request):
+        """Hook to notify about read-only mode."""
+        if is_read_only():
+            notification_response = INotificationResponse(request, None)
+            if notification_response is not None:
+                notification_response.addWarningNotification(
+                    structured("""
+                        Launchpad is undergoing maintenance and is in
+                        read-only mode. <i>You cannot make any
+                        changes.</i> Please see the <a
+                        href="http://blog.launchpad.net/maintenance">Launchpad
+                        Blog</a> for details.
+                        """))
 
     def getPrincipal(self, request):
-        """Return the authenticated principal for this request."""
+        """Return the authenticated principal for this request.
+
+        If there is no authenticated principal or the principal represents a
+        personless account, return the unauthenticated principal.
+        """
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.authenticate(request)
-        if principal is None:
+        if principal is None or principal.person is None:
+            # This is either an unauthenticated user or a user who
+            # authenticated on our OpenID server using a personless account.
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal
 
     def maybeRestrictToTeam(self, request):
-
-        from canonical.launchpad.interfaces import (
-            IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
         restrict_to_team = config.launchpad.restrict_to_team
         if not restrict_to_team:
             return
@@ -257,21 +310,50 @@ class LaunchpadBrowserPublication(
 
         The OffsiteFormPostError exception is raised if the following
         holds true:
-          1. the request method is POST
-          2. the HTTP referer header is not empty
-          3. the host portion of the referrer is not a registered vhost
+          1. the request method is POST *AND*
+          2. a. the HTTP referer header is empty *OR*
+             b. the host portion of the referrer is not a registered vhost
         """
         if request.method != 'POST':
             return
         # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our OpenID endpoint.  Ideally we'd
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
         # have a better way of marking this URL as allowing offsite
         # form posts.
         if request['PATH_INFO'] == '/+openid':
             return
+        if (IOAuthSignedRequest.providedBy(request)
+            or not IBrowserRequest.providedBy(request)
+            or request['PATH_INFO']  in (
+                '/+storeblob', '/+request-token', '/+access-token',
+                '/+hwdb/+submit')):
+            # We only want to check for the referrer header if we are
+            # in the middle of a request initiated by a web browser. A
+            # request to the web service (which is necessarily
+            # OAuth-signed) or a request that does not implement
+            # IBrowserRequest (such as an XML-RPC request) can do
+            # without a Referer.
+            #
+            # XXX gary 2010-03-09 bug=535122,538097
+            # The one-off exceptions are necessary because existing
+            # non-browser applications make requests to these URLs
+            # without providing a Referer. Apport makes POST requests
+            # to +storeblob without providing a Referer (bug 538097),
+            # and launchpadlib used to make POST requests to
+            # +request-token and +access-token without providing a
+            # Referer.
+            #
+            # We'll have to keep an application's one-off exception
+            # until the application has been changed to send a
+            # Referer, and until we have no legacy versions of that
+            # application to support. For instance, we can't get rid
+            # of the apport exception until after Lucid's end-of-life
+            # date. We should be able to get rid of the launchpadlib
+            # exception after Karmic's end-of-life date.
+            return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            return
+            raise NoReferrerError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
@@ -309,8 +391,7 @@ class LaunchpadBrowserPublication(
         view = removeSecurityProxy(ob)
         # It's possible that the view is a bounded method.
         view = getattr(view, 'im_self', view)
-        context = removeSecurityProxy(
-            getattr(view, 'context', None))
+        context = removeSecurityProxy(getattr(view, 'context', None))
         if context is None:
             pageid = ''
         else:
@@ -360,10 +441,6 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
-        if self.thread_locals.db_policy is not None:
-            self.thread_locals.db_policy.afterCall()
-            self.thread_locals.db_policy = None
-
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
@@ -379,6 +456,15 @@ class LaunchpadBrowserPublication(
         if request.method == 'HEAD':
             request.response.setResult('')
 
+        try:
+            getUtility(IStoreSelector).pop()
+        except IndexError:
+            # We have to cope with no database policy being installed
+            # to allow doc/webapp-publication.txt tests to pass. These
+            # tests rely on calling the afterCall hook without first
+            # calling beforeTraversal or doing proper cleanup.
+            pass
+
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
 
@@ -390,11 +476,25 @@ class LaunchpadBrowserPublication(
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication """
+        # In some cases we seem to be called more than once for a given
+        # traversed object, so we need to be careful here and only append an
+        # object the first time we see it.
+        if ob not in request.traversed_objects:
+            request.traversed_objects.append(ob)
         notify(BeforeTraverseEvent(ob, request))
 
     def afterTraversal(self, request, ob):
-        """ We don't want to call _maybePlacefullyAuthenticate as does
-        zopepublication."""
+        """See zope.publisher.interfaces.IPublication.
+
+        This hook does not invoke our parent's afterTraversal hook
+        in zopepublication.py because we don't want to call
+        _maybePlacefullyAuthenticate.
+        """
+        # Log the URL including vhost information to the ZServer tracelog.
+        tracelog = ITraceLog(request, None)
+        if tracelog is not None:
+            tracelog.log(request.getURL())
+
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
             'beforeTraversal(), was not found.')
@@ -409,6 +509,13 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        # Uninstall the database policy.
+        store_selector = getUtility(IStoreSelector)
+        if store_selector.get_current() is not None:
+            db_policy = store_selector.pop()
+        else:
+            db_policy = None
+
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
@@ -431,21 +538,65 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
-        # Reraise Retry exceptions rather than log.
-        if retry_allowed and isinstance(
-            exc_info[1], (Retry, DisconnectionError, IntegrityError,
-                          TransactionRollbackError)):
+        # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
+        # We need to do this before we re-raise the exception as a Retry.
+        if isinstance(exc_info[1], DisconnectionError):
+            getUtility(IErrorReportingUtility).handling(exc_info, request)
+
+        def should_retry(exc_info):
+            if not retry_allowed:
+                return False
+
+            # If we get a LookupError and the default database being
+            # used is a replica, raise a Retry exception instead of
+            # returning the 404 error page. We do this in case the
+            # LookupError is caused by replication lag. Our database
+            # policy forces the use of the master database for retries.
+            if (isinstance(exc_info[1], LookupError)
+                and isinstance(db_policy, LaunchpadDatabasePolicy)):
+                if db_policy.default_flavor == MASTER_FLAVOR:
+                    return False
+                else:
+                    return True
+
+            # Retry exceptions need to be propagated so they are
+            # retried. Retry exceptions occur when an optimistic
+            # transaction failed, such as we detected two transactions
+            # attempting to modify the same resource.
+            # DisconnectionError and TransactionRollbackError indicate
+            # a database transaction failure, and should be retried
+            # The appserver detects the error state, and a new database
+            # connection is opened allowing the appserver to cope with
+            # database or network outages.
+            # An IntegrityError may be caused when we insert a row
+            # into the database that already exists, such as two requests
+            # doing an insert-or-update. It may succeed if we try again.
+            if isinstance(exc_info[1], (Retry, DisconnectionError,
+                IntegrityError, TransactionRollbackError)):
+                return True
+
+            return False
+
+        # Re-raise Retry exceptions ourselves rather than invoke
+        # our superclass handleException method, as it will log OOPS
+        # reports etc. This would be incorrect, as transaction retry
+        # is a normal part of operation.
+        if should_retry(exc_info):
             if request.supportsRetry():
                 # Remove variables used for counting ticks as this request is
                 # going to be retried.
                 orig_env.pop('launchpad.traversalticks', None)
                 orig_env.pop('launchpad.publicationticks', None)
+            # Our endRequest needs to know if a retry is pending or not.
+            request._wants_retry = True
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
+
         superclass = zope.app.publication.browser.BrowserPublication
-        superclass.handleException(self, object, request, exc_info,
-                                   retry_allowed)
+        superclass.handleException(
+            self, object, request, exc_info, retry_allowed)
+
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
         # UPSTREAM: Should this be part of zope,
@@ -453,6 +604,28 @@ class LaunchpadBrowserPublication(
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
             request.response.setResult('')
+
+    def beginErrorHandlingTransaction(self, request, ob, note):
+        """Hook for when a new view is started to handle an exception.
+
+        We need to add an additional behavior to the usual Zope behavior.
+        We must restart the request timer.  Otherwise we can get OOPS errors
+        from our exception views inappropriately.
+        """
+        # pylint: disable-msg=E1002
+        super(LaunchpadBrowserPublication,
+              self).beginErrorHandlingTransaction(request, ob, note)
+        # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to
+        # only clear the SQL records and timeout when we are preparing for a
+        # view (or a side effect). Otherwise, we don't want to clear the
+        # records because they are what the error reporting utility uses to
+        # create OOPS reports with the SQL commands that led up to the error.
+        # At the moment, we can only distinguish based on the "note" argument:
+        # an undocumented argument of this undocumented method.
+        if note in ('application error-handling',
+                    'application error-handling side-effect'):
+            da.clear_request_started()
+            da.set_request_started()
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
@@ -462,36 +635,55 @@ class LaunchpadBrowserPublication(
 
         da.clear_request_started()
 
-        if config.debug.references:
-            self.debugReferencesLeak(request)
-
         # Maintain operational statistics.
-        OpStats.stats['requests'] += 1
+        if getattr(request, '_wants_retry', False):
+            OpStats.stats['retries'] += 1
+        else:
+            OpStats.stats['requests'] += 1
 
-        # Increment counters for HTTP status codes we track individually
-        # NB. We use IBrowserRequest, as other request types such as
-        # IXMLRPCRequest use IHTTPRequest as a superclass.
-        # This should be fine as Launchpad only deals with browser
-        # and XML-RPC requests.
-        if IBrowserRequest.providedBy(request):
-            OpStats.stats['http requests'] += 1
-            status = request.response.getStatus()
-            if status == 404: # Not Found
-                OpStats.stats['404s'] += 1
-            elif status == 500: # Unhandled exceptions
-                OpStats.stats['500s'] += 1
-            elif status == 503: # Timeouts
-                OpStats.stats['503s'] += 1
+            # Increment counters for HTTP status codes we track individually
+            # NB. We use IBrowserRequest, as other request types such as
+            # IXMLRPCRequest use IHTTPRequest as a superclass.
+            # This should be fine as Launchpad only deals with browser
+            # and XML-RPC requests.
+            if IBrowserRequest.providedBy(request):
+                OpStats.stats['http requests'] += 1
+                status = request.response.getStatus()
+                if status == 404: # Not Found
+                    OpStats.stats['404s'] += 1
+                elif status == 500: # Unhandled exceptions
+                    OpStats.stats['500s'] += 1
+                elif status == 503: # Timeouts
+                    OpStats.stats['503s'] += 1
 
-            # Increment counters for status code groups.
-            OpStats.stats[str(status)[0] + 'XXs'] += 1
+                # Increment counters for status code groups.
+                status_group = str(status)[0] + 'XXs'
+                OpStats.stats[status_group] += 1
 
-        # Reset all Storm stores when not running the test suite. We could
-        # reset them when running the test suite but that'd make writing tests
-        # a much more painful task. We still reset the slave stores though
-        # to minimize stale cache issues.
+                # Increment counter for 5XXs_b.
+                if is_browser(request) and status_group == '5XXs':
+                    OpStats.stats['5XXs_b'] += 1
+
+        # Make sure our databases are in a sane state for the next request.
         thread_name = threading.currentThread().getName()
         for name, store in getUtility(IZStorm).iterstores():
+            try:
+                assert store._connection._state != STATE_DISCONNECTED, (
+                    "Bug #504291: Store left in a disconnected state.")
+            except AssertionError:
+                # The Store is in a disconnected state. This should
+                # not happen, as store.rollback() should have been called
+                # by now. Log an OOPS so we know about this. This
+                # is Bug #504291 happening.
+                getUtility(IErrorReportingUtility).handling(
+                    sys.exc_info(), request)
+                # Repair things so the server can remain operational.
+                store.rollback()
+            # Reset all Storm stores when not running the test suite.
+            # We could reset them when running the test suite but
+            # that'd make writing tests a much more painful task. We
+            # still reset the slave stores though to minimize stale
+            # cache issues.
             if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
@@ -521,12 +713,16 @@ class LaunchpadBrowserPublication(
             profiler = self.thread_locals.profiler
             profiler.disable()
 
-            if oopsid:
-                oopsid_part = '-%s' % oopsid
-            else:
-                oopsid_part = ''
-            filename = '%s-%s%s-%s.prof' % (
-                timestamp, pageid, oopsid_part,
+            if oopsid is None:
+                # Log an OOPS to get a log of the SQL queries, and other
+                # useful information,  together with the profiling
+                # information.
+                info = (ProfilingOops, None, None)
+                error_utility = getUtility(IErrorReportingUtility)
+                error_utility.raising(info, request)
+                oopsid = request.oopsid
+            filename = '%s-%s-%s-%s.prof' % (
+                timestamp, pageid, oopsid,
                 threading.currentThread().getName())
 
             profiler.dump_stats(
@@ -547,99 +743,9 @@ class LaunchpadBrowserPublication(
                 vss_start, rss_start, vss_end, rss_end))
             log.close()
 
-    def debugReferencesLeak(self, request):
-        """See what kind of references are increasing.
-
-        This logs the current RSS and references count by types in a
-        scoreboard file. If that file exists, we compare the current stats
-        with the previous one and logs the increase along the current page id.
-
-        Note that this only provides reliable results when only one thread is
-        processing requests.
-        """
-        gc.collect()
-        current_rss = resident()
-        current_garbage_count = len(gc.garbage)
-        # Convert type to string, because that's what we get when reading
-        # the old scoreboard.
-        current_refs = [
-            (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
-        # Add G as prefix to types on the garbage list.
-        current_garbage = [
-            (count, 'G%s' % str(ref_type))
-            for count, ref_type in countsByType(gc.garbage, n=0)]
-        scoreboard_path = config.debug.references_scoreboard_file
-
-        # Read in previous scoreboard if it exists.
-        if os.path.exists(scoreboard_path):
-            scoreboard = open(scoreboard_path, 'r')
-            try:
-                stats = scoreboard.readline().split()
-                prev_rss = int(stats[0].strip())
-                prev_garbage_count = int(stats[1].strip())
-                prev_refs = readCounts(scoreboard, '=== GARBAGE ===\n')
-                prev_garbage = readCounts(scoreboard)
-            finally:
-                scoreboard.close()
-            mem_leak = current_rss - prev_rss
-            garbage_leak = current_garbage_count - prev_garbage_count
-            delta_refs = list(deltaCounts(prev_refs, current_refs))
-            delta_refs.extend(deltaCounts(prev_garbage, current_garbage))
-            self.logReferencesLeak(request, mem_leak, delta_refs)
-
-        # Save the current scoreboard.
-        scoreboard = open(scoreboard_path, 'w')
-        try:
-            scoreboard.write("%d %d\n" % (current_rss, current_garbage_count))
-            printCounts(current_refs, scoreboard)
-            scoreboard.write('=== GARBAGE ===\n')
-            printCounts(current_garbage, scoreboard)
-        finally:
-            scoreboard.close()
-
-    def logReferencesLeak(self, request, mem_leak, delta_refs):
-        """Log the time, pageid, increase in RSS and increase in references.
-        """
-        log = open(config.debug.references_leak_log, 'a')
-        try:
-            pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-            # It can happen that the pageid is ''?!?
-            if pageid == '':
-                pageid = 'Unknown'
-            leak_in_mb = float(mem_leak) / (1024*1024)
-            formatted_delta = "; ".join(
-                "%s=%d" % (ref_type, count)
-                for count, ref_type in delta_refs)
-            log.write('%s %s %.2fMb %s\n' % (
-                strftime('%Y-%m-%d:%H:%M:%S'),
-                pageid,
-                leak_in_mb,
-                formatted_delta))
-        finally:
-            log.close()
-
 
 class InvalidThreadsConfiguration(Exception):
     """Exception thrown when the number of threads isn't set correctly."""
-
-
-def debug_references_startup_check(event):
-    """Event handler for IProcessStartingEvent.
-
-    If debug/references is set to True, we make sure that the number of
-    threads is configured to 1. We also delete any previous scoreboard file.
-    """
-    if not config.debug.references:
-        return
-
-    if config.threads != 1:
-        raise InvalidThreadsConfiguration(
-            "Number of threads should be one when debugging references.")
-
-    # Remove any previous scoreboard, the content is meaningless once
-    # the server is restarted.
-    if os.path.exists(config.debug.references_scoreboard_file):
-        os.remove(config.debug.references_scoreboard_file)
 
 
 class DefaultPrimaryContext:
@@ -649,3 +755,30 @@ class DefaultPrimaryContext:
 
     def __init__(self, context):
         self.context = context
+
+
+_browser_re = re.compile(r"""(?x)^(
+    Mozilla |
+    Opera |
+    Lynx |
+    Links |
+    w3m
+    )""")
+
+def is_browser(request):
+    """Return True if we believe the request was from a browser.
+
+    There will be false positives and false negatives, as we can
+    only tell this from the User-Agent: header and this cannot be
+    trusted.
+
+    Almost all web browsers provide a User-Agent: header starting
+    with 'Mozilla'. This is good enough for our uses. We also
+    add a few other common matches as well for good measure.
+    We could massage one of the user-agent databases that are
+    available into a usable, but we would gain little.
+    """
+    user_agent = request.getHeader('User-Agent')
+    return (
+        user_agent is not None
+        and _browser_re.search(user_agent) is not None)

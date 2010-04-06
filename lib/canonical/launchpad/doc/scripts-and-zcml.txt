@@ -25,7 +25,9 @@ Run the script (making sure it uses the testrunner configuration).
 
    >>> env = dict(os.environ)
    >>> env['LPCONFIG'] = 'testrunner'
-   >>> proc = subprocess.Popen([sys.executable, script_file.name], 
+   >>> from canonical.config import config
+   >>> bin_py = os.path.join(config.root, 'bin', 'py')
+   >>> proc = subprocess.Popen([bin_py, script_file.name], 
    ...                         stdout=subprocess.PIPE, stderr=None,
    ...                         env=env)
 

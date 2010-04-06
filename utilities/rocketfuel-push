@@ -1,7 +1,10 @@
 #! /bin/bash
 
-# Push all of your branches to devpad, so that you have a server-side backup
-# of everything, assuming your ~/.bazaar/locations.conf has been setup
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# Push all of your branches to launchpad, so that you have a server-side
+# backup of everything, assuming your ~/.bazaar/locations.conf has been setup
 # correctly by rocketfuel-setup.
 
 source "$HOME/.rocketfuel-env.sh"

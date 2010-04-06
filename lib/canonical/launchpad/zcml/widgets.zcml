@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -13,14 +17,6 @@
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-addform.pt"
-        />
-
-    <browser:page
-        for="*"
-        name="launchpad_generalform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-generalform.pt"
         />
 
     <browser:page

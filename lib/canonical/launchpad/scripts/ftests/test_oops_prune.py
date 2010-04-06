@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the oops-prune.py cronscript and methods in the
    canonical.launchpad.scripts.oops module.
@@ -16,6 +17,7 @@ import tempfile
 import unittest
 
 from pytz import UTC
+import transaction
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
@@ -57,9 +59,16 @@ class TestOopsPrune(unittest.TestCase):
             INSERT INTO MessageChunk(message, sequence, content)
             VALUES (1, 99, 'OOPS-%s')
             """ % self.referenced_oops_code)
+        if not os.path.exists(config.error_reports.error_dir):
+            os.mkdir(config.error_reports.error_dir)
+
+        # Need to commit or the changes are not visible on the slave.
+        transaction.commit()
+
 
     def tearDown(self):
         shutil.rmtree(self.oops_dir)
+        shutil.rmtree(config.error_reports.error_dir)
 
     def test_referenced_oops(self):
         self.failUnlessEqual(
@@ -95,6 +104,10 @@ class TestOopsPrune(unittest.TestCase):
                 whiteboard=NULL
                 WHERE id=2
             """)
+
+        # Need to commit or the changes are not visible on the slave.
+        transaction.commit()
+
         self.failUnlessEqual(
                 set([
                     self.referenced_oops_code,
@@ -134,6 +147,20 @@ class TestOopsPrune(unittest.TestCase):
                     '2006-01' in unwanted_path,
                     'New OOPS %s unwanted' % unwanted_path
                     )
+
+    def test_referenced_oops_in_urls(self):
+        # Sometimes OOPS ids appears as part of an URL. We don't want the
+        # POSIX regexp matching on those OOPS ids since the FormattersAPI
+        # doesn't match them.
+        cur = cursor()
+        cur.execute("""
+            UPDATE Bug SET
+                title='Some title',
+                description='https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-1Foo666'
+            """)
+        self.failUnlessEqual(
+                set([self.referenced_oops_code]),
+                referenced_oops())
 
     def test_script(self):
         unwanted = unwanted_oops_files(self.oops_dir, 90)

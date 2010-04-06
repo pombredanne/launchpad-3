@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """PostgreSQL server side session storage for Zope3."""
 
@@ -10,12 +11,14 @@ from UserDict import DictMixin
 from random import random
 from datetime import datetime, timedelta
 
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
 from zope.session.interfaces import (
-    ISessionDataContainer, ISessionData, ISessionPkgData)
+    ISessionDataContainer, ISessionData, ISessionPkgData, IClientIdManager)
 
 from storm.zope.interfaces import IZStorm
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 
 SECONDS = 1
@@ -51,10 +54,11 @@ class PGSessionDataContainer(PGSessionBase):
         pickle     bytea NOT NULL,
         CONSTRAINT sessiondata_key UNIQUE (client_id, product_id, key)
         );
+
+    Removing expired data needs to be done out of band.
     """
     implements(ISessionDataContainer)
 
-    timeout = 60 * DAYS
     # If we have a low enough resolution, we can determine active users
     # using the session data.
     resolution = 9 * MINUTES
@@ -64,7 +68,6 @@ class PGSessionDataContainer(PGSessionBase):
 
     def __getitem__(self, client_id):
         """See zope.session.interfaces.ISessionDataContainer"""
-        self._sweep()
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
@@ -72,23 +75,6 @@ class PGSessionDataContainer(PGSessionBase):
         # The SessionData / SessionPkgData objects know how to store
         # themselves.
         pass
-
-    _last_sweep = datetime.utcnow()
-    fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
-
-    def _sweep(self):
-        interval = timedelta(
-                seconds=self.resolution - self.fuzz + 2 * self.fuzz * random()
-                )
-        now = datetime.utcnow()
-        if self._last_sweep + interval > now:
-            return
-        self._last_sweep = now
-        query = """
-            DELETE FROM SessionData WHERE last_accessed
-                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '%d seconds'::interval
-            """ % self.timeout
-        self.store.execute(query, noresult=True)
 
 
 class PGSessionData(PGSessionBase):
@@ -117,9 +103,43 @@ class PGSessionData(PGSessionBase):
     def _ensureClientId(self):
         if self._have_ensured_client_id:
             return
+        # We want to make sure the browser cookie and the database both know
+        # about our client id. We're doing it lazily to try and keep anonymous
+        # users from having a session.
         self.store.execute(
             "SELECT ensure_session_client_id(?)", (self.client_id,),
             noresult=True)
+        request = get_current_browser_request()
+        if request is not None:
+            client_id_manager = getUtility(IClientIdManager)
+            if IUnauthenticatedPrincipal.providedBy(request.principal):
+                # it would be nice if this could be a monitored, logged
+                # message instead of an instant-OOPS.
+                assert (client_id_manager.namespace in request.cookies or
+                        request.response.getCookie(
+                            client_id_manager.namespace) is not None), (
+                    'Session data should generally only be stored for '
+                    'authenticated users, and for users who have just logged '
+                    'out.  If an unauthenticated user has just logged out, '
+                    'they should have a session cookie set for ten minutes. '
+                    'This should be plenty of time for passing notifications '
+                    'about successfully logging out.  Because this assertion '
+                    'failed, it means that some code is trying to set '
+                    'session data for an unauthenticated user who has been '
+                    'logged out for more than ten minutes: something that '
+                    'should not happen.  The code setting the session data '
+                    'should be reviewed; and failing that, the cookie '
+                    'timeout after logout (set in '
+                    'canonoical.launchpad.webapp.login) should perhaps be '
+                    'increased a bit, if a ten minute fudge factor is not '
+                    'enough to handle the vast majority of computers with '
+                    'not-very-accurate system clocks.  In an exceptional '
+                    'case, the code may set the necessary cookies itself to '
+                    'assert that yes, it *should* set the session for an '
+                    'unauthenticated user.  See the webapp.login module for '
+                    'an example of this, as well.')
+            else:
+                client_id_manager.setRequestId(request, self.client_id)
         self._have_ensured_client_id = True
 
     def __getitem__(self, product_id):

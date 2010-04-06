@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for testing menus."""
 
@@ -15,6 +16,7 @@ from zope.security.management import endInteraction, newInteraction
 from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp import urlsplit
+from canonical.launchpad.webapp.interfaces import ILink
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -29,17 +31,20 @@ def summarise_tal_links(links):
         keys = sorted(links)
     else:
         keys = links
-    for link_name in keys:
+    for key in keys:
         if is_dict:
-            link = links[link_name]
+            link = links[key]
         else:
-            link = link_name
-        print 'link %s' % link.name
-        attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
-        for attrname in attributes:
-            if not safe_hasattr(link, attrname):
-                continue
-            print '    %s:' % attrname, getattr(link, attrname)
+            link = key
+        if ILink.providedBy(link):
+            print 'link %s' % link.name
+            attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
+            for attrname in attributes:
+                if not safe_hasattr(link, attrname):
+                    continue
+                print '    %s:' % attrname, getattr(link, attrname)
+        else:
+            print 'attribute %s: %s' % (key, link)
 
 
 def make_fake_request(url, traversed_objects=None):
@@ -55,7 +60,8 @@ def make_fake_request(url, traversed_objects=None):
         SERVER_URL=server_url,
         PATH_INFO=path_info)
     request._traversed_names = path_info.split('/')[1:]
-    request.traversed_objects = traversed_objects
+    if traversed_objects is not None:
+        request.traversed_objects = traversed_objects[:]
     # After making the request, setup a new interaction.
     endInteraction()
     newInteraction(request)

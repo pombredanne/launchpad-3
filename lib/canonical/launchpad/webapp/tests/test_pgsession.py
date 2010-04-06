@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test pgsession.py."""
 
@@ -7,6 +8,8 @@ __metaclass__ = type
 import unittest
 from datetime import timedelta
 from zope.session.interfaces import ISessionDataContainer, ISessionData
+from zope.publisher.browser import TestRequest
+from zope.security.management import newInteraction, endInteraction
 
 from canonical.launchpad.webapp.pgsession import (
         PGSessionDataContainer, PGSessionData
@@ -30,8 +33,12 @@ class TestPgSession(unittest.TestCase):
     def setUp(self):
         self.sdc = PGSessionDataContainer()
         LaunchpadLayer.resetSessionDb()
+        self.request = TestRequest()
+        newInteraction(self.request)
 
     def tearDown(self):
+        endInteraction()
+        del self.request
         del self.sdc
 
     def test_sdc_basics(self):
@@ -54,67 +61,6 @@ class TestPgSession(unittest.TestCase):
         session_data = self.sdc[client_id]
         self.failUnless(isinstance(session_data, PGSessionData))
         self.failUnless(ISessionData.providedBy(session_data))
-
-    def test_sweep(self):
-        product_id = 'Product Id'
-        client_id1 = 'Client Id #1'
-        client_id2 = 'Client Id #2'
-
-        store = self.sdc.store
-
-        # Create a session
-        session1 = self.sdc[client_id1]
-        session2 = self.sdc[client_id2]
-
-        # Store some session data to ensure we can clean up sessions
-        # with data.
-        spd = self.sdc[client_id1][product_id]
-        spd['key'] = 'value'
-
-        # Add and delete some data on the second client ID to ensure
-        # that it exists in the database.
-        session2._ensureClientId()
-
-        # Do a quick sanity check.  Nothing has been stored for the
-        # third client ID.
-        result = store.execute(
-            "SELECT client_id FROM SessionData ORDER BY client_id")
-        client_ids = [row[0] for row in result]
-        self.failUnlessEqual(client_ids, [client_id1, client_id2])
-        result = store.execute("SELECT COUNT(*) FROM SessionPkgData")
-        self.failUnlessEqual(result.get_one()[0], 1)
-
-        # Push the session into the past. There is fuzzyness involved
-        # in when the sweeping actually happens (to minimize concurrency
-        # issues), so we just push it into the far past for testing.
-        store.execute("""
-            UPDATE SessionData
-            SET last_accessed = last_accessed - '1 year'::interval
-            WHERE client_id = ?
-            """, (client_id1,), noresult=True)
-
-        # Make the SessionDataContainer think it hasn't swept in a while
-        self.sdc._last_sweep = self.sdc._last_sweep - timedelta(days=365)
-
-        # Sweep happens automatically in __getitem__
-        ignored_result = self.sdc[client_id2][product_id]
-
-        # So the client_id1 session should now have been removed.
-        result = store.execute(
-            "SELECT client_id FROM SessionData ORDER BY client_id")
-        client_ids = [row[0] for row in result]
-        self.failUnlessEqual(client_ids, [client_id2])
-
-        # __getitem__ does not cause a sweep though if  sweep has been
-        # done recently, to minimize database queries.
-        store.execute("""
-            UPDATE SessionData
-            SET last_accessed = last_accessed - '1 year'::interval
-            """, noresult=True)
-        session1._ensureClientId()
-        session1 = self.sdc[client_id1]
-        result = store.execute("SELECT COUNT(*) FROM SessionData")
-        self.failUnlessEqual(result.get_one()[0], 2)
 
     def test_storage(self):
         client_id1 = 'Client Id #1'
@@ -191,6 +137,10 @@ class TestPgSession(unittest.TestCase):
         result = store.execute("SELECT COUNT(*) FROM SessionData")
         self.assertEqual(result.get_one()[0], 0)
 
+        # The session cookie is also not yet set in the response.
+        self.assertEqual(self.request.response.getCookie('launchpad_tests'),
+                         None)
+
         # Now try storing some data in the session, which will result
         # in it being stored in the database.
         pkgdata['key'] = 'value'
@@ -199,9 +149,14 @@ class TestPgSession(unittest.TestCase):
         client_ids = [row[0] for row in result]
         self.assertEquals(client_ids, [client_id])
 
+        # The session cookie also is now set, via the same "trigger".
+        self.assertNotEqual(
+            self.request.response.getCookie('launchpad_tests'), None)
+
+        # also see the page test xx-no-anonymous-session-cookies for tests of
+        # the cookie behavior.
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestPgSession))
     return suite
-

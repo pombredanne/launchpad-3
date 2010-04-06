@@ -1,7 +1,0 @@
-A bug with duplicates shows a message of how many times it's been reported.
-
-    >>> user_browser.open("http://launchpad.dev/bugs/5")
-
-    >>> tag = find_tag_by_id(user_browser.contents, "number_of_dupes")
-    >>> print tag.renderContents()
-    This bug has 1 duplicate

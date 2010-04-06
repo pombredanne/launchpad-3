@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Define the layers used in Launchpad.
 
@@ -7,12 +8,12 @@ Also define utilities that manipulate layers.
 
 __metaclass__ = type
 
-from zope.interface import directlyProvides, directlyProvidedBy, Interface
+from zope.interface import (
+    alsoProvides, directlyProvides, directlyProvidedBy, Interface)
 from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IDefaultBrowserLayer)
+    IBrowserRequest, IDefaultBrowserLayer, IBrowserSkinType)
 
-from canonical.lazr.interfaces.rest import (
-    WebServiceLayer as LazrWebServiceLayer)
+from lazr.restful.interfaces import IWebServiceLayer
 
 
 def setAdditionalLayer(request, layer):
@@ -47,15 +48,6 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove this layer.
-class OpenIDLayer(LaunchpadLayer):
-    """The `OpenID` layer."""
-
-
-class IdLayer(LaunchpadLayer):
-    """The new OpenID `Id` layer."""
-
 
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
@@ -63,6 +55,10 @@ class DebugLayer(Interface):
     This derives from Interface beacuse it is just a marker that this
     is a debug-related request.
     """
+
+
+class TestOpenIDLayer(LaunchpadLayer):
+    """The `TestOpenIDLayer` layer."""
 
 
 class PageTestLayer(LaunchpadLayer):
@@ -79,28 +75,16 @@ class PageTestLayer(LaunchpadLayer):
     The SystemErrorView base class looks at the request to see if it provides
     this interface.  If so, it renders tracebacks as plain text.
     """
-
-
-class ShipItLayer(LaunchpadLayer):
-    """The `ShipIt` layer."""
-
-
-class ShipItUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for Ubuntu layer."""
-
-
-class ShipItKUbuntuLayer(ShipItLayer):
-    """The `ShipIt` for KUbuntu layer."""
-
-
-class ShipItEdUbuntuLayer(IDefaultBrowserLayer):
-    """The `ShipIt` for EdUbuntu layer."""
+# A few tests register this interface directly as a layer, bypassing the zcml
+# machinery.  This means that they don't get the proper SkinType interface
+# applied to them.  We add it here for convenience.
+alsoProvides(PageTestLayer, IBrowserSkinType)
 
 
 class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
 
 
-class WebServiceLayer(LazrWebServiceLayer, LaunchpadLayer):
+class WebServiceLayer(IWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
 

@@ -107,3 +107,18 @@ submission:
   u'abcdef'
   >>> context.number
   42
+
+By default LaunchpadFormHarness uses LaunchpadTestRequest as its request
+class, but it's possible to change that by passing a request_class argument to
+it.
+
+    >>> harness.request
+    <...LaunchpadTestRequest...
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class FormHarnessTestRequest(LaunchpadTestRequest):
+    ...     pass
+    >>> harness = LaunchpadFormHarness(context, HarnessTestView,
+    ...     request_class=FormHarnessTestRequest)
+    >>> harness.request
+    <...FormHarnessTestRequest...

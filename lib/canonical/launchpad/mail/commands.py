@@ -1,47 +1,38 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['emailcommands', 'get_error_message']
-
-import os.path
+__all__ = [
+    'EmailCommand',
+    'EmailCommandCollection',
+    'BugEmailCommands',
+    'get_error_message']
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.schema import ValidationError
 
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.interfaces import (
         BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IBugTaskSet, IMessageSet, IDistroBugTask,
+        IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
-        BugTaskStatus)
-from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
+        BugTaskStatus, UserCannotUnsubscribePerson)
+from lazr.lifecycle.event import (
+    ObjectModifiedEvent, ObjectCreatedEvent)
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent, IObjectModifiedEvent)
 
+from canonical.launchpad.mail.helpers import (
+    get_error_message, get_person_or_team)
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.snapshot import Snapshot
-
-
-def get_error_message(filename, **interpolation_items):
-    """Returns the error message that's in the given filename.
-
-    If the error message requires some parameters, those are given in
-    interpolation_items.
-
-    The files are searched for in lib/canonical/launchpad/mail/errortemplates.
-    """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'errortemplates', filename)
-    error_template = open(fullpath).read()
-    return error_template % interpolation_items
 
 
 def normalize_arguments(string_args):
@@ -145,8 +136,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            bug = getUtility(IBugSet).createBug(params)
-            return bug, SQLObjectCreatedEvent(bug)
+            return getUtility(IBugSet).createBugWithoutTarget(params)
         else:
             try:
                 bugid = int(bugid)
@@ -174,7 +164,7 @@ class EditEmailCommand(EmailCommand):
         args = self.convertArguments(context)
 
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
@@ -186,9 +176,9 @@ class EditEmailCommand(EmailCommand):
             if getattr(context, attr_name) != attr_value:
                 self.setAttributeValue(context, attr_name, attr_value)
                 edited = True
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
             edited_fields.update(args.keys())
-            current_event = SQLObjectModifiedEvent(
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -228,7 +218,7 @@ class PrivateEmailCommand(EmailCommand):
 
         # Snapshot.
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
@@ -239,9 +229,9 @@ class PrivateEmailCommand(EmailCommand):
         edited = context.setPrivate(private, getUtility(ILaunchBag).user)
 
         # Update the current event.
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
             edited_fields.add('private')
-            current_event = SQLObjectModifiedEvent(
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -275,7 +265,7 @@ class SecurityEmailCommand(EmailCommand):
         # Take a snapshot.
         edited = False
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
@@ -294,8 +284,8 @@ class SecurityEmailCommand(EmailCommand):
             edited_fields.add('security_related')
 
         # Update the current event.
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
-            current_event = SQLObjectModifiedEvent(
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -317,17 +307,7 @@ class SubscribeEmailCommand(EmailCommand):
         user = getUtility(ILaunchBag).user
 
         if len(string_args) == 1:
-            person_name_or_email = string_args.pop()
-            valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-            try:
-                person_term = valid_person_vocabulary.getTermByToken(
-                    person_name_or_email)
-            except LookupError:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'no-such-person.txt',
-                        name_or_email=person_name_or_email))
-            person = person_term.value
+            person = get_person_or_team(string_args.pop())
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = user
@@ -343,7 +323,7 @@ class SubscribeEmailCommand(EmailCommand):
 
         else:
             bugsubscription = bug.subscribe(person, user)
-            notify(SQLObjectCreatedEvent(bugsubscription))
+            notify(ObjectCreatedEvent(bugsubscription))
 
         return bug, current_event
 
@@ -357,17 +337,7 @@ class UnsubscribeEmailCommand(EmailCommand):
         """See IEmailCommand."""
         string_args = list(self.string_args)
         if len(string_args) == 1:
-            person_name_or_email = string_args.pop()
-            valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-            try:
-                person_term = valid_person_vocabulary.getTermByToken(
-                    person_name_or_email)
-            except LookupError:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'no-such-person.txt',
-                        name_or_email=person_name_or_email))
-            person = person_term.value
+            person = get_person_or_team(string_args.pop())
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
@@ -376,9 +346,15 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person)
+            try:
+                bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            except UserCannotUnsubscribePerson:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'user-cannot-unsubscribe.txt',
+                        person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 
@@ -522,7 +498,7 @@ class AffectsEmailCommand(EmailCommand):
 
         # We can't check for IBugTarget, since Project is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"
@@ -592,17 +568,17 @@ class AffectsEmailCommand(EmailCommand):
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
                 bugtask.sourcepackagename = bug_target.sourcepackagename
-                event = SQLObjectModifiedEvent(
+                event = ObjectModifiedEvent(
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 
         if bugtask is None:
             bugtask = self._create_bug_task(bug, bug_target)
-            event = SQLObjectCreatedEvent(bugtask)
+            event = ObjectCreatedEvent(bugtask)
 
         return bugtask, event
 
     def _targetBug(self, user, bug, series, sourcepackagename=None):
-        """Try to target the bug the the given distroseries.
+        """Try to target the bug the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
@@ -627,18 +603,20 @@ class AffectsEmailCommand(EmailCommand):
         if general_task is None:
             # A series task has to have a corresponding
             # distribution/product task.
-            general_task = getUtility(IBugTaskSet).createTask(
-                bug, user, distribution=distribution,
-                product=product, sourcepackagename=sourcepackagename)
+            general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:
@@ -653,29 +631,16 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko 2005-09-05 bug=1690:
-        # We could fix this by making createTask be a method on
-        # IBugTarget, but I'm not going to do this now.
-        bugtaskset = getUtility(IBugTaskSet)
         user = getUtility(ILaunchBag).user
-        if IProduct.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, product=bug_target)
-        elif IProductSeries.providedBy(bug_target):
-            return self._targetBug(user, bug, bug_target)
-        elif IDistribution.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroSeries.providedBy(bug_target):
+        if (IProductSeries.providedBy(bug_target) or
+            IDistroSeries.providedBy(bug_target)):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
                 user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
-        elif IDistributionSourcePackage.providedBy(bug_target):
-            return bugtaskset.createTask(
-                bug, user, distribution=bug_target.distribution,
-                sourcepackagename=bug_target.sourcepackagename)
         else:
-            assert False, "Not a valid bug target: %r" % bug_target
+            return bug.addTask(user, bug_target)
 
 
 class AssigneeEmailCommand(EditEmailCommand):
@@ -693,16 +658,7 @@ class AssigneeEmailCommand(EditEmailCommand):
         if person_name_or_email == "nobody":
             return {self.name: None}
 
-        valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-        try:
-            person_term = valid_person_vocabulary.getTermByToken(
-                person_name_or_email)
-        except LookupError:
-            raise EmailProcessingError(
-                get_error_message(
-                    'no-such-person.txt', name_or_email=person_name_or_email))
-
-        return {self.name: person_term.value}
+        return {self.name: get_person_or_team(person_name_or_email)}
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
@@ -884,7 +840,28 @@ class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
 
 
-class EmailCommands:
+class EmailCommandCollection:
+    """A collection of email commands."""
+
+    @classmethod
+    def names(klass):
+        """Returns all the command names."""
+        return klass._commands.keys()
+
+    @classmethod
+    def get(klass, name, string_args):
+        """Returns a command object with the given name and arguments.
+
+        If a command with the given name can't be found, a NoSuchCommand
+        error is raised.
+        """
+        command_class = klass._commands.get(name)
+        if command_class is None:
+            raise NoSuchCommand(name)
+        return command_class(name, string_args)
+
+
+class BugEmailCommands(EmailCommandCollection):
     """A collection of email commands."""
 
     _commands = {
@@ -905,20 +882,3 @@ class EmailCommands:
         'priority': ReplacedByImportanceCommand,
         'tag': TagEmailCommand,
     }
-
-    def names(self):
-        """Returns all the command names."""
-        return self._commands.keys()
-
-    def get(self, name, string_args):
-        """Returns a command object with the given name and arguments.
-
-        If a command with the given name can't be found, a NoSuchCommand
-        error is raised.
-        """
-        command_class = self._commands.get(name)
-        if command_class is None:
-            raise NoSuchCommand(name)
-        return command_class(name, string_args)
-
-emailcommands = EmailCommands()

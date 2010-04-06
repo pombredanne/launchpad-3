@@ -3,7 +3,7 @@
 A widget used when setting the geographic location of a given person.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.fields import LocationField
     >>> from canonical.widgets.location import LocationWidget
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
@@ -158,6 +158,39 @@ the map.
     <input...name="field.location.latitude"...type="hidden"...
     <input...name="field.location.longitude"...type="hidden"...
     <select...name="field.location.time_zone"...
+
+
+== The widget's script ==
+
+The widget initializes the mapping.renderPersonMap() JavaScript methods
+with its map_javascript property. The widget uses the
+mapping.setLocation() method to lookup the time zone for the location.
+The launchpad.geonames_identity config key provides the identity required to
+access ba-ws.geonames.net's service.
+
+    >>> from canonical.config import config
+
+    >>> config.push('geoname_data', """
+    ...     [launchpad]
+    ...     geonames_identity: totoro
+    ...     """)
+    >>> print widget.map_javascript
+    <BLANKLINE>
+    <script type="text/javascript">
+        YUI().use('node', 'lp.mapping', function(Y) {
+            function renderMap() {
+                Y.lp.mapping.renderPersonMap(
+                    52.2, 0.3, "Colin Watson",
+                    'kamion', '<img ... />', 'totoro',
+                    'field.location.latitude', 'field.location.longitude',
+                    'field.location.time_zone', 9, 1);
+                }
+            Y.on("domready", renderMap);
+            });
+    </script>
+
+    # Restore the config the the default state.
+    >>> config_data = config.pop('geoname_data')
 
 
 == XSS ==

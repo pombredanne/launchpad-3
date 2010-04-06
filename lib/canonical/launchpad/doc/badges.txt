@@ -30,6 +30,8 @@ Iterating over this collection gives:
     branch
     bug
     mentoring
+    mergeproposal
+    patch
     private
     security
 
@@ -155,7 +157,7 @@ badging methodology is to provide an adapter for the content class to
 adapt the content class to `IHasBadges`.  The implementation of this
 adapter can do the simple determination of a badge based on the
 accessing or counting of the content object's attributes.  The listing
-views then use a decorated object in order to override the badge
+views then use a delegating object in order to override the badge
 determination methods to use the results of an alternative query.
 
     >>> class IFoo(Interface):
@@ -191,7 +193,7 @@ IHasBadges.  Here is the sample from the branch.zcml to illustrate.
   <adapter
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.webapp.badge.IHasBadges"
-      factory="canonical.launchpad.browser.BranchBadges"
+      factory="lp.code.browser.branchlisting.BranchBadges"
       />
 
 Luckily zope provides a way to do this in doctests:
@@ -218,21 +220,20 @@ as illustrated by the printed method calls.
     Foo.blueprints
     <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
 
-When showing listings of Foos, you often want to decorate them with
-`canonical.lazr.decorates`.  By having the DecoratedFoo inherit from the
-FooBadges class, we provide two things: a default implementation for
-each of the badge methods; and direct implementation of IHasBadges.
-This allows the decorated class to provide an alternative method to
-decide on badge visibility.  For example, with branches the visibility
-of the bug badge is determined by the users ability to see the bugs for
-any bug branch links. On listings we don't want to do 100 queries
-just to check bug badges. The batch handler for branches executes a
-single query for the BugBranch links for the branches in the batch and
-that is used to construct the DecoratedBranch.
+When showing listings of Foos, you often want to use
+`lazr.delegates.delegates`. By having the DelegatingFoo inherit from the
+FooBadges class, we provide two things: a default implementation for each of
+the badge methods; and direct implementation of IHasBadges. This allows the
+wrapping, delegating class to provide an alternative method to decide on badge
+visibility. For example, with branches the visibility of the bug badge is
+determined by the users ability to see the bugs for any bug branch links. On
+listings we don't want to do 100 queries just to check bug badges. The batch
+handler for branches executes a single query for the BugBranch links for the
+branches in the batch and that is used to construct the DecoratedBranch.
 
-    >>> from canonical.lazr import decorates
-    >>> class DecoratedFoo(FooBadges):
-    ...     decorates(IFoo, 'foo')
+    >>> from lazr.delegates import delegates
+    >>> class DelegatingFoo(FooBadges):
+    ...     delegates(IFoo, 'foo')
     ...     def __init__(self, foo):
     ...         FooBadges.__init__(self, foo)
     ...         self.foo = foo
@@ -241,19 +242,19 @@ that is used to construct the DecoratedBranch.
     ...     def isBlueprintBadgeVisible(self):
     ...         return False
 
-    >>> decorated_foo = DecoratedFoo(foo)
-    >>> decorated_foo
-    <DecoratedFoo object at ...>
+    >>> delegating_foo = DelegatingFoo(foo)
+    >>> delegating_foo
+    <DelegatingFoo object at ...>
 
-Since the DecoratedFoo implements IHasBadges through the class hierarchy
+Since the DelegatingFoo implements IHasBadges through the class hierarchy
 FooBadges and then HasBadgeBase, getting an IHasBadges for the
-DecoratedFoo returns the same object.
+DelegatingFoo returns the same object.
 
-    >>> badger = IHasBadges(decorated_foo)
-    >>> badger is decorated_foo
+    >>> badger = IHasBadges(delegating_foo)
+    >>> badger is delegating_foo
     True
 
-Getting the visible badges for the decorated_foo bypasses the underlying
+Getting the visible badges for the delegating_foo bypasses the underlying
 method calls, and thus avoiding unnecessary database hits (for normal
 content classes).
 
@@ -285,12 +286,12 @@ content class.
     <img alt="bug" width="32" height="32" src="/@@/bug-large"
          title="Linked to a bug" id="bugbadge"/>
 
-Using the decorated foo, we get the decorated methods called and avoid
+Using the delegating foo, we get the delegated methods called and avoid
 the content class method calls.
 
-    >>> print test_tales('context/badges:small', context=decorated_foo)
+    >>> print test_tales('context/badges:small', context=delegating_foo)
     <img alt="bug" width="14" height="14" src="/@@/bug"
          title="Linked to a bug"/>
-    >>> print test_tales('context/badges:large', context=decorated_foo)
+    >>> print test_tales('context/badges:large', context=delegating_foo)
     <img alt="bug" width="32" height="32" src="/@@/bug-large"
          title="Linked to a bug" id="bugbadge"/>

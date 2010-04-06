@@ -7,7 +7,7 @@ and authorize or not the consumer to act on his behalf.
     # Create a new request token.
     >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
     >>> token = consumer.newRequestToken()
@@ -19,35 +19,26 @@ use the HTTP GET method and may include the oauth_callback parameter.
 The oauth_token parameter, on the other hand, is required in the
 Launchpad implementation.
 
-The +authorize-token page is restricted to logged in users, so users
-will first be asked to log in.
+The +authorize-token page is restricted to logged in users, so users will
+first be asked to log in. (We won't show the actual login process because
+it involves OpenID, which would complicate this test quite a bit.)
 
-    # Set handleErrors to True so that the Unauthorized exception is handled
-    # by the publisher and we get redirected to the +login page.
-    >>> browser.handleErrors = True
     >>> from urllib import urlencode
     >>> params = dict(
     ...     oauth_token=token.key, oauth_callback='http://launchpad.dev/bzr')
-    >>> browser.open(
-    ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
-    >>> browser.url
-    'http://.../+authorize-token/+login?oauth_token=...&oauth_callback=...'
+    >>> url = "http://launchpad.dev/+authorize-token?%s" % urlencode(params)
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
-And then the user is redirected back to the +authorize-token page.
-Note how the query parameters are kept.
-
-    >>> browser.getControl('E-mail address:', index=0).value = (
-    ...     'no-priv@canonical.com')
-    >>> browser.getControl('Password:').value = 'test'
-    >>> browser.getControl(name='loginpage_submit_login').click()
-    >>> browser.url
-    'http://.../+authorize-token?oauth_token=...&oauth_callback=...'
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open(url)
     >>> browser.title
     'Authorize application to access Launchpad on your behalf'
 
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
-    Authorize application to access Launchpad on your behalf
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
@@ -71,9 +62,47 @@ This page contains one submit button for each item of OAuthPermission.
     >>> len(actions) == len(OAuthPermission.items)
     True
 
-An application, when asking to access Launchpad on a user's behalf may
-also specify a certain context, so that the access granted by the user
-is restricted to things related to that context.
+An application, when asking to access Launchpad on a user's behalf,
+may restrict the user to certain items of OAuthPermission. This
+prevents annoying cases where the user grants a level of permission
+that isn't enough for the application. The user always has the option
+to deny permission altogether.
+
+    >>> def print_access_levels(allow_permission):
+    ...     browser.open(
+    ...         "http://launchpad.dev/+authorize-token?%s&%s"
+    ...         % (urlencode(params), allow_permission))
+    ...     main_content = find_tag_by_id(browser.contents, 'maincontent')
+    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
+    ...     for action in actions:
+    ...         print action['value']
+
+    >>> print_access_levels(
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
+    No Access
+    Change Non-Private Data
+    Change Anything
+
+If an application doesn't specify any valid access levels, or only
+specifies the UNAUTHORIZED access level, Launchpad will show all the
+access levels.
+
+    >>> print_access_levels('')
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
+
+    >>> print_access_levels('allow_permission=UNAUTHORIZED')
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
+
+An application may also specify a context, so that the access granted
+by the user is restricted to things related to that context.
 
     >>> params_with_context = {'lp.context': 'firefox'}
     >>> params_with_context.update(params)
@@ -82,8 +111,41 @@ is restricted to things related to that context.
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
-    Authorize application to access Launchpad on your behalf
     The application...wants to access things related to Mozilla Firefox...
+
+A client other than a web browser may request a JSON representation of
+the list of authentication levels.
+
+    >>> import simplejson
+    >>> from canonical.launchpad.testing.pages import setupBrowser
+
+    >>> json_browser = setupBrowser()
+    >>> json_browser.addHeader('Accept', 'application/json')
+    >>> json_browser.addHeader('Authorization',
+    ...     'Basic test@canonical.com:test')
+    >>> json_browser.open(
+    ...     "http://launchpad.dev/+authorize-token?%s"
+    ...     % urlencode(params))
+    >>> json_token = simplejson.loads(json_browser.contents)
+    >>> sorted(json_token.keys())
+    ['access_levels', 'oauth_token', 'oauth_token_consumer']
+
+    >>> sorted((level['value'], level['title'])
+    ...        for level in json_token['access_levels'])
+    [('READ_PRIVATE', 'Read Anything'),
+     ('READ_PUBLIC', 'Read Non-Private Data'),
+     ('UNAUTHORIZED', 'No Access'),
+     ('WRITE_PRIVATE', 'Change Anything'),
+     ('WRITE_PUBLIC', 'Change Non-Private Data')]
+
+    >>> json_browser.open(
+    ...     ("http://launchpad.dev/+authorize-token?%s"
+    ...      "&allow_permission=READ_PRIVATE") % urlencode(params))
+    >>> json_token = simplejson.loads(json_browser.contents)
+    >>> sorted((level['value'], level['title'])
+    ...        for level in json_token['access_levels'])
+    [('READ_PRIVATE', 'Read Anything'),
+     ('UNAUTHORIZED', 'No Access')]
 
 Once the user authorizes the application to access Launchpad on his
 behalf, we issue a redirect to the given oauth_callback (if it was
@@ -102,6 +164,7 @@ person set.
 
     # Need to get the token again as it's been changed in another
     # transaction.
+    >>> login(ANONYMOUS)
     >>> token = consumer.getRequestToken(token.key)
     >>> token.person.name
     u'no-priv'
@@ -114,6 +177,7 @@ If no oauth_callback is specified, we redirect the user to
 +authorized-token.
 
     # Create a new (unreviewed) token.
+    >>> logout()
     >>> login('salgado@ubuntu.com')
     >>> token = consumer.newRequestToken()
     >>> logout()
@@ -174,4 +238,3 @@ another window/tab so there's no need to worry.
     This request for accessing Launchpad on your behalf has been
     reviewed ... ago.
     See all applications authorized to access Launchpad on your behalf.
-

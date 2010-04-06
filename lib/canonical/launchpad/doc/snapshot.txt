@@ -1,153 +1,39 @@
-Get a Snapshot of an Object
----------------------------
+Snapshots of results set
+------------------------
 
-You can create a simple snapshot of an object with Snapshot:
+Launchpad adds special Snapshot support for attributes that are result
+set. Since for comparison purpose we are actually interested in the actual
+result set before the modifciation, we snapshot these as a shortlist.
 
-    >>> from zope.interface import Interface, implements, Attribute
-    >>> from zope.schema import List
-    >>> from canonical.launchpad.fields import Title, Text
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.snapshot import Snapshot
 
-    >>> class IFoo(Interface):
-    ...     title = Title(title=u'My Title')
-    ...     description = Text(title=u'Description')
-    ...     remotes = List(title=u'remotes')
-    ...     totals = Attribute('totals')
-
-    >>> class Foo:
-    ...     implements(IFoo)
+    >>> from lp.registry.model.product import Product
+    >>> class SQLFoo:
+    ...     active_products= True
     ...
     ...     @property
-    ...     def remotes(self):
-    ...         return ["OK"]
-    ...
-    ...     @property
-    ...     def totals(self):
-    ...         return "NOT"
-    >>> foo = Foo()
-    >>> foo.title = 'Some Title'
-    >>> foo.description = 'bla bla bla'
-    >>> snapshot = Snapshot(foo, names=['title'])
-
-Only the given attributes will be assigned to the snapshot:
-
-    >>> snapshot.title == foo.title
-    True
-    >>> hasattr(snapshot, 'description')
-    False
-
-The snapshot won't provided the same interface as foo, though:
-
-    >>> IFoo.providedBy(snapshot)
-    False
-
-If we want the snapshot to provide some interface, we have to specify
-that explicitly:
-
-    >>> snapshot = Snapshot(foo, names=['title'], providing=IFoo)
-    >>> snapshot.title == foo.title
-    True
-    >>> hasattr(snapshot, 'description')
-    False
-    >>> IFoo.providedBy(snapshot)
-    True
-
-The API requires you to specify either 'names' or 'providing':
-
-    >>> snapshot = Snapshot(foo)
-    Traceback (most recent call last):
-    ...
-    SnapshotCreationError: ...
-
-If no names argument is supplied, the snapshot should provide all
-members of the specified interface(s), with the exception of
-Attribute-derived members.
-
-    >>> snapshot = Snapshot(foo, providing=IFoo)
-    >>> snapshot.title == foo.title
-    True
-    >>> hasattr(snapshot, 'description')
-    True
-    >>> hasattr(snapshot, 'totals')
-    False
-    >>> hasattr(snapshot, 'remotes')
-    True
-    >>> snapshot.remotes == ["OK"]
-    True
-
-We can also give more than one interface to provide as an iterable. If
-we don't specify any names, all the names in the given interfaces will
-be copied:
-
-    >>> from zope.interface import providedBy
-    >>> snapshot = Snapshot(foo, providing=providedBy(foo))
-    >>> snapshot.title == foo.title
-    True
-    >>> snapshot.description == foo.description
-    True
-    >>> IFoo.providedBy(snapshot)
-    True
-
-    >>> class IBar(Interface):
-    ...     name = Text(title=u'Name')
-
-    >>> foo.name = "barbie"
-
-    >>> snapshot = Snapshot(foo, providing=[IFoo, IBar])
-    >>> IFoo.providedBy(snapshot)
-    True
-    >>> IBar.providedBy(snapshot)
-    True
-
-    >>> snapshot.title == foo.title
-    True
-    >>> snapshot.name == "barbie"
-    True
-    >>> snapshot.description == foo.description
-    True
-    >>> IFoo.providedBy(snapshot)
-    True
-    >>> IBar.providedBy(snapshot)
-    True
-
-Snapshots of SQLObjects
------------------------
-
-If your methods return SQLObject SelectResults, they will be
-automatically converted to lists (via shortlist) when attaching them to
-the Snapshot object. The example below uses a property that returns
-products to demonstrate:
-
-    >>> from canonical.launchpad.database.product import Product
-    >>> class SQLFoo(Foo):
-    ...     implements(IFoo)
-    ...
-    ...     active_remotes = True
-    ...
-    ...     @property
-    ...     def remotes(self):
-    ...         if self.active_remotes:
+    ...     def products(self):
+    ...         if self.active_products:
     ...             return Product.selectBy(active=True, orderBy='id')
     ...         else:
     ...             return Product.select(orderBy='id')
-    >>> sqlfoo = SQLFoo()
-    >>> sqlfoo.title = 'Some Title'
-    >>> sqlfoo.description = 'bla bla bla'
 
-    >>> snapshot = Snapshot(sqlfoo, providing=IFoo)
-    >>> products = sqlfoo.remotes
-    >>> snapshot.remotes == list(products)
+    >>> sqlfoo = SQLFoo()
+    >>> snapshot = Snapshot(sqlfoo, names=['products'])
+    >>> products = sqlfoo.products
+    >>> snapshot.products == list(products)
     True
 
 You can still effectively compare snapshot and real object. We use the
-active_remotes gimmick here to change the results dynamically, and then
+active_products gimmick here to change the results dynamically, and then
 check to see that the diff we get is actually sane:
 
-    >>> sqlfoo.active_remotes = None
-    >>> products = sqlfoo.remotes
-    >>> snapshot.remotes == list(products)
+    >>> sqlfoo.active_products = False
+    >>> products = sqlfoo.products
+    >>> snapshot.products == list(products)
     False
-    >>> diff = set(products) - set(snapshot.remotes)
+    >>> diff = set(products) - set(snapshot.products)
     >>> diff == set(Product.selectBy(active=False, orderBy='id'))
     True
+
 
