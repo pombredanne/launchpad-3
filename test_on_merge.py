@@ -4,27 +4,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
-
-import sys, os
-
-# In order to be more robust in the face of system Pythons, we want to
-# run without site-packages loaded.  Normally, we do this by just making the
-# script run with bin/py or as an executable.  However, buildbot's
-# configuration starts this file with ``python2.5 -t test_on_merge.py -vv``.
-# Eventually, we probably ought to change this.  However, for now, we will
-# handle this here by restarting.
-if ('site' in sys.modules and
-    not os.path.abspath(sys.modules['site'].__file__).startswith(
-        os.path.abspath(os.path.dirname(__file__)))):
-    # We will restart with python -S.
-    args = sys.argv[:]
-    args[0:0] = [sys.executable, '-S']
-    os.execv(sys.executable, args)
-
 import _pythonpath
 
-import time
-import errno
+import sys, time
+import os, errno
 import tabnanny
 from StringIO import StringIO
 import psycopg2
