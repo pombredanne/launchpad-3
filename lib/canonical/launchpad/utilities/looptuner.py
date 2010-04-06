@@ -89,10 +89,10 @@ class LoopTuner:
         else:
             self.log = log
 
-    def _is_timed_out(self, extra=0):
-        """Return True if the task will be timed out in 'extra' seconds."""
+    def _isTimedOut(self, extra_seconds=0):
+        """Return True if the task will be timed out in extra_seconds."""
         return self.abort_time is not None and (
-            self._time() + extra >= self.start_time + self.abort_time)
+            self._time() + extra_seconds >= self.start_time + self.abort_time)
 
     def run(self):
         """Run the loop to completion."""
@@ -103,7 +103,7 @@ class LoopTuner:
         last_clock = self.start_time
         while not self.operation.isDone():
 
-            if self._is_timed_out():
+            if self._isTimedOut():
                 self.log.warn(
                     "Task aborted after %d seconds." % self.abort_time)
                 break
@@ -160,8 +160,7 @@ class LoopTuner:
         if self.cooldown_time is None or self.cooldown_time <= 0.0:
             return bedtime
         else:
-            if not self._is_timed_out(self.cooldown_time):
-                time.sleep(self.cooldown_time)
+            self._sleep(self.cooldown_time)
             return self._time()
 
     def _time(self):
@@ -171,6 +170,15 @@ class LoopTuner:
         actually waiting.
         """
         return time.time()
+
+    def _sleep(self, seconds):
+        """Sleep.
+
+        If the sleep interval would put us over the tasks timeout,
+        do nothing.
+        """
+        if not self._isTimedOut(self.cooldown_time):
+            time.sleep(self.cooldown_time)
 
 
 def timedelta_to_seconds(td):
@@ -206,11 +214,9 @@ class DBLoopTuner(LoopTuner):
 
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
-        if self._is_timed_out():
-            return
         # Lag is most meaningful on the master.
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        while True:
+        while not self._isTimedOut():
             lag = store.execute("SELECT replication_lag()").get_one()[0]
             if lag is None:
                 lag = timedelta(seconds=0)
@@ -227,17 +233,16 @@ class DBLoopTuner(LoopTuner):
                 % time_to_sleep)
 
             transaction.abort() # Don't become a long running transaction!
-            if not self._is_timed_out(time_to_sleep):
-                time.sleep(time_to_sleep)
+            self._sleep(time_to_sleep)
 
     def _blockForLongRunningTransactions(self):
         """If there are long running transactions, block to avoid making
         bloat worse."""
-        if self.long_running_transaction is None or self._is_timed_out():
+        if self.long_running_transaction is None:
             return
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        _msg_counter = 0
-        while True:
+        msg_counter = 0
+        while not self._isTimedOut():
             results = list(store.execute("""
                 SELECT
                     CURRENT_TIMESTAMP - xact_start,
@@ -254,16 +259,15 @@ class DBLoopTuner(LoopTuner):
 
             # Check for long running transactions every 30 seconds, but
             # only report every 10 minutes to avoid log spam.
-            _msg_counter += 1
-            if _msg_counter % 20 == 1:
+            msg_counter += 1
+            if msg_counter % 20 == 1:
                 for runtime, procpid, usename, datname, query in results:
                     self.log.info(
                         "Blocked on %s old xact %s@%s/%d - %s."
                         % (runtime, usename, datname, procpid, query))
                 self.log.info("Sleeping for up to 10 minutes.")
             transaction.abort() # Don't become a long running transaction!
-            if not self._is_timed_out(30):
-                time.sleep(30)
+            self._sleep(30)
 
     def _coolDown(self, bedtime):
         """As per LoopTuner._coolDown, except we always wait until there
