@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from StringIO import StringIO
 import unittest
 
 import transaction
@@ -17,19 +16,19 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorFreshness)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.mail import stub
+from lp.testing.factory import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadFunctionalLayer
-
 
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
+        self.factory = LaunchpadObjectFactory()
         mirrorset = getUtility(IDistributionMirrorSet)
         self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
             'releases-mirror')
@@ -132,15 +131,6 @@ class TestDistributionMirror(unittest.TestCase):
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.TWODAYSBEHIND)
 
-    def _create_probe_record(self, mirror):
-        log_file = StringIO()
-        log_file.write("Fake probe, nothing useful here.")
-        log_file.seek(0)
-        library_alias = getUtility(ILibraryFileAliasSet).create(
-            name='foo', size=len(log_file.getvalue()),
-            file=log_file, contentType='text/plain')
-        proberecord = mirror.newProbeRecord(library_alias)
-
     def test_disabling_mirror_and_notifying_owner(self):
         login('karl@canonical.com')
 
@@ -148,7 +138,7 @@ class TestDistributionMirror(unittest.TestCase):
         # If a mirror has been probed only once, the owner will always be
         # notified when it's disabled --it doesn't matter whether it was
         # previously enabled or disabled.
-        self._create_probe_record(mirror)
+        self.factory.makeMirrorProbeRecord(mirror)
         self.failUnless(mirror.enabled)
         log = 'Got a 404 on http://foo/baz'
         mirror.disable(notify_owner=True, log=log)
@@ -166,7 +156,7 @@ class TestDistributionMirror(unittest.TestCase):
 
         # For mirrors that have been probed more than once, we'll only notify
         # the owner if the mirror was previously enabled.
-        self._create_probe_record(mirror)
+        self.factory.makeMirrorProbeRecord(mirror)
         mirror.enabled = True
         mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.

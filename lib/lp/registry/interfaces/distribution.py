@@ -25,7 +25,7 @@ from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-   collection_default_content, export_as_webservice_collection,
+   collection_default_content, copy_field, export_as_webservice_collection,
    export_as_webservice_entry, export_operation_as,
    export_read_operation, exported, operation_parameters,
    operation_returns_collection_of, operation_returns_entry,
@@ -320,6 +320,14 @@ class IDistributionPublic(
         """Return the mirror with the given name for this distribution or None
         if it's not found.
         """
+
+    @operation_parameters(
+        country=copy_field(IDistributionMirror['country'], required=True),
+        mirror_type=copy_field(IDistributionMirror['content'], required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
+    def getCountryMirror(country, mirror_type):
+        """Return the country DNS mirror for a country and content type."""
 
     def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
