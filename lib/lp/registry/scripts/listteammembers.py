@@ -56,8 +56,9 @@ def process_team(teamname, display_option='simple'):
                     type_name = 'Unknown key type'
                 params = dict(
                     name=member.name,
-                    sshkey="%s %s %s" % (type_name, key.keytext, 
-                        key.comment.strip())
+                    sshkey="%s %s %s" % (type_name,
+                        key.keytext.translate(None, '\r\n\f'),
+                        key.comment.translate(None, '\r\n\f').strip())
                     )
                 output.append(template % params)
         # Ubuntite
