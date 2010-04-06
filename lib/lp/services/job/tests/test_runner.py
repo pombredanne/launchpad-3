@@ -297,6 +297,10 @@ class ListLogger:
     def __init__(self):
         self.entries = []
 
+    def debug(self, input, *args):
+        # We don't care about debug messages.
+        pass
+
     def info(self, input, *args):
         self.entries.append(input)
 
