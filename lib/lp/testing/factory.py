@@ -1674,7 +1674,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
-                    virtualized=True, description=None):
+                    virtualized=True, description=None, displayname=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1707,8 +1707,9 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled,
-            require_virtualized=virtualized, description=description)
+            distribution=distribution, name=name, displayname=displayname,
+            enabled=enabled, require_virtualized=virtualized,
+            description=description)
 
         if private:
             archive.private = True
@@ -1784,12 +1785,15 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
-                                     sourcename=None):
+                                     sourcename=None, distroseries=None):
         """Make a new SourcePackageRecipeBuild."""
-        if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
         if recipe is None:
             recipe = self.makeSourcePackageRecipe()
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if sourcepackage is None:
+            sourcepackage = distroseries.getSourcePackage(
+                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
         if archive is None:

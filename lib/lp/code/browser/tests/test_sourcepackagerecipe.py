@@ -25,16 +25,20 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSourcePackageRecipeView, self).setUp()
+        self.ppa = self.factory.makeArchive(displayname='Secret PPA')
+        self.squirrel = self.factory.makeDistroSeries(
+            displayname='Secret Squirrel')
+
     def makeRecipe(self):
         chef = self.factory.makePersonNoCommit(displayname='Master Chef',
                 name='chef')
         chocolate = self.factory.makeProduct(name='chocolate')
         cake_branch = self.factory.makeProductBranch(
             owner=chef, name='cake', product=chocolate)
-        distroseries = self.factory.makeDistroSeries(
-            displayname='Secret Squirrel')
         return self.factory.makeSourcePackageRecipe(
-            None, chef, distroseries, None, u'cake_recipe',
+            None, chef, self.squirrel, None, u'cake_recipe',
             u'This recipe builds a foo for disto bar, with my Secret Squirrel'
             ' changes.', cake_branch)
 
@@ -45,7 +49,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     def test_index(self):
         recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe))
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
         pattern = re.compile(dedent("""\
@@ -63,7 +67,15 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Distribution series:
             Secret Squirrel
             Build records
-            Successful build.on 2010-03-16
+            Status
+            Time
+            Distro
+            Archive
+            Successful build
+            on 2010-03-16
+            Secret Squirrel
+            Secret PPA
+            Request build\(s\)
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake"""), re.S)
@@ -73,16 +85,23 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe))
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         pattern = re.compile(dedent("""\
             Build records
+            Status
+            Time
+            Distro
+            Archive
             No suitable builders
-            Recipe contents"""), re.S)
+            Secret Squirrel
+            Secret PPA
+            Request build\(s\)"""), re.S)
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
 
     def makeBuildJob(self, recipe):
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
         buildjob = self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=build)
         return build
@@ -93,7 +112,16 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         builder = self.factory.makeBuilder()
         pattern = re.compile(dedent("""\
             Build records
-            Pending build.in .*\(estimated\)
+            Status
+            Time
+            Distro
+            Archive
+            Pending build
+            in .*
+            \(estimated\)
+            Secret Squirrel
+            Secret PPA
+            Request build\(s\)
             Recipe contents"""), re.S)
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
