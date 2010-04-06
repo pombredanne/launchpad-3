@@ -303,7 +303,7 @@ class OpenIDCallbackView(OpenIDLogin):
                 if account.status == AccountStatus.SUSPENDED:
                     return self.suspended_account_template()
                 elif account.status == AccountStatus.DEACTIVATED:
-                    comment = 'Reactivated by the user herself'
+                    comment = 'Reactivated by the user'
                     password = '' # Needed just to please reactivate() below.
                     sreg_email = self.sreg_response.get('email')
                     email_address = getUtility(IEmailAddressSet).getByEmail(
