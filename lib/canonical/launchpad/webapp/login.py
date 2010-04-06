@@ -277,12 +277,24 @@ class OpenIDCallbackView(OpenIDLogin):
         assert email_address is not None and full_name is not None, (
             "No email address or full name found in sreg response; "
             "can't create a new account for this identity URL.")
-        account, email = getUtility(IAccountSet).createAccountAndEmail(
-            email_address,
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-            full_name,
-            password=None,
-            openid_identifier=openid_identifier)
+        email = getUtility(IEmailAddressSet).getByEmail(email_address)
+        if email is not None:
+            account = email.account
+            assert account is not None, (
+                "This email address should have an associated account.")
+            removeSecurityProxy(account).openid_identifier = openid_identifier
+            if account.status == AccountStatus.DEACTIVATED:
+                comment = 'Reactivated by the user'
+                password = None # Needed just to please reactivate() below.
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+        else:
+            account, email = getUtility(IAccountSet).createAccountAndEmail(
+                email_address,
+                PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                full_name,
+                password=None,
+                openid_identifier=openid_identifier)
         return account
 
     def render(self):
