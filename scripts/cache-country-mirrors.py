@@ -14,6 +14,7 @@ containing the archive mirrors for that country.
 import _pythonpath
 
 import os
+import shutil
 import tempfile
 
 from zope.component import getUtility
@@ -51,7 +52,8 @@ class CacheCountryMirrors(LaunchpadScript):
                 "\n".join(mirror.base_url for mirror in mirrors))
             mirrors_file.close()
             filename = os.path.join(dir_name, '%s.txt' % country.iso3166code2)
-            os.rename(tmpfile, filename)
+            shutil.move(tmpfile, filename)
+            os.chmod(filename, 0644)
 
 
 if __name__ == '__main__':

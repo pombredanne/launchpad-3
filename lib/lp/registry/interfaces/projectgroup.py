@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -25,6 +25,7 @@ from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot)
@@ -45,7 +46,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
-from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, exported,
@@ -236,8 +237,8 @@ class IProjectGroupPublic(
                           "reviewed.")))
 
     bugtracker = exported(
-        Choice(title=_('Bug Tracker'), required=False,
-               vocabulary='BugTracker',
+        ReferenceChoice(title=_('Bug Tracker'), required=False,
+               vocabulary='BugTracker', schema=IBugTracker,
                description=_(
                 "The bug tracker the projects in this project group use.")),
         exported_as="bug_tracker")

@@ -781,6 +781,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (11, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'mark_oid', NULL, '123/mark');
@@ -3922,6 +3925,80 @@ INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
 
 
+ALTER TABLE lp_account DISABLE TRIGGER ALL;
+
+INSERT INTO lp_account (id, openid_identifier) VALUES (11, 'mark_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (21, 'lifeless_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (31, 'justdave_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (41, 'kamion_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (51, 'keybuk_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (61, 'jdub_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (71, 'spiv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (81, 'jblack_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (91, 'kiko_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (101, 'limi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (111, 'stevea_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (121, 'name12_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (131, 'carlos_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (141, 'daf_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (161, 'name16_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (221, 'stub_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (231, 'ddaa_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (261, 'kinnison_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (271, 'debonzi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (281, 'cprov_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (291, 'salgado_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (331, 'edgar_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (341, 'jvprat_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (351, 'sigurd-ubuntu_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (361, 'skacel_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (371, 'danner_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (381, 'martin-pitt_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (391, 'nsv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (401, 'callipeo_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (411, 'jorge-gonzalez-gonzalez_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (421, 'barbier_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (431, 'andrelop_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (441, 'valyag_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (451, 'luk-claes_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (461, 'kurem_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (471, 'morten_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (481, 'mpo_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (491, 'kebil_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (501, 'tsukimi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (511, 'kreutzm_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (521, 'no-priv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (551, 'marilize_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (561, 'jordi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (581, 'bug-importer_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (621, 'bug-watch-updater_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (631, 'karl_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (651, 'launchpad-janitor_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (661, 'matsubara_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (671, 'team-membership-janitor_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (681, 'launchpad-beta-owner_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (701, 'former-user_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436021, 'no-team-memberships_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436031, 'one-membership_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436061, 'neMCQNd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436081, 'WQPMHdf');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436091, '6w7kmzC');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436101, 'cCGE3LA');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436111, 'MGWJnTL');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436141, '6KHNEe3');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436151, 'yEzBPbd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436161, 'R8FpwXd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436171, 'CALDpFr');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436221, 'rPwGRk4');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436231, 'mTmeENb');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436241, 'cF4PNk3');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436242, 'GMX7shE');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436243, 'kYFxQYP');
+
+
+ALTER TABLE lp_account ENABLE TRIGGER ALL;
+
+
 ALTER TABLE lp_person DISABLE TRIGGER ALL;
 
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (1, 'Mark Shuttleworth', NULL, NULL, 'mark', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 11);
@@ -4007,7 +4084,7 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243614, 'josh', NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 2436141);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243615, 'Sjoerd Simons', NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 2436151);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243616, 'Martin Pitt', NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 2436161);
-INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436171);
+INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'dumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436171);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243618, 'Bazaar Experts', 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243620, 'Canonical Partner Developers', 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243621, 'Commercial Subscription Admins', 243622, NULL, 'commercial-admins', NULL, NULL, NULL, NULL, 3, NULL, '2008-04-21 21:29:56.881698', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
@@ -5209,7 +5286,7 @@ INSERT INTO person (id, displayname, teamowner, teamdescription, name, language,
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243614, 'josh', NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 2436141);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243615, 'Sjoerd Simons', NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 2436151);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243616, 'Martin Pitt', NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 2436161);
-INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436171);
+INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243617, 'Tim Penhey', NULL, NULL, 'dumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, 2436171);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243618, 'Bazaar Experts', 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243620, 'Canonical Partner Developers', 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
 INSERT INTO person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (243621, 'Commercial Subscription Admins', 243622, NULL, 'commercial-admins', NULL, NULL, NULL, NULL, 3, NULL, '2008-04-21 21:29:56.881698', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, true, NULL);
@@ -8995,6 +9072,13 @@ ALTER TABLE sourcepackagerecipedatainstruction DISABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerecipedatainstruction ENABLE TRIGGER ALL;
+
+
+ALTER TABLE sourcepackagerecipedistroseries DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE sourcepackagerecipedistroseries ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
