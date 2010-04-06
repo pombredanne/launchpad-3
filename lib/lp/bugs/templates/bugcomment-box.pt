@@ -74,25 +74,23 @@
       </li>
     </ul>
 
-    <tal:cache tal:replace="cache:private,30 days,comment/index">
-      <tal:comment replace="nothing">
-          Unfortunately, this section needs 'private' visibility as inline
-          bug links get marked up with a tooltip containing the bug
-          summary, which would leak private bug information if the cache
-          was shared. This might thrash our cache - if so, we need to
-          change the visibility to 'anonymous' and not cache at all for
-          logged in users. Or stop doing so much work marking up bug
-          comments, removing functionality but improving performance.
-      </tal:comment>
-      <div class="bug-comment"
-        tal:content="structure
-          comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
-        Comment text.
-      </div>
-      <p tal:condition="comment/was_truncated">
-        <a tal:attributes="href comment/fmt:url">Read more...</a>
-      </p>
-    </tal:cache>
+    <tal:comment replace="nothing">
+        Unfortunately, this section needs 'private' visibility as inline
+        bug links get marked up with a tooltip containing the bug
+        summary, which would leak private bug information if the cache
+        was shared. This might thrash our cache - if so, we need to
+        change the visibility to 'anonymous' and not cache at all for
+        logged in users. Or stop doing so much work marking up bug
+        comments, removing functionality but improving performance.
+    </tal:comment>
+    <div class="bug-comment"
+      tal:content="structure
+        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+      Comment text.
+    </div>
+    <p tal:condition="comment/was_truncated">
+      <a tal:attributes="href comment/fmt:url">Read more...</a>
+    </p>
   </div>
   <div class="boardCommentFooter" tal:condition="comment/show_footer"
     tal:content="cache:authenticated,30 minutes,comment/index">
