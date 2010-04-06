@@ -825,7 +825,7 @@ class TestBugTracker:
         self.test_bug_one = test_bug_one
         self.test_bug_two = test_bug_two
 
-    def getBugWatchesNeedingUpdate(self, hours):
+    def getBugWatchesNeedingUpdate(self):
         """Returns a sequence of teo bug watches for testing."""
         return TestResultSequence([
             TestBugWatch(1, self.test_bug_one, failing=True),
@@ -905,7 +905,7 @@ class TestBugWatchUpdater(BugWatchUpdater):
         """
         return [
             bug_watch for bug_watch in (
-                self.bugtracker.getBugWatchesNeedingUpdate(0))
+                self.bugtracker.getBugWatchesNeedingUpdate())
             if (bug_watch.remotebug == remote_bug_id and
                 bug_watch.id in bug_watch_ids)
             ]

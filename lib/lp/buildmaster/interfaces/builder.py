@@ -150,13 +150,14 @@ class IBuilder(IHasOwner):
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
-    def checkCanBuildForDistroArchSeries(distro_arch_series):
-        """Check that the slave can compile for the given distro_arch_release.
+    def checkSlaveArchitecture():
+        """Check that the slave can compile for its nominated processor.
 
         This will query the builder to determine its actual architecture (as
-        opposed to what we expect it to be).
+        opposed to what we expect it to be). It will then look for a
+        DistroArchSeries with the returned architecture tag, and confirm that
+        the processor type matches.
 
-        :param distro_arch_release: The distro_arch_release to check against.
         :raises BuildDaemonError: When the builder is down or of the wrong
             architecture.
         :raises ProtocolVersionMismatch: When the builder returns an

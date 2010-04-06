@@ -83,6 +83,7 @@ class BugWatch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    next_check = UtcDateTimeCol()
 
     @property
     def bugtasks(self):

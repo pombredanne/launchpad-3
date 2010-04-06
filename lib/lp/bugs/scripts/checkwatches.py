@@ -58,7 +58,7 @@ from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
-MAX_SQL_STATEMENTS_LOGGED = 1000
+MAX_SQL_STATEMENTS_LOGGED = 10000
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -149,7 +149,7 @@ def report_oops(message=None, properties=None, info=None, txn=None):
         clear_request_started()
         set_request_started(
             request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
-            txn=txn)
+            txn=txn, enable_timeout=False)
     return request
 
 
@@ -261,7 +261,7 @@ class BugWatchUpdater(object):
                     set_request_started(
                         request_statements=LimitedList(
                             MAX_SQL_STATEMENTS_LOGGED),
-                        txn=self.txn)
+                        txn=self.txn, enable_timeout=False)
                     run = self._interactionDecorator(self.updateBugTracker)
                     return run(bug_tracker_id, batch_size)
                 finally:
@@ -408,7 +408,7 @@ class BugWatchUpdater(object):
             self.txn.begin()
             if not self.updateBugTracker(bug_tracker, batch_size):
                 break
-            watches_left = bug_tracker.getBugWatchesNeedingUpdate(23).count()
+            watches_left = bug_tracker.getBugWatchesNeedingUpdate().count()
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
@@ -466,16 +466,7 @@ class BugWatchUpdater(object):
 
     def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
-        # XXX 2007-01-18 gmb:
-        #     Once we start running checkwatches more frequently we need
-        #     to update the comment and the call to
-        #     getBugWatchesNeedingUpdate() below. We'll be checking
-        #     those watches which haven't been checked for 24 hours, not
-        #     23.
-        # We want 1 day, but we'll use 23 hours because we can't count
-        # on the cron job hitting exactly the same time every day
-        bug_watches_to_update = (
-            bug_tracker.getBugWatchesNeedingUpdate(23))
+        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate()
 
         if bug_watches_to_update.count() > 0:
             # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
@@ -495,6 +486,7 @@ class BugWatchUpdater(object):
                 for bug_watch in bug_watches_to_update:
                     bug_watch.last_error_type = error_type
                     bug_watch.lastchecked = UTC_NOW
+                    bug_watch.next_check = None
 
                 message = (
                     "ExternalBugtracker for BugTrackerType '%s' is not "
@@ -734,6 +726,7 @@ class BugWatchUpdater(object):
             for bug_watch_id in bug_watch_ids:
                 bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
                 bugwatch.lastchecked = UTC_NOW
+                bugwatch.next_check = None
                 bugwatch.last_error_type = errortype
             self.txn.commit()
             raise
@@ -764,6 +757,7 @@ class BugWatchUpdater(object):
             for bug_watch_id in bug_watch_ids:
                 bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
                 bugwatch.lastchecked = UTC_NOW
+                bugwatch.next_check = None
                 bugwatch.last_error_type = errortype
             self.txn.commit()
             raise
@@ -817,6 +811,7 @@ class BugWatchUpdater(object):
 
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
+                bug_watch.next_check = None
             if remote_bug_id in unmodified_remote_ids:
                 continue
 
@@ -911,6 +906,7 @@ class BugWatchUpdater(object):
                 errortype = get_bugwatcherrortype_for_error(error)
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
+                    bug_watch.next_check = None
                     bug_watch.last_error_type = errortype
                     bug_watch.addActivity(result=errortype, oops_id=oops_id)
                 # We need to commit the transaction, in case the next

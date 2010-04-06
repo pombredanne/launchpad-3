@@ -91,13 +91,27 @@ being correct.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate(23))
+    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
+    >>> len(bug_watches)
+    0
+
+It looks as though there are no bug watches needing to be updated.
+That's because the check for whether a bug watch needs to be updated
+looks at its next_check field, which is None by default. Updating the
+bug watches should solve that problem.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+    >>> for watch in debbugs.watches:
+    ...     watch.next_check = datetime.now(utc)
+
+    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
     >>> len(bug_watches)
     5
 
-Log in and kick off the update. The importing of comments, which is
-controlled by a configuration option, is disabled here and will be
-tested later.
+Now there are some watches to update we can run the update against them.
+The importing of comments, which is controlled by a configuration
+option, is disabled here and will be tested later.
 
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
@@ -116,11 +130,11 @@ tested later.
     327549: open important security
     308994: open important
 
-The lastchecked attribute got updated for each bug watch, so no more
-watches are in need of an update.
+The next_check value for all the watches got set to null when they
+were updated, so there are no watches left needing an update.
 
     >>> flush_database_updates()
-    >>> watches = debbugs.getBugWatchesNeedingUpdate(23)
+    >>> watches = debbugs.getBugWatchesNeedingUpdate()
     >>> watches.count()
     0
 

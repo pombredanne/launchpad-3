@@ -166,7 +166,7 @@ class SystemErrorView(LaunchpadView):
     @property
     def layer_help(self):
         if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
-            return '''<a href="http://help.launchpad.net/Feeds">
+            return '''<a href="https://help.launchpad.net/Feeds">
                       Help with Launchpad feeds</a>'''
         else:
             return None

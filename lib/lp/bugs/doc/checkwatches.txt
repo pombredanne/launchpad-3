@@ -103,6 +103,8 @@ timeout and call the checkwatches cronscript machinery directly.
 
 First, we create some bug watches to test with:
 
+    >>> from datetime import datetime
+    >>> from pytz import utc
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IBugSet)
@@ -128,6 +130,7 @@ First, we create some bug watches to test with:
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1',
     ...     getUtility(ILaunchpadCelebrities).janitor)
+    >>> example_bugwatch.next_check = datetime.now(utc)
 
     >>> login('no-priv@canonical.com')
 
@@ -206,7 +209,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...         bugtrackertype.name, bugtracker.name)
 
     >>> login(ANONYMOUS)
-    >>> example_bugwatch.lastchecked = None
+    >>> example_bugwatch.next_check = datetime.now(utc)
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
@@ -242,6 +245,7 @@ transaction if something goes wrong.
     ...     example_bugwatch = example_bug.addWatch(
     ...         example_bug_tracker, str(bug_id),
     ...         getUtility(ILaunchpadCelebrities).janitor)
+    ...     example_bugwatch.next_check = datetime.now(utc)
 
 Since we know how many bugwatches example_bug has we will be able to see
 when checkwatches only updates a subset of them.
@@ -294,15 +298,13 @@ watch.
 We'll set the lastchecked time on that Savannah instance to make sure
 that it looks as though it has been updated recently
 
-    >>> import pytz
-    >>> from datetime import datetime
     >>> login('test@canonical.com')
     >>> for watch in savannah.watches:
-    ...     watch.lastchecked = datetime.now(pytz.timezone('UTC'))
+    ...     watch.lastchecked = datetime.now(utc)
 
 So our Savannah instance now has no watches that need checking.
 
-    >>> savannah.getBugWatchesNeedingUpdate(23).count()
+    >>> savannah.getBugWatchesNeedingUpdate().count()
     0
 
 However, forceUpdateAll() will update every watch, whether they've
@@ -368,10 +370,11 @@ made.
     ...     def _updateBugTracker(self, bug_tracker, batch_size):
     ...         # Update as many watches as the batch size says.
     ...         watches_to_update = (
-    ...             bug_tracker.getBugWatchesNeedingUpdate(23)[:batch_size])
+    ...             bug_tracker.getBugWatchesNeedingUpdate()[:batch_size])
     ...
     ...         for watch in watches_to_update:
-    ...             watch.lastchecked = datetime.now(pytz.timezone('UTC'))
+    ...             watch.lastchecked = datetime.now(utc)
+    ...             watch.next_check = None
 
     >>> non_connecting_updater = NonConnectingUpdater(transaction)
     >>> non_connecting_updater.log = FakeLogger()
@@ -397,8 +400,6 @@ external bug tracker (bug 484712).
 
 We'll create a non-functioning ExternalBugtracker to demonstrate this.
 
-    >>> import pytz
-    >>> from datetime import datetime
     >>> from zope.interface import implements
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus, BugTaskImportance)
@@ -407,7 +408,7 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...     ISupportsBackLinking)
     >>> from lp.bugs.externalbugtracker.base import ExternalBugTracker
 
-    >>> nowish = datetime.now(pytz.timezone('UTC'))
+    >>> nowish = datetime.now(utc)
     >>> class UselessExternalBugTracker(ExternalBugTracker):
     ...
     ...     implements(

@@ -16,7 +16,7 @@ and an external bug, see bugwatch.txt.
 
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
-    ...         bugtracker.getBugWatchesNeedingUpdate(23),
+    ...         bugtracker.getBugWatchesNeedingUpdate(),
     ...         key=lambda watch: (watch.remotebug, watch.bug.id))
     ...
     ...     for bug_watch in watches:
@@ -28,8 +28,8 @@ We must be an admin to modify bug watches later on.
     >>> login('foo.bar@canonical.com')
 
 We can get a list of all the bug tracker's bug watches needing to be
-updated.  The current criteria for needing a update is that it hasn't
-been updated in the last 23 hours.
+updated. A bug watch is considered to be needing an update when its
+next_check time is in the past.
 
     >>> bug_watches = mozilla_bugzilla.watches
     >>> print bug_watches.count()
@@ -37,7 +37,7 @@ been updated in the last 23 hours.
 
     >>> print bug_watches[0].remotebug, bug_watches[0].bug.id
     2000 1
-    >>> bug_watches[0].lastchecked = None
+    >>> bug_watches[0].next_check = now - timedelta(hours=1)
 
     >>> print bug_watches[1].remotebug, bug_watches[1].bug.id
     123543 1
@@ -48,11 +48,11 @@ remote bug.
 
     >>> print bug_watches[2].remotebug, bug_watches[2].bug.id
     42 1
-    >>> bug_watches[2].lastchecked = now - timedelta(hours=36)
+    >>> bug_watches[2].next_check = now - timedelta(hours=36)
 
     >>> print bug_watches[3].remotebug, bug_watches[3].bug.id
     42 2
-    >>> bug_watches[3].lastchecked = now - timedelta(days=1)
+    >>> bug_watches[3].next_check = now - timedelta(days=1)
 
 The watches needing updating should the ones with old statuses, 2000 and 42:
 
@@ -593,31 +593,34 @@ It's possible to reset all the watches on a bug tracker by calling its
 resetWatches() method.
 
     >>> from operator import attrgetter
+    >>> from pytz import utc
+    >>> definitely_now = datetime.now(utc)
 
     >>> def print_tracker_watch_times(bugtracker):
     ...     for watch in sorted(
     ...         bugtracker.watches, key=attrgetter('id')):
-    ...         if watch.lastchecked is not None:
-    ...             print watch.bug.id, "not None"
+    ...         if watch.next_check != definitely_now:
+    ...             print watch.bug.id, "not now"
     ...         else:
-    ...             print watch.bug.id, watch.lastchecked
+    ...             print watch.bug.id, "now"
 
     >>> print_tracker_watch_times(mozilla_bugzilla)
-    2 not None
-    1 None
-    1 not None
-    1 not None
+    2 not now
+    1 not now
+    1 not now
+    1 not now
 
-Calling resetWatches() on mozilla_bugzilla will set all its
-lastchecked times to None.
+Calling resetWatches() on mozilla_bugzilla will set all its next_check
+times to datetime.now(). For testing purposes, we'll pass it a value to
+use in place of now().
 
-    >>> mozilla_bugzilla.resetWatches()
+    >>> mozilla_bugzilla.resetWatches(now=definitely_now)
     >>> transaction.commit()
     >>> print_tracker_watch_times(mozilla_bugzilla)
-    2 None
-    1 None
-    1 None
-    1 None
+    2 now
+    1 now
+    1 now
+    1 now
 
 resetWatches() also clears the last_error_type field of the watches.
 
