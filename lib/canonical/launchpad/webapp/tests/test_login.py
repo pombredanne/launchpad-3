@@ -202,16 +202,24 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     def test_deactivated_account(self):
         # The user has the account's password and is trying to login, so we'll
         # just re-activate their account.
+        email = 'foo@example.com'
         account = self.factory.makeAccount(
-            'Test account', status=AccountStatus.DEACTIVATED)
+            'Test account', email=email, status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
-        view, html = self._createViewWithResponse(account)
+        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_response = FakeOpenIDResponse(
+            'http://testopenid.dev/+id/%s' % openid_identifier,
+            status=SUCCESS, email=email, full_name=account.displayname)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createAndRenderView(openid_response)
         self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
         self.assertEquals(view.request.form['starting_url'],
                           response.getHeader('Location'))
+        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEquals(email, account.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
         # stuff. 
