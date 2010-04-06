@@ -74,16 +74,19 @@
       </li>
     </ul>
 
-    <div class="bug-comment"
-      tal:content="structure
-        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
-      Comment text.
-    </div>
-    <p tal:condition="comment/was_truncated">
-      <a tal:attributes="href comment/fmt:url">Read more...</a>
-    </p>
+    <tal:cache tal:replace="cache:authenticated,30 days,comment/index">
+      <div class="bug-comment"
+        tal:content="structure
+          comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+        Comment text.
+      </div>
+      <p tal:condition="comment/was_truncated">
+        <a tal:attributes="href comment/fmt:url">Read more...</a>
+      </p>
+    </tal:cache>
   </div>
-  <div class="boardCommentFooter" tal:condition="comment/show_footer">
+  <div class="boardCommentFooter" tal:condition="comment/show_footer"
+    tal:content="cache:authenticated,30 minutes,comment/index">
     <tal:activity
         define="activity_list comment/activity"
         condition="comment/activity">
