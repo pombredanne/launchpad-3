@@ -72,22 +72,13 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        suitable_distroseries = set(self.suitable_distroseries)
-        distros = [distro for distro in self.context.distroseries
-                   if distro in suitable_distroseries]
-        return {'distros': distros}
-
-    @property
-    def suitable_distroseries(self):
-        dsset = getUtility(IDistroSeriesSet).search()
-        return [distro for distro in dsset
-                if distro.enabled_architectures.count() > 0]
+        return {'distros': self.context.distroseries}
 
     @property
     def schema(self):
+        dsset = getUtility(IDistroSeriesSet).search()
         terms = [SimpleTerm(distro, distro.id, distro.title)
-                 for distro in self.suitable_distroseries]
-
+                 for distro in dsset]
         archive_vocab = make_archive_vocabulary(
             ppa
             for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
