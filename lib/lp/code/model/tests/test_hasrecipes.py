@@ -17,7 +17,7 @@ class TestIHasRecipes(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_branch_implements_hasbranches(self):
+    def test_branch_implements_hasrecipes(self):
         # Branches should implement IHasRecipes.
         branch = self.factory.makeBranch()
         self.assertProvides(branch, IHasRecipes)
