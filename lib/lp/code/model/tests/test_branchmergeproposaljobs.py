@@ -178,6 +178,14 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
             'The source branch has no revisions.',
             email.get_payload(decode=True))
 
+    def test_10_minute_lease(self):
+        self.useBzrBranches()
+        bmp = self.createExampleMerge()[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        job.acquireLease()
+        expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
+        self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
+
 
 class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 

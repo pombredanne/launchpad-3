@@ -1212,8 +1212,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
 
-        return getUtility(IBugWatchSet).createBugWatch(
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
+
+        # You need to be an admin to set next_check on a BugWatch.
+        def set_next_check(bug_watch):
+            bug_watch.next_check = datetime.now(pytz.timezone('UTC'))
+
+        person = getUtility(IPersonSet).getByName('name16')
+        run_with_login(person, set_next_check, bug_watch)
+        return bug_watch
 
     def makeBugComment(self, bug=None, owner=None, subject=None, body=None):
         """Create and return a new bug comment.
@@ -1755,7 +1763,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, *branches):
+                                name=None, description=None, *branches):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1767,9 +1775,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             sourcepackagename = self.makeSourcePackageName()
         if name is None:
             name = self.getUniqueString().decode('utf8')
+        if description is None:
+            description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
         return getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, distroseries, sourcepackagename, name, recipe)
+            registrant, owner, [distroseries], sourcepackagename, name,
+            recipe, description)
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
@@ -2109,6 +2120,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
+            changelog=None,
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),

@@ -327,6 +327,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         yield
         server.stop_server()
 
+    def acquireLease(self, duration=600):
+        return self.job.acquireLease(duration)
+
     def run(self):
         """See `IRunnableJob`."""
         self.checkReady()

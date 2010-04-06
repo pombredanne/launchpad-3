@@ -1523,22 +1523,15 @@ class BuildBaseFormatterAPI(ObjectFormatterAPI):
         else:
             return ""
 
-    def icon(self, view_name):
-        if not check_permission('launchpad.View', self._context):
-            return '<img src="/@@/processing" alt="[build]" />'
-
-        return BuildImageDisplayAPI(self._context).icon()
-
     def link(self, view_name, rootsite=None):
-        icon = self.icon(view_name)
         build = self._context
         if not check_permission('launchpad.View', build):
-            return '%s private source' % icon
+            return 'private source'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
         title = cgi.escape(build.title)
         archive = self._composeArchiveReference(build.archive)
-        return '<a href="%s">%s%s</a>%s' % (url, icon, title, archive)
+        return '<a href="%s">%s</a>%s' % (url, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
