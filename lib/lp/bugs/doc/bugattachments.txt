@@ -576,3 +576,28 @@ meaningful description.
 
     >>> print attachment.type.title
     Patch
+
+
+Attachments without library files
+---------------------------------
+
+It can happen that the LibraryFileContent record of a bug attachment is
+deleted, for example. because an admin deleted a privacy sensitive file.
+These attachments are not included in the property `valid_attachments`.
+Out test bug has at present two valid attachments.
+
+    >>> [attachment.title for attachment in bug.valid_attachments]
+    [u'foobar', u'An attachment of some sort']
+
+If we remove the content record from one attachment, it no longer
+returned by Bug.valid_attachments.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(attachment.libraryfile).content = None
+    >>> [attachment.title for attachment in bug.valid_attachments]
+    [u'foobar']
+
+But Bug.attachments still lists it.
+
+    >>> [attachment.title for attachment in bug.attachments]
+    [u'foobar', u'An attachment of some sort']

@@ -472,9 +472,8 @@ class BugViewMixin:
         # We remove also those attachments where the library file
         # has been deleted.
         return [attachment
-                for attachment in self.context.attachments
-                if (attachment.type != BugAttachmentType.PATCH and
-                    attachment.libraryfile.content is not None)]
+                for attachment in self.context.valid_attachments
+                if attachment.type != BugAttachmentType.PATCH]
 
     @property
     def patches(self):
@@ -482,9 +481,8 @@ class BugViewMixin:
         # We remove also those attachments where the library file
         # has been deleted.
         return [attachment
-                for attachment in self.context.attachments
-                if (attachment.type == BugAttachmentType.PATCH and
-                    attachment.libraryfile.content is not None)]
+                for attachment in self.context.valid_attachments
+                if attachment.type == BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):

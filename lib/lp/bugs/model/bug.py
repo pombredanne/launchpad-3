@@ -1537,6 +1537,13 @@ class Bug(SQLBase):
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
 
+    @property
+    def valid_attachments(self):
+        """See `IBug`."""
+        return [
+            attachment for attachment in self.attachments
+            if attachment.libraryfile.content is not None]
+
 
 class BugSet:
     """See BugSet."""
