@@ -44,9 +44,10 @@ from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.launchpad.helpers import is_ascii_only
-from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
+from canonical.launchpad.helpers import is_ascii_only
+from canonical.lp import isZopeless
+from lp.services.mail.stub import TestMailer
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -408,7 +409,7 @@ def sendmail(message, to_addrs=None, bulk=True):
 
     raw_message = message.as_string()
 
-    if config.instance_name == 'testrunner':
+    if isZopeless() and config.instance_name == 'testrunner':
         # when running in the testing environment, store emails
         TestMailer().send(
             config.canonical.bounce_address, to_addrs, raw_message)
