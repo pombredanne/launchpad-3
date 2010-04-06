@@ -20,8 +20,8 @@ from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
-    OkSlave,)
+from lp.soyuz.tests.soyuzbuilddhelpers import (
+    MockBuilder, OkSlave)
 from lp.soyuz.tests.test_binarypackagebuildbehavior import (
     BaseTestVerifySlaveBuildID)
 from lp.soyuz.tests.test_publishing import (

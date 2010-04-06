@@ -29,7 +29,7 @@ Builders can take on different behaviors depending on the type of build
 they are currently processing. Each builder provides an attribute
 (current_build_behavior) to which all the build-type specific behavior
 for the current build is delegated. In the sample data, bob's current
-behavior is the behavior for dealing with binary packages
+behavior is dealing with binary packages.
 
     >>> from zope.security.proxy import isinstance
     >>> from lp.soyuz.model.binarypackagebuildbehavior import (
@@ -67,7 +67,7 @@ Iterating over a BuilderSet yields all registered builders.
     bob
     frog
 
-count() return the number of builder instance we have stored:
+count() return the number of builders registered:
 
     >>> builderset.count()
     2
@@ -96,20 +96,20 @@ The 'new' method will create a new builder in the database.
     u'dummy'
 
 'getBuilders' returns builders with the 'active' flag set, ordered by
-virtualisation status, architecture, then name.
+virtualization status, architecture, then name.
 
     >>> for b in builderset.getBuilders():
-    ...     b.name
-    u'bob'
-    u'dummy'
-    u'frog'
+    ...     print b.name
+    bob
+    dummy
+    frog
     >>> login('foo.bar@canonical.com')
     >>> bnew.active = False
     >>> login(ANONYMOUS)
     >>> for b in builderset.getBuilders():
-    ...     b.name
-    u'bob'
-    u'frog'
+    ...     print b.name
+    bob
+    frog
 
 'getBuildQueueSizeForProcessor' returns the number of pending builds
 for a given Processor. The callsites can also control which build-farm
