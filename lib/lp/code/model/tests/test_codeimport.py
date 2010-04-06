@@ -12,7 +12,8 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
+from canonical.launchpad.testing.codeimporthelpers import (
+    make_running_import)
 from lp.code.errors import (
     CodeImportAlreadyRequested, CodeImportAlreadyRunning,
     CodeImportNotInReviewedState)
@@ -24,8 +25,7 @@ from lp.code.interfaces.branch import BranchCreatorNotMemberOfOwnerTeam
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
-    RevisionControlSystems)
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.testing import (
     login, login_person, logout, TestCaseWithFactory, time_counter)
@@ -632,8 +632,7 @@ class TestRequestImport(TestCaseWithFactory):
 
     def setUp(self):
         # We have to be logged in to request imports
-        TestCaseWithFactory.setUp(self)
-        login('no-priv@canonical.com')
+        TestCaseWithFactory.setUp(self, user='no-priv@canonical.com')
 
     def test_requestsJob(self):
         code_import = self.factory.makeCodeImport(
@@ -669,7 +668,8 @@ class TestRequestImport(TestCaseWithFactory):
 
     def test_exception_on_disabled(self):
         # get an SVN request, which isn't reviewed by default
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeCodeImport(
+            svn_branch_url=self.factory.getUniqueURL())
         requester = self.factory.makePerson()
         # which leads to an exception if we try and ask for an import
         self.assertRaises(
@@ -679,13 +679,8 @@ class TestRequestImport(TestCaseWithFactory):
     def test_exception_if_already_running(self):
         code_import = self.factory.makeCodeImport(
             git_repo_url=self.factory.getUniqueURL())
-        machine = self.factory.makeCodeImportMachine(set_online=True)
-        unsafe_job = removeSecurityProxy(code_import.import_job)
-        unsafe_job.state = CodeImportJobState.RUNNING
-        unsafe_job.machine = machine
-        unsafe_job.heartbeat = UTC_NOW
-        unsafe_job.logtail = "logtail"
-        unsafe_job.date_started = UTC_NOW
+        code_import = make_running_import(factory=self.factory,
+            code_import=code_import)
         requester = self.factory.makePerson()
         self.assertRaises(
             CodeImportAlreadyRunning, code_import.requestImport,
