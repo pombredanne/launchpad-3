@@ -6,6 +6,7 @@
 
 import xmlrpclib
 
+from email.iterators import typed_subpart_iterator
 from email.Utils import formatdate, make_msgid
 
 # pylint: disable-msg=F0401
@@ -72,6 +73,18 @@ def hold(mlist, msg, msgdata, annotation):
         # message id, so treat this as spam.
         syslog('vette',
                'Discarding duplicate held message-id: %s', message_id)
+        raise Errors.DiscardMessage
+    # Discard messages without text content since there will be nothing to
+    # moderate. Most of these messages are spam.
+    has_content = False
+    for part in typed_subpart_iterator(msg, 'text'):
+        if part.get_content_subtype() == 'plain':
+            if len(part.get_payload().strip()) > 0:
+                has_content = True
+                break
+    if not has_content:
+        syslog('vette',
+               'Discarding text-less message-id: %s', message_id)
         raise Errors.DiscardMessage
     holds[message_id] = request_id
     # In addition to Message-ID, the librarian requires a Date header.
