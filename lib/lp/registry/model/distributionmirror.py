@@ -45,9 +45,11 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.distributionmirror import (
+    CannotTransitionToCountryMirror, CountryMirrorAlreadySet,
     IDistributionMirror, IDistributionMirrorSet, IMirrorCDImageDistroSeries,
     IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorFreshness, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
+    MirrorContent, MirrorFreshness, MirrorHasNoHTTPURL, MirrorNotOfficial,
+    MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
@@ -100,6 +102,8 @@ class DistributionMirror(SQLBase):
     date_reviewed = UtcDateTimeCol(default=None)
     whiteboard = StringCol(
         notNull=False, default=None)
+    country_dns_mirror = BoolCol(
+        notNull=True, default=False)
 
     @property
     def base_url(self):
@@ -144,6 +148,64 @@ class DistributionMirror(SQLBase):
         assert self.last_probe_record is None, (
             "This mirror has been probed and thus can't be removed.")
         SQLBase.destroySelf(self)
+
+    def verifyTransitionToCountryMirror(self):
+        """Verify that a mirror can be set as a country mirror.
+
+        Return True if valid, otherwise raise a subclass of
+        CannotTransitionToCountryMirror.
+        """
+
+        current_country_mirror = self.distribution.getCountryMirror(
+            self.country, self.content)
+
+        if current_country_mirror is not None:
+            # Country already has a country mirror.
+            raise CountryMirrorAlreadySet(
+                "%s already has a country %s mirror set." % (
+                    self.country.name, self.content))
+
+        if not self.isOfficial():
+            # Only official mirrors may be set as country mirrors.
+            raise MirrorNotOfficial(
+                "This mirror may not be set as a country mirror as it is not "
+                "an official mirror.")
+
+        if self.http_base_url is None:
+            # Country mirrors must have HTTP URLs set.
+            raise MirrorHasNoHTTPURL(
+                "This mirror may not be set as a country mirror as it does "
+                "not have an HTTP URL set.")
+
+        if not self.last_probe_record:
+            # Only mirrors which have been probed may be set as country
+            # mirrors.
+            raise MirrorNotProbed(
+                "This mirror may not be set as a country mirror as it has "
+                "not been probed.")
+
+        # Verification done.
+        return True
+
+    def canTransitionToCountryMirror(self):
+        """See `IDistributionMirror`."""
+        try:
+            return self.verifyTransitionToCountryMirror()
+        except CannotTransitionToCountryMirror:
+            return False
+
+    def transitionToCountryMirror(self, country_dns_mirror):
+        """See `IDistributionMirror`."""
+
+        # country_dns_mirror has not been changed, do nothing.
+        if self.country_dns_mirror == country_dns_mirror:
+            return
+
+        # Environment sanity checks.
+        if country_dns_mirror:
+            self.verifyTransitionToCountryMirror()
+
+        self.country_dns_mirror = country_dns_mirror
 
     def getOverallFreshness(self):
         """See IDistributionMirror"""
