@@ -51,8 +51,6 @@ class SourcePackageRecipeView(LaunchpadView):
         return builds
 
 
-
-
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     """A view for requesting builds of a SourcePackageRecipe."""
 
@@ -64,7 +62,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def schema(self):
         dsset = getUtility(IDistroSeriesSet).search()
         terms = [SimpleTerm(distro, distro.id, distro.title)
-                 for distro in dsset]
+                 for distro in dsset if distro.active]
         archive_vocab = make_archive_vocabulary(
             ppa
             for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
