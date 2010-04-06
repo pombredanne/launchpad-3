@@ -41,6 +41,15 @@ def process(mlist, msg, msgdata):
     hold(mlist, msg, msgdata, 'Not subscribed')
 
 
+def is_message_empty(msg):
+    """Is the message missing a text/plain part with content?"""
+    for part in typed_subpart_iterator(msg, 'text'):
+        if part.get_content_subtype() == 'plain':
+            if len(part.get_payload().strip()) > 0:
+                return False
+    return True
+
+
 def hold(mlist, msg, msgdata, annotation):
     """Hold the message in both Mailman and Launchpad.
 
@@ -76,13 +85,7 @@ def hold(mlist, msg, msgdata, annotation):
         raise Errors.DiscardMessage
     # Discard messages without text content since there will be nothing to
     # moderate. Most of these messages are spam.
-    has_content = False
-    for part in typed_subpart_iterator(msg, 'text'):
-        if part.get_content_subtype() == 'plain':
-            if len(part.get_payload().strip()) > 0:
-                has_content = True
-                break
-    if not has_content:
+    if is_message_empty(msg):
         syslog('vette',
                'Discarding text-less message-id: %s', message_id)
         raise Errors.DiscardMessage
