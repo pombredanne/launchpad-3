@@ -34,7 +34,9 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             displayname='Secret Squirrel')
         return self.factory.makeSourcePackageRecipe(
-            None, chef, distroseries, None, u'cake_recipe', cake_branch)
+            None, chef, distroseries, None, u'cake_recipe',
+            u'This recipe builds a foo for disto bar, with my Secret Squirrel'
+            ' changes.', cake_branch)
 
     def getMainText(self, recipe):
         browser = self.getUserBrowser(canonical_url(recipe))
