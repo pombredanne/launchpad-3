@@ -1,13 +1,30 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+
+import sys, os
+
+# In order to be more robust in the face of system Pythons, we want to
+# run without site-packages loaded.  Normally, we do this by just making the
+# script run with bin/py or as an executable.  However, buildbot's
+# configuration starts this file with ``python2.5 -t test_on_merge.py -vv``.
+# Eventually, we probably ought to change this.  However, for now, we will
+# handle this here by restarting.
+if ('site' in sys.modules and
+    not os.path.abspath(sys.modules['site'].__file__).startswith(
+        os.path.abspath(os.path.dirname(__file__)))):
+    # We will restart with python -S.
+    args = sys.argv[:]
+    args[0:0] = [sys.executable, '-S']
+    os.execv(sys.executable, args)
+
 import _pythonpath
 
-import sys, time
-import os, errno
+import time
+import errno
 import tabnanny
 from StringIO import StringIO
 import psycopg2
@@ -93,8 +110,7 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test PYTHON=%s > /dev/null' % (
-        schema_dir, sys.executable)) != 0:
+    if os.system('cd %s; make test > /dev/null' % (schema_dir)) != 0:
         print 'Failed to create database or load sampledata.'
         return 1
 
