@@ -15,15 +15,29 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView,
-    LaunchpadView)
+    action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
+    LaunchpadView, Link)
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+
+class SourcePackageRecipeContextMenu(ContextMenu):
+    """Context menu for sourcepackage recipes."""
+
+    usedfor = ISourcePackageRecipe
+
+    facet = 'branches'
+
+    links = ('request_builds',)
+
+    def request_builds(self):
+        return Link('+request-builds', 'Request build(s)', icon='add')
 
 
 class SourcePackageRecipeView(LaunchpadView):

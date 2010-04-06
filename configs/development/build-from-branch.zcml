@@ -38,5 +38,9 @@
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
             permission="zope.Public"/>
-    </facet>
+        <browser:menus
+            classes="SourcePackageRecipeContextMenu"
+            module="lp.code.browser.sourcepackagerecipe"/>
+
+        </facet>
 </configure>
