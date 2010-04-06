@@ -1385,3 +1385,6 @@ body.tab-bugs #portlet-subscribers .sprite {
 .distromirrorstatusTWODAYSBEHIND {color: red;}
 .distromirrorstatusONEWEEKBEHIND {color: red;}
 .distromirrorstatusUNKNOWN {color: grey;}
+
+tr.bug-branch-summary td { padding: 0px 6px; }
+tr.bug-branch-summary td.first { padding-left: 0px; }
