@@ -114,13 +114,14 @@ Editing the import location
 +++++++++++++++++++++++++++
 
 The +edit-import page allows the import operator to edit the location
-an import is from.
+an import is from, for example to add a user name and password to the
+url.
 
 This is true for Subversion imports,
 
     >>> import_browser.open(svn_import_location + '/+edit-import')
     >>> import_browser.getControl('URL').value = \
-    ...     'svn://svn-new.example.com/fooix/trunk'
+    ...     'svn://user:password@svn-new.example.com/fooix/trunk'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
@@ -130,7 +131,7 @@ bzr-svn imports,
 
     >>> import_browser.open(bzr_svn_import_location + '/+edit-import')
     >>> import_browser.getControl('URL').value = \
-    ...     'svn://svn-new.example.com/bzr-svn/trunk'
+    ...     'svn://user:password@svn-new.example.com/bzr-svn/trunk'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
@@ -152,7 +153,7 @@ Git imports,
 
     >>> import_browser.open(git_import_location + '/+edit-import')
     >>> import_browser.getControl('URL').value = \
-    ...     'git://git-new.example.org/fooix'
+    ...     'git://user:password@git-new.example.org/fooix'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
@@ -162,7 +163,7 @@ and Mercurial imports.
 
     >>> import_browser.open(hg_import_location + '/+edit-import')
     >>> import_browser.getControl('URL').value = \
-    ...     'http://metal.example.org/bar'
+    ...     'http://user:password@metal.example.org/bar'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
@@ -291,7 +292,7 @@ last import completed, and so in this case in about three hours.
     >>> print_import_details(import_browser)
     Import Status: Reviewed
     This branch is an import of the Subversion branch from
-        svn://svn-new.example.com/fooix/trunk.
+        svn://user:password@svn-new.example.com/fooix/trunk.
     The next import is scheduled to run in 3 hours.
     Last successful import was on 2007-09-10.
     ...
@@ -328,7 +329,7 @@ displayed.
     >>> print_import_details(sample_person_browser)
     Import Status: Reviewed
     This branch is an import of the Subversion branch from
-        svn://svn-new.example.com/fooix/trunk.
+        svn://user:password@svn-new.example.com/fooix/trunk.
     The next import is scheduled to run as soon as possible (requested
     by Sample Person).
     Last successful import was on 2007-09-10.
