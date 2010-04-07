@@ -21,7 +21,7 @@ class SIGDUMPMEMTestCase(TestCase):
     layer = AppServerLayer
 
     def test_sigdumpmem(self):
-        # XXX: AaronBentley 2010-03-30 bug=557356: Test breaks other tests.
+        # XXX: AaronBentley 2010-04-07 bug=557356: Test breaks other tests.
         return
         # Remove the dump file, if one exists.
         if os.path.exists(DUMP_FILE):
