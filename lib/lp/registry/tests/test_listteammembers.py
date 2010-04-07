@@ -65,34 +65,31 @@ class ListTeamMembersTestCase(TestCaseWithFactory):
     """Test listing team members."""
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(ListTeamMembersTestCase, self).setUp()
-
     def test_listteammembers_default_list(self):
         """Test the default option."""
         self.assertEqual(
-            listteammembers.process_team('ubuntu-team'), ubuntuteam_default)
+            ubuntuteam_default, listteammembers.process_team('ubuntu-team'))
 
     def test_listteammembers_email_only(self):
         """Test the email only option."""
         self.assertEqual(
-            listteammembers.process_team('ubuntu-team', 'email'),
-            ubuntuteam_email)
+            ubuntuteam_email,
+            listteammembers.process_team('ubuntu-team', 'email'))
 
     def test_listteammembers_full_details(self):
         """Test the full details option."""
         self.assertEqual(
-            listteammembers.process_team('ubuntu-team', 'full'),
-            ubuntuteam_full)
+            ubuntuteam_full,
+            listteammembers.process_team('ubuntu-team', 'full'))
 
     def test_listteammembers_sshkeys(self):
         """Test the ssh keys option."""
         self.assertEqual(
-            listteammembers.process_team('ubuntu-team', 'sshkeys'),
-            ubuntuteam_sshkeys)
+            ubuntuteam_sshkeys,
+            listteammembers.process_team('ubuntu-team', 'sshkeys'))
 
     def test_make_sshkey_params(self):
-        """Test that ssh keys ."""
+        """Test that ssh keys are rendered as a single line."""
         member = self.factory.makePerson(name='biggles')
         team = self.factory.makeTeam(name='squadron')
         team.addMember(member, reviewer=team.teamowner)
