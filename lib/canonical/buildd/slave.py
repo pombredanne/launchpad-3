@@ -20,7 +20,7 @@ from twisted.internet import process
 from twisted.web import xmlrpc
 
 # cprov 20080611: in python2.4 posixfile.SEEK_END is deprecated and our
-# importfascist-check denies its import. When we migrate to python2.6,
+# importfascist-check denies its import. When we migrate to python2.5,
 # we can use os.SEEK_END. See bug #239213.
 SEEK_END = 2
 

@@ -123,7 +123,7 @@ class DateTimeWidget(TextWidget):
         super(DateTimeWidget, self).__init__(context, request)
         self.system_time_zone = getUtility(ILaunchBag).time_zone
 
-    #@property  XXX: do as a property when we have python2.6 for tests of
+    #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
     def time_zone(self):
         """The widget time zone.
@@ -215,7 +215,7 @@ class DateTimeWidget(TextWidget):
         else:
             return None
 
-    #@property  XXX: do as a property when we have python2.6 for tests of
+    #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
     def daterange(self):
         """The javascript variable giving the allowed date range to pick.
