@@ -58,7 +58,15 @@ class ProductSeriesLinkedBranch(BaseLinkedBranch):
         if result != 0:
             return result
         else:
-            return cmp(self._product_series, other._product_series)
+            # When a project gets the series they are ordered alphabetically
+            # by name.
+            my_parts = (
+                self._product_series.product.name,
+                self._product_series.name)
+            other_parts = (
+                other._product_series.product.name,
+                other._product_series.name)
+            return cmp(my_parts, other_parts)
 
     @property
     def branch(self):
@@ -131,12 +139,12 @@ class PackageLinkedBranch(BaseLinkedBranch):
         my_parts = (
             self._suite_sourcepackage.distribution.name,
             Version(other._suite_sourcepackage.distroseries.version),
-            self._suite_sourcepackage.sourcepackagename.name,
+            self._suite_sourcepackage.sourcepackagename,
             self._suite_sourcepackage.pocket)
         other_parts = (
             other._suite_sourcepackage.distribution.name,
             Version(self._suite_sourcepackage.distroseries.version),
-            other._suite_sourcepackage.sourcepackagename.name,
+            other._suite_sourcepackage.sourcepackagename,
             other._suite_sourcepackage.pocket)
         return cmp(my_parts, other_parts)
 
@@ -177,10 +185,10 @@ class DistributionPackageLinkedBranch(BaseLinkedBranch):
         else:
             my_names = (
                 self._distribution_sourcepackage.distribution.name,
-                self._distribution_sourcepackage.sourcepackagename.name)
+                self._distribution_sourcepackage.sourcepackagename)
             other_names = (
                 other._distribution_sourcepackage.distribution.name,
-                other._distribution_sourcepackage.sourcepackagename.name)
+                other._distribution_sourcepackage.sourcepackagename)
             return cmp(my_names, other_names)
 
     @property

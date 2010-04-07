@@ -233,12 +233,117 @@ class TestLinkedBranchSorting(TestCaseWithFactory):
         # reverts to the name of the product.
         aardvark_link = ICanHasLinkedBranch(
             self.factory.makeProduct(name='aardvark'))
+        meerkat_link = ICanHasLinkedBranch(
+            self.factory.makeProduct(name='meerkat'))
         zebra_link = ICanHasLinkedBranch(
             self.factory.makeProduct(name='zebra'))
-        self.assertEqual(1, cmp(zebra_link, aardvark_link))
-        self.assertEqual(0, cmp(zebra_link, zebra_link))
-        self.assertEqual(-1, cmp(aardvark_link, zebra_link))
+        links = sorted(
+            [zebra_link, aardvark_link, meerkat_link])
+        self.assertIs(aardvark_link, links[0])
+        self.assertIs(meerkat_link, links[1])
+        self.assertIs(zebra_link, links[2])
 
-        
+    def test_product_series_sort(self):
+        # Sorting by product series checks the product name first, then series
+        # name.
+        aardvark = self.factory.makeProduct(name='aardvark')
+        zebra = self.factory.makeProduct(name='zebra')
+        aardvark_devel = ICanHasLinkedBranch(
+            self.factory.makeProductSeries(
+                product=aardvark, name='devel'))
+        aardvark_testing = ICanHasLinkedBranch(
+            self.factory.makeProductSeries(
+                product=aardvark, name='testing'))
+        zebra_devel = ICanHasLinkedBranch(
+            self.factory.makeProductSeries(
+                product=zebra, name='devel'))
+        zebra_mashup = ICanHasLinkedBranch(
+            self.factory.makeProductSeries(
+                product=zebra, name='mashup'))
+
+        links = sorted(
+            [zebra_mashup, aardvark_testing, zebra_devel, aardvark_devel])
+        self.assertIs(aardvark_devel, links[0])
+        self.assertIs(aardvark_testing, links[1])
+        self.assertIs(zebra_devel, links[2])
+        self.assertIs(zebra_mashup, links[3])
+
+    def test_distribution_source_package_sort(self):
+        # Sorting of distribution source packages sorts firstly on the
+        # distribution name, then the package name.
+        aardvark = self.factory.makeDistribution(name='aardvark')
+        zebra = self.factory.makeDistribution(name='zebra')
+        aardvark_devel = ICanHasLinkedBranch(
+            self.factory.makeDistributionSourcePackage(
+                distribution=aardvark, sourcepackagename='devel'))
+        aardvark_testing = ICanHasLinkedBranch(
+            self.factory.makeDistributionSourcePackage(
+                distribution=aardvark, sourcepackagename='testing'))
+        zebra_devel = ICanHasLinkedBranch(
+            self.factory.makeDistributionSourcePackage(
+                distribution=zebra, sourcepackagename='devel'))
+        zebra_mashup = ICanHasLinkedBranch(
+            self.factory.makeDistributionSourcePackage(
+                distribution=zebra, sourcepackagename='mashup'))
+
+        links = sorted(
+            [zebra_mashup, aardvark_testing, zebra_devel, aardvark_devel])
+        self.assertIs(aardvark_devel, links[0])
+        self.assertIs(aardvark_testing, links[1])
+        self.assertIs(zebra_devel, links[2])
+        self.assertIs(zebra_mashup, links[3])
+
+    def test_suite_source_package_sort(self):
+        # The sorting of suite source packages checks the distribution first,
+        # then the distroseries version, followed by the source package name,
+        # and finally the pocket.
+        aardvark = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                distroseries=self.factory.makeDistroSeries(
+                    self.factory.makeDistribution(name='aardvark'))))
+        zebra = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                distroseries=self.factory.makeDistroSeries(
+                    self.factory.makeDistribution(name='zebra'))))
+        meerkat = self.factory.makeDistribution(name='meerkat')
+        meerkat_1 = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                self.factory.makeDistroSeries(meerkat, "1.0")))
+        meerkat_2 = self.factory.makeDistroSeries(meerkat, "2.0")
+        meerkat_3 = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                self.factory.makeDistroSeries(meerkat, "3.0")))
+        meerkat_2_devel_release = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                meerkat_2, 'devel', PackagePublishingPocket.RELEASE))
+        meerkat_2_devel_updates = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                meerkat_2, 'devel', PackagePublishingPocket.UPDATES))
+        meerkat_2_devel_backports = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                meerkat_2, 'devel', PackagePublishingPocket.BACKPORTS))
+        meerkat_2_apples = ICanHasLinkedBranch(
+            self.factory.makeSuiteSourcePackage(
+                meerkat_2, 'apples'))
+
+        links = sorted(
+            [meerkat_3,
+             meerkat_2_devel_updates,
+             zebra,
+             meerkat_2_apples,
+             aardvark,
+             meerkat_2_devel_backports,
+             meerkat_1,
+             meerkat_2_devel_release])
+        self.assertIs(aardvark, links[0])
+        self.assertIs(meerkat_3, links[1])
+        self.assertIs(meerkat_2_apples, links[2])
+        self.assertIs(meerkat_2_devel_release, links[3])
+        self.assertIs(meerkat_2_devel_updates, links[4])
+        self.assertIs(meerkat_2_devel_backports, links[5])
+        self.assertIs(meerkat_1, links[6])
+        self.assertIs(zebra, links[7])
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
