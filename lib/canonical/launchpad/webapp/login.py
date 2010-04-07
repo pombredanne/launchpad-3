@@ -29,17 +29,19 @@ from zope.session.interfaces import ISession, IClientIdManager
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.registry.interfaces.person import IPerson, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
-    IPlacelessAuthUtility, IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
@@ -256,6 +258,10 @@ class OpenIDCallbackView(OpenIDLogin):
         logInPrincipal(
             self.request, loginsource.getPrincipalByLogin(email), email)
 
+    @cachedproperty
+    def sreg_response(self):
+        return sreg.SRegResponse.fromSuccessResponse(self.openid_response)
+
     def _createAccount(self, openid_identifier):
         # Here we assume the OP sent us the user's email address and
         # full name in the response. Note we can only do that because
@@ -264,21 +270,31 @@ class OpenIDCallbackView(OpenIDLogin):
         # asked to.  Once we start using other OPs we won't be able to
         # make this assumption here as they might not include what we
         # want in the response.
-        sreg_response = sreg.SRegResponse.fromSuccessResponse(
-            self.openid_response)
-        assert sreg_response is not None, (
+        assert self.sreg_response is not None, (
             "OP didn't include an sreg extension in the response.")
-        email_address = sreg_response.get('email')
-        full_name = sreg_response.get('fullname')
+        email_address = self.sreg_response.get('email')
+        full_name = self.sreg_response.get('fullname')
         assert email_address is not None and full_name is not None, (
             "No email address or full name found in sreg response; "
             "can't create a new account for this identity URL.")
-        account, email = getUtility(IAccountSet).createAccountAndEmail(
-            email_address,
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-            full_name,
-            password=None,
-            openid_identifier=openid_identifier)
+        email = getUtility(IEmailAddressSet).getByEmail(email_address)
+        if email is not None:
+            account = email.account
+            assert account is not None, (
+                "This email address should have an associated account.")
+            removeSecurityProxy(account).openid_identifier = openid_identifier
+            if account.status == AccountStatus.DEACTIVATED:
+                comment = 'Reactivated by the user'
+                password = None # Needed just to please reactivate() below.
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+        else:
+            account, email = getUtility(IAccountSet).createAccountAndEmail(
+                email_address,
+                PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                full_name,
+                password=None,
+                openid_identifier=openid_identifier)
         return account
 
     def render(self):
@@ -298,6 +314,20 @@ class OpenIDCallbackView(OpenIDLogin):
 
                 if account.status == AccountStatus.SUSPENDED:
                     return self.suspended_account_template()
+                elif account.status == AccountStatus.DEACTIVATED:
+                    comment = 'Reactivated by the user'
+                    password = '' # Needed just to please reactivate() below.
+                    sreg_email = self.sreg_response.get('email')
+                    email_address = getUtility(IEmailAddressSet).getByEmail(
+                        sreg_email)
+                    if email_address is None:
+                        email_address = getUtility(IEmailAddressSet).new(
+                            sreg_email, account=account)
+                    removeSecurityProxy(account).reactivate(
+                        comment, password, removeSecurityProxy(email_address))
+                else:
+                    # Account is active, so nothing to do.
+                    pass
                 if IPerson(account, None) is None:
                     removeSecurityProxy(account).createPerson(
                         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
@@ -376,24 +406,6 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-
-
-def logInPrincipalAndMaybeCreatePerson(request, principal, email):
-    """Log the principal in, creating a Person if necessary.
-
-    If the given principal has no associated person, we create a new
-    person, fetch a new principal and set it in the request.
-
-    Password validation must be done in callsites.
-    """
-    logInPrincipal(request, principal, email)
-    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
-        person = principal.account.createPerson(
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            principal.id)
-        assert ILaunchpadPrincipal.providedBy(new_principal)
-        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
