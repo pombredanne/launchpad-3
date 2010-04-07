@@ -12,9 +12,14 @@ import os
 import unittest
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.database.constants import UTC_NOW
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
 
 
@@ -48,11 +53,11 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_getUploadLogContent_nolog(self):
-        """If there is no log file there, a string explaining that is returned.
+        """If there is no log file there, a string explanation is returned.
         """
         self.useTempDir()
         build_base = BuildBase()
-        self.assertEquals('Could not find upload log file', 
+        self.assertEquals('Could not find upload log file',
             build_base.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploadLogContent_only_dir(self):
@@ -61,7 +66,7 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         self.useTempDir()
         os.makedirs("accepted/myleaf")
         build_base = BuildBase()
-        self.assertEquals('Could not find upload log file', 
+        self.assertEquals('Could not find upload log file',
             build_base.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploadLogContent_readsfile(self):
@@ -98,6 +103,65 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
             upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
 
+
+class TestBuildBaseHandleStatus(TestCaseWithFactory):
+    """Tests for `IBuildBase`s handleStatus method."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildBaseHandleStatus, self).setUp()
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.prepareBreezyAutotest()
+        binaries = test_publisher.getPubBinaries()
+        self.build = binaries[0].binarypackagerelease.build
+
+        # For the moment, we require a builder for the build so that
+        # handleStatus_OK can get a reference to the slave.
+        builder = self.factory.makeBuilder()
+        self.build.buildqueue_record.builder = builder
+        self.build.buildqueue_record.setDateStarted(UTC_NOW)
+        self.slave = WaitingSlave('BuildStatus.OK')
+        self.slave.valid_file_hashes.append('test_file_hash')
+        builder.setSlaveForTesting(self.slave)
+
+        # We overwrite the buildmaster root to use a temp directory.
+        tmp_dir = self.makeTemporaryDirectory()
+        tmp_builddmaster_root = """
+        [builddmaster]
+        root: %s
+        """ % tmp_dir
+        config.push('tmp_builddmaster_root', tmp_builddmaster_root)
+
+    def test_handleStatus_OK_normal_file(self):
+        # A filemap with plain filenames should not cause a problem.
+        # The call to handleStatus will attempt to get the file from
+        # the slave resulting in a URL error in this test case.
+        self.build.handleStatus('OK', None, {
+                'filemap': { 'myfile.py': 'test_file_hash'},
+                })
+
+        # Note: process upload was called by the above, but didn't
+        # really succeed (as there was no changelog in the upload), but
+        # because the build was created with binaries, it looks like
+        # the upload was processed successfully.
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
+
+    def test_handleStatus_OK_absolute_filepath(self):
+        # A filemap that tries to write to files outside of
+        # the upload directory will result in a failed upload.
+        self.build.handleStatus('OK', None, {
+            'filemap': { '/tmp/myfile.py': 'test_file_hash'},
+            })
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
+
+    def test_handleStatus_OK_relative_filepath(self):
+        # A filemap that tries to write to files outside of
+        # the upload directory will result in a failed upload.
+        self.build.handleStatus('OK', None, {
+            'filemap': { '../myfile.py': 'test_file_hash'},
+            })
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
