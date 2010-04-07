@@ -487,6 +487,7 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+        notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
         getUtility(ICalculateBugHeatJobSource).create(self)
 
