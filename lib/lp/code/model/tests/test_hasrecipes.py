@@ -57,6 +57,18 @@ class TestIHasRecipes(TestCaseWithFactory):
         product = self.factory.makeProduct()
         self.assertProvides(product, IHasRecipes)
 
+    def test_product_getRecipes(self):
+        # IBranch.recipes should provide all the SourcePackageRecipes attached
+        # to that branch.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        recipe1 = self.factory.makeSourcePackageRecipe(
+            None, None, None, None, None, None, branch)
+        recipe2 = self.factory.makeSourcePackageRecipe(
+            None, None, None, None, None, None, branch)
+        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(2, product.getRecipes().count())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

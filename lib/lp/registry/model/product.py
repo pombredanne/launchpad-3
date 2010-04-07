@@ -34,6 +34,8 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -1020,6 +1022,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getRecipes(self):
         """See `IHasBranches`."""
+        from lp.code.model.branch import Branch
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id ==
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+            SourcePackageRecipeData.base_branch == Branch.id,
+            Branch.product == self)
 
 
 class ProductSet:
