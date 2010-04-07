@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-__all__ = ['DBLoopTuner', 'LoopTuner']
+__all__ = [
+    'DBLoopTuner',
+    'LoopTuner',
+    'TunableLoop',
+    ]
 
 
 from datetime import timedelta
@@ -11,6 +15,7 @@ import time
 
 import transaction
 from zope.component import getUtility
+from zope.interface import implements
 
 import canonical.launchpad.scripts
 from canonical.launchpad.webapp.interfaces import (
@@ -281,3 +286,26 @@ class DBLoopTuner(LoopTuner):
                 time.sleep(remaining_nap)
         return self._time()
 
+
+class TunableLoop:
+    """A base implementation of `ITunableLoop`."""
+    implements(ITunableLoop)
+
+    goal_seconds = 4
+    minimum_chunk_size = 1
+    maximum_chunk_size = None # Override
+    cooldown_time = 0
+
+    def __init__(self, log, abort_time=None):
+        self.log = log
+        self.abort_time = abort_time
+
+    def run(self):
+        assert self.maximum_chunk_size is not None, (
+            "Did not override maximum_chunk_size.")
+        DBLoopTuner(
+            self, self.goal_seconds,
+            minimum_chunk_size = self.minimum_chunk_size,
+            maximum_chunk_size = self.maximum_chunk_size,
+            cooldown_time = self.cooldown_time,
+            abort_time = self.abort_time).run()

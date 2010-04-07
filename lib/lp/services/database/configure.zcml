@@ -12,5 +12,7 @@
         <allow interface="storm.zope.interfaces.IResultSet" />
         <allow attributes="__getslice__" />
     </class>
-
+    <class class="storm.references.BoundIndirectReferenceSet">
+        <allow attributes="add remove clear" />
+    </class>
 </configure>
