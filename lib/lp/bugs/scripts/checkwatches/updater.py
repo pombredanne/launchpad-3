@@ -250,17 +250,17 @@ def unique(iterator):
 def suggest_batch_size(remote_system, num_watches):
     """Suggest a value for batch_size if it's not set.
 
-    Givend the number of bug watches for an `remote_system`, this sets
-    a suggested batch size on it. If `remote_system` already has a
-    batch size set, this does not override it.
+    Given the number of bug watches for a `remote_system`, this sets a
+    suggested batch size on it. If `remote_system` already has a batch
+    size set, this does not override it.
 
     :param remote_system: An `ExternalBugTracker`.
     :param num_watches: The number of watches for `remote_system`.
     """
     if remote_system.batch_size is None:
         remote_system.batch_size = max(
-            SUGGESTED_BATCH_SIZE_MIN, int(
-                SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
+            SUGGESTED_BATCH_SIZE_MIN,
+            int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
 
 
 class BugWatchUpdater(object):
