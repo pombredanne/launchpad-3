@@ -400,18 +400,23 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
 
-    def getUserBrowser(self, url=None):
+    def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
+
+        :param user: The user to open a browser for.
+        :param password: The password to use.  (This cannot be determined
+            because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
         from canonical.launchpad.testing.pages import setupBrowser
         login(ANONYMOUS)
-        user = self.factory.makePerson(password='test')
+        if user is None:
+            user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
         logout()
         browser = setupBrowser(
-            auth="Basic %s:test" % str(email))
+            auth="Basic %s:%s" % (str(email), password))
         if url is not None:
             browser.open(url)
         return browser

@@ -16,9 +16,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import extract_text, find_main_content
+from canonical.launchpad.testing.pages import setupBrowser
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
-from lp.testing import (TestCaseWithFactory)
+from lp.testing import (logout, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipeView(TestCaseWithFactory):
@@ -27,23 +28,25 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSourcePackageRecipeView, self).setUp()
-        self.ppa = self.factory.makeArchive(displayname='Secret PPA')
+        self.chef = self.factory.makePersonNoCommit(
+            displayname='Master Chef', name='chef', password='test')
+        self.ppa = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef)
         self.squirrel = self.factory.makeDistroSeries(
-            displayname='Secret Squirrel')
+            displayname='Secret Squirrel', name='secret')
 
     def makeRecipe(self):
-        chef = self.factory.makePersonNoCommit(displayname='Master Chef',
-                name='chef')
         chocolate = self.factory.makeProduct(name='chocolate')
         cake_branch = self.factory.makeProductBranch(
-            owner=chef, name='cake', product=chocolate)
+            owner=self.chef, name='cake', product=chocolate)
         return self.factory.makeSourcePackageRecipe(
-            None, chef, self.squirrel, None, u'cake_recipe',
+            None, self.chef, self.squirrel, None, u'cake_recipe',
             u'This recipe builds a foo for disto bar, with my Secret Squirrel'
             ' changes.', cake_branch)
 
-    def getMainText(self, recipe):
-        browser = self.getUserBrowser(canonical_url(recipe))
+    def getMainText(self, recipe, view_name=None):
+        url = canonical_url(recipe, view_name=view_name)
+        browser = self.getUserBrowser(url, self.chef)
         return extract_text(find_main_content(browser.contents))
 
     def test_index(self):
@@ -154,3 +157,26 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         set_day(build5, 12)
         set_day(build6, 11)
         self.assertEqual([build5, build4, build3, build2, build1], view.builds)
+
+    def test_request_builds(self):
+        recipe = self.makeRecipe()
+        text = self.getMainText(recipe, '+request-builds')
+        self.assertEqual(dedent(u"""\
+            Request builds for cake_recipe
+            Master Chef
+            Branches
+            Request builds for cake_recipe
+            Archive:
+            Secret PPA (chef/ppa)
+            Distribution series:
+            Warty
+            Hoary
+            Six
+            7.0
+            Woody
+            Sarge
+            Guada2005
+            Secret Squirrel
+            or
+            Cancel"""), text)
+

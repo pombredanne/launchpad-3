@@ -75,7 +75,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     @property
     def schema(self):
         dsset = getUtility(IDistroSeriesSet).search()
-        terms = [SimpleTerm(distro, distro.id, distro.title)
+        terms = [SimpleTerm(distro, distro.id, distro.displayname)
                  for distro in dsset if distro.active]
         archive_vocab = make_archive_vocabulary(
             ppa
