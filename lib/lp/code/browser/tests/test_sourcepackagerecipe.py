@@ -80,7 +80,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Build records
             Status
             Time
-            Distro
+            Distribution series
             Archive
             Successful build
             on 2010-03-16
@@ -101,7 +101,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Build records
             Status
             Time
-            Distro
+            Distribution series
             Archive
             No suitable builders
             Secret Squirrel
@@ -126,7 +126,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Build records
             Status
             Time
-            Distro
+            Distribution series
             Archive
             Pending build
             in .*
