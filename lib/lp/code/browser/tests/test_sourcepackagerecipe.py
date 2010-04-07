@@ -1,5 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=F0401
 
 """Tests for the product view classes and templates."""
 
@@ -16,10 +17,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import extract_text, find_main_content
-from canonical.launchpad.testing.pages import setupBrowser
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
-from lp.testing import (ANONYMOUS, login, logout, TestCaseWithFactory)
+from lp.testing import (ANONYMOUS, login, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipeView(TestCaseWithFactory):
@@ -91,7 +91,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+        removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         pattern = re.compile(dedent("""\
             Build records
@@ -109,14 +109,13 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     def makeBuildJob(self, recipe):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
-        buildjob = self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
     def test_index_pending(self):
         recipe = self.makeRecipe()
-        buildjob = self.makeBuildJob(recipe)
-        builder = self.factory.makeBuilder()
+        self.makeBuildJob(recipe)
+        self.factory.makeBuilder()
         pattern = re.compile(dedent("""\
             Build records
             Status
@@ -160,7 +159,8 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         set_day(build4, 13)
         set_day(build5, 12)
         set_day(build6, 11)
-        self.assertEqual([build5, build4, build3, build2, build1], view.builds)
+        self.assertEqual(
+            [build5, build4, build3, build2, build1], view.builds)
 
     def test_request_builds_page(self):
         recipe = self.makeRecipe()
