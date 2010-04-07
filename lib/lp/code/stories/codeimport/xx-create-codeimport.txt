@@ -41,8 +41,8 @@ The default foreign VCS type is Subversion.
     (*) Subversion
     ( ) CVS
 
-The user is required to enter a project that the import is for,
-a name for the import branch, and a subversion branch location.
+The user is required to enter a project that the import is for, a name
+for the import branch, and a subversion branch location.
 
     >>> browser.getControl('Branch Name').value = "imported"
     >>> browser.getControl('Branch URL').value = (
@@ -67,6 +67,20 @@ attribute on the text of 'Subversion'.
     Subversion
     >>> print svn_span['title']
     Subversion via bzr-svn
+
+If the user wants, they can include a username and password in the
+URL.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Branch Name').value = "with-password"
+    >>> browser.getControl('Branch URL').value = (
+    ...     "http://user:password@svn.example.com/firefox/trunk")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Request Import').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    Import Status: Pending Review
+    This branch is an import of the Subversion branch
+    from http://user:password@svn.example.com/firefox/trunk.
 
 
 Requesting a Git import

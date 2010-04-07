@@ -212,7 +212,7 @@ class NewCodeImportForm(Interface):
             "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False,
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
