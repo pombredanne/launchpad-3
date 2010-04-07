@@ -284,18 +284,6 @@ properties `patches` and `regular_attachments` of the class BugView.
     >>> [patch.title for patch in view.patches]
     [u'patch 1', u'patch 2']
 
-It can happen that the LibraryFileContent record of a bug attachment is
-deleted. These attachments are not included in the properties `patches`
-and `regular_attachments`.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(attachment_1.libraryfile).content = None
-    >>> removeSecurityProxy(patch_1.libraryfile).content = None
-    >>> [attachment.title for attachment in view.regular_attachments]
-    [u'attachment 2']
-    >>> [patch.title for patch in view.patches]
-    [u'patch 2']
-
 
 == Bug Navigation ==
 

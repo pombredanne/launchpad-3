@@ -22,6 +22,7 @@ from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from lp.hardwaredb.model.hwdb import HWSubmission
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -766,25 +767,24 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
 
     maximum_chunk_size = 1000
 
-    BUGATTACHMENTS_WITHOUT_CONTENT = (
-        """SELECT bugattachment.id from bugattachment, libraryfilealias
-               WHERE bugattachment.libraryfile=libraryfilealias.id
-                   AND libraryfilealias.content IS NULL""")
-
     def __init__(self, log, abort_time=None):
         super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
         self.store = IMasterStore(BugAttachment)
 
+    def _to_remove(self):
+        return self.store.find(
+            BugAttachment.id,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content == None)
+
     def isDone(self):
-        result = self.store.execute(
-            "SELECT EXISTS(%s)" % self.BUGATTACHMENTS_WITHOUT_CONTENT)
-        return not result.get_one()[0]
+        return self._to_remove().any() is None
 
     def __call__(self, chunk_size):
-        chunk_size = max(int(chunk_size), 1)
-        self.store.execute(
-            "DELETE FROM BugAttachment WHERE id IN (%s LIMIT %i)"
-            % (self.BUGATTACHMENTS_WITHOUT_CONTENT, chunk_size))
+        chunk_size = int(chunk_size)
+        ids_to_remove = list(self._to_remove()[:chunk_size])
+        self.store.find(
+            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
         transaction.commit()
 
 
