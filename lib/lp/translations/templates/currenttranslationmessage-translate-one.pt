@@ -100,8 +100,7 @@
   class="discreet secondary translation">
   <td colspan="3" />
   <th class="icon left right">
-    <span class="sprite info"
-          title="Developer's note to translators:"></span>
+    <span class="sprite info" title="Developer's note to translators"></span>
   </th>
   <td tal:content="view/source_comment">
       This refers to the content type.
@@ -112,7 +111,7 @@
   class="discreet secondary translation">
   <td colspan="3" />
   <th class="icon left right">
-    <span class="sprite info" title="Note to translators:"></span>
+    <span class="sprite info" title="Note to translators"></span>
   </th>
   <td>
     <code>[tab]</code> represents a tab character.
@@ -126,7 +125,7 @@
 >
   <td colspan="3" />
   <th class="icon left right">
-    <span class="sprite info" title="Note to translators:"></span>
+    <span class="sprite info" title="Note to translators"></span>
   </th>
   <td>
     <img
@@ -143,7 +142,7 @@
 >
   <td colspan="3" />
   <th class="icon left right">
-    <span class="sprite info" title="Note to translators:"></span>
+    <span class="sprite info" title="Note to translators"></span>
   </th>
   <td>
     <img
