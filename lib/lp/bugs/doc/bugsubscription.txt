@@ -887,11 +887,13 @@ they receive an email notification. The notification is sent only when
 an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
-    >>> from lazr.lifecycle.event import ObjectCreatedEvent
+An ObjectCreatedEvent is created using the send_notifications parameter
+for Bug.subscribe.
+
     >>> transaction.commit()
     >>> stub.test_emails = []
-    >>> bug_subscription = bug_six.subscribe(mark, lifeless)
-    >>> notify(ObjectCreatedEvent(bug_subscription))
+    >>> bug_subscription = bug_six.subscribe(
+    ...     mark, lifeless, send_notifications=True)
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
