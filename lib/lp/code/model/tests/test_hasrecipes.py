@@ -52,6 +52,11 @@ class TestIHasRecipes(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.assertProvides(distroseries, IHasRecipes)
 
+    def test_product_implements_hasbranches(self):
+        # Product should implement IHasRecipes.
+        product = self.factory.makeProduct()
+        self.assertProvides(product, IHasRecipes)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

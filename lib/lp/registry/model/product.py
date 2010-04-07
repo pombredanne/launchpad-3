@@ -1018,6 +1018,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             if include_inactive or series.active or
                series == self.development_focus]
 
+    def getRecipes(self):
+        """See `IHasBranches`."""
+
 
 class ProductSet:
     implements(IProductSet)
