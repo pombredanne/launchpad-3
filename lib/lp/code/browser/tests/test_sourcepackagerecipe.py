@@ -19,7 +19,7 @@ from canonical.launchpad.testing.pages import extract_text, find_main_content
 from canonical.launchpad.testing.pages import setupBrowser
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
-from lp.testing import (logout, TestCaseWithFactory)
+from lp.testing import (ANONYMOUS, login, logout, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipeView(TestCaseWithFactory):
@@ -44,9 +44,13 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             u'This recipe builds a foo for disto bar, with my Secret Squirrel'
             ' changes.', cake_branch)
 
-    def getMainText(self, recipe, view_name=None):
+    def getRecipeBrowser(self, recipe, view_name=None):
+        login(ANONYMOUS)
         url = canonical_url(recipe, view_name=view_name)
-        browser = self.getUserBrowser(url, self.chef)
+        return self.getUserBrowser(url, self.chef)
+
+    def getMainText(self, recipe, view_name=None):
+        browser = self.getRecipeBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
 
     def test_index(self):
@@ -158,7 +162,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         set_day(build6, 11)
         self.assertEqual([build5, build4, build3, build2, build1], view.builds)
 
-    def test_request_builds(self):
+    def test_request_builds_page(self):
         recipe = self.makeRecipe()
         text = self.getMainText(recipe, '+request-builds')
         self.assertEqual(dedent(u"""\
@@ -180,3 +184,15 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             or
             Cancel"""), text)
 
+    def test_request_builds_action(self):
+        """Requesting a build creates pending builds."""
+        recipe = self.makeRecipe()
+        browser = self.getRecipeBrowser(recipe, '+request-builds')
+        browser.getControl('Woody').click()
+        browser.getControl('Request builds').click()
+        build_distros = [
+            build.distroseries.displayname for build in
+            recipe.getBuilds(True)]
+        build_distros.sort()
+        # Secret Squirrel is checked by default.
+        self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
