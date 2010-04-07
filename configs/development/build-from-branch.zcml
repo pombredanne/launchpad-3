@@ -42,5 +42,5 @@
             classes="SourcePackageRecipeContextMenu"
             module="lp.code.browser.sourcepackagerecipe"/>
 
-        </facet>
+    </facet>
 </configure>

@@ -37,6 +37,7 @@ class SourcePackageRecipeContextMenu(ContextMenu):
     links = ('request_builds',)
 
     def request_builds(self):
+        """Provide a link for requesting builds of a recipe."""
         return Link('+request-builds', 'Request build(s)', icon='add')
 
 
@@ -70,10 +71,15 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        """Set initial values for the widgets.
+
+        The distroseries function as defaults for requesting a build.
+        """
         return {'distros': self.context.distroseries}
 
     @property
     def schema(self):
+        """Context-sensitive schema generation FTW."""
         dsset = getUtility(IDistroSeriesSet).search()
         terms = [SimpleTerm(distro, distro.id, distro.displayname)
                  for distro in dsset if distro.active]
@@ -106,6 +112,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
+        """User action for requesting a number of builds."""
         for distroseries in data['distros']:
             self.context.requestBuild(
                 data['archive'], self.user, distroseries,

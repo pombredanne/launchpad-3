@@ -27,6 +27,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        """Provide useful defaults."""
         super(TestSourcePackageRecipeView, self).setUp()
         self.chef = self.factory.makePersonNoCommit(
             displayname='Master Chef', name='chef', password='test')
@@ -36,6 +37,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             displayname='Secret Squirrel', name='secret')
 
     def makeRecipe(self):
+        """Create and return a specific recipe."""
         chocolate = self.factory.makeProduct(name='chocolate')
         cake_branch = self.factory.makeProductBranch(
             owner=self.chef, name='cake', product=chocolate)
@@ -45,11 +47,13 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             ' changes.', cake_branch)
 
     def getRecipeBrowser(self, recipe, view_name=None):
+        """Return a browser for the specified recipe, opened as Chef."""
         login(ANONYMOUS)
         url = canonical_url(recipe, view_name=view_name)
         return self.getUserBrowser(url, self.chef)
 
     def getMainText(self, recipe, view_name=None):
+        """Return the main text of a recipe page, as seen by Chef."""
         browser = self.getRecipeBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
 
@@ -107,12 +111,14 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         self.assertTrue(pattern.search(main_text), main_text)
 
     def makeBuildJob(self, recipe):
+        """Return a build associated with a buildjob."""
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
     def test_index_pending(self):
+        """Test the listing of a pending build."""
         recipe = self.makeRecipe()
         self.makeBuildJob(recipe)
         self.factory.makeBuilder()
@@ -163,6 +169,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             [build5, build4, build3, build2, build1], view.builds)
 
     def test_request_builds_page(self):
+        """Ensure the +request-builds page is sane."""
         recipe = self.makeRecipe()
         text = self.getMainText(recipe, '+request-builds')
         self.assertEqual(dedent(u"""\
