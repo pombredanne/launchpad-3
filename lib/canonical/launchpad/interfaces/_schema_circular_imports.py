@@ -40,7 +40,6 @@ from lp.blueprints.interfaces.specificationbranch import (
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference

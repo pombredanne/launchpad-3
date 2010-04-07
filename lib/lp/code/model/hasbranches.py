@@ -61,7 +61,8 @@ class HasRequestedReviewsMixin:
 
         visible_branches = getUtility(IAllBranches).visibleByUser(
             visible_by_user)
-        proposals = visible_branches.getMergeProposalsForReviewer(self, status)
+        proposals = visible_branches.getMergeProposalsForReviewer(
+            self, status)
         return proposals
 
 
