@@ -501,7 +501,9 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         # bzr identity is lp:product.
         fooix = removeSecurityProxy(self.factory.makeProduct(name='fooix'))
         fooix.development_focus.name = 'devel'
-        branch = self.factory.makeProductBranch(product=fooix)
+        eric = self.factory.makePerson(name='eric')
+        branch = self.factory.makeProductBranch(
+            product=fooix, owner=eric, name='trunk')
         linked_branch = ICanHasLinkedBranch(fooix)
         linked_branch.setBranch(branch)
         self.assertEqual(
@@ -510,7 +512,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         self.assertEqual(
             [('lp://dev/fooix', fooix),
              ('lp://dev/fooix/devel', fooix.development_focus),
-             ('lp://dev/' + branch.unique_name, branch)],
+             ('lp://dev/~eric/fooix/trunk', branch)],
             branch.branchIdentities())
 
 
