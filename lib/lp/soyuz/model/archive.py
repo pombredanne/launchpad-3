@@ -779,10 +779,8 @@ class Archive(SQLBase):
         if self.is_ppa:
             archives.append(self.distribution.main_archive.id)
         archives.append(self.id)
-        dep = ArchiveDependency.selectOneBy(archive=self)
-        while dep is not None:
-            archives.append(dep.dependency.id)
-            dep = ArchiveDependency.selectOneBy(archive=dep.dependency)
+        archives.extend(
+            [archive_dep.dependency.id for archive_dep in self.dependencies])
 
         query = """
             binarypackagename = %s AND
