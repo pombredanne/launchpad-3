@@ -16,10 +16,9 @@ from urlparse import urlunsplit
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 

@@ -10,8 +10,6 @@ __all__ = [
 
 import transaction
 
-from storm.expr import Not
-
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.interfaces import IMasterStore
