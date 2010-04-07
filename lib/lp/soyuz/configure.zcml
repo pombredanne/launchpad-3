@@ -225,6 +225,8 @@
         class="canonical.launchpad.database.PackageUploadCustom">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
+        <require
+            permission="launchpad.Admin" set_attributes="libraryfilealias"/>
     </class>
 
     <!-- PackageUploadSet -->
@@ -400,7 +402,7 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname publish"/>
+            set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret arm_builds_allowed
@@ -863,5 +865,13 @@
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
         permission="zope.Public" />
+
+    <!-- BinaryPackageReleaseDownloadCount -->
+    <class
+        class="lp.soyuz.model.binarypackagerelease.BinaryPackageReleaseDownloadCount">
+        <require
+            permission="launchpad.View"
+            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
+    </class>
 
 </configure>

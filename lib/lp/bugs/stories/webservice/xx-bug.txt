@@ -816,12 +816,14 @@ We can get the collection of subscriptions to a bug.
   ...     pprint_entry(entry)
   ...     print
   bug_link: u'http://.../bugs/1'
+  date_created: u'2006-10-16T18:31:43.156104+00:00'
   person_link: u'http://.../~name12'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/name12'
   subscribed_by_link: u'http://.../~janitor'
 
   bug_link: u'http://.../bugs/1'
+  date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
@@ -833,6 +835,7 @@ Each subscription can be accessed individually.
   ...     subscription_entries[1]['self_link']).jsonBody()
   >>> pprint_entry(subscription)
   bug_link: u'http://.../bugs/1'
+  date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
@@ -1022,6 +1025,7 @@ report described by the bugwatch.
   date_created: u'2004-10-04T01:00:00+00:00'
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
@@ -1093,6 +1097,7 @@ Following the redirect, we can see the new bug watch:
   date_created: u'...'
   date_last_changed: None
   date_last_checked: None
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~salgado'
   remote_bug: u'9876'

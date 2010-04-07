@@ -1,9 +1,15 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0211,E0213
+
+
 """Interface of the `SourcePackageRecipe` content type."""
 
+
 __metaclass__ = type
+
+
 __all__ = [
     'ForbiddenInstruction',
     'ISourcePackageRecipe',
@@ -11,14 +17,16 @@ __all__ = [
     'TooNewRecipeFormat',
     ]
 
-from lazr.restful.fields import Reference
+
+from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, TextLine
+from zope.schema import Bool, Datetime, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -57,10 +65,12 @@ class ISourcePackageRecipe(IHasOwner):
     owner = Reference(
         IPerson, title=_("The person or team who can edit this recipe"),
         readonly=False)
-    distroseries = Reference(
-        IDistroSeries, title=_("The distroseries this recipe will build a "
-                               "source package for"),
-        readonly=True)
+    distroseries = CollectionField(
+        Reference(IDistroSeries), title=_("The distroseries this recipe will"
+            " build a source package for"),
+        readonly=False)
+    build_daily = Bool(
+        title=_("If true, the recipe should be built daily."))
     sourcepackagename = Reference(
         ISourcePackageName, title=_("The name of the source package this "
                                     "recipe will build a source package"),
@@ -71,8 +81,16 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
+    description = Text(
+        title=_('Description'), required=True,
+        description=_('A short description of the recipe.'))
+
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
+
+    base_branch = Reference(
+        IBranch, title=_("The base branch used by this recipe."),
+        required=True, readonly=True)
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
@@ -93,5 +111,5 @@ class ISourcePackageRecipeSource(Interface):
     """
 
     def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe):
+            builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""

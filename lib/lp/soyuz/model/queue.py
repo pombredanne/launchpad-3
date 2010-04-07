@@ -612,6 +612,11 @@ class PackageUpload(SQLBase):
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
+                for custom_file in self.customfiles:
+                    update_files_privacy(custom_file)
+                    debug(logger,
+                          "Re-uploaded custom file %s to librarian" %
+                          custom_file.libraryfilealias.filename)
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     pas_verify = BuildDaemonPackagesArchSpecific(
                         config.builddmaster.root, self.distroseries)
@@ -1318,7 +1323,12 @@ class PackageUpload(SQLBase):
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
 
-        return self.sources.count() > 0
+        # We override our own archive too, as it is used to create
+        # the SPPH during publish().
+        self.archive = self.distroseries.distribution.getArchiveByComponent(
+            new_component.name)
+
+        return True
 
     def overrideBinaries(self, new_component, new_section, new_priority,
                          allowed_components):
@@ -1546,7 +1556,6 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
-        section = self.sourcepackagerelease.section
 
         if self.packageupload.is_delayed_copy:
             # For a delayed copy the component will not yet have
@@ -1576,11 +1585,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
-            self.packageupload.distroseries.name))
+            self.packageupload.distroseries.name,
+            self.packageupload.archive.name))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,

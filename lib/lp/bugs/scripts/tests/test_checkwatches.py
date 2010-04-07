@@ -14,13 +14,14 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, IBugSet, IBugTaskSet,
     ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, get_request_statements, set_request_started)
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
@@ -69,18 +70,19 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
 
     def setUp(self):
         super(TestCheckwatchesWithSyncableGnomeProducts, self).setUp()
+        transaction.commit()
 
         # We monkey-patch externalbugtracker.get_external_bugtracker()
         # so that it always returns what we want.
         self.original_get_external_bug_tracker = (
-            checkwatches.externalbugtracker.get_external_bugtracker)
-        checkwatches.externalbugtracker.get_external_bugtracker = (
+            checkwatches.updater.externalbugtracker.get_external_bugtracker)
+        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
             always_BugzillaAPI_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
         # products.
         self.updater = checkwatches.BugWatchUpdater(
-            transaction, QuietFakeLogger(), ['test-product'])
+            transaction.manager, QuietFakeLogger(), ['test-product'])
 
     def tearDown(self):
         checkwatches.externalbugtracker.get_external_bugtracker = (
@@ -97,6 +99,10 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         bug_watch_2 = self.factory.makeBugWatch(
             remote_bug=2, bugtracker=gnome_bugzilla)
 
+        # The bug watch updater expects to begin and end all
+        # transactions.
+        transaction.commit()
+
         # Calling this method shouldn't raise a KeyError, even though
         # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
@@ -107,12 +113,16 @@ class TestBugWatchUpdater(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(TestBugWatchUpdater, self).setUp()
+        transaction.abort()
+
     def test_bug_497141(self):
         # Regression test for bug 497141. KeyErrors raised in
         # BugWatchUpdater.updateBugWatches() shouldn't cause
         # checkwatches to abort.
         updater = NoBugWatchesByRemoteBugUpdater(
-            transaction, QuietFakeLogger())
+            transaction.manager, QuietFakeLogger())
 
         # Create a couple of bug watches for testing purposes.
         bug_tracker = self.factory.makeBugTracker()
@@ -136,6 +146,26 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         last_oops = error_utility.getLastOopsReport()
         self.assertTrue(
             last_oops.value.startswith('Spurious remote bug ID'))
+
+    def test_sql_log_cleared_in_oops_reporting(self):
+        # The log of SQL statements is cleared after an OOPS has been
+        # reported by checkwatches.report_oops().
+
+        # Enable SQL statment logging.
+        set_request_started()
+        try:
+            bug = self.factory.makeBug()
+            self.assertTrue(
+                len(get_request_statements()) > 0,
+                "We need at least one statement in the SQL log.")
+            checkwatches.report_oops()
+            self.assertTrue(
+                len(get_request_statements()) == 0,
+                "SQL statement log not cleared by "
+                "checkwatches.report_oops().")
+        finally:
+            # stop SQL statemnet logging.
+            clear_request_started()
 
 
 class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
@@ -166,7 +196,7 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         # subscribers from a bug watch.
         question.subscribe(
             getUtility(ILaunchpadCelebrities).launchpad_developers)
-        commit()
+        transaction.commit()
 
         # We now need to switch to the checkwatches DB user so that
         # we're testing with the correct set of permissions.
@@ -183,7 +213,7 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         self.bugwatch_with_question = bug_with_question.addWatch(
             bugtracker, '1', getUtility(ILaunchpadCelebrities).janitor)
         self.bugtask_with_question.bugwatch = self.bugwatch_with_question
-        commit()
+        transaction.commit()
 
     def test_can_update_bug_with_questions(self):
         """Test whether bugs with linked questions can be updated.
@@ -313,7 +343,8 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
 
     def __init__(self, output_file):
         logger = QuietFakeLogger()
-        super(BugWatchUpdaterForThreads, self).__init__(transaction, logger)
+        super(BugWatchUpdaterForThreads, self).__init__(
+            transaction.manager, logger)
         self.output_file = output_file
 
     def _getExternalBugTrackersAndWatches(self, bug_trackers, bug_watches):
@@ -354,8 +385,9 @@ class TestTwistedThreadSchedulerInPlace(
         threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
         threaded_bug_watch_scheduler = TwistedThreadScheduler(
             num_threads=10, install_signal_handlers=False)
+        # Run the updater.
         threaded_bug_watch_updater.updateBugTrackers(
-            bug_tracker_names=[tracker.name for tracker in self.trackers],
+            bug_tracker_names=['butterscotch', 'strawberry'],
             batch_size=5, scheduler=threaded_bug_watch_scheduler)
         # The thread names should match the tracker names.
         self.assertEqual(

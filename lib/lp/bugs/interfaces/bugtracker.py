@@ -250,6 +250,13 @@ class IBugTracker(Interface):
             title=_('Updates for this bug tracker are enabled'),
             required=True, default=True))
 
+    watches_ready_to_check = Attribute(
+        "The set of bug watches that are scheduled to be checked.")
+    watches_with_unpushed_comments = Attribute(
+        "The set of bug watches that have unpushed comments.")
+    watches_needing_update = Attribute(
+        "The set of bug watches that need updating.")
+
     def getBugFilingAndSearchLinks(remote_product, summary=None,
                                    description=None):
         """Return the bug filing and search links for the tracker.
@@ -272,14 +279,6 @@ class IBugTracker(Interface):
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
-
-    def getBugWatchesNeedingUpdate(hours_since_last_check):
-        """Get the bug watches needing to be updated.
-
-        All bug watches not being updated for the last
-        :hours_since_last_check: hours are considered needing to be
-        updated.
-        """
 
     def getLinkedPersonByName(name):
         """Return the `IBugTrackerPerson` for a given name on a bugtracker.
@@ -318,8 +317,13 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
-    def resetWatches():
-        """Reset the lastchecked times of this BugTracker's `BugWatch`es."""
+    def resetWatches(now=None):
+        """Reset the next_check times of this BugTracker's `BugWatch`es.
+
+        :param now: If specified, contains the datetime to which to set
+                    the BugWatches' next_check times. Defaults to
+                    datetime.now().
+        """
 
 
 class IBugTrackerSet(Interface):
@@ -332,7 +336,9 @@ class IBugTrackerSet(Interface):
 
     title = Attribute('Title')
 
-    bugtracker_count = Attribute("The number of registered bug trackers.")
+    count = Attribute("The number of registered bug trackers.")
+
+    names = Attribute("The names of all registered bug trackers.")
 
     def get(bugtracker_id, default=None):
         """Get a BugTracker by its id.

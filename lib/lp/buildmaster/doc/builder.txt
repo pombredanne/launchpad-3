@@ -1,4 +1,6 @@
-= Builder Class =
+=============
+Builder Class
+=============
 
 This test aims to meet the requirements of
 <https://launchpad.canonical.com/BasicTestCoverage> for the Builder class,
@@ -54,7 +56,8 @@ Check if the instance corresponds to the declared interface:
     True
 
 
-== BuilderSet ==
+BuilderSet
+==========
 
 Now perform the tests for the Builder ContentSet class, BuilderSet.
 
@@ -171,7 +174,8 @@ The build for the ubuntu primary archive shows up again.
     (1, datetime.timedelta(0, 60))
 
 
-== Resuming buildd slaves ==
+Resuming buildd slaves
+======================
 
 Virtual slaves are resumed using a command specified in the
 configuration profile. Production configuration uses a SSH trigger
@@ -230,3 +234,36 @@ Restore default value for resume command.
 
     >>> config_data = config.pop('vm_resume_command')
 
+
+Slave architecture checks
+=========================
+
+Builder.checkSlaveArchitecture() asks the slave for its version and tries
+to match it against a DistroArchSeries with a ProcessorFamily containing
+the Builder's Processor. If it fails, it will raise an exception so the
+builder can be marked as failed.
+
+A fictitious i386 variant is rejected, since there are no DASes with that
+tag.
+
+   >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
+   >>> bob.setSlaveForTesting(OkSlave('i387'))
+   >>> bob.checkSlaveArchitecture()
+   Traceback (most recent call last):
+   ...
+   BuildDaemonError: Bad slave architecture tag: i387 (registered family: x86)
+
+hppa isn't in the x86 family, so it too is rejected.
+
+   >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
+   >>> bob.setSlaveForTesting(OkSlave('hppa'))
+   >>> bob.checkSlaveArchitecture()
+   Traceback (most recent call last):
+   ...
+   BuildDaemonError: Bad slave architecture tag: hppa (registered family: x86)
+
+But i386, a real x86 variant, passes without objection.
+
+   >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
+   >>> bob.setSlaveForTesting(OkSlave('i386'))
+   >>> bob.checkSlaveArchitecture()
