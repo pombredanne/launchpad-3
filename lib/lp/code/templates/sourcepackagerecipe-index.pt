@@ -60,12 +60,12 @@
   <div class="yui-g">
     <div class="portlet">
       <h2>Build records</h2>
-        <table>
+        <table class="code">
           <tr>
-            <th style="text-align: left"><span>Status</span></th>
-            <th style="text-align: left">Time</th>
-            <th style="text-align: left">Distro</th>
-            <th style="text-align: left">Archive</th>
+            <th>Status</th>
+            <th>Time</th>
+            <th>Distro</th>
+            <th>Archive</th>
           </tr>
           <tr tal:repeat="build view/builds">
             <td>
