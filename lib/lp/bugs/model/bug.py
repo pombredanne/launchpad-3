@@ -478,7 +478,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.latest_patch_uploaded is not None
 
-    def subscribe(self, person, subscribed_by):
+    def subscribe(self, person, subscribed_by, send_notifications=False):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
@@ -487,7 +487,9 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
-        notify(ObjectCreatedEvent(sub, user=subscribed_by))
+
+        if send_notifications is True:
+            notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
         getUtility(ICalculateBugHeatJobSource).create(self)
 

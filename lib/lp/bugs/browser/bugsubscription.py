@@ -38,7 +38,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
     @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
-        subscription = self.context.bug.subscribe(person, self.user)
+        subscription = self.context.bug.subscribe(
+            person, self.user, send_notifications=True)
         if person.isTeam():
             message = '%s team has been subscribed to this bug.'
         else:
