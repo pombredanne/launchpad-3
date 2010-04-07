@@ -210,5 +210,84 @@ a different cache.
         <div> first 1 </div>
     </body>
 
+Note that the default syntax isn't useful when you are looping over
+a changeable list. For example, let's say we have a list of comments.
+The basic syntax lets us cache the first comment, the second comment,
+the third comment etc.
 
+    >>> comments = ["Today's comment", "Yesterday's comment"]
+    >>> template = TestPageTemplate(dedent("""\
+    ...     <body>
+    ...         <div tal:omit-tag="" tal:repeat="comment comments">
+    ...             <div tal:replace="cache:public">
+    ...                 <span tal:replace="comment" />
+    ...             </div>
+    ...         </div>
+    ...     </body>"""))
+    >>> print template(comments=comments)
+    <body>
+    Today's comment
+    Yesterday's comment
+    </body>
+
+However, if we now insert a new comment at the front of the list, the
+first comment has now become the second comment and our caches are
+incorrect.
+
+    >>> updated_comments = ['New comment'] + comments
+    >>> print template(comments=updated_comments)
+    <body>
+    Today's comment
+    Yesterday's comment
+    Yesterday's comment
+    </body>
+
+To correct this, we need to manually specify part of the key using
+a tales path expression. This path expression can be anything
+that can be cast to a string.
+
+    >>> template = TestPageTemplate(dedent("""\
+    ...     <body>
+    ...         <div tal:omit-tag="" tal:repeat="comment comments">
+    ...             <div tal:replace="cache:
+    ...                 public,1 hour,comment/comment_num">
+    ...                 <span tal:replace="comment/comment" />
+    ...             </div>
+    ...         </div>
+    ...     </body>"""))
+    >>> comments = [
+    ...     {'comment_num': 42, 'comment': "Today's comment"},
+    ...     {'comment_num': 12, 'comment': "Yesterday's comment"}]
+    >>> print template(comments=comments)
+    <body>
+    Today's comment
+    Yesterday's comment
+    </body>
+
+    >>> comments.insert(0, {'comment_num': 'foo', 'comment': 'New comment'})
+    >>> print template(comments=comments)
+    <body>
+    New comment
+    Today's comment
+    Yesterday's comment
+    </body>
+
+If we mutate the comments list without flushing the cache, we can
+demonstrate that the cached values are being correctly used in the loop.
+
+    >>> comments[2]['comment'] = 'Mutated comment'
+    >>> print template(comments=comments)
+    <body>
+    New comment
+    Today's comment
+    Yesterday's comment
+    </body>
+
+    >>> MemcachedLayer.purge()
+    >>> print template(comments=comments)
+    <body>
+    New comment
+    Today's comment
+    Mutated comment
+    </body>
 

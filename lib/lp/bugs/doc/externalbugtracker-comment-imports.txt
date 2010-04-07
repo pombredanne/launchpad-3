@@ -373,8 +373,10 @@ comment containing the CVE reference doesn't get any karma from this
 since they aren't a valid Launchpad user, having been created during the
 import process.
 
-We'll add a listener to check for Karma events.
+We'll create a bug watch and add a listener to check for Karma events.
 
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug_watch = factory.makeBugWatch('123456')
     >>> from lp.registry.tests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
@@ -382,8 +384,6 @@ We'll add a listener to check for Karma events.
 Importing a comment with a CVE reference will produce a CVE link in
 Launchpad but will result in no Karma records being created.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> bug_watch = factory.makeBugWatch('123456')
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> external_bugtracker.remote_comments = {

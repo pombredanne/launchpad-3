@@ -14,16 +14,17 @@ able to:
 
 == Setting up ==
 
-    >>> from lp.buildmaster.master import BuilddMaster
+    >>> from lp.soyuz.scripts.buildd import QueueBuilder
 
 Import the bunch of required database classes:
 
-    >>> from canonical.launchpad.database import (
-    ...      Build, BuildQueue, DistroArchSeries, PocketChroot)
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from canonical.launchpad.interfaces import (
-    ...      PackagePublishingStatus)
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.model.build import Build
+    >>> from lp.soyuz.model.distroarchseries import (
+    ...     DistroArchSeries, PocketChroot)
 
 The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', see
@@ -32,10 +33,10 @@ test_system_documentation.py for more information.
     >>> import logging
     >>> logger = logging.getLogger()
 
-Now that we have satisfied all of the needs for BuildMaster, let's
+Now that we have satisfied all of the needs for QueueBuilder, let's
 instantiate it.
 
-If I pass the current 'transaction' to BuilddMaster it will call
+If I pass the current 'transaction' to QueueBuilder it will call
 commit() on it for it build created. It apparently mess with the
 transaction manager is a way that the builds created in the sampledata
 catch-up (line 103) do not persist for the test build creation (line
@@ -46,7 +47,9 @@ souces and locations but with higher IDs.
     ...     def commit(self):
     ...         flush_database_updates()
 
-    >>> build_master = BuilddMaster(logger, FakeZtm())
+    >>> queue_builder = QueueBuilder(name='queue-builder', test_args=[])
+    >>> queue_builder.txn = FakeZtm()
+    >>> queue_builder.logger = logger
 
 Emulate a PocketChroot entry to validate the following
 distroarchseries:
@@ -75,10 +78,12 @@ Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
 
     >>> distroseries = set()
+    >>> archseries = set()
 
-    >>> for archseries in DistroArchSeries.select():
-    ...     distroseries.add(archseries.distroseries)
-    ...     build_master.addDistroArchSeries(archseries)
+    >>> for das in DistroArchSeries.select():
+    ...     distroseries.add(das.distroseries)
+    ...     if das.getChroot():
+    ...         archseries.add(das)
 
     >>> import operator
     >>> distroseries = sorted(
@@ -87,9 +92,7 @@ build jobs will be created.
 Among all the available distroarchseries only the one with chroot will
 be considered.
 
-    >>> valid_archs = sorted(build_master._archseries.keys(),
-    ...                      key=operator.attrgetter('id'))
-    >>> for arch in valid_archs:
+    >>> for arch in sorted(archseries, key=operator.attrgetter('id')):
     ...     print arch.title
     The Warty Warthog Release for i386 (x86)
     The Hoary Hedgehog Release for i386 (x86)
@@ -108,11 +111,11 @@ This is to allow us to study carefully what is being added as we add
 new series and builds.
 
     >>> for series in distroseries:
-    ...      build_master.createMissingBuilds(series)
+    ...      queue_builder.createMissingBuilds(series)
 
 Add the missing build queue entries.
 
-    >>> build_master.addMissingBuildQueueEntries()
+    >>> queue_builder.addMissingBuildQueueEntries(archseries)
 
 Store current status of the database:
 
@@ -299,7 +302,7 @@ We expect to have a couple of new builds for the sane hoary/RELEASE,
 one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
     >>> for series in distroseries:
-    ...      build_master.createMissingBuilds(series)
+    ...      queue_builder.createMissingBuilds(series)
 
 Check that we only created new Build entries for the new hoary releases:
 
@@ -368,7 +371,7 @@ created in the last stage of the queue-builder script.
     >>> print given_back_build.buildqueue_record
     None
 
-    >>> build_master.addMissingBuildQueueEntries()
+    >>> queue_builder.addMissingBuildQueueEntries(archseries)
 
     >>> given_back_build.buildqueue_record is not None
     True
