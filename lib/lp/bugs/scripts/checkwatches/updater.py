@@ -61,16 +61,15 @@ from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from lp.bugs.externalbugtracker.bugzilla import (
-    BugzillaAPI)
+    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError,
+    BugWatchUpdateError, BugWatchUpdateWarning, InvalidBugId,
+    PrivateRemoteBug, UnknownBugTrackerTypeError, UnknownRemoteStatusError,
+    UnparseableBugData, UnparseableBugTrackerVersion,
+    UnsupportedBugTrackerVersion)
+from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking)
+from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadCronScript
 
@@ -402,7 +401,12 @@ class BugWatchUpdater(object):
         `BaseScheduler`. If no scheduler is given, `SerialScheduler`
         will be used, which simply runs the jobs in order.
         """
-        self.log.debug("Using a global batch size of %s" % batch_size)
+        if batch_size is None:
+            self.log.debug("No global batch size specified.")
+        elif batch_size == BATCH_SIZE_UNLIMITED:
+            self.log.debug("Using an unlimited global batch size.")
+        else:
+            self.log.debug("Using a global batch size of %s" % batch_size)
 
         # Default to using the very simple SerialScheduler.
         if scheduler is None:
@@ -681,11 +685,6 @@ class BugWatchUpdater(object):
             # by the ExternalBugTracker.
             batch_size = remotesystem.batch_size
 
-        if batch_size == 0:
-            # A batch_size of 0 means that there's no batch size limit
-            # for this bug tracker.
-            batch_size = None
-
         with self.transaction:
             old_bug_watches = set(
                 bug_watch for bug_watch in bug_watches
@@ -718,7 +717,7 @@ class BugWatchUpdater(object):
         # are actually some bugs that we're interested in so as to
         # avoid unnecessary network traffic.
         if server_time is not None and len(remote_old_ids) > 0:
-            if batch_size is None:
+            if batch_size == BATCH_SIZE_UNLIMITED:
                 remote_old_ids_to_check = (
                     remotesystem.getModifiedRemoteBugs(
                         remote_old_ids, oldest_lastchecked))
@@ -746,7 +745,7 @@ class BugWatchUpdater(object):
         remote_ids_to_check = chain(
             remote_ids_with_comments, remote_new_ids, remote_old_ids_to_check)
 
-        if batch_size is not None:
+        if batch_size != BATCH_SIZE_UNLIMITED:
             # Some remote bug IDs may appear in more than one list so
             # we must filter the list before slicing.
             remote_ids_to_check = islice(

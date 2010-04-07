@@ -22,18 +22,19 @@ import pytz
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.webapp import urlsplit
+
+from lp.bugs.externalbugtracker import (
+    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError,
+    ExternalBugTracker, InvalidBugId, UnknownRemoteStatusError)
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE)
-from canonical.launchpad.mail import simple_sendmail
 from lp.bugs.scripts import debbugs
-from canonical.launchpad.webapp import urlsplit
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -61,7 +62,7 @@ class DebBugs(ExternalBugTracker):
     # Because we keep a local copy of debbugs, we remove the batch_size
     # limit so that all debbugs watches that need checking will be
     # checked each time checkwatches runs.
-    batch_size = 0
+    batch_size = BATCH_SIZE_UNLIMITED
 
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)
