@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 # pylint: disable-msg=W0403
 
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
@@ -403,7 +403,7 @@ def main(argv):
     person = create_ppa_user(user_name, options, admin, log)
 
     create_ppa(ubuntu, person, 'test-ppa')
-       
+
     txn.commit()
     log.info("Done.")
 
