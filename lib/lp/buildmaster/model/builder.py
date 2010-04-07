@@ -664,12 +664,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+            active=True, virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=True)
+                       builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""

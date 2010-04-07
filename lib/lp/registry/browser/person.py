@@ -443,6 +443,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return queryMultiAdapter(
                 (self.context, self.request), name ="+archivesubscriptions")
 
+    @stepthrough('+recipe')
+    def traverse_recipe(self, name):
+        """Traverse to this person's recipes."""
+        return self.context.getRecipe(name)
+
 
 class TeamNavigation(PersonNavigation):
 

@@ -2258,6 +2258,12 @@ class Person(
 
         return rset
 
+    def getRecipe(self, name):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        return Store.of(self).find(
+            SourcePackageRecipe, SourcePackageRecipe.owner == self,
+            SourcePackageRecipe.name == name).one()
+
     def isUploader(self, distribution):
         """See `IPerson`."""
         permissions = getUtility(IArchivePermissionSet).componentsForUploader(
