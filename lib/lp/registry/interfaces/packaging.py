@@ -62,7 +62,7 @@ class IPackaging(IHasOwner):
         vocabulary="ProductSeries", description=_(
         "The series for this source package. The same distribution "
         "release may package two different series of the same project as "
-        "different source packages. For example: python2.4 and python2.5"))
+        "different source packages. For example: python2.4 and python2.6"))
 
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
