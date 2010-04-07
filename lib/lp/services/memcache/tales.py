@@ -4,7 +4,11 @@
 """Implementation of the cache: namespace in TALES."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'MemcacheExpr',
+    'MemcacheHit',
+    'MemcacheMiss',
+    ]
 
 
 from hashlib import md5
@@ -15,12 +19,17 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.tal.talinterpreter import TALInterpreter, I18nMessageTypes
 from zope.tales.interfaces import ITALESExpression
+from zope.tales.expressions import simpleTraverse, PathExpr
 
 from canonical.base import base
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
+
+
+# Request annotation key.
+COUNTER_KEY = 'lp.services.memcache.tales.counter'
 
 
 class MemcacheExpr:
@@ -34,7 +43,7 @@ class MemcacheExpr:
     </div>
     """
     implements(ITALESExpression)
-    def __init__(self, name, expr, engine):
+    def __init__(self, name, expr, engine, traverser=simpleTraverse):
         """expr is in the format "visibility, 42 units".
 
         visibility is one of...
@@ -67,18 +76,30 @@ class MemcacheExpr:
         """
         self._s = expr
 
-        if ',' in expr:
-            try:
-                self.visibility, max_age = (s.strip() for s in expr.split(','))
-            except ValueError:
-                raise SyntaxError("Too many arguments in cache: expression")
-        else:
-            self.visibility = expr.strip()
+        components = [component.strip() for component in expr.split(',')]
+        num_components = len(components)
+        if num_components == 1:
+            self.visibility = components[0]
             max_age = None
-        assert self.visibility in (
-            'anonymous', 'public', 'private', 'authenticated',
-            ), 'visibility must be anonymous, public, private or authenticated'
+            self.extra_key = None
+        elif num_components == 2:
+            self.visibility, max_age = components
+            self.extra_key = None
+        elif num_components == 3:
+            self.visibility, max_age, extra_key = components
+            # Construct a callable that will evaluate the subpath
+            # expression when passed a context.
+            self.extra_key = PathExpr(name, extra_key, engine, traverser)
+        else:
+            raise SyntaxError("Too many arguments in cache: expression")
 
+        if self.visibility not in (
+            'anonymous', 'public', 'private', 'authenticated'):
+            raise SyntaxError(
+                'visibility must be anonymous, public, private or '
+                'authenticated')
+
+        # Convert the max_age string to an integer number of seconds.
         if max_age is None:
             self.max_age = 0
         else:
@@ -156,21 +177,27 @@ class MemcacheExpr:
             else: # private visibility
                 uid = str(logged_in_user.id)
 
-        # We include a counter in the key, reset at the start of the
-        # request, to ensure we get unique but repeatable keys inside
-        # tal:repeat loops.
-        counter_key = 'lp.services.memcache.tales.counter'
-        counter = request.annotations.get(counter_key, 0) + 1
-        request.annotations[counter_key] = counter
+        # The extra_key is used to differentiate items inside loops.
+        if self.extra_key is not None:
+            # Encode it to base64 to make it memcached key safe.
+            extra_key = unicode(
+                self.extra_key(econtext)).encode('base64').rstrip()
+        else:
+            # If no extra_key was specified, we include a counter in the
+            # key that is reset at the start of the request. This
+            # ensures we get unique but repeatable keys inside
+            # tal:repeat loops.
+            extra_key = request.annotations.get(COUNTER_KEY, 0) + 1
+            request.annotations[COUNTER_KEY] = extra_key
 
         # We use pt: as a unique prefix to ensure no clashes with other
         # components using the memcached servers. The order of components
         # below only matters for human readability and memcached reporting
         # tools - it doesn't really matter provided all the components are
         # included and separators used.
-        key = "pt:%s:%s,%s:%s:%d,%d:%d,%s" % (
+        key = "pt:%s:%s,%s:%s:%d,%d:%s,%s" % (
             self._lpconfig, source_file, versioninfo.revno, uid,
-            econtext.position[0], econtext.position[1], counter,
+            econtext.position[0], econtext.position[1], extra_key,
             sanitized_url,
             )
 
@@ -184,11 +211,9 @@ class MemcacheExpr:
         return key
 
     def __call__(self, econtext):
-
         # If we have an 'anonymous' visibility chunk and are logged in,
         # we don't cache. Return the 'default' magic token to interpret
         # the contents.
-        request = econtext.getValue('request')
         if (self.visibility == 'anonymous'
             and getUtility(ILaunchBag).user is not None):
             return econtext.getDefault()

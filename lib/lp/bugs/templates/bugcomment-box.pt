@@ -83,7 +83,8 @@
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
   </div>
-  <div class="boardCommentFooter" tal:condition="comment/show_footer">
+  <div class="boardCommentFooter" tal:condition="comment/show_footer"
+    tal:content="cache:authenticated,30 minutes,comment/index">
     <tal:activity
         define="activity_list comment/activity"
         condition="comment/activity">
