@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUG_WATCH_ACTIVITY_SUCCESS_STATUSES',
     'BugWatchActivityStatus',
     'IBugWatch',
     'IBugWatchActivity',
@@ -98,6 +99,13 @@ class BugWatchActivityStatus(DBEnumeratedType):
 
         The remote bug's status was successfully synchronised to Launchpad.
         """)
+
+
+# The set of BugWatchActivityStatuses that are considered to indicate
+# success.
+BUG_WATCH_ACTIVITY_SUCCESS_STATUSES = [
+    BugWatchActivityStatus.SYNC_SUCCEEDED,
+    ]
 
 
 class IBugWatch(IHasBug):

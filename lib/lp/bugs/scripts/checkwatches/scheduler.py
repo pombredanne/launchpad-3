@@ -16,6 +16,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.interfaces import IMasterStore
 
+from lp.bugs.interfaces.bugwatch import BUG_WATCH_ACTIVITY_SUCCESS_STATUSES
 from lp.bugs.model.bugwatch import BugWatch
 
 
@@ -70,7 +71,7 @@ class BugWatchScheduler(TunableLoop):
                         FROM (SELECT 1
                             FROM bugwatchactivity
                            WHERE bugwatchactivity.bug_watch = bug_watch.id
-                             AND bugwatchactivity.result IS NOT NULL
+                             AND bugwatchactivity.result NOT IN (%s)
                            ORDER BY bugwatchactivity.id DESC
                            LIMIT %s) AS recent_failures
                     ) AS recent_failure_count
@@ -80,7 +81,8 @@ class BugWatchScheduler(TunableLoop):
             ) AS counts
         WHERE BugWatch.id = counts.id
         """ % sqlvalues(
-            self.delay_coefficient, self.max_sample_size, chunk_size)
+            self.delay_coefficient, BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
+            self.max_sample_size, chunk_size)
         self.transaction.begin()
         result = self.store.execute(query)
         self.log.debug("Scheduled %s watches" % result.rowcount)
