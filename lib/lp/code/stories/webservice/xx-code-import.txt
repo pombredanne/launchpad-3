@@ -230,39 +230,6 @@ If we wish to create a branch owned by a team we are part of then we can.
     None
 
 
-== Exceptions ==
-
-Picking a team you aren't a member of to own a branch gets you a 400
-response,
-
-    >>> other_team_url = import_webservice.getAbsoluteUrl('/~other-team')
-    >>> new_remote_url = factory.getUniqueURL()
-    >>> print import_webservice.named_post(product_url, 'newCodeImport',
-    ...    branch_name='other-team-import', rcs_type='Git',
-    ...    url=new_remote_url, owner=other_team_url)
-    HTTP/1.1 400 Bad Request ...
-    BranchCreatorNotMemberOfOwnerTeam: Import-owner is not a member of
-    Other Team...
-
-as does choosing another user,
-
-    >>> other_person_url = import_webservice.getAbsoluteUrl('/~other-person')
-    >>> print import_webservice.named_post(product_url, 'newCodeImport',
-    ...    branch_name='other-person-import', rcs_type='Git',
-    ...    url=new_remote_url, owner=other_person_url)
-    HTTP/1.1 400 Bad Request ...
-    BranchCreatorNotOwner: Import-owner cannot create branches owned by
-    Other-person...
-
-and choosing a branch name that already exists for the implied branch
-namespace.
-
-    >>> print import_webservice.named_post(product_url, 'newCodeImport',
-    ...    branch_name='import', rcs_type='Git', url=new_remote_url)
-    HTTP/1.1 400 Bad Request ...
-    A branch with the name "import" already exists for import-owner in
-    scruff...
-
 == Requesting an Import ==
 
 You can request that an approved, working import happen soon over the

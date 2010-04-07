@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0213
+
 """Interface definitions for IHas<code related bits>."""
 
 __metaclass__ = type
@@ -101,7 +103,7 @@ class IHasRequestedReviews(Interface):
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
     def getRequestedReviews(status=None, visible_by_user=None):
-        """Returns merge proposals that a review was requested from the person.
+        """Returns merge proposals where a person was asked to review.
 
         This does not include merge proposals that were requested from
         teams that the person is part of. If status is not passed then

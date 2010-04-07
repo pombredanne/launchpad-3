@@ -681,7 +681,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
 
         packagename = self.sourcepackagename.name
-        displayname = self.displayname
         distro = self.distroseries.distribution
 
         histories = distro.main_archive.getPublishedSources(

@@ -32,7 +32,6 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
-    'UnknownBranchTypeError',
     'user_has_special_branch_access',
     ]
 

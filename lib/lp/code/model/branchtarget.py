@@ -326,8 +326,8 @@ class ProductBranchTarget(_BaseBranchTarget):
 class ProductSeriesBranchTarget(ProductBranchTarget):
 
     def __init__(self, productseries):
+        ProductBranchTarget.__init__(self, productseries.product)
         self.productseries = productseries
-        self.product = productseries.product
 
     @property
     def context(self):
