@@ -66,19 +66,21 @@ You can even share a comment history across project boundaries and tools, and us
                         In Launchpad, you can share a bug report and its comment history with other communities interested in finding a fix.
                         Each project &mdash; or even different releases within a project &mdash; can track its own status, importance and assignee for that same bug report.
                         <br /><br />
-                        Even if the bug is tracked elsewhere &mdash; such as in Trac, Sourceforge or Bugzilla &mdash; Launchpad can pull in it status. Using our <a href="https://help.launchpad.net/Bugs/PluginAPISpec">bug tracker plugins</a> for Bugzilla and Trac you can share a comment history for the same bug tracked both in Launchpad and an external tracker.<br /><br />
+                        Even if the bug is tracked elsewhere &mdash; such as in Trac, Sourceforge or Bugzilla &mdash; Launchpad can monitor its status. Using our <a href="https://help.launchpad.net/Bugs/PluginAPISpec">bug tracker plugins</a> for Bugzilla and Trac you can share a comment history for the same bug tracked both in Launchpad and an external tracker.<br /><br />
 And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&rdquo; report that shows which of your bugs are marked fixed in other communities.
 
                         </p>
                     </div>
                     <div class="block odd">
-                        <h3>Found a fix? Publish a branch!</h3>
-                        <h4>Don't swap static patches in bug comments. Instead, share evolving fixes by linking bug reports directly to Bazaar branches.</h4>
+                        <h3>Turn patches into fixes</h3>
+                        <h4>Direct links from bug reports to the patches and branches that contain the fix.</h4>
                         <p class="screen-holder">
                             <img src="images/bugs/5.png" alt="Found a fix? Publish a branch!" />                        </p>
                         <p>
-                        Other community members can use Bazaar to download your fix, make their own changes and then upload them back to Launchpad for everyone to see.<br /><br />
-                        Thanks to Bazaar, it&rsquo;s easy to merge the branch containing your bug fix into your project&rsquo;s trunk. Bazaar branches are like "living patches" &mdash; a single URL points to the latest version of the fix and a single command merges it into your trunk branch.
+                          Launchpad helps you bring bugs and fixes together. You can easily see any patches attached to a bug report and you can jump straight to a list of all the bug reports, associated with your project, that have patches.
+                        <br /><br />
+                          For fixes that require more than a simple patch, you can link directly to the Bazaar branch (including imports from git, Subversion and CVS) you're working in, allowing everyone interested in the bug to watch your solution evolve or even download your branch, make their own changes and then upload them back to Launchpad for everyone to see.<br /><br />
+                          A single URL points to the latest version of the fix and a single command merges it into the project's trunk branch.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -94,9 +96,9 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                         <p class="screen-holder">
                             <img src="images/bugs/3.png" alt="Bug tracker email interface"  />                        </p>
                         <p>
-                        Manage bug reports entirely through your mail client, using the Launchpad Bugs email interface.
+                        Manage bug reports entirely through your email client.
 <br /><br />
-						Report, subscribe, comment on, assign, prioritize and make just about any other update to bugs tracked in Launchpad using email. Launchpad will also mail you with updates on any bug you're interested in, whether an individual bug or all the bugs associated with a particular project or package. Read more about <a href="https://help.launchpad.net/Bugs/EmailInterface">the bug tracker's e-mail interface &gt;</a><br /><br />
+						You can use email to report, subscribe, comment on, assign, prioritise and make just about any other update to bugs tracked in Launchpad. Launchpad will also mail you with updates on any bug you're interested in, whether an individual bug or all the bugs associated with a particular project or package. Read more about <a href="https://help.launchpad.net/Bugs/EmailInterface">the bug tracker's e-mail interface &gt;</a><br /><br />
 						And, if you prefer, you can also subscribe to bug information in your feed reader with our Atom feeds. <img src="https://edge.launchpad.net/@@/rss" alt="Feed logo" />
                         </p>
                     </div>
