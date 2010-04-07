@@ -585,7 +585,7 @@ is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing Archive Mirrors
     INFO    Probed 4 mirrors.
     INFO    Disabling 1 mirror(s):
@@ -599,7 +599,7 @@ is correct.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Disabling 1 mirror(s):
@@ -615,7 +615,7 @@ probed again.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    No mirrors to probe.
     INFO    Done.
@@ -628,7 +628,7 @@ all official mirrors independently if they were probed recently or not.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Done.
@@ -647,7 +647,7 @@ we'll enable them again.
     >>> transaction.commit()
     >>> prober, stdout, stderr = run_prober('--content-type=cdimage --force')
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-distributionmirror-prober.lock
     INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Re-enabling 1 mirror(s):

@@ -500,7 +500,7 @@ upload log information:
     * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/process-upload-buildd.lock
     DEBUG   Initialising connection.
     ...
     DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
@@ -737,7 +737,7 @@ Check the log from the uploader run has made it into the upload directory:
     ...                                  'uploader.log'))
 
     >>> print uploader_log.read()
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/process-upload-buildd.lock
     DEBUG   Initialising connection.
     DEBUG   Beginning processing
     DEBUG   Creating directory /var/tmp/builddmaster/accepted

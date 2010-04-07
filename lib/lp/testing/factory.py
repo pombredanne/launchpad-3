@@ -1105,6 +1105,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
+        branch.startMirroring()
+        branch.mirrorComplete(parent.revision_id)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id, sequence=None):
