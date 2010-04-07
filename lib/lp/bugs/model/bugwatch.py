@@ -282,7 +282,12 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         activity = BugWatchActivity()
         activity.bug_watch = self
-        activity.result = result
+        if result is None:
+            # If no result is passed we assume that the activity
+            # succeded and set the result field accordingly.
+            activity.result = BugWatchActivityStatus.SYNC_SUCCEEDED
+        else:
+            activity.result = result
         if message is not None:
             activity.message = unicode(message)
         if oops_id is not None:

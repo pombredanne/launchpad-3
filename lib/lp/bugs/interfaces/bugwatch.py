@@ -93,6 +93,12 @@ class BugWatchActivityStatus(DBEnumeratedType):
         Launchpad cannot import the status of private remote bugs.
         """)
 
+    SYNC_SUCCEEDED = DBItem(9, """
+        Synchronisation succeeded
+
+        The remote bug's status was successfully synchronised to Launchpad.
+        """)
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
