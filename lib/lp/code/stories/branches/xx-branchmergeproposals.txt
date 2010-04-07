@@ -80,13 +80,16 @@ The summary reflects the selected target and prerequisite.
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
     >>> print_summary(nopriv_browser)
-    Status:...
+    Status:
+    ...
     Proposed branch:
     lp://dev/~name12/gnome-terminal/klingon
     Merge into:
     lp://dev/~name12/gnome-terminal/main
     Prerequisite:
     lp://dev/~name12/gnome-terminal/pushed
+    To merge this branch:
+    bzr merge lp://dev/~name12/gnome-terminal/klingon
 
 
 Editing a commit message

@@ -21,7 +21,6 @@ __all__ = [
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
     'ProductSeriesSetBranchView',
-    'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
@@ -59,7 +58,6 @@ from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
@@ -79,7 +77,6 @@ from canonical.launchpad.webapp import (
     Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
     stepto)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, UnexpectedFormData)
@@ -1127,23 +1124,6 @@ class ProductSeriesRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductSeriesSourceListView(LaunchpadView):
-    """A listing of all the running imports.
-
-    See `ICodeImportSet.getActiveImports` for our definition of running.
-    """
-
-    page_title = 'Available code imports'
-    label = page_title
-
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.text = self.request.get('text')
-        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
-
-        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):
