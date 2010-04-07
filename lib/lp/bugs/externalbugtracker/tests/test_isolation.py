@@ -29,8 +29,8 @@ class TestIsolation(TestCase):
         stores[0].execute('SELECT 1')
 
     def test_gen_store_statuses(self):
-	# XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently. 
-	return
+        # XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently.
+        return
 
         # All stores are either disconnected or idle when all
         # transactions have been aborted.
@@ -46,8 +46,8 @@ class TestIsolation(TestCase):
                 for _, status in isolation.gen_store_statuses()))
 
     def test_is_transaction_in_progress(self):
-	# XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently. 
-	return
+        # XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently.
+        return
 
         # is_transaction_in_progress() returns False when all
         # transactions have been aborted.
@@ -59,8 +59,8 @@ class TestIsolation(TestCase):
         self.failUnless(isolation.is_transaction_in_progress())
 
     def test_check_no_transaction(self):
-	# XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently. 
-	return
+        # XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently.
+        return
 
         # check_no_transaction() should be a no-op when there are no
         # transactions in operation.
@@ -74,8 +74,8 @@ class TestIsolation(TestCase):
             isolation.check_no_transaction)
 
     def test_ensure_no_transaction(self):
-	# XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently. 
-	return
+        # XXX: AaronBentley 2010-03-30 bug=551751: Test fails inconsistently.
+        return
 
         # ensure_no_transaction() is a decorator that raises
         # TransactionInProgress if a transaction has begun, else it
