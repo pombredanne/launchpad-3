@@ -1626,12 +1626,14 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None):
+                          parent_series=None, name=None, displayname=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
         if name is None:
             name = self.getUniqueString()
+        if displayname is None:
+            displayname = name.capitalize()
         if version is None:
             version = "%s.0" % self.getUniqueInteger()
 
@@ -1641,7 +1643,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         series = naked_distribution.newSeries(
             version=version,
             name=name,
-            displayname=name.capitalize(),
+            displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
@@ -1720,7 +1722,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None):
+                    virtualized=True, vm_host=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -1744,7 +1746,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IBuilderSet).new(
             processor, url, name, title, description, owner, active,
-            virtualized, vm_host)
+            virtualized, vm_host, manual=manual)
 
     def makeRecipe(self, *branches):
         """Make a builder recipe that references `branches`.
@@ -1804,11 +1806,12 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,
-        sourcename=None):
+        sourcename=None, recipe_build=None):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
-        recipe_build = self.makeSourcePackageRecipeBuild(
-            sourcename=sourcename)
+        if recipe_build is None:
+            recipe_build = self.makeSourcePackageRecipeBuild(
+                sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
