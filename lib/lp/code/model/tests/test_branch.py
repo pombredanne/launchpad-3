@@ -496,6 +496,23 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             [('lp://dev/' + branch.unique_name, branch)],
             branch.branchIdentities())
 
+    def test_linked_to_product(self):
+        # If a branch is the development focus branch for a product, then it's
+        # bzr identity is lp:product.
+        fooix = removeSecurityProxy(self.factory.makeProduct(name='fooix'))
+        fooix.development_focus.name = 'devel'
+        branch = self.factory.makeProductBranch(product=fooix)
+        linked_branch = ICanHasLinkedBranch(fooix)
+        linked_branch.setBranch(branch)
+        self.assertEqual(
+            [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
+            branch.branchLinks())
+        self.assertEqual(
+            [('lp://dev/fooix', fooix),
+             ('lp://dev/fooix/devel', fooix.development_focus),
+             ('lp://dev/' + branch.unique_name, branch)],
+            branch.branchIdentities())
+
 
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
