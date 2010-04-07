@@ -234,8 +234,8 @@ then an error is shown to the user.
 Requesting an import for a product that does not exist
 ======================================================
 
-If there are privacy policies that disallow the user from creating branches
-then an error is shown to the user.
+If the name typed in the product field does not match that of an
+existing product, an error is shown to the user.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "no-such-product"
