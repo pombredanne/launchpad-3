@@ -21,6 +21,7 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestBuildBase(TestCase):
@@ -133,6 +134,11 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         """ % tmp_dir
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
 
+        # We stub out our builds getUploaderCommand() method so
+        # we can check whether it was called.
+        self.build.getUploaderCommand = FakeMethod(
+            result=['echo', 'noop'])
+
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
@@ -141,11 +147,8 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
                 'filemap': { 'myfile.py': 'test_file_hash'},
                 })
 
-        # Note: process upload was called by the above, but didn't
-        # really succeed (as there was no changelog in the upload), but
-        # because the build was created with binaries, it looks like
-        # the upload was processed successfully.
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
+        self.assertEqual(1, self.build.getUploaderCommand.call_count)
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
@@ -154,6 +157,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
+        self.assertEqual(0, self.build.getUploaderCommand.call_count)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
@@ -162,6 +166,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
+        self.assertEqual(0, self.build.getUploaderCommand.call_count)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
