@@ -1298,7 +1298,8 @@ in the archive dependency domain it will be found.
 We also add another archive dependency here to exercise findDepCandidateByName
 a little more.
 
-    >>> second_ppa = factory.makeArchive(name="secondppa")
+    >>> joe = factory.makePerson(email='joe@example.com')
+    >>> second_ppa = factory.makeArchive(name="secondppa", owner=joe)
     >>> second_archive_dep = cprov.archive.addArchiveDependency(
     ...     second_ppa, release_pocket, main_component)
 
@@ -1335,7 +1336,7 @@ package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, name='my-copy-archive')
+    ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
     >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
@@ -1907,7 +1908,7 @@ given purpose:
     ...     ubuntu, purposes=ArchivePurpose.COPY)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name19  False    True
+    my-copy-archive  me-copy       False    True
 
 The method `getArchivesForDistribution` can also be used with multiple
 purposes. First we'll check how many partner archives are in the DB:
@@ -1925,7 +1926,7 @@ archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
     >>> print_archive_names(copy_n_partner_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name19  False    True
+    my-copy-archive  me-copy       False    True
     partner          ubuntu-team   False    True
 
 First we create four copy archives for ubuntu:
@@ -1957,7 +1958,7 @@ Now the `getArchivesForDistribution` finds the relevant COPY archives:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name19  False    True
+    my-copy-archive  me-copy       False    True
     team-archive     t1            False    True
     ultimate-copy    copy-owner1   False    True
 
@@ -2008,7 +2009,7 @@ The owner of the archive will also see their private archive in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name19  True     True
+    my-copy-archive  me-copy       True     True
     ultimate-copy    copy-owner1   False    True
 
 An admin will see all the private and disabled archives in the results:
@@ -2019,7 +2020,7 @@ An admin will see all the private and disabled archives in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name19  True     True
+    my-copy-archive  me-copy       True     True
     team-archive     t1            True     True
     there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
