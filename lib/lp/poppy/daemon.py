@@ -9,10 +9,15 @@ __all__ = [
     ]
 
 import optparse
+import warnings
 
 from canonical.launchpad.scripts import logger, logger_options
 from lp.poppy.hooks import Hooks
 from lp.poppy.server import run_server
+
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
 
 
 def main():

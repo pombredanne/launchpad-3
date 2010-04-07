@@ -128,7 +128,12 @@ class TacTestSetup:
         remove_if_exists(self.logfile)
 
         self.setUpRoot()
-        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
+        args = [sys.executable,
+                # Deprecation warnings in Twisted are not our problem.  They
+                # also aren't easy to suppress, and cause test failures due to
+                # spurious stderr output.  Just shut the whole bloody mess up.
+                '-Wignore::DeprecationWarning',
+                twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')

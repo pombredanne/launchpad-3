@@ -9,6 +9,11 @@
 
 import os
 import sys
+import warnings
+
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
 
 site_dir = "${scripts:parts-directory}"
 
