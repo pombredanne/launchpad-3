@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -93,8 +93,7 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test PYTHON=%s > /dev/null' % (
-        schema_dir, sys.executable)) != 0:
+    if os.system('cd %s; make test > /dev/null' % (schema_dir)) != 0:
         print 'Failed to create database or load sampledata.'
         return 1
 

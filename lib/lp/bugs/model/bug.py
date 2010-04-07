@@ -22,7 +22,9 @@ __all__ = [
 import operator
 import re
 from cStringIO import StringIO
+from datetime import datetime, timedelta
 from email.Utils import make_msgid
+from pytz import timezone
 
 from zope.contenttype import guess_content_type
 from zope.component import getUtility
@@ -33,7 +35,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -260,6 +262,7 @@ class Bug(SQLBase):
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
+    heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
     @property
@@ -1534,9 +1537,13 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat):
+    def setHeat(self, heat, timestamp=None):
         """See `IBug`."""
+        if timestamp is None:
+            timestamp = UTC_NOW
+
         self.heat = heat
+        self.heat_last_updated = timestamp
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
 
@@ -1792,6 +1799,18 @@ class BugSet:
         store = IStore(Bug)
         result_set = store.find(Bug)
         return result_set.order_by('id')
+
+    def getBugsWithOutdatedHeat(self, max_heat_age):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        last_updated_cutoff = (
+            datetime.now(timezone('UTC')) -
+            timedelta(days=max_heat_age))
+        last_updated_clause = Or(
+            Bug.heat_last_updated < last_updated_cutoff,
+            Bug.heat_last_updated == None)
+
+        return store.find(Bug, last_updated_clause).order_by('id')
 
 
 class BugAffectsPerson(SQLBase):
