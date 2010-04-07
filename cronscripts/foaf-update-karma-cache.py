@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -123,7 +123,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         # VACUUM KarmaTotalCache since we have just touched every row in it.
         self.cur.execute("""VACUUM KarmaTotalCache""")
 
-        # Insert new records into the KarmaTotalCache table. 
+        # Insert new records into the KarmaTotalCache table.
 
         # XXX: salgado 2007-02-06:
         # If deadlocks ever become a problem, first LOCK the
@@ -148,7 +148,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
     def C_add_karmacache_sums(self):
         self.logger.info("Step C: Calculating KarmaCache sums")
-        # We must issue some SUM queries to insert the karma totals for: 
+        # We must issue some SUM queries to insert the karma totals for:
         # - All actions of a person on a given product.
         # - All actions of a person on a given distribution.
         # - All actions of a person on a given project.
@@ -158,7 +158,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions with a specific category of a person.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, category, SUM(karmavalue), NULL, NULL, NULL, NULL
@@ -169,7 +169,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions of a person on a given product.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, NULL, SUM(karmavalue), product, NULL, NULL, NULL
@@ -180,7 +180,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions of a person on a given distribution.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
@@ -191,7 +191,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions of a person on a given project.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, NULL, SUM(karmavalue), NULL, NULL, NULL,
@@ -208,7 +208,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         # inserted here will be included in the calculation of the overall
         # karma of a person on a given project.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, category, SUM(karmavalue), NULL, NULL, NULL,
@@ -267,7 +267,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         """
         (person_id, category_id, product_id, distribution_id, points) = entry
         points *= scaling[category_id] # Scaled. wow.
-        self.logger.debug("Setting person_id=%d, category_id=%d, points=%d" 
+        self.logger.debug("Setting person_id=%d, category_id=%d, points=%d"
                           % (person_id, category_id, points))
 
         points = int(points)
@@ -290,7 +290,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = KarmaCacheUpdater('karma-update', 
+    script = KarmaCacheUpdater('karma-update',
         dbuser=config.karmacacheupdater.dbuser)
     script.lock_and_run(implicit_begin=True)
 

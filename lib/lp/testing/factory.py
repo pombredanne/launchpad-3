@@ -340,9 +340,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(account).status = status
         if email is None:
             email = self.getUniqueEmailAddress()
+        email_status = EmailAddressStatus.PREFERRED
+        if status != AccountStatus.ACTIVE:
+            email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
-            email, person=None, account=account,
-            email_status=EmailAddressStatus.PREFERRED)
+            email, person=None, account=account, email_status=email_status)
         if commit:
             transaction.commit()
         return account
