@@ -688,7 +688,17 @@ class Branch(SQLBase):
 
     def branchIdentities(self):
         """See `IBranch`."""
-        
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        if self.private:
+            # XXX: thumper 2010-04-08, bug 261609
+            # We have to get around to fixing this
+            identities = []
+        else:
+            identities = [
+                (lp_prefix + link.bzr_path, link.context)
+                for link in self.branchLinks()]
+        identities.append((lp_prefix + self.unique_name, self))
+        return identities
 
     def branchLinks(self):
         """See `IBranch`."""

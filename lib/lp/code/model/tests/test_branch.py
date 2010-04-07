@@ -483,6 +483,20 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertFalse(branch.upgrade_pending)
 
 
+class TestBranchLinksAndIdentites(TestCaseWithFactory):
+    """Test IBranch.bzr_identity."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_identities(self):
+        # If there are no links, the branch identities is just the unique
+        # name.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            [('lp://dev/' + branch.unique_name, branch)],
+            branch.branchIdentities())
+
+
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
 
