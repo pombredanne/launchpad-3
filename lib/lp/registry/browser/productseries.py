@@ -29,7 +29,6 @@ __all__ = [
 import cgi
 from operator import attrgetter
 
-from BeautifulSoup import BeautifulSoup
 from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
@@ -58,6 +57,7 @@ from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
