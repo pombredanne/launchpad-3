@@ -33,6 +33,7 @@ from lp.bugs.externalbugtracker.base import (
     ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
 from lp.bugs.interfaces.bug import IBugSet
@@ -55,6 +56,7 @@ class Bugzilla(ExternalBugTracker):
         self.remote_bug_status = {}
         self.remote_bug_product = {}
 
+    @ensure_no_transaction
     def _remoteSystemHasBugzillaAPI(self):
         """Return True if the remote host offers the Bugzilla API.
 
@@ -72,7 +74,10 @@ class Bugzilla(ExternalBugTracker):
             # server because it's the most lightweight method there is.
             remote_version = proxy.Bugzilla.version()
         except xmlrpclib.Fault, fault:
-            if fault.faultCode == 'Client':
+            # 'Client' is a hangover. Either Bugzilla or the Perl
+            # XML-RPC lib in use returned it as faultCode. It's wrong,
+            # but it's known wrongness, so we recognize it here.
+            if fault.faultCode in (xmlrpclib.METHOD_NOT_FOUND, 'Client'):
                 return False
             else:
                 raise
@@ -96,6 +101,7 @@ class Bugzilla(ExternalBugTracker):
                     return True
             return False
 
+    @ensure_no_transaction
     def _remoteSystemHasPluginAPI(self):
         """Return True if the remote host has the Launchpad plugin installed.
         """
@@ -110,7 +116,10 @@ class Bugzilla(ExternalBugTracker):
             # server because it's the most lightweight method there is.
             proxy.Launchpad.plugin_version()
         except xmlrpclib.Fault, fault:
-            if fault.faultCode == 'Client':
+            # 'Client' is a hangover. Either Bugzilla or the Perl
+            # XML-RPC lib in use returned it as faultCode. It's wrong,
+            # but it's known wrongness, so we recognize it here.
+            if fault.faultCode in (xmlrpclib.METHOD_NOT_FOUND, 'Client'):
                 return False
             else:
                 raise
@@ -463,6 +472,7 @@ class BugzillaAPI(Bugzilla):
             raise BugTrackerAuthenticationError(
                 self.baseurl, "No credentials found.")
 
+    @ensure_no_transaction
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
 
@@ -490,6 +500,7 @@ class BugzillaAPI(Bugzilla):
             if remote_bug['alias'] != '':
                 self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
+    @ensure_no_transaction
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         time_dict = self.xmlrpc_proxy.Bugzilla.time()
@@ -542,6 +553,7 @@ class BugzillaAPI(Bugzilla):
 
         return bug_ids_to_retrieve
 
+    @ensure_no_transaction
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
@@ -576,6 +588,7 @@ class BugzillaAPI(Bugzilla):
         else:
             return status
 
+    @ensure_no_transaction
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
         response_dict = self.xmlrpc_proxy.Bug.search(
@@ -639,6 +652,7 @@ class BugzillaAPI(Bugzilla):
 
         return [str(comment['id']) for comment in bug_comments]
 
+    @ensure_no_transaction
     def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(remote_bug_id)
@@ -697,6 +711,7 @@ class BugzillaAPI(Bugzilla):
             owner=poster, subject='', content=comment['text'],
             datecreated=comment['time'].replace(tzinfo=pytz.timezone('UTC')))
 
+    @ensure_no_transaction
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Add a comment to the remote bugtracker.
@@ -726,6 +741,7 @@ class BugzillaAPI(Bugzilla):
         #     this method.
         return None
 
+    @ensure_no_transaction
     @needs_authentication
     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
         """Set the Launchpad bug for a given remote bug.
@@ -757,6 +773,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         """The Bugzilla LP Plugin has been chosen, so return self."""
         return self
 
+    @ensure_no_transaction
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.
 
@@ -791,6 +808,7 @@ class BugzillaLPPlugin(BugzillaAPI):
             raise BugTrackerAuthenticationError(
                 self.baseurl, message)
 
+    @ensure_no_transaction
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
         # We pass permissive=True to ensure that Bugzilla won't error
@@ -805,6 +823,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         self._storeBugs(remote_bugs)
         return [remote_bug['id'] for remote_bug in remote_bugs]
 
+    @ensure_no_transaction
     def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""
         # First, discard all those bug IDs about which we already have
@@ -827,6 +846,7 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         self._storeBugs(remote_bugs)
 
+    @ensure_no_transaction
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         time_dict = self.xmlrpc_proxy.Launchpad.time()
@@ -836,6 +856,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         server_utc_time = time_dict['utc_time']
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
+    @ensure_no_transaction
     def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(remote_bug_id)
@@ -862,6 +883,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         # bug 248938).
         return [str(comment['id']) for comment in bug_comments]
 
+    @ensure_no_transaction
     def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(remote_bug_id)
@@ -889,6 +911,7 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         self._bugs[actual_bug_id]['comments'] = bug_comments
 
+    @ensure_no_transaction
     @needs_authentication
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Add a comment to the remote bugtracker.
@@ -929,6 +952,7 @@ class BugzillaLPPlugin(BugzillaAPI):
 
         return launchpad_bug_id
 
+    @ensure_no_transaction
     @needs_authentication
     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
         """Set the Launchpad bug for a given remote bug.

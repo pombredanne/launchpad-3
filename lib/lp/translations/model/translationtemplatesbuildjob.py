@@ -21,6 +21,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -62,7 +63,8 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     def getName(self):
         """See `IBuildFarmJob`."""
-        return '%s-%d' % (self.branch.name, self.job.id)
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+        return '%s-%d' % (self.branch.name, buildqueue.id)
 
     def getTitle(self):
         """See `IBuildFarmJob`."""

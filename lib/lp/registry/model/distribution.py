@@ -37,7 +37,7 @@ from lp.soyuz.model.binarypackagerelease import (
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, OfficialBugTagTargetMixin)
+    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.registry.model.distributionmirror import DistributionMirror
@@ -78,6 +78,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.soyuz.interfaces.build import IBuildSet
@@ -121,11 +122,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    OfficialBugTagTargetMixin, QuestionTargetMixin,
-                   StructuralSubscriptionTargetMixin, HasMilestonesMixin):
+                   StructuralSubscriptionTargetMixin, HasMilestonesMixin,
+                   HasBugHeatMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget)
+        IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -398,6 +401,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getMirrorByName(self, name):
         """See `IDistribution`."""
         return DistributionMirror.selectOneBy(distribution=self, name=name)
+
+    def getCountryMirror(self, country, mirror_type):
+        """See `IDistribution`."""
+        store = Store.of(self)
+        results = store.find(
+            DistributionMirror,
+            DistributionMirror.distribution == self,
+            DistributionMirror.country == country,
+            DistributionMirror.content == mirror_type,
+            DistributionMirror.country_dns_mirror == True)
+        return results.one()
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
@@ -928,7 +942,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.changelog = ' '.join(sorted(sprchangelog))
 
     def searchSourcePackageCaches(
-        self, text, has_packaging=None):
+        self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -949,6 +963,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             ]
 
+        publishing_condition = ''
+        if publishing_distroseries is not None:
+            publishing_condition = """
+                AND EXISTS (
+                    SELECT 1
+                    FROM SourcePackageRelease spr
+                        JOIN SourcePackagePublishingHistory spph
+                            ON spph.sourcepackagerelease = spr.id
+                    WHERE spr.sourcepackagename = SourcePackageName.id
+                        AND spph.distroseries = %d
+                    )""" % (
+                publishing_distroseries.id)
 
         packaging_query = """
             SELECT 1
@@ -965,24 +991,28 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
         condition = """
-            distribution = %s AND
-            archive IN %s AND
-            (fti @@ ftq(%s) OR
+            DistributionSourcePackageCache.distribution = %s AND
+            DistributionSourcePackageCache.archive IN %s AND
+            (DistributionSourcePackageCache.fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
             %s
+            %s
             """ % (quote(self), quote(self.all_distro_archive_ids),
-                   quote(text), quote_like(text), has_packaging_condition)
+                   quote(text), quote_like(text), has_packaging_condition,
+                   publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
             find_spec, condition
             ).order_by('rank DESC')
 
         return dsp_caches_with_ranks
 
-    def searchSourcePackages(self, text, has_packaging=None):
+    def searchSourcePackages(
+        self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
 
         dsp_caches_with_ranks = self.searchSourcePackageCaches(
-            text, has_packaging=has_packaging)
+            text, has_packaging=has_packaging,
+            publishing_distroseries=publishing_distroseries)
 
         # Create a function that will decorate the resulting
         # DistributionSourcePackageCaches, converting

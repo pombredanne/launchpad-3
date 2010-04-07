@@ -109,7 +109,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   ...         print source.sourcepackagerelease.name
   ...     pub_records = item.realiseUpload(mock_logger)
   ed
-  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
+  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
   DEBUG: Publishing build to ubuntu/hoary/i386
   DEBUG: ... ed/0.2-20 (Arch Specific)
 

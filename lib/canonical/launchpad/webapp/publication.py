@@ -7,7 +7,6 @@ __all__ = [
     'LaunchpadBrowserPublication',
     ]
 
-import gc
 import os
 import re
 import sys
@@ -18,7 +17,6 @@ import urllib
 
 from cProfile import Profile
 from datetime import datetime
-from time import strftime
 
 import tickcount
 import transaction
@@ -38,7 +36,8 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
-from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.interfaces.browser import (
+    IDefaultSkin, IBrowserRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -47,17 +46,16 @@ import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
 
 from canonical.config import config, dbconfig
-from canonical.mem import (
-    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
-    resident)
+from canonical.mem import memory, resident
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 from canonical.launchpad.readonly import is_read_only
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
     IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
-    MASTER_FLAVOR, OffsiteFormPostError, SLAVE_FLAVOR)
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import (
     DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
 from canonical.launchpad.webapp.menu import structured
@@ -312,21 +310,50 @@ class LaunchpadBrowserPublication(
 
         The OffsiteFormPostError exception is raised if the following
         holds true:
-          1. the request method is POST
-          2. the HTTP referer header is not empty
-          3. the host portion of the referrer is not a registered vhost
+          1. the request method is POST *AND*
+          2. a. the HTTP referer header is empty *OR*
+             b. the host portion of the referrer is not a registered vhost
         """
         if request.method != 'POST':
             return
         # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our OpenID endpoint.  Ideally we'd
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
         # have a better way of marking this URL as allowing offsite
         # form posts.
         if request['PATH_INFO'] == '/+openid':
             return
+        if (IOAuthSignedRequest.providedBy(request)
+            or not IBrowserRequest.providedBy(request)
+            or request['PATH_INFO']  in (
+                '/+storeblob', '/+request-token', '/+access-token',
+                '/+hwdb/+submit')):
+            # We only want to check for the referrer header if we are
+            # in the middle of a request initiated by a web browser. A
+            # request to the web service (which is necessarily
+            # OAuth-signed) or a request that does not implement
+            # IBrowserRequest (such as an XML-RPC request) can do
+            # without a Referer.
+            #
+            # XXX gary 2010-03-09 bug=535122,538097
+            # The one-off exceptions are necessary because existing
+            # non-browser applications make requests to these URLs
+            # without providing a Referer. Apport makes POST requests
+            # to +storeblob without providing a Referer (bug 538097),
+            # and launchpadlib used to make POST requests to
+            # +request-token and +access-token without providing a
+            # Referer.
+            #
+            # We'll have to keep an application's one-off exception
+            # until the application has been changed to send a
+            # Referer, and until we have no legacy versions of that
+            # application to support. For instance, we can't get rid
+            # of the apport exception until after Lucid's end-of-life
+            # date. We should be able to get rid of the launchpadlib
+            # exception after Karmic's end-of-life date.
+            return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            return
+            raise NoReferrerError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
@@ -608,9 +635,6 @@ class LaunchpadBrowserPublication(
 
         da.clear_request_started()
 
-        if config.debug.references:
-            self.debugReferencesLeak(request)
-
         # Maintain operational statistics.
         if getattr(request, '_wants_retry', False):
             OpStats.stats['retries'] += 1
@@ -719,99 +743,9 @@ class LaunchpadBrowserPublication(
                 vss_start, rss_start, vss_end, rss_end))
             log.close()
 
-    def debugReferencesLeak(self, request):
-        """See what kind of references are increasing.
-
-        This logs the current RSS and references count by types in a
-        scoreboard file. If that file exists, we compare the current stats
-        with the previous one and logs the increase along the current page id.
-
-        Note that this only provides reliable results when only one thread is
-        processing requests.
-        """
-        gc.collect()
-        current_rss = resident()
-        current_garbage_count = len(gc.garbage)
-        # Convert type to string, because that's what we get when reading
-        # the old scoreboard.
-        current_refs = [
-            (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
-        # Add G as prefix to types on the garbage list.
-        current_garbage = [
-            (count, 'G%s' % str(ref_type))
-            for count, ref_type in countsByType(gc.garbage, n=0)]
-        scoreboard_path = config.debug.references_scoreboard_file
-
-        # Read in previous scoreboard if it exists.
-        if os.path.exists(scoreboard_path):
-            scoreboard = open(scoreboard_path, 'r')
-            try:
-                stats = scoreboard.readline().split()
-                prev_rss = int(stats[0].strip())
-                prev_garbage_count = int(stats[1].strip())
-                prev_refs = readCounts(scoreboard, '=== GARBAGE ===\n')
-                prev_garbage = readCounts(scoreboard)
-            finally:
-                scoreboard.close()
-            mem_leak = current_rss - prev_rss
-            garbage_leak = current_garbage_count - prev_garbage_count
-            delta_refs = list(deltaCounts(prev_refs, current_refs))
-            delta_refs.extend(deltaCounts(prev_garbage, current_garbage))
-            self.logReferencesLeak(request, mem_leak, delta_refs)
-
-        # Save the current scoreboard.
-        scoreboard = open(scoreboard_path, 'w')
-        try:
-            scoreboard.write("%d %d\n" % (current_rss, current_garbage_count))
-            printCounts(current_refs, scoreboard)
-            scoreboard.write('=== GARBAGE ===\n')
-            printCounts(current_garbage, scoreboard)
-        finally:
-            scoreboard.close()
-
-    def logReferencesLeak(self, request, mem_leak, delta_refs):
-        """Log the time, pageid, increase in RSS and increase in references.
-        """
-        log = open(config.debug.references_leak_log, 'a')
-        try:
-            pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-            # It can happen that the pageid is ''?!?
-            if pageid == '':
-                pageid = 'Unknown'
-            leak_in_mb = float(mem_leak) / (1024*1024)
-            formatted_delta = "; ".join(
-                "%s=%d" % (ref_type, count)
-                for count, ref_type in delta_refs)
-            log.write('%s %s %.2fMb %s\n' % (
-                strftime('%Y-%m-%d:%H:%M:%S'),
-                pageid,
-                leak_in_mb,
-                formatted_delta))
-        finally:
-            log.close()
-
 
 class InvalidThreadsConfiguration(Exception):
     """Exception thrown when the number of threads isn't set correctly."""
-
-
-def debug_references_startup_check(event):
-    """Event handler for IProcessStartingEvent.
-
-    If debug/references is set to True, we make sure that the number of
-    threads is configured to 1. We also delete any previous scoreboard file.
-    """
-    if not config.debug.references:
-        return
-
-    if config.threads != 1:
-        raise InvalidThreadsConfiguration(
-            "Number of threads should be one when debugging references.")
-
-    # Remove any previous scoreboard, the content is meaningless once
-    # the server is restarted.
-    if os.path.exists(config.debug.references_scoreboard_file):
-        os.remove(config.debug.references_scoreboard_file)
 
 
 class DefaultPrimaryContext:

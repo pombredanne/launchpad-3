@@ -211,6 +211,9 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
+
   </tal:devmode>
   <tal:production condition="not:devmode">
     <script type="text/javascript"

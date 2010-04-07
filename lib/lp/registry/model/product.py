@@ -34,10 +34,11 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, OfficialBugTagTargetMixin)
+    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
@@ -169,13 +170,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
+              HasBugHeatMixin):
 
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
-        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
+        IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
+        IQuestionTarget)
 
     _table = 'Product'
 
@@ -1138,8 +1141,10 @@ class ProductSet:
             conditions.append(Product.active == active)
 
         if search_text is not None and search_text.strip() != '':
-            conditions.append(SQL(
-                'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
+            conditions.append(SQL('''
+                Product.fti @@ ftq(%(text)s) OR
+                Product.name = lower(%(text)s)
+                ''' % sqlvalues(text=search_text)))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime
