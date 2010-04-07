@@ -32,7 +32,6 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
-    'UnknownBranchTypeError',
     'user_has_special_branch_access',
     ]
 
@@ -922,6 +921,17 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
 
     def associatedSuiteSourcePackages():
         """Return the suite source packages that this branch is linked to."""
+
+    def branchLinks():
+        """Return a sorted list of ICanHasLinkedBranch objects."""
+
+    def branchIdentites():
+        """A list of aliases for a branch.
+
+        Returns a list of tuples of bzr identity and context object.  There is
+        at least one alias for any branch, and that is the branch itself.  For
+        linked branches, the context object is the appropriate linked object.
+        """
 
     # subscription-related methods
     @operation_parameters(

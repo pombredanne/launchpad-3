@@ -686,6 +686,24 @@ class Branch(SQLBase):
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
 
+    def branchIdentities(self):
+        """See `IBranch`."""
+        
+
+    def branchLinks(self):
+        """See `IBranch`."""
+        links = []
+        for suite_sp in self.associatedSuiteSourcePackages():
+            links.append(ICanHasLinkedBranch(suite_sp))
+            if suite_sp.distribution.currentseries == suite_sp.distroseries:
+                links.append(ICanHasLinkedBranch(
+                        suite_sp.sourcepackage.distribution_sourcepackage))
+        for series in self.associatedProductSeries():
+            links.append(ICanHasLinkedBranch(series))
+            if series.product.development_focus == series:
+                links.append(ICanHasLinkedBranch(series.product))
+        return sorted(links)
+
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level):
