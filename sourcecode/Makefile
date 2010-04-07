@@ -1,4 +1,4 @@
-PYTHON_VERSION=2.5
+PYTHON_VERSION=2.6
 PYTHON=python${PYTHON_VERSION}
 # Not all packages have a working Makefile. Work around this by hardcoding
 # the ones we test.  If we fix them all to have EITHER a good makefile
