@@ -27,14 +27,14 @@ class NoSuchTeamError(Exception):
     """Used if non-existent team name is specified."""
 
 
-bad_ssh_patters = re.compile('[\r\n\f]')
+bad_ssh_pattern = re.compile('[\r\n\f]')
 
 
 def make_sshkey_params(member, type_name, key):
     sshkey = "%s %s %s" % (
         type_name,
-        bad_ssh_patters.sub('', key.keytext),
-        bad_ssh_patters.sub('', key.comment).strip())
+        bad_ssh_pattern.sub('', key.keytext),
+        bad_ssh_pattern.sub('', key.comment).strip())
     return dict(name=member.name, sshkey=sshkey)
 
 

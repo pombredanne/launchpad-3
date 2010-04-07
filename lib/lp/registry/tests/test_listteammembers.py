@@ -98,7 +98,7 @@ class ListTeamMembersTestCase(TestCaseWithFactory):
         team.addMember(member, reviewer=team.teamowner)
         sshkey = self.factory.makeSSHKey(member)
         sshkey.keytext = u'123badKeysMight\r\nContain\fBadCharacters'
-        sshkey.comment = 'comment'
+        sshkey.comment = 'co\rmm\ne\f\fnt'
         expected = dict(
             name=u'biggles',
             sshkey=u'ssh-rsa 123badKeysMightContainBadCharacters comment')
