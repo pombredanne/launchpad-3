@@ -1192,12 +1192,6 @@
             classes="
                 PersonSetNavigation"/>
         <browser:page
-            name="+newperson"
-            for="lp.registry.interfaces.person.IPersonSet"
-            class="lp.registry.browser.person.PersonAddView"
-            permission="launchpad.Admin"
-            template="../templates/people-newperson.pt"/>
-        <browser:page
             name="+newteam"
             for="lp.registry.interfaces.person.IPersonSet"
             class="lp.registry.browser.team.TeamAddView"
@@ -2172,6 +2166,12 @@
         classes="
             PersonProductFacets"
         module="lp.registry.browser.personproduct"/>
+
+    <browser:url
+        for="lp.registry.interfaces.ssh.ISSHKey"
+        path_expression="string:+ssh-keys/${id}"
+        rootsite="api"
+        attribute_to_parent="person" />
 
     <browser:url
         for="lp.registry.interfaces.gpg.IGPGKey"

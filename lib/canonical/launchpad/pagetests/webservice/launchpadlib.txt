@@ -2,10 +2,49 @@ Using launchpadlib in pagetests
 ===============================
 
 As an alternative to crafting HTTP requests with the 'webservice'
-object, you can write pagetests using launchpadlib. The 'launchpad'
-variable contains a launchpadlib Launchpad object that's
-pre-authenticated with salgado's permissions. Anything you can do with
-'webservice', you can do with 'launchpad'.
+object, you can write pagetests using launchpadlib.
 
-  >>> print launchpad.me.name
-  salgado
+Two helper functions make it easy to set up Launchpad objects that
+can access the web service. With launchpadlib_for() you can set up a
+Launchpad object for a given user with a single call.
+
+    >>> launchpad = launchpadlib_for(
+    ...     'launchpadlib test', 'salgado', 'WRITE_PUBLIC')
+    >>> print launchpad.me.name
+    salgado
+
+    # XXX leonardr 2010-03-31 bug=552732
+    # launchpadlib doesn't work with a credential scoped to a context
+    # like 'firefox', because the service root resource is considered
+    # out of scope. This test should pass, but it doesn't.
+    #
+    # When you fix this, be sure to show that an attempt to access
+    # something that really is out of scope (like launchpad.me.name)
+    # yields a 401 error.
+    #
+    #>>> launchpad = launchpadlib_for(
+    #...     'launchpadlib test', 'no-priv', 'READ_PRIVATE', 'firefox',
+    #...      version="devel")
+    #>>> print launchpad.projects['firefox'].name
+    #firefox
+
+With launchpadlib_credentials_for() you can get a launchpadlib
+Credentials object.
+
+    >>> from lp.testing import launchpadlib_credentials_for
+    >>> credentials = launchpadlib_credentials_for(
+    ...     'launchpadlib test', 'no-priv', 'READ_PUBLIC')
+    >>> credentials
+    <launchpadlib.credentials.Credentials object ...>
+
+    >>> print credentials.consumer.key
+    launchpadlib test
+    >>> print credentials.access_token
+    oauth_token_secret=...&oauth_token=...
+
+This can be used to create your own Launchpad object.
+
+    >>> from launchpadlib.launchpad import Launchpad
+    >>> launchpad = Launchpad(credentials, 'http://api.launchpad.dev/')
+    >>> print launchpad.me.name
+    no-priv
