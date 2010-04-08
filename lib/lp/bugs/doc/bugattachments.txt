@@ -226,9 +226,8 @@ If the request contains no attachment description the filename should be used.
     Attachment added: u'RA.txt'
     >>> len(add_comment_view.errors)
     0
-    >>> bug_one.attachments[-1].title
+    >>> bug_one.attachments[bug_one.attachments.count()-1].title
     u'RA.txt'
-
 
 Since the ObjectCreatedEvent was generated, a notification about the
 attachment was added.
@@ -259,9 +258,10 @@ Let's try uploading a file with some weird characters in them:
     Attachment added: u'fo\xf6 bar'
     >>> len(add_comment_view.errors)
     0
-    >>> bug_one.attachments[-1].libraryfile.filename
+    >>> attachments = bug_one.attachments
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.filename
     u'fo\xf6 bar'
-    >>> bug_one.attachments[-1].libraryfile.http_url
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.http_url
     'http://.../fo%C3%B6%20bar'
 
 If a filename contains a slash, it will be converted to a dash instead.
@@ -284,9 +284,9 @@ from the librarian.
     Attachment added: u'foo-bar-baz'
     >>> len(add_comment_view.errors)
     0
-    >>> bug_one.attachments[-1].libraryfile.filename
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.filename
     u'foo-bar-baz'
-    >>> bug_one.attachments[-1].libraryfile.http_url
+    >>> attachments[bug_one.attachments.count()-1].libraryfile.http_url
     'http://.../foo-bar-baz'
 
     >>> config_data = config.pop('max_attachment_size')
@@ -586,7 +586,7 @@ deleted, for example. because an admin deleted a privacy sensitive file.
 These attachments are not included in Bug.attachments. Our test bug has
 at present two attachments.
 
-    >>> [attachment.title for attachment in bug.valid_attachments]
+    >>> [attachment.title for attachment in bug.attachments]
     [u'foobar', u'An attachment of some sort']
 
 If we remove the content record from one attachment, it is no longer
@@ -594,5 +594,5 @@ returned by Bug.attachments.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(attachment.libraryfile).content = None
-    >>> [attachment.title for attachment in bug.valid_attachments]
+    >>> [attachment.title for attachment in bug.attachments]
     [u'foobar']
