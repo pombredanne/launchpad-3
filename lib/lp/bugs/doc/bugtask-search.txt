@@ -709,7 +709,7 @@ closed after a certain date.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.searchbuilder import greater_than
-    >>> product = factory.makeProductNoCommit()
+    >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
@@ -739,7 +739,7 @@ It's possible to search for bugs with an attachment of a certain type.
     >>> from canonical.launchpad.interfaces import (
     ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     ...     IMessageSet)
-    >>> product = factory.makeProductNoCommit()
+    >>> product = factory.makeProduct()
     >>> patch_bug = factory.makeBug(
     ...     product=product)
     >>> filecontent = 'Some diff data'
