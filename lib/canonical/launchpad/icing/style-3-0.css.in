@@ -1396,3 +1396,6 @@ table.code th {
 table.code th, table.code td {
     padding-right: 3em;
 }
+
+tr.bug-branch-summary td { padding: 0px 6px; }
+tr.bug-branch-summary td.first { padding-left: 0px; }

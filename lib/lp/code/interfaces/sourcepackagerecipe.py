@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=E0211,E0213
 
-
 """Interface of the `SourcePackageRecipe` content type."""
 
 
@@ -22,7 +21,7 @@ __all__ = [
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Datetime, Object, TextLine, Text
+from zope.schema import Bool, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator

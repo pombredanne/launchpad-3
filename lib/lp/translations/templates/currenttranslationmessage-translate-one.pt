@@ -8,10 +8,12 @@
   define="language_code context/pofile/language/code">
 <tr class="translation">
   <td class="icon left right">
-    <a tal:attributes="href view/zoom_url"><img tal:attributes="
-          alt view/zoom_alt;
+    <a tal:attributes="
+          href view/zoom_url;
           title view/zoom_alt;
-          src view/zoom_icon;" /></a>
+          id view/zoom_link_id">
+    <span tal:attributes="class string:sprite ${view/zoom_icon}"></span>
+    </a>
   </td>
   <td style="text-align: right;">
     <div tal:attributes="id string:${view/html_id}">
@@ -32,12 +34,11 @@
     </label>
   </th>
   <td class="icon left right">
-    <img
+    <span
       tal:condition="context/potmsgset/is_translation_credit"
-      src="/@@/read-only"
-      alt="This message is handled automatically by Launchpad."
+      class="sprite read-only"
       title="This message is handled automatically by Launchpad."
-    />
+    ></span>
     <tal:form-writeable condition="view/form_is_writeable">
       <a href=""
          tal:condition="not:context/potmsgset/is_translation_credit"
@@ -99,8 +100,7 @@
   class="discreet secondary translation">
   <td colspan="3" />
   <th class="icon left right">
-    <img alt="Developer note:" src="/@@/info"
-         title="This is a note to translators by the software developer" />
+    <span class="sprite info" title="Developer's note to translators"></span>
   </th>
   <td tal:content="view/source_comment">
       This refers to the content type.
@@ -111,7 +111,7 @@
   class="discreet secondary translation">
   <td colspan="3" />
   <th class="icon left right">
-    <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+    <span class="sprite info" title="Note to translators"></span>
   </th>
   <td>
     <code>[tab]</code> represents a tab character.
@@ -125,7 +125,7 @@
 >
   <td colspan="3" />
   <th class="icon left right">
-    <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+    <span class="sprite info" title="Note to translators"></span>
   </th>
   <td>
     <img
@@ -142,7 +142,7 @@
 >
   <td colspan="3" />
   <th class="icon left right">
-    <img alt="Note:" src="/@@/info" title="This is a note to translators" />
+    <span class="sprite info" title="Note to translators"></span>
   </th>
   <td>
     <img

@@ -73,6 +73,7 @@ import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
+from wsgi_intercept import httplib2_intercept
 
 from lazr.restful.utils import safe_hasattr
 
@@ -255,9 +256,10 @@ class BaseLayer:
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
-        # layer is being run in a subprocess.
+        # layer is being run in a subprocess. No need to be polite
+        # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
-            kill_by_pidfile(MemcachedLayer.getPidFile())
+            kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
             LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
@@ -938,12 +940,18 @@ class FunctionalLayer(BaseLayer):
         register_launchpad_request_publication_factories()
         wsgi_intercept.add_wsgi_intercept(
             'localhost', 80, lambda: wsgi_application)
+        wsgi_intercept.add_wsgi_intercept(
+            'api.launchpad.dev', 80, lambda: wsgi_application)
+        httplib2_intercept.install()
+
 
     @classmethod
     @profiled
     def tearDown(cls):
         FunctionalLayer.isSetUp = False
         wsgi_intercept.remove_wsgi_intercept('localhost', 80)
+        wsgi_intercept.remove_wsgi_intercept('api.launchpad.dev', 80)
+        httplib2_intercept.uninstall()
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
@@ -1489,6 +1497,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     @classmethod
     @profiled
     def startStory(cls):
+        MemcachedLayer.testSetUp()
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
         LaunchpadLayer.resetSessionDb()
@@ -1500,6 +1509,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
         PageTestLayer.resetBetweenTests(True)
         LibrarianLayer.testTearDown()
         DatabaseLayer.testTearDown()
+        MemcachedLayer.testTearDown()
 
     @classmethod
     @profiled

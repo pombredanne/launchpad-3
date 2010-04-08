@@ -6,7 +6,8 @@ __all__ = [
     'OAuthAccessTokenView',
     'OAuthAuthorizeTokenView',
     'OAuthRequestTokenView',
-    'OAuthTokenAuthorizedView']
+    'OAuthTokenAuthorizedView',
+    'lookup_oauth_context']
 
 import simplejson
 
@@ -172,18 +173,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             context = self.request.form.get('lp.context')
             if not context:
                 return
-        if '/' in context:
-            distro, package = context.split('/')
-            distro = getUtility(IDistributionSet).getByName(distro)
-            if distro is None:
-                raise UnexpectedFormData("Unknown context.")
-            context = distro.getSourcePackage(package)
-            if context is None:
-                raise UnexpectedFormData("Unknown context.")
-        else:
-            context = getUtility(IPillarNameSet).getByName(context)
-            if context is None:
-                raise UnexpectedFormData("Unknown context.")
+        try:
+            context = lookup_oauth_context(context)
+        except ValueError:
+            raise UnexpectedFormData("Unknown context.")
         self.token_context = context
 
     def reviewToken(self, permission):
@@ -194,6 +187,25 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         else:
             self.next_url = (
                 '+token-authorized?oauth_token=%s' % self.token.key)
+
+def lookup_oauth_context(context):
+    """Transform an OAuth context string into a context object.
+
+    :param context: A string to turn into a context object.
+    """
+    if '/' in context:
+        distro, package = context.split('/')
+        distro = getUtility(IDistributionSet).getByName(distro)
+        if distro is None:
+            raise ValueError(distro)
+        context = distro.getSourcePackage(package)
+        if context is None:
+            raise ValueError(package)
+    else:
+        context = getUtility(IPillarNameSet).getByName(context)
+        if context is None:
+            raise ValueError(context)
+    return context
 
 
 class OAuthTokenAuthorizedView(LaunchpadView):

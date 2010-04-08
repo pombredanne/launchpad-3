@@ -82,6 +82,8 @@ from lp.testing._login import (
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
+from lp.testing._webservice import (
+    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them

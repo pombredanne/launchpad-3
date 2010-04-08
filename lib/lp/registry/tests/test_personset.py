@@ -99,23 +99,19 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         # Person in question.
 
         # Create a testing `Account` and a testing `Person` directly,
-        # linked. However the `Account` email is not linked to the
-        # `Person`.
+        # linked.
         testing_account = self.factory.makeAccount(
             self.displayname, email=self.email_address)
         testing_person = removeSecurityProxy(
             testing_account).createPerson(self.rationale)
-        self.assertIs(None, testing_account.preferredemail.person)
-        self.assertIs(None, testing_person.preferredemail)
+        self.assertEqual(
+            testing_person, testing_account.preferredemail.person)
 
+        # Since there's an existing Person for the given email address,
+        # IPersonSet.ensurePerson() will just return it.
         ensured_person = self.person_set.ensurePerson(
             self.email_address, self.displayname, self.rationale)
-
-        # The existing Person was retrieved and the Account
-        # 'preferredemail' is also bound to the existing Person.
-        self.assertEquals(testing_person.id, ensured_person.id)
-        self.assertEquals(testing_account.preferredemail.id,
-                          ensured_person.preferredemail.id)
+        self.assertEqual(testing_person, ensured_person)
 
 
 class TestPersonSetMerge(TestCaseWithFactory):
