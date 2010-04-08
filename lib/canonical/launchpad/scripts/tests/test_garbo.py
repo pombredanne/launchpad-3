@@ -511,8 +511,8 @@ class TestGarbo(TestCaseWithFactory):
         db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        Store.of(db_branch).flush()
         branch_job = BranchUpgradeJob.create(db_branch)
-        transaction.commit()
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
