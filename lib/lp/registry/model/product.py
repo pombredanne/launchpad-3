@@ -1021,7 +1021,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                series == self.development_focus]
 
     def getRecipes(self):
-        """See `IHasBranches`."""
+        """See `IHasRecipes`."""
         from lp.code.model.branch import Branch
         store = Store.of(self)
         return store.find(

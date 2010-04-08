@@ -33,7 +33,7 @@ class TestIHasRecipes(TestCaseWithFactory):
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, base_branch.getRecipes().count())
 
-    def test_person_implements_hasbranches(self):
+    def test_person_implements_hasrecipes(self):
         # Person should implement IHasRecipes.
         person = self.factory.makeBranch()
         self.assertProvides(person, IHasRecipes)
@@ -47,13 +47,13 @@ class TestIHasRecipes(TestCaseWithFactory):
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, person.getRecipes().count())
 
-    def test_product_implements_hasbranches(self):
+    def test_product_implements_hasrecipes(self):
         # Product should implement IHasRecipes.
         product = self.factory.makeProduct()
         self.assertProvides(product, IHasRecipes)
 
     def test_product_getRecipes(self):
-        # IBranch.recipes should provide all the SourcePackageRecipes attached
+        # IProduct.recipes should provide all the SourcePackageRecipes attached
         # to that branch.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
