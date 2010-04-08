@@ -96,12 +96,26 @@ for the current Ubuntu series will NOT be suggested.
     >>> for dsp in view.suggestions:
     ...     print dsp.name
 
+A source package that does NOT have a publishing history in the PENDING
+or PUBLISHED statuses will NOT be suggested.
+
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
+    ...     status=PackagePublishingStatus.DELETED)
+    >>> (ubuntu, product, spn) = updateCache()
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
+    >>> for dsp in view.suggestions:
+    ...     print dsp.name
+
 A source package that does have a publishing history for the current
-Ubuntu series will be suggested.
+Ubuntu series in the PUBLISHED status will be suggested.
 
     >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> (ubuntu, product, spn) = updateCache()
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
