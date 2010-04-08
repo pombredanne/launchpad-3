@@ -124,7 +124,7 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
+    ILaunchBag, IStoreSelector, MASTER_FLAVOR)
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
@@ -263,22 +263,7 @@ class Person(
         return '<Person at 0x%x %s (%s)>' % (
             id(self), self.name, self.displayname)
 
-    def _sync_displayname(self, attr, value):
-        """Update any related Account.displayname.
-
-        We can't do this in a DB trigger as soon the Account table will
-        in a separate database to the Person table.
-        """
-        if self.accountID is not None:
-            auth_store = getUtility(IStoreSelector).get(
-                AUTH_STORE, MASTER_FLAVOR)
-            account = auth_store.get(Account, self.accountID)
-            if account.displayname != value:
-                account.displayname = value
-        return value
-
-    displayname = StringCol(dbName='displayname', notNull=True,
-                            storm_validator=_sync_displayname)
+    displayname = StringCol(dbName='displayname', notNull=True)
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -2272,6 +2257,12 @@ class Person(
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
         return rset
+
+    def getRecipe(self, name):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        return Store.of(self).find(
+            SourcePackageRecipe, SourcePackageRecipe.owner == self,
+            SourcePackageRecipe.name == name).one()
 
     def isUploader(self, distribution):
         """See `IPerson`."""

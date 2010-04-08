@@ -14,8 +14,9 @@ from lp.code.model.branchtarget import (
     check_default_stacked_on,
     PackageBranchTarget, PersonBranchTarget, ProductBranchTarget,
     ProductSeriesBranchTarget)
-from lp.code.enums import BranchType
+from lp.code.enums import BranchType, RevisionControlSystems
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp import canonical_url
@@ -176,6 +177,16 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             ubuntu_branches.teamowner)
         self.assertEqual(branch, self.target.default_merge_target)
 
+    def test_doesnt_support_code_imports(self):
+        self.assertFalse(self.target.supports_code_imports)
+
+    def test_creating_code_import_fails(self):
+        self.assertRaises(
+            AssertionError, self.target.newCodeImport,
+                self.factory.makePerson(),
+                self.factory.getUniqueString("name-"),
+                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
+
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
@@ -257,6 +268,16 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch = self.factory.makePersonalBranch(owner=self.original)
         self.target._retargetBranch(removeSecurityProxy(branch))
         self.assertEqual(self.target, branch.target)
+
+    def test_doesnt_support_code_imports(self):
+        self.assertFalse(self.target.supports_code_imports)
+
+    def test_creating_code_import_fails(self):
+        self.assertRaises(
+            AssertionError, self.target.newCodeImport,
+                self.factory.makePerson(),
+                self.factory.getUniqueString("name-"),
+                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
 
 
 class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -364,6 +385,23 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             setattr, self.original.development_focus, 'branch', branch)
         self.assertEqual(branch, self.target.default_merge_target)
 
+    def test_supports_code_imports(self):
+        self.assertTrue(self.target.supports_code_imports)
+
+    def test_creating_code_import_succeeds(self):
+        target_url = self.factory.getUniqueURL()
+        branch_name = self.factory.getUniqueString("name-")
+        owner = self.factory.makePerson()
+        code_import = self.target.newCodeImport(
+            owner, branch_name, RevisionControlSystems.GIT, url=target_url)
+        code_import = removeSecurityProxy(code_import)
+        self.assertProvides(code_import, ICodeImport)
+        self.assertEqual(target_url, code_import.url)
+        self.assertEqual(branch_name, code_import.branch.name)
+        self.assertEqual(owner, code_import.registrant)
+        self.assertEqual(owner, code_import.branch.owner)
+        self.assertEqual(self.target, code_import.branch.target)
+
 
 class TestProductSeriesBranchTarget(TestCaseWithFactory):
 
@@ -377,6 +415,16 @@ class TestProductSeriesBranchTarget(TestCaseWithFactory):
     def test_adapter(self):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, ProductSeriesBranchTarget)
+
+    def test_doesnt_support_code_imports(self):
+        self.assertFalse(self.target.supports_code_imports)
+
+    def test_creating_code_import_fails(self):
+        self.assertRaises(
+            AssertionError, self.target.newCodeImport,
+                self.factory.makePerson(),
+                self.factory.getUniqueString("name-"),
+                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

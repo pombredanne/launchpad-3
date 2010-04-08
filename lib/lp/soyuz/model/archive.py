@@ -15,7 +15,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select
+from storm.expr import Or, And, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
 from storm.zope.interfaces import IResultSet
@@ -40,6 +40,8 @@ from canonical.launchpad.components.tokens import (
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -57,7 +59,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    ArchivePurpose, ArchiveStatus, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
     NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -146,6 +148,9 @@ class Archive(SQLBase):
 
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
+
+    status = EnumCol(
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -1123,6 +1128,25 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getBinaryPackageRelease(self, name, version, archtag):
+        """See `IArchive`."""
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageRelease.binarypackagename == name,
+            BinaryPackageRelease.version == version,
+            Build.id == BinaryPackageRelease.buildID,
+            DistroArchSeries.id == Build.distroarchseriesID,
+            DistroArchSeries.architecturetag == archtag,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
+
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(
@@ -1321,6 +1345,35 @@ class Archive(SQLBase):
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
+
+    def updatePackageDownloadCount(self, bpr, day, country, count):
+        """See `IArchive`."""
+        store = Store.of(self)
+        entry = store.find(
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
+        if entry is None:
+            entry = BinaryPackageReleaseDownloadCount(
+                archive=self, binary_package_release=bpr, day=day,
+                country=country, count=count)
+        else:
+            entry.count += count
+
+    def getPackageDownloadTotal(self, bpr):
+        """See `IArchive`."""
+        store = Store.of(self)
+        count = store.find(
+            Sum(BinaryPackageReleaseDownloadCount.count),
+            BinaryPackageReleaseDownloadCount.archive == self,
+            BinaryPackageReleaseDownloadCount.binary_package_release == bpr,
+            ).one()
+        return count or 0
+
+    def getPackageDownloadCount(self, bpr, day, country):
+        """See `IArchive`."""
+        return Store.of(self).find(
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""
