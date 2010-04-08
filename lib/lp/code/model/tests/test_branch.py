@@ -497,8 +497,8 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             branch.branchIdentities())
 
     def test_linked_to_product(self):
-        # If a branch is the development focus branch for a product, then it's
-        # bzr identity is lp:product.
+        # If a branch is linked to the product, it is also by definition
+        # linked to the development focus of the product.
         fooix = removeSecurityProxy(self.factory.makeProduct(name='fooix'))
         fooix.development_focus.name = 'devel'
         eric = self.factory.makePerson(name='eric')
@@ -513,6 +513,57 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             [('lp://dev/fooix', fooix),
              ('lp://dev/fooix/devel', fooix.development_focus),
              ('lp://dev/~eric/fooix/trunk', branch)],
+            branch.branchIdentities())
+
+    def test_linked_to_product_series(self):
+        # If a branch is linked to a non-development series of a product and
+        # not linked to the product itself, then the product is not returned
+        # in the links.
+        fooix = removeSecurityProxy(self.factory.makeProduct(name='fooix'))
+        future = self.factory.makeProductSeries(product=fooix, name='future')
+        eric = self.factory.makePerson(name='eric')
+        branch = self.factory.makeProductBranch(
+            product=fooix, owner=eric, name='trunk')
+        linked_branch = ICanHasLinkedBranch(future)
+        linked_branch.setBranch(branch)
+        self.assertEqual(
+            [linked_branch],
+            branch.branchLinks())
+        self.assertEqual(
+            [('lp://dev/fooix/future', future),
+             ('lp://dev/~eric/fooix/trunk', branch)],
+            branch.branchIdentities())
+
+    def test_linked_to_package(self):
+        # If a branch is the development focus branch for a product, then it's
+        # bzr identity is lp:product.
+        mint = self.factory.makeDistribution(name='mint')
+        dev = self.factory.makeDistroSeries(
+            distribution=mint, version='1.0', name='dev')
+        eric = self.factory.makePerson(name='eric')
+        branch = self.factory.makePackageBranch(
+            distroseries=dev, sourcepackagename='choc', name='tip',
+            owner=eric)
+        dsp = self.factory.makeDistributionSourcePackage('choc', mint)
+        linked_branch = ICanHasLinkedBranch(dsp)
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            linked_branch.setBranch, branch, registrant)
+
+        development_package = dsp.development_version
+        suite_sourcepackage = development_package.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
+
+        self.assertEqual(
+            [linked_branch, suite_sp_link],
+            branch.branchLinks())
+        self.assertEqual(
+            [('lp://dev/mint/choc', dsp),
+             ('lp://dev/mint/dev/choc', suite_sourcepackage),
+             ('lp://dev/~eric/mint/dev/choc/tip', branch)],
             branch.branchIdentities())
 
 
