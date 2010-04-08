@@ -654,7 +654,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 raise NotABranchPath(virtual_url_fragment)
             transport, _ = self._transport_dispatch.makeTransport(
                 (transport_type, data, trailing_path))
-            # XXX yikes!!
             if jail_info.transports:
                 jail_info.transports.append(transport)
             try:
