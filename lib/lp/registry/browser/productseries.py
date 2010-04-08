@@ -975,7 +975,7 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                     rcs_item = RevisionControlSystems.items[rcs_type.name]
                     code_import = getUtility(ICodeImportSet).new(
                         registrant=branch_owner,
-                        target=self.target,
+                        target=IBranchTarget(self.context.product),
                         branch_name=branch_name,
                         rcs_type=rcs_item,
                         url=url,
