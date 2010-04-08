@@ -20,6 +20,7 @@ __all__ = [
     'BranchExists',
     'BranchTargetError',
     'BranchTypeError',
+    'BzrIdentityMixin',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'get_blacklisted_hostnames',
@@ -1320,6 +1321,12 @@ class IBranchCloud(Interface):
 
 
 class BzrIdentityMixin:
+    """This mixin class determines the bazaar identities.
+
+    Used by both the model branch class and the browser branch listing item.
+    This allows the browser code to cache the associated links which reduces
+    query counts.
+    """
 
     @property
     def bzr_identity(self):
