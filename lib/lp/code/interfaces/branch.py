@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
     'BranchCannotBePrivate',
@@ -36,7 +35,6 @@ __all__ = [
     ]
 
 from cgi import escape
-from operator import attrgetter
 import re
 
 from zope.component import getUtility
@@ -1357,52 +1355,6 @@ class BzrIdentityMixin:
             if series.product.development_focus == series:
                 links.append(ICanHasLinkedBranch(series.product))
         return sorted(links)
-
-
-def bazaar_identity(branch, is_dev_focus):
-    """Return the shortest lp: style branch identity."""
-    lp_prefix = config.codehosting.bzr_lp_prefix
-
-    # XXX: TimPenhey 2008-05-06 bug=227602: Since at this stage the launchpad
-    # name resolution is not authenticated, we can't resolve series branches
-    # that end up pointing to private branches, so don't show short names for
-    # the branch if it is private.
-    if branch.private:
-        return lp_prefix + branch.unique_name
-
-    use_series = None
-    # XXX: JonathanLange 2009-03-21 spec=package-branches: This should
-    # probably delegate to IBranch.target. I would do it now if I could figure
-    # what all the optimization code is for.
-    if branch.product is not None:
-        if is_dev_focus:
-            return lp_prefix + branch.product.name
-
-        # If there are no associated series, then use the unique name.
-        associated_series = sorted(
-            branch.associatedProductSeries(), key=attrgetter('datecreated'))
-        if len(associated_series) == 0:
-            return lp_prefix + branch.unique_name
-        # Use the most recently created series.
-        use_series = associated_series[-1]
-        return "%(prefix)s%(product)s/%(series)s" % {
-            'prefix': lp_prefix,
-            'product': use_series.product.name,
-            'series': use_series.name}
-
-    if branch.sourcepackage is not None:
-        if is_dev_focus:
-            return "%(prefix)s%(distro)s/%(packagename)s" % {
-            'prefix': lp_prefix,
-            'distro': branch.distroseries.distribution.name,
-            'packagename': branch.sourcepackagename.name}
-        suite_sourcepackages = branch.associatedSuiteSourcePackages()
-        # Take the first link if there is one.
-        if len(suite_sourcepackages) > 0:
-            suite_source_package = suite_sourcepackages[0]
-            return lp_prefix + suite_source_package.path
-
-    return lp_prefix + branch.unique_name
 
 
 def user_has_special_branch_access(user):
