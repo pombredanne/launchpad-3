@@ -532,7 +532,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDevelopmentSeries(self):
         """See `IDistribution`."""
-        return DistroSeries.selectBy(
+        return Store.of(self).find(
+            DistroSeries,
             distribution=self,
             status=SeriesStatus.DEVELOPMENT)
 
@@ -1241,8 +1242,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     # already too long and complicated.
     def getAllPPAs(self):
         """See `IDistribution`"""
-        return Archive.selectBy(
-            purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
+        return Store.of(self).find(
+            Archive,
+            distribution=self,
+            purpose=ArchivePurpose.PPA).order_by('id')
 
     def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
