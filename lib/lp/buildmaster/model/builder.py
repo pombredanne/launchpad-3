@@ -438,12 +438,12 @@ class Builder(SQLBase):
 
         status = {'builder_status': status_sentence[0]}
 
-        # Extract detailed status, ID and log information if present.
+        # Extract detailed status and log information if present.
+        # Although build_id is also easily extractable here, there is no
+        # valid reason for anything to use it, so we exclude it.
         if status['builder_status'] == 'BuilderStatus.WAITING':
             status['build_status'] = status_sentence[1]
-            status['build_id'] = status_sentence[2]
         else:
-            status['build_id'] = status_sentence[1]
             if status['builder_status'] == 'BuilderStatus.BUILDING':
                 status['logtail'] = status_sentence[2]
 

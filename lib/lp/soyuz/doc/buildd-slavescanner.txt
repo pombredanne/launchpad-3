@@ -542,7 +542,7 @@ Create a mock slave so the builder gets the right responses for this test.
     >>> bqItem11.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
     >>> a_builder.updateBuild(bqItem11)
-    WARNING:slave-scanner:***** 1-1 is GIVENBACK by bob *****
+    WARNING:slave-scanner:***** i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
 can't be sure if logtail will contain any information, because it
@@ -1494,7 +1494,6 @@ items:
     ...     status_dict = defaultdict(lambda:None, status_dict)
     ...     print (
     ...         "builder_status: %(builder_status)s\n"
-    ...         "build_id: %(build_id)s\n"
     ...         "build_status: %(build_status)s\n"
     ...         "logtail: %(logtail)r\n"
     ...         "filemap: %(filemap)s\n"
@@ -1503,7 +1502,6 @@ items:
     >>> a_builder.setSlaveForTesting(OkSlave())
     >>> printSlaveStatus(a_builder.slaveStatus())
     builder_status: BuilderStatus.IDLE
-    build_id:
     build_status: None
     logtail: None
     filemap: None
@@ -1512,7 +1510,6 @@ items:
     >>> a_builder.setSlaveForTesting(BuildingSlave())
     >>> printSlaveStatus(a_builder.slaveStatus())
     builder_status: BuilderStatus.BUILDING
-    build_id: 1-1
     build_status: None
     logtail: <xmlrpclib.Binary ...>
     filemap: None
@@ -1521,7 +1518,6 @@ items:
     >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
     >>> printSlaveStatus(a_builder.slaveStatus())
     builder_status: BuilderStatus.WAITING
-    build_id: 1-1
     build_status: BuildStatus.OK
     logtail: None
     filemap: {}
@@ -1530,7 +1526,6 @@ items:
     >>> a_builder.setSlaveForTesting(AbortingSlave())
     >>> printSlaveStatus(a_builder.slaveStatus())
     builder_status: BuilderStatus.ABORTING
-    build_id: 1-1
     build_status: None
     logtail: None
     filemap: None
@@ -1539,7 +1534,6 @@ items:
     >>> a_builder.setSlaveForTesting(AbortedSlave())
     >>> printSlaveStatus(a_builder.slaveStatus())
     builder_status: BuilderStatus.ABORTED
-    build_id: 1-1
     build_status: None
     logtail: None
     filemap: None
