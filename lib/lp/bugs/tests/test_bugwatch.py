@@ -16,10 +16,9 @@ from urlparse import urlunsplit
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
@@ -496,6 +495,9 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         # If a watch has been checked and has never failed its next
         # check will be scheduled for 24 hours after its last check.
         now = datetime.now(utc)
+        # Add some succesful activity to ensure that successful activity
+        # is handled correctly.
+        self.bug_watch.addActivity()
         self.bug_watch.lastchecked = now
         self.bug_watch.next_check = None
         transaction.commit()
