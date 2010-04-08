@@ -18,6 +18,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import Or, And, Select
 from storm.locals import Count, Join
 from storm.store import Store
+from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
@@ -780,7 +781,8 @@ class Archive(SQLBase):
             archives.append(self.distribution.main_archive.id)
         archives.append(self.id)
         archives.extend(
-            [archive_dep.dependency.id for archive_dep in self.dependencies])
+            IResultSet(self.dependencies).values(
+            ArchiveDependency.dependencyID))
 
         query = """
             binarypackagename = %s AND
