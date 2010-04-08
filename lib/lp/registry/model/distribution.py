@@ -464,7 +464,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         orig_name = name
         count = 1
-        while DistributionMirror.selectOneBy(name=name) is not None:
+        while self.getMirrorByName(name=name) is not None:
             count += 1
             name = '%s%s' % (orig_name, count)
 
