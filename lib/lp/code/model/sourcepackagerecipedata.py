@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the recipe storage.
@@ -9,7 +9,7 @@ interfaces.
 """
 
 __metaclass__ = type
-__all__ = ['_SourcePackageRecipeData']
+__all__ = ['SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import (
     BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
@@ -50,6 +50,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
                  directory, recipe_data, parent_instruction):
+        super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
         self.comment = comment
@@ -78,7 +79,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
     directory = Unicode(allow_none=True)
 
     recipe_data_id = Int(name='recipe_data', allow_none=False)
-    recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
+    recipe_data = Reference(recipe_data_id, 'SourcePackageRecipeData.id')
 
     parent_instruction_id = Int(name='parent_instruction', allow_none=True)
     parent_instruction = Reference(
@@ -97,7 +98,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         return branch
 
 
-class _SourcePackageRecipeData(Storm):
+class SourcePackageRecipeData(Storm):
     """The database representation of a BaseRecipeBranch from bzr-builder.
 
     This is referenced from the SourcePackageRecipe table as the 'recipe_data'
@@ -215,6 +216,7 @@ class _SourcePackageRecipeData(Storm):
     def __init__(self, recipe, sourcepackage_recipe):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
+        super(SourcePackageRecipeData, self).__init__()
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
 

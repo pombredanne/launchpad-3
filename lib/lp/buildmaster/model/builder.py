@@ -438,8 +438,17 @@ class Builder(SQLBase):
         status_sentence = self.slave.status()
 
         status = {'builder_status': status_sentence[0]}
-        status.update(
-            self.current_build_behavior.slaveStatus(status_sentence))
+
+        # Extract detailed status, ID and log information if present.
+        if status['builder_status'] == 'BuilderStatus.WAITING':
+            status['build_status'] = status_sentence[1]
+            status['build_id'] = status_sentence[2]
+        else:
+            status['build_id'] = status_sentence[1]
+            if status['builder_status'] == 'BuilderStatus.BUILDING':
+                status['logtail'] = status_sentence[2]
+
+        self.current_build_behavior.updateSlaveStatus(status_sentence, status)
         return status
 
     def slaveStatusSentence(self):
@@ -655,12 +664,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+            active=True, virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=True)
+                       builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""

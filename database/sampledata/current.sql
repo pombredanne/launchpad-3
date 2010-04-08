@@ -781,6 +781,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (11, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'mark_oid', NULL, '123/mark');
@@ -1710,18 +1713,18 @@ ALTER TABLE bugtrackerperson ENABLE TRIGGER ALL;
 
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
 
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL, NULL, NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (11, 15, 3, '308994', 'open important', '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641', '2007-12-18 16:30:47.889614', 16, NULL, 'UNKNOWN', NULL);
-INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id) VALUES (12, 15, 2, '304070', NULL, NULL, NULL, '2007-12-18 16:31:34.790641', 243614, 2, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (2, 1, 1, '2000', '', '2004-10-04 01:00:00', '2004-10-04 01:00:00', '2004-10-04 01:00:00', 1, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (6, 9, 4, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL, NULL, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (11, 15, 3, '308994', 'open important', '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641', '2007-12-18 16:30:47.889614', 16, NULL, 'UNKNOWN', NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (12, 15, 2, '304070', NULL, NULL, NULL, '2007-12-18 16:31:34.790641', 243614, 2, NULL, NULL, NULL);
 
 
 ALTER TABLE bugwatch ENABLE TRIGGER ALL;
@@ -3920,6 +3923,80 @@ INSERT INTO logintoken (id, requester, requesteremail, email, created, tokentype
 
 
 ALTER TABLE logintoken ENABLE TRIGGER ALL;
+
+
+ALTER TABLE lp_account DISABLE TRIGGER ALL;
+
+INSERT INTO lp_account (id, openid_identifier) VALUES (11, 'mark_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (21, 'lifeless_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (31, 'justdave_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (41, 'kamion_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (51, 'keybuk_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (61, 'jdub_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (71, 'spiv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (81, 'jblack_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (91, 'kiko_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (101, 'limi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (111, 'stevea_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (121, 'name12_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (131, 'carlos_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (141, 'daf_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (161, 'name16_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (221, 'stub_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (231, 'ddaa_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (261, 'kinnison_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (271, 'debonzi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (281, 'cprov_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (291, 'salgado_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (331, 'edgar_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (341, 'jvprat_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (351, 'sigurd-ubuntu_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (361, 'skacel_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (371, 'danner_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (381, 'martin-pitt_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (391, 'nsv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (401, 'callipeo_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (411, 'jorge-gonzalez-gonzalez_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (421, 'barbier_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (431, 'andrelop_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (441, 'valyag_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (451, 'luk-claes_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (461, 'kurem_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (471, 'morten_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (481, 'mpo_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (491, 'kebil_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (501, 'tsukimi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (511, 'kreutzm_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (521, 'no-priv_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (551, 'marilize_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (561, 'jordi_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (581, 'bug-importer_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (621, 'bug-watch-updater_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (631, 'karl_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (651, 'launchpad-janitor_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (661, 'matsubara_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (671, 'team-membership-janitor_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (681, 'launchpad-beta-owner_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (701, 'former-user_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436021, 'no-team-memberships_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436031, 'one-membership_oid');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436061, 'neMCQNd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436081, 'WQPMHdf');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436091, '6w7kmzC');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436101, 'cCGE3LA');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436111, 'MGWJnTL');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436141, '6KHNEe3');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436151, 'yEzBPbd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436161, 'R8FpwXd');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436171, 'CALDpFr');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436221, 'rPwGRk4');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436231, 'mTmeENb');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436241, 'cF4PNk3');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436242, 'GMX7shE');
+INSERT INTO lp_account (id, openid_identifier) VALUES (2436243, 'kYFxQYP');
+
+
+ALTER TABLE lp_account ENABLE TRIGGER ALL;
 
 
 ALTER TABLE lp_person DISABLE TRIGGER ALL;
@@ -8995,6 +9072,13 @@ ALTER TABLE sourcepackagerecipedatainstruction DISABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerecipedatainstruction ENABLE TRIGGER ALL;
+
+
+ALTER TABLE sourcepackagerecipedistroseries DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE sourcepackagerecipedistroseries ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;

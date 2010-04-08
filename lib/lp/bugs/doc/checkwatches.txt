@@ -44,17 +44,17 @@ the watch.
     0
 
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-checkwatches.lock
     DEBUG   Using a global batch size of None
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
+    DEBUG   No watches to update on http://bugzilla.gnome.org/
+    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
+    DEBUG   No watches to update on https://bugzilla.mozilla.org/
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
-    DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
-    DEBUG   No watches to update on http://bugzilla.gnome.org/
-    DEBUG   No watches to update on https://bugzilla.mozilla.org/
     INFO    Time for this run: ... seconds.
     DEBUG   Removing lock file:...
     <BLANKLINE>
@@ -303,7 +303,7 @@ that it looks as though it has been updated recently
 
 So our Savannah instance now has no watches that need checking.
 
-    >>> savannah.getBugWatchesNeedingUpdate().count()
+    >>> savannah.watches_needing_update.count()
     0
 
 However, forceUpdateAll() will update every watch, whether they've
@@ -337,9 +337,13 @@ since that's the error that was raised during the update.
 If a bug tracker doesn't have any watches to update, forceUpdateAll()
 will ignore it.
 
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('test@canonical.com')
     >>> empty_tracker = factory.makeBugTracker(
     ...     'http://example.com', BugTrackerType.ROUNDUP)
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> empty_tracker_name = empty_tracker.name
     >>> update_all(empty_tracker_name)
     INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
@@ -372,7 +376,7 @@ made.
     ...         # Update as many watches as the batch size says.
     ...         with self.transaction:
     ...             watches_to_update = (
-    ...                 bug_tracker.getBugWatchesNeedingUpdate()[:batch_size])
+    ...                 bug_tracker.watches_needing_update[:batch_size])
     ...             now = datetime.now(utc)
     ...             for watch in watches_to_update:
     ...                 watch.lastchecked = now

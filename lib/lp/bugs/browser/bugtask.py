@@ -485,7 +485,12 @@ class BugTaskNavigation(Navigation):
         # I have chosed to use this simple solution for now.
         #   -- kiko, 2006-07-11
         try:
-            return comments[index]
+            comment = comments[index]
+            if (comment.visible
+                or check_permission('launchpad.Admin', self.context)):
+                return comment
+            else:
+                return None
         except IndexError:
             return None
 
@@ -3437,7 +3442,6 @@ class BugTaskTableRowView(LaunchpadView):
                                 None),
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
-            'status_requires_confirmation': not self.user_can_edit_importance,
             'user_can_edit_importance': (
                 self.user_can_edit_importance and
                 not self.context.bugwatch)})
