@@ -62,8 +62,8 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, CannotDeleteBranch,
+    BranchCannotBePrivate, BranchCannotBePublic,
+    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -73,18 +73,16 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 
-class Branch(SQLBase):
+class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch, IBranchNavigationMenu)
@@ -469,12 +467,6 @@ class Branch(SQLBase):
     def browse_source_url(self):
         return self.codebrowse_url('files')
 
-    @property
-    def bzr_identity(self):
-        """See `IBranch`."""
-        identity, context = self.branchIdentities()[0]
-        return identity
-
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
         # Not all protocols work for private branches.
@@ -681,35 +673,6 @@ class Branch(SQLBase):
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
-
-    def branchIdentities(self):
-        """See `IBranch`."""
-        lp_prefix = config.codehosting.bzr_lp_prefix
-        if self.private or self.is_personal_branch:
-            # XXX: thumper 2010-04-08, bug 261609
-            # We have to get around to fixing this
-            identities = []
-        else:
-            identities = [
-                (lp_prefix + link.bzr_path, link.context)
-                for link in self.branchLinks()]
-        identities.append((lp_prefix + self.unique_name, self))
-        return identities
-
-    def branchLinks(self):
-        """See `IBranch`."""
-        links = []
-        for suite_sp in self.associatedSuiteSourcePackages():
-            links.append(ICanHasLinkedBranch(suite_sp))
-            if (suite_sp.distribution.currentseries == suite_sp.distroseries
-                and suite_sp.pocket == PackagePublishingPocket.RELEASE):
-                links.append(ICanHasLinkedBranch(
-                        suite_sp.sourcepackage.distribution_sourcepackage))
-        for series in self.associatedProductSeries():
-            links.append(ICanHasLinkedBranch(series))
-            if series.product.development_focus == series:
-                links.append(ICanHasLinkedBranch(series.product))
-        return sorted(links)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
