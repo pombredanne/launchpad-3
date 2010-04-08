@@ -148,7 +148,10 @@ class TestBranchPuller(PullerBranchTestCase):
         # tests, and the default behaviour of the HttpServer is to use daemon
         # threads and let the garbage collector get them, however this causes
         # issues with the test runner.
-        self.addCleanup(http_server._http_thread.join)
+        # XXX: Salgado, 2010-04-08: This causes the test suite to hang, so
+        # I've commented it out to see if we can run the test suite to
+        # completion.
+        #self.addCleanup(http_server._http_thread.join)
         self.addCleanup(http_server.stop_server)
         return http_server.get_url().rstrip('/')
 
