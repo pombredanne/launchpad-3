@@ -54,7 +54,7 @@ class TestIHasRecipes(TestCaseWithFactory):
 
     def test_product_getRecipes(self):
         # IProduct.recipes should provide all the SourcePackageRecipes attached
-        # to that product.
+        # to that product's branches.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
         recipe1 = self.factory.makeSourcePackageRecipe(
