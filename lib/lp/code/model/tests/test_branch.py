@@ -484,7 +484,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
 
 class TestBranchLinksAndIdentites(TestCaseWithFactory):
-    """Test IBranch.bzr_identity."""
+    """Test IBranch.branchLinks and IBranch.branchIdentities."""
 
     layer = DatabaseFunctionalLayer
 
