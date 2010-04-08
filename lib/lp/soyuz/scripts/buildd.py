@@ -19,7 +19,6 @@ from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
@@ -187,8 +186,7 @@ class QueueBuilder(LaunchpadCronScript):
             return
 
         # Get the current build job candidates.
-        bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(archseries)
+        candidates = getUtility(IBuildSet).calculateCandidates(archseries)
 
         self.logger.info("Found %d build in NEEDSBUILD state. Rescoring"
                          % candidates.count())
