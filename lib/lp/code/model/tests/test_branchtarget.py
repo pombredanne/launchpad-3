@@ -12,8 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.branchtarget import (
     check_default_stacked_on,
-    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget,
-    ProductSeriesBranchTarget)
+    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
 from lp.code.enums import BranchType, RevisionControlSystems
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImport
@@ -403,28 +402,17 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(self.target, code_import.branch.target)
 
 
-class TestProductSeriesBranchTarget(TestCaseWithFactory):
+class TestProductSeriesToTarget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.original = self.factory.makeProductSeries()
-        self.target = ProductSeriesBranchTarget(self.original)
 
     def test_adapter(self):
         target = IBranchTarget(self.original)
-        self.assertIsInstance(target, ProductSeriesBranchTarget)
-
-    def test_doesnt_support_code_imports(self):
-        self.assertFalse(self.target.supports_code_imports)
-
-    def test_creating_code_import_fails(self):
-        self.assertRaises(
-            AssertionError, self.target.newCodeImport,
-                self.factory.makePerson(),
-                self.factory.getUniqueString("name-"),
-                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
+        self.assertIsInstance(target, ProductBranchTarget)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
