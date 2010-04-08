@@ -42,7 +42,6 @@ from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IHasBugs, IHasOfficialBugTags)
-from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -144,7 +143,7 @@ class IDistroSeriesEditRestricted(Interface):
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasBuildRecords, IHasRecipes):
+    IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
