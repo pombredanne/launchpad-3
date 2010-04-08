@@ -14,6 +14,7 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
@@ -66,6 +67,21 @@ class SourcePackageRecipeView(LaunchpadView):
         return builds
 
 
+def buildable_distroseries_vocabulary(context):
+    """Return a vocabulary of buildable distroseries."""
+    dsset = getUtility(IDistroSeriesSet).search()
+    terms = [SimpleTerm(distro, distro.id, distro.displayname)
+             for distro in dsset if distro.active]
+    return SimpleVocabulary(terms)
+
+def target_ppas_vocabulary(context):
+    """Return a vocabulary of ppas that the current user can target."""
+    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
+    return make_archive_vocabulary(
+        ppa for ppa in ppas
+        if check_permission('launchpad.Append', ppa))
+
+
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     """A view for requesting builds of a SourcePackageRecipe."""
 
@@ -77,24 +93,12 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         """
         return {'distros': self.context.distroseries}
 
-    @property
-    def schema(self):
-        """Context-sensitive schema generation FTW."""
-        dsset = getUtility(IDistroSeriesSet).search()
-        terms = [SimpleTerm(distro, distro.id, distro.displayname)
-                 for distro in dsset if distro.active]
-        archive_vocab = make_archive_vocabulary(
-            ppa
-            for ppa in getUtility(IArchiveSet).getPPAsForUser(self.user)
-            if check_permission('launchpad.Append', ppa))
-
-        class schema(Interface):
-            distros = List(
-                Choice(vocabulary=SimpleVocabulary(terms)),
-                title=u'Distribution series')
-            archive = Choice(title=u'Archive', vocabulary=archive_vocab)
-
-        return schema
+    class schema(Interface):
+        """Schema for requesting a build."""
+        distros = List(
+            Choice(vocabulary='BuildableDistroSeries'),
+            title=u'Distribution series')
+        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
 
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
