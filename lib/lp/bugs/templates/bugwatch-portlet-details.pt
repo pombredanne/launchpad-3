@@ -53,7 +53,6 @@
         <dd>
           <span
             tal:condition="context/next_check"
-            tal:attributes="title context/next_check/fmt:datetime"
             tal:content="context/next_check/fmt:datetime">
             13 Jan 2004
            </span>
