@@ -188,16 +188,6 @@ class ICodeImportSet(Interface):
         :param target: An `IBranchTarget` that the code is associated with.
         """
 
-    def getActiveImports(text=None):
-        """Return an iterable of all 'active' CodeImport objects.
-
-        Active is defined, somewhat arbitrarily, as having
-        review_status==REVIEWED and having completed at least once.
-
-        :param text: If specifed, limit to the results to those that contain
-            ``text`` in the product or project titles and descriptions.
-        """
-
     def get(id):
         """Get a CodeImport by its id.
 

@@ -843,6 +843,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         not teams can be converted into teams.
         """
 
+    def getRecipe(name):
+        """Return the person's recipe with the given name."""
+
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
 
