@@ -54,11 +54,17 @@ should now be displayed to the user.
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
     that the bug number is correct.
 
-We can observe this for each of the BugWatchActivityStatus values:
+We can observe this for each of the BugWatchActivityStatus failure values:
 
+    >>> from lp.bugs.interfaces.bugwatch import (
+    ...     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES)
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     set_bugwatch_error_type)
-    >>> for item in sorted(BugWatchActivityStatus.items):
+
+    >>> failure_values = [
+    ...     value for value in sorted(BugWatchActivityStatus.items) if
+    ...     value not in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES]
+    >>> for item in failure_values:
     ...     set_bugwatch_error_type(watch, item)
     ...     user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
     ...     for tag in find_tags_by_class(user_browser.contents,
