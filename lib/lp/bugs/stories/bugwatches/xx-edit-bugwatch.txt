@@ -56,3 +56,24 @@ The +edit page for a watch also displays some details about the watch.
     Scheduled: Not yet scheduled
     Created: 2004-10-04
     Created by: Mark Shuttleworth
+
+If we change the next_check date of the watch its will be shown in the
+Scheduled column.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+    >>> from zope.component import getUtility
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.next_check = datetime(2010, 4, 8, 16, 07, tzinfo=utc)
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> data_tag = find_tag_by_id(
+    ...     admin_browser.contents, 'bugwatch-next_check')
+    >>> print extract_text(data_tag.renderContents())
+    Scheduled: 2010-04-08...

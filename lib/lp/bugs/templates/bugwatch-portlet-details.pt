@@ -48,7 +48,7 @@
            </span>
         </dd>
       </dl>
-      <dl class="bugwatch-data">
+      <dl class="bugwatch-data" id="bugwatch-next_check">
         <dt>Scheduled:</dt>
         <dd>
           <span
