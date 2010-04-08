@@ -52,6 +52,9 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         # If a watch has been checked and has never failed its next
         # check will be scheduled for 24 hours after its last check.
         now = datetime.now(utc)
+        # Add some succesful activity to ensure that successful activity
+        # is handled correctly.
+        self.bug_watch.addActivity()
         self.bug_watch.lastchecked = now
         self.bug_watch.next_check = None
         transaction.commit()
