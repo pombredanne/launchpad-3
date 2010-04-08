@@ -1769,8 +1769,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
         if description is None:
@@ -1785,7 +1788,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                                      sourcename=None):
         """Make a new SourcePackageRecipeBuild."""
         if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
+            sourcepackage = self.makeSourcePackage(sourcename)
         if recipe is None:
             recipe = self.makeSourcePackageRecipe()
         if requester is None:
@@ -2056,11 +2059,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(
-        self, sourcepackagename=None, distroseries=None, sourcename=None):
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName(sourcename)
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
@@ -2244,14 +2249,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         if pocket is None:
             pocket = self.getAnyPocket()
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if distribution is None:
             distribution = self.makeDistribution()
 
