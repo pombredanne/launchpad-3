@@ -179,6 +179,10 @@ class Branch(SQLBase):
             target = self.product
         return IBranchTarget(target)
 
+    @property
+    def is_personal_branch(self):
+        return self.product is None and self.distroseries is None
+
     def setTarget(self, user, project=None, source_package=None):
         """See `IBranch`."""
         if project is not None:
@@ -689,7 +693,7 @@ class Branch(SQLBase):
     def branchIdentities(self):
         """See `IBranch`."""
         lp_prefix = config.codehosting.bzr_lp_prefix
-        if self.private:
+        if self.private or self.is_personal_branch:
             # XXX: thumper 2010-04-08, bug 261609
             # We have to get around to fixing this
             identities = []
