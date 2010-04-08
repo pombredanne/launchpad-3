@@ -568,6 +568,38 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
              ('lp://dev/~eric/mint/dev/choc/tip', branch)],
             branch.branchIdentities())
 
+    def test_linked_to_package_not_release_pocket(self):
+        # If a branch is linked to a suite source package where the
+        # distroseries is the current series for the distribution, but the
+        # pocket is not the RELEASE pocket, then there is only the link for
+        # the suite source package.
+        mint = self.factory.makeDistribution(name='mint')
+        dev = self.factory.makeDistroSeries(
+            distribution=mint, version='1.0', name='dev')
+        eric = self.factory.makePerson(name='eric')
+        branch = self.factory.makePackageBranch(
+            distroseries=dev, sourcepackagename='choc', name='tip',
+            owner=eric)
+        dsp = self.factory.makeDistributionSourcePackage('choc', mint)
+        development_package = dsp.development_version
+        suite_sourcepackage = development_package.getSuiteSourcePackage(
+            PackagePublishingPocket.BACKPORTS)
+        suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
+
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            suite_sp_link.setBranch, branch, registrant)
+
+        self.assertEqual(
+            [suite_sp_link],
+            branch.branchLinks())
+        self.assertEqual(
+            [('lp://dev/mint/dev-backports/choc', suite_sourcepackage),
+             ('lp://dev/~eric/mint/dev/choc/tip', branch)],
+            branch.branchIdentities())
+
     def test_linked_to_package_not_current_series(self):
         # If a branch is the development focus branch for a product, then it's
         # bzr identity is lp:product.

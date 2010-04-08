@@ -78,6 +78,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
@@ -471,17 +472,8 @@ class Branch(SQLBase):
     @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # Should probably put this into the branch target.
-        if self.product is not None:
-            series_branch = self.product.development_focus.branch
-            is_dev_focus = (series_branch == self)
-        elif self.distroseries is not None:
-            distro_package = self.sourcepackage.distribution_sourcepackage
-            linked_branch = ICanHasLinkedBranch(distro_package)
-            is_dev_focus = (linked_branch.branch == self)
-        else:
-            is_dev_focus = False
-        return bazaar_identity(self, is_dev_focus)
+        identity, context = self.branchIdentities()[0]
+        return identity
 
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
@@ -709,7 +701,8 @@ class Branch(SQLBase):
         links = []
         for suite_sp in self.associatedSuiteSourcePackages():
             links.append(ICanHasLinkedBranch(suite_sp))
-            if suite_sp.distribution.currentseries == suite_sp.distroseries:
+            if (suite_sp.distribution.currentseries == suite_sp.distroseries
+                and suite_sp.pocket == PackagePublishingPocket.RELEASE):
                 links.append(ICanHasLinkedBranch(
                         suite_sp.sourcepackage.distribution_sourcepackage))
         for series in self.associatedProductSeries():
