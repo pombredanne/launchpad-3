@@ -131,5 +131,9 @@
              tal:content="context/preview_diff/conflicts"/>
       </td>
     </tr>
+    <tr id="summary-row-merge-instruction">
+      <th>To merge this branch:</th>
+      <td>bzr merge <span class="branch-url" tal:content="context/source_branch/bzr_identity" /></td>
+    </tr>
   </tbody>
 </table>

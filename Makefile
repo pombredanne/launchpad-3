@@ -178,8 +178,7 @@ buildonce_eggs: $(PY)
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
-		--ez_setup-source=ez_setup.py \
-		--version=1.5.0dev-gary-r108342 \
+		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
 # This builds bin/py and all the other bin files except bin/buildout.
@@ -325,11 +324,7 @@ clean: clean_js
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak
 	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
-	mv $(APIDOC_DIR)/wadl-testrunner-devel.xml.bak \
-	    $(APIDOC_DIR)/wadl-testrunner-devel.xml
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
