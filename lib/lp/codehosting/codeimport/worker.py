@@ -26,7 +26,7 @@ from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 import bzrlib.ui
-from bzrlib.urlutils import join as urljoin
+from bzrlib.urlutils import join as urljoin, local_path_from_url
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
@@ -591,8 +591,16 @@ class GitImportWorker(PullingImportWorker):
         it in the Bazaar tree, that is at '.bzr/repository/git.db'.
         """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
+        # legacy:
         self.import_data_store.fetch(
             'git.db', tree.branch.repository._transport)
+        # new hotness
+        local_name = 'git-cache.tar.gz'
+        if self.import_data_store.fetch(local_name, get_transport('.')):
+            repo_transport = tree.branch.repository._transport
+            git_db_dir = os.path.join(
+                local_path_from_url(repo_transport.base), 'git')
+            extract_tarball(local_name, git_db_dir)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
@@ -604,8 +612,12 @@ class GitImportWorker(PullingImportWorker):
         """
         non_trivial = PullingImportWorker.pushBazaarWorkingTree(
             self, bazaar_tree)
-        self.import_data_store.put(
-            'git.db', bazaar_tree.branch.repository._transport)
+        repo_transport = bazaar_tree.branch.repository._transport
+        git_db_dir = os.path.join(
+            local_path_from_url(repo_transport.base), 'git')
+        local_name = 'git-cache.tar.gz'
+        create_tarball(local_name, git_db_dir)
+        self.import_data_store.put(local_name, get_transport('.'))
         return non_trivial
 
 
