@@ -27,24 +27,17 @@ The master also requires an 'logging' instance to not compromise the
 standard output with noisily output.
 
     >>> import logging
-
-First let's test an essential part of the Build-master class, the
-BuilderGroup() class, by creating an empty BuilderGroup object
-
-    >>> from lp.buildmaster.buildergroup import BuilderGroup
-
-    >>> buildergroup = BuilderGroup(
-    ...     logging.getLogger(), local_transaction)
+    >>> logger = logging.getLogger()
 
 Import MockBuilder and a series of MockSlaves to be used in this test.
 
     >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
-    ...    AbortedSlave, AbortingSlave, BrokenSlave, BuildingSlave,
-    ...    InsaneWaitingSlave, LostBuildingBrokenSlave,
-    ...    LostBuildingSlave, LostWaitingSlave, MockBuilder, OkSlave,
-    ...    SaneBuildingSlave, SaneWaitingSlave, WaitingSlave)
+    ...    AbortedSlave, AbortingSlave, BuildingSlave, InsaneWaitingSlave,
+    ...    LostBuildingBrokenSlave, LostBuildingSlave, LostWaitingSlave,
+    ...    MockBuilder, OkSlave, SaneBuildingSlave, SaneWaitingSlave,
+    ...    WaitingSlave)
 
-Let's play with a BuilderGroup method designed to rescue build slaves
+Let's play with a Builder method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
 only happens if the slave is processing deleted or modified BuildQueue
 entry, since Build entries are never removed. It might be caused by
@@ -69,21 +62,21 @@ identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
     >>> sanebuilding_builder = MockBuilder(
     ...     'Sane Building Slave', SaneBuildingSlave())
-    >>> sanebuilding_builder.rescueIfLost(buildergroup.logger) is None
+    >>> sanebuilding_builder.rescueIfLost(logger) is None
     True
 
 A sane WAITING slave:
 
     >>> sanewaiting_builder = MockBuilder(
     ...     'Sane Waiting Slave', SaneWaitingSlave())
-    >>> sanewaiting_builder.rescueIfLost(buildergroup.logger) is None
+    >>> sanewaiting_builder.rescueIfLost(logger) is None
     True
 
 A insane WAITING slave, with wrong BuildQueue/Build relation:
 
     >>> insanewaiting_builder = MockBuilder(
     ...     'Insane Waiting Slave', InsaneWaitingSlave())
-    >>> insanewaiting_builder.rescueIfLost(buildergroup.logger)
+    >>> insanewaiting_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1': 'Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
@@ -94,7 +87,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
-    >>> lostbuilding_builder.rescueIfLost(buildergroup.logger)
+    >>> lostbuilding_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000':
     'Build 1000 is not available: 'Object not found''
 
@@ -102,7 +95,7 @@ Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
-    >>> lostwaiting_builder.rescueIfLost(buildergroup.logger)
+    >>> lostwaiting_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000':
     'Build 1000 is not available: 'Object not found''
 
@@ -115,13 +108,13 @@ A BUILDING or WAITING slave without a build assigned in the DB will also be resc
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> lostbuilding_builder.current_build_behavior = IdleBuildBehavior()
-    >>> lostbuilding_builder.rescueIfLost(buildergroup.logger)
+    >>> lostbuilding_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000': 'No job assigned to builder'
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> lostwaiting_builder.current_build_behavior = IdleBuildBehavior()
-    >>> lostwaiting_builder.rescueIfLost(buildergroup.logger)
+    >>> lostwaiting_builder.rescueIfLost(logger)
     WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'No job assigned to builder'
 
 Slave-scanner will deactivate a 'lost-building' builder that could not
@@ -130,7 +123,7 @@ be aborted appropriately.
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
 
-    >>> lostbuilding_builder.updateStatus(buildergroup.logger)
+    >>> lostbuilding_builder.updateStatus(logger)
     WARNING:root:Lost Building Broken Slave (http://fake:0000) marked as failed due to: <Fault 8002: 'Could not abort'>
     Traceback (most recent call last):
     ...
@@ -151,42 +144,6 @@ exist in the apt sources.list.  If nothing is passed, the chroot's default
 list applies, otherwise the passed list is used.  This behavior is required
 in build slaves because some jobs may only depend on certain archives and
 hence certain package dependencies.
-
-    >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
-
-    >>> builder2 = MockBuilder('Idle Slave', OkSlave())
-
-    >>> builder3 = MockBuilder(
-    ...    'Package Failed', WaitingSlave('BuildStatus.PACKAGEFAIL'))
-
-    >>> builder4 = MockBuilder(
-    ...     'Missing Dependency build',
-    ...     WaitingSlave('BuildStatus.DEPFAIL', 'baz (>= 1.0.1)'))
-
-    >>> builder5 = MockBuilder(
-    ...     'Bad Chroot', WaitingSlave('BuildStatus.CHROOTFAIL'))
-
-    >>> builder6 = MockBuilder(
-    ...     'I am out of order', WaitingSlave('BuildStatus.BUILDERFAIL'))
-
-    >>> builder7 = MockBuilder('I am busy', BuildingSlave())
-
-    >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
-
-    >>> builder9 = MockBuilder(
-    ...     'I am trying to terminate the child process', AbortingSlave())
-
-    >>> builder10 = MockBuilder(
-    ...     'Package Successfully Built',
-    ...      WaitingSlave('BuildStatus.OK'))
-
-    >>> builder11 = MockBuilder(
-    ...     'I am giving this job back',
-    ...     WaitingSlave('BuildStatus.GIVENBACK'))
-
-    >>> buildergroup.builders = [
-    ...     builder1, builder2, builder3, builder4, builder5, builder6,
-    ...     builder7, builder8, builder9, builder10, builder11]
 
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
@@ -298,7 +255,7 @@ Do the test execution:
     >>> build.dependencies
     u'baz (>= 1.0.1)'
     >>> build.buildstate.title
-    'Dependency wait'
+    'Could not build because of missing dependencies'
 
 WAITING - CHROOTFAIL -> the Chroot for this distroseries is damage, nor
 builder, but right state stored in Build entry:
@@ -325,7 +282,7 @@ builder, but right state stored in Build entry:
     >>> check_mail_sent(last_stub_mail_count)
     True
     >>> build.buildstate.title
-    'Chroot problem'
+    'Could not build because of chroot problem'
 
 WAITING - BUILDERFAIL -> builder has failed by internal error, job is available for next build round:
 
@@ -352,7 +309,7 @@ Create a mock slave so the builder can operate - one with a builder error.
     False
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem6)
     >>> print build.buildstate.title
-    Needs building
+    Pending build
     >>> job = bqItem6.specific_job.job
     >>> print job.status.title
     Waiting
@@ -473,7 +430,7 @@ FAILEDTOUPLOAD:
     >>> check_mail_sent(last_stub_mail_count)
     True
     >>> build.buildstate.title
-    'Failed to upload'
+    'Could not be uploaded correctly'
 
 Let's check the emails generated by this 'failure'
 (see build-failedtoupload-workflow.txt for more information):
@@ -564,7 +521,7 @@ notification and updating the build information:
     >>> build.buildlog is not None
     True
     >>> build.buildstate.title
-    'Successfully built'
+    'Successful build'
     >>> check_mail_sent(last_stub_mail_count)
     False
 
@@ -602,7 +559,7 @@ scanned it)
     False
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem11)
     >>> print build.buildstate.title
-    Needs building
+    Pending build
     >>> job = bqItem11.specific_job.job
     >>> print job.status.title
     Waiting
@@ -681,12 +638,16 @@ Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
 in our filesystem.
 
+    >>> built_builder = MockBuilder(
+    ...     'Package Successfully Built',
+    ...      WaitingSlave('BuildStatus.OK'))
+
     >>> import gzip, tempfile
     >>> fd, fname = tempfile.mkstemp()
     >>> tmp = os.fdopen(fd, 'wb')
     >>> tmp.write(logfile.read())
     >>> tmp.close()
-    >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+    >>> gzip.open(fname).read() == built_builder.slave.getFile('buildlog').read()
     True
 
 This also happens with urllib instance, we need to download it to the
@@ -697,7 +658,7 @@ filesystem before decompress.
     >>> tmp = open(fname, 'wb')
     >>> tmp.write(from_web.read())
     >>> tmp.close()
-    >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+    >>> gzip.open(fname).read() == built_builder.slave.getFile('buildlog').read()
     True
 
 Both access methods work as expected, remove the temporary file used here.
