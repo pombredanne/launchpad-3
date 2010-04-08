@@ -68,11 +68,13 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -494,6 +496,14 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             title=_("The ISourcePackage that this branch belongs to. "
                     "None if not a package branch."),
             schema=Interface, required=False, readonly=True))
+
+    is_personal_branch = exported(
+        Bool(
+            title=_("Personal Branch"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "A branch is a personal branch if it is not associated "
+                "with a project nor a source package.")))
 
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
@@ -1309,6 +1319,44 @@ class IBranchCloud(Interface):
 
         :return: a `ResultSet` of (product, num_branches, last_revision_date).
         """
+
+
+class BzrIdentityMixin:
+
+    @property
+    def bzr_identity(self):
+        """See `IBranch`."""
+        identity, context = self.branchIdentities()[0]
+        return identity
+
+    def branchIdentities(self):
+        """See `IBranch`."""
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        if self.private or self.is_personal_branch:
+            # XXX: thumper 2010-04-08, bug 261609
+            # We have to get around to fixing this
+            identities = []
+        else:
+            identities = [
+                (lp_prefix + link.bzr_path, link.context)
+                for link in self.branchLinks()]
+        identities.append((lp_prefix + self.unique_name, self))
+        return identities
+
+    def branchLinks(self):
+        """See `IBranch`."""
+        links = []
+        for suite_sp in self.associatedSuiteSourcePackages():
+            links.append(ICanHasLinkedBranch(suite_sp))
+            if (suite_sp.distribution.currentseries == suite_sp.distroseries
+                and suite_sp.pocket == PackagePublishingPocket.RELEASE):
+                links.append(ICanHasLinkedBranch(
+                        suite_sp.sourcepackage.distribution_sourcepackage))
+        for series in self.associatedProductSeries():
+            links.append(ICanHasLinkedBranch(series))
+            if series.product.development_focus == series:
+                links.append(ICanHasLinkedBranch(series.product))
+        return sorted(links)
 
 
 def bazaar_identity(branch, is_dev_focus):
