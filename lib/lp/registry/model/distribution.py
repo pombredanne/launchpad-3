@@ -248,10 +248,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @cachedproperty
     def all_distro_archives(self):
         """See `IDistribution`."""
-        return Archive.select("""
-            Distribution = %s AND
-            Purpose IN %s""" % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES)
-            )
+        return Store.of(self).find(
+            Archive,
+            Archive.distribution == self,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
     @cachedproperty
     def all_distro_archive_ids(self):
