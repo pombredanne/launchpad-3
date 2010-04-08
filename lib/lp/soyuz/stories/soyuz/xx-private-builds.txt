@@ -338,7 +338,7 @@ portlet will display a link to the newly unembargoed build:
     >>> portlet = find_portlet(browser.contents, 'Builds')
     >>> print extract_text(portlet)
     Builds
-    breezy-autotest i386 Successfully built
+    breezy-autotest i386 Successful build
 
     >>> print browser.getLink('i386').url
     http://launchpad.dev/~cprov/+archive/p3a/+build/...

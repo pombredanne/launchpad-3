@@ -781,6 +781,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (11, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'mark_oid', NULL, '123/mark');
@@ -9069,6 +9072,13 @@ ALTER TABLE sourcepackagerecipedatainstruction DISABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerecipedatainstruction ENABLE TRIGGER ALL;
+
+
+ALTER TABLE sourcepackagerecipedistroseries DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE sourcepackagerecipedistroseries ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;

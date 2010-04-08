@@ -1145,8 +1145,10 @@ class ProductSet:
             conditions.append(Product.active == active)
 
         if search_text is not None and search_text.strip() != '':
-            conditions.append(SQL(
-                'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
+            conditions.append(SQL('''
+                Product.fti @@ ftq(%(text)s) OR
+                Product.name = lower(%(text)s)
+                ''' % sqlvalues(text=search_text)))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime

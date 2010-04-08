@@ -1031,19 +1031,21 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        source_packages = ubuntu.searchSourcePackages(
+        distro_source_packages = ubuntu.searchSourcePackages(
             self.context.name, has_packaging=False,
             publishing_distroseries=ubuntu.currentseries)
         # Based upon the matches, create a new vocabulary with
         # term descriptions that include a link to the source package.
         self.suggestions = []
         vocab_terms = []
-        for package in source_packages[:20]:
-            self.suggestions.append(package)
-            item_url = canonical_url(package)
-            description = """<a href="%s">%s</a>""" % (
-                item_url, escape(package.name))
-            vocab_terms.append(SimpleTerm(package, package.name, description))
+        for package in distro_source_packages[:20]:
+            if package.development_version.currentrelease is not None:
+                self.suggestions.append(package)
+                item_url = canonical_url(package)
+                description = """<a href="%s">%s</a>""" % (
+                    item_url, escape(package.name))
+                vocab_terms.append(
+                    SimpleTerm(package, package.name, description))
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
