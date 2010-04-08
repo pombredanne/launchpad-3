@@ -151,12 +151,12 @@ class PackageLinkedBranch(BaseLinkedBranch):
         my_parts = (
             self.suite_sourcepackage.distribution.name,
             Version(other.suite_sourcepackage.distroseries.version),
-            self.suite_sourcepackage.sourcepackagename,
+            self.suite_sourcepackage.sourcepackagename.name,
             self.suite_sourcepackage.pocket)
         other_parts = (
             other.suite_sourcepackage.distribution.name,
             Version(self.suite_sourcepackage.distroseries.version),
-            other.suite_sourcepackage.sourcepackagename,
+            other.suite_sourcepackage.sourcepackagename.name,
             other.suite_sourcepackage.pocket)
         return cmp(my_parts, other_parts)
 
@@ -201,10 +201,10 @@ class DistributionPackageLinkedBranch(BaseLinkedBranch):
         else:
             my_names = (
                 self.distribution_sourcepackage.distribution.name,
-                self.distribution_sourcepackage.sourcepackagename)
+                self.distribution_sourcepackage.sourcepackagename.name)
             other_names = (
                 other.distribution_sourcepackage.distribution.name,
-                other.distribution_sourcepackage.sourcepackagename)
+                other.distribution_sourcepackage.sourcepackagename.name)
             return cmp(my_names, other_names)
 
     @property
