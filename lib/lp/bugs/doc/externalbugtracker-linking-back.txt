@@ -47,6 +47,8 @@ The methods are called by the BugWatchUpdater class:
 
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> txn.commit()
+
     >>> external_bugtracker = BackLinkingExternalBugTracker(
     ...     'http://example.com/')
 
@@ -86,6 +88,8 @@ be called on our BackLinkingExternalBugTracker.
     >>> bug_watch.bug.id == bug_watch_2.bug.id
     False
 
+    >>> transaction.commit()
+
     >>> bug_watch_updater.linkLaunchpadBug(
     ...     external_bugtracker, bug_watch_2)
     Getting Launchpad id for bug 42
@@ -109,6 +113,8 @@ fact link to it.
 
 Calling linkLaunchpadBug() with a bug watch that actually does link to
 bug 42 will correct the error.
+
+    >>> transaction.commit()
 
     >>> bug_watch_updater.linkLaunchpadBug(external_bugtracker, bug_watch)
     Getting Launchpad id for bug 42

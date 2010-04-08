@@ -44,7 +44,9 @@ _SLAVE_TABLESPACE=pg_default
 
 PGMASSACRE=../../utilities/pgmassacre.py
 
-SHHH=../../utilities/shhh.py
+# Turn off silencing for now so we details on staging deployments.
+#SHHH=../../utilities/shhh.py
+SHHH=
 
 AUTHDB_TABLES=\
 	account accountpassword authkoken emailaddress \
