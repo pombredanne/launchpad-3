@@ -190,7 +190,6 @@ class TestTranslationTemplatesBuildBehavior(
         slave_status = {
             'builder_status': builder.slave.status()[0],
             'build_status': builder.slave.status()[1],
-            'build_id': builder.slave.status()[2]
             }
         behavior.updateSlaveStatus(builder.slave.status(), slave_status)
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
