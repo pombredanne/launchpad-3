@@ -592,8 +592,8 @@ class TestGitImportWorker(WorkerTest):
             self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
     def test_pushBazaarWorkingTree_saves_git_cache(self):
-        # GitImportWorker.pushBazaarWorkingTree saves the git file from the
-        # tree's repository in the worker's ImportDataStore.
+        # GitImportWorker.pushBazaarWorkingTree saves a tarball of the git
+        # cache from the tree's repository in the worker's ImportDataStore.
         content = self.factory.getUniqueString()
         tree = self.make_branch_and_tree('.')
         tree.branch.repository._transport.mkdir('git')
@@ -622,8 +622,9 @@ class TestGitImportWorker(WorkerTest):
             content, tree.branch.repository._transport.get('git.db').read())
 
     def test_getBazaarWorkingTree_fetches_git_cache(self):
-        # GitImportWorker.getBazaarWorkingTree fetches the git.db file from
-        # the worker's ImportDataStore into the tree's repository.
+        # GitImportWorker.getBazaarWorkingTree fetches the tarball of the git
+        # cache from the worker's ImportDataStore and expands it into the
+        # tree's repository.
         import_worker = self.makeImportWorker()
         # Store a tarred-up cache in the store.x
         content = self.factory.getUniqueString()

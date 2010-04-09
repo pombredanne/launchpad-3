@@ -591,10 +591,10 @@ class GitImportWorker(PullingImportWorker):
         it in the Bazaar tree, that is at '.bzr/repository/git.db'.
         """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
-        # legacy:
+        # Fetch the legacy cache from the store, if present.
         self.import_data_store.fetch(
             'git.db', tree.branch.repository._transport)
-        # new hotness
+        # The cache dir from newer bzr-gits is stored as a tarball.
         local_name = 'git-cache.tar.gz'
         if self.import_data_store.fetch(local_name):
             repo_transport = tree.branch.repository._transport
