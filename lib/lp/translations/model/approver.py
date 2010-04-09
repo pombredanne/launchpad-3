@@ -33,7 +33,7 @@ class TranslationNullApprover(object):
 
 
 class TranslationBranchApprover(object):
-    """Automatic approval of translation import files."""
+    """Automatic approval of template files uploaded from bzr branches."""
 
     def __init__(self, files, productseries=None,
                  distroseries=None, sourcepackagename=None):
@@ -49,10 +49,12 @@ class TranslationBranchApprover(object):
         :param sourcepackagename: The sourcepackagename that this upload
             is for.
         """
-        assert((productseries is not None and
-                distroseries is None and sourcepackagename is None) or
-               (productseries is None and
-                distroseries is not None and sourcepackagename is not None))
+
+        # Productseries and distroseries will be asserted in getSubset but
+        # not sourcepackagename.
+        assert (distroseries is None and sourcepackagename is None or
+                distroseries is not None and sourcepackagename is not None), (
+                "Please specify distroseries and sourcepackagename together.")
 
         self._potemplates = {}
         self._n_matched = 0
@@ -147,16 +149,17 @@ class TranslationBranchApprover(object):
 
 
 class TranslationBuildApprover(object):
-    """Automatic approval of automatically build translation files."""
+    """Automatic approval of automatically build translation templates."""
 
     def __init__(
         self, filenames,
         productseries=None, distroseries=None, sourcepackagename=None):
-        """Bind the new approver to a productseries or sourcepackagename."""
-        assert((productseries is not None and
-                distroseries is None and sourcepackagename is None) or
-               (productseries is None and
-                distroseries is not None and sourcepackagename is not None))
+
+        # Productseries and distroseries will be asserted in getSubset but
+        # not sourcepackagename.
+        assert (distroseries is None and sourcepackagename is None or
+                distroseries is not None and sourcepackagename is not None), (
+                "Please specify distroseries and sourcepackagename together.")
 
         importer = TranslationImporter()
         # We only care for templates.
@@ -170,31 +173,64 @@ class TranslationBuildApprover(object):
         else:
             self.owner = distroseries.distribution.owner
 
-    def _makeGenericPOTemplate(self, path):
-        """Create a potemplate when the path is generic."""
-        if self._potemplateset.productseries is not None:
-            domain = self._potemplateset.productseries.product.name
-        else:
-            domain = self._potemplateset.sourcepackagename.name
-        name = domain
-        return self._potemplateset.new(name, domain, path, self.owner)
+    def _getOrCreateGenericTemplate(self, path):
+        """Try to find or create a template for a generic path.
 
-    def _checkGenericPath(self, path):
-        """Perform checks to find a match for generic paths."""
+        Because a generic path (i.e. messages.pot) does not provide
+        a template name, the name of the product or sourcepackagename is used
+        when creating a new template.
+
+        :param path: The path of the template file.
+        :return: The template or None.
+        """
         if len(self.filenames) != 1:
             # Generic paths can only be approved if they are alone.
             return None
-        if len(self._potemplateset) == 0:
+        len_potemplateset = len(self._potemplateset)
+        if len_potemplateset == 0:
             # Create template from product or sourcepackagename name.
-            return self._makeGenericPOTemplate(path)
-        elif len(self._potemplateset) == 1:
+            if self._potemplateset.productseries is not None:
+                domain = self._potemplateset.productseries.product.name
+            else:
+                domain = self._potemplateset.sourcepackagename.name
+            name = domain
+            return self._potemplateset.new(name, domain, path, self.owner)
+        elif len_potemplateset == 1:
             # Use the one template that is there.
             # Can only be accessed through iterator.
             for pot in self._potemplateset:
                 return pot
         else:
-            # No approval possible if more than one template is available.
+            # If more than one template is available we don't know which to
+            # chose.
             return None
+
+    def _getOrCreatePOTemplateForPath(self, path):
+        """Find the POTemplate that path should be imported into.
+
+        If no existing template could be found it creates one if possible.
+
+        :param path: The path of the file to be imported.
+        :return: The POTemplate instance or None.
+        """
+        if path not in self.filenames:
+            # The file is not a template file.
+            return None
+
+        potemplate = self._potemplateset.getPOTemplateByPath(path)
+        if potemplate is None:
+            domain = make_domain(path)
+            name = make_name(domain)
+            if name == '':
+                # A generic name does not contain a translation domain.
+                potemplate = self._getOrCreateGenericTemplate(path)
+            else:
+                potemplate = self._potemplateset.getPOTemplateByName(name)
+                if potemplate is None:
+                    # Still no template found, create a new one.
+                    potemplate = self._potemplateset.new(
+                        name, domain, path, self.owner)
+        return potemplate
 
     def approve(self, entry):
         """Approve a queue entry."""
@@ -202,37 +238,22 @@ class TranslationBuildApprover(object):
             entry.productseries == self._potemplateset.productseries and
             entry.distroseries == self._potemplateset.distroseries and
             entry.sourcepackagename == self._potemplateset.sourcepackagename
-            ),("Entry must be for same target as approver.")
+            ), ("Entry must be for same target as approver.")
 
+        # This method is intended to be used to wrap
+        # TranslationImportQueue.addOrUpdateEntry which may return None.
         if entry is None:
             return None
 
-        if entry.path not in self.filenames:
-            # Only files that have been announced to the approver can be
-            # approved.
-            return entry
-        potemplate = self._potemplateset.getPOTemplateByPath(entry.path)
-        if potemplate is None:
-            domain = make_domain(entry.path)
-            name = make_name(domain)
-            if name == '':
-                # A generic name, check if this is the first template.
-                potemplate = self._checkGenericPath(entry.path)
-                if potemplate is None:
-                    # Not approvable.
-                    return entry
-            else:
-                potemplate = self._potemplateset.getPOTemplateByName(name)
-            if potemplate is None:
-                # Still no template found, create a new one.
-                potemplate = self._potemplateset.new(
-                    name, domain, entry.path, self.owner)
+        potemplate = self._getOrCreatePOTemplateForPath(entry.path)
 
-        # Approve the entry
-        entry.potemplate = potemplate
-        potemplate.path = entry.path
-        if entry.status == RosettaImportStatus.NEEDS_REVIEW:
-            entry.setStatus(RosettaImportStatus.APPROVED,
-                            getUtility(ILaunchpadCelebrities).rosetta_experts)
+        if potemplate is not None:
+            # We have a POTemplate, the entry can be approved.
+            entry.potemplate = potemplate
+            potemplate.path = entry.path
+            if entry.status == RosettaImportStatus.NEEDS_REVIEW:
+                entry.setStatus(
+                    RosettaImportStatus.APPROVED,
+                    getUtility(ILaunchpadCelebrities).rosetta_experts)
         return entry
 

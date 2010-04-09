@@ -1,7 +1,11 @@
 = TranslationBuildApprover =
 
 The TranslationBuildApprover is a much simpler approver than the
-TranslationBranchApprover.
+TranslationBranchApprover. The latter tries to detect when templates have
+been removed or renamed and refuses to approve anything when that happens.
+This new approver does not care about these things but tries to approve as
+many templates as possible. If this behavior proofs practical, it should
+replace the TranslationBranchApprover in the future.
 
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
@@ -17,62 +21,62 @@ TranslationBranchApprover.
 It will approve all template files that it can derive a name from. It will
 create a new template if none is found by that name.
 
-    >>> my_series = factory.makeProductSeries()
-    >>> my_approver = TranslationBuildApprover(
-    ...     ["po/my_domain.pot"], productseries=my_series)
-    >>> my_entry = makeQueueEntry("po/my_domain.pot", my_series)
-    >>> print my_entry.status.title
+    >>> productseries = factory.makeProductSeries()
+    >>> approver = TranslationBuildApprover(
+    ...     ["po/my_domain.pot"], productseries=productseries)
+    >>> entry = makeQueueEntry("po/my_domain.pot", productseries)
+    >>> print entry.status.title
     Needs Review
-    >>> my_entry = my_approver.approve(my_entry)
-    >>> print my_entry.status.title
+    >>> my_entry = approver.approve(entry)
+    >>> print entry.status.title
     Approved
 
 If a template with the name exists, it will target the import entry to it and
 not create a new template.
 
-    >>> existing_series = factory.makeProductSeries()
+    >>> productseries = factory.makeProductSeries()
     >>> existing_potemplate = factory.makePOTemplate(
-    ...     name='existing-domain', productseries=existing_series)
-    >>> existing_approver = TranslationBuildApprover(
-    ...     ["po/existing_domain.pot"], productseries=existing_series)
-    >>> existing_entry = makeQueueEntry(
-    ...     "po/existing_domain.pot", existing_series)
-    >>> existing_entry = existing_approver.approve(existing_entry)
-    >>> print existing_entry.status.title
+    ...     name='existing-domain', productseries=productseries)
+    >>> approver = TranslationBuildApprover(
+    ...     ["po/existing_domain.pot"], productseries=productseries)
+    >>> entry = makeQueueEntry(
+    ...     "po/existing_domain.pot", productseries)
+    >>> entry = approver.approve(entry)
+    >>> print entry.status.title
     Approved
-    >>> print existing_entry.potemplate == existing_potemplate
+    >>> print entry.potemplate == existing_potemplate
     True
 
-Template files with generic names will only be approved, if there is only one
-such file and the series has one or no templates. If no template exists, a
-template with the name of the product is created.
+A template file with generic names is only approved if it is the only one that
+is being imported and the series has zero or one templates. If no template
+exists, a template with the name of the product is created.
 
-    >>> empty_product = factory.makeProduct(name='fooproduct')
-    >>> empty_series = factory.makeProductSeries(product=empty_product)
-    >>> empty_entry = makeQueueEntry('po/messages.pot', empty_series)
-    >>> empty_approver = TranslationBuildApprover(
-    ...     ['po/messages.pot'], productseries=empty_series)
-    >>> empty_entry = empty_approver.approve(empty_entry)
-    >>> print empty_entry.status.title
+    >>> product = factory.makeProduct(name='fooproduct')
+    >>> productseries = factory.makeProductSeries(product=product)
+    >>> generic_entry = makeQueueEntry('po/messages.pot', productseries)
+    >>> approver = TranslationBuildApprover(
+    ...     ['po/messages.pot'], productseries=productseries)
+    >>> generic_entry = approver.approve(generic_entry)
+    >>> print generic_entry.status.title
     Approved
-    >>> print empty_entry.potemplate.translation_domain
+    >>> print generic_entry.potemplate.translation_domain
     fooproduct
-    >>> print empty_entry.potemplate.name
+    >>> print generic_entry.potemplate.name
     fooproduct
 
-If there are other files or templates, generic names will not be approved.
-Only the valid ones will.
+If there are other files or templates, files with generic names are not
+approved. Only the ones containing a translation domain are approved.
 
-    >>> generic_series = factory.makeProductSeries()
-    >>> generic_approver = TranslationBuildApprover(
+    >>> productseries = factory.makeProductSeries()
+    >>> approver = TranslationBuildApprover(
     ...     ["po/messages.pot", "validdomain.pot"],
-    ...     productseries=generic_series)
-    >>> generic_entry = makeQueueEntry("po/messages.pot", generic_series)
-    >>> generic_entry = generic_approver.approve(generic_entry)
+    ...     productseries=productseries)
+    >>> generic_entry = makeQueueEntry("po/messages.pot", productseries)
+    >>> generic_entry = approver.approve(generic_entry)
     >>> print generic_entry.status.title
     Needs Review
-    >>> valid_entry = makeQueueEntry("validdomain.pot", generic_series)
-    >>> valid_entry = generic_approver.approve(valid_entry)
+    >>> valid_entry = makeQueueEntry("validdomain.pot", productseries)
+    >>> valid_entry = approver.approve(valid_entry)
     >>> print valid_entry.status.title
     Approved
 
