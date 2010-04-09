@@ -924,14 +924,34 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """Return the suite source packages that this branch is linked to."""
 
     def branchLinks():
-        """Return a sorted list of ICanHasLinkedBranch objects."""
+        """Return a sorted list of ICanHasLinkedBranch objects.
 
-    def branchIdentites():
+        There is one result for each related linked object that the branch is
+        linked to.  For example in the case where a branch is linked to the
+        development series of a project, the link objects for both the project
+        and the development series are returned.
+
+        The sorting uses the defined order of the linked objects where the
+        more important links are sorted first.
+        """
+
+    def branchIdentities():
         """A list of aliases for a branch.
 
         Returns a list of tuples of bzr identity and context object.  There is
         at least one alias for any branch, and that is the branch itself.  For
         linked branches, the context object is the appropriate linked object.
+
+        Where a branch is linked to a product series or a suite source
+        package, the branch is available through a number of different urls.
+        These urls are the aliases for the branch.
+
+        For example, a branch linked to the development focus of the 'fooix'
+        project is accessible using:
+          lp:fooix - the linked object is the product fooix
+          lp:fooix/trunk - the linked object is the trunk series of fooix
+          lp:~owner/fooix/name - the unique name of the branch where the linked
+            object is the branch itself.
         """
 
     # subscription-related methods

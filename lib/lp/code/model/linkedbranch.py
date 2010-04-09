@@ -62,8 +62,8 @@ class ProductSeriesLinkedBranch(BaseLinkedBranch):
         if result != 0:
             return result
         else:
-            # When a project gets the series they are ordered alphabetically
-            # by name.
+            # The sorting of the product series uses the same sorting the
+            # product itself uses, which is alphabetically by name.
             my_parts = (
                 self.product_series.product.name,
                 self.product_series.name)

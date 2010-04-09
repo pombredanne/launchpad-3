@@ -489,8 +489,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_default_identities(self):
-        # If there are no links, the branch identities is just the unique
-        # name.
+        # If there are no links, the only branch identity is the unique name.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             [('lp://dev/' + branch.unique_name, branch)],
@@ -517,8 +516,8 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
     def test_linked_to_product_series(self):
         # If a branch is linked to a non-development series of a product and
-        # not linked to the product itself, then the product is not returned
-        # in the links.
+        # not linked to the product itself, then only the product series is
+        # returned in the links.
         fooix = removeSecurityProxy(self.factory.makeProduct(name='fooix'))
         future = self.factory.makeProductSeries(product=fooix, name='future')
         eric = self.factory.makePerson(name='eric')

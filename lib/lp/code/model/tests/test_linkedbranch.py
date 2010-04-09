@@ -229,8 +229,8 @@ class TestLinkedBranchSorting(TestCaseWithFactory):
 
     def test_product_sort(self):
         # If in the extremely unlikely event we have one branch linked as the
-        # trunk of two different products (you never know), then the sorting
-        # reverts to the name of the product.
+        # trunk of two or more different products (you never know), then the
+        # sorting reverts to the name of the product.
         aardvark_link = ICanHasLinkedBranch(
             self.factory.makeProduct(name='aardvark'))
         meerkat_link = ICanHasLinkedBranch(
