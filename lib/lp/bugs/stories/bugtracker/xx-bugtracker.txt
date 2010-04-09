@@ -541,7 +541,7 @@ displayed:
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'latestwatches'))
-    Launchpad bug  Remote bug  Status  Last checked  Next check
+    Launchpad bug  Remote bug  Status  Last check  Next check
     #15: Nonse...  308994      open...
     #3:  Bug T...  327549
     #2:  Black...  327452
@@ -563,7 +563,7 @@ Scheduling any of the watches will change their "Next check" column.
     ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'latestwatches'))
-    Launchpad bug  Remote bug  Status  Last checked  Next check
+    Launchpad bug  Remote bug  Status  Last check  Next check
     #15: Nonse...  308994      open... 2007-12-18    2010-04-09 09:50:00 UTC
     #3:  Bug T...  327549
     #2:  Black...  327452

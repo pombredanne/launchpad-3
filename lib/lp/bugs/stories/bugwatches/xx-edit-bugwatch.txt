@@ -53,12 +53,12 @@ The +edit page for a watch also displays some details about the watch.
     Last status: None recorded
     Changed: 2004-10-04
     Checked: 2004-10-04
-    Scheduled: Not yet scheduled
+    Next check: Not yet scheduled
     Created: 2004-10-04
     Created by: Mark Shuttleworth
 
 If we change the next_check date of the watch its will be shown in the
-Scheduled column.
+Next check column.
 
     >>> from datetime import datetime
     >>> from pytz import utc
@@ -76,4 +76,4 @@ Scheduled column.
     >>> data_tag = find_tag_by_id(
     ...     admin_browser.contents, 'bugwatch-next_check')
     >>> print extract_text(data_tag.renderContents())
-    Scheduled: 2010-04-08...
+    Next check: 2010-04-08...

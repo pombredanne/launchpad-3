@@ -49,7 +49,7 @@
         </dd>
       </dl>
       <dl class="bugwatch-data" id="bugwatch-next_check">
-        <dt>Scheduled:</dt>
+        <dt>Next check:</dt>
         <dd>
           <span
             tal:condition="context/next_check"

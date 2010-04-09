@@ -13,7 +13,7 @@
           <th>Launchpad bug</th>
           <th>Remote bug</th>
           <th>Status</th>
-          <th>Last checked</th>
+          <th>Last check</th>
           <th>Next check</th>
         </tr>
       </thead>
