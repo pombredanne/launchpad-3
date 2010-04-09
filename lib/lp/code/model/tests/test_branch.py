@@ -600,8 +600,9 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             branch.branchIdentities())
 
     def test_linked_to_package_not_current_series(self):
-        # If a branch is the development focus branch for a product, then it's
-        # bzr identity is lp:product.
+        # If the branch is linked to a suite source package where the distro
+        # series is not the current series, only the suite source package is
+        # returned in the links.
         mint = self.factory.makeDistribution(name='mint')
         self.factory.makeDistroSeries(
             distribution=mint, version='1.0', name='dev')
