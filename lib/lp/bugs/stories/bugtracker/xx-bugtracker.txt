@@ -541,12 +541,34 @@ displayed:
   ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
   >>> print extract_text(find_tag_by_id(
   ...     anon_browser.contents, 'latestwatches'))
-  Launchpad bug                      Remote bug  Status
-  #15: Nonsensical bugs are useless  308994      open important
-  #3:  Bug Title Test                327549
-  #2:  Blackhole Trash folder        327452
-  #1:  Firefox does not support SVG  304014
-  #7:  A test bug                    280883
+  Launchpad bug  Remote bug  Status  Last checked  Next check
+  #15: Nonse...  308994      open...
+  #3:  Bug T...  327549
+  #2:  Black...  327452
+  #1:  Firef...  304014
+  #7:  A tes...  280883
+
+Scheduling any of the watches will change their "Next check" column.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+
+    >>> login('foo.bar@canonical.com')
+    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> watch_15 = debbugs.watches[0]
+    >>> watch_15.next_check = datetime(2010, 4, 9, 9, 50, 0, tzinfo=utc)
+    >>> logout()
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'latestwatches'))
+    Launchpad bug  Remote bug  Status  Last checked  Next check
+    #15: Nonse...  308994      open... 2007-12-18    2010-04-09 09:50:00 UTC
+    #3:  Bug T...  327549
+    #2:  Black...  327452
+    #1:  Firef...  304014
+    #7:  A tes...  280883
 
 
 === Private bugs ===
@@ -565,7 +587,7 @@ associated with a private bug:
   ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
   >>> print extract_text(find_tag_by_id(
   ...     anon_browser.contents, 'latestwatches'))
-  Launchpad bug                      Remote bug  Status
+  Launchpad bug                      Remote bug  Status...
   #15: (Private)                     -
   #3:  Bug Title Test                327549
   #2:  Blackhole Trash folder        327452
@@ -615,7 +637,8 @@ Then we can see how logged-in users and anonymous users see the page:
   ...     watches = find_tag_by_id(
   ...         browser.contents, 'latestwatches').tbody.findAll('tr')
   ...     for watch in watches:
-  ...         bug, remote_bug, status = watch.findAll('td')
+  ...         bug, remote_bug, status, last_checked, next_check = (
+  ...             watch.findAll('td'))
   ...         print extract_text(bug)
   ...         print '  --> %s: %s' % (
   ...             extract_text(remote_bug),
