@@ -537,16 +537,16 @@ are no inactive bug trackers.
 When looking at a bug tracker page, a list of bug watches is
 displayed:
 
-  >>> anon_browser.open(
-  ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
-  >>> print extract_text(find_tag_by_id(
-  ...     anon_browser.contents, 'latestwatches'))
-  Launchpad bug  Remote bug  Status  Last checked  Next check
-  #15: Nonse...  308994      open...
-  #3:  Bug T...  327549
-  #2:  Black...  327452
-  #1:  Firef...  304014
-  #7:  A tes...  280883
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'latestwatches'))
+    Launchpad bug  Remote bug  Status  Last checked  Next check
+    #15: Nonse...  308994      open...
+    #3:  Bug T...  327549
+    #2:  Black...  327452
+    #1:  Firef...  304014
+    #7:  A tes...  280883
 
 Scheduling any of the watches will change their "Next check" column.
 
