@@ -278,8 +278,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             content=MirrorContent.ARCHIVE,
             enabled=True,
             status=MirrorStatus.OFFICIAL,
-            official_candidate=True
-        )
+            official_candidate=True)
 
     @property
     def cdimage_mirrors(self):
@@ -290,8 +289,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             content=MirrorContent.RELEASE,
             enabled=True,
             status=MirrorStatus.OFFICIAL,
-            official_candidate=True
-        )
+            official_candidate=True)
 
     @property
     def disabled_mirrors(self):
@@ -301,8 +299,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self,
             enabled=False,
             status=MirrorStatus.OFFICIAL,
-            official_candidate=True
-        )
+            official_candidate=True)
 
     @property
     def unofficial_mirrors(self):
@@ -310,8 +307,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Store.of(self).find(
             DistributionMirror,
             distribution=self,
-            status=MirrorStatus.UNOFFICIAL
-        )
+            status=MirrorStatus.UNOFFICIAL)
 
     @property
     def pending_review_mirrors(self):
@@ -320,8 +316,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistributionMirror,
             distribution=self,
             status=MirrorStatus.PENDING_REVIEW,
-            official_candidate=True
-        )
+            official_candidate=True)
 
     @property
     def full_functionality(self):
