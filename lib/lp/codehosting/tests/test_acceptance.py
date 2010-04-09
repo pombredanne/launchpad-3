@@ -404,8 +404,9 @@ class AcceptanceTests(SSHTestCase):
         LaunchpadZopelessTestSetup().txn.abort()
 
     def test_record_default_stacking(self):
-        # XXX
-
+        # If the location being pushed to has a default stacked-on branch,
+        # then branches pushed to that location end up stacked on it by
+        # default.
         product = self.factory.makeProduct()
 
         self.make_branch_and_tree('stacked-on')
@@ -427,8 +428,10 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(db_trunk, db_stacked.stacked_on)
 
     def test_explicit_stacking(self):
-        # XXX
-
+        # If a branch is pushed to launchpad --stacked-on the absolute URL of
+        # another Launchpad branch, this is recorded as the stacked_on
+        # attribute of the database branch, and stacked on location of the new
+        # branch is normalized to be a relative path.
         product = self.factory.makeProduct()
 
         self.make_branch_and_tree('stacked-on')

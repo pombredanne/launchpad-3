@@ -615,7 +615,20 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addErrback(translate_fault)
 
     def _normalize_stacked_on_url(self, branch):
-        """XXX."""
+        """Normalize and return the stacked-on location of `branch`.
+
+        In the common case, `branch` will either be unstacked or stacked on a
+        relative path, in which case this is very easy: just return the
+        location.
+
+        If `branch` is stacked on the absolute URL of another Launchpad
+        branch, we normalize this to a relative path (mutating the branch) and
+        return the relative path.
+
+        If `branch` is stacked on some other absolute URL we don't recognise,
+        we just return that and rely on the `branchChanged` XML-RPC method
+        recording a complaint in the appropriate place.
+        """
         stacked_on_url = get_stacked_on_url(branch)
         if stacked_on_url is None:
             return None
@@ -623,13 +636,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # Assume it's a relative path.
             return stacked_on_url
         uri = URI(stacked_on_url)
-        # We could try to display an error on stderr for these cases
-        # maybe?  The scanner will complain in due course.
+        # XXX Maaaybe we could complain on stderr here?
         if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
-            return None
+            return stacked_on_url
         launchpad_domain = config.vhost.mainsite.hostname
         if not uri.underDomain(launchpad_domain):
-            return None
+            return stacked_on_url
         # We use TransportConfig directly because the branch
         # is still locked at this point!  We're effectively
         # 'borrowing' the lock that is being released.

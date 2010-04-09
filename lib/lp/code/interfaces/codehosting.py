@@ -180,9 +180,15 @@ class IBranchFileSystem(Interface):
         """
 
     def branchChanged(branch_id, stacked_on_url, last_revision_id):
-        """XXX.
+        """Record that a branch has been changed.
 
-        :param branchID: a branch ID.
+        This method records the stacked on branch and tip revision id of the
+        branch and creates a scan job if the tip revision id has changed.
+
+        :param branchID: The database id of the branch to operate on.
+        :param stacked_on_url: The unique name of the branch this branch is
+            stacked on, or '' if this branch is not stacked.
+        :param last_revision_id: The tip revision ID of the branch.
         """
 
     def translatePath(requester_id, path):
