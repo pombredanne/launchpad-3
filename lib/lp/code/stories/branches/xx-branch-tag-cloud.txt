@@ -22,11 +22,13 @@ in a different colour.
 
 Update firefox to officially use codehosting:
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/+edit')
-    >>> admin_browser.getControl(
-    ...     'Code for this project is published in Bazaar branches on '
-    ...     'Launchpad').click()
-    >>> admin_browser.getControl('Change').click()
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.development_focus.branch = factory.makeBranch(
+    ...     product=firefox)
+    >>> logout()
 
 The class for firefox in the project tag cloud will now show 'highlight' rather
 than shade.
