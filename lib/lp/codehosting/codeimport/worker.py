@@ -596,8 +596,9 @@ class GitImportWorker(PullingImportWorker):
             'git.db', tree.branch.repository._transport)
         # new hotness
         local_name = 'git-cache.tar.gz'
-        if self.import_data_store.fetch(local_name, get_transport('.')):
+        if self.import_data_store.fetch(local_name):
             repo_transport = tree.branch.repository._transport
+            repo_transport.mkdir('git')
             git_db_dir = os.path.join(
                 local_path_from_url(repo_transport.base), 'git')
             extract_tarball(local_name, git_db_dir)
@@ -616,8 +617,8 @@ class GitImportWorker(PullingImportWorker):
         git_db_dir = os.path.join(
             local_path_from_url(repo_transport.base), 'git')
         local_name = 'git-cache.tar.gz'
-        create_tarball(local_name, git_db_dir)
-        self.import_data_store.put(local_name, get_transport('.'))
+        create_tarball(git_db_dir, local_name)
+        self.import_data_store.put(local_name)
         return non_trivial
 
 

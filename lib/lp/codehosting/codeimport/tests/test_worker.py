@@ -28,6 +28,7 @@ from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import BaseLayer
 
 from lp.codehosting import load_optional_plugin
+from lp.codehosting.codeimport.tarball import create_tarball, extract_tarball
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, BzrSvnImportWorker, CodeImportWorkerExitCode,
     ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
@@ -590,20 +591,23 @@ class TestGitImportWorker(WorkerTest):
             source_details, self.get_transport('import_data'),
             self.makeBazaarBranchStore(), logging.getLogger("silent"))
 
-    def test_pushBazaarWorkingTree_saves_git_db(self):
-        # GitImportWorker.pushBazaarWorkingTree saves the git.db file from the
+    def test_pushBazaarWorkingTree_saves_git_cache(self):
+        # GitImportWorker.pushBazaarWorkingTree saves the git file from the
         # tree's repository in the worker's ImportDataStore.
         content = self.factory.getUniqueString()
         tree = self.make_branch_and_tree('.')
-        tree.branch.repository._transport.put_bytes('git.db', content)
+        tree.branch.repository._transport.mkdir('git')
+        tree.branch.repository._transport.put_bytes('git/cache', content)
         import_worker = self.makeImportWorker()
         import_worker.pushBazaarWorkingTree(tree)
-        import_worker.import_data_store.fetch('git.db')
-        self.assertEqual(content, open('git.db').read())
+        import_worker.import_data_store.fetch('git-cache.tar.gz')
+        extract_tarball('git-cache.tar.gz', '.')
+        self.assertEqual(content, open('cache').read())
 
-    def test_getBazaarWorkingTree_fetches_git_db(self):
-        # GitImportWorker.getBazaarWorkingTree fetches the git.db file from
-        # the worker's ImportDataStore into the tree's repository.
+    def test_getBazaarWorkingTree_fetches_legacy_git_db(self):
+        # GitImportWorker.getBazaarWorkingTree fetches the legacy git.db file,
+        # if present, from the worker's ImportDataStore into the tree's
+        # repository.
         import_worker = self.makeImportWorker()
         # Store the git.db file in the store.
         content = self.factory.getUniqueString()
@@ -616,6 +620,24 @@ class TestGitImportWorker(WorkerTest):
         tree = import_worker.getBazaarWorkingTree()
         self.assertEqual(
             content, tree.branch.repository._transport.get('git.db').read())
+
+    def test_getBazaarWorkingTree_fetches_git_cache(self):
+        # GitImportWorker.getBazaarWorkingTree fetches the git.db file from
+        # the worker's ImportDataStore into the tree's repository.
+        import_worker = self.makeImportWorker()
+        # Store a tarred-up cache in the store.x
+        content = self.factory.getUniqueString()
+        os.mkdir('cache')
+        open('cache/git-cache', 'w').write(content)
+        create_tarball('cache', 'git-cache.tar.gz')
+        import_worker.import_data_store.put('git-cache.tar.gz')
+        # Make sure there's a Bazaar branch in the branch store.
+        tree = self.make_branch_and_tree('tree')
+        ImportWorker.pushBazaarWorkingTree(import_worker, tree)
+        # Finally, fetching the tree gets the git.db file too.
+        tree = import_worker.getBazaarWorkingTree()
+        self.assertEqual(
+            content, tree.branch.repository._transport.get('git/git-cache').read())
 
 
 def clean_up_default_stores_for_import(source_details):
