@@ -32,7 +32,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 
 
 class BuildFarmJobBehaviorBase:
@@ -130,7 +130,7 @@ class BuildFarmJobBehaviorBase:
         from lp.soyuz.model.build import Build
 
         return self._helpVerifyBuildIDComponent(
-            raw_id, Build, getUtility(IBuildSet).getByBuildID)
+            raw_id, Build, getUtility(IBinaryPackageBuildSet).getByBuildID)
 
     def getVerifiedBuildQueue(self, raw_id):
         """Verify and retrieve the `BuildQueue` component of a slave build id.
@@ -154,7 +154,7 @@ class BuildFarmJobBehaviorBase:
             build_id, queue_item_id = slave_build_id.split('-')
         except ValueError:
             raise CorruptBuildID('Malformed build ID')
-            
+
         build = self.getVerifiedBuild(build_id)
         queue_item = self.getVerifiedBuildQueue(queue_item_id)
 

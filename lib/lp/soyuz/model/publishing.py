@@ -54,7 +54,8 @@ from canonical.launchpad.database.librarian import (
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
@@ -510,19 +511,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return the_url
 
     def _getAllowedArchitectures(self, available_archs):
-        """Filter out any restricted architectures not specifically allowed 
+        """Filter out any restricted architectures not specifically allowed
         for an archive.
 
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
         associated_proc_families = [
-            archivearch.processorfamily for archivearch 
+            archivearch.processorfamily for archivearch
             in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
-            if not distroarch.processorfamily.restricted or 
+            if not distroarch.processorfamily.restricted or
                distroarch.processorfamily in associated_proc_families]
 
     def createMissingBuilds(self, architectures_available=None,
@@ -553,8 +554,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def _createMissingBuildForArchitecture(self, arch, logger=None):
         """Create a build for a given architecture if it doesn't exist yet.
 
-        Return the just-created `IBuild` record already scored or None
-        if a suitable build is already present.
+        Return the just-created `IBinaryPackageBuild` record already
+        scored or None if a suitable build is already present.
         """
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
@@ -1542,8 +1543,8 @@ class PublishingSet:
         used in the calculation.
         """
         builds = source_publication.getBuilds()
-        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
-            builds)
+        summary = getUtility(
+            IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
 
         # We only augment the result if:
         #   1. we (the SPPH) are ourselves in an active publishing state, and

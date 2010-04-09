@@ -7,7 +7,7 @@ import os
 import transaction
 import unittest
 
-from twisted.internet import defer, task, reactor
+from twisted.internet import defer
 from twisted.internet.error import (
     ConnectionClosed, ProcessTerminated, TimeoutError)
 from twisted.python.failure import Failure
@@ -30,7 +30,7 @@ from lp.buildmaster.manager import (
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
@@ -509,7 +509,7 @@ class TestBuilddManagerScan(TrialTestCase):
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
         self.assertEqual(job.job.status, JobStatus.RUNNING)
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
@@ -633,7 +633,7 @@ class TestBuilddManagerScan(TrialTestCase):
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
         self.assertTrue(job.date_started is None)
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
     def testScanRescuesJobFromBrokenBuilder(self):
@@ -717,7 +717,7 @@ class TestDispatchResult(unittest.TestCase):
         builder.builderok = True
 
         job = builder.currentjob
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
             build.title)
@@ -734,7 +734,7 @@ class TestDispatchResult(unittest.TestCase):
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
         job = getUtility(IBuildQueueSet).get(job_id)
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
         self.assertEqual(None, job.date_started)

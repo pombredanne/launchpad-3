@@ -49,7 +49,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import (
+from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
     IBinaryPackageBuildSet)
 from lp.buildmaster.interfaces.buildbase import IBuildBase
@@ -471,7 +471,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         # Look for all sourcepackagerelease instances that match the name
         # and get the (successfully built) build records for this
         # package.
-        completed_builds = Build.select("""
+        completed_builds = BinaryPackageBuild.select("""
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             Build.id != %s AND
             Build.buildduration IS NOT NULL AND
@@ -694,7 +694,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         raise NotFoundError(filename)
 
 
-class BuildSet:
+class BinaryPackageBuildSet:
     implements(IBinaryPackageBuildSet)
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):

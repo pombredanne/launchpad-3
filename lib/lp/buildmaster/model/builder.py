@@ -55,7 +55,7 @@ from lp.services.job.interfaces.job import JobStatus
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
@@ -428,7 +428,7 @@ class Builder(SQLBase):
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
             self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):

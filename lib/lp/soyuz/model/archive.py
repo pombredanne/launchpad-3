@@ -71,7 +71,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -211,7 +211,7 @@ class Archive(SQLBase):
         for (family, archive_arch) in restricted_families:
             if family == arm:
                 return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no 
+        # ARM doesn't exist or isn't restricted. Either way, there is no
         # need for an explicit association.
         return False
 
@@ -358,7 +358,7 @@ class Archive(SQLBase):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
-        return getUtility(IBuildSet).getBuildsForArchive(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             self, build_state, name, pocket, arch_tag)
 
     def getPublishedSources(self, name=None, version=None, status=None,

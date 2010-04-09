@@ -406,7 +406,7 @@
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret arm_builds_allowed
-                            external_dependencies private 
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -493,13 +493,13 @@
         class="canonical.launchpad.database.Build">
         <require
             permission="launchpad.View"
-            interface="lp.soyuz.interfaces.build.IBuildView"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildView"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.soyuz.interfaces.build.IBuildEdit"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildEdit"/>
         <require
             permission="launchpad.Admin"
-            interface="lp.soyuz.interfaces.build.IBuildAdmin"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
 
         <!-- XXX cprov 2005-10-27
 
@@ -507,11 +507,12 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="buildlog datebuilt buildduration builder                                                                                                                 buildstate dependencies upload_log"/>
+            set_attributes="buildlog datebuilt buildduration builder
+                            buildstate dependencies upload_log"/>
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
 
@@ -519,9 +520,9 @@
 
     <securedutility
         class="canonical.launchpad.database.BuildSet"
-        provides="lp.soyuz.interfaces.build.IBuildSet">
+        provides="lp.soyuz.interfaces.build.IBinaryPackageBuildSet">
         <allow
-            interface="lp.soyuz.interfaces.build.IBuildSet"/>
+            interface="lp.soyuz.interfaces.build.IBinaryPackageBuildSet"/>
     </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
@@ -848,7 +849,7 @@
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
     </class>
-    <!-- 
+    <!--
         The registration below is used to discover all build farm job classes
         that implement the `IBuildFarmJob` interface. Please see bug #503839
         for more detail.
