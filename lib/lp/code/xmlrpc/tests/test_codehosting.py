@@ -32,6 +32,7 @@ from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
+from lp.code.interfaces.branchjob import IBranchScanJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
@@ -762,6 +763,17 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertFaultEqual(
             faults.NoBranchWithID(unused_id),
             self.branchfs.branchChanged(unused_id, '', ''))
+
+    def test_branchChanged_creates_scan_job(self):
+        # XXX
+        if not isinstance(self.frontend, LaunchpadDatabaseFrontend):
+            return
+        branch = self.factory.makeAnyBranch()
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(jobs))
+        self.branchfs.branchChanged(branch.id, '', 'rev1')
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(1, len(jobs))
 
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""

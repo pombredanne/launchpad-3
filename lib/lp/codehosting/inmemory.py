@@ -9,10 +9,13 @@ __all__ = [
     'XMLRPCWrapper',
     ]
 
+import datetime
 import operator
 from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
+
+import pytz
 
 from zope.component import adapter, getSiteManager
 from zope.interface import implementer
@@ -616,6 +619,25 @@ class FakeBranchFilesystem:
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
+
+    def branchChanged(self, branch_id, stacked_on_location, last_revision_id):
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            # We could log or something if the branch is not found here, but
+            # we just wait until the scanner fails and sets up an appropriate
+            # message.
+            stacked_on_branch = self._branch_set._find(
+                unique_name=stacked_on_location.strip('/'))
+        branch = self._branch_set._find(id=branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        branch.stacked_on = stacked_on_branch
+        branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+        if branch.last_mirrored_id != last_revision_id:
+            branch.last_mirrored_id = last_revision_id
+            #getUtility(IBranchScanJobSource).create(branch)
+        return True
 
     def _canRead(self, person_id, branch):
         """Can the person 'person_id' see 'branch'?"""
