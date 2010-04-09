@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Translation file from automtic builds auto approver tests."""
+"""Tests for the `TranslationBuildApprover`."""
 
 __metaclass__ = type
 
@@ -21,30 +21,17 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        # We will always need the import queue and an importer.
         super(TestTranslationBuildApprover, self).setUp()
         self.queue = getUtility(ITranslationImportQueue)
-        self.importer_person = self.factory.makePerson()
+        self.uploader = self.factory.makePerson()
 
     def _makeApprovedEntries(self, series, approver, filenames):
         """Create a list of queue entries and approve them."""
         return [
             approver.approve(self.queue.addOrUpdateEntry(
-                path, "#Dummy content.", False, self.importer_person,
+                path, "#Dummy content.", False, self.uploader,
                 productseries=series))
             for path in filenames]
-
-    def _assertStatus(self, entries, statuslist):
-        """Compare a list of statuses to entries' statuses."""
-        for index, entry in enumerate(entries):
-            if index >= len(statuslist):
-                # Repeat the last value
-                status = statuslist[-1]
-            else:
-                status = statuslist[index]
-            self.assertEqual(
-                status, entry.status,
-                "Entry %s was not '%s'." % (entry.path, status.title))
 
     def test_approve_all_new(self):
         # The happy approval case, all new templates.
@@ -57,10 +44,12 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
-        self.assertEqual('domain1', entries[0].potemplate.name)
-        self.assertEqual('domain2', entries[1].potemplate.name)
-        self.assertEqual('domain3', entries[2].potemplate.name)
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED] * len(entries),
+            [entry.status for entry in entries])
+        self.assertEqual(
+            ['domain1', 'domain2', 'domain3'],
+            [entry.potemplate.name for entry in entries])
 
     def test_approve_only_pots(self):
         # Only template files will be approved.
@@ -72,7 +61,9 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.NEEDS_REVIEW])
+        self.assertEqual(
+            [RosettaImportStatus.NEEDS_REVIEW] * len(entries),
+            [entry.status for entry in entries])
 
     def test_approve_all_existing(self):
         # The happy approval case, all existing templates.
@@ -91,10 +82,12 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
-        self.assertEqual(domain1_pot, entries[0].potemplate)
-        self.assertEqual(domain2_pot, entries[1].potemplate)
-        self.assertEqual(domain3_pot, entries[2].potemplate)
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED] * len(entries),
+            [entry.status for entry in entries])
+        self.assertEqual(
+            [domain1_pot, domain2_pot, domain3_pot],
+            [entry.potemplate for entry in entries])
 
     def test_approve_some_existing(self):
         # The happy approval case, some existing templates.
@@ -112,7 +105,9 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED] * len(entries),
+            [entry.status for entry in entries])
         self.assertEqual(domain1_pot, entries[0].potemplate)
         self.assertEqual(domain2_pot, entries[1].potemplate)
         self.assertEqual('domain3', entries[2].potemplate.name)
@@ -128,7 +123,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
+        self.assertEqual(RosettaImportStatus.APPROVED, entries[0].status)
         self.assertEqual('fooproduct', entries[0].potemplate.name)
 
     def test_approve_generic_name_one_existing(self):
@@ -141,7 +136,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
+        self.assertEqual(RosettaImportStatus.APPROVED, entries[0].status)
         self.assertEqual(pot, entries[0].potemplate)
 
     def test_approve_generic_name_multiple_files(self):
@@ -154,9 +149,9 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(
-            entries,
-            [RosettaImportStatus.NEEDS_REVIEW, RosettaImportStatus.APPROVED])
+        self.assertEqual(
+            [RosettaImportStatus.NEEDS_REVIEW, RosettaImportStatus.APPROVED],
+            [entry.status for entry in entries])
         self.assertEqual('mydomain', entries[1].potemplate.name)
 
     def test_approve_generic_name_multiple_templates(self):
@@ -170,7 +165,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.NEEDS_REVIEW])
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entries[0].status)
 
     def test_approve_not_in_list(self):
         # A file that is not the list of filenames is not approved.
@@ -183,11 +178,12 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         entries = self._makeApprovedEntries(
             series, approver, filenames + ['po-domain3/domain3.pot'])
 
-        self._assertStatus(
-            entries, [
+        self.assertEqual([
                 RosettaImportStatus.APPROVED,
                 RosettaImportStatus.APPROVED,
-                RosettaImportStatus.NEEDS_REVIEW])
+                RosettaImportStatus.NEEDS_REVIEW
+                ],
+                [entry.status for entry in entries])
 
     def test_approve_by_path(self):
         # A file will be targeted to an existing template if the paths match.
@@ -203,9 +199,12 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
-        self.assertEqual(domain1_pot, entries[0].potemplate)
-        self.assertEqual(domain2_pot, entries[1].potemplate)
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED] * len(entries),
+            [entry.status for entry in entries])
+        self.assertEqual(
+            [domain1_pot, domain2_pot],
+            [entry.potemplate for entry in entries])
 
     def test_approve_path_updated(self):
         # The path of an existing template will be updated with the path
@@ -219,7 +218,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
-        self._assertStatus(entries, [RosettaImportStatus.APPROVED])
+        self.assertEqual(RosettaImportStatus.APPROVED, entries[0].status)
         self.assertEqual(filenames[0], domain1_pot.path)
 
 
