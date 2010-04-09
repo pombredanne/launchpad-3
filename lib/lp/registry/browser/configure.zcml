@@ -1664,6 +1664,13 @@
         facet="overview"
         permission="launchpad.Edit"/>
     <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+setbranch"
+        class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
+        template="../templates/productseries-setbranch.pt"
+        facet="overview"
+        permission="launchpad.Edit"/>
+    <browser:page
         name="+review"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesReviewView"
