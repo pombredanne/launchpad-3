@@ -60,31 +60,35 @@
   <div class="yui-g">
     <div class="portlet">
       <h2>Build records</h2>
-        <table class="code">
-          <tr>
-            <th>Status</th>
-            <th>Time</th>
-            <th>Distribution series</th>
-            <th>Archive</th>
-          </tr>
-          <tr tal:repeat="build view/builds">
-            <td>
-              <tal:status replace="build/@@+index/status" />
-            </td>
-            <td>
-              <tal:date replace="build/@@+index/date/fmt:displaydate" />
-              <tal:estimate condition="build/@@+index/estimate">
-              (estimated)
-              </tal:estimate>
-            </td>
-            <td>
-              <tal:distro
-              replace="structure build/distroseries/fmt:link:mainsite" />
-            </td>
-            <td>
-              <tal:archive replace="structure build/archive/fmt:link"/>
-            </td>
-          </tr>
+        <table class="listing narrow-listing" style='margin-bottom: 1em;'>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Time</th>
+              <th>Distribution series</th>
+              <th>Archive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="build view/builds">
+              <td>
+                <tal:status replace="build/@@+index/status" />
+              </td>
+              <td>
+                <tal:date replace="build/@@+index/date/fmt:displaydate" />
+                <tal:estimate condition="build/@@+index/estimate">
+                (estimated)
+                </tal:estimate>
+              </td>
+              <td>
+                <tal:distro
+                replace="structure build/distroseries/fmt:link:mainsite" />
+              </td>
+              <td>
+                <tal:archive replace="structure build/archive/fmt:link"/>
+              </td>
+            </tr>
+          </tbody>
         </table>
         <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
       </div>
