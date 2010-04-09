@@ -847,7 +847,8 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             [(db_branch.id, '', 'null:')], self._branch_changed_log)
 
     def test_branch_unlock_calls_branchChanged(self):
-        # Unlocking a branch requests a mirror.
+        # Unlocking a branch calls branchChanged on the branch filesystem
+        # endpoint.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
@@ -858,7 +859,8 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             [(db_branch.id, '', 'null:')], self._branch_changed_log)
 
     def test_branch_unlock_reports_stacked_on_url(self):
-        # XXX
+        # Unlocking a branch reports the stacked on URL to the branch
+        # filesystem endpoint.
         db_branch1 = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         db_branch2 = self.factory.makeAnyBranch(
@@ -874,7 +876,8 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             self._branch_changed_log)
 
     def test_branch_unlock_reports_last_revision(self):
-        # XXX
+        # Unlocking a branch reports the tip revision of the branch to the
+        # branch filesystem endpoint.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
@@ -886,19 +889,27 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             [(db_branch.id, '', revid)], self._branch_changed_log)
 
     def test_branch_unlock_relativizes_absolute_stacked_on_url(self):
-        # XXX
+        # When a branch that has been stacked on the absolute URL of another
+        # Launchpad branch is unlocked, the branch is mutated to be stacked on
+        # the path part of that URL, and this relative path is passed to
+        # branchChanged().
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
         del self._branch_changed_log[:]
         branch.lock_write()
         branch.get_config().set_user_option(
-            'stacked_on_location', 'http://bazaar.launchpad.dev/~user/foo')
+            'stacked_on_location',
+            'http://bazaar.launchpad.dev/~user/product/branch')
         branch.unlock()
-        self.assertEqual('/~user/foo', branch.get_stacked_on_url())
+        self.assertEqual('/~user/product/branch', branch.get_stacked_on_url())
+        self.assertEqual(
+            [(db_branch.id, '/~user/product/branch', 'null:')],
+            self._branch_changed_log)
 
     def test_branch_unlock_ignores_non_launchpad_stacked_url(self):
-        # XXX
+        # When a branch that has been stacked on the absolute URL of a branch
+        # that is not on Launchpad, it is passed unchanged to branchChanged().
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
@@ -909,11 +920,13 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             'stacked_on_location', stacked_on_url)
         branch.unlock()
         self.assertEqual(
-            [(db_branch.id, '', 'null:')], self._branch_changed_log)
+            [(db_branch.id, stacked_on_url, 'null:')], self._branch_changed_log)
         self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
 
     def test_branch_unlock_ignores_odd_scheme_stacked_url(self):
-        # XXX
+        # When a branch that has been stacked on the absolute URL of a branch
+        # on Launchpad with a scheme we don't understand, it is passed
+        # unchanged to branchChanged().
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
