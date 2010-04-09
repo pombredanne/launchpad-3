@@ -913,3 +913,13 @@ for Bug.subscribe.
     ** Affects: firefox
     ...
     http://bugs.launchpad.dev/bugs/...
+
+Notifications are not created if send_notifications is False.
+
+    >>> len(stub.test_emails)
+    1
+    >>> not_notified = bug_six.subscribe(
+    ...     keybuk, lifeless, send_notifications=False)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
