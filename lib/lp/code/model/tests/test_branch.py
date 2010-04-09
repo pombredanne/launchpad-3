@@ -65,7 +65,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     run_with_login, TestCase, TestCaseWithFactory, time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -470,8 +469,8 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertFalse(branch.upgrade_pending)
 
     def test_upgradePending_old_job_exists(self):
-        # If the branch had an upgrade pending, but then the job was completed,
-        # then upgrade_pending should return False.
+        # If the branch had an upgrade pending, but then the job was
+        # completed, then upgrade_pending should return False.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
         owner = removeSecurityProxy(branch).owner
@@ -867,7 +866,7 @@ class TestBranchDeletionConsequences(TestCase):
         """Deletion requirements for a branch with a bug are right."""
         bug = self.factory.makeBug()
         bug.linkBranch(self.branch, self.branch.owner)
-        self.assertEqual({bug.linked_branches[0]:
+        self.assertEqual({bug.default_bugtask:
             ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
@@ -1238,16 +1237,14 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
-        whiteboard = u"Some whiteboard"
         commit_message = u'Some commit message'
         proposal = self.source.addLandingTarget(
-            self.user, self.target, self.prerequisite, whiteboard,
+            self.user, self.target, self.prerequisite,
             commit_message=commit_message)
         self.assertEqual(proposal.registrant, self.user)
         self.assertEqual(proposal.source_branch, self.source)
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.prerequisite_branch, self.prerequisite)
-        self.assertEqual(proposal.whiteboard, whiteboard)
         self.assertEqual(proposal.commit_message, commit_message)
 
     def test__createMergeProposal_with_reviewers(self):
@@ -1735,6 +1732,7 @@ class TestBranchBugLinks(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.user = self.factory.makePerson()
+        login_person(self.user)
 
     def test_bug_link(self):
         # Branches can be linked to bugs through the Branch interface.
@@ -2016,6 +2014,8 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
         bmp1 = self.factory.makeBranchMergeProposal()
         bmp2 = self.factory.makeBranchMergeProposal(
             source_branch=bmp1.source_branch)
+        removeSecurityProxy(bmp1).target_branch.last_scanned_id = 'rev1'
+        removeSecurityProxy(bmp2).target_branch.last_scanned_id = 'rev2'
         jobs = bmp1.source_branch.scheduleDiffUpdates()
         self.assertEqual(2, len(jobs))
         bmps_to_update = set(
@@ -2026,14 +2026,21 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
         """Diffs for proposals in final states aren't updated."""
         source_branch = self.factory.makeBranch()
         for state in FINAL_STATES:
-            self.factory.makeBranchMergeProposal(
+            bmp = self.factory.makeBranchMergeProposal(
                 source_branch=source_branch, set_state=state)
+            removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
         # Creating a superseded proposal has the side effect of creating a
         # second proposal.  Delete the second proposal.
         for bmp in source_branch.landing_targets:
             if bmp.queue_status not in FINAL_STATES:
                 removeSecurityProxy(bmp).deleteProposal()
         jobs = source_branch.scheduleDiffUpdates()
+        self.assertEqual(0, len(jobs))
+
+    def test_scheduleDiffUpdates_ignores_unpushed_target(self):
+        """Diffs aren't updated if target has no revisions."""
+        bmp = self.factory.makeBranchMergeProposal()
+        jobs = bmp.source_branch.scheduleDiffUpdates()
         self.assertEqual(0, len(jobs))
 
 

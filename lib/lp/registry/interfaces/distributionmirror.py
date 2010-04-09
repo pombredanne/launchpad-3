@@ -6,18 +6,24 @@
 __metaclass__ = type
 
 __all__ = [
-'IDistributionMirror',
-'IMirrorDistroArchSeries',
-'IMirrorDistroSeriesSource',
-'IMirrorProbeRecord',
-'IDistributionMirrorSet',
-'IMirrorCDImageDistroSeries',
-'PROBE_INTERVAL',
-'UnableToFetchCDImageFileList',
-'MirrorContent',
-'MirrorFreshness',
-'MirrorSpeed',
-'MirrorStatus']
+    'CannotTransitionToCountryMirror',
+    'CountryMirrorAlreadySet',
+    'IDistributionMirror',
+    'IMirrorDistroArchSeries',
+    'IMirrorDistroSeriesSource',
+    'IMirrorProbeRecord',
+    'IDistributionMirrorSet',
+    'IMirrorCDImageDistroSeries',
+    'PROBE_INTERVAL',
+    'MirrorContent',
+    'MirrorFreshness',
+    'MirrorHasNoHTTPURL',
+    'MirrorNotOfficial',
+    'MirrorNotProbed',
+    'MirrorSpeed',
+    'MirrorStatus',
+    'UnableToFetchCDImageFileList',
+    ]
 
 from cgi import escape
 
@@ -28,8 +34,11 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported)
-from lazr.restful.fields import Reference
+    export_as_webservice_entry, export_read_operation,
+    export_write_operation, exported, mutator_for, operation_parameters,
+    webservice_error)
+from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -37,10 +46,48 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
+from lp.services.worlddata.interfaces.country import ICountry
 
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
+
+
+class CannotTransitionToCountryMirror(Exception):
+    """Root exception for transitions to country mirrors."""
+    webservice_error(400)
+
+
+class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
+    """Distribution mirror cannot be set as a country mirror.
+
+    Raised when a user tries to change set a distribution mirror as a country
+    mirror, however there is already one set for that country.
+    """
+
+
+class MirrorNotOfficial(CannotTransitionToCountryMirror):
+    """Distribution mirror is not permitted to become a country mirror.
+
+    Raised when a user tries to change set a distribution mirror as a country
+    mirror, however the mirror in question is not official.
+    """
+
+
+class MirrorHasNoHTTPURL(CannotTransitionToCountryMirror):
+    """Distribution mirror has no HTTP URL.
+
+    Raised when a user tries to make an official mirror a country mirror,
+    however the mirror has not HTTP URL set.
+    """
+
+
+class MirrorNotProbed(CannotTransitionToCountryMirror):
+    """Distribution mirror has not been probed.
+
+    Raised when a user tries to set an official mirror as a country mirror,
+    however the mirror has not been probed yet.
+    """
 
 
 class MirrorContent(DBEnumeratedType):
@@ -290,10 +337,6 @@ class IDistributionMirror(Interface):
         title=_('Owner'), readonly=False, vocabulary='ValidOwner',
         required=True, description=_(
             "The person who is set as the current administrator of this mirror.")))
-    reviewer = exported(PublicPersonChoice(
-        title=_('Reviewer'), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam', description=_(
-            "The person who last reviewed this mirror.")))
     distribution = exported(
         Reference(
             Interface,
@@ -331,9 +374,11 @@ class IDistributionMirror(Interface):
     speed = exported(Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary=MirrorSpeed))
-    country = Choice(
-        title=_('Location'), required=True, readonly=False,
-        vocabulary='CountryName')
+    country = exported(ReferenceChoice(
+        title=_('Location'), description=_(
+            "The country in which this mirror is based."),
+        required=True, readonly=False,
+        vocabulary='CountryName', schema=ICountry))
     content = exported(Choice(
         title=_('Content'), required=True, readonly=False,
         description=_(
@@ -341,9 +386,6 @@ class IDistributionMirror(Interface):
             'this distribution. Choose "Archive" if this is a '
             'mirror of packages for this distribution.'),
         vocabulary=MirrorContent))
-    official_candidate = exported(Bool(
-        title=_('Apply to be an official mirror of this distribution'),
-        required=False, readonly=False, default=True))
     status = exported(Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary=MirrorStatus,
@@ -364,14 +406,39 @@ class IDistributionMirror(Interface):
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True,
         description=_("The date on which this mirror was registered.")))
+    country_dns_mirror = exported(Bool(
+        title=_('Country DNS Mirror'),
+        description=_('Whether this is a country mirror in DNS.'),
+        required=False, readonly=True, default=False))
+
+    reviewer = exported(PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=True,
+        vocabulary='ValidPersonOrTeam', description=_(
+            "The person who last reviewed this mirror.")))
     date_reviewed = exported(Datetime(
         title=_('Date reviewed'), required=False, readonly=True,
         description=_(
-            "The date on which this mirror was last reviewed by a mirror admin.")))
+            "The date on which this mirror was last reviewed by a mirror "
+            "admin.")))
+
+    official_candidate = exported(Bool(
+        title=_('Apply to be an official mirror of this distribution'),
+        required=False, readonly=False, default=True))
     whiteboard = exported(Whiteboard(
         title=_('Whiteboard'), required=False, readonly=False,
         description=_("Notes on the current status of the mirror (only "
                       "visible to admins and the mirror's registrant).")))
+
+    @export_read_operation()
+    def canTransitionToCountryMirror():
+        """Verify if a mirror can be set as a country mirror or return
+        False."""
+
+    @mutator_for(country_dns_mirror)
+    @operation_parameters(country_dns_mirror=copy_field(country_dns_mirror))
+    @export_write_operation()
+    def transitionToCountryMirror(country_dns_mirror):
+       """Method run on changing country_dns_mirror."""
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -506,6 +573,7 @@ class IDistributionMirror(Interface):
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
+
 
 
 class UnableToFetchCDImageFileList(Exception):

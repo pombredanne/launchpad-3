@@ -4,14 +4,17 @@
 """queue tool base class tests."""
 
 __metaclass__ = type
+__all__ = [
+    'upload_bar_source',
+    ]
 
-__all__ = ['upload_bar_source']
 
+import hashlib
 import os
 import shutil
 import tempfile
+
 from unittest import TestCase, TestLoader
-from sha import sha
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -929,7 +932,7 @@ class TestQueueToolInJail(TestQueueBase):
 
     def _getsha1(self, filename):
         """Return a sha1 hex digest of a file"""
-        file_sha = sha()
+        file_sha = hashlib.sha1()
         opened_file = open(filename,"r")
         for chunk in filechunks(opened_file):
             file_sha.update(chunk)

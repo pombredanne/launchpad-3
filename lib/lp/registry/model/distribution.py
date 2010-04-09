@@ -5,15 +5,18 @@
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
-__all__ = ['Distribution', 'DistributionSet']
+__all__ = [
+    'Distribution',
+    'DistributionSet',
+    ]
 
-from zope.interface import alsoProvides, implements
-from zope.component import getUtility
 
 from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import Desc, In, Join, SQL
+from storm.locals import Desc, In, Int, Join, SQL
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import alsoProvides, implements
 
 from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
@@ -34,7 +37,7 @@ from lp.soyuz.model.binarypackagerelease import (
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, OfficialBugTagTargetMixin)
+    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.registry.model.distributionmirror import DistributionMirror
@@ -75,6 +78,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.soyuz.interfaces.build import IBuildSet
@@ -118,11 +122,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    OfficialBugTagTargetMixin, QuestionTargetMixin,
-                   StructuralSubscriptionTargetMixin, HasMilestonesMixin):
+                   StructuralSubscriptionTargetMixin, HasMilestonesMixin,
+                   HasBugHeatMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget)
+        IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -175,7 +181,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
     active = True # Required by IPillar interface.
+    max_bug_heat = Int()
 
+    def __repr__(self):
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.displayname, self.name)
 
     def _init(self, *args, **kw):
         """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
@@ -392,6 +402,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
+    def getCountryMirror(self, country, mirror_type):
+        """See `IDistribution`."""
+        store = Store.of(self)
+        results = store.find(
+            DistributionMirror,
+            DistributionMirror.distribution == self,
+            DistributionMirror.country == country,
+            DistributionMirror.content == mirror_type,
+            DistributionMirror.country_dns_mirror == True)
+        return results.one()
+
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
                   ftp_base_url=None, rsync_base_url=None,
@@ -474,26 +495,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def __iter__(self):
         return iter(self.series)
-
-    @property
-    def bugCounter(self):
-        """See `IDistribution`."""
-        counts = []
-
-        severities = [BugTaskStatus.NEW,
-                      BugTaskStatus.CONFIRMED,
-                      BugTaskStatus.INVALID,
-                      BugTaskStatus.FIXRELEASED]
-
-        querystr = ("BugTask.distribution = %s AND "
-                 "BugTask.status = %s")
-
-        for severity in severities:
-            query = querystr % sqlvalues(self.id, severity.value)
-            count = BugTask.select(query).count()
-            counts.append(count)
-
-        return counts
 
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
@@ -940,7 +941,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
         cache.changelog = ' '.join(sorted(sprchangelog))
 
-    def searchSourcePackageCaches(self, text):
+    def searchSourcePackageCaches(
+        self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
@@ -961,25 +963,56 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 )
             ]
 
+        publishing_condition = ''
+        if publishing_distroseries is not None:
+            publishing_condition = """
+                AND EXISTS (
+                    SELECT 1
+                    FROM SourcePackageRelease spr
+                        JOIN SourcePackagePublishingHistory spph
+                            ON spph.sourcepackagerelease = spr.id
+                    WHERE spr.sourcepackagename = SourcePackageName.id
+                        AND spph.distroseries = %d
+                    )""" % (
+                publishing_distroseries.id)
+
+        packaging_query = """
+            SELECT 1
+            FROM Packaging
+            WHERE Packaging.sourcepackagename = SourcePackageName.id
+            """
+        has_packaging_condition = ''
+        if has_packaging is True:
+            has_packaging_condition = 'AND EXISTS (%s)' % packaging_query
+        elif has_packaging is False:
+            has_packaging_condition = 'AND NOT EXISTS (%s)' % packaging_query
+
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec,
-            """distribution = %s AND
-            archive IN %s AND
-            (fti @@ ftq(%s) OR
+        condition = """
+            DistributionSourcePackageCache.distribution = %s AND
+            DistributionSourcePackageCache.archive IN %s AND
+            (DistributionSourcePackageCache.fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
+            %s
+            %s
             """ % (quote(self), quote(self.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text), has_packaging_condition,
+                   publishing_condition)
+        dsp_caches_with_ranks = store.using(*origin).find(
+            find_spec, condition
             ).order_by('rank DESC')
 
         return dsp_caches_with_ranks
 
-    def searchSourcePackages(self, text):
+    def searchSourcePackages(
+        self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
 
-        dsp_caches_with_ranks = self.searchSourcePackageCaches(text)
+        dsp_caches_with_ranks = self.searchSourcePackageCaches(
+            text, has_packaging=has_packaging,
+            publishing_distroseries=publishing_distroseries)
 
         # Create a function that will decorate the resulting
         # DistributionSourcePackageCaches, converting
@@ -1369,7 +1402,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
                   RelatedProduct.official_malone IS TRUE) THEN
-                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch,
+            COUNT(DISTINCT CASE WHEN Bugtask.status in %(unresolved)s AND
+                  RelatedBugTask.bugwatch IS NULL AND
+                  RelatedProduct.official_malone IS FALSE AND
+                  Bug.latest_patch_uploaded IS NOT NULL
+                  THEN
+                  RelatedBugTask.bug END)
+                  AS bugs_with_upstream_patches
             FROM
                 SourcePackageName AS SPN
                 JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
@@ -1447,7 +1487,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # in a reasonable data structure.
         results = []
         for (spn_id, spn_name, open_bugs, bugs_triaged,
-             bugs_affecting_upstream, bugs_with_upstream_bugwatch) in counts:
+             bugs_affecting_upstream, bugs_with_upstream_bugwatch,
+             bugs_with_upstream_patches) in counts:
             sourcepackagename = SourcePackageName.get(spn_id)
             dsp = self.getSourcePackage(sourcepackagename)
             if spn_id in sources_to_products:
@@ -1457,7 +1498,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 product = None
             results.append(
                 (dsp, product, open_bugs, bugs_triaged,
-                 bugs_affecting_upstream, bugs_with_upstream_bugwatch))
+                 bugs_affecting_upstream, bugs_with_upstream_bugwatch,
+                 bugs_with_upstream_patches))
         return results
 
     def setBugSupervisor(self, bug_supervisor, user):

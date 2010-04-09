@@ -6,7 +6,7 @@ easier to use and to shorten some of our URLs. Currently, the objects that
 share their name namespace are Product, Project and Distribution.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IPillarNameSet, IProduct, IProject, IDistribution
+    ...     IPillarNameSet, IProduct, IProjectGroup, IDistribution
     ...     )
     >>> pillar_set = getUtility(IPillarNameSet)
 
@@ -28,7 +28,7 @@ share their name namespace are Product, Project and Distribution.
     True
     >>> pillar_set['apache'].name
     u'apache'
-    >>> IProject.providedBy(pillar_set['apache'])
+    >>> IProjectGroup.providedBy(pillar_set['apache'])
     True
 
     >>> 'fnord' in pillar_set
@@ -43,7 +43,7 @@ use the special getByName() method which returns active/inactive pillars..
 
     >>> 'gimp' in pillar_set
     True
-    >>> IProject.providedBy(pillar_set['gimp'])
+    >>> IProjectGroup.providedBy(pillar_set['gimp'])
     True
     >>> login('mark@example.com')
     >>> pillar_set['gimp'].active = False
@@ -53,7 +53,7 @@ use the special getByName() method which returns active/inactive pillars..
     Traceback (most recent call last):
     ...
     NotFoundError: 'gimp'
-    >>> IProject.providedBy(pillar_set.getByName('gimp'))
+    >>> IProjectGroup.providedBy(pillar_set.getByName('gimp'))
     True
 
 It also works if you use Unicode strings.
@@ -228,11 +228,11 @@ PillarName objects have a pillar attribute that returns the object referenced
 by that pillar name
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProjectSet)
+    ...     IDistributionSet, IProjectGroupSet)
     >>> from lp.registry.model.pillar import PillarName
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> gnome = getUtility(IProjectGroupSet).getByName('gnome')
     >>> ubuntu_pillarname = PillarName.selectOneBy(name='ubuntu')
     >>> ubuntu_pillarname.pillar == ubuntu
     True

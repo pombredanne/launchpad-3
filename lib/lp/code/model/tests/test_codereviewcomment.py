@@ -35,7 +35,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote)
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
-        self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual('Message subject', comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 
@@ -45,7 +44,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote)
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
-        self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual(
             'Re: [Merge] %s into %s' % (
                 self.bmp.source_branch.bzr_identity,
@@ -58,7 +56,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         reply = self.bmp.createComment(
             self.reviewer, 'Reply subject', 'Reply content',
             CodeReviewVote.ABSTAIN, 'My tag', comment)
-        self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual(comment.message.id, reply.message.parent.id)
         self.assertEqual(comment.message, reply.message.parent)
         self.assertEqual('Reply subject', reply.message.subject)

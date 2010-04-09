@@ -13,7 +13,8 @@ __all__ = [
     ]
 
 
-# Ensure correct plugins are loaded. Do not delete this line.
+# Ensure correct plugins are loaded. Do not delete this comment or the line
+# below this comment.
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
@@ -30,6 +31,7 @@ from bzrlib.repofmt.pack_repo import (
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -189,11 +191,7 @@ class RepositoryFormat(DBEnumeratedType):
         " and chk inventories\n",
         )
 
-    BZR_CHK_2A = DBItem(415,
-        "Bazaar repository format 2a (needs bzr 1.16 or later)\n",
-        "Development repository format - rich roots, group compression"
-        " and chk inventories\n",
-        )
+    BZR_CHK_2A = _format_enum(415, RepositoryFormat2a)
 
 
 class ControlFormat(DBEnumeratedType):

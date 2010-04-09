@@ -23,23 +23,22 @@ from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
+import transaction
 from twisted.internet import defer, reactor
 from twisted.protocols import amp
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+from lazr.delegates import delegates
 
 from canonical.config import config
-from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
-from lazr.delegates import delegates
-import transaction
-
-from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
-from lp.services.mail.sendmail import MailController
+from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
+from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
+from lp.services.mail.sendmail import MailController
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 
 
 class BaseRunnableJob:
@@ -54,6 +53,17 @@ class BaseRunnableJob:
     delegates(IJob, 'job')
 
     user_error_types = ()
+
+    # We redefine __eq__ and __ne__ here to prevent the security proxy
+    # from mucking up our comparisons in tests and elsewhere.
+
+    def __eq__(self, job):
+        return (
+            self.__class__ is removeSecurityProxy(job.__class__)
+            and self.job == job.job)
+
+    def __ne__(self, job):
+        return not (self == job)
 
     def getOopsRecipients(self):
         """Return a list of email-ids to notify about oopses."""
@@ -205,8 +215,11 @@ class JobRunner(BaseJobRunner):
         return cls(job_class.iterReady(), logger)
 
     @classmethod
-    def runFromSource(cls, job_source, logger):
-        """Run all ready jobs provided by the specified source."""
+    def runFromSource(cls, job_source, dbuser, logger):
+        """Run all ready jobs provided by the specified source.
+
+        The dbuser parameter is ignored.
+        """
         with removeSecurityProxy(job_source.contextManager()):
             logger.info("Running synchronously.")
             runner = cls.fromReady(job_source, logger)
@@ -242,19 +255,22 @@ class RunJobCommand(amp.Command):
 class JobRunnerProcess(child.AMPChild):
     """Base class for processes that run jobs."""
 
-    def __init__(self, job_source_name):
+    def __init__(self, job_source_name, dbuser):
         child.AMPChild.__init__(self)
         module, name = job_source_name.rsplit('.', 1)
         source_module = __import__(module, fromlist=[name])
         self.job_source = getattr(source_module, name)
         self.context_manager = self.job_source.contextManager()
+        # icky, but it's really a global value anyhow.
+        self.__class__.dbuser = dbuser
 
-    @staticmethod
-    def __enter__():
+    @classmethod
+    def __enter__(cls):
         def handler(signum, frame):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
+        initZopeless(dbuser=cls.dbuser)
 
     @staticmethod
     def __exit__(exc_type, exc_val, exc_tb):
@@ -286,7 +302,7 @@ class JobRunnerProcess(child.AMPChild):
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
-    def __init__(self, job_source, logger=None, error_utility=None):
+    def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PYTHONPATH': os.environ['PYTHONPATH'],
                'PATH': os.environ['PATH']}
         lp_config = os.environ.get('LPCONFIG')
@@ -299,8 +315,8 @@ class TwistedJobRunner(BaseJobRunner):
         import_name = '%s.%s' % (
             removeSecurityProxy(job_source).__module__, job_source.__name__)
         self.pool = pool.ProcessPool(
-            JobRunnerProcess, ampChildArgs=[import_name], starter=starter,
-            min=0, timeout_signal=SIGHUP)
+            JobRunnerProcess, ampChildArgs=[import_name, str(dbuser)],
+            starter=starter, min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
         """Run the job_class with the specified id in the process pool.
@@ -366,10 +382,13 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, logger, error_utility=None):
-        """Run all ready jobs provided by the specified source."""
+    def runFromSource(cls, job_source, dbuser, logger):
+        """Run all ready jobs provided by the specified source.
+
+        The dbuser parameter is not ignored.
+        """
         logger.info("Running through Twisted.")
-        runner = cls(job_source, logger, error_utility)
+        runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
         handler = getsignal(SIGCHLD)
         try:
@@ -382,14 +401,17 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self, runner_class=JobRunner):
-        dbuser = getattr(config, self.config_name).dbuser
-        super(JobCronScript, self).__init__(self.config_name, dbuser)
+    def __init__(self, runner_class=JobRunner, test_args=None):
+        self.dbuser = getattr(config, self.config_name).dbuser
+        super(JobCronScript, self).__init__(
+            self.config_name, self.dbuser, test_args)
         self.runner_class = runner_class
 
     def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
-        runner = self.runner_class.runFromSource(job_source, self.logger)
+        runner = self.runner_class.runFromSource(
+            job_source, self.dbuser, self.logger)
         self.logger.info(
             'Ran %d %s jobs.',
             len(runner.completed_jobs), self.source_interface.__name__)

@@ -1,6 +1,6 @@
 = Announcements =
 
-Any IProject, IProduct or IDistribution can make announcements. These are
+Any IProjectGroup, IProduct or IDistribution can make announcements. These are
 listed on the project home page (latest 5) and also in a batched listing of
 all announcements since the project was registered in LP.
 
@@ -14,10 +14,10 @@ after publishing, and they can be deleted, permanently.
     >>> NOW = datetime.utcnow().replace(tzinfo=pytz.utc)
     >>> FUTURE = NOW + timedelta(days=10)
     >>> from canonical.launchpad.interfaces import (
-    ...     IAnnouncementSet, IDistributionSet, IProductSet, IProjectSet)
+    ...     IAnnouncementSet, IDistributionSet, IProductSet, IProjectGroupSet)
     >>> announcements = getUtility(IAnnouncementSet)
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
-    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache = getUtility(IProjectGroupSet).getByName('apache')
     >>> tomcat = getUtility(IProductSet).getByName('tomcat')
     >>> derby = getUtility(IProductSet).getByName('derby')
     >>> mark = apache.owner
@@ -42,7 +42,7 @@ For the moment, this is only available to beta testers.
 
 To make an announcement, use the announce() method on the relevant project.
 
-This can be done on an IProject:
+This can be done on an IProjectGroup:
 
 In this first example, we will specify a date and time the announcement was
 published:

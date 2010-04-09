@@ -51,6 +51,7 @@ distributions are supported as the bug target.
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
+    >>> transaction.commit()
     >>> bug_watch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '3')
@@ -125,6 +126,7 @@ the script gets notified about it.
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '5')
     WARNING:...:Unknown debian package (#5 at http://...): no-such-package
+    (OOPS-...)
 
     >>> [added_task] = bug.bugtasks
     >>> added_task.distribution.name

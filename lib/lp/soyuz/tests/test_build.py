@@ -10,16 +10,18 @@ import unittest
 from storm.store import Store
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.soyuz.interfaces.build import IBuild, IBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.build import BuildStatus, IBuild, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -246,6 +248,47 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
         self.assertContentEqual(builds, i386_builds)
+
+
+class TestStoreBuildInfo(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestStoreBuildInfo, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        gedit_src_hist = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
+        self.build = gedit_src_hist.createMissingBuilds()[0]
+
+        self.builder = self.factory.makeBuilder()
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.build.buildqueue_record.builder = self.builder
+        self.build.buildqueue_record.setDateStarted(UTC_NOW)
+
+    def testDependencies(self):
+        """Verify that storeBuildInfo sets any dependencies."""
+        self.build.storeBuildInfo(None, {'dependencies': 'somepackage'})
+        self.assertIsNot(None, self.build.buildlog)
+        self.assertEqual(self.builder, self.build.builder)
+        self.assertEqual(u'somepackage', self.build.dependencies)
+        self.assertIsNot(None, self.build.datebuilt)
+        self.assertIsNot(None, self.build.buildduration)
+
+    def testWithoutDependencies(self):
+        """Verify that storeBuildInfo clears the build's dependencies."""
+        # Set something just to make sure that storeBuildInfo actually
+        # empties it.
+        self.build.dependencies = u'something'
+
+        self.build.storeBuildInfo(None, {})
+        self.assertIsNot(None, self.build.buildlog)
+        self.assertEqual(self.builder, self.build.builder)
+        self.assertIs(None, self.build.dependencies)
+        self.assertIsNot(None, self.build.datebuilt)
+        self.assertIsNot(None, self.build.buildduration)
 
 
 def test_suite():

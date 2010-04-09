@@ -8,7 +8,7 @@ uploaded into the system.
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
   >>> from lp.soyuz.model.publishing import (
-  ...     SecureSourcePackagePublishingHistory)
+  ...     SourcePackagePublishingHistory)
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -54,10 +54,11 @@ queue:
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
-  ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     '', '', '', '', dapper.main_archive, 'copyright ?!', '', '')
+  ...     SourcePackageUrgency.LOW, None, None, None, GPGKey.get(1),
+  ...     Section.get(1), '', '', '', '', dapper.main_archive,
+  ...     'copyright ?!', '', '')
 
-  >>> publishing_history = SecureSourcePackagePublishingHistory(
+  >>> publishing_history = SourcePackagePublishingHistory(
   ...     distroseries=dapper.id,
   ...     sourcepackagerelease=source_package_release.id,
   ...     component=source_package_release.component.id,
@@ -65,7 +66,6 @@ queue:
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False,
   ...     archive=dapper.main_archive)
 
   # Do the upload into the system.

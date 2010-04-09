@@ -32,8 +32,5 @@
     <li>
       <a tal:replace="structure context/menu:overview/queue/fmt:link" />
     </li>
-    <li>
-      <a tal:replace="structure context/menu:overview/packaging/fmt:icon-link" />
-    </li>
   </ul>
 </div>

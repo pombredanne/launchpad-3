@@ -14,8 +14,8 @@ __all__ = [
 
 
 import binascii
+import hashlib
 import random
-import sha
 
 from contrib.oauth import OAuthRequest
 
@@ -178,7 +178,7 @@ class SSHADigestEncryptor:
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()
-        v = binascii.b2a_base64(sha.new(plaintext + salt).digest() + salt)
+        v = binascii.b2a_base64(hashlib.sha1(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
@@ -191,7 +191,7 @@ class SSHADigestEncryptor:
             return False
         salt = ref[20:]
         v = binascii.b2a_base64(
-            sha.new(plaintext + salt).digest() + salt)[:-1]
+            hashlib.sha1(plaintext + salt).digest() + salt)[:-1]
         pw1 = (v or '').strip()
         pw2 = (encrypted or '').strip()
         return pw1 == pw2

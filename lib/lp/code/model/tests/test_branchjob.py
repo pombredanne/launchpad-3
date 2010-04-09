@@ -7,8 +7,8 @@ __metaclass__ = type
 
 import datetime
 import os
+import pytz
 import shutil
-from storm.locals import Store
 import tempfile
 from unittest import TestLoader
 
@@ -17,6 +17,7 @@ from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
+from bzrlib.transport import get_transport
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -40,8 +41,8 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
     IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
@@ -274,6 +275,29 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
 
+    def test_existing_bzr_backup(self):
+        # If the target branch already has a backup.bzr dir, the upgrade copy
+        # should remove it.
+        self.useBzrBranches()
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        # Add a fake backup.bzr dir
+        source_branch_transport = get_transport(db_branch.getPullURL())
+        source_branch_transport.mkdir('backup.bzr')
+        source_branch_transport.clone('.bzr').copy_tree_to_transport(
+            source_branch_transport.clone('backup.bzr'))
+
+        job = BranchUpgradeJob.create(db_branch)
+        job.run()
+
+        new_branch = Branch.open(tree.branch.base)
+        self.assertEqual(
+            new_branch.repository._format.get_format_string(),
+            'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
 
 class TestRevisionMailJob(TestCaseWithFactory):
     """Tests for BranchDiffJob."""
@@ -308,7 +332,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
             '%(url)s\n'
             '\nYou are subscribed to branch %(identity)s.\n'
             'To unsubscribe from this branch go to'
-            ' %(url)s/+edit-subscription.\n' % {
+            ' %(url)s/+edit-subscription\n' % {
                 'url': canonical_url(branch),
                 'identity': branch.bzr_identity
                 },
@@ -546,8 +570,27 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         wrong_target_proposal.source_branch.last_scanned_id = 'rev2a-id'
         job = RevisionsAddedJob.create(target_branch, 'rev2b-id', 'rev2b-id',
                                        '')
-        self.assertEqual([desired_proposal],
-                         list(job.findRelatedBMP(['rev2a-id'])))
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
+
+    def test_findRelatedBMP_one_per_source(self):
+        """findRelatedBMP only returns the most recent proposal for any
+        particular source branch.
+        """
+        self.useBzrBranches()
+        target_branch, tree = self.create_branch_and_tree('tree')
+        the_past = datetime.datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        old_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch, date_created=the_past,
+            set_state=BranchMergeProposalStatus.MERGED)
+        source_branch = old_proposal.source_branch
+        source_branch.last_scanned_id = 'rev2a-id'
+        desired_proposal = source_branch.addLandingTarget(
+            source_branch.owner, target_branch)
+        job = RevisionsAddedJob.create(
+            target_branch, 'rev2b-id', 'rev2b-id', '')
+        self.assertEqual(
+            [desired_proposal], job.findRelatedBMP(['rev2a-id']))
 
     def test_getAuthors(self):
         """Ensure getAuthors returns the authors for the revisions."""
@@ -854,7 +897,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestRosettaUploadJob, self).setUp()
         self.series = None
 
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
@@ -902,19 +945,18 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         seen_dirs = set()
         for file_pair in files:
             file_name = file_pair[0]
-            dname, fname = os.path.split(file_name)
-            if dname != '' and dname not in seen_dirs:
-                self.tree.bzrdir.root_transport.mkdir(dname)
-                self.tree.add(dname)
-                seen_dirs.add(dname)
             try:
                 file_content = file_pair[1]
                 if file_content is None:
                     raise IndexError # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
+            dname = os.path.dirname(file_name)
+            self.tree.bzrdir.root_transport.clone(dname).create_prefix()
             self.tree.bzrdir.root_transport.put_bytes(file_name, file_content)
-            self.tree.add(file_name)
+        if len(files) > 0:
+            self.tree.smart_add(
+                [self.tree.abspath(file_pair[0]) for file_pair in files])
         if commit_message is None:
             commit_message = self.factory.getUniqueString('commit')
         revision_id = self.tree.commit(commit_message)
@@ -1015,6 +1057,20 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # configured for template import.
         entries = self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, 'empty.pot', '')
+        self.assertEqual(entries, [])
+
+    def test_upload_hidden_pot(self):
+        # A POT cannot be uploaded if its name starts with a dot.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES, '.hidden.pot')
+        self.assertEqual(entries, [])
+
+    def test_upload_pot_hidden_in_subdirectory(self):
+        # In fact, if any parent directory is hidden, the file will not be
+        # imported.
+        entries = self._runJobWithFile(
+            TranslationsBranchImportMode.IMPORT_TEMPLATES,
+            'bar/.hidden/bla/foo.pot')
         self.assertEqual(entries, [])
 
     def test_upload_pot_uploader(self):

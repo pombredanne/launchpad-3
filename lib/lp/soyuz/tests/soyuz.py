@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.ftests import import_public_test_keys, syncUpdate 
+from canonical.launchpad.ftests import import_public_test_keys, syncUpdate
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -25,8 +25,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory)
 
 
 class SoyuzTestHelper:
@@ -72,7 +72,7 @@ class SoyuzTestHelper:
 
     def createPublishingForDistroSeries(self, sourcepackagerelease,
                                         distroseries):
-        """Return a list of `SecureSourcePackagePublishingHistory`.
+        """Return a list of `SourcePackagePublishingHistory`.
 
         The publishing records are created according the given
         `SourcePackageRelease` and `DistroSeries` for all
@@ -80,7 +80,7 @@ class SoyuzTestHelper:
         """
         sample_pub = []
         for status, archive, pocket in self.sample_publishing_data:
-            pub = SecureSourcePackagePublishingHistory(
+            pub = SourcePackagePublishingHistory(
                 sourcepackagerelease=sourcepackagerelease,
                 distroseries=distroseries,
                 component=sourcepackagerelease.component,
@@ -96,7 +96,7 @@ class SoyuzTestHelper:
 
     def createPublishingForDistroArchSeries(self, binarypackagerelease,
                                             distroarchseries):
-        """Return a list of `SecureBinaryPackagePublishingHistory`.
+        """Return a list of `BinaryPackagePublishingHistory`.
 
         The publishing records are created according the given
         `BinaryPackageRelease` and `DistroArchSeries` for all
@@ -104,7 +104,7 @@ class SoyuzTestHelper:
         """
         sample_pub = []
         for status, archive, pocket in self.sample_publishing_data:
-            pub = SecureBinaryPackagePublishingHistory(
+            pub = BinaryPackagePublishingHistory(
                 binarypackagerelease=binarypackagerelease,
                 distroarchseries=distroarchseries,
                 component=binarypackagerelease.component,
@@ -121,11 +121,6 @@ class SoyuzTestHelper:
 
     def checkPubList(self, expected, given):
         """Check if the given publication list matches the expected one.
-
-        We have to check ID, because the lookup returns contents of
-        IBinaryPackagePublishingHistory, a postgres view of
-        SecureBinaryPackagePublishinghistory, where we created the records.
-        The list order is also important.
 
         Return True if the lists matches, otherwise False.
         """

@@ -67,7 +67,7 @@ class BMPMailer(BranchMailer):
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None, message_id=None,
-                 requested_reviews=None, comment=None, preview_diff=None,
+                 requested_reviews=None, preview_diff=None,
                  direct_email=False):
         BranchMailer.__init__(
             self, subject, template_name, recipients, from_address, delta,
@@ -76,7 +76,6 @@ class BMPMailer(BranchMailer):
         if requested_reviews is None:
             requested_reviews = []
         self.requested_reviews = requested_reviews
-        self.comment = comment
         self.preview_diff = preview_diff
         self.template_params = self._generateTemplateParams()
         self.direct_email = direct_email
@@ -106,7 +105,6 @@ class BMPMailer(BranchMailer):
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address, message_id=get_msgid(),
             requested_reviews=merge_proposal.votes,
-            comment=merge_proposal.root_comment,
             preview_diff=merge_proposal.preview_diff)
 
     @classmethod
@@ -131,7 +129,7 @@ class BMPMailer(BranchMailer):
         if delta is None:
             return None
         return cls(
-            '%(proposal_title)s updated',
+            '%(proposal_title)s',
             'branch-merge-proposal-updated.txt', recipients,
             merge_proposal, from_address, delta, get_msgid())
 
@@ -140,17 +138,11 @@ class BMPMailer(BranchMailer):
         """Return a mailer for a request to review a BranchMergeProposal."""
         from_address = cls._format_user_address(from_user)
         recipients = {reason.subscriber: reason}
-        comment = None
-        if (merge_proposal.root_comment is not None and
-            (merge_proposal.root_comment.message.owner ==
-             merge_proposal.registrant)):
-            comment = merge_proposal.root_comment
         return cls(
-            'Request to review proposed merge of %(source_branch)s into '
-            '%(target_branch)s', 'review-requested.txt', recipients,
+            '%(proposal_title)s',
+            'review-requested.txt', recipients,
             merge_proposal, from_address, message_id=get_msgid(),
-            comment=comment, preview_diff=merge_proposal.preview_diff,
-            direct_email=True)
+            preview_diff=merge_proposal.preview_diff, direct_email=True)
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
@@ -195,13 +187,14 @@ class BMPMailer(BranchMailer):
 
     def _generateTemplateParams(self):
         """For template params that don't change, calcualte just once."""
+        proposal = self.merge_proposal
         params = {
-            'proposal_registrant': self.merge_proposal.registrant.displayname,
-            'source_branch': self.merge_proposal.source_branch.bzr_identity,
-            'target_branch': self.merge_proposal.target_branch.bzr_identity,
+            'proposal_registrant': proposal.registrant.displayname,
+            'source_branch': proposal.source_branch.bzr_identity,
+            'target_branch': proposal.target_branch.bzr_identity,
             'prerequisite': '',
-            'proposal_title': self.merge_proposal.title,
-            'proposal_url': canonical_url(self.merge_proposal),
+            'proposal_title': proposal.title,
+            'proposal_url': canonical_url(proposal),
             'edit_subscription': '',
             'comment': '',
             'gap': '',
@@ -210,8 +203,8 @@ class BMPMailer(BranchMailer):
             'diff_cutoff_warning': '',
             }
 
-        if self.merge_proposal.prerequisite_branch is not None:
-            prereq_url = self.merge_proposal.prerequisite_branch.bzr_identity
+        if proposal.prerequisite_branch is not None:
+            prereq_url = proposal.prerequisite_branch.bzr_identity
             params['prerequisite'] = ' with %s as a prerequisite' % prereq_url
 
         requested_reviews = []
@@ -228,8 +221,8 @@ class BMPMailer(BranchMailer):
             params['reviews'] = (''.join('    %s\n' % review
                                  for review in requested_reviews))
 
-        if self.comment is not None:
-            params['comment'] = (self.comment.message.text_contents)
+        if proposal.description is not None:
+            params['comment'] = (proposal.description)
             if len(requested_reviews) > 0:
                 params['gap'] = '\n\n'
 
@@ -237,8 +230,35 @@ class BMPMailer(BranchMailer):
             params['diff_cutoff_warning'] = (
                 "The attached diff has been truncated due to its size.")
 
+        params['reviews'] = self._getRequestedReviews()
         params['related_bugs'] = self._getRelatedBugs()
         return params
+
+    def _formatExtraInformation(self, heading, chunks):
+        """Consistently indent the chunks with the heading.
+
+        Used to provide consistent indentation for requested reviews and
+        related bugs.
+        """
+        if len(chunks) == 0:
+            return ''
+        else:
+            info = ''.join('  %s\n' % value for value in chunks)
+            return '%s\n%s' % (heading, info)
+
+    def _getRequestedReviews(self):
+        """Return a string describing the requested reviews, if any."""
+        requested_reviews = []
+        for review in self.requested_reviews:
+            reviewer = review.reviewer
+            if review.review_type is None:
+                requested_reviews.append(reviewer.unique_displayname)
+            else:
+                requested_reviews.append(
+                    "%s: %s" % (reviewer.unique_displayname,
+                                review.review_type))
+        return self._formatExtraInformation(
+            'Requested reviews:', requested_reviews)
 
     def _getRelatedBugs(self):
         """Return a string describing related bugs, if any.
@@ -247,12 +267,9 @@ class BMPMailer(BranchMailer):
         """
         bug_chunks = []
         for bug in self.merge_proposal.related_bugs:
-            bug_chunks.append('  #%d %s\n' % (bug.id, bug.title))
-            bug_chunks.append('  %s\n' % canonical_url(bug))
-        if len(bug_chunks) == 0:
-            return ''
-        else:
-            return 'Related bugs:\n' + ''.join(bug_chunks)
+            bug_chunks.append('#%d %s' % (bug.id, bug.title))
+            bug_chunks.append(canonical_url(bug))
+        return self._formatExtraInformation('Related bugs:', bug_chunks)
 
     def _getTemplateParams(self, email):
         """Return a dict of values to use in the body and subject."""

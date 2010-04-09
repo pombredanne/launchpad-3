@@ -122,7 +122,7 @@ class TestBranchPuller(PullerBranchTestCase):
         output, error = process.communicate()
         return process.returncode, output, error
 
-    def runPuller(self):
+    def runPuller(self, *args):
         """Run the puller script for the given branch type.
 
         :param branch_type: One of 'upload', 'mirror' or 'import'
@@ -132,7 +132,7 @@ class TestBranchPuller(PullerBranchTestCase):
             stdout and stderr respectively.
         """
         command = [
-            '%s/bin/py' % config.root, self._puller_script, '-q']
+            '%s/bin/py' % config.root, self._puller_script, '-q'] + list(args)
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
@@ -429,6 +429,23 @@ class TestBranchPuller(PullerBranchTestCase):
         # Run the puller on an empty pull queue.
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
+
+    def test_type_filtering(self):
+        # When run with --branch-type arguments, the puller only mirrors those
+        # branches of the specified types.
+        hosted_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        mirrored_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        mirrored_branch.requestMirror()
+        transaction.commit()
+        self.pushBranch(hosted_branch)
+        command, retcode, output, error = self.runPuller(
+            '--branch-type', 'HOSTED')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(hosted_branch)
+        self.assertIsNot(
+            None, mirrored_branch.next_mirror_time)
 
     def test_records_script_activity(self):
         # A record gets created in the ScriptActivity table.

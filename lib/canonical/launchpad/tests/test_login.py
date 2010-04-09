@@ -13,13 +13,11 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
-from lp.registry.interfaces.person import IPerson
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility)
-from canonical.launchpad.webapp.login import (
-    logInPrincipal, logInPrincipalAndMaybeCreatePerson, logoutPerson)
+from canonical.launchpad.webapp.login import logInPrincipal, logoutPerson
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -136,23 +134,6 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
             self.request)
         self.failUnless(ILaunchpadPrincipal.providedBy(principal))
         self.failUnless(principal.person is None)
-
-    def test_logInPrincipalAndMaybeCreatePerson(self):
-        # logInPrincipalAndMaybeCreatePerson() will log the given principal in
-        # and create a Person entry associated with it if one doesn't exist
-        # already.
-        logInPrincipalAndMaybeCreatePerson(
-            self.request, self.principal, 'foo@example.com')
-
-        # This is so that the authenticate() call below uses cookie auth.
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
-
-        principal = getUtility(IPlacelessAuthUtility).authenticate(
-            self.request)
-        self.failUnless(ILaunchpadPrincipal.providedBy(principal))
-        person = IPerson(principal.account)
-        self.failUnless(IPerson.providedBy(person))
 
 
 def test_suite():

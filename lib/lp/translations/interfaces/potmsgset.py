@@ -163,19 +163,25 @@ class IPOTMsgSet(Interface):
         """
 
     def getExternallyUsedTranslationMessages(language):
-        """Returns all externally used translations.
+        """Find externally used translations for the same message.
 
-        External are those on other templates for the same English message.
-        "Used" messages are either current or imported ones.
+        This is used to find suggestions for translating this
+        `POTMsgSet` that are actually used (i.e. current or imported) in
+        other templates.
+
+        The suggestions are read-only; they come from the slave store.
 
         :param language: language we want translations for.
         """
 
     def getExternallySuggestedTranslationMessages(language):
-        """Return all externally suggested translations.
+        """Find externally suggested translations for the same message.
 
-        External are those on other templates for the same English message.
-        "Suggested" messages are those which are neither current nor imported.
+        This is used to find suggestions for translating this
+        `POTMsgSet` that were entered in another context, but for the
+        same English text, and are not in actual use.
+
+        The suggestions are read-only; they come from the slave store.
 
         :param language: language we want translations for.
         """

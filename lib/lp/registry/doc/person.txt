@@ -988,13 +988,15 @@ the previous search will include myteam in the results.
 
 Searching for users with non-ASCII characters in their name works.
 
-    >>> print_people(personset.find(u'P\xf6ll\xe4'))
-    Matti Pöllä (mpo): [u'mpo@iki.fi']
+    >>> [found_person] = personset.find(u'P\xf6ll\xe4')
+    >>> found_person.displayname
+    u'Matti P\xf6ll\xe4'
 
     >>> bjorns_team = factory.makeTeam(salgado, name='bjorn-team',
     ...     displayname=u'Team Bj\xf6rn')
-    >>> print_people(personset.findTeam(u'Bj\xf6rn'))
-    Team Bj... (bjorn-team): []
+    >>> [found_person] = personset.find(u'Bj\xf6rn')
+    >>> found_person.displayname
+    u'Team Bj\xf6rn'
 
 You can get the top overall contributors, that is, the people with the
 most karma.
@@ -1113,14 +1115,14 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (IDistribution, IProject,
-    ...     IProduct)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistribution, IProjectGroup, IProduct)
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar
     ...     if IDistribution.providedBy(pillar):
     ...         pillar_type = 'distribution'
-    ...     elif IProject.providedBy(pillar):
+    ...     elif IProjectGroup.providedBy(pillar):
     ...         pillar_type = 'project group'
     ...     elif IProduct.providedBy(pillar):
     ...         pillar_type = 'project'
@@ -1417,14 +1419,14 @@ Now Celso is a bug contributor in Launchpad.
 
 Celso is a bug contributer in the context of the `firefox` product.
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
     >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
     True
 
 And also in the context of the `mozilla` project, by association.
 
     >>> cprov.isBugContributorInTarget(user=foobar,
-    ...     target=getUtility(IProjectSet).getByName('mozilla'))
+    ...     target=getUtility(IProjectGroupSet).getByName('mozilla'))
     True
 
 But not in other contexts.

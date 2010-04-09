@@ -103,25 +103,18 @@ the redirects.
     ...     'a', onclick="setBetaRedirect(false)"))
     Disable edge redirect.
 
-The disable-redirect link will not appear for locationless pages, such
-as the login page, or any other view that does not inherit from
-LaunchpadView and therefore does not provide isBetaUser().
-
-    >>> beta_browser.open('http://launchpad.dev/+login')
-    >>> print extract_text(find_tags_by_class(
-    ...     beta_browser.contents, 'sitemessage')[0])
-    This is a beta site.
-
-The disable-redirect link will not appear in the site_message when
-browsed by non-beta users.
+The disable-redirect link will also appear in the site_message when browsed by
+non-beta/anonymous users. This is to reduce the annoyance when users are
+logged into launchpad.net but haven't noticed yet that they need to log into
+edge as well (https://launchpad.net/bugs/160191).
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tags_by_class(
     ...     browser.contents, 'sitemessage')[0])
-    This is a beta site.
+    This is a beta site. Disable edge redirect.
 
-Similarly, once the redirection has been inhibited, the link changes to
-enable redirects..
+Once the redirection has been inhibited, the link changes to enable
+redirects.
 
     # Workaround bug in mechanize where you cannot use the Cookie
     # header with the CookieJar
@@ -143,7 +136,6 @@ enable redirects..
     >>> print extract_text(site_message.find(
     ...     'a', onclick="setBetaRedirect(true)"))
     Enable edge redirect.
-
 
     # Remove the specific site-message config data before continuing.
     >>> dummy = config.pop('edge_config_data')

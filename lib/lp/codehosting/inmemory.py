@@ -18,6 +18,7 @@ from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.model.branchnamespace import BranchNamespaceSet
 from lp.code.model.branchtarget import (
     PackageBranchTarget, ProductBranchTarget)
@@ -61,10 +62,20 @@ class FakeStore:
         expected_value = kwargs[attribute]
         branch = self._object_set.get(branch_id)
         if branch is None:
-            return None
+            return FakeResult(None)
         if expected_value is getattr(branch, attribute):
-            return branch
+            return FakeResult(branch)
         return None
+
+
+class FakeResult:
+    """As with FakeStore, just enough of a result to pass tests."""
+
+    def __init__(self, branch):
+        self._branch = branch
+
+    def one(self):
+        return self._branch
 
 
 class FakeDatabaseObject:
@@ -442,34 +453,20 @@ class FakeBranchPuller:
         self._branch_set = branch_set
         self._script_activity_set = script_activity_set
 
-    def _getBranchPullInfo(self, branch):
-        default_branch = ''
-        if branch.product is not None:
-            series = branch.product.development_focus
-            user_branch = series.branch
-            if (user_branch is not None
-                and not (
-                    user_branch.private
-                    and branch.branch_type == BranchType.MIRRORED)):
-                default_branch = '/' + user_branch.unique_name
-        return (
-            branch.id, branch.getPullURL(), branch.unique_name,
-            default_branch)
-
-    def getBranchPullQueue(self, branch_type):
-        queue = []
-        branch_type = BranchType.items[branch_type]
-        for branch in self._branch_set:
-            if (branch.branch_type == branch_type
-                and branch.next_mirror_time < UTC_NOW):
-                queue.append(self._getBranchPullInfo(branch))
-        return queue
-
-    def acquireBranchToPull(self):
+    def acquireBranchToPull(self, branch_type_names):
+        if not branch_type_names:
+            branch_type_names = 'HOSTED', 'MIRRORED', 'IMPORTED'
+        branch_types = []
+        for branch_type_name in branch_type_names:
+            try:
+                branch_types.append(BranchType.items[branch_type_name])
+            except KeyError:
+                raise UnknownBranchTypeError(
+                    'Unknown branch type: %r' % (branch_type_name,))
         branches = sorted(
             [branch for branch in self._branch_set
              if branch.next_mirror_time is not None
-             and branch.branch_type != BranchType.REMOTE],
+             and branch.branch_type in branch_types],
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]
@@ -555,7 +552,7 @@ class FakeBranchFilesystem:
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)
-        escaped_path = unescape(branch_path.strip('/')).encode('utf-8')
+        escaped_path = unescape(branch_path.strip('/'))
         try:
             namespace_path, branch_name = escaped_path.rsplit('/', 1)
         except ValueError:
@@ -565,7 +562,7 @@ class FakeBranchFilesystem:
         owner = self._person_set.getByName(data['person'])
         if owner is None:
             return faults.NotFound(
-                "User/team %r does not exist." % (data['person'],))
+                "User/team '%s' does not exist." % (data['person'],))
         registrant = self._person_set.get(requester_id)
         # The real code consults the branch creation policy of the product. We
         # don't need to do so here, since the tests above this layer never
@@ -583,7 +580,7 @@ class FakeBranchFilesystem:
             product = self._product_set.getByName(data['product'])
             if product is None:
                 return faults.NotFound(
-                    "Project %r does not exist." % (data['product'],))
+                    "Project '%s' does not exist." % (data['product'],))
         elif data['distribution'] is not None:
             distro = self._distribution_set.getByName(data['distribution'])
             if distro is None:
@@ -612,7 +609,10 @@ class FakeBranchFilesystem:
                 sourcepackage=sourcepackage, registrant=registrant,
                 branch_type=BranchType.HOSTED).id
         except LaunchpadValidationError, e:
-            return faults.PermissionDenied(str(e))
+            msg = e.args[0]
+            if isinstance(msg, unicode):
+                msg = msg.encode('utf-8')
+            return faults.PermissionDenied(msg)
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()

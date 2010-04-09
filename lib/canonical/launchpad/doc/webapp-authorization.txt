@@ -100,12 +100,12 @@ Distribution or DistributionSourcePackage).  If that is used, then the
 access level specified will be valid only for things in that scope.
 
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> login('foo.bar@canonical.com')
     >>> principal = getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
     ...     'foo.bar@canonical.com')
     >>> firefox = getUtility(IProductSet)['firefox']
-    >>> mozilla = getUtility(IProjectSet)['mozilla']
+    >>> mozilla = getUtility(IProjectGroupSet)['mozilla']
     >>> private_bug = getUtility(IBugSet).get(14)
     >>> logout()
     >>> principal.access_level = AccessLevel.WRITE_PRIVATE

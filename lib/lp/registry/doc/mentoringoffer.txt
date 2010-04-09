@@ -106,8 +106,8 @@ show up there.
 We also can get lists of offers of mentoring associated with groups of
 products (Project classes :-)). Tomcat is part of the Apache project, so:
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> projectset = getUtility(IProjectSet)
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> projectset = getUtility(IProjectGroupSet)
     >>> apache = projectset.getByName('apache')
     >>> for offer in apache.mentoring_offers:
     ...     print offer.target.title

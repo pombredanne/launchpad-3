@@ -19,8 +19,13 @@ def make_friendly_plural_forms(expression, pluralforms_count):
     # The max length of the examples list per plural form.
     MAX_EXAMPLES = 6
 
-    for number in range(1, 200):
-        form = expression(number)
+    for number in range(0, 200):
+        try:
+            form = expression(number)
+        except ZeroDivisionError:
+            raise BadPluralExpression(
+                "Zero division error in the plural form expression.")
+
         # Create empty list if this form doesn't have one yet
         forms.setdefault(form, [])
         # If all the plural forms for this language have examples (max. of 6
@@ -28,6 +33,11 @@ def make_friendly_plural_forms(expression, pluralforms_count):
         if len(forms[form]) == MAX_EXAMPLES:
             continue
         forms[form].append(number)
+
+    if pluralforms_count != len(forms):
+        raise BadPluralExpression(
+            "Number of recognized plural forms doesn't match the "
+            "expected number of them.")
 
     # Each dict has two keys, 'form' and 'examples', that address the form
     # number index and a list of its examples.
