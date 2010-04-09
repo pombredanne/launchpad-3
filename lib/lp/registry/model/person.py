@@ -2258,6 +2258,12 @@ class Person(
 
         return rset
 
+    def getRecipe(self, name):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        return Store.of(self).find(
+            SourcePackageRecipe, SourcePackageRecipe.owner == self,
+            SourcePackageRecipe.name == name).one()
+
     def isUploader(self, distribution):
         """See `IPerson`."""
         permissions = getUtility(IArchivePermissionSet).componentsForUploader(
@@ -2359,6 +2365,14 @@ class Person(
         """See `IPerson`."""
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
+
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == self)
 
 
 class PersonSet:

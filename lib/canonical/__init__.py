@@ -14,3 +14,8 @@ import warnings
 filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
 warnings.filterwarnings(
     'ignore', filter_pattern, category=DeprecationWarning)
+
+# XXX wgrant 2010-03-30 bug=551510:
+# Also filter apt_pkg warnings, since Lucid's python-apt has a new API.
+warnings.filterwarnings(
+    'ignore', '.*apt_pkg.*', category=DeprecationWarning)

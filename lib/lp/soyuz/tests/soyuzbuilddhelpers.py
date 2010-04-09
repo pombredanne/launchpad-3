@@ -7,11 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'MockBuilder',
-    'SaneBuildingSlave',
-    'SaneWaitingSlave',
-    'InsaneWaitingSlave',
-    'LostBuildingSlave',
-    'LostWaitingSlave',
     'LostBuildingBrokenSlave',
     'BrokenSlave',
     'OkSlave',
@@ -36,9 +31,12 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    current_build_behavior = BinaryPackageBuildBehavior(None)
+    def __init__(self, name, slave, behavior=None):
+        if behavior is None:
+            self.current_build_behavior = BinaryPackageBuildBehavior(None)
+        else:
+            self.current_build_behavior = behavior
 
-    def __init__(self, name, slave):
         self.slave = slave
         self.builderok = True
         self.manual = False
@@ -58,9 +56,11 @@ class MockBuilder:
         return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
 
     def cleanSlave(self):
+        print 'Cleaning slave'
         return self.slave.clean()
 
     def requestAbort(self):
+        print 'Aborting slave'
         return self.slave.abort()
 
     def resumeSlave(self, logger):
@@ -77,88 +77,6 @@ class MockBuilder:
 
     def updateStatus(self, logger=None):
         updateBuilderStatus(self, logger)
-
-
-class SaneBuildingSlave:
-    """A mock slave that is currently building build 8 and buildqueue 1."""
-
-    def status(self):
-        return ('BuilderStatus.BUILDING', '8-1', 'Doing something ...')
-
-    def clean(self):
-        print 'Rescuing SaneSlave'
-
-    def echo(self, *args):
-        return args
-
-    def info(self):
-        return ['1.0', 'i386', ['debian']]
-
-    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
-        return ('BuildStatus.Building', buildid)
-
-
-class SaneWaitingSlave:
-    """A mock slave that is currently waiting.
-
-    Uses build 8 and buildqueue 1.
-    """
-
-    def status(self):
-        return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
-
-    def clean(self):
-        print 'Rescuing SaneSlave'
-
-
-class InsaneWaitingSlave:
-    """A mock slave waiting with a bogus Build/BuildQueue relation."""
-
-    def status(self):
-        return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
-
-    def clean(self):
-        pass
-
-
-class LostBuildingSlave:
-    """A mock slave building bogus Build/BuildQueue IDs."""
-
-    def status(self):
-        return ('BuilderStatus.BUILDING', '1000-10000')
-
-    def abort(self):
-        pass
-
-
-class LostWaitingSlave:
-    """A mock slave waiting with bogus Build/BuildQueue IDs."""
-
-    def status(self):
-        return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
-
-    def clean(self):
-        pass
-
-
-class LostBuildingBrokenSlave:
-    """A mock slave building bogus Build/BuildQueue IDs that can't be aborted.
-
-    When 'aborted' it raises an xmlrpclib.Fault(8002, 'Could not abort')
-    """
-
-    def status(self):
-        return ('BuilderStatus.BUILDING', '1000-10000')
-
-    def abort(self):
-        raise xmlrpclib.Fault(8002, "Could not abort")
-
-
-class BrokenSlave:
-    """A mock slave that reports that it is broken."""
-
-    def status(self):
-        raise xmlrpclib.Fault(8001, "Broken slave")
 
 
 class OkSlave:
@@ -196,7 +114,13 @@ class OkSlave:
     def fetchlogtail(self, size):
         return 'BOGUS'
 
+    def echo(self, *args):
+        return args
+
     def clean(self):
+        pass
+
+    def abort(self):
         pass
 
     def info(self):
@@ -223,15 +147,47 @@ class OkSlave:
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
 
+    def __init__(self, build_id='1-1'):
+        super(BuildingSlave, self).__init__()
+        self.build_id = build_id
+
     def status(self):
         buildlog = xmlrpclib.Binary("This is a build log")
-        return ('BuilderStatus.BUILDING', '1-1', buildlog)
+        return ('BuilderStatus.BUILDING', self.build_id, buildlog)
 
     def getFile(self, sum):
         if sum == "buildlog":
             s = StringIO("This is a build log")
             s.headers = {'content-length':19}
             return s
+
+
+class WaitingSlave(OkSlave):
+    """A mock slave that looks like it's currently waiting."""
+
+    def __init__(self, state='BuildStatus.OK', dependencies=None,
+                 build_id='1-1'):
+        super(WaitingSlave, self).__init__()
+        self.state = state
+        self.dependencies = dependencies
+        self.build_id = build_id
+
+    def status(self):
+        return ('BuilderStatus.WAITING', self.state, self.build_id, {},
+                self.dependencies)
+
+    def getFile(self, sum):
+        if sum == "buildlog":
+            s = StringIO("This is a build log")
+            s.headers = {'content-length':19}
+            return s
+
+
+class AbortingSlave(OkSlave):
+    """A mock slave that looks like it's in the process of aborting."""
+
+    def status(self):
+        return ('BuilderStatus.ABORTING', '1-1')
 
 
 class AbortedSlave(OkSlave):
@@ -241,26 +197,21 @@ class AbortedSlave(OkSlave):
         return ('BuilderStatus.ABORTED', '1-1')
 
 
-class WaitingSlave(OkSlave):
-    """A mock slave that looks like it's currently waiting."""
+class LostBuildingBrokenSlave:
+    """A mock slave building bogus Build/BuildQueue IDs that can't be aborted.
 
-    def __init__(self, state, dependencies=None):
-        super(WaitingSlave, self).__init__()
-        self.state = state
-        self.dependencies = dependencies
+    When 'aborted' it raises an xmlrpclib.Fault(8002, 'Could not abort')
+    """
 
     def status(self):
-        return ('BuilderStatus.WAITING', self.state, '1-1', {},
-                self.dependencies )
+        return ('BuilderStatus.BUILDING', '1000-10000')
 
-    def getFile(self, sum):
-        if sum == "buildlog":
-            s = StringIO("This is a build log")
-            s.headers = {'content-length':19}
-            return s
+    def abort(self):
+        raise xmlrpclib.Fault(8002, "Could not abort")
 
-class AbortingSlave(OkSlave):
-    """A mock slave that looks like it's in the process of aborting."""
+
+class BrokenSlave:
+    """A mock slave that reports that it is broken."""
 
     def status(self):
-        return ('BuilderStatus.ABORTING', '1-1')
+        raise xmlrpclib.Fault(8001, "Broken slave")

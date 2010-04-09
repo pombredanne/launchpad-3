@@ -20,8 +20,8 @@ from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
-    SaneBuildingSlave,)
+from lp.soyuz.tests.soyuzbuilddhelpers import (
+    MockBuilder, OkSlave)
 from lp.soyuz.tests.test_binarypackagebuildbehavior import (
     BaseTestVerifySlaveBuildID)
 from lp.soyuz.tests.test_publishing import (
@@ -84,7 +84,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # VerifyBuildRequest won't raise any exceptions when called with a
         # valid builder set.
         job = self.makeJob()
-        builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
+        builder = MockBuilder("bob-de-bouwer", OkSlave())
         job.setBuilder(builder)
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
@@ -136,7 +136,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # dispatchBuildToSlave will fail when there is not chroot tarball
         # available for the distroseries to build for.
         job = self.makeJob()
-        builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
+        builder = MockBuilder("bob-de-bouwer", OkSlave())
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
         job.setBuilder(builder)

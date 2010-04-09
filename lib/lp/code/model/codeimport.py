@@ -225,6 +225,8 @@ class CodeImportSet:
                 review_status = CodeImportReviewStatus.REVIEWED
             else:
                 review_status = CodeImportReviewStatus.NEW
+        if not target.supports_code_imports:
+            raise AssertionError("%r doesn't support code imports" % target)
         # Create the branch for the CodeImport.
         namespace = target.getNamespace(registrant)
         import_branch = namespace.createBranch(

@@ -88,6 +88,9 @@ class IBranchTarget(IPrimaryContext):
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
+    supports_code_imports = Attribute(
+        "Does this target support code imports at all?")
+
     def areBranchesMergeable(other_target):
         """Are branches from other_target mergeable into this target."""
 
@@ -113,3 +116,18 @@ class IBranchTarget(IPrimaryContext):
 
     def getBugTask(bug):
         """Get the BugTask for a given bug related to the branch target."""
+
+    def newCodeImport(registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None):
+        """Create a new code import for this target.
+
+        :param registrant: the `IPerson` who should be recorded as creating
+            the import and will own the resulting branch.
+        :param branch_name: the name the resulting branch should have.
+        :param rcs_type: the type of the foreign VCS.
+        :param url: the url to import from if the import isn't CVS.
+        :param cvs_root: if the import is from CVS the CVSROOT to import from.
+        :param cvs_module: if the import is from CVS the module to import.
+        :returns: an `ICodeImport`.
+        :raises AssertionError: if supports_code_imports is False.
+        """

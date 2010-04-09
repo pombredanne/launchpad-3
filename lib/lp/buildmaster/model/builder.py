@@ -47,7 +47,6 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -58,7 +57,6 @@ from lp.services.job.interfaces.job import JobStatus
 # is moved.
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
@@ -325,6 +323,7 @@ class Builder(SQLBase):
         rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
+        """See `IBuilder`."""
         updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
@@ -439,12 +438,12 @@ class Builder(SQLBase):
 
         status = {'builder_status': status_sentence[0]}
 
-        # Extract detailed status, ID and log information if present.
+        # Extract detailed status and log information if present.
+        # Although build_id is also easily extractable here, there is no
+        # valid reason for anything to use it, so we exclude it.
         if status['builder_status'] == 'BuilderStatus.WAITING':
             status['build_status'] = status_sentence[1]
-            status['build_id'] = status_sentence[2]
         else:
-            status['build_id'] = status_sentence[1]
             if status['builder_status'] == 'BuilderStatus.BUILDING':
                 status['logtail'] = status_sentence[2]
 
@@ -664,12 +663,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+            active=True, virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=True)
+                       builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -728,19 +727,37 @@ class BuilderSet(object):
         """See IBuilderSet."""
         logger.debug("Slave Scan Process Initiated.")
 
-        buildMaster = BuilddMaster(logger, txn)
-
         logger.debug("Setting Builders.")
-        # Put every distroarchseries we can find into the build master.
-        for archseries in getUtility(IDistroArchSeriesSet):
-            buildMaster.addDistroArchSeries(archseries)
-            buildMaster.setupBuilders(archseries)
+        self.checkBuilders(logger, txn)
 
         logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
-        buildMaster.scanActiveBuilders()
-        return buildMaster
+        self.scanActiveBuilders(logger, txn)
+
+    def checkBuilders(self, logger, txn):
+        """See `IBuilderSet`."""
+        for builder in self:
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
+            if builder.builderok:
+                builder.updateStatus(logger)
+
+        txn.commit()
+
+    def scanActiveBuilders(self, logger, txn):
+        """See `IBuilderSet`."""
+
+        queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
+
+        logger.debug(
+            "scanActiveBuilders() found %d active build(s) to check"
+            % queueItems.count())
+
+        for job in queueItems:
+            job.builder.updateBuild(job)
+            txn.commit()
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
