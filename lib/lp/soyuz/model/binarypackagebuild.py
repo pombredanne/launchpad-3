@@ -4,7 +4,7 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Build', 'BuildSet']
+__all__ = ['BinaryPackageBuild', 'BinaryPackageBuildSet']
 
 import apt_pkg
 import datetime
@@ -50,7 +50,8 @@ from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
-    BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
+    BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
+    IBinaryPackageBuildSet)
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -62,8 +63,8 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class Build(BuildBase, SQLBase):
-    implements(IBuildBase, IBuild)
+class BinaryPackageBuild(BuildBase, SQLBase):
+    implements(IBuildBase, IBinaryPackageBuild)
     _table = 'Build'
     _defaultOrder = 'id'
 
@@ -694,10 +695,10 @@ class Build(BuildBase, SQLBase):
 
 
 class BuildSet:
-    implements(IBuildSet)
+    implements(IBinaryPackageBuildSet)
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
-        """See `IBuildSet`"""
+        """See `IBinaryPackageBuildSet`"""
         clauseTables = ['DistroArchSeries']
         query = ('Build.sourcepackagerelease = %s '
                  'AND Build.distroarchseries = DistroArchSeries.id '
@@ -705,25 +706,25 @@ class BuildSet:
                  % sqlvalues(sourcepackagereleaseID, archtag)
                  )
 
-        return Build.select(query, clauseTables=clauseTables)
+        return BinaryPackageBuild.select(query, clauseTables=clauseTables)
 
     def getByBuildID(self, id):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         try:
-            return Build.get(id)
+            return BinaryPackageBuild.get(id)
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
 
     def getPendingBuildsForArchSet(self, archseries):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         if not archseries:
             return None
 
         archseries_ids = [d.id for d in archseries]
 
-        return Build.select(
-            AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(Build.q.distroarchseriesID, archseries_ids))
+        return BinaryPackageBuild.select(
+            AND(BinaryPackageBuild.q.buildstate==BuildStatus.NEEDSBUILD,
+                IN(BinaryPackageBuild.q.distroarchseriesID, archseries_ids))
             )
 
     def handleOptionalParamsForBuildQueries(
@@ -775,7 +776,7 @@ class BuildSet:
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
                             arch_tag=None, user=None):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         queries = []
         clauseTables = []
 
@@ -801,12 +802,13 @@ class BuildSet:
 
         queries.append("builder=%s" % builder_id)
 
-        return Build.select(" AND ".join(queries), clauseTables=clauseTables,
-                            orderBy=["-Build.datebuilt", "id"])
+        return BinaryPackageBuild.select(
+            " AND ".join(queries), clauseTables=clauseTables,
+            orderBy=["-Build.datebuilt", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None, arch_tag=None):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         queries = []
         clauseTables = []
 
@@ -828,17 +830,18 @@ class BuildSet:
         clause = " AND ".join(queries)
 
         return self._decorate_with_prejoins(
-            Build.select(clause, clauseTables=clauseTables, orderBy=orderBy))
+            BinaryPackageBuild.select(
+                clause, clauseTables=clauseTables, orderBy=orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
             # XXX cprov 2006-09-08: returning and empty SelectResult to make
             # the callsites happy as bjorn suggested. However it would be
             # much clearer if we have something like SQLBase.empty() for this
-            return Build.select("2=1")
+            return BinaryPackageBuild.select("2=1")
 
         clauseTables = []
 
@@ -894,7 +897,7 @@ class BuildSet:
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
         return self._decorate_with_prejoins(
-            Build.select(' AND '.join(condition_clauses),
+            BinaryPackageBuild.select(' AND '.join(condition_clauses),
             clauseTables=clauseTables, orderBy=orderBy))
 
     def _decorate_with_prejoins(self, result_set):
@@ -906,12 +909,12 @@ class BuildSet:
         return decorated_results
 
     def retryDepWaiting(self, distroarchseries):
-        """See `IBuildSet`. """
+        """See `IBinaryPackageBuildSet`. """
         # XXX cprov 20071122: use the root logger once bug 164203 is fixed.
         logger = logging.getLogger('retry-depwait')
 
         # Get the MANUALDEPWAIT records for all archives.
-        candidates = Build.selectBy(
+        candidates = BinaryPackageBuild.selectBy(
             buildstate=BuildStatus.MANUALDEPWAIT,
             distroarchseries=distroarchseries)
 
@@ -937,7 +940,7 @@ class BuildSet:
 
     def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
                                         buildstate=None):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
@@ -951,12 +954,12 @@ class BuildSet:
         if buildstate is not None:
             query += "AND buildstate = %s" % sqlvalues(buildstate)
 
-        return Build.select(
+        return BinaryPackageBuild.select(
             query, orderBy=["-datecreated", "id"],
             clauseTables=["Archive"])
 
     def getStatusSummaryForBuilds(self, builds):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         # Create a small helper function to collect the builds for a given
         # list of build states:
         def collect_builds(*states):
@@ -1024,26 +1027,27 @@ class BuildSet:
         build_ids = [build.id for build in results]
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
-            Build,
+            BinaryPackageBuild,
             LeftJoin(
                 SourcePackageRelease,
-                SourcePackageRelease.id == Build.sourcepackagereleaseID),
+                (SourcePackageRelease.id ==
+                    BinaryPackageBuild.sourcepackagereleaseID)),
             LeftJoin(
                 SourcePackageName,
                 SourcePackageName.id
                     == SourcePackageRelease.sourcepackagenameID),
             LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == Build.buildlogID),
+                     LibraryFileAlias.id == BinaryPackageBuild.buildlogID),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
                 Builder,
-                Builder.id == Build.builderID),
+                Builder.id == BinaryPackageBuild.builderID),
             )
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
              LibraryFileContent, Builder),
-            In(Build.id, build_ids))
+            In(BinaryPackageBuild.id, build_ids))
 
         # Force query execution so that the ancillary data gets fetched
         # and added to StupidCache.
@@ -1053,36 +1057,38 @@ class BuildSet:
         return list(result_set)
 
     def getByQueueEntry(self, queue_entry):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
-            Build,
-            BuildPackageJob.build == Build.id,
+            BinaryPackageBuild,
+            BuildPackageJob.build == BinaryPackageBuild.id,
             BuildPackageJob.job == BuildQueue.jobID,
             BuildQueue.job == queue_entry.job)
 
         return result_set.one()
 
     def getQueueEntriesForBuildIDs(self, build_ids):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         origin = (
             BuildPackageJob,
             Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
-            Join(Build, BuildPackageJob.build == Build.id),
+            Join(
+                BinaryPackageBuild,
+                BuildPackageJob.build == BinaryPackageBuild.id),
             LeftJoin(
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
         result_set = store.using(*origin).find(
             (BuildQueue, Builder, BuildPackageJob),
-            In(Build.id, build_ids))
+            In(BinaryPackageBuild.id, build_ids))
 
         return result_set
 
     def calculateCandidates(self, archseries):
-        """See `IBuildSet`."""
+        """See `IBinaryPackageBuildSet`."""
         if not archseries:
             raise AssertionError("Given 'archseries' cannot be None/empty.")
 
