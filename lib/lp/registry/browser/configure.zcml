@@ -1569,6 +1569,13 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesPillarView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         facet="overview"

@@ -32,9 +32,10 @@ from operator import attrgetter
 from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
+from zope.component.globalregistry import provideAdapter
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import implements, Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -79,7 +80,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+    INavigationMenu, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
@@ -88,6 +89,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.browser.pillar import InvolvedMenu, PillarView
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 
@@ -165,6 +167,34 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
+
+
+class IProductSeriesInvolved(Interface):
+    """A marker interface for getting involved."""
+
+
+class ProductSeriesInvolvedMenu(InvolvedMenu):
+    """The get involved menu."""
+    usedfor = IProductSeriesInvolved
+    links = [
+        'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
+
+    def submit_code(self):
+        product = self.context.context.product
+        target = canonical_url(product, view_name='+addbranch')
+        enabled = product.official_codehosting
+        return Link(
+            target, 'Submit code', site='code', icon='code', enabled=enabled)
+
+
+class ProductSeriesPillarView(PillarView):
+    """A view to show the applications that the pillar uses."""
+    implements(IProductSeriesInvolved)
+
+
+provideAdapter(
+    ProductSeriesInvolvedMenu, [IProductSeriesInvolved], INavigationMenu,
+    name="overview")
 
 
 class ProductSeriesOverviewMenu(
@@ -489,7 +519,6 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
             # The distroseries and sourcepackagename are not already linked
             # to this series, or any other series.
             pass
-
 
     @action('Update', name='continue')
     def continue_action(self, action, data):
@@ -861,8 +890,8 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         # Extend the allowed schemes for the repository URL based on
         # rcs_type.
         extra_schemes = {
-            RevisionControlSystemsExtended.BZR_SVN:['svn'],
-            RevisionControlSystemsExtended.GIT:['git'],
+            RevisionControlSystemsExtended.BZR_SVN: ['svn'],
+            RevisionControlSystemsExtended.GIT: ['git'],
             }
         schemes.update(extra_schemes.get(rcs_type, []))
         return schemes
