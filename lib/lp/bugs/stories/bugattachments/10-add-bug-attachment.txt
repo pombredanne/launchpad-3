@@ -50,6 +50,8 @@ And that we stripped the leading and trailing whitespace correctly
 
   >>> '   Some information   ' in user_browser.contents
   False
+  >>> 'Some information' in user_browser.contents
+  True
 
 If no description is given it gets set to the attachment filename. It's
 also not necessary to enter a comment in order to add an attachment.
