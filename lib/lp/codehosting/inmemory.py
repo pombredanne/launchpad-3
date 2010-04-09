@@ -621,6 +621,9 @@ class FakeBranchFilesystem:
         self._branch_set.get(branch_id).requestMirror()
 
     def branchChanged(self, branch_id, stacked_on_location, last_revision_id):
+        branch = self._branch_set._find(id=branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
         if stacked_on_location == '':
             stacked_on_branch = None
         else:
@@ -629,9 +632,9 @@ class FakeBranchFilesystem:
             # message.
             stacked_on_branch = self._branch_set._find(
                 unique_name=stacked_on_location.strip('/'))
-        branch = self._branch_set._find(id=branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
+            if stacked_on_branch is None:
+                branch.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
         branch.stacked_on = stacked_on_branch
         branch.last_mirrored = datetime.datetime.now(pytz.UTC)
         if branch.last_mirrored_id != last_revision_id:
