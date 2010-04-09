@@ -581,7 +581,7 @@ class GitImportWorker(PullingImportWorker):
 
     def getExtraPullArgs(self):
         """See `PullingImportWorker.getExtraPullArgs`."""
-        return {'limit': config.codeimport.revisions_import_limit}
+        return {'limit': config.codeimport.git_revisions_import_limit}
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -668,7 +668,7 @@ class BzrSvnImportWorker(PullingImportWorker):
 
     def getExtraPullArgs(self):
         """See `PullingImportWorker.getExtraPullArgs`."""
-        return {'limit': config.codeimport.revisions_import_limit}
+        return {'limit': config.codeimport.svn_revisions_import_limit}
 
     @property
     def format_classes(self):

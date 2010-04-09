@@ -935,7 +935,10 @@ class PartialTest:
         self.makeForeignCommit(worker.source_details)
         self.assertTrue(self.foreign_commit_count > 1)
         self.pushConfig(
-            'codeimport', revisions_import_limit=self.foreign_commit_count-1)
+            'codeimport',
+            git_revisions_import_limit=self.foreign_commit_count-1,
+            svn_revisions_import_limit=self.foreign_commit_count-1,
+            )
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
         self.assertEqual(
