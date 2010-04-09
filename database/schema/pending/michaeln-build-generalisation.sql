@@ -27,7 +27,8 @@ CREATE TABLE BuildFarmJob (
     date_finished timestamp without time zone,
     builder integer CONSTRAINT buildfarmjob__builder__fk REFERENCES builder,
     status integer NOT NULL,
-    log integer CONSTRAINT buildfarmjob__log__fk REFERENCES libraryfilealias
+    log integer CONSTRAINT buildfarmjob__log__fk REFERENCES libraryfilealias,
+    job_type integer NOT NULL
 );
 CREATE INDEX buildfarmjob__date_created__idx ON buildfarmjob(date_created);
 CREATE INDEX buildfarmjob__date_started__idx ON buildfarmjob(date_started);
@@ -98,12 +99,13 @@ BEGIN
     LOOP
         INSERT INTO buildfarmjob(
             processor, virtualised, date_created, date_started,
-            date_finished, builder, status, log)
+            date_finished, builder, status, log, job_type)
         VALUES (
             build_info.processor, build_info.virtualised,
             build_info.date_created, build_info.date_started,
             build_info.date_finished, build_info.builder,
-            build_info.status, build_info.log);
+            build_info.status, build_info.log,
+            1); -- BuildFarmJobType.PackageBuild (should be renamed BinaryPackageBuild)
         -- Get the key of the BuildFarmJob row just inserted.
         SELECT currval('buildfarmjob_id_seq') INTO buildfarmjob_id;
         INSERT INTO packagebuild (
