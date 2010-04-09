@@ -9,7 +9,6 @@ __all__ = [
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
-    'product_series_to_target',
     ]
 
 from zope.component import getUtility
@@ -320,11 +319,6 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.product = self.product
         branch.distroseries = None
         branch.sourcepackagename = None
-
-
-def product_series_to_target(product_series):
-    """Adapt an `IProductSeries` and a ProductBranchTarget."""
-    return ProductBranchTarget(product_series.product)
 
 
 def get_canonical_url_data_for_target(branch_target):
