@@ -266,8 +266,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return faults.NoBranchWithID(branch_id)
         branch.stacked_on = stacked_on_branch
         branch.last_mirrored = datetime.datetime.now(pytz.UTC)
-        branch.mirror_failures = 0
-        if branch.last_mirrored_id == last_revision_id:
+        if branch.last_mirrored_id != last_revision_id:
             branch.last_mirrored_id = last_revision_id
             getUtility(IBranchScanJobSource).create(branch)
         return True

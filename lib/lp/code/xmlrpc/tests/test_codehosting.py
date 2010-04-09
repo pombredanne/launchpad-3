@@ -724,6 +724,45 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
+    def test_branchChanged_sets_last_revision_id(self):
+        # XXX
+        revid = self.factory.getUniqueString()
+        branch = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(branch.id, '', revid)
+        self.assertEqual(revid, branch.last_mirrored_id)
+
+    def test_branchChanged_sets_stacked_on(self):
+        # XXX
+        branch = self.factory.makeAnyBranch()
+        stacked_on = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(branch.id, stacked_on.unique_name, '')
+        self.assertEqual(stacked_on, branch.stacked_on)
+
+    def test_branchChanged_unsets_stacked_on(self):
+        # XXX
+        branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(branch).stacked_on = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(branch.id, '', '')
+        self.assertIs(None, branch.stacked_on)
+
+    def test_branchChanged_sets_last_mirrored(self):
+        # XXX
+        branch = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(branch.id, '', '')
+        self.assertIsNot(None, branch.last_mirrored)
+
+    def test_branchChanged_ignores_unknown_stacked_on(self):
+        # XXX
+        branch = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(branch.id, '~does/not/exist', '')
+        self.assertIs(None, branch.stacked_on)
+
+    def test_branchChanged_fault_on_unknown_id(self):
+        unused_id = -1
+        self.assertFaultEqual(
+            faults.NoBranchWithID(unused_id),
+            self.branchfs.branchChanged(unused_id, '', ''))
+
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
         fault = self.branchfs.translatePath(requester.id, path)
