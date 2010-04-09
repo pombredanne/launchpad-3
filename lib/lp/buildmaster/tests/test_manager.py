@@ -553,7 +553,7 @@ class TestBuilddManagerScan(TrialTestCase):
                '', '')),
              ('build',
               ('11-2',
-               'debian', '0feca720e2c29dafb2c900713ba560e03b758711',
+               'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
                {'alsa-utils_1.0.9a-4ubuntu1.dsc':
                 '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
                {'arch_indep': True,
