@@ -85,8 +85,8 @@ to configure each service.
     ...     print link.name
     configure_answers
     configure_bugtracker
-    link_branch
     configure_translations
+    set_branch
 
 Project are supported too, but they only display the applications used by
 their products.

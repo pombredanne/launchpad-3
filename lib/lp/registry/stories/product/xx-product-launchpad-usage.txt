@@ -48,7 +48,7 @@ doesn't use any bug tracker at all.
 We'll also set it as officially using codehosting.
 
     >>> registrant_browser.getLink('Configure project branch').click()
-    >>> registrant_browser.getControl(name='field.branch').value = (
+    >>> registrant_browser.getControl(name='field.branch_location').value = (
     ...     '~name12/firefox/main')
     >>> registrant_browser.getControl('Update').click()
 

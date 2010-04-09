@@ -25,6 +25,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
@@ -174,9 +175,9 @@ class ProductInvolvementView(PillarView):
             ]
         configuration_links = [
             overview_menu[name] for name in configuration_names]
-        link_branch = series_menu['link_branch']
-        link_branch.text = 'Configure project branch'
-        configuration_links.append(link_branch)
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure project branch'
+        configuration_links.append(set_branch)
         return sorted([
             link for link in configuration_links if link.enabled],
             key=attrgetter('sort_key'))
@@ -197,6 +198,6 @@ class ProductSeriesInvolvementView(PillarView):
     def configuration_links(self):
         """The enabled involvement links."""
         series_menu = MenuAPI(self.context).overview
-        link_branch = series_menu['link_branch']
-        link_branch.text = 'Configure series branch'
-        return [link_branch]
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure series branch'
+        return [set_branch]

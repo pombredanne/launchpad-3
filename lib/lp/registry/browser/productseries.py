@@ -176,6 +176,7 @@ class ProductSeriesOverviewMenu(
     links = [
         'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
         'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'set_branch',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -211,6 +212,21 @@ class ProductSeriesOverviewMenu(
             icon = 'edit'
             summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
+
+    @enabled_with_permission('launchpad.Edit')
+    def set_branch(self):
+        """Return a link to set the bazaar branch for this series."""
+        # Once +setbranch has been beta tested thoroughly, it should
+        # replace the +linkbranch page.
+        if self.context.branch is None:
+            text = 'Link to branch'
+            icon = 'add'
+            summary = 'Set the branch for this series'
+        else:
+            text = "Change branch"
+            icon = 'edit'
+            summary = 'Change the branch for this series'
+        return Link('+setbranch', text, summary, icon=icon)
 
     def branch_add(self):
         text = 'Register a branch'
@@ -735,7 +751,8 @@ class SetBranchForm(Interface):
         )
 
 
-class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
+class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
+                                 ProductSeriesView,
                                  BranchNameValidationMixin):
     """The view to set a branch for the ProductSeries."""
 
@@ -920,7 +937,6 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
-        self.next_url = canonical_url(self.context)
         branch_type = data.get('branch_type')
         if branch_type == LINK_LP_BZR:
             branch_location = data.get('branch_location')
@@ -1011,11 +1027,6 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
         except BranchExists, e:
             self._setBranchExists(e.existing_branch, 'branch_name')
         return branch
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
