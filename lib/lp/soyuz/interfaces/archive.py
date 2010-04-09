@@ -14,6 +14,7 @@ __all__ = [
     'ArchiveDisabled',
     'ArchiveNotPrivate',
     'ArchivePurpose',
+    'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
@@ -263,6 +264,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
+        )
+
+    status = Int(
+        title=_("Status of archive."), required=True, readonly=True,
         )
 
     sources_cached = Int(
@@ -526,6 +531,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return the corresponding `ILibraryFileAlias` is the file was found.
         """
 
+    def getBinaryPackageRelease(name, version, archtag):
+        """Find the specified `IBinaryPackageRelease` in the archive.
+
+        :param name: The `IBinaryPackageName` of the package.
+        :param version: The version of the package.
+        :param archtag: The architecture tag of the package's build. 'all'
+            will not work here -- 'i386' (the build DAS) must be used instead.
+
+        :return The binary package release with the given name and version,
+            or None if one does not exist or there is more than one.
+        """
+
     def getBinaryPackageReleaseByFileName(filename):
         """Return the corresponding `IBinaryPackageRelease` in this context.
 
@@ -762,6 +779,21 @@ class IArchivePublic(IHasOwner, IPrivacy):
             archive.
         """
 
+    def updatePackageDownloadCount(bpr, day, country, count):
+        """Update the daily download count for a given package.
+
+        :param bpr: The `IBinaryPackageRelease` to update the count for.
+        :param day: The date to update the count for.
+        :param country: The `ICountry` to update the count for.
+        :param count: The new download count.
+
+        If there's no matching `IBinaryPackageReleaseDownloadCount` entry,
+        we create one with the given count.  Otherwise we just increase the
+        count of the existing one by the given amount.
+        """
+
+    def getPackageDownloadTotal(bpr):
+        """Get the total download count for a given package."""
 
 
 class IArchiveView(IHasBuildRecords):
@@ -1011,6 +1043,9 @@ class IArchiveView(IHasBuildRecords):
         :param person: An `IPerson`
         :return: A list of `IArchivePermission` records.
         """
+
+    def getPackageDownloadCount(bpr, day, country):
+        """Get the `IBinaryPackageDownloadCount` with the given key."""
 
 
 class IArchiveAppend(Interface):
@@ -1492,6 +1527,30 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be user for publishing package with
         debug-symbols.
         """)
+
+
+class ArchiveStatus(DBEnumeratedType):
+    """The status of an archive, e.g. active, disabled. """
+
+    ACTIVE = DBItem(0, """
+        Active
+
+        This archive accepts uploads, copying and publishes packages.
+        """)
+
+    DELETING = DBItem(1, """
+        Deleting
+
+        This archive is in the process of being deleted.  This is a user-
+        requested and short-lived status.
+        """)
+
+    DELETED = DBItem(2, """
+        Deleted
+
+        This archive has been deleted and removed from disk.
+        """)
+
 
 
 default_name_by_purpose = {

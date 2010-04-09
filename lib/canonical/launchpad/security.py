@@ -69,6 +69,8 @@ from canonical.launchpad.interfaces.oauth import (
 from lp.soyuz.interfaces.packageset import IPackageset, IPackagesetSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount)
 from lp.soyuz.interfaces.build import IBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
@@ -2171,6 +2173,11 @@ class EditPublishing(AuthorizationBase):
 class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
     """Restrict viewing of binary publications."""
     usedfor = IBinaryPackagePublishingHistory
+
+
+class ViewBinaryPackageReleaseDownloadCount(ViewSourcePackagePublishingHistory):
+    """Restrict viewing of binary package download counts."""
+    usedfor = IBinaryPackageReleaseDownloadCount
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
