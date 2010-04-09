@@ -33,6 +33,37 @@ class TestIHasRecipes(TestCaseWithFactory):
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, base_branch.getRecipes().count())
 
+    def test_person_implements_hasrecipes(self):
+        # Person should implement IHasRecipes.
+        person = self.factory.makeBranch()
+        self.assertProvides(person, IHasRecipes)
+
+    def test_person_getRecipes(self):
+        # IPerson.getRecipes should provide all the SourcePackageRecipes
+        # owned by that person.
+        person = self.factory.makePerson()
+        recipe1 = self.factory.makeSourcePackageRecipe(owner=person)
+        recipe2 = self.factory.makeSourcePackageRecipe(owner=person)
+        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(2, person.getRecipes().count())
+
+    def test_product_implements_hasrecipes(self):
+        # Product should implement IHasRecipes.
+        product = self.factory.makeProduct()
+        self.assertProvides(product, IHasRecipes)
+
+    def test_product_getRecipes(self):
+        # IProduct.recipes should provide all the SourcePackageRecipes attached
+        # to that product's branches.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        recipe1 = self.factory.makeSourcePackageRecipe(
+            None, None, None, None, None, None, branch)
+        recipe2 = self.factory.makeSourcePackageRecipe(
+            None, None, None, None, None, None, branch)
+        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(2, product.getRecipes().count())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
