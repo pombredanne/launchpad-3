@@ -181,20 +181,16 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
 
     def submit_code(self):
         product = self.context.context.product
-        target = canonical_url(product, view_name='+addbranch')
+        target = canonical_url(
+            product, view_name='+addbranch', rootsite='code')
         enabled = product.official_codehosting
         return Link(
-            target, 'Submit code', site='code', icon='code', enabled=enabled)
+            target, 'Submit code', icon='code', enabled=enabled)
 
 
 class ProductSeriesPillarView(PillarView):
     """A view to show the applications that the pillar uses."""
     implements(IProductSeriesInvolved)
-
-
-provideAdapter(
-    ProductSeriesInvolvedMenu, [IProductSeriesInvolved], INavigationMenu,
-    name="overview")
 
 
 class ProductSeriesOverviewMenu(

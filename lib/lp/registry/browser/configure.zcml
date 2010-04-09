@@ -483,6 +483,12 @@
         for="lp.registry.interfaces.pillar.IPillarNameSet"
         path_expression="string:pillars"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        for="lp.registry.browser.pillar.IInvolved"
+        factory="lp.registry.browser.pillar.InvolvedMenu"
+        name="overview"
+        permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.pillar.IPillar"
         name="+listing-simple"
@@ -1558,6 +1564,12 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         path_expression="name"
         attribute_to_parent="product"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        for="lp.registry.browser.productseries.IProductSeriesInvolved"
+        factory="lp.registry.browser.productseries.ProductSeriesInvolvedMenu"
+        name="overview"
+        permission="zope.Public"/>
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+index"/>

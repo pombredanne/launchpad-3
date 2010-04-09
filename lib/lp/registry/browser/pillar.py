@@ -18,7 +18,8 @@ from zope.interface import implements, Interface
 
 from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import Link, NavigationMenu
-from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
+from canonical.launchpad.webapp.publisher import (
+    canonical_url, LaunchpadView, nearest)
 from canonical.launchpad.webapp.tales import MenuAPI
 
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -128,7 +129,3 @@ class PillarView(LaunchpadView):
         return sorted([
             link for link in menuapi.navigation.values() if link.enabled],
             key=attrgetter('sort_key'))
-
-
-provideAdapter(
-    InvolvedMenu, [IInvolved], INavigationMenu, name="overview")

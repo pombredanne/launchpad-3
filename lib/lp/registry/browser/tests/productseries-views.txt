@@ -37,7 +37,7 @@ rendering links:
     >>> for link in sorted(
     ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
     ...     print link.url
-    http://bugs.launchpad.dev/app/+filebug
+    http://bugs.launchpad.dev/app/simple/+filebug
     http://translations.launchpad.dev/app/simple
     http://code.launchpad.dev/app/+addbranch
     http://blueprints.launchpad.dev/app/simple/+addspec
