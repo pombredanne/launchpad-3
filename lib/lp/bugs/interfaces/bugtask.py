@@ -461,7 +461,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Fix Committed or Fix Released."),
+                               "either Won't Fix, Invalid or Fix Released."),
                  readonly=True,
                  required=False))
     date_left_new = exported(

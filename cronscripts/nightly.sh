@@ -3,11 +3,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This script performs nightly chores. It should be run from 
+# This script performs nightly chores. It should be run from
 # cron as the launchpad user once a day. Typically the output
 # will be sent to an email address for inspection.
 
-# Note that http/ftp proxies are needed by the product 
+# Note that http/ftp proxies are needed by the product
 # release finder
 
 # Only run this script on loganberry
@@ -42,41 +42,41 @@ fi
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo == Expiring memberships `date` ==
-python2.5 flag-expired-memberships.py -q
+python2.5 -S flag-expired-memberships.py -q
 
 echo == Allocating revision karma `date` ==
-python2.5 allocate-revision-karma.py -q
+python2.5 -S allocate-revision-karma.py -q
 
 echo == Recalculating karma `date` ==
-python2.5 foaf-update-karma-cache.py -q
+python2.5 -S foaf-update-karma-cache.py -q
 
 echo == Updating cached statistics `date` ==
-python2.5 update-stats.py -q
+python2.5 -S update-stats.py -q
 
 echo == Expiring questions `date` ==
-python2.5 expire-questions.py
+python2.5 -S expire-questions.py
 
 ### echo == Expiring bugs `date` ==
-### python2.5 expire-bugtasks.py
+### python2.5 -S expire-bugtasks.py
 
 # checkwatches.py is scheduled in the /code/pqm/launchpad_crontabs branch.
 ### echo == Updating bug watches `date` ==
-### python2.5 checkwatches.py
+### python2.5 -S checkwatches.py
 
 echo == Updating bugtask target name caches `date` ==
-python2.5 update-bugtask-targetnamecaches.py -q
+python2.5 -S update-bugtask-targetnamecaches.py -q
 
 echo == Updating personal standings `date` ==
-python2.5 update-standing.py -q
+python2.5 -S update-standing.py -q
 
 echo == Updating CVE database `date` ==
-python2.5 update-cve.py -q
+python2.5 -S update-cve.py -q
 
 echo == Updating package cache `date` ==
-python2.5 update-pkgcache.py -q
+python2.5 -S update-pkgcache.py -q
 
 echo == Product Release Finder `date` ==
-python2.5 product-release-finder.py -q
+python2.5 -S product-release-finder.py -q
 
 
 rm -f $LOCK

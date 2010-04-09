@@ -44,8 +44,8 @@ the watch.
     0
 
     >>> print err
-    INFO    creating lockfile
-    DEBUG   Using a global batch size of None
+    INFO    Creating lockfile: /var/lock/launchpad-checkwatches.lock
+    DEBUG   No global batch size specified.
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
@@ -274,7 +274,7 @@ requests are actually made.
     ...     updater.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
-    DEBUG Using a global batch size of None
+    DEBUG No global batch size specified.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
     ERROR Connection timed out when updating ... (OOPS-...)
 
@@ -337,9 +337,13 @@ since that's the error that was raised during the update.
 If a bug tracker doesn't have any watches to update, forceUpdateAll()
 will ignore it.
 
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('test@canonical.com')
     >>> empty_tracker = factory.makeBugTracker(
     ...     'http://example.com', BugTrackerType.ROUNDUP)
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> empty_tracker_name = empty_tracker.name
     >>> update_all(empty_tracker_name)
     INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
@@ -408,7 +412,8 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     ISupportsCommentImport, ISupportsCommentPushing,
     ...     ISupportsBackLinking)
-    >>> from lp.bugs.externalbugtracker.base import ExternalBugTracker
+    >>> from lp.bugs.externalbugtracker.base import (
+    ...     BATCH_SIZE_UNLIMITED, ExternalBugTracker)
 
     >>> nowish = datetime.now(utc)
     >>> class UselessExternalBugTracker(ExternalBugTracker):
@@ -416,6 +421,8 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...     implements(
     ...         ISupportsBackLinking, ISupportsCommentImport,
     ...         ISupportsCommentPushing)
+    ...
+    ...     batch_size = BATCH_SIZE_UNLIMITED
     ...
     ...     def initializeRemoteBugDB(self, bug_ids):
     ...         # This just exists to stop errors from being raised.

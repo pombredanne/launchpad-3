@@ -48,8 +48,7 @@ import rlcompleter
 from storm.locals import *
 from storm.expr import *
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
-        SLAVE_FLAVOR, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
 
 
 def switch_db_user(dbuser, commit_first=True):

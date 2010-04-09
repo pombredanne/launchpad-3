@@ -30,6 +30,7 @@ from lazr.restful.declarations import (
    export_read_operation, exported, operation_parameters,
    operation_returns_collection_of, operation_returns_entry,
    rename_parameters_as)
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -320,6 +321,14 @@ class IDistributionPublic(
         """Return the mirror with the given name for this distribution or None
         if it's not found.
         """
+
+    @operation_parameters(
+        country=copy_field(IDistributionMirror['country'], required=True),
+        mirror_type=copy_field(IDistributionMirror['content'], required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
+    def getCountryMirror(country, mirror_type):
+        """Return the country DNS mirror for a country and content type."""
 
     def newMirror(owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,

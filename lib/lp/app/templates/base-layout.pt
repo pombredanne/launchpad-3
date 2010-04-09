@@ -69,7 +69,7 @@
       ${view/macro:pagetype}
       ${view/context/fmt:public-private-css}
       yui-skin-sam">
-        <script type="text/javascript" tal:condition="is_edge">
+        <script type="text/javascript">
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-12833497-1']);
           _gaq.push(['_setDomainName', '.launchpad.net']);
