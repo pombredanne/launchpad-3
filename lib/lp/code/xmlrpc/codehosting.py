@@ -253,17 +253,17 @@ class BranchFileSystem(LaunchpadXMLRPCView):
     def branchChanged(self, branch_id, stacked_on_location, last_revision_id):
         """See `IBranchFileSystem`."""
         branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-        if stacked_on_location == '':
-            stacked_on_branch = None
-        else:
-            # We could log or something if the branch is not found here, but
-            # we just wait until the scanner fails and sets up an appropriate
-            # message.
-            stacked_on_branch = branch_set.getByUniqueName(
-                stacked_on_location.strip('/'))
         branch = branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            stacked_on_branch = branch_set.getByUniqueName(
+                stacked_on_location.strip('/'))
+            if stacked_on_branch is None:
+                branch.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
         branch.stacked_on = stacked_on_branch
         branch.last_mirrored = datetime.datetime.now(pytz.UTC)
         if branch.last_mirrored_id != last_revision_id:
