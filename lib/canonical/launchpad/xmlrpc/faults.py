@@ -15,7 +15,6 @@ __all__ = [
     'BranchNameInUse',
     'BranchUniqueNameConflict',
     'CannotHaveLinkedBranch',
-    'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
@@ -48,18 +47,7 @@ import xmlrpclib
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
-def check_fault(fault, *fault_classes):
-    """Check if 'fault's faultCode matches any of 'fault_classes'.
-
-    :param fault: An instance of `xmlrpclib.Fault`.
-    :param fault_classes: Any number of `LaunchpadFault` subclasses.
-    """
-    for cls in fault_classes:
-        if fault.faultCode == cls.error_code:
-            return True
-    return False
-
-
+# XXX: JonathanLange 2010-03-19: Move this to lp.services.
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.
 
