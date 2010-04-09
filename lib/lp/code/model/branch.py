@@ -178,10 +178,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             target = self.product
         return IBranchTarget(target)
 
-    @property
-    def is_personal_branch(self):
-        return self.product is None and self.distroseries is None
-
     def setTarget(self, user, project=None, source_package=None):
         """See `IBranch`."""
         if project is not None:

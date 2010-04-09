@@ -402,7 +402,6 @@
                     composePublicURL
                     whiteboard
                     target
-                    is_personal_branch
                     mirror_status_message
                     private
                     registrant

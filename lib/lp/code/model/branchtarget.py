@@ -95,6 +95,11 @@ class PackageBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -182,6 +187,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return False
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return False
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
@@ -255,6 +265,11 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_short_identites(self):
         """See `IBranchTarget`."""
         return True
 

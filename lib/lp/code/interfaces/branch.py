@@ -496,14 +496,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
                     "None if not a package branch."),
             schema=Interface, required=False, readonly=True))
 
-    is_personal_branch = exported(
-        Bool(
-            title=_("Personal Branch"), required=False,
-            readonly=True, default=False,
-            description=_(
-                "A branch is a personal branch if it is not associated "
-                "with a project nor a source package.")))
-
     code_reviewer = Attribute(
         "The reviewer if set, otherwise the owner of the branch.")
 
@@ -1337,7 +1329,7 @@ class BzrIdentityMixin:
     def branchIdentities(self):
         """See `IBranch`."""
         lp_prefix = config.codehosting.bzr_lp_prefix
-        if self.private or self.is_personal_branch:
+        if self.private or not self.target.supports_short_identites:
             # XXX: thumper 2010-04-08, bug 261609
             # We have to get around to fixing this
             identities = []

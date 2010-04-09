@@ -88,6 +88,9 @@ class IBranchTarget(IPrimaryContext):
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
+    supports_short_identites = Attribute(
+        "Does this target support shortened bazaar identities?")
+
     def areBranchesMergeable(other_target):
         """Are branches from other_target mergeable into this target."""
 
