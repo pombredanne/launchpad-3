@@ -757,14 +757,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # set to _something_.
         self.assertIsNot(None, branch.last_mirrored)
 
-    def test_branchChanged_ignores_unknown_stacked_on(self):
+    def test_branchChanged_records_bogus_stacked_on_url(self):
         # If a bogus location is passed in as the stacked_on parameter,
-        # mirror_status_message is set to indicated the problem and stacked_on
+        # mirror_status_message is set to indicate the problem and stacked_on
         # set to None.
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(branch.id, '~does/not/exist', '')
         self.assertIs(None, branch.stacked_on)
-        self.assertContains('~does/not/exist', branch.mirror_status_message)
+        self.assertTrue('~does/not/exist' in branch.mirror_status_message)
 
     def test_branchChanged_fault_on_unknown_id(self):
         # If the id passed in doesn't match an existing branch, the fault
