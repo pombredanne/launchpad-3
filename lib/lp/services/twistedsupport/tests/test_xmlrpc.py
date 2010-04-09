@@ -10,11 +10,11 @@ import unittest
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
-from canonical.launchpad.xmlrpc import faults
+from lp.services.xmlrpc import LaunchpadFault
 from lp.services.twistedsupport.xmlrpc import trap_fault
 
 
-class TestFaultOne(faults.LaunchpadFault):
+class TestFaultOne(LaunchpadFault):
     """An arbitrary subclass of `LaunchpadFault`.
 
     This class and `TestFaultTwo` are a pair of distinct `LaunchpadFault`
@@ -25,7 +25,7 @@ class TestFaultOne(faults.LaunchpadFault):
     msg_template = "Fault one."
 
 
-class TestFaultTwo(faults.LaunchpadFault):
+class TestFaultTwo(LaunchpadFault):
     """Another arbitrary subclass of `LaunchpadFault`.
 
     This class and `TestFaultOne` are a pair of distinct `LaunchpadFault`

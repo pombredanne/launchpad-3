@@ -41,30 +41,8 @@ __all__ = [
     ]
 
 
-import xmlrpclib
-
-
 from lp.registry.interfaces.projectgroup import IProjectGroup
-
-
-# XXX: JonathanLange 2010-03-19: Move this to lp.services.
-class LaunchpadFault(xmlrpclib.Fault):
-    """Base class for a Launchpad XMLRPC fault.
-
-    Subclasses should define a unique error_code and a msg_template,
-    which will be interpolated with the given keyword arguments.
-    """
-
-    error_code = None
-    msg_template = None
-
-    def __init__(self, **kw):
-        assert self.error_code is not None, (
-            "Subclasses must define error_code.")
-        assert self.msg_template is not None, (
-            "Subclasses must define msg_template.")
-        msg = self.msg_template % kw
-        xmlrpclib.Fault.__init__(self, self.error_code, msg)
+from lp.services.xmlrpc import LaunchpadFault
 
 
 class NoSuchProduct(LaunchpadFault):
