@@ -47,11 +47,11 @@ from zope.schema import (
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
+    REQUEST_USER, call_with, collection_default_content,
+    export_as_webservice_collection, export_as_webservice_entry,
+    export_destructor_operation, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    export_destructor_operation, exported, operation_parameters,
-    operation_returns_entry, REQUEST_USER)
+    exported, mutator_for, operation_parameters, operation_returns_entry)
 
 from canonical.config import config
 
@@ -70,6 +70,7 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
@@ -309,7 +310,8 @@ class IBranchNavigationMenu(Interface):
     """A marker interface to indicate the need to show the branch menu."""
 
 
-class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
+class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
+              IHasRecipes):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.
@@ -406,6 +408,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
+    @mutator_for(private)
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))

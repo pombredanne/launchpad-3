@@ -37,7 +37,7 @@ from lp.soyuz.model.binarypackagerelease import (
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, OfficialBugTagTargetMixin)
+    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
 from lp.registry.model.distributionmirror import DistributionMirror
@@ -78,6 +78,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
 from lp.soyuz.interfaces.build import IBuildSet
@@ -121,11 +122,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin, HasAliasMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    OfficialBugTagTargetMixin, QuestionTargetMixin,
-                   StructuralSubscriptionTargetMixin, HasMilestonesMixin):
+                   StructuralSubscriptionTargetMixin, HasMilestonesMixin,
+                   HasBugHeatMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IQuestionTarget)
+        IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -398,6 +401,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getMirrorByName(self, name):
         """See `IDistribution`."""
         return DistributionMirror.selectOneBy(distribution=self, name=name)
+
+    def getCountryMirror(self, country, mirror_type):
+        """See `IDistribution`."""
+        store = Store.of(self)
+        results = store.find(
+            DistributionMirror,
+            DistributionMirror.distribution == self,
+            DistributionMirror.country == country,
+            DistributionMirror.content == mirror_type,
+            DistributionMirror.country_dns_mirror == True)
+        return results.one()
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,

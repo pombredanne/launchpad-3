@@ -496,11 +496,12 @@
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
+                    getRecipes
                     "/>
     <require
         permission="launchpad.Edit"
-        attributes="destroySelf destroySelfBreakReferences setPrivate 
-		            setOwner setTarget requestUpgrade"
+        attributes="destroySelf destroySelfBreakReferences setPrivate
+                    setOwner setTarget requestUpgrade"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
@@ -1004,13 +1005,20 @@
   <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehavior"
            permission="zope.Public" />
 
+  <!-- SourcePackageRecipeData -->
+  <class
+     class="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData">
+    <allow
+    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"/>
+  </class>
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
-    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    <allow
+    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe"/>
+       set_attributes="builder_recipe build_daily"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">
