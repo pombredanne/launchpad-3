@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.scripts import db_options, logger_options, logger
 
 import replication.helpers
-from replication.helpers import AUTHDB_SET_ID, LPMAIN_SET_ID
+from replication.helpers import LPMAIN_SET_ID
 
 def main():
     parser = OptionParser(
@@ -209,7 +209,7 @@ def main():
         echo 'Subscribing new node to set %d.';
         subscribe set (
             id=%d, provider=@master_node, receiver=@new_node, forward=yes);
-        echo 'Waiting for subscribe to propagate.';
+        echo 'Waiting for subscribe to start processing.';
         sync (id = @master_node);
         wait for event (
             origin = @master_node, confirmed = ALL,
