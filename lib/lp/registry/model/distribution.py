@@ -357,7 +357,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @cachedproperty('_cached_series')
     def series(self):
         """See `IDistribution`."""
-        ret = DistroSeries.selectBy(distribution=self)
+        ret = Store.of(self).find(
+            DistroSeries,
+            distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
     @property
