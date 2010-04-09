@@ -190,7 +190,6 @@ class TestTranslationTemplatesBuildBehavior(
         slave_status = {
             'builder_status': builder.slave.status()[0],
             'build_status': builder.slave.status()[1],
-            'build_id': builder.slave.status()[2]
             }
         behavior.updateSlaveStatus(builder.slave.status(), slave_status)
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
@@ -288,7 +287,12 @@ class TestTTBuildBehaviorTranslationsQueue(
         builder.slave.getFile.result = open(self.dummy_tar)
         builder.slave._status['filemap'] = {
             'translation-templates.tar.gz': 'foo'}
-        slave_status = behavior.slaveStatus(builder.slave.status())
+        slave_status = {
+            'builder_status': builder.slave.status()[0],
+            'build_status': builder.slave.status()[1],
+            'build_id': builder.slave.status()[2]
+            }
+        behavior.updateSlaveStatus(builder.slave.status(), slave_status)
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
 
         entries = self.queue.getAllEntries(target=self.productseries)
