@@ -945,37 +945,37 @@ class TranslationImportQueue:
 
         return entry
 
-    def _getTranslationFileFromTar(self, tarinfo, path_filter):
-        """Check if the given file in the tarball is a translation file.
+    def _iterTarballFiles(self, tarball):
+        """Iterate through all non-emtpy files in the tarball."""
+        for tarinfo in tarball:
+            if tarinfo.isfile() and tarinfo.size > 0:
+                # Don't be tricked into reading directories, symlinks,
+                # or worst of all: devices.
+                yield tarinfo.name
 
-        :return: The path to the file or None if not a translation file.
-        """
-        if not tarinfo.isfile():
-            # Don't be tricked into reading directories, symlinks,
-            # or worst of all: devices.
-            return None
-
-        path = posixpath.normpath(tarinfo.name)
+    def _makePath(self, name, path_filter):
+        """Make the file path from the name stored in the tarball."""
+        path = posixpath.normpath(name)
         if path_filter:
             path = path_filter(path)
+        return path
+
+    def _isTranslationFile(self, path):
+        """Is this a translation file that should be uploaded?"""
         if path is None or path == '':
-            return None
+            return False
 
         translation_importer = getUtility(ITranslationImporter)
         if translation_importer.isHidden(path):
             # Dotfile.  Probably an editor backup or somesuch.
-            return None
+            return False
 
         base, ext = posixpath.splitext(path)
         if ext not in translation_importer.supported_file_extensions:
             # Doesn't look like a supported translation file type.
-            return None
+            return False
 
-        if tarinfo.size == 0:
-            # Skip empty files.
-            return None
-
-        return path
+        return True
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
@@ -993,10 +993,10 @@ class TranslationImportQueue:
 
         # Build a list of files to upload.
         upload_files = {}
-        for tarinfo in tarball:
-            path = self._getTranslationFileFromTar(tarinfo, filename_filter)
-            if path is not None:
-                upload_files[tarinfo.name] = path
+        for name in self._iterTarballFiles(tarball):
+            path = self._makePath(name, filename_filter)
+            if self._isTranslationFile(path):
+                upload_files[name] = path
         tarball.close()
 
         if approver_factory is None:
@@ -1013,8 +1013,6 @@ class TranslationImportQueue:
             if tarinfo.name not in upload_files:
                 continue
             file_content = tarball.extractfile(tarinfo).read()
-            # We already checked tarinfo.size, so this should not fail.
-            assert len(file_content) > 0
 
             path = upload_files[tarinfo.name]
             entry = approver.approve(self.addOrUpdateEntry(
