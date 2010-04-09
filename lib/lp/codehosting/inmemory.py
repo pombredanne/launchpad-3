@@ -639,7 +639,6 @@ class FakeBranchFilesystem:
         branch.last_mirrored = datetime.datetime.now(pytz.UTC)
         if branch.last_mirrored_id != last_revision_id:
             branch.last_mirrored_id = last_revision_id
-            #getUtility(IBranchScanJobSource).create(branch)
         return True
 
     def _canRead(self, person_id, branch):
