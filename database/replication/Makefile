@@ -44,13 +44,13 @@ _SLAVE_TABLESPACE=pg_default
 
 PGMASSACRE=../../utilities/pgmassacre.py
 
+CREATEDB_83=createdb --encoding=UTF8
+CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
+CREATEDB=${CREATEDB_83}
+
 # Turn off silencing for now so we details on staging deployments.
 #SHHH=../../utilities/shhh.py
 SHHH=
-
-AUTHDB_TABLES=\
-	account accountpassword authkoken emailaddress \
-	openidassociation openidauthorization openidnonce openidrpsummary
 
 default:
 	echo Usage: make [start|stop|restart]
@@ -76,7 +76,7 @@ devsetup:
 	
 	# Replicate it again, so we can test with multiple slaves.
 	-${PGMASSACRE} launchpad_dev_slave2
-	createdb --encoding=UTF8 launchpad_dev_slave2
+	${CREATEDB} launchpad_dev_slave2
 	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py start \
 		 node3_node 'dbname=launchpad_dev_slave2 user=slony'
 	LPCONFIG=${DEV_CONFIG} ./new-slave.py 3 launchpad_dev_slave2
@@ -96,23 +96,12 @@ stagingsetup:
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
 	    LAG="0 seconds"
 	# Create the DB with the desired default tablespace.
-	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
-	    lpmain_staging_new
-	# Restore the DB schema. We need to restore permissions, despite
+	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging_new
+	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
 	pg_restore --dbname=lpmain_staging_new \
 	    --no-owner --exit-on-error ${STAGING_DUMP}
-	psql -q -d lpmain_staging_new -f authdb_drop.sql
-	psql -q -d lpmain_staging_new -f authdb_create.sql \
-	    2>&1 | grep -v _sl || true
-	# Restore the authdb data.
-	for table in ${AUTHDB_TABLES}; do \
-	    pg_restore --dbname=lpmain_staging_new \
-		--no-acl --no-owner --disable-triggers --data-only \
-		--table=$$table ${STAGING_DUMP}; \
-	done
-	psql -q -d lpmain_staging_new -f authdb_sequences.sql
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -144,17 +133,9 @@ stagingswitch:
 	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
 
 dogfood:
-	createdb --encoding UTF8 ${DOGFOOD_DBNAME}
+	${CREATEDB} ${DOGFOOD_DBNAME}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
 	    --exit-on-error ${DOGFOOD_DUMP}
-	psql -q -d ${DOGFOOD_DBNAME} -f authdb_drop.sql
-	psql -q -d ${DOGFOOD_DBNAME} -f authdb_create.sql \
-	    2>&1 | grep -v _sl || true
-	for table in ${AUTHDB_TABLES}; do \
-	    pg_restore --dbname=${DOGFOOD_DBNAME} \
-		--no-acl --no-owner --disable-triggers --data-only \
-		--table=$$table ${DOGFOOD_DUMP}; \
-	done
 	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/fti.py -d ${DOGFOOD_DBNAME}
@@ -174,14 +155,15 @@ _prelim:
 _replicate:
 	@echo LPCONFIG currently ${LPCONFIG}
 	# Start the slon daemon for the master.
-	./slon_ctl.py start \
+	./slon_ctl.py --lag="0 seconds" start \
 		 node1_node "dbname=${_MASTER} user=slony"
 	# Initialize the cluster and create replication sets.
 	./initialize.py
 	# Create the soon-to-be-slave database, empty at this point.
-	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
+	${CREATEDB} --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
 	# Start the slon daemon for the slave
-	./slon_ctl.py start node2_node "dbname=${_SLAVE} user=slony"
+	./slon_ctl.py --lag="0 seconds" start \
+	    node2_node "dbname=${_SLAVE} user=slony"
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}"
 	# Upgrade all databases in the cluster and reset security.
@@ -192,10 +174,6 @@ _replicate:
 	@echo Running security.py `date`
 	./slon_ctl.py stop # security.py can deadlock with slony
 	${SHHH} ../schema/security.py --cluster -U slony
-	./slon_ctl.py --lag="0 seconds" start
-	# Migrate tables to the authdb replication set, creating the set
-	# and subscribing nodes to it as necessary.
-	./populate_auth_replication_set.py -U slony
 	# Restart slon daemons with default lag setting.
 	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start
