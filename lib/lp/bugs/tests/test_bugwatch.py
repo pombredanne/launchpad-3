@@ -23,6 +23,7 @@ from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
@@ -31,7 +32,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.registry.interfaces.person import IPersonSet
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, login_person
 
 
 class ExtractBugTrackerAndBugTestBase:
@@ -367,6 +368,42 @@ class TestBugWatch(TestCaseWithFactory):
             self.factory.makeBug(product=product, owner=product.owner))
         self.failUnlessEqual(
             [], list(removeSecurityProxy(watch).bugtasks_to_update))
+
+    def test_updateStatus_with_duplicate_bug(self):
+        # Calling BugWatch.updateStatus() will not update the status
+        # of a task that is part of a duplicate bug.
+        bug = self.factory.makeBug()
+        bug.markAsDuplicate(self.factory.makeBug())
+        login_person(bug.owner)
+        bug_task = bug.default_bugtask
+        bug_task.bugwatch = self.factory.makeBugWatch()
+        bug_task_initial_status = bug_task.status
+        self.failIfEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+        bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
+        self.failUnlessEqual(bug_task_initial_status, bug_task.status)
+        # Once the task is no longer linked to a duplicate bug, the
+        # status will get updated.
+        bug.markAsDuplicate(None)
+        bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
+        self.failUnlessEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+
+    def test_updateImportance_with_duplicate_bug(self):
+        # Calling BugWatch.updateImportance() will not update the
+        # importance of a task that is part of a duplicate bug.
+        bug = self.factory.makeBug()
+        bug.markAsDuplicate(self.factory.makeBug())
+        login_person(bug.owner)
+        bug_task = bug.default_bugtask
+        bug_task.bugwatch = self.factory.makeBugWatch()
+        bug_task_initial_importance = bug_task.importance
+        self.failIfEqual(BugTaskImportance.HIGH, bug_task.importance)
+        bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
+        self.failUnlessEqual(bug_task_initial_importance, bug_task.importance)
+        # Once the task is no longer linked to a duplicate bug, the
+        # importance will get updated.
+        bug.markAsDuplicate(None)
+        bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
+        self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
 
 
 class TestBugWatchSet(TestCaseWithFactory):

@@ -139,19 +139,12 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToImportance(
                 malone_importance,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
             if linked_bugtask.importance != old_bugtask.importance:
                 event = ObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['importance'],
@@ -166,12 +159,7 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
