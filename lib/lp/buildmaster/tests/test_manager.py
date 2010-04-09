@@ -31,7 +31,7 @@ from lp.buildmaster.manager import (
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
+from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
@@ -553,7 +553,7 @@ class TestBuilddManagerScan(TrialTestCase):
                '', '')),
              ('build',
               ('11-2',
-               'debian', '0feca720e2c29dafb2c900713ba560e03b758711',
+               'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
                {'alsa-utils_1.0.9a-4ubuntu1.dsc':
                 '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
                {'arch_indep': True,
@@ -671,7 +671,7 @@ class TestBuilddManagerScan(TrialTestCase):
         self.assertTrue(builder.builderok)
 
         job = getUtility(IBuildQueueSet).get(job.id)
-        self.assertBuildingJob(job, builder, logtail='Doing something ...')
+        self.assertBuildingJob(job, builder, logtail='This is a build log')
 
     def testScanUpdatesBuildingJobs(self):
         # The job assigned to a broken builder is rescued.
@@ -682,7 +682,7 @@ class TestBuilddManagerScan(TrialTestCase):
 
         login('foo.bar@canonical.com')
         builder.builderok = True
-        builder.setSlaveForTesting(SaneBuildingSlave())
+        builder.setSlaveForTesting(BuildingSlave(build_id='8-1'))
         transaction.commit()
         login(ANONYMOUS)
 

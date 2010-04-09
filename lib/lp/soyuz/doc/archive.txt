@@ -172,6 +172,28 @@ archives are published on disk.
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
 
+'status' tracks the status of an Archive.  Its current values are only
+ACTIVE and DELETING.  ACTIVE is the normal value; DELETING is set when
+the user has requested the PPA to be deleted.  The actual deletion is done
+some time later in a zopeless script.
+
+It is only editable by someone with launchpad.Edit permissions:
+
+    >>> print cprov_archive.status.name
+    ACTIVE
+
+    >>> from lp.soyuz.interfaces.archive import ArchiveStatus
+    >>> cprov_archive.status = ArchiveStatus.DELETING
+    >>> print cprov_archive.status.name
+    DELETING
+
+    >>> login(ANONYMOUS)
+    >>> cprov_archive.status = ArchiveStatus.ACTIVE
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+
 'name' is only editable by an LP administrator and only exposed via
 the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
 using default names.
@@ -1295,6 +1317,14 @@ This method is aware of the archive dependency tree. So, even when a
 package is not published on the context PPA but is available somewhere
 in the archive dependency domain it will be found.
 
+We also add another archive dependency here to exercise findDepCandidateByName
+a little more.
+
+    >>> joe = factory.makePerson(email='joe@example.com')
+    >>> second_ppa = factory.makeArchive(name="secondppa", owner=joe)
+    >>> second_archive_dep = cprov.archive.addArchiveDependency(
+    ...     second_ppa, release_pocket, main_component)
+
 'at' binary package is not present in Celso's PPA.
 
     >>> cprov_archive.getAllPublishedBinaries(name='at').count()
@@ -1317,6 +1347,9 @@ Then a lookup on Celso's PPA will find it.
     >>> primary_candidate == ppa_candidate
     True
 
+And clean-up after ourselves:
+
+    >>> ignore = cprov.archive.removeArchiveDependency(second_ppa)
 
 == Creating a package copy request from an IArchive ==
 
@@ -1325,7 +1358,7 @@ package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, name='my-copy-archive')
+    ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
     >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
@@ -1496,7 +1529,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    18
+    20
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1897,7 +1930,7 @@ given purpose:
     ...     ubuntu, purposes=ArchivePurpose.COPY)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
 
 The method `getArchivesForDistribution` can also be used with multiple
 purposes. First we'll check how many partner archives are in the DB:
@@ -1915,7 +1948,7 @@ archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
     >>> print_archive_names(copy_n_partner_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
     partner          ubuntu-team   False    True
 
 First we create four copy archives for ubuntu:
@@ -1947,7 +1980,7 @@ Now the `getArchivesForDistribution` finds the relevant COPY archives:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
     team-archive     t1            False    True
     ultimate-copy    copy-owner1   False    True
 
@@ -1998,7 +2031,7 @@ The owner of the archive will also see their private archive in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  True     True
+    my-copy-archive  me-copy       True     True
     ultimate-copy    copy-owner1   False    True
 
 An admin will see all the private and disabled archives in the results:
@@ -2009,7 +2042,7 @@ An admin will see all the private and disabled archives in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  True     True
+    my-copy-archive  me-copy       True     True
     team-archive     t1            True     True
     there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
@@ -2751,3 +2784,47 @@ already created accordingly.
 
     >>> ppa_with_key.signing_key == cprov.archive.signing_key
     True
+
+
+== Download counts ==
+
+Counts of downloads per binary package release, day and country are kept
+up to date by a log-processing script. Archives have a method to get the
+total number of downloads for a particular binary package release.
+
+    >>> login('mark@example.com')
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     architecturespecific=True)
+    >>> archive = binaries[0].archive
+    >>> binary0, binary1 = (b.binarypackagerelease for b in binaries)
+
+The new packages have no downloads yet.
+
+    >>> print archive.getPackageDownloadTotal(binary0)
+    0
+    >>> print archive.getPackageDownloadTotal(binary1)
+    0
+
+We will fake some package downloads.
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+    >>> uk = getUtility(ICountrySet)['GB']
+
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 21), None, 10)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 22), uk, 5)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 22), australia, 4)
+
+    >>> archive.updatePackageDownloadCount(
+    ...     binary1, date(2010, 2, 21), australia, 2)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary1, date(2010, 2, 21), uk, 1)
+
+    >>> print archive.getPackageDownloadTotal(binary0)
+    19
+    >>> print archive.getPackageDownloadTotal(binary1)
+    3

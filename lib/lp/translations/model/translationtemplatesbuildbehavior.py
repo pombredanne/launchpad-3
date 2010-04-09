@@ -71,7 +71,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
-        logger.info("Starting templates build.")
+        logger.info(
+            "Starting templates build %s for %s." % (
+            self.buildfarmjob.getName(),
+            self.buildfarmjob.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""
@@ -93,6 +96,12 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             queue.addOrUpdateEntriesFromTarball(
                 tarball, False, branch.owner, productseries=series)
 
+    def updateSlaveStatus(self, raw_slave_status, status):
+        """See `IBuildFarmJobBehavior`."""
+        if status['builder_status'] == 'BuilderStatus.WAITING':
+            if len(raw_slave_status) >= 4:
+                status['filemap'] = raw_slave_status[3]
+
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.
 
@@ -103,21 +112,22 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         retry it.
         """
         build_status = self.extractBuildStatus(slave_status)
-        build_id = slave_status['build_id']
         filemap = slave_status['filemap']
 
-        logger.debug("Templates generation job %s finished with status %s" % (
-            build_id, build_status))
+        logger.debug(
+            "Templates generation job %s for %s finished with status %s." % (
+            queue_item.specific_job.getName(),
+            queue_item.specific_job.branch.bzr_identity,
+            build_status))
 
         if build_status == 'OK':
-            logger.debug("Processing templates build %s" % build_id)
+            logger.debug("Processing successful templates build.")
             tarball = self._readTarball(queue_item, filemap, logger)
             if tarball is None:
-                logger.error("Successful build %s produced no tarball." % (
-                    build_id))
+                logger.error("Build produced no tarball.")
             else:
                 logger.debug("Uploading translation templates tarball.")
-                self._uploadTarball(tarball, logger)
+                self._uploadTarball(queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
         queue_item.builder.cleanSlave()

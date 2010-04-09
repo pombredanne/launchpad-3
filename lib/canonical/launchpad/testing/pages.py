@@ -41,7 +41,8 @@ from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
-from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing import (
+    ANONYMOUS, launchpadlib_for, login, login_person, logout)
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import NameAlreadyTaken
 
@@ -727,9 +728,6 @@ def setUpGlobs(test):
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', '')
-    test.globs['launchpad'] = Launchpad.login(
-        'launchpad-library', 'salgado-change-anything', 'test',
-        service_root='http://api.launchpad.dev/', version="devel")
     test.globs['setupBrowser'] = setupBrowser
     test.globs['setupDTCBrowser'] = setupDTCBrowser
     test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser
@@ -757,6 +755,7 @@ def setUpGlobs(test):
     test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['login'] = login
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout

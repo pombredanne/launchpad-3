@@ -173,6 +173,18 @@ class IBuilder(IHasOwner):
         :raises BuildDaemonError: When the slave is down.
         """
 
+    def rescueIfLost(logger=None):
+        """Reset the slave if its job information doesn't match the DB.
+
+        If the builder is BUILDING or WAITING but has a build ID string
+        that doesn't match what is stored in the DB, we have to dismiss
+        its current actions and clean the slave for another job, assuming
+        the XMLRPC is working properly at this point.
+        """
+
+    def updateStatus(logger=None):
+        """Update the builder's status by probing it."""
+
     def cleanSlave():
         """Clean any temporary files from the slave."""
 
@@ -338,10 +350,13 @@ class IBuilderSet(Interface):
         :param txn: A zopeless transaction object which is currently used by
             legacy code that we are in the process of removing. DO NOT add
             additional uses of this parameter.
-        :return: A lp.buildmaster.master.BuilddMaster instance. This is
-            temporary and once the dispatchBuilds method no longer requires
-            a used instance this return parameter will be dropped.
         """
+
+    def checkBuilders(logger, txn):
+        """Update the status of all builders and commit."""
+
+    def scanActiveBuilders(logger, txn):
+        """Scan all active builders, updating the current build jobs."""
 
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

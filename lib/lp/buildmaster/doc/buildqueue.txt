@@ -255,7 +255,7 @@ Materialize the changes in database:
 Note that the results are ordered by descending BuildQueue.lastscore
 and restricted
 
-    >>> for bq in bqset.calculateCandidates(archseries):
+    >>> for bq in getUtility(IBuildSet).calculateCandidates(archseries):
     ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
@@ -287,7 +287,7 @@ The build score for the fake language pack is zero.
 The fake language pack will be queued behind the other source packages
 as intended.
 
-    >>> for bq in bqset.calculateCandidates(archseries):
+    >>> for bq in getUtility(IBuildSet).calculateCandidates(archseries):
     ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
@@ -299,7 +299,7 @@ as intended.
 Restricting the domain to only hoary/hppa:
 
     >>> archseries = [hoary['hppa']]
-    >>> for bq in bqset.calculateCandidates(archseries):
+    >>> for bq in getUtility(IBuildSet).calculateCandidates(archseries):
     ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
@@ -308,12 +308,12 @@ Restricting the domain to only hoary/hppa:
 This method asserts a valid 'archseries' argument, None or an empty
 list will result in a AssertionFailure.
 
-    >>> bqset.calculateCandidates(None).count()
+    >>> getUtility(IBuildSet).calculateCandidates(None).count()
     Traceback (most recent call last):
     ...
     AssertionError: Given 'archseries' cannot be None/empty.
 
-    >>> bqset.calculateCandidates([]).count()
+    >>> getUtility(IBuildSet).calculateCandidates([]).count()
     Traceback (most recent call last):
     ...
     AssertionError: Given 'archseries' cannot be None/empty.
