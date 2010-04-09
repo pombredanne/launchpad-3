@@ -937,7 +937,8 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             'stacked_on_location', stacked_on_url)
         branch.unlock()
         self.assertEqual(
-            [(db_branch.id, '', 'null:')], self._branch_changed_log)
+            [(db_branch.id, stacked_on_url, 'null:')],
+            self._branch_changed_log)
         self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
 
 
