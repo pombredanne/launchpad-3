@@ -672,7 +672,8 @@ bug tracker:
   ...     'A test Bugzilla Tracker']
   >>> admin_browser.getControl('Change Details').click()
 
-  >>> admin_browser.open('http://launchpad.dev/jokosher/+edit')
+  >>> admin_browser.open(
+  ...     'http://launchpad.dev/jokosher/+configure-bugtracker')
   >>> admin_browser.getControl(name='field.bugtracker'
   ...     ).displayValue = ['In a registered bug tracker:']
   >>> admin_browser.getControl(name='field.bugtracker.bugtracker'
