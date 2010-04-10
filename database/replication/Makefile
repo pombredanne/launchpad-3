@@ -175,7 +175,6 @@ _replicate:
 	./slon_ctl.py stop # security.py can deadlock with slony
 	${SHHH} ../schema/security.py --cluster -U slony
 	# Restart slon daemons with default lag setting.
-	./slon_ctl.py stop
 	./slon_ctl.py --lag="${LAG}" start
 	# Generate a preamble for manual slonik(1) usage.
 	./preamble.py > preamble.sk
