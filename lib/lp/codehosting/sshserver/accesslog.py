@@ -29,22 +29,8 @@ from zope.interface import Attribute, implements, Interface
 
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
+from lp.services.utils import synchronize
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
-
-
-def synchronize(source, target, add, remove):
-    """Update 'source' to match 'target' using 'add' and 'remove'.
-
-    Changes the container 'source' so that it equals 'target', calling 'add'
-    with any object in 'target' not in 'source' and 'remove' with any object
-    not in 'target' but in 'source'.
-    """
-    need_to_add = [obj for obj in target if obj not in source]
-    need_to_remove = [obj for obj in source if obj not in target]
-    for obj in need_to_add:
-        add(obj)
-    for obj in need_to_remove:
-        remove(obj)
 
 
 class LoggingManager:

@@ -21,6 +21,7 @@ from lp.code.enums import BranchType
 from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
+from lp.services.xmlrpc import LaunchpadFault
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -62,7 +63,7 @@ class TestExpandURL(TestCaseWithFactory):
         """Assert that `lp_url_path` path expands to `unique_name`."""
         results = self.api.resolve_lp_path(lp_url_path)
         # This improves the error message if results happens to be a fault.
-        if isinstance(results, faults.LaunchpadFault):
+        if isinstance(results, LaunchpadFault):
             raise results
         for url in results['urls']:
             self.assertEqual('/' + unique_name, URI(url).path)
