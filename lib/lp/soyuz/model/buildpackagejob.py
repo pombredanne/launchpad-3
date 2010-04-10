@@ -12,19 +12,17 @@ import pytz
 
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import classProvides, implements
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
@@ -32,7 +30,6 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 class BuildPackageJob(PackageBuildFarmJob, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
-    classProvides(IBuildFarmJobDispatchEstimation)
 
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
@@ -157,38 +154,6 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
 
-    def getTitle(self):
-        """See `IBuildPackageJob`."""
-        return self.build.title
-
-    @staticmethod
-    def composePendingJobsQuery(min_score, processor, virtualized):
-        """See `IBuildFarmJob`."""
-        return """
-            SELECT
-                BuildQueue.job,
-                BuildQueue.lastscore,
-                BuildQueue.estimated_duration,
-                Build.processor AS processor,
-                Archive.require_virtualized AS virtualized
-            FROM
-                BuildQueue, Build, BuildPackageJob, Archive, Job
-            WHERE
-                BuildQueue.job_type = %s
-                AND BuildPackageJob.job = BuildQueue.job
-                AND BuildPackageJob.job = Job.id
-                AND Job.status = %s
-                AND BuildPackageJob.build = Build.id
-                AND Build.buildstate = %s
-                AND Build.archive = Archive.id
-                AND Archive.enabled = TRUE
-                AND BuildQueue.lastscore >= %s
-                AND Build.processor = %s
-                AND Archive.require_virtualized = %s
-        """ % sqlvalues(
-            BuildFarmJobType.PACKAGEBUILD, JobStatus.WAITING,
-            BuildStatus.NEEDSBUILD, min_score, processor, virtualized)
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""
@@ -213,8 +178,8 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         sub_query = """
             SELECT TRUE FROM Archive, Build, BuildPackageJob, DistroArchSeries
             WHERE
-            BuildPackageJob.job = Job.id AND 
-            BuildPackageJob.build = Build.id AND 
+            BuildPackageJob.job = Job.id AND
+            BuildPackageJob.build = Build.id AND
             Build.distroarchseries = DistroArchSeries.id AND
             Build.archive = Archive.id AND
             ((Archive.private IS TRUE AND

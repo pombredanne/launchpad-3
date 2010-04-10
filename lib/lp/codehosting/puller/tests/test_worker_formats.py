@@ -17,7 +17,6 @@ from bzrlib.tests.per_repository import TestCaseWithRepository
 from lp.codehosting.puller.tests import PullerWorkerMixin
 from lp.codehosting.tests.helpers import LoomTestMixin
 from lazr.uri import URI
-from canonical.testing import reset_logging
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
@@ -30,10 +29,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         self.worker = self.makePullerWorker(
             self.get_url(self._source_branch_path),
             self.get_url('dest-path'))
-
-    def tearDown(self):
-        TestCaseWithRepository.tearDown(self)
-        reset_logging()
 
     def _createSourceBranch(self, repository_format, bzrdir_format,
                             branch_format=None):

@@ -36,4 +36,20 @@
         interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
   </securedutility>
 
+  <browser:navigation
+      module="canonical.launchpad.browser.temporaryblobstorage"
+      classes="TemporaryBlobStorageNavigation"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage"
+      urldata="canonical.launchpad.browser.temporaryblobstorage.TemporaryBlobStorageURL"
+      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
+      path_expression="string:temporary-blobs/${uuid}"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager"
+      path_expression="string:temporary-blobs"
+      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
 </configure>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslatableMessage`."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 import pytz
+import transaction
 from unittest import TestLoader
 
 from lp.testing import TestCaseWithFactory
@@ -147,10 +148,12 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
 
     def test_getExternalTranslations(self):
+        transaction.commit()
         externals = self.message.getExternalTranslations()
         self.assertContentEqual([self.external_current], externals)
 
     def test_getExternalSuggestions(self):
+        transaction.commit()
         externals = self.message.getExternalSuggestions()
         self.assertContentEqual([self.external_suggestion], externals)
 

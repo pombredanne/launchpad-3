@@ -8,7 +8,7 @@
       <div class="boardCommentDetails filename">
         <ul class="horizontal">
           <li>
-            <a tal:attributes="href attachment/getURL">
+            <a tal:attributes="href view/preview_diff/fmt:url">
               <img src="/@@/download"/>
               Download diff
             </a>

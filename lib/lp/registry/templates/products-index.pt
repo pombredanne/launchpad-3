@@ -60,17 +60,8 @@
     </p>
 
     <tal:non-empty-search-string condition="view/search_string">
-      <p tal:condition="view/tooManyResultsFound"
-           class="informational message">
-        More than <span tal:replace="view/max_results_to_display" /> projects
-        were found, so we're displaying only the ones that are most relevant
-        to your search terms.
-        If the project you are looking for is not on the list below, please
-        do another search with more relevant search terms.
-      </p>
-
       <tal:searching tal:condition="view/search_results">
-        <p class="search-results">
+        <p id="search-summary" class="search-results">
           <span tal:replace="view/matches">3</span>
           <span tal:condition="python: view.matches == 1">project found</span>
           <span tal:condition="python: view.matches != 1">projects found</span>
@@ -92,8 +83,21 @@
         </tbody>
       </table>
 
-      <div id="application-summary">
-        <p class="sprite error-icon"
+      <form id="project-search-lower" method="get" accept-charset="UTF-8"
+        tal:attributes="action request/URL"
+        tal:condition="view/search_results">
+        <div id="too-many-matches" class="sprite info"
+          tal:condition="view/tooManyResultsFound">
+          More than <span tal:replace="view/max_results_to_display" />
+          projects were found. You can do another search with more
+          relevant search terms.
+        </div>
+        <input size="30" name="text" tal:attributes="value view/search_string" />
+        <input type="submit" value="Search again" />
+      </form>
+
+      <div id="no-matches">
+        <p class="sprite info"
            tal:condition="not: view/search_results">
           No projects matching
           &#8220;<span tal:replace="view/search_string">moz</span>&#8221;

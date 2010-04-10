@@ -167,6 +167,8 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
+  >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
+  >>> changelog = None
 
 The other argurments are strings:
 
@@ -190,10 +192,11 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright,
-  ...      build_conflicts=None, build_conflicts_indep=None)
+  ...     build_conflicts=None, build_conflicts_indep=None,
+  ...     source_package_recipe_build=arg_recipebuild)
 
   >>> new_spr.upload_distroseries.name
   u'hoary'
@@ -203,6 +206,8 @@ ISourcePackageRelease, it will automatically set the
   True
   >>> new_spr.copyright
   u'smashed debian/copyright ...'
+  >>> new_spr.source_package_recipe_build == arg_recipebuild
+  True
 
 Throw away the DB changes:
 
@@ -265,11 +270,11 @@ the same permission on it.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True)
 
     >>> private_publication = test_publisher.getPubSource(
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
 
     >>> test_sourcepackagerelease = private_publication.sourcepackagerelease
     >>> print test_sourcepackagerelease.title

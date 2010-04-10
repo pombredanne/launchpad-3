@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -33,11 +33,11 @@ class RunRevisionMailJobs(LaunchpadCronScript):
         jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
         runner = JobRunner(jobs, self.logger)
         server = get_scanner_server()
-        server.setUp()
+        server.start_server()
         try:
             runner.runAll()
         finally:
-            server.tearDown()
+            server.stop_server()
         self.logger.info(
             'Ran %d RevisionMailJobs.' % len(runner.completed_jobs))
 

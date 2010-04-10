@@ -52,7 +52,7 @@ source package.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -74,7 +74,7 @@ source package release, but that's more than I can chew off for now.)
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1 > i386 build
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils

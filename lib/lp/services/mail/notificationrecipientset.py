@@ -16,7 +16,8 @@ from zope.interface import implements
 
 from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.interfaces import (
-    INotificationRecipientSet, IPerson, UnknownRecipientError)
+    INotificationRecipientSet, UnknownRecipientError)
+from lp.registry.interfaces.person import IPerson
 
 
 class NotificationRecipientSet:

@@ -145,7 +145,18 @@ archive as well as some new PPAs.
     >>> ppa_beta = factory.makeArchive(name="beta",
     ...                                distribution=ubuntutest)
 
-    # Then publish netapplet to both PPAs
+The 'ppa_disabled' archive added below will be disabled at the end of this
+set-up block. 
+It will thus not be listed in the "...other untrusted versions of..." portlet.
+
+    >>> ppa_disabled = factory.makeArchive(name="disabled",
+    ...                                    distribution=ubuntutest)
+
+    # Then publish netapplet to all PPAs
+    >>> netapplet_disabled_pub_breezy = publisher.getPubSource(
+    ...     sourcename="netapplet", archive=ppa_disabled,
+    ...     creator=ppa_disabled.owner,
+    ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.1d1')
     >>> netapplet_nightly_pub_breezy = publisher.getPubSource(
     ...     sourcename="netapplet", archive=ppa_nightly,
     ...     creator=ppa_nightly.owner,
@@ -165,6 +176,8 @@ archive as well as some new PPAs.
     >>> from lp.registry.model.karma import KarmaTotalCache
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
+    >>> ppa_disabled_owner_id = ppa_disabled.owner.id
+    >>> ppa_disabled.disable()
     >>> transaction.commit()
 
     # XXX: Michael Nelson 2009-07-07 bug=396419. Currently there is no
@@ -178,11 +191,12 @@ archive as well as some new PPAs.
     ...     person=ppa_beta_owner_id, karma_total=200)
     >>> cache_entry = KarmaTotalCache(
     ...     person=ppa_nightly_owner_id, karma_total=201)
+    >>> cache_entry = KarmaTotalCache(
+    ...     person=ppa_disabled_owner_id, karma_total=202)
     >>> transaction.commit()
     >>> reconnect_stores('launchpad')
 
     >>> logout()
-
 
 A /$DISTRO/+source/$PACKAGE page shows an overview of a source package in
 a distribution.  There are several sections of information.
@@ -284,8 +298,18 @@ As can be seen, the packaging is not linked yet.  We can do that now using the
     >>> print user_browser.url
     http://launchpad.dev/ubuntu/warty/+source/iceweasel/+edit-packaging
 
+In step one the project is specified.
+
     >>> user_browser.getControl(
-    ...     name='field.productseries').value = "firefox/trunk"
+    ...     name='field.product').value = "firefox"
+    >>> user_browser.getControl('Continue').click()
+
+In step two, one of the series for that project can be selected.
+
+    >>> series_control = user_browser.getControl(name='field.productseries')
+    >>> print series_control.options
+    ['trunk', '1.0']
+    >>> series_control.value = ['trunk']
     >>> user_browser.getControl('Change').click()
 
 Go back to the source page, and now the upstream's description is shown and
@@ -360,7 +384,7 @@ A link to further PPA searches is also included.
     ...     url='http://launchpad.dev/ubuntutest/+ppas?'
     ...         'name_filter=netapplet')
     >>> link.text
-    "...more untrusted versions of..."
+    "...other untrusted versions of..."
 
 
 Source package change logs
@@ -464,8 +488,8 @@ changelog:
     ...     "+changelog")
     >>> changelog = find_tag_by_id(
     ...     user_browser.contents, 'commercialpackage_1.0-1')
-    >>> changelog.find('a')
-    <a href="http://launchpad.dev/~name16" class="sprite person">&nbsp;foo.bar@canonical.com</a>
+    >>> print extract_text(changelog.find('a'))
+    foo.bar@canonical.com
 
 
 Packages that are not published

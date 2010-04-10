@@ -49,19 +49,19 @@ across Launchpad.
     ...         summary_td.b.renderContents().strip(),
     ...         summary_td.a.renderContents())
     Bigfixer:
-             Summary for new bug 10
+             Summary for new bug ...
     <BLANKLINE>
     Bigfixer:
-             Summary for new bug 9
+             Summary for new bug ...
     <BLANKLINE>
     Bigfixer:
-             Summary for new bug 8
+             Summary for new bug ...
     <BLANKLINE>
     Bigfixer:
-             Summary for new bug 7
+             Summary for new bug ...
     <BLANKLINE>
     Bigfixer:
-             Summary for new bug 6
+             Summary for new bug ...
     <BLANKLINE>
 
 

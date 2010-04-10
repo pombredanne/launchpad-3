@@ -105,12 +105,14 @@ def execute_zcml_for_scripts(use_web_security=False):
             Instead, your test should use the Zopeless layer.
             """
 
-    scriptzcmlfilename = os.path.normpath(
-        os.path.join(os.path.dirname(__file__),
-                     os.pardir, os.pardir, os.pardir, os.pardir,
-                     'script.zcml'))
+    if config.instance_name == 'testrunner':
+        scriptzcmlfilename = 'script-testing.zcml'
+    else:
+        scriptzcmlfilename = 'script.zcml'
 
-    scriptzcmlfilename = os.path.abspath(scriptzcmlfilename)
+    scriptzcmlfilename = os.path.abspath(
+        os.path.join(config.root, scriptzcmlfilename))
+
     from zope.configuration import xmlconfig
 
     # Hook up custom component architecture calls

@@ -8,8 +8,6 @@
 >
   <body>
   <div metal:fill-slot="main">
-    <h1 tal:content="view/label" />
-
     <p>
       You need to register an SSH key with Launchpad to be able to publish
       your Bazaar code branches in Launchpad. For more information, read about

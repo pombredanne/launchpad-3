@@ -8,22 +8,17 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestDateTimeCalendarWidget(TestCaseWithFactory):
+class TestDateTimeCalendarWidget(WindmillTestCase):
     """Test datetime calendar widget."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        super(TestDateTimeCalendarWidget, self).setUp()
-        self.client = WindmillTestClient('DateTimeCalendarWidget')
+    suite_name = 'DateTimeCalendarWidget'
 
     def test_datetime_calendar_widget(self):
         """Test the calendar widget's general functionality.

@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime, timedelta
 from pytz import timezone
+import transaction
 import unittest
 
 import gettextpo
@@ -66,6 +67,8 @@ class TestTranslationSuggestions(unittest.TestCase):
             ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
 
+        transaction.commit()
+
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
@@ -87,6 +90,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
             ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
+
+        transaction.commit()
 
         # There is a global (externally used) suggestion.
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
@@ -116,6 +121,8 @@ class TestTranslationSuggestions(unittest.TestCase):
             self.foo_template.owner, ["Noueh hallo dus."],
             is_imported=False, lock_timestamp=None)
         suggestion.is_current = False
+
+        transaction.commit()
 
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)

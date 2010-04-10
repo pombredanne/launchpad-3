@@ -144,3 +144,23 @@ for us to test for the first instances of each here. This is an instance of Bug
         mozilla-firefox (Debian) Low Confirmed
     13 Launchpad CSS and JS is not testible
         Launchpad Undecided New
+
+=== Person bugs menu ===
+
+The person bugs page can be accessed without being in the bugs
+site, yet all the menu links point to the bugs site.
+
+    >>> anon_browser.open('http://launchpad.dev/~name12/+assignedbugs')
+    >>> print anon_browser.getLink('List commented bugs').url
+    http://bugs.launchpad.dev/~name12/+commentedbugs
+    >>> print anon_browser.getLink('List reported bugs').url
+    http://bugs.launchpad.dev/~name12/+reportedbugs
+    >>> print anon_browser.getLink('List subscribed bugs').url
+    http://bugs.launchpad.dev/~name12/+subscribedbugs
+    >>> print anon_browser.getLink('List all related bugs').url
+    http://bugs.launchpad.dev/~name12
+    >>> print anon_browser.getLink('List subscribed packages').url
+    http://bugs.launchpad.dev/~name12/+packagebugs
+    >>> anon_browser.open('http://launchpad.dev/~name12/+commentedbugs')
+    >>> print anon_browser.getLink('List assigned bugs').url
+    http://bugs.launchpad.dev/~name12/+assignedbugs

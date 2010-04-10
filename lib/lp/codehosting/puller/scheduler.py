@@ -24,16 +24,16 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
 from canonical.cachedproperty import cachedproperty
-from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
-from canonical.twistedsupport.processmonitor import (
+from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
+from lp.services.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 
 
 class BadMessage(Exception):
@@ -417,9 +417,10 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_puller_endpoint, logger):
+    def __init__(self, branch_puller_endpoint, logger, branch_type_names):
         self.branch_puller_endpoint = branch_puller_endpoint
         self.logger = logger
+        self.branch_type_names = branch_type_names
         self.actualLock = None
         self.name = 'branch-puller'
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
@@ -455,7 +456,7 @@ class JobScheduler:
 
     def _poll(self):
         deferred = self.branch_puller_endpoint.callRemote(
-            'acquireBranchToPull')
+            'acquireBranchToPull', self.branch_type_names)
         deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
 

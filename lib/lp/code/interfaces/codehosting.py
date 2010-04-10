@@ -58,23 +58,12 @@ class IBranchPuller(Interface):
     Published at 'branch_puller' on the private XML-RPC server.
     """
 
-    def getBranchPullQueue(branch_type):
-        """Get the list of branches to be mirrored.
-
-        :param branch_type: One of 'HOSTED', 'MIRRORED', or 'IMPORTED'.
-
-        :raise UnknownBranchTypeError: if the branch type is unrecognized.
-
-        :returns: a list of (branch_id, pull_url, unique_name, default_branch)
-            4-tuples.  branch_id is the database id of the branch, pull_url is
-            where to pull from, unique_name is the unique_name of the branch
-            and default_branch is the default stacked on branch for the
-            branch's target.
-        """
-
-    def acquireBranchToPull():
+    def acquireBranchToPull(branch_type_names):
         """Return a Branch to pull and mark it as mirror-started.
 
+        :param branch_type_names: Only consider branches of these type names.
+            An empty list means consider HOSTED, MIRRORED and IMPORTED
+            branches.
         :return: A 5-tuple::
 
               (branch_id, pull_url, unique_name, default_branch, branch_type)

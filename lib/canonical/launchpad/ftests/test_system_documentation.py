@@ -7,6 +7,8 @@ lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
 
+from __future__ import with_statement
+
 import logging
 import os
 import unittest
@@ -28,9 +30,10 @@ from canonical.launchpad.testing.systemdocs import (
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
-from canonical.testing import (
+from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -167,11 +170,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 
-def hwdbDeviceTablesSetup(test):
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
-
-
 def updateRemoteProductSetup(test):
     """Setup to use the 'updateremoteproduct' db user."""
     setUp(test)
@@ -238,11 +236,6 @@ special = {
             tearDown=test_notifications.tearDown,
             stdout_logging=False, layer=None
             ),
-    'hwdb-device-tables.txt': LayeredDocFileSuite(
-            '../doc/hwdb-device-tables.txt',
-            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer,
-            ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -278,6 +271,11 @@ special = {
             setUp=setUp,
             tearDown=tearDown,
             layer=FunctionalLayer,
+            ),
+    'google-searchservice.txt': LayeredDocFileSuite(
+            '../doc/google-searchservice.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=GoogleLaunchpadFunctionalLayer,
             ),
     }
 
@@ -395,6 +393,8 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
+            # 'icky way of running doctests with __future__ imports
+            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

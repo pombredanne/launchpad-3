@@ -29,6 +29,8 @@ from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.person import Person
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
@@ -493,6 +495,106 @@ class TestCreatePersonAndEmail(unittest.TestCase):
             InvalidName, self.person_set.createPersonAndEmail,
             'testing@example.com', PersonCreationRationale.UNKNOWN,
             name='/john')
+
+
+class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedBugTaskSearch, self).setUp()
+        self.user = self.factory.makePerson(displayname="User")
+        self.context = self.factory.makePerson(displayname="Context")
+
+    def checkUserFields(
+        self, params, assignee=None, bug_subscriber=None,
+        owner=None, bug_commenter=None, bug_reporter=None):
+        self.failUnlessEqual(assignee, params.assignee)
+        # fromSearchForm() takes a bug_subscriber parameter, but saves
+        # it as subscriber on the parameter object.
+        self.failUnlessEqual(bug_subscriber, params.subscriber)
+        self.failUnlessEqual(owner, params.owner)
+        self.failUnlessEqual(bug_commenter, params.bug_commenter)
+        self.failUnlessEqual(bug_reporter, params.bug_reporter)
+
+    def test_get_related_bugtasks_search_params(self):
+        # With no specified options, get_related_bugtasks_search_params()
+        # returns 4 BugTaskSearchParams objects, each with a different
+        # user field set.
+        search_params = get_related_bugtasks_search_params(self.user, self.context)
+        self.assertEqual(len(search_params), 4)
+        self.checkUserFields(
+            search_params[0], assignee=self.context)
+        self.checkUserFields(
+            search_params[1], bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[2], owner=self.context, bug_reporter=self.context)
+        self.checkUserFields(
+            search_params[3], bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_with_assignee(self):
+        # With assignee specified, get_related_bugtasks_search_params() returns
+        # 3 BugTaskSearchParams objects.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, assignee=self.user)
+        self.assertEqual(len(search_params), 3)
+        self.checkUserFields(
+            search_params[0], assignee=self.user, bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[1], assignee=self.user, owner=self.context,
+            bug_reporter=self.context)
+        self.checkUserFields(
+            search_params[2], assignee=self.user, bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_with_owner(self):
+        # With owner specified, get_related_bugtasks_search_params() returns
+        # 3 BugTaskSearchParams objects.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, owner=self.user)
+        self.assertEqual(len(search_params), 3)
+        self.checkUserFields(
+            search_params[0], owner=self.user, assignee=self.context)
+        self.checkUserFields(
+            search_params[1], owner=self.user, bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[2], owner=self.user, bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_with_bug_reporter(self):
+        # With bug reporter specified, get_related_bugtasks_search_params()
+        # returns 4 BugTaskSearchParams objects, but the bug reporter
+        # is overwritten in one instance.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, bug_reporter=self.user)
+        self.assertEqual(len(search_params), 4)
+        self.checkUserFields(
+            search_params[0], bug_reporter=self.user,
+            assignee=self.context)
+        self.checkUserFields(
+            search_params[1], bug_reporter=self.user,
+            bug_subscriber=self.context)
+        # When a BugTaskSearchParams is prepared with the owner filled
+        # in, the bug reporter is overwritten to match.
+        self.checkUserFields(
+            search_params[2], bug_reporter=self.context,
+            owner=self.context)
+        self.checkUserFields(
+            search_params[3], bug_reporter=self.user,
+            bug_commenter=self.context)
+
+    def test_get_related_bugtasks_search_params_illegal(self):
+        self.assertRaises(
+            IllegalRelatedBugTasksParams,
+            get_related_bugtasks_search_params, self.user, self.context,
+            assignee=self.user, owner=self.user, bug_commenter=self.user,
+            bug_subscriber=self.user)
+
+    def test_get_related_bugtasks_search_params_illegal_context(self):
+        # in case the `context` argument is not  of type IPerson an
+        # AssertionError is raised
+        self.assertRaises(
+            AssertionError,
+            get_related_bugtasks_search_params, self.user, "Username",
+            assignee=self.user)
 
 
 def test_suite():

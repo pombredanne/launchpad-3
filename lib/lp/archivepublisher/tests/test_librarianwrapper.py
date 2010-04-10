@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
+import hashlib
 import os
 import shutil
-import sha
 import sys
 import unittest
 
@@ -47,7 +47,7 @@ class TestLibrarianWrapper(unittest.TestCase):
 
         fileobj = open(path, 'rb')
         size = os.stat(path).st_size
-        digest = sha.sha(open(path, 'rb').read()).hexdigest()
+        digest = hashlib.sha1(open(path, 'rb').read()).hexdigest()
 
         ## Use Fake Librarian class
         uploader = FakeUploadClient()

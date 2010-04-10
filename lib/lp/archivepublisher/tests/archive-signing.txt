@@ -94,7 +94,7 @@ Indeed, Marks's PPA does not have a defined 'signing_key'.
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
     1024D/12345678
 
@@ -229,8 +229,9 @@ The generated key UID follows "Launchpad %(ppa.displayname)s" format.
     ...    signing_key.fingerprint)
 
     >>> [uid] = retrieved_key.uids
-    >>> print uid.name
-    Launchpad PPA for Celso áéíóú Providelo
+    >>> uid.name
+    'Launchpad PPA for
+     Celso \xc3\xa1\xc3\xa9\xc3\xad\xc3\xb3\xc3\xba Providelo'
 
 The secret key is securily stored in the designed configuration
 path. So only the IGPGHandler itself can access it.

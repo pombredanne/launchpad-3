@@ -5,13 +5,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'IBranchMergeProposalStatusChangeEvent',
     'IJoinTeamEvent',
     'IKarmaAssignedEvent',
     'IMessageHeldEvent',
-    'INewBranchMergeProposalEvent',
-    'INewCodeReviewCommentEvent',
-    'IReviewerNominatedEvent',
     'ITeamInvitationEvent',
     ]
 
@@ -45,22 +41,3 @@ class IMessageHeldEvent(IObjectCreatedEvent):
 
     mailing_list = Attribute('The mailing list the message is held for.')
     message_id = Attribute('The Message-ID of the held message.')
-
-
-class IBranchMergeProposalStatusChangeEvent(IObjectEvent):
-    """A merge proposal has changed state."""
-    user = Attribute("The user who updated the proposal.")
-    from_state = Attribute("The previous queue_status.")
-    to_state = Attribute("The updated queue_status.")
-
-
-class INewBranchMergeProposalEvent(IObjectEvent):
-    """A new merge has been proposed."""
-
-
-class IReviewerNominatedEvent(IObjectEvent):
-    """A reviewer has been nominated."""
-
-
-class INewCodeReviewCommentEvent(IObjectEvent):
-    """A new comment has been added to the merge proposal."""

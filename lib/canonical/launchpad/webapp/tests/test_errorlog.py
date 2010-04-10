@@ -581,6 +581,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         class UnprintableException(Exception):
             def __str__(self):
                 raise RuntimeError('arrgh')
+            __repr__ = __str__
 
         log = InstalledHandler('SiteError')
         try:

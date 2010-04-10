@@ -9,17 +9,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobDispatchEstimation)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -207,163 +203,6 @@ class TestBuildPackageJob(TestBuildJobBase):
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
 
-    def test_x86_pending_queries(self):
-        # Select x86 jobs with equal or better score.
-        #
-        # The x86 builds are as follows:
-        #
-        # j: 4        gedit p:  386 v:False e:0:02:00 *** s: 1002
-        # j: 6      firefox p:  386 v:False e:0:04:00 *** s: 1004
-        # j: 8     cobblers p:  386 v:False e:0:06:00 *** s: 1006
-        # j:10 thunderpants p:  386 v:False e:0:08:00 *** s: 1008
-        # j:12          apg p:  386 v:False e:0:10:00 *** s: 1010
-        # j:14          vim p:  386 v:False e:0:12:00 *** s: 1012
-        # j:16          gcc p:  386 v:False e:0:14:00 *** s: 1014
-        # j:18        bison p:  386 v:False e:0:16:00 *** s: 1016
-        # j:20         flex p:  386 v:False e:0:18:00 *** s: 1018
-        # j:22     postgres p:  386 v:False e:0:20:00 *** s: 1020
-        #
-        # Please note: the higher scored jobs are lower in the list.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        build, bq = find_job(self, 'apg')
-        bpj = bq.specific_job
-        query = bpj.composePendingJobsQuery(1010, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        # The pending x86 jobs with score 1010 or higher are as follows.
-        # Please note that we do not require the results to be in any
-        # particular order.
-
-        # Processor == 1 -> Intel 386
-        # SELECT id,name,title FROM processor
-        #  id | name  |     title
-        # ----+-------+----------------
-        #   1 | 386   | Intel 386
-        #   2 | amd64 | AMD 64bit
-        #   3 | hppa  | HPPA Processor
-
-        expected_results = [
-        #   job  score estimated_duration   processor   virtualized
-            (12, 1010, timedelta(0, 600),       1,      False),
-            (14, 1012, timedelta(0, 720),       1,      False),
-            (16, 1014, timedelta(0, 840),       1,      False),
-            (18, 1016, timedelta(0, 960),       1,      False),
-            (20, 1018, timedelta(0, 1080),      1,      False),
-            (22, 1020, timedelta(0, 1200),      1,      False)]
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-        # How about builds with lower scores? Please note also that no
-        # hppa builds are listed.
-        query = bpj.composePendingJobsQuery(0, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        expected_results = [
-        #   job  score estimated_duration   processor   virtualized
-            (22, 1020, timedelta(0, 1200),      1,      False),
-            (20, 1018, timedelta(0, 1080),      1,      False),
-            (18, 1016, timedelta(0, 960),       1,      False),
-            (16, 1014, timedelta(0, 840),       1,      False),
-            (14, 1012, timedelta(0, 720),       1,      False),
-            (12, 1010, timedelta(0, 600),       1,      False),
-            (10, 1008, timedelta(0, 480),       1,      False),
-            (8,  1006, timedelta(0, 360),       1,      False),
-            (6,  1004, timedelta(0, 240),       1,      False),
-            (4,  1002, timedelta(0, 120),       1,      False)]
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-        # How about builds with higher scores?
-        query = bpj.composePendingJobsQuery(2500, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        expected_results = []
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-
-        # We will start the 'flex' job now and see whether it still turns
-        # up in our pending job list.
-        assign_to_builder(self, 'flex', 1)
-        query = bpj.composePendingJobsQuery(1016, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        expected_results = [
-        #   job  score estimated_duration   processor   virtualized
-            (22, 1020, timedelta(0, 1200),      1,      False),
-            (18, 1016, timedelta(0, 960),       1,      False)]
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-        # As we can see it was absent as expected.
-
-    def test_hppa_pending_queries(self):
-        # Select hppa jobs with equal or better score.
-        #
-        # The hppa builds are as follows:
-        #
-        # j: 3        gedit p: hppa v:False e:0:01:00 *** s: 1001
-        # j: 5      firefox p: hppa v:False e:0:03:00 *** s: 1003
-        # j: 7     cobblers p: hppa v:False e:0:05:00 *** s: 1005
-        # j: 9 thunderpants p: hppa v:False e:0:07:00 *** s: 1007
-        # j:11          apg p: hppa v:False e:0:09:00 *** s: 1009
-        # j:13          vim p: hppa v:False e:0:11:00 *** s: 1011
-        # j:15          gcc p: hppa v:False e:0:13:00 *** s: 1013
-        # j:17        bison p: hppa v:False e:0:15:00 *** s: 1015
-        # j:19         flex p: hppa v:False e:0:17:00 *** s: 1017
-        # j:21     postgres p: hppa v:False e:0:19:00 *** s: 1019
-        #
-        # Please note: the higher scored jobs are lower in the list.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        build, bq = find_job(self, 'vim', 'hppa')
-        bpj = bq.specific_job
-        query = bpj.composePendingJobsQuery(1011, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        # The pending hppa jobs with score 1011 or higher are as follows.
-        # Please note that we do not require the results to be in any
-        # particular order.
-
-        # Processor == 3 -> HPPA
-        # SELECT id,name,title FROM processor
-        #  id | name  |     title
-        # ----+-------+----------------
-        #   1 | 386   | Intel 386
-        #   2 | amd64 | AMD 64bit
-        #   3 | hppa  | HPPA Processor
-
-        expected_results = [
-        #   job  score estimated_duration   processor   virtualized
-            (13, 1011, timedelta(0, 660),       3,      False),
-            (15, 1013, timedelta(0, 780),       3,      False),
-            (17, 1015, timedelta(0, 900),       3,      False),
-            (19, 1017, timedelta(0, 1020),      3,      False),
-            (21, 1019, timedelta(0, 1140),      3,      False)]
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-        # How about builds with lower scores? Please note also that no
-        # hppa builds are listed.
-        query = bpj.composePendingJobsQuery(0, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        expected_results = [
-        #   job  score estimated_duration   processor   virtualized
-            (3,  1001, timedelta(0, 60),        3,      False),
-            (5,  1003, timedelta(0, 180),       3,      False),
-            (7,  1005, timedelta(0, 300),       3,      False),
-            (9,  1007, timedelta(0, 420),       3,      False),
-            (11, 1009, timedelta(0, 540),       3,      False),
-            (13, 1011, timedelta(0, 660),       3,      False),
-            (15, 1013, timedelta(0, 780),       3,      False),
-            (17, 1015, timedelta(0, 900),       3,      False),
-            (19, 1017, timedelta(0, 1020),      3,      False),
-            (21, 1019, timedelta(0, 1140),      3,      False)]
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-        # How about builds with higher scores?
-        query = bpj.composePendingJobsQuery(2500, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        expected_results = []
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-
-        # We will start the 'flex' job now and see whether it still turns
-        # up in our pending job list.
-        assign_to_builder(self, 'flex', 1, 'hppa')
-        query = bpj.composePendingJobsQuery(1014, *builder_key(build))
-        result_set = store.execute(query).get_all()
-        expected_results = [
-        #   job  score estimated_duration   processor   virtualized
-            (17, 1015, timedelta(0, 900),       3,      False),
-            (21, 1019, timedelta(0, 1140),      3,      False)]
-        self.assertEqual(sorted(result_set), sorted(expected_results))
-        # As we can see it was absent as expected.
-
     def test_processor(self):
         # Test that BuildPackageJob returns the correct processor.
         build, bq = find_job(self, 'gcc', '386')
@@ -381,9 +220,6 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'flex', 'hppa')
         bpj = bq.specific_job
         self.assertEqual(bpj.virtualized, False)
-
-    def test_provides_dispatch_estimation_interface(self):
-        verifyObject(IBuildFarmJobDispatchEstimation, BuildPackageJob)
 
     def test_getTitle(self):
         # Test that BuildPackageJob returns the title of the build.

@@ -29,11 +29,11 @@ from lp.code.enums import CodeImportResultStatus
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
-    OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
+    OpenIDConsumerAssociationPruner)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 from lp.bugs.model.bugnotification import (
@@ -219,12 +219,12 @@ class TestGarbo(TestCaseWithFactory):
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
 
-    def test_OpenIDAssociationPruner(self, pruner=OpenIDAssociationPruner):
-        store_name = pruner.store_name
+    def test_OpenIDConsumerAssociationPruner(self):
+        pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(store_name, MASTER_FLAVOR)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -247,7 +247,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        store = store_selector.get(store_name, MASTER_FLAVOR)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -262,9 +262,6 @@ class TestGarbo(TestCaseWithFactory):
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
-
-    def test_OpenIDConsumerAssociationPruner(self):
-        self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
 
     def test_RevisionAuthorEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -373,6 +370,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # If we remove the email address that was subscribed, the
         # garbage collector removes the subscription.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
         Store.of(email).remove(email)
         transaction.commit()
         self.runDaily()
@@ -572,6 +570,30 @@ class TestGarbo(TestCaseWithFactory):
             store.find(
                 BranchJob).count(),
             1)
+
+    def test_ObsoleteBugAttachmentDeleter(self):
+        # Bug attachments without a LibraryFileContent record are removed.
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        bug = self.factory.makeBug()
+        attachment = self.factory.makeBugAttachment(bug=bug)
+        transaction.commit()
+
+        # Bug attachments that have a LibraryFileContent record are
+        # not deleted.
+        self.assertIsNot(attachment.libraryfile.content, None)
+        self.runDaily()
+        self.assertEqual(bug.attachments.count(), 1)
+
+        # But once we delete the LfC record, the attachment is deleted
+        # in the next daily garbo run.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        removeSecurityProxy(attachment.libraryfile).content = None
+        transaction.commit()
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(bug.attachments.count(), 0)
+
 
 
 def test_suite():

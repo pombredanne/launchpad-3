@@ -161,6 +161,9 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
 
     layer = TwistedLayer
 
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
+
     def setUp(self):
         TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
@@ -412,6 +415,9 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
 
     layer = TwistedLayer
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
 
     def setUp(self):
         TrialTestCase.setUp(self)

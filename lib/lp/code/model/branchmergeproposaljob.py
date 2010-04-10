@@ -1,13 +1,20 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
 """Job classes related to BranchMergeProposals are in here.
 
 This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
 
+
+from __future__ import with_statement
+
+
 __metaclass__ = type
+
+
 __all__ = [
     'BranchMergeProposalJob',
     'CreateMergeProposalJob',
@@ -29,7 +36,6 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
@@ -51,7 +57,7 @@ from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.runner import BaseRunnableJob, JobRunnerProcess
+from lp.services.job.runner import BaseRunnableJob
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -153,14 +159,6 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
-
-    def __eq__(self, job):
-        return (
-            self.__class__ is removeSecurityProxy(job.__class__)
-            and self.job == job.job)
-
-    def __ne__(self, job):
-        return not (self == job)
 
     @classmethod
     def create(cls, bmp):
@@ -272,23 +270,18 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """See `IUpdatePreviewDiffJobSource`."""
         errorlog.globalErrorUtility.configure('update_preview_diffs')
         server = get_scanner_server()
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
+
+    def acquireLease(self, duration=600):
+        return self.job.acquireLease(duration)
 
     def run(self):
         """See `IRunnableJob`"""
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
-
-
-class UpdatePreviewDiffProcess(JobRunnerProcess):
-    """A process that runs UpdatePreviewDiffJobs"""
-    job_class = UpdatePreviewDiffJob
-
-
-UpdatePreviewDiffJob.amp = UpdatePreviewDiffProcess
 
 
 class CreateMergeProposalJob(BaseRunnableJob):
@@ -335,23 +328,25 @@ class CreateMergeProposalJob(BaseRunnableJob):
         """See `ICreateMergeProposalJob`."""
         # Avoid circular import
         from lp.code.mail.codehandler import CodeHandler
-        message = self.getMessage()
-        # Since the message was checked as signed before it was saved in the
-        # Librarian, just create the principle from the sender and setup the
-        # interaction.
-        name, email_addr = parseaddr(message['From'])
-        authutil = getUtility(IPlacelessAuthUtility)
-        principal = authutil.getPrincipalByLogin(email_addr)
-        if principal is None:
-            raise AssertionError('No principal found for %s' % email_addr)
-        setupInteraction(principal, email_addr)
+        url = self.context.message_bytes.getURL()
+        with errorlog.globalErrorUtility.oopsMessage('Mail url: %r' % url):
+            message = self.getMessage()
+            # Since the message was checked as signed before it was saved in
+            # the Librarian, just create the principal from the sender and set
+            # up the interaction.
+            name, email_addr = parseaddr(message['From'])
+            authutil = getUtility(IPlacelessAuthUtility)
+            principal = authutil.getPrincipalByLogin(email_addr)
+            if principal is None:
+                raise AssertionError('No principal found for %s' % email_addr)
+            setupInteraction(principal, email_addr)
 
-        server = get_multi_server(write_hosted=True)
-        server.setUp()
-        try:
-            return CodeHandler().processMergeProposal(message)
-        finally:
-            server.tearDown()
+            server = get_multi_server(write_hosted=True)
+            server.start_server()
+            try:
+                return CodeHandler().processMergeProposal(message)
+            finally:
+                server.stop_server()
 
     def getOopsRecipients(self):
         message = self.getMessage()

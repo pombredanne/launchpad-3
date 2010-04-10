@@ -8,7 +8,6 @@ __metaclass__ = type
 from datetime import datetime
 import logging
 import os
-import sys
 import textwrap
 import unittest
 
@@ -17,33 +16,32 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error, reactor, task
+from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
-from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
-from lp.codehosting.puller.tests import PullerBranchTestCase
-from lp.codehosting.puller.worker import (
-    get_canonical_url_for_branch_name)
 from canonical.config import config
-from lp.code.enums import BranchType
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.testing.factory import ObjectFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
-from canonical.twistedsupport.tests.test_processmonitor import (
+from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
+from lp.codehosting.puller.tests import PullerBranchTestCase
+from lp.codehosting.puller.worker import (
+    get_canonical_url_for_branch_name)
+from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
+from lp.testing.factory import ObjectFactory
 
 
 class FakePullerEndpointProxy:
 
-    def __init__(self, branch_queues=None):
-        self.branch_queues = branch_queues
+    def __init__(self):
         self.calls = []
 
     def callRemote(self, method_name, *args):
@@ -58,8 +56,8 @@ class FakePullerEndpointProxy:
     def _default(self, *args):
         return defer.succeed(None)
 
-    def _remote_getBranchPullQueue(self, branch_type):
-        return defer.succeed(self.branch_queues[branch_type])
+    def _remote_acquireBranchToPull(self, *args):
+        return defer.succeed(0)
 
     def _remote_setStackedOn(self, branch_id, stacked_on_location):
         if stacked_on_location == 'raise-branch-not-found':
@@ -70,7 +68,7 @@ class FakePullerEndpointProxy:
         return defer.succeed(None)
 
 
-class TestJobScheduler(unittest.TestCase):
+class TestJobScheduler(TrialTestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
@@ -80,8 +78,9 @@ class TestJobScheduler(unittest.TestCase):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
 
-    def makeJobScheduler(self):
-        return scheduler.JobScheduler(None, logging.getLogger())
+    def makeJobScheduler(self, branch_type_names=()):
+        return scheduler.JobScheduler(
+            FakePullerEndpointProxy(), logging.getLogger(), branch_type_names)
 
     def testManagerCreatesLocks(self):
         manager = self.makeJobScheduler()
@@ -99,6 +98,13 @@ class TestJobScheduler(unittest.TestCase):
         self.assertRaises(scheduler.LockError, anothermanager.lock)
         self.failUnless(os.path.exists(self.masterlock))
         manager.unlock()
+
+    def test_run_calls_acquireBranchToPull(self):
+        manager = self.makeJobScheduler(('HOSTED',))
+        manager.run()
+        self.assertEqual(
+            [('acquireBranchToPull', ('HOSTED',))],
+            manager.branch_puller_endpoint.calls)
 
 
 class TestPullerWireProtocol(TrialTestCase):
@@ -516,7 +522,6 @@ class TestPullerMasterSpawning(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        from twisted.internet import reactor
         self.factory = ObjectFactory()
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = self.makePullerMaster(
@@ -526,7 +531,6 @@ class TestPullerMasterSpawning(TrialTestCase):
         self.commands_spawned = []
 
     def tearDown(self):
-        from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
 
     def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
@@ -658,11 +662,6 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.

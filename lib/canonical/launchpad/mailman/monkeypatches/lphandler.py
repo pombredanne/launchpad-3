@@ -3,7 +3,8 @@
 
 """A global pipeline handler for determining Launchpad membership."""
 
-import sha
+
+import hashlib
 import xmlrpclib
 
 from Mailman import Errors
@@ -24,7 +25,7 @@ def process(mlist, msg, msgdata):
     secret = msg['x-launchpad-hash']
     message_id = msg['message-id']
     if secret and message_id:
-        hash = sha.new(mm_cfg.LAUNCHPAD_SHARED_SECRET)
+        hash = hashlib.sha1(mm_cfg.LAUNCHPAD_SHARED_SECRET)
         hash.update(message_id)
         if secret == hash.hexdigest():
             # Since this message is coming from Launchpad, pre-approve it.

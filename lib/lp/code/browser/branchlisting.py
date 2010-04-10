@@ -55,7 +55,7 @@ from canonical.launchpad.browser.feeds import (
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet)
-from canonical.launchpad.interfaces.personproduct import (
+from lp.registry.interfaces.personproduct import (
     IPersonProduct, IPersonProductFactory)
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, custom_widget, enabled_with_permission,
