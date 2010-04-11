@@ -288,9 +288,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     number_of_duplicates = exported(
         Int(title=_('The number of bugs marked as duplicates of this bug'),
             required=True, readonly=True))
-    message_count = Int(
-        title=_('The number of comments on this bug'),
-        required=True, readonly=True)
+    message_count = exported(
+        Int(title=_('The number of comments on this bug'),
+        required=True, readonly=True))
     users_affected_count = exported(
         Int(title=_('The number of users affected by this bug '
                     '(not including duplicates)'),
@@ -325,6 +325,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
         required=False, readonly=True))
+    heat_last_updated = Datetime(
+        title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
@@ -783,7 +785,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat):
+    def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
 class InvalidDuplicateValue(Exception):
@@ -1036,6 +1038,14 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+    def getBugsWithOutdatedHeat(max_heat_age):
+        """Return the set of bugs whose heat is out of date.
+
+        :param max_heat_age: The maximum age, in days, that a bug's heat
+                             can be before it is included in the
+                             returned set.
+        """
 
 
 class IFileBugData(Interface):

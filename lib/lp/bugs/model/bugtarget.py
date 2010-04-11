@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
+    'HasBugHeatMixin',
     'OfficialBugTag',
     'OfficialBugTagTargetMixin',
     ]
@@ -162,8 +163,56 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
-    def setMaxBugHeat(self, heat):
+    @property
+    def has_bugtasks(self):
         """See `IHasBugs`."""
+        # Check efficiently if any bugtasks exist. We should avoid
+        # expensive calls like all_bugtasks.count(). all_bugtasks
+        # returns a storm.SQLObjectResultSet instance, and this
+        # class does not provide methods like is_empty(). But we can
+        # indirectly call SQLObjectResultSet._result_set.is_empty()
+        # by converting all_bugtasks into a boolean object.
+        return bool(self.all_bugtasks)
+
+    def getBugCounts(self, user, statuses=None):
+        """See `IHasBugs`."""
+        if statuses is None:
+            statuses = BugTaskStatus.items
+        statuses = list(statuses)
+
+        count_column = """
+            COUNT (CASE WHEN BugTask.status = %s
+                        THEN BugTask.id ELSE NULL END)"""
+        select_columns = [count_column % sqlvalues(status)
+                          for status in statuses]
+        conditions = [
+            '(%s)' % self._getBugTaskContextClause(),
+            'BugTask.bug = Bug.id',
+            'Bug.duplicateof is NULL']
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        cur = cursor()
+        cur.execute(
+            "SELECT %s FROM BugTask, Bug WHERE %s" % (
+                ', '.join(select_columns), ' AND '.join(conditions)))
+        counts = cur.fetchone()
+        return dict(zip(statuses, counts))
+
+
+class BugTargetBase(HasBugsBase):
+    """Standard functionality for IBugTargets.
+
+    All IBugTargets should inherit from this class.
+    """
+
+
+class HasBugHeatMixin:
+    """Standard functionality for objects implementing IHasBugHeat."""
+
+    def setMaxBugHeat(self, heat):
+        """See `IHasBugHeat`."""
         if (IDistribution.providedBy(self)
             or IProduct.providedBy(self)
             or IProjectGroup.providedBy(self)
@@ -174,7 +223,7 @@ class HasBugsBase:
             raise NotImplementedError
 
     def recalculateMaxBugHeat(self):
-        """See `IHasBugs`."""
+        """See `IHasBugHeat`."""
         if IProductSeries.providedBy(self):
             return self.product.recalculateMaxBugHeat()
         if IDistroSeries.providedBy(self):
@@ -239,50 +288,6 @@ class HasBugsBase:
         if IProduct.providedBy(self) and self.project is not None:
             self.project.recalculateMaxBugHeat()
 
-    @property
-    def has_bugtasks(self):
-        """See `IHasBugs`."""
-        # Check efficiently if any bugtasks exist. We should avoid
-        # expensive calls like all_bugtasks.count(). all_bugtasks
-        # returns a storm.SQLObjectResultSet instance, and this
-        # class does not provide methods like is_empty(). But we can
-        # indirectly call SQLObjectResultSet._result_set.is_empty()
-        # by converting all_bugtasks into a boolean object.
-        return bool(self.all_bugtasks)
-
-    def getBugCounts(self, user, statuses=None):
-        """See `IHasBugs`."""
-        if statuses is None:
-            statuses = BugTaskStatus.items
-        statuses = list(statuses)
-
-        count_column = """
-            COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END)"""
-        select_columns = [count_column % sqlvalues(status)
-                          for status in statuses]
-        conditions = [
-            '(%s)' % self._getBugTaskContextClause(),
-            'BugTask.bug = Bug.id',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        cur = cursor()
-        cur.execute(
-            "SELECT %s FROM BugTask, Bug WHERE %s" % (
-                ', '.join(select_columns), ' AND '.join(conditions)))
-        counts = cur.fetchone()
-        return dict(zip(statuses, counts))
-
-
-
-class BugTargetBase(HasBugsBase):
-    """Standard functionality for IBugTargets.
-
-    All IBugTargets should inherit from this class.
-    """
 
 
 class OfficialBugTagTargetMixin:

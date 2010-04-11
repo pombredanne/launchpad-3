@@ -57,13 +57,6 @@
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+code-import-list"
-      class="lp.registry.browser.productseries.ProductSeriesSourceListView"
-      template="../templates/sources-list.pt"
-      permission="zope.Public"
-      />
-  <browser:page
       for="zope.interface.Interface"
       name="+test-webservice-js"
       template="../../../canonical/launchpad/templates/test-webservice-js.pt"

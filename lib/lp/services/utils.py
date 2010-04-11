@@ -1,12 +1,16 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Generic Python utilities.
 
-"""Implementations of the XML-RPC APIs for codehosting."""
+Functions, lists and so forth. Nothing here that does system calls or network
+stuff.
+"""
 
 __metaclass__ = type
 __all__ = [
     'iter_split',
+    'synchronize',
     'text_delta',
     'value_string',
     ]
@@ -33,6 +37,21 @@ def iter_split(string, splitter):
     tokens = string.split(splitter)
     for i in reversed(range(1, len(tokens) + 1)):
         yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
+
+
+def synchronize(source, target, add, remove):
+    """Update 'source' to match 'target' using 'add' and 'remove'.
+
+    Changes the container 'source' so that it equals 'target', calling 'add'
+    with any object in 'target' not in 'source' and 'remove' with any object
+    not in 'target' but in 'source'.
+    """
+    need_to_add = [obj for obj in target if obj not in source]
+    need_to_remove = [obj for obj in source if obj not in target]
+    for obj in need_to_add:
+        add(obj)
+    for obj in need_to_remove:
+        remove(obj)
 
 
 def value_string(item):
