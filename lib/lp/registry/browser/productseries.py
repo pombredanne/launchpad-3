@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -20,7 +20,7 @@ __all__ = [
     'ProductSeriesOverviewNavigationMenu',
     'ProductSeriesRdfView',
     'ProductSeriesReviewView',
-    'ProductSeriesSourceListView',
+    'ProductSeriesSetBranchView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
@@ -34,6 +34,7 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib import form
+from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -41,7 +42,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.code.browser.branchref import BranchRef
+from canonical.launchpad.fields import URIField
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.blueprints.interfaces.specification import (
@@ -49,9 +50,15 @@ from lp.blueprints.interfaces.specification import (
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
+from lp.code.browser.branch import BranchNameValidationMixin
+from lp.code.browser.branchref import BranchRef
+from lp.code.enums import BranchType, RevisionControlSystems
+from lp.code.interfaces.branch import (
+    BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
-    ICodeImportSet)
+    ICodeImport, ICodeImportSet)
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -70,18 +77,23 @@ from canonical.launchpad.webapp import (
     Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
     stepto)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView)
+    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
+    ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import structured
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
+
+from lazr.enum import DBItem
+from lazr.restful.interface import copy_field, use_template
 
 
 def quote(text):
@@ -164,6 +176,7 @@ class ProductSeriesOverviewMenu(
     links = [
         'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
         'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'set_branch',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -199,6 +212,21 @@ class ProductSeriesOverviewMenu(
             icon = 'edit'
             summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
+
+    @enabled_with_permission('launchpad.Edit')
+    def set_branch(self):
+        """Return a link to set the bazaar branch for this series."""
+        # Once +setbranch has been beta tested thoroughly, it should
+        # replace the +linkbranch page.
+        if self.context.branch is None:
+            text = 'Link to branch'
+            icon = 'add'
+            summary = 'Set the branch for this series'
+        else:
+            text = "Change branch"
+            icon = 'edit'
+            summary = 'Change the branch for this series'
+        return Link('+setbranch', text, summary, icon=icon)
 
     def branch_add(self):
         text = 'Register a branch'
@@ -644,7 +672,366 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         self.next_url = canonical_url(product)
 
 
-class ProductSeriesLinkBranchView(LaunchpadEditFormView):
+LINK_LP_BZR = 'link-lp-bzr'
+CREATE_NEW = 'create-new'
+IMPORT_EXTERNAL = 'import-external'
+
+
+BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(LINK_LP_BZR, LINK_LP_BZR,
+               _("Link to a Bazaar branch already on Launchpad")),
+    SimpleTerm(CREATE_NEW, CREATE_NEW,
+               _("Create a new, empty branch in Launchpad and "
+                 "link to this series")),
+    SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
+               _("Import a branch hosted somewhere else")),
+    ))
+
+
+class RevisionControlSystemsExtended(RevisionControlSystems):
+    """External RCS plus Bazaar."""
+    BZR = DBItem(99, """
+        Bazaar
+
+        External Bazaar branch.
+        """)
+
+
+class SetBranchForm(Interface):
+    """The fields presented on the form for setting a branch."""
+
+    use_template(
+        ICodeImport,
+        ['cvs_module'])
+
+    rcs_type = Choice(title=_("Type of RCS"),
+        required=False, vocabulary=RevisionControlSystemsExtended,
+        description=_(
+            "The version control system to import from. "))
+
+    repo_url = URIField(
+        title=_("Branch URL"), required=True,
+        description=_("The URL of the branch."),
+        allowed_schemes=["http", "https"],
+        allow_userinfo=False,
+        allow_port=True,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False)
+
+    branch_location = copy_field(
+        IProductSeries['branch'],
+        __name__='branch_location',
+        title=_('Branch'),
+        description=_(
+            "The Bazaar branch for this series in Launchpad, "
+            "if one exists."),
+        )
+
+    branch_type = Choice(
+        title=_('Import type'),
+        vocabulary=BRANCH_TYPE_VOCABULARY,
+        description=_("The type of import"),
+        required=True)
+
+    branch_name = copy_field(
+        IBranch['name'],
+        __name__='branch_name',
+        title=_('Branch name'),
+        description=_(''),
+        required=True,
+        )
+
+    branch_owner = copy_field(
+        IBranch['owner'],
+        __name__='branch_owner',
+        title=_('Branch owner'),
+        description=_(''),
+        required=True,
+        )
+
+
+class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
+                                 ProductSeriesView,
+                                 BranchNameValidationMixin):
+    """The view to set a branch for the ProductSeries."""
+
+    schema = SetBranchForm
+    # Set for_input to True to ensure fields marked read-only will be editable
+    # upon creation.
+    for_input = True
+
+    custom_widget('rcs_type', LaunchpadRadioWidget)
+    custom_widget('branch_type', LaunchpadRadioWidget)
+    initial_values = {
+        'rcs_type': RevisionControlSystemsExtended.BZR,
+        'branch_type': LINK_LP_BZR,
+        }
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(ProductSeriesSetBranchView, self).setUpWidgets()
+
+        def render(widget, term_value, current_value, label=None):
+            term = widget.vocabulary.getTerm(term_value)
+            if term.value == current_value:
+                render = widget.renderSelectedItem
+            else:
+                render = widget.renderItem
+            if label is None:
+                label = term.title
+            value = term.token
+            return render(index=term.value,
+                          text=label,
+                          value=value,
+                          name=widget.name,
+                          cssClass='')
+
+        widget = self.widgets['rcs_type']
+        vocab = widget.vocabulary
+        current_value = widget._getFormValue()
+        self.rcs_type_cvs = render(widget, vocab.CVS, current_value, 'CVS')
+        self.rcs_type_svn = render(widget, vocab.BZR_SVN, current_value,
+                                   'SVN')
+        self.rcs_type_git = render(widget, vocab.GIT, current_value)
+        self.rcs_type_hg = render(widget, vocab.HG, current_value)
+        self.rcs_type_bzr = render(widget, vocab.BZR, current_value)
+        self.rcs_type_emptymarker = widget._emptyMarker()
+
+        widget = self.widgets['branch_type']
+        current_value = widget._getFormValue()
+        vocab = widget.vocabulary
+
+        (self.branch_type_link,
+         self.branch_type_create,
+         self.branch_type_import) = [
+            render(widget, value, current_value)
+            for value in (LINK_LP_BZR, CREATE_NEW, IMPORT_EXTERNAL)]
+
+    def _validateLinkLpBzr(self, data):
+        """Validate data for link-lp-bzr case."""
+        if 'branch_location' not in data:
+            self.setFieldError(
+                'branch_location',
+                'The branch location must be set.')
+
+    def _validateCreateNew(self, data):
+        """Validate data for create new case."""
+        self._validateBranch(data)
+
+    def _validateImportExternal(self, data):
+        """Validate data for import external case."""
+        rcs_type = data.get('rcs_type')
+        repo_url = data.get('repo_url')
+
+        if repo_url is None:
+            self.setFieldError('repo_url',
+                               'You must set the external repository URL.')
+        else:
+            # Ensure this URL has not been imported before.
+            code_import = getUtility(ICodeImportSet).getByURL(repo_url)
+            if code_import is not None:
+                self.setFieldError(
+                    'repo_url',
+                    structured("""
+                    This foreign branch URL is already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                               canonical_url(code_import.branch),
+                               code_import.branch.unique_name))
+
+        # RCS type is mandatory.
+        # This condition should never happen since an initial value is set.
+        if rcs_type is None:
+            # The error shows but does not identify the widget.
+            self.setFieldError(
+                'rcs_type',
+                'You must specify the type of RCS for the remote host.')
+        elif rcs_type == RevisionControlSystemsExtended.CVS:
+            if 'cvs_module' not in data:
+                self.setFieldError(
+                    'cvs_module',
+                    'The CVS module must be set.')
+        self._validateBranch(data)
+
+    def _validateBranch(self, data):
+        """Validate that branch name and owner are set."""
+        if 'branch_name' not in data:
+            self.setFieldError(
+                'branch_name',
+                'The branch name must be set.')
+        if 'branch_owner' not in data:
+            self.setFieldError(
+                'branch_owner',
+                'The branch owner must be set.')
+
+    def _setRequired(self, names, value):
+        """Mark the widget field as optional."""
+        for name in names:
+            widget = self.widgets[name]
+            # The 'required' property on the widget context is set to False.
+            # The widget also has a 'required' property but it isn't used
+            # during validation.
+            widget.context.required = value
+
+    def _validSchemes(self, rcs_type):
+        """Return the valid schemes for the repository URL."""
+        schemes = set(['http', 'https'])
+        # Extend the allowed schemes for the repository URL based on
+        # rcs_type.
+        extra_schemes = {
+            RevisionControlSystemsExtended.BZR_SVN:['svn'],
+            RevisionControlSystemsExtended.GIT:['git'],
+            }
+        schemes.update(extra_schemes.get(rcs_type, []))
+        return schemes
+
+    def validate_widgets(self, data, names=None):
+        """See `LaunchpadFormView`."""
+        names = ['branch_type', 'rcs_type']
+        super(ProductSeriesSetBranchView, self).validate_widgets(data, names)
+        branch_type = data.get('branch_type')
+        if branch_type == LINK_LP_BZR:
+            # Mark other widgets as non-required.
+            self._setRequired(['rcs_type', 'repo_url', 'cvs_module',
+                               'branch_name', 'branch_owner'], False)
+        elif branch_type == CREATE_NEW:
+            self._setRequired(
+                ['branch_location', 'repo_url', 'rcs_type', 'cvs_module'],
+                False)
+        elif branch_type == IMPORT_EXTERNAL:
+            rcs_type = data.get('rcs_type')
+
+            # Set the valid schemes based on rcs_type.
+            self.widgets['repo_url'].field.allowed_schemes = (
+                self._validSchemes(rcs_type))
+            # The branch location is not required for validation.
+            self._setRequired(['branch_location'], False)
+            # The cvs_module is required if it is a CVS import.
+            if rcs_type == RevisionControlSystemsExtended.CVS:
+                self._setRequired(['cvs_module'], True)
+        else:
+            raise AssertionError("Unknown branch type %s" % branch_type)
+        # Perform full validation now.
+        super(ProductSeriesSetBranchView, self).validate_widgets(data)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        # If widget validation returned errors then there is no need to
+        # continue as we'd likely just override the errors reported there.
+        if len(self.errors) > 0:
+            return
+        branch_type = data['branch_type']
+        if branch_type == IMPORT_EXTERNAL:
+            self._validateImportExternal(data)
+        elif branch_type == LINK_LP_BZR:
+            self._validateLinkLpBzr(data)
+        elif branch_type == CREATE_NEW:
+            self._validateCreateNew(data)
+        else:
+            raise AssertionError("Unknown branch type %s" % branch_type)
+
+    @property
+    def target(self):
+        """The branch target for the context."""
+        return IBranchTarget(self.context)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        branch_type = data.get('branch_type')
+        if branch_type == LINK_LP_BZR:
+            branch_location = data.get('branch_location')
+            if branch_location != self.context.branch:
+                self.context.branch = branch_location
+                # Request an initial upload of translation files.
+                getUtility(IRosettaUploadJobSource).create(
+                    self.context.branch, NULL_REVISION)
+            else:
+                self.context.branch = branch_location
+            self.request.response.addInfoNotification(
+                'Series code location updated.')
+        else:
+            branch_name = data.get('branch_name')
+            branch_owner = data.get('branch_owner')
+
+            # Create a new branch.
+            if branch_type == CREATE_NEW:
+                branch = self._createBzrBranch(
+                    BranchType.HOSTED, branch_name, branch_owner)
+                if branch is not None:
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'New branch created and linked to the series.')
+
+            # Import or mirror an external branch.
+            elif branch_type == IMPORT_EXTERNAL:
+                # Either create an externally hosted bzr branch
+                # (a.k.a. 'mirrored') or create a new code import.
+                rcs_type = data.get('rcs_type')
+                if rcs_type == RevisionControlSystemsExtended.BZR:
+                    branch = self._createBzrBranch(
+                        BranchType.MIRRORED, branch_name, branch_owner,
+                        data['repo_url'])
+
+                    if branch is not None:
+                        self.context.branch = branch
+                        self.request.response.addInfoNotification(
+                            'Mirrored branch created and linked to '
+                            'the series.')
+                else:
+                    # We need to create an import request.
+
+                    # Ensure the URL has not already been imported.
+                    if rcs_type == RevisionControlSystemsExtended.CVS:
+                        cvs_root = data.get('repo_url')
+                        cvs_module = data.get('cvs_module')
+                        url = None
+                    else:
+                        cvs_root = None
+                        cvs_module = None
+                        url = data.get('repo_url')
+                    rcs_item = RevisionControlSystems.items[rcs_type.name]
+                    code_import = getUtility(ICodeImportSet).new(
+                        registrant=branch_owner,
+                        target=IBranchTarget(self.context.product),
+                        branch_name=branch_name,
+                        rcs_type=rcs_item,
+                        url=url,
+                        cvs_root=cvs_root,
+                        cvs_module=cvs_module)
+                    self.context.branch = code_import.branch
+                    self.request.response.addInfoNotification(
+                        'Code import created and branch linked to the '
+                        'series.')
+            else:
+                raise UnexpectedFormData(branch_type)
+
+    def _createBzrBranch(self, branch_type, branch_name,
+                         branch_owner, repo_url=None):
+        """Create a new Bazaar branch.  It may be hosted or mirrored.
+
+        Return the branch on success or None.
+        """
+        branch = None
+        try:
+            namespace = self.target.getNamespace(branch_owner)
+            branch = namespace.createBranch(branch_type=branch_type,
+                                            name=branch_name,
+                                            registrant=self.user,
+                                            url=repo_url)
+            if branch_type == BranchType.MIRRORED:
+                branch.requestMirror()
+        except BranchCreationForbidden:
+            self.addError(
+                "You are not allowed to create branches in %s." %
+                self.context.displayname)
+        except BranchExists, e:
+            self._setBranchExists(e.existing_branch, 'branch_name')
+        return branch
+
+
+class ProductSeriesLinkBranchView(ReturnToReferrerMixin,
+                                  ProductSeriesView,
+                                  LaunchpadEditFormView):
     """View to set the bazaar branch for a product series."""
 
     schema = IProductSeries
@@ -661,11 +1048,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         """The page title."""
         return self.label
 
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the branch attribute."""
@@ -678,11 +1060,6 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
             self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Series code location updated.')
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
@@ -751,23 +1128,6 @@ class ProductSeriesRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductSeriesSourceListView(LaunchpadView):
-    """A listing of all the running imports.
-
-    See `ICodeImportSet.getActiveImports` for our definition of running.
-    """
-
-    page_title = 'Available code imports'
-    label = page_title
-
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.text = self.request.get('text')
-        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
-
-        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):
