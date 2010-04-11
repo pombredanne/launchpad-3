@@ -13,7 +13,7 @@ from lp.testing import WindmillTestCase
 
 class POFileNewTranslationFieldKeybindings(WindmillTestCase):
     """Tests for keybinding actions associated to the translation field.
-    
+
     These tests should cover both simple (ie. pt) and composed (ie. pt_br)
     language codes.
     """
@@ -45,7 +45,7 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
             id=new_translation_id, text=u'New translation')
 
         # Check that the associated radio button is selected.
-        self.client.asserts.assertChecked(id=new_translation_select_id)        
+        self.client.asserts.assertChecked(id=new_translation_select_id)
 
     def test_pofile_new_translation_autoselect(self):
         """Test for automatically selecting new translation on text input.
@@ -77,6 +77,7 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
                         'ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
                         'pt_BR/1/+translate')
         new_translation_id = u'msgset_152_pt_BR_translation_0_new'
-        new_translation_select_id = u'msgset_152_pt_BR_translation_0_new_select'
+        new_translation_select_id = (u'msgset_152_pt_BR'
+                                       '_translation_0_new_select')
         self._check_translation_autoselect(
             start_url, new_translation_id, new_translation_select_id)
