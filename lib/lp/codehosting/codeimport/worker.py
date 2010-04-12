@@ -543,8 +543,7 @@ class PullingImportWorker(ImportWorker):
         return {}
 
     def _doImport(self):
-        #self.bazaar_branch_store.push(
-        #    self.source_details.branch_id, bazaar_tree, self.required_format)
+        self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
@@ -570,6 +569,7 @@ class PullingImportWorker(ImportWorker):
             self._logger.info("Pushing foreign branch to central store.")
             self.pushBazaarBranch(bazaar_branch)
             last_imported_revison = bazaar_branch.last_revision()
+            self._logger.info("Job complete.")
             if last_imported_revison == foreign_branch_tip:
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
