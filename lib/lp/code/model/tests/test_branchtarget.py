@@ -121,6 +121,10 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # Package branches do support merge proposals.
         self.assertTrue(self.target.supports_merge_proposals)
 
+    def test_supports_short_identites(self):
+        # Package branches do support short bzr identites.
+        self.assertTrue(self.target.supports_short_identites)
+
     def test_displayname(self):
         # The display name of a source package target is the display name of
         # the source package.
@@ -226,6 +230,10 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_supports_merge_proposals(self):
         # Personal branches do not support merge proposals.
         self.assertFalse(self.target.supports_merge_proposals)
+
+    def test_supports_short_identites(self):
+        # Personal branches do not support short bzr identites.
+        self.assertFalse(self.target.supports_short_identites)
 
     def test_displayname(self):
         # The display name of a person branch target is ~$USER/+junk.
@@ -339,6 +347,10 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_supports_merge_proposals(self):
         # Product branches do support merge proposals.
         self.assertTrue(self.target.supports_merge_proposals)
+
+    def test_supports_short_identites(self):
+        # Product branches do support short bzr identites.
+        self.assertTrue(self.target.supports_short_identites)
 
     def test_displayname(self):
         # The display name of a product branch target is the display name of
