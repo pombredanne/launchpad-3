@@ -176,7 +176,7 @@ class IBinaryPackageBuild(
     IBinaryPackageBuildView, IBinaryPackageBuildEdit,
     IBinaryPackageBuildAdmin):
     """A Build interface"""
-    export_as_webservice_entry()
+    export_as_webservice_entry(singular_name='build', plural_name='builds')
 
 
 class BuildSetStatus(EnumeratedType):
