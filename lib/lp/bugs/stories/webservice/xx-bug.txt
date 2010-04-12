@@ -34,6 +34,7 @@ At the top level we provide a collection of bugs.
   id: 11
   latest_patch_uploaded: None
   linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
+  message_count: 7
   messages_collection_link: u'http://.../bugs/11/messages'
   name: None
   number_of_duplicates: 0

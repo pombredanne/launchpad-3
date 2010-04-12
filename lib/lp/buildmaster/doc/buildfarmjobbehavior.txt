@@ -111,3 +111,11 @@ appropriate exception.
      ...
     BuildBehaviorMismatch: Builder was idle when asked to log the start of a
     build.
+
+If a slave is working on a job while we think it is idle, it will always be
+aborted.
+
+    >>> bob.current_build_behavior.verifySlaveBuildCookie('foo')
+    Traceback (most recent call last):
+    ...
+    CorruptBuildCookie: No job assigned to builder

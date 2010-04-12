@@ -31,6 +31,7 @@ returns that item. Otherwise it raises a ValueError.
 
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from zope.component import getMultiAdapter
+    >>> from zope.schema import Choice
     >>> from lazr.restful.fields import ReferenceChoice
     >>> from lazr.restful.interfaces import IFieldMarshaller
     >>> from lazr.restful import EntryResource
@@ -83,6 +84,21 @@ resource and not a random string.
 
     >>> marshaller.representation_name
     'some_person_link'
+
+If you export a Choice that uses an SQLObjectVocabularyBase then you
+get an error, as you should be using a ReferenceChoice instead to
+ensure that the resulting wadl matches lazr.restful conventions.
+
+    >>> field = Choice(
+    ...    __name__='some_person', vocabulary='ValidPersonOrTeam')
+    >>> field = field.bind(None)
+    >>> getMultiAdapter((field, request), IFieldMarshaller)
+    ... # doctest: +NORMALIZE_WHITESPACE
+    Traceback (most recent call last):
+    ...
+    AssertionError: You exported some_person as an IChoice based on an
+    SQLObjectVocabularyBase, you should use
+    lazr.restful.fields.ReferenceChoice instead.
 
 Cleanup.
 
