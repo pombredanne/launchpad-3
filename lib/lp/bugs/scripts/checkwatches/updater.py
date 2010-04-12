@@ -66,7 +66,6 @@ from lp.bugs.externalbugtracker import (
     PrivateRemoteBug, UnknownBugTrackerTypeError, UnknownRemoteStatusError,
     UnparseableBugData, UnparseableBugTrackerVersion,
     UnsupportedBugTrackerVersion)
-from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking

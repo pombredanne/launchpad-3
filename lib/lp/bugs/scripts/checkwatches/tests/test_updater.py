@@ -221,7 +221,7 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         # Enable SQL statment logging.
         set_request_started()
         try:
-            bug = self.factory.makeBug()
+            self.factory.makeBug()
             self.assertTrue(
                 len(get_request_statements()) > 0,
                 "We need at least one statement in the SQL log.")
