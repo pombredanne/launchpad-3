@@ -150,8 +150,12 @@ def auto_merge_proposals(scan_completed):
     # which introduced the change, that will either be set through the web
     # ui by a person, or by PQM once it is integrated.
 
-    merge_sorted = CachingIterator(
-        scan_completed.bzr_branch.iter_merge_sorted_revisions())
+    if scan_completed.bzr_branch is None:
+        # Only happens in tests.
+        merge_sorted = []
+    else:
+        merge_sorted = CachingIterator(
+            scan_completed.bzr_branch.iter_merge_sorted_revisions())
     for proposal in db_branch.landing_candidates:
         tip_rev_id = proposal.source_branch.last_scanned_id
         if tip_rev_id in bzr_ancestry:
