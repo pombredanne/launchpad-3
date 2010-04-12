@@ -40,6 +40,8 @@ recent_watch_activity property.
 
 We'll create a new watch in order to demonstrate this.
 
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
     >>> new_watch = factory.makeBugWatch()
 
 The view for the new watch will have an empty recent_watch_activity list
@@ -48,3 +50,41 @@ since it hasn't been updated yet.
     >>> new_watch_view = create_initialized_view(new_watch, '+edit')
     >>> len(new_watch_view.recent_watch_activity)
     0
+
+Adding a successful activity entry for the watch will cause it to show
+up on the recent_watch_activity property.
+
+    >>> new_watch.addActivity()
+    >>> len(new_watch_view.recent_watch_activity)
+    1
+
+Each entry in the recent_watch_activity list is a dict containing data
+about the activity.
+
+    >>> from pprint import pprint
+    >>> for activity_dict in new_watch_view.recent_watch_activity:
+    ...     pprint(activity_dict)
+    {'completion_message': 'completed successfully',
+     'date': datetime.datetime(...tzinfo=<UTC>),
+     'icon': '/@@/yes'}
+
+If an activity entry records a failure, the 'icon' entry in the dict
+will point to the 'no' icon and the completion_message will explain the
+failure.
+
+We'll commit the transaction to make sure that the two activities have
+different dates.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+    >>> new_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> for activity_dict in new_watch_view.recent_watch_activity:
+    ...     pprint(activity_dict)
+    {'completion_message': "failed with error 'Bug Not Found'",
+     'date': datetime.datetime(...tzinfo=<UTC>),
+     'icon': '/@@/no'}
+    {'completion_message': 'completed successfully',
+     'date': datetime.datetime(...tzinfo=<UTC>),
+     'icon': '/@@/yes'}

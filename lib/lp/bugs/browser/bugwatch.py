@@ -12,7 +12,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.cachedproperty import cachedproperty
 from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
@@ -101,18 +100,18 @@ class BugWatchEditView(LaunchpadFormView):
         """See `LaunchpadFormView.`"""
         return {'url' : self.context.url}
 
-    @cachedproperty
+    @property
     def recent_watch_activity(self):
         """Return a list of dicts representing recent watch activity."""
         activity_items = []
         for activity in self.context.activity:
-            if status in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+            if activity.result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
                 icon = "/@@/yes"
                 completion_message = "completed successfully"
             else:
                 icon = "/@@/no"
                 completion_message = (
-                    "failed with error '%s'" % status.title)
+                    "failed with error '%s'" % activity.result.title)
 
             activity_items.append({
                 'icon': icon,
