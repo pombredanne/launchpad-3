@@ -955,15 +955,16 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
 
-                    if branch is not None:
-                        self.context.branch = branch
-                        self.request.response.addInfoNotification(
-                            'Mirrored branch created and linked to '
-                            'the series.')
+                    if branch is None:
+                        self.next_url = None
+                        return
+
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'Mirrored branch created and linked to '
+                        'the series.')
                 else:
                     # We need to create an import request.
-
-                    # Ensure the URL has not already been imported.
                     if rcs_type == RevisionControlSystemsExtended.CVS:
                         cvs_root = data.get('repo_url')
                         cvs_module = data.get('cvs_module')
@@ -973,14 +974,20 @@ class ProductSeriesSetBranchView(LaunchpadFormView, ProductSeriesView,
                         cvs_module = None
                         url = data.get('repo_url')
                     rcs_item = RevisionControlSystems.items[rcs_type.name]
-                    code_import = getUtility(ICodeImportSet).new(
-                        registrant=branch_owner,
-                        target=IBranchTarget(self.context.product),
-                        branch_name=branch_name,
-                        rcs_type=rcs_item,
-                        url=url,
-                        cvs_root=cvs_root,
-                        cvs_module=cvs_module)
+                    try:
+                        code_import = getUtility(ICodeImportSet).new(
+                            registrant=branch_owner,
+                            target=IBranchTarget(self.context.product),
+                            branch_name=branch_name,
+                            rcs_type=rcs_item,
+                            url=url,
+                            cvs_root=cvs_root,
+                            cvs_module=cvs_module)
+                    except BranchExists, e:
+                        self._setBranchExists(e.existing_branch,
+                        'branch_name')
+                        self.next_url = None
+                        return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
                         'Code import created and branch linked to the '
