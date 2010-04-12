@@ -805,8 +805,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
-                              default=None)
+    supersededby = ForeignKey(
+        foreignKey='BinaryPackageBuild', dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)

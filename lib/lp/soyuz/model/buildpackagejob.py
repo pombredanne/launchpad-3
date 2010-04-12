@@ -38,7 +38,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
     job = Reference(job_id, 'Job.id')
 
     build_id = Int(name='build', allow_none=False)
-    build = Reference(build_id, 'Build.id')
+    build = Reference(build_id, 'BinaryPackageBuild.id')
 
     def score(self):
         """See `IBuildPackageJob`."""

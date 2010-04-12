@@ -487,10 +487,10 @@
                 deletePackagesetUploader"/>
     </securedutility>
 
-    <!-- Build -->
+    <!-- BinaryPackageBuild -->
 
     <class
-        class="canonical.launchpad.database.Build">
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuild">
         <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildView"/>
@@ -516,13 +516,13 @@
         factory="lp.soyuz.browser.build.BuildBreadcrumb"
         permission="zope.Public"/>
 
-    <!-- BuildSet -->
+    <!-- BinaryPackageBuildSet -->
 
     <securedutility
-        class="canonical.launchpad.database.BuildSet"
-        provides="lp.soyuz.interfaces.build.IBinaryPackageBuildSet">
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildSet"
+        provides="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet">
         <allow
-            interface="lp.soyuz.interfaces.build.IBinaryPackageBuildSet"/>
+            interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet"/>
     </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
