@@ -1647,18 +1647,60 @@
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
         <allow
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorPublic" />
+            attributes="
+                id
+                name
+                displayname
+                description
+                distribution
+                http_base_url
+                ftp_base_url
+                rsync_base_url
+                enabled
+                speed
+                status
+                country
+                content
+                owner
+                title
+                cdimage_series
+                source_series
+                arch_series
+                last_probe_record
+                all_probe_records
+                has_ftp_or_rsync_base_url
+                base_url
+                date_created
+                country_dns_mirror
+                mirrorMustHaveHTTPOrFTPURL
+                getSummarizedMirroredSourceSeries
+                getSummarizedMirroredArchSeries
+                getOverallFreshness
+                isOfficial
+                shouldDisable
+                disable
+                newProbeRecord
+                deleteMirrorDistroArchSeries
+                ensureMirrorDistroArchSeries
+                ensureMirrorDistroSeriesSource
+                deleteMirrorDistroSeriesSource
+                ensureMirrorCDImageSeries
+                deleteMirrorCDImageSeries
+                deleteAllMirrorCDImageSeries
+                getExpectedPackagesPaths
+                getExpectedSourcesPaths
+                canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorEditRestricted"
             set_attributes="name displayname description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
-                            speed country content official_candidate owner" />
+                            speed country content official_candidate owner"
+            attributes="official_candidate whiteboard" />
         <require
             permission="launchpad.Admin"
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
             set_attributes="status reviewer date_reviewed"
-            attributes="destroySelf" />
+            attributes="reviewer date_reviewed destroySelf
+                transitionToCountryMirror" />
     </class>
 
     <adapter

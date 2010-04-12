@@ -354,6 +354,13 @@ class WebServiceApplication(ServiceRootResource):
 
     cached_wadl = {}
 
+    @classmethod
+    def cachedWADLPath(cls, instance_name, version):
+        """Helper method to calculate the path to a cached WADL file."""
+        return os.path.join(
+            os.path.dirname(os.path.normpath(__file__)),
+            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
+
     def toWADL(self):
         """See `IWebServiceApplication`.
 
@@ -370,10 +377,8 @@ class WebServiceApplication(ServiceRootResource):
             return super(WebServiceApplication, self).toWADL()
         if  version not in self.__class__.cached_wadl:
             # It's not cached. Look for it on disk.
-            _wadl_filename = os.path.join(
-                os.path.dirname(os.path.normpath(__file__)),
-                'apidoc', 'wadl-%s-%s.xml' % (config.instance_name, version))
-
+            _wadl_filename = self.cachedWADLPath(
+                config.instance_name, version)
             _wadl_fd = None
             try:
                 _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')

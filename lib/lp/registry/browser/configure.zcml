@@ -1192,12 +1192,6 @@
             classes="
                 PersonSetNavigation"/>
         <browser:page
-            name="+newperson"
-            for="lp.registry.interfaces.person.IPersonSet"
-            class="lp.registry.browser.person.PersonAddView"
-            permission="launchpad.Admin"
-            template="../templates/people-newperson.pt"/>
-        <browser:page
             name="+newteam"
             for="lp.registry.interfaces.person.IPersonSet"
             class="lp.registry.browser.team.TeamAddView"
@@ -1667,6 +1661,13 @@
         name="+linkbranchtoseries"
         class="lp.registry.browser.productseries.ProductSeriesLinkBranchFromCodeView"
         template="../templates/productseries-linkbranch.pt"
+        facet="overview"
+        permission="launchpad.Edit"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+setbranch"
+        class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
+        template="../templates/productseries-setbranch.pt"
         facet="overview"
         permission="launchpad.Edit"/>
     <browser:page
