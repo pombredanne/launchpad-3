@@ -51,5 +51,15 @@ class TestCachingIterator(TestCase):
             [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
         self.assertEqual([0,1,2,3,4], iterator.data)
 
+    def test_limited_iterator(self):
+        # Make sure that StopIteration is handled correctly.
+        iterator = CachingIterator(iter([0,1,2,3,4]))
+        self.assertEqual(
+            [0,1,2], list(itertools.islice(iterator, 0, 3)))
+        self.assertEqual([0,1,2], iterator.data)
+        self.assertEqual([0,1,2,3,4], list(iterator))
+        self.assertIs(None, iterator.iterator)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

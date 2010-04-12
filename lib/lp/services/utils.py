@@ -103,8 +103,10 @@ class CachingIterator:
         for item in self.data:
             yield item
         while self.iterator is not None:
-            item = self.iterator.next()
-            self.data.append(item)
-            if item is None:
+            try:
+                item = self.iterator.next()
+            except StopIteration:
                 self.iterator = None
+                break
+            self.data.append(item)
             yield item
