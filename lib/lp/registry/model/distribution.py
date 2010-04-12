@@ -745,6 +745,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         raise NotFoundError(distroseries_name)
 
+    def getSeriesByStatus(self, status):
+        """See `IDistribution`."""
+        return DistroSeries.selectBy(distribution=self,
+            status=status)
+
     def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See `IDistribution`."""
         assert (source or binary), "searching in an explicitly empty " \
