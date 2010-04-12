@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.dbpolicy import (
     ReadOnlyLaunchpadDatabasePolicy, SlaveDatabasePolicy,
     SlaveOnlyDatabasePolicy)
 from canonical.launchpad.webapp.interfaces import (
-    ALL_STORES, AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
+    ALL_STORES, DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy,
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore,
     SLAVE_FLAVOR)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -46,9 +46,6 @@ class ImplicitDatabasePolicyTestCase(TestCase):
         store_selector = getUtility(IStoreSelector)
         main_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
         self.failUnlessEqual(self.getDBUser(main_store), 'launchpad_main')
-
-        auth_store = store_selector.get(AUTH_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(auth_store), 'launchpad_auth')
 
     def getDBUser(self, store):
         return store.execute(
@@ -172,7 +169,7 @@ class LayerDatabasePolicyTestCase(TestCase):
             and will meltdown when the API becomes popular.
         """
         api_prefix = getUtility(
-            IWebServiceConfiguration).service_version_uri_prefix
+            IWebServiceConfiguration).active_versions[0]
         server_url = 'http://api.launchpad.dev/%s' % api_prefix
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         setFirstLayer(request, WebServiceLayer)
@@ -185,7 +182,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         can be outsourced to a slave database when possible.
         """
         api_prefix = getUtility(
-            IWebServiceConfiguration).service_version_uri_prefix
+            IWebServiceConfiguration).active_versions[0]
         server_url = 'http://api.launchpad.dev/%s' % api_prefix
         request = LaunchpadTestRequest(SERVER_URL=server_url)
         newInteraction(request)
@@ -211,7 +208,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         touch_read_only_file()
         try:
             api_prefix = getUtility(
-                IWebServiceConfiguration).service_version_uri_prefix
+                IWebServiceConfiguration).active_versions[0]
             server_url = 'http://api.launchpad.dev/%s' % api_prefix
             request = LaunchpadTestRequest(SERVER_URL=server_url)
             setFirstLayer(request, WebServiceLayer)

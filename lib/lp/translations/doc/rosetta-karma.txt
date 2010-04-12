@@ -21,7 +21,7 @@ like SQLObjects are not persistent between transactions.
 
 Setup an event listener to help ensure karma is assigned when it should.
 
-    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 

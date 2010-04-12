@@ -14,7 +14,6 @@ import pdb
 import pprint
 import re
 import transaction
-import sys
 import unittest
 
 from BeautifulSoup import (
@@ -28,17 +27,22 @@ from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
+from zope.security.proxy import removeSecurityProxy
+
+from launchpadlib.launchpad import Launchpad
 
 from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities)
+    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
+    TeamMembershipStatus)
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
-from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing import (
+    ANONYMOUS, launchpadlib_for, login, login_person, logout)
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import NameAlreadyTaken
 
@@ -51,6 +55,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
     sending both Basic Auth and cookie credentials raises an exception
     (Bug 39881).
     """
+
     def __init__(self, *args, **kw):
         if kw.get('debug'):
             self._debug = True
@@ -133,6 +138,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         self.handle_errors = handle_errors
         WebServiceCaller.__init__(self, handle_errors, domain, protocol)
 
+    default_api_version = "beta"
+
     def addHeadersTo(self, full_url, full_headers):
         if (self.consumer is not None and self.access_token is not None):
             request = OAuthRequest.from_consumer_and_token(
@@ -203,7 +210,9 @@ def extract_all_script_and_style_links(content):
 
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
+
     match_classes = set(class_.split())
+
     def class_matcher(value):
         if value is None:
             return False
@@ -263,6 +272,7 @@ def print_feedback_messages(content):
     for message in get_feedback_messages(content):
         print message
 
+
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
     """Given a <table> print the content of each row.
 
@@ -282,6 +292,7 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
                 row_content.append(extract_text(item))
         if len(row_content) > 0:
             print sep.join(row_content)
+
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -457,7 +468,7 @@ def print_action_links(content):
 
 def print_navigation_links(content):
     """Print navigation menu urls."""
-    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    navigation_links = find_tag_by_id(content, 'navigation-tabs')
     if navigation_links is None:
         print "No navigation links"
         return
@@ -527,7 +538,7 @@ def print_comments(page):
 
 def print_batch_header(soup):
     """Print the batch navigator header."""
-    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    navigation = soup.find('td', {'class': 'batch-navigation-index'})
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
@@ -669,26 +680,41 @@ def setupDTCBrowser():
     login('foo.bar@canonical.com')
     try:
         dtg_member = LaunchpadObjectFactory().makePerson(
+            name='ubuntu-translations-coordinator',
             email="dtg-member@ex.com", password="test")
     except NameAlreadyTaken:
         # We have already created the translations coordinator
         pass
     else:
-        dtg = LaunchpadObjectFactory().makeTranslationGroup(owner=dtg_member)
+        dtg = LaunchpadObjectFactory().makeTranslationGroup(
+            name="ubuntu-translators",
+            title="Ubuntu Translators",
+            owner=dtg_member)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu.translationgroup = dtg
     logout()
     return setupBrowser(auth='Basic dtg-member@ex.com:test')
 
 
-def stop():
-    # Temporarily restore the real stdout.
-    old_stdout = sys.stdout
-    sys.stdout = sys.__stdout__
+def setupRosettaExpertBrowser():
+    """Testbrowser configured for Rosetta Experts."""
+
+    login('admin@canonical.com')
     try:
-        pdb.set_trace()
-    finally:
-        sys.stdout = old_stdout
+        rosetta_expert = LaunchpadObjectFactory().makePerson(
+            name='rosetta-experts-member',
+            email='re@ex.com', password='test')
+    except NameAlreadyTaken:
+        # We have already created an Rosetta expert
+        pass
+    else:
+        rosetta_experts_team = removeSecurityProxy(getUtility(
+            ILaunchpadCelebrities).rosetta_experts)
+        rosetta_experts_team.addMember(
+            rosetta_expert, reviewer=rosetta_experts_team,
+            status=TeamMembershipStatus.ADMIN)
+    logout()
+    return setupBrowser(auth='Basic re@ex.com:test')
 
 
 def setUpGlobs(test):
@@ -704,6 +730,7 @@ def setUpGlobs(test):
         'launchpad-library', '')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['setupDTCBrowser'] = setupDTCBrowser
+    test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
@@ -728,6 +755,7 @@ def setUpGlobs(test):
     test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['login'] = login
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout

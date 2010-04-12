@@ -58,25 +58,13 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError,
+    translation_import_queue_entry_age,
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-# Approximate number of days in a 6-month period.
-half_year = 366 / 2
-
-# Period after which entries with certain statuses are culled from the
-# queue.
-entry_gc_age = {
-    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
-    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
-    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
-    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=half_year),
-}
 
 
 def is_gettext_name(path):
@@ -320,6 +308,10 @@ class TranslationImportQueueEntry(SQLBase):
             # that's only possible if we know where to import it
             # (import_into not None).
             return self.canAdmin(roles) and self.import_into is not None
+        if new_status == RosettaImportStatus.NEEDS_INFORMATION:
+            # Only administrators are able to set the NEEDS_INFORMATION
+            # status.
+            return self.canAdmin(roles)
         if new_status == RosettaImportStatus.IMPORTED:
             # Only rosetta experts are able to set the IMPORTED status, and
             # that's only possible if we know where to import it
@@ -958,38 +950,14 @@ class TranslationImportQueue:
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None):
         """See ITranslationImportQueue."""
-        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
-        # workaround for bug 44773 (Python's gzip support sometimes fails to
-        # work when using plain tarfile.open()). The issue is that we can't
-        # rely on tarfile's smart detection of filetypes and instead need to
-        # hardcode the type explicitly in the mode. We simulate magic
-        # here to avoid depending on the python-magic package. We can
-        # get rid of this when http://bugs.python.org/issue1488634 is
-        # fixed.
-        #
-        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
-        # bug #1982 (Python's bz2 support is not able to handle external file
-        # objects). That bug is worked around by using tarfile.open() which
-        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
-        # this when we upgrade to python2.5 everywhere.
         num_files = 0
         conflict_files = []
-
-        if content.startswith('BZh'):
-            mode = "r|bz2"
-        elif content.startswith('\037\213'):
-            mode = "r|gz"
-        elif content[257:262] == 'ustar':
-            mode = "r|tar"
-        else:
-            # Not a tarball, we ignore it.
-            return (num_files, conflict_files)
 
         translation_importer = getUtility(ITranslationImporter)
 
         try:
-            tarball = tarfile.open('', mode, StringIO(content))
-        except tarfile.ReadError:
+            tarball = tarfile.open('', 'r|*', StringIO(content))
+        except (tarfile.CompressionError, tarfile.ReadError):
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
             return (num_files, conflict_files)
@@ -1006,7 +974,7 @@ class TranslationImportQueue:
             if filename is None or filename == '':
                 continue
 
-            if posixpath.basename(filename).startswith('.'):
+            if translation_importer.isHidden(filename):
                 # Dotfile.  Probably an editor backup or somesuch.
                 continue
 
@@ -1252,8 +1220,8 @@ class TranslationImportQueue:
         """
         now = datetime.datetime.now(pytz.UTC)
         deletion_clauses = []
-        for status, gc_age in entry_gc_age.iteritems():
-            cutoff = now - gc_age
+        for status, max_age in translation_import_queue_entry_age.iteritems():
+            cutoff = now - max_age
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))

@@ -8,50 +8,51 @@ by unauthorised people.  For publications attached to a public archive, there
 are no restrictions.  For those attached to a private archive, only those able
 to view the archive, or admins, can see the publication.
 
-As an anonymous user get the first published source and binary out of cprov's 
-public PPA:
+We create two PPAs, one public and one private. Both PPAs are populated
+with some source and binary publishings.
+
+    >>> login('admin@canonical.com')
+    >>> public_ppa = factory.makeArchive(private=False)
+    >>> private_ppa = factory.makeArchive(private=True)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> ignore = test_publisher.getPubBinaries(archive=public_ppa)
+    >>> ignore = test_publisher.getPubBinaries(archive=private_ppa)
+
+
+As an anonymous user we can get the first published source and binary out
+the public PPA:
 
     >>> login(ANONYMOUS)
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-    >>> cprov_ppa.private
-    False
-
-    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> source_pub = public_ppa.getPublishedSources()[0]
     >>> print source_pub.displayname
-    cdrkit 1.0 in breezy-autotest
+    foo 666 in breezy-autotest
 
-    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> binary_pub = public_ppa.getAllPublishedBinaries()[0]
     >>> print binary_pub.displayname
-    mozilla-firefox 1.0 in warty hppa
+    foo-bin 666 in breezy-autotest i386
 
 A regular user can see them too:
 
     >>> login('no-priv@canonical.com')
-    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> source_pub = public_ppa.getPublishedSources()[0]
     >>> print source_pub.displayname
-    cdrkit 1.0 in breezy-autotest
+    foo 666 in breezy-autotest
 
-    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> binary_pub = public_ppa.getAllPublishedBinaries()[0]
     >>> print binary_pub.displayname
-    mozilla-firefox 1.0 in warty hppa
+    foo-bin 666 in breezy-autotest i386
 
-Now, we'll make cprov's PPA private:
-
-    >>> login('admin@canonical.com')
-    >>> cprov_ppa.private = True
-    >>> cprov_ppa.buildd_secret = "blah"
-
-Anonymous access will now be refused:
+But when querying the private PPA, anonymous access will be refused:
 
     >>> login(ANONYMOUS)
-    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> source_pub = private_ppa.getPublishedSources()[0]
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> binary_pub = private_ppa.getAllPublishedBinaries()[0]
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -59,35 +60,35 @@ Anonymous access will now be refused:
 As is for a regular user.
 
     >>> login('no-priv@canonical.com')
-    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> source_pub = private_ppa.getPublishedSources()[0]
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> binary_pub = private_ppa.getAllPublishedBinaries()[0]
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-But cprov himself can see them:
+But the owner can see them.
 
-    >>> login('celso.providelo@canonical.com')
-    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> login_person(private_ppa.owner)
+    >>> source_pub = private_ppa.getPublishedSources()[0]
     >>> print source_pub.displayname
-    cdrkit 1.0 in breezy-autotest
+    foo 666 in breezy-autotest
 
-    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> binary_pub = private_ppa.getAllPublishedBinaries()[0]
     >>> print binary_pub.displayname
-    mozilla-firefox 1.0 in warty hppa
+    foo-bin 666 in breezy-autotest i386
 
 As can an administrator.
 
     >>> login('admin@canonical.com')
-    >>> source_pub = cprov_ppa.getPublishedSources()[0]
+    >>> source_pub = private_ppa.getPublishedSources()[0]
     >>> print source_pub.displayname
-    cdrkit 1.0 in breezy-autotest
+    foo 666 in breezy-autotest
 
-    >>> binary_pub = cprov_ppa.getAllPublishedBinaries()[0]
+    >>> binary_pub = private_ppa.getAllPublishedBinaries()[0]
     >>> print binary_pub.displayname
-    mozilla-firefox 1.0 in warty hppa
+    foo-bin 666 in breezy-autotest i386
 

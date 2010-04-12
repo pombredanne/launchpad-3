@@ -24,7 +24,7 @@ from zope.interface import implements
 
 from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
-from canonical.launchpad.browser.objectreassignment import (
+from lp.registry.browser.objectreassignment import (
     ObjectReassignmentView)
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)

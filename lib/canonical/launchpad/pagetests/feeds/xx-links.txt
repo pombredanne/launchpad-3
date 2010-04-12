@@ -53,11 +53,11 @@ branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-       href="http://feeds.launchpad.dev/~stevea/branches.atom"
-       title="Latest Branches for Steve Alexander" />,
-    <link rel="alternate" type="application/atom+xml"
        href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom"
        title="Latest Bugs for Steve Alexander" />,
+    <link rel="alternate" type="application/atom+xml"
+       href="http://feeds.launchpad.dev/~stevea/branches.atom"
+       title="Latest Branches for Steve Alexander" />,
     <link rel="alternate" type="application/atom+xml"
        href="http://feeds.launchpad.dev/~stevea/revisions.atom"
        title="Latest Revisions by Steve Alexander" />]
@@ -95,7 +95,7 @@ main product page.
         title="Latest Branches for Jokosher" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/jokosher/revisions.atom"
-	title="Latest Revisions for Jokosher" />]
+        title="Latest Revisions for Jokosher" />]
 
 Only bug feeds should be linked to on bugs.launchpad.dev.
 

@@ -17,7 +17,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.registry.interfaces.karma import IKarmaAction, IKarmaActionSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadView, Navigation)
@@ -86,7 +86,7 @@ class KarmaContextTopContributorsView(LaunchpadView):
             self.context_name = 'Project'
         elif IDistribution.providedBy(context):
             self.context_name = 'Distribution'
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             self.context_name = 'Project Group'
         else:
             raise AssertionError(

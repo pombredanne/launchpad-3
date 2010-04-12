@@ -93,8 +93,9 @@ The IFAQCollection interface is provided by objects that represents a
 collection of FAQs. This interface can be used to retrieve and search
 for FAQs. It is provided by product, distribution, and projects.
 
-    >>> from canonical.launchpad.interfaces import IFAQCollection, IProjectSet
-    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IFAQCollection, IProjectGroupSet)
+    >>> gnome = getUtility(IProjectGroupSet).getByName('gnome')
     >>> verifyObject(IFAQCollection, gnome)
     True
     >>> verifyObject(IFAQCollection, ubuntu)

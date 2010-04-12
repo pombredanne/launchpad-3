@@ -91,13 +91,13 @@
     <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
        (<a href="/+help/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
-    <form tal:condition="context/gpgkeys/count"
+    <form tal:condition="context/gpg_keys/count"
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
       <h2>Your active keys</h2>
 
-      <div tal:repeat="key context/gpgkeys">
+      <div tal:repeat="key context/gpg_keys">
         <label>
           <input type="checkbox" name="DEACTIVATE_GPGKEY"
                  tal:attributes="value key/id"/>
@@ -112,14 +112,14 @@
 
     </form>
 
-    <form tal:condition="context/pendinggpgkeys" name="gpg_actions"
+    <form tal:condition="context/pending_gpg_keys" name="gpg_actions"
           action="" method="POST">
       <input type="hidden" name="action" value="remove_gpgtoken" />
 
       <h2>Keys pending validation</h2>
 
       <div>
-        <label tal:repeat="fingerprint context/pendinggpgkeys">
+        <label tal:repeat="fingerprint context/pending_gpg_keys">
           <input type="checkbox" name="REMOVE_GPGTOKEN"
                  tal:attributes="value fingerprint"/>
           <span tal:replace="fingerprint">TOKEN</span>
@@ -129,7 +129,7 @@
       <input type="submit" value="Cancel Validation for Selected Keys" />
     </form>
 
-    <form tal:condition="context/inactivegpgkeys" name="gpg_actions"
+    <form tal:condition="context/inactive_gpg_keys" name="gpg_actions"
           action="" method="POST">
       <input type="hidden" name="action" value="reactivate_gpg" />
 
@@ -137,7 +137,7 @@
 
       <p>You can reactivate any of these keys for use in Launchpad whenever you choose.</p>
 
-      <div tal:repeat="key context/inactivegpgkeys">
+      <div tal:repeat="key context/inactive_gpg_keys">
         <label>
         <input type="checkbox" name="REACTIVATE_GPGKEY"
                tal:attributes="value key/id"/>

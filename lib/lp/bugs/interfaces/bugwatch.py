@@ -8,8 +8,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugWatchErrorType',
+    'BugWatchActivityStatus',
     'IBugWatch',
+    'IBugWatchActivity',
     'IBugWatchSet',
     'NoBugTrackerFound',
     'UnrecognizedBugTrackerURL',
@@ -22,7 +23,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.registry.interfaces.person import IPerson
 from lp.bugs.interfaces.bugtracker import IBugTracker
 
 from lazr.restful.declarations import (
@@ -30,7 +30,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 
-class BugWatchErrorType(DBEnumeratedType):
+class BugWatchActivityStatus(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
     UNKNOWN = DBItem(999, """
@@ -128,13 +128,17 @@ class IBugWatch(IHasBug):
         Datetime(title=_('Last Checked')),
         exported_as='date_last_checked')
     last_error_type = exported(
-        Choice(title=_('Last Error Type'), vocabulary=BugWatchErrorType))
+        Choice(title=_('Last Error Type'), vocabulary=BugWatchActivityStatus))
     datecreated = exported(
         Datetime(title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created')
     owner = exported(
         Reference(title=_('Owner'), required=True,
-                  readonly=True, schema=IPerson))
+                  readonly=True, schema=Interface))
+    activity = Attribute('The activity history of this BugWatch.')
+    next_check = exported(
+        Datetime(title=_('Next Check')),
+        exported_as='date_next_checked')
 
     # Useful joins.
     bugtasks = exported(
@@ -205,6 +209,9 @@ class IBugWatch(IHasBug):
 
     def getImportedBugMessages():
         """Return all the `IBugMessage`s that have been imported."""
+
+    def addActivity(result=None, message=None, oops_id=None):
+        """Add an `IBugWatchActivity` record for this BugWatch."""
 
 
 # Defined here because of circular imports.
@@ -294,3 +301,28 @@ class NoBugTrackerFound(Exception):
 
 class UnrecognizedBugTrackerURL(Exception):
     """The given URL isn't used by any bug tracker we support."""
+
+
+class IBugWatchActivity(Interface):
+    """A record of a single BugWatch update."""
+
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The unique id of this activity record."))
+    bug_watch = Reference(
+        title=_('Bug watch'), required=True, readonly=True, schema=IBugWatch,
+        description=_(
+            "The BugWatch whose activity is recorded in this record"))
+    activity_date = Datetime(
+        title=_('Activity date'), required=True, readonly=True,
+        description=_("The date on which this activity occurred."))
+    result = Choice(
+        title=_('Result'), vocabulary=BugWatchActivityStatus, readonly=True,
+        description=_("The result of the activity."))
+    message = Text(
+        title=_('Message'), readonly=True,
+        description=_("The message associated with this activity."))
+    oops_id = Text(
+        title=_('OOPS ID'), readonly=True,
+        description=_("The OOPS ID associated with this activity."))
+

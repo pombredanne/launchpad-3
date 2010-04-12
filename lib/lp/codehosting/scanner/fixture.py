@@ -14,7 +14,6 @@ __all__ = [
     'Fixtures',
     'FixtureWithCleanup',
     'IFixture',
-    'make_zope_event_fixture',
     'run_with_fixture',
     'ServerFixture',
     'with_fixture',
@@ -118,10 +117,6 @@ class ZopeEventHandlerFixture(FixtureWithCleanup):
         gsm = getGlobalSiteManager()
         provideHandler(self._handler)
         self.addCleanup(gsm.unregisterHandler, self._handler)
-
-
-def make_zope_event_fixture(*handlers):
-    return Fixtures(map(ZopeEventHandlerFixture, handlers))
 
 
 class ServerFixture:

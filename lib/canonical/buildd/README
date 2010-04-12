@@ -3,6 +3,7 @@ In order to build the package you need dpkg-dev and fakeroot
 To build the package do:
 
 cd ..../lib/canonical/buildd
+debian/rules package
 dpkg-buildpackage -rfakeroot -b
 
 It will "fail" because the package built in the "wrong" place. Don't

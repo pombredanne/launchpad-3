@@ -111,6 +111,17 @@ class BaseDatabasePolicy:
         """See `IDatabasePolicy`."""
         pass
 
+    def __enter__(self):
+        """See `IDatabasePolicy`."""
+        getUtility(IStoreSelector).push(self)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """See `IDatabasePolicy`."""
+        policy = getUtility(IStoreSelector).pop()
+        assert policy is self, (
+            "Unexpected database policy %s returned by store selector"
+            % repr(policy))
+
 
 class DatabaseBlockedPolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` that blocks all access to the database."""
@@ -293,26 +304,18 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # sl_status gives meaningful results only on the origin node.
         master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        # If it takes more than (by default) 0.25 seconds to query the
-        # replication lag, assume we are lagged. Normally the query
-        # takes <20ms. This can happen during heavy updates, as the
-        # Slony-I tables can get slow with lots of events. We use a
-        # SAVEPOINT to conveniently reset the statement timeout.
-        master_store.execute("""
-            SAVEPOINT lag_check; SET LOCAL statement_timeout TO %d
-            """ % config.launchpad.lag_check_timeout)
-        try:
-            try:
-                return master_store.execute(
-                    "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
-            except TimeoutError:
-                logging.warn(
-                    'Gave up querying slave lag after %d ms',
-                    (config.launchpad.lag_check_timeout))
-                return timedelta(days=999) # A long, long time.
-        finally:
-            master_store.execute("ROLLBACK TO lag_check")
 
+        # Retrieve the cached lag.
+        lag = master_store.execute("""
+            SELECT lag + (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - updated)
+            FROM DatabaseReplicationLag WHERE node=%d
+            """ % slave_node_id).get_one()
+        if lag is None:
+            logging.error(
+                "No data in DatabaseReplicationLag for node %d"
+                % slave_node_id)
+            return timedelta(days=999) # A long, long time.
+        return lag[0]
 
 
 def WebServiceDatabasePolicyFactory(request):

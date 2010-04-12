@@ -202,7 +202,7 @@ merged accounts from lists etc.
 An email is sent to the user informing him that he should review his email
 and mailing list subscription settings.
 
-    >>> from canonical.launchpad.interfaces.personnotification import (
+    >>> from lp.registry.interfaces.personnotification import (
     ...     IPersonNotificationSet)
 
     >>> notification_set = getUtility(IPersonNotificationSet)

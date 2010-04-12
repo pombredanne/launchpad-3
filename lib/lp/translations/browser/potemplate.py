@@ -21,6 +21,7 @@ __all__ = [
     'POTemplateUploadView',
     'POTemplateView',
     'POTemplateViewPreferred',
+    'BaseSeriesTemplatesView',
     ]
 
 import cgi
@@ -59,6 +60,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -174,21 +176,21 @@ class POTemplateMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
         text = 'Upload'
-        return Link('+upload', text)
+        return Link('+upload', text, icon='add')
 
     def download(self):
         text = 'Download'
-        return Link('+export', text)
+        return Link('+export', text, icon='download')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Settings'
-        return Link('+edit', text)
+        text = 'Edit'
+        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def administer(self):
         text = 'Administer'
-        return Link('+admin', text)
+        return Link('+admin', text, icon='edit')
 
 
 class POTemplateSubsetView:
@@ -257,7 +259,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
     @property
     def group_parent(self):
-        """Return a parent object implementing `IHasTranslationGroups`."""
+        """Return a parent object implementing `ITranslationPolicy`."""
         if self.context.productseries is not None:
             return self.context.productseries.product
         else:
@@ -509,7 +511,7 @@ class POTemplateViewPreferred(POTemplateView):
         return POTemplateView.pofiles(self, preferred_only=True)
 
 
-class POTemplateEditView(LaunchpadEditFormView):
+class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
@@ -537,12 +539,9 @@ class POTemplateEditView(LaunchpadEditFormView):
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
+        return "name"
 
 
 class POTemplateAdminView(POTemplateEditView):
@@ -781,3 +780,40 @@ class POTemplateBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return smartquote('Template "%s"' % self.context.name)
+
+
+class BaseSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the Series."""
+
+    is_distroseries = True
+    distroseries = None
+    productseries = None
+    label = "Translation templates"
+    page_title = "All templates"
+
+    def initialize(self, series, is_distroseries=True):
+        self.is_distroseries = is_distroseries
+        if is_distroseries:
+            self.distroseries = series
+        else:
+            self.productseries = series
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(
+            productseries=self.productseries,
+            distroseries=self.distroseries,
+            ordered_by_names=True)
+
+    def rowCSSClass(self, template):
+        if template.iscurrent:
+            return "active-template"
+        else:
+            return "inactive-template"
+
+    def isVisible(self, template):
+        if (template.iscurrent or
+            check_permission('launchpad.Edit', template)):
+            return True
+        else:
+            return False

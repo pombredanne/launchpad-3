@@ -16,6 +16,7 @@ __all__ = [
     'NullBugTask',
     'bugtask_sort_key',
     'get_bug_privacy_filter',
+    'get_related_bugtasks_search_params',
     'search_value_to_where_condition']
 
 
@@ -49,16 +50,19 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.interfaces.lpstorm import IStore
+
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
-    IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugBranchSearch, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus)
@@ -70,11 +74,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.milestone import IProjectMilestone
+from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
@@ -82,7 +86,8 @@ from lp.registry.interfaces.sourcepackagename import (
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    IPerson, validate_person_not_private_membership,
+    validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -137,6 +142,48 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
+
+def get_related_bugtasks_search_params(user, context, **kwargs):
+    """Returns a list of `BugTaskSearchParams` which can be used to
+    search for all tasks related to a user given by `context`.
+
+    Which tasks are related to a user?
+      * the user has to be either assignee or owner of this tasks
+        OR
+      * the user has to be subscriber or commenter to the underlying bug
+        OR
+      * the user is reporter of the underlying bug, but this condition
+        is automatically fulfilled by the first one as each new bug
+        always get one task owned by the bug reporter
+    """
+    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
+    search_params = []
+    for key in relevant_fields:
+        # all these parameter default to None
+        user_param = kwargs.get(key)
+        if user_param is None or user_param == context:
+            # we are only creating a `BugTaskSearchParams` object if
+            # the field is None or equal to the context
+            arguments = kwargs.copy()
+            arguments[key] = context
+            if key == 'owner':
+                # Specify both owner and bug_reporter to try to
+                # prevent the same bug (but different tasks)
+                # being displayed.
+                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
+                arguments['bug_reporter'] = context
+            search_params.append(
+                BugTaskSearchParams.fromSearchForm(user, **arguments))
+    if len(search_params) == 0:
+        # unable to search for related tasks to user_context because user
+        # modified the query in an invalid way by overwriting all user
+        # related parameters
+        raise IllegalRelatedBugTasksParams(
+            ('Cannot search for related tasks to \'%s\', at least one '
+             'of these parameter has to be empty: %s'
+                %(context.name, ", ".join(relevant_fields))))
+    return search_params
 
 
 class BugTaskDelta:
@@ -766,7 +813,8 @@ class BugTask(SQLBase, BugTaskMixin):
             user.id == celebrities.bug_importer.id):
             return True
         else:
-            return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
+            return (self.status is not BugTaskStatus.WONTFIX and
+                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
@@ -922,6 +970,9 @@ class BugTask(SQLBase, BugTaskMixin):
         enforced implicitly by the code in
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
+
+        target_before_change = self.target
+
         if (self.milestone is not None and
             self.milestone.target != target):
             # If the milestone for this bugtask is set, we
@@ -945,6 +996,12 @@ class BugTask(SQLBase, BugTaskMixin):
                 raise IllegalTarget(
                     "Distribution bug tasks may only be re-targeted "
                     "to a package in the same distribution.")
+
+        # After the target has changed, we need to recalculate the maximum bug
+        # heat for the new and old targets.
+        if self.target != target_before_change:
+            target_before_change.recalculateMaxBugHeat()
+            self.target.recalculateMaxBugHeat()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1264,6 +1321,7 @@ class BugTaskSet:
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
         "heat": "Bug.heat",
+        "latest_patch_uploaded": "Bug.latest_patch_uploaded",
         }
 
     _open_resolved_upstream = """
@@ -1311,40 +1369,38 @@ class BugTaskSet:
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
-        # Need to import Bug locally, to avoid circular imports.
+        # Import locally to avoid circular imports.
+        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
-        bugtask_ids = [bugtask.id for bugtask in bugtasks]
-        bugs_with_mentoring_offers = list(Bug.select(
-            """id IN (SELECT MentoringOffer.bug
-                      FROM MentoringOffer, BugTask
-                      WHERE MentoringOffer.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_specifications = list(Bug.select(
-            """id IN (SELECT SpecificationBug.bug
-                      FROM SpecificationBug, BugTask
-                      WHERE SpecificationBug.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_branches = list(Bug.select(
-            """id IN (SELECT BugBranch.bug
-                      FROM BugBranch, BugTask
-                      WHERE BugBranch.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_patches = list(Bug.select(
-            """id IN (SELECT BugAttachment.bug
-                      FROM BugAttachment, BugTask
-                      WHERE BugAttachment.bug = BugTask.bug
-                      AND BugAttachment.type = %s
-                        AND BugTask.id IN %s)""" % sqlvalues(
-            BugAttachmentType.PATCH, bugtask_ids)))
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.registry.model.mentoringoffer import MentoringOffer
+
+        bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
+        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
+                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
+        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
+                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+        bug_ids_with_branches = set(IStore(BugBranch).find(
+                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+
+        # Cache all bugs at once to avoid one query per bugtask. We
+        # could rely on the Storm cache, but this is explicit.
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+
         badge_properties = {}
         for bugtask in bugtasks:
+            bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
                 'has_mentoring_offer':
-                    bugtask.bug in bugs_with_mentoring_offers,
-                'has_specification': bugtask.bug in bugs_with_specifications,
-                'has_branch': bugtask.bug in bugs_with_branches,
-                'has_patch': bugtask.bug in bugs_with_patches,
+                    bug.id in bug_ids_with_mentoring_offers,
+                'has_specification':
+                    bug.id in bug_ids_with_specifications,
+                'has_branch':
+                    bug.id in bug_ids_with_branches,
+                'has_patch':
+                    bug.latest_patch_uploaded is not None,
                 }
+
         return badge_properties
 
     def getMultiple(self, task_ids):
@@ -1479,7 +1535,7 @@ class BugTaskSet:
             extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
-            if IProjectMilestone.providedBy(params.milestone):
+            if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
                     IN (SELECT Milestone.id
                         FROM Milestone, Product
@@ -1516,15 +1572,18 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            attachment_clause = (
-                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
-            if isinstance(params.attachmenttype, any):
-                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
-                    sqlvalues(*params.attachmenttype.query_values))
+            if params.attachmenttype == BugAttachmentType.PATCH:
+                extra_clauses.append("Bug.latest_patch_uploaded IS NOT NULL")
             else:
-                where_cond = "BugAttachment.type = %s" % sqlvalues(
-                    params.attachmenttype)
-            extra_clauses.append(attachment_clause % where_cond)
+                attachment_clause = (
+                    "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
+                if isinstance(params.attachmenttype, any):
+                    where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                        sqlvalues(*params.attachmenttype.query_values))
+                else:
+                    where_cond = "BugAttachment.type = %s" % sqlvalues(
+                        params.attachmenttype)
+                extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))
@@ -1671,6 +1730,21 @@ class BugTaskSet:
         hw_clause = self._buildHardwareRelatedClause(params)
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
+
+        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+            extra_clauses.append(
+                """EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+            extra_clauses.append(
+                """NOT EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        else:
+            # If no branch specific search restriction is specified,
+            # we don't need to add any clause.
+            pass
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1844,7 +1918,7 @@ class BugTaskSet:
         params.hardware_product_id are all not None.
         """
         # Avoid cyclic imports.
-        from canonical.launchpad.database.hwdb import (
+        from lp.hardwaredb.model.hwdb import (
             HWSubmission, HWSubmissionBug, HWSubmissionDevice,
             _userCanAccessSubmissionStormClause,
             make_submission_device_statistics_clause)
@@ -2171,7 +2245,7 @@ class BugTaskSet:
             be either a Distribution, DistroSeries, Product, or ProductSeries.
             If target is None, the clause joins BugTask to all the supported
             BugTarget tables.
-        :raises NotImplementedError: If the target is an IProject,
+        :raises NotImplementedError: If the target is an IProjectGroup,
             ISourcePackage, or an IDistributionSourcePackage.
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
@@ -2225,7 +2299,7 @@ class BugTaskSet:
             target_clause = "target.product_pillar = %s" % sqlvalues(target)
         elif IProductSeries.providedBy(target):
             target_clause = "BugTask.productseries = %s" % sqlvalues(target)
-        elif (IProject.providedBy(target)
+        elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
             raise NotImplementedError(

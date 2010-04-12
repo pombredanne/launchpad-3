@@ -77,6 +77,8 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
+    >>> transaction.commit()
+
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
@@ -140,7 +142,7 @@ updateBugWatches() issues only one request to update all watches:
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
     WARNING:...:Didn't find bug u'1798' on http://bugs.some.where
-    (local bugs: 10).
+    (local bugs: 10). (OOPS-...)
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -179,7 +181,7 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get

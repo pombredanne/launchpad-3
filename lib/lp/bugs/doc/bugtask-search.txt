@@ -62,6 +62,17 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
     >>> ubuntu_firefox_bugs.count() > 0
     True
 
+== Person bugs ==
+
+To get all related tasks to a person call searchTasks() on the person
+object:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> user = getUtility(IPersonSet).getByName('name16')
+    >>> user_bugs = user.searchTasks(None, user=None)
+    >>> user_bugs.count() > 0
+    True
+
 == Dupes and Conjoined tasks ==
 
 You can set flags to omit duplicates:
@@ -798,7 +809,7 @@ product ID. If we search for bugs related to the PCI device (0x10de,
 0x0455), which appears in a HWDB submission from Sample Person, bugs
 reported by him will be returned.
 
-    >>> from canonical.launchpad.interfaces.hwdb import HWBus
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus
     >>> search_params = BugTaskSearchParams(
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
@@ -902,7 +913,7 @@ Finally, we can search for who bugs which are directly linked to
 a HWDB submission, where the submission contains the given device or
 driver.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> hw_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> bug_19 = getUtility(IBugSet).get(19)
@@ -962,8 +973,34 @@ return True for isUserAffected(foo_bar).
     >>> print reduce(
     ...     lambda x, y: x and y,
     ...     [task.bug.isUserAffected(foo_bar)
-    ...      for task in firefox.searchTasks(search_params)]) 
+    ...      for task in firefox.searchTasks(search_params)])
     True
+
+
+== Searching for bugs linked to branches ==
+
+We can search for bugs having branches linked to them.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    4 2
+    5 1
+
+Similary, we can search for bugs that do not have any linked branches.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    1 0
+    6 0
+    18 0
+    20 0
+    21 0
 
 
 == Ordering search results ==
@@ -1057,6 +1094,44 @@ Another way of sorting searches is by bug heat.
     9 Thunderbird crashes [heat: 9]
     2 Blackhole Trash folder [heat: 2]
     1 Firefox does not support SVG [heat: 1]
+
+
+=== Ordering by patch age ===
+
+We can also sort search results by the creation time of the youngest
+patch attached to a bug.
+
+Since we have at present no bugs with patches, we use effectively
+the default sort order, by bug task ID (which is implicitly added as
+a "second level" sort order to ensure reliable sorting).
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='latest_patch_uploaded', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+
+If we add a patch attachment to bug 2 and bug 10, they are listed first.
+
+    >>> patch_attachment_bug_2 = factory.makeBugAttachment(
+    ...     bug=bug_two, is_patch=True)
+    >>> patch_attachment_bug_10 = factory.makeBugAttachment(
+    ...     bug=bug_ten, is_patch=True)
+    >>> params = BugTaskSearchParams(
+    ...     orderby='latest_patch_uploaded', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    26 2 Ubuntu Blackhole Trash folder
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 == Searching using a flat interface ==

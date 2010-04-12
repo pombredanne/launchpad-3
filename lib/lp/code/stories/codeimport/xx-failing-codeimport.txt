@@ -10,7 +10,7 @@ Imports that have failed more than the configured
     >>> from canonical.config import config
     >>> product = factory.makeProduct(name='imported')
     >>> owner = factory.makePerson(name='import-owner')
-    >>> code_import = factory.makeCodeImport(
+    >>> code_import = factory.makeProductCodeImport(
     ...     product=product, branch_name='trunk', registrant=owner)
     >>> for i in range(config.codeimport.consecutive_failure_limit):
     ...     dummy = make_finished_import(

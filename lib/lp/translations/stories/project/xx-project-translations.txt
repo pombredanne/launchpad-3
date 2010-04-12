@@ -1,5 +1,5 @@
 There is a list of IProduct objects that have translations and are using
-Launchpad Translations officially from a IProject's translations page.
+Launchpad Translations officially from a IProjectGroup's translations page.
 
 GNOME is a good example, it has products with translations.
 

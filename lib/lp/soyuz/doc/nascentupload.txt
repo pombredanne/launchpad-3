@@ -843,7 +843,7 @@ The second key of name16 person is used to sign uploads (the first gpgkey
 record is a placeholder one, we used the second key):
 
   >>> name16 = getUtility(IPersonSet).getByName('name16')
-  >>> uploader_key = name16.gpgkeys[1]
+  >>> uploader_key = name16.gpg_keys[1]
   >>> print uploader_key.fingerprint
   340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 

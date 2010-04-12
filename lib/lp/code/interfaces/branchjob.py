@@ -180,6 +180,16 @@ class IRosettaUploadJobSource(Interface):
             given) whose status is neither "complete" nor "failed."
         """
 
+    def providesTranslationFiles(branch):
+        """Is anyone importing translation files from this branch?
+
+        This is used to check if any product series is related to the branch
+        in order to decide if a job needs to be created.
+
+        :param branch: The `IBranch` that is being scanned.
+        :return: Boolean.
+        """
+
 
 class IReclaimBranchSpaceJob(IRunnableJob):
     """A job to delete a branch from disk after its been deleted from the db.

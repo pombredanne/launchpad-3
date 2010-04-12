@@ -7,13 +7,9 @@ __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
 import apt_pkg
-from cStringIO import StringIO
 import datetime
 import logging
 import operator
-import os
-import subprocess
-import time
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -29,41 +25,37 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    clear_current_connection_cache, flush_database_updates, cursor,
-    quote_like, SQLBase, sqlvalues)
+from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import (
-     get_contact_email_addresses, filenameToContentType, get_email_template)
+     get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.librarian.utils import copy_and_close
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.registry.interfaces.pocket import (PackagePublishingPocket,
-    pocketsuffix)
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
-from lp.buildmaster.interfaces.builder import IBuilderSet
+    BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.buildmaster.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
@@ -71,7 +63,7 @@ from lp.soyuz.model.queue import (
 
 
 class Build(BuildBase, SQLBase):
-    implements(IBuild)
+    implements(IBuildBase, IBuild)
     _table = 'Build'
     _defaultOrder = 'id'
 
@@ -111,13 +103,6 @@ class Build(BuildBase, SQLBase):
             BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == self.id)
         return results.one()
-
-    @property
-    def upload_log_url(self):
-        """See `IBuild`."""
-        if self.upload_log is None:
-            return None
-        return self._getProxiedFileURL(self.upload_log)
 
     def _getLatestPublication(self):
         store = Store.of(self)
@@ -333,159 +318,6 @@ class Build(BuildBase, SQLBase):
         store.add(specific_job)
         return specific_job
 
-    def getEstimatedBuildStartTime(self):
-        """See `IBuild`.
-
-        The estimated dispatch time for the build job at hand is
-        calculated from the following ingredients:
-            * the start time for the head job (job at the
-              head of the respective build queue)
-            * the estimated build durations of all jobs that
-              precede the job at hand in the build queue
-              (divided by the number of machines in the respective
-              build pool)
-        If either of the above cannot be determined the estimated
-        dispatch is not known in which case the EPOCH time stamp
-        is returned.
-        """
-        # This method may only be invoked for pending jobs.
-        if self.buildstate != BuildStatus.NEEDSBUILD:
-            raise AssertionError(
-                "The start time is only estimated for pending builds.")
-
-        # A None value indicates that the estimated dispatch time is not
-        # available.
-        result = None
-
-        cur = cursor()
-        # For a given build job in position N in the build queue the
-        # query below sums up the estimated build durations for the
-        # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
-        sum_query = """
-            SELECT
-                EXTRACT(EPOCH FROM SUM(BuildQueue.estimated_duration))
-            FROM
-                Archive
-                JOIN Build ON
-                    Build.archive = Archive.id
-                JOIN BuildPackageJob ON
-                    Build.id = BuildPackageJob.build
-                JOIN BuildQueue ON
-                    BuildPackageJob.job = BuildQueue.job
-            WHERE
-                Build.buildstate = 0 AND
-                Build.processor = %s AND
-                Archive.require_virtualized = %s AND
-                Archive.enabled = TRUE AND
-                ((BuildQueue.lastscore > %s) OR
-                 ((BuildQueue.lastscore = %s) AND
-                  (Build.id < %s)))
-             """ % sqlvalues(self.processor, self.is_virtualized,
-                      self.buildqueue_record.lastscore,
-                      self.buildqueue_record.lastscore, self)
-
-        cur.execute(sum_query)
-        # Get the sum of the estimated build time for jobs that are
-        # ahead of us in the queue.
-        [sum_of_delays] = cur.fetchone()
-
-        # Get build dispatch time for job at the head of the queue.
-        headjob_delay = self._getHeadjobDelay()
-
-        # Get the number of machines that are available in the build
-        # pool for this build job.
-        pool_size = getUtility(IBuilderSet).getBuildersForQueue(
-            self.processor, self.is_virtualized).count()
-
-        # The estimated dispatch time can only be calculated for
-        # non-zero-sized build pools.
-        if pool_size > 0:
-            # This is the estimated build job start time in seconds
-            # from now.
-            start_time = 0
-
-            if sum_of_delays is None:
-                # This job is the head job.
-                start_time = headjob_delay
-            else:
-                # There are jobs ahead of us. Divide the delay total by
-                # the number of machines available in the build pool.
-                # Please note: we need the pool size to be a floating
-                # pointer number for the purpose of the division below.
-                pool_size = float(pool_size)
-                start_time = headjob_delay + int(sum_of_delays/pool_size)
-
-            result = (
-                datetime.datetime.utcnow() +
-                datetime.timedelta(seconds=start_time))
-
-        return result
-
-    def _getHeadjobDelay(self):
-        """Get estimated dispatch time for job at the head of the queue."""
-        cur = cursor()
-        # The query below yields the remaining build times (in seconds
-        # since EPOCH) for the jobs that are currently building on the
-        # machine pool of interest.
-        delay_query = """
-            SELECT
-                CAST (EXTRACT(EPOCH FROM
-                        (BuildQueue.estimated_duration -
-                        (NOW() - Job.date_started))) AS INTEGER)
-                    AS remainder
-            FROM
-                Archive
-                JOIN Build ON
-                    Build.archive = Archive.id
-                JOIN BuildPackageJob ON
-                    Build.id = BuildPackageJob.build
-                JOIN BuildQueue ON
-                    BuildQueue.job = BuildPackageJob.job
-                JOIN Builder ON
-                    Builder.id = BuildQueue.builder
-                JOIN Job ON
-                    Job.id = BuildPackageJob.job
-            WHERE
-                Archive.require_virtualized = %s AND
-                Archive.enabled = TRUE AND
-                Build.buildstate = %s AND
-                Builder.processor = %s
-            ORDER BY
-                remainder;
-            """ % sqlvalues(self.is_virtualized, BuildStatus.BUILDING,
-                    self.processor)
-
-        cur.execute(delay_query)
-        # Get the remaining build times for the jobs currently
-        # building on the respective machine pool (current build
-        # set).
-        remainders = cur.fetchall()
-        build_delays = set([int(row[0]) for row in remainders if row[0]])
-
-        # This is the head job delay in seconds. Initialize it here.
-        if len(build_delays):
-            headjob_delay = max(build_delays)
-        else:
-            headjob_delay = 0
-
-        # Did all currently building jobs overdraw their estimated
-        # time budget?
-        if headjob_delay < 0:
-            # Yes, this is the case. Reset the head job delay to two
-            # minutes.
-            headjob_delay = 120
-
-        for delay in reversed(sorted(build_delays)):
-            if delay < 0:
-                # This job is currently building and taking longer
-                # than estimated i.e. we don't have a clue when it
-                # will be finished. Make a wild guess (2 minutes?).
-                delay = 120
-            if delay < headjob_delay:
-                headjob_delay = delay
-
-        return headjob_delay
-
     def _parseDependencyToken(self, token):
         """Parse the given token.
 
@@ -677,6 +509,9 @@ class Build(BuildBase, SQLBase):
 
         return estimated_duration
 
+    def verifySuccessfulUpload(self):
+        return self.binarypackages.count() > 0
+
     def notify(self, extra_info=None):
         """See `IBuildBase`.
 
@@ -827,27 +662,6 @@ class Build(BuildBase, SQLBase):
             simple_sendmail(
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
-
-    def storeUploadLog(self, content):
-        """See `IBuildBase`."""
-        # The given content is stored in the librarian, restricted as
-        # necessary according to the targeted archive's privacy.  The content
-        # object's 'upload_log' attribute will point to the
-        # `LibrarianFileAlias`.
-
-        assert self.upload_log is None, (
-            "Upload log information already exist and cannot be overridden.")
-
-        filename = 'upload_%s_log.txt' % self.id
-        contentType = filenameToContentType(filename)
-        file_size = len(content)
-        file_content = StringIO(content)
-        restricted = self.archive.private
-
-        library_file = getUtility(ILibraryFileAliasSet).create(
-            filename, file_size, file_content, contentType=contentType,
-            restricted=restricted)
-        self.upload_log = library_file
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""
@@ -1248,3 +1062,44 @@ class BuildSet:
             BuildQueue.job == queue_entry.job)
 
         return result_set.one()
+
+    def getQueueEntriesForBuildIDs(self, build_ids):
+        """See `IBuildSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        origin = (
+            BuildPackageJob,
+            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
+            Join(Build, BuildPackageJob.build == Build.id),
+            LeftJoin(
+                Builder,
+                BuildQueue.builderID == Builder.id),
+            )
+        result_set = store.using(*origin).find(
+            (BuildQueue, Builder, BuildPackageJob),
+            In(Build.id, build_ids))
+
+        return result_set
+
+    def calculateCandidates(self, archseries):
+        """See `IBuildSet`."""
+        if not archseries:
+            raise AssertionError("Given 'archseries' cannot be None/empty.")
+
+        arch_ids = [d.id for d in archseries]
+
+        query = """
+           Build.distroarchseries IN %s AND
+           Build.buildstate = %s AND
+           BuildQueue.job_type = %s AND
+           BuildQueue.job = BuildPackageJob.job AND
+           BuildPackageJob.build = build.id AND
+           BuildQueue.builder IS NULL
+        """ % sqlvalues(
+            arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
+
+        candidates = BuildQueue.select(
+            query, clauseTables=['Build', 'BuildPackageJob'],
+            orderBy=['-BuildQueue.lastscore'])
+
+        return candidates

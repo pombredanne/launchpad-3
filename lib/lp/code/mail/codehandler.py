@@ -1,7 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
+
 __metaclass__ = type
+
 
 import operator
 import re
@@ -33,10 +37,12 @@ from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import urlparse
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
 from lp.code.enums import BranchType, CodeReviewVote
 from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
+from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
@@ -302,12 +308,18 @@ class CodeHandler:
         any CodeReviewVote item value, case-insensitively.
         :return: True.
         """
+        user = getUtility(ILaunchBag).user
         try:
             merge_proposal = self.getBranchMergeProposal(email_addr)
+        except NonExistantBranchMergeProposalAddress:
+            send_process_error_notification(
+                str(user.preferredemail.email),
+                'Submit Request Failure',
+                'There is no merge proposal at %s' % email_addr,
+                mail)
+            return True
         except BadBranchMergeProposalAddress:
             return False
-
-        user = getUtility(ILaunchBag).user
         context = CodeReviewEmailCommandExecutionContext(merge_proposal, user)
         try:
             email_body_text = get_main_body(mail)
@@ -540,7 +552,8 @@ class CodeHandler:
             if part.is_multipart():
                 continue
             payload = part.get_payload(decode=True)
-            if part['Content-type'].startswith('text/plain'):
+            content_type = part.get('Content-type', 'text/plain').lower()
+            if content_type.startswith('text/plain'):
                 body = payload
                 charset = part.get_param('charset')
                 if charset is not None:
@@ -571,54 +584,61 @@ class CodeHandler:
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
             return
+        oops_message = (
+            'target: %r source: %r' %
+            (md.target_branch, md.source_branch))
+        with globalErrorUtility.oopsMessage(oops_message):
+            try:
+                source, target = self._acquireBranchesForProposal(
+                    md, submitter)
+            except NonLaunchpadTarget:
+                body = get_error_message('nonlaunchpadtarget.txt',
+                    target_branch=md.target_branch)
+                simple_sendmail('merge@code.launchpad.net',
+                    [message.get('from')],
+                    'Error Creating Merge Proposal', body)
+                return
+            except BranchCreationException, e:
+                body = get_error_message(
+                        'branch-creation-exception.txt', reason=e)
+                simple_sendmail('merge@code.launchpad.net',
+                    [message.get('from')],
+                    'Error Creating Merge Proposal', body)
+                return
+        with globalErrorUtility.oopsMessage(
+            'target: %r source: %r' % (target, source)):
+            try:
+                bmp = source.addLandingTarget(submitter, target,
+                                              needs_review=True)
 
-        try:
-            source, target = self._acquireBranchesForProposal(md, submitter)
-        except NonLaunchpadTarget:
-            body = get_error_message('nonlaunchpadtarget.txt',
-                target_branch=md.target_branch)
-            simple_sendmail('merge@code.launchpad.net',
-                [message.get('from')],
-                'Error Creating Merge Proposal', body)
-            return
+                context = CodeReviewEmailCommandExecutionContext(
+                    bmp, submitter, notify_event_listeners=False)
+                processed_count = self.processCommands(context, comment_text)
 
+                # If there are no reviews requested yet, request the default
+                # reviewer of the target branch.
+                if bmp.votes.count() == 0:
+                    bmp.nominateReviewer(
+                        target.code_reviewer, submitter, None,
+                        _notify_listeners=False)
 
-        try:
-            bmp = source.addLandingTarget(submitter, target,
-                                          needs_review=True)
+                comment_text = comment_text.strip()
+                if comment_text != '':
+                    bmp.description = comment_text
+                return bmp
 
-            context = CodeReviewEmailCommandExecutionContext(
-                bmp, submitter, notify_event_listeners=False)
-            processed_count = self.processCommands(context, comment_text)
-
-            # If there are no reviews requested yet, request the default
-            # reviewer of the target branch.
-            if bmp.votes.count() == 0:
-                bmp.nominateReviewer(
-                    target.code_reviewer, submitter, None,
-                    _notify_listeners=False)
-
-            if comment_text.strip() == '':
-                comment = None
-            else:
-                comment = bmp.createComment(
-                    submitter, message['Subject'], comment_text,
-                    _notify_listeners=False)
-            return bmp, comment
-
-        except BranchMergeProposalExists:
-            body = get_error_message(
-                'branchmergeproposal-exists.txt',
-                source_branch=source.bzr_identity,
-                target_branch=target.bzr_identity)
-            simple_sendmail('merge@code.launchpad.net',
-                [message.get('from')],
-                'Error Creating Merge Proposal', body)
-            transaction.abort()
-        except IncomingEmailError, error:
-            send_process_error_notification(
-                str(submitter.preferredemail.email),
-                'Submit Request Failure',
-                error.message, comment_text, error.failing_command)
-            transaction.abort()
-
+            except BranchMergeProposalExists:
+                body = get_error_message(
+                    'branchmergeproposal-exists.txt',
+                    source_branch=source.bzr_identity,
+                    target_branch=target.bzr_identity)
+                simple_sendmail('merge@code.launchpad.net',
+                    [message.get('from')],
+                    'Error Creating Merge Proposal', body)
+                transaction.abort()
+            except IncomingEmailError, error:
+                send_process_error_notification(
+                    str(submitter.preferredemail.email),
+                    'Submit Request Failure',
+                    error.message, comment_text, error.failing_command)
+                transaction.abort()

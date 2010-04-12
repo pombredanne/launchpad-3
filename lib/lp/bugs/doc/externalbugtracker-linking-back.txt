@@ -34,7 +34,12 @@ The methods are called by the BugWatchUpdater class:
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bug_watch = factory.makeBugWatch('42')
+    >>> bug_watch.bug.default_bugtask.bugwatch = bug_watch
     >>> bug_watch_2 = factory.makeBugWatch('42', bug_watch.bugtracker)
+    >>> bug_watch_2.bug.default_bugtask.bugwatch = bug_watch_2
+    >>> bug_watch_without_bugtask = (
+    ...     factory.makeBugWatch('42', bug_watch.bugtracker))
+
     >>> unlinked_bug = factory.makeBug()
 
     >>> txn.commit()
@@ -42,6 +47,8 @@ The methods are called by the BugWatchUpdater class:
 
     >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> txn.commit()
+
     >>> external_bugtracker = BackLinkingExternalBugTracker(
     ...     'http://example.com/')
 
@@ -51,6 +58,12 @@ The methods are called by the BugWatchUpdater class:
 
     >>> external_bugtracker.last_launchpad_bug_id == bug_watch.bug.id
     True
+
+For comment syncing and back-linking to be attempted, bug watches must
+be related to a bug task, not just a bug.
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugtracker, [bug_watch_without_bugtask])
 
 
 == BugWatchUpdater.linkLaunchpadBug() ==
@@ -75,6 +88,8 @@ be called on our BackLinkingExternalBugTracker.
     >>> bug_watch.bug.id == bug_watch_2.bug.id
     False
 
+    >>> transaction.commit()
+
     >>> bug_watch_updater.linkLaunchpadBug(
     ...     external_bugtracker, bug_watch_2)
     Getting Launchpad id for bug 42
@@ -98,6 +113,8 @@ fact link to it.
 
 Calling linkLaunchpadBug() with a bug watch that actually does link to
 bug 42 will correct the error.
+
+    >>> transaction.commit()
 
     >>> bug_watch_updater.linkLaunchpadBug(external_bugtracker, bug_watch)
     Getting Launchpad id for bug 42

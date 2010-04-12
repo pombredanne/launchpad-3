@@ -115,10 +115,14 @@ class EC2TestRunner:
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
                  include_download_cache_changes=None, instance=None,
-                 launchpad_login=None):
+                 launchpad_login=None,
+                 timeout=None):
         """Create a new EC2TestRunner.
 
-        This sets the following attributes:
+        :param timeout: Number of minutes before we force a shutdown. This is
+            useful because sometimes the normal instance termination might
+            fail.
+
           - original_branch
           - test_options
           - headless
@@ -129,6 +133,7 @@ class EC2TestRunner:
           - email (after validating email capabilities)
           - image (after connecting to ec2)
           - file
+          - timeout
         """
         self.original_branch = branch
         self.test_options = test_options
@@ -137,6 +142,7 @@ class EC2TestRunner:
         self.open_browser = open_browser
         self.file = file
         self._launchpad_login = launchpad_login
+        self.timeout = timeout
 
         trunk_specified = False
         trunk_branch = TRUNK_BRANCH
@@ -177,11 +183,7 @@ class EC2TestRunner:
             (tree,
              bzrbranch,
              relpath) = BzrDir.open_containing_tree_or_branch(branch)
-            # if tree is None, remote...I'm assuming.
-            if tree is None:
-                config = GlobalConfig()
-            else:
-                config = bzrbranch.get_config()
+            config = bzrbranch.get_config()
 
             if pqm_message is not None or tree is not None:
                 # if we are going to maybe send a pqm_message, we're going to
@@ -295,10 +297,8 @@ class EC2TestRunner:
                     'here: https://wiki.canonical.com/EmailSetup .')
             self._smtp_username = config.get_user_option('smtp_username')
             self._smtp_password = config.get_user_option('smtp_password')
-            from_email = config.username()
-            if not from_email:
-                # XXX: JonathanLange 2009-10-04: Is this strictly true? I
-                # can't actually see where this is used.
+            self._from_email = config.username()
+            if not self._from_email:
                 raise ValueError(
                     'To send email, your bzr email address must be set '
                     '(use ``bzr whoami``).')
@@ -314,12 +314,18 @@ class EC2TestRunner:
 
     def configure_system(self):
         user_connection = self._instance.connect()
+        if self.timeout is not None:
+            user_connection.perform(
+                "echo sudo shutdown -h now | at today + %d minutes"
+                % self.timeout)
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir .bazaar')
+            as_user('[ -d .bazaar ] || mkdir .bazaar')
             bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf", 'w')
+            bazaar_conf_file.write(
+                'email = %s\n' % (self._from_email,))
             bazaar_conf_file.write(
                 'smtp_server = %s\n' % (self._smtp_server,))
             if self._smtp_username:
@@ -394,6 +400,10 @@ class EC2TestRunner:
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
         p('/var/launchpad/test/utilities/launchpad-database-setup $USER')
+        p('mkdir -p /var/tmp/launchpad_mailqueue/cur')
+        p('mkdir -p /var/tmp/launchpad_mailqueue/new')
+        p('mkdir -p /var/tmp/launchpad_mailqueue/tmp')
+        p('chmod -R a-w /var/tmp/launchpad_mailqueue/')
         # close ssh connection
         user_connection.close()
 

@@ -135,8 +135,27 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
-            'Requested reviews:\n    Review-person (review-person)\n\n-- \n',
+            '\nRequested reviews:'
+            '\n  Review-person (review-person)'
+            '\n\n-- \n',
             ctrl.body)
+
+    def test_forCreation_with_review_request_and_bug(self):
+        """Correctly format list of reviewers and bug info."""
+        bmp, subscriber = self.makeProposalWithSubscriber()
+        bug = self.factory.makeBug(title='I am a bug')
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        reviewer = self.factory.makePerson(name='review-person')
+        vote_reference = bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        expected = (
+            '\nRequested reviews:'
+            '\n  Review-person (review-person)'
+            '\nRelated bugs:'
+            '\n  #%d I am a bug'
+            '\n  %s\n\n--' % (bug.id, canonical_url(bug)))
+        self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_prerequisite_branch(self):
         """Correctly format list of reviewers."""
@@ -269,6 +288,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
         merge_proposal.requestReview()
         merge_proposal.commit_message = 'new commit message'
+        merge_proposal.description = 'change description'
         mailer = BMPMailer.forModification(
             old_merge_proposal, merge_proposal, merge_proposal.registrant)
         return mailer, subscriber
@@ -289,7 +309,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer, subscriber = self.makeMergeProposalMailerModification()
         self.assertEqual(
             '    Status: Work in progress => Needs review\n\n'
-            'Commit Message changed to:\n\nnew commit message',
+            'Commit Message changed to:\n\nnew commit message\n\n'
+            'Description changed to:\n\nchange description',
             mailer.textDelta())
 
     def test_generateEmail(self):
@@ -298,7 +319,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
-            'lp://dev/~mary/super-product/bar updated', ctrl.subject)
+            'lp://dev/~mary/super-product/bar', ctrl.subject)
         url = canonical_url(mailer.merge_proposal)
         reason = mailer._recipients.getReason(
             subscriber.preferredemail.email)[0].getReason()
@@ -310,6 +331,10 @@ The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/
 Commit Message changed to:
 
 new commit message
+
+Description changed to:
+
+change description
 --\x20
 %s
 %s
@@ -365,9 +390,6 @@ new commit message
             request, request.merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
-        self.assertEqual(
-            request.merge_proposal.root_comment,
-            mailer.comment)
         self.assertEqual(
             request.merge_proposal.preview_diff,
             mailer.preview_diff)

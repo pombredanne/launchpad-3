@@ -11,9 +11,7 @@ __all__ = [
 
 from bzrlib.revision import NULL_REVISION
 
-from zope.component import adapter, getUtility
-
-from lp.codehosting.scanner import events
+from zope.component import getUtility
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -70,7 +68,6 @@ def merge_detected(logger, source, target, proposal=None):
             mark_branch_merged(logger, proposal.source_branch)
 
 
-@adapter(events.ScanCompleted)
 def auto_merge_branches(scan_completed):
     """Detect branches that have been merged.
 
@@ -117,7 +114,6 @@ def auto_merge_branches(scan_completed):
             merge_detected(logger, branch, db_branch)
 
 
-@adapter(events.ScanCompleted)
 def auto_merge_proposals(scan_completed):
     """Detect merged proposals."""
     db_branch = scan_completed.db_branch

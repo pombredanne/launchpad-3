@@ -28,7 +28,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
+    IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProjectGroup)
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -197,8 +197,8 @@ class FAQSearch:
             self.distribution = distribution
 
         if project is not None:
-            assert IProject.providedBy(project), (
-                'project should be an IProject, not %s' % type(project))
+            assert IProjectGroup.providedBy(project), (
+                'project should be an IProjectGroup, not %s' % type(project))
             assert product is None and distribution is None, (
                 'can only use one of product, distribution, or project')
             self.project = project

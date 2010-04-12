@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
@@ -329,6 +329,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
 
+        transaction.commit()
+
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
         self.assertEquals(
@@ -340,6 +342,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=True)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(serbian),
             [])
@@ -350,6 +355,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=True)
         imported_translation.is_current = False
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(serbian),
             [imported_translation])
@@ -359,6 +367,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=False)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(serbian),
             [imported_translation, current_translation])
@@ -377,6 +388,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
 
+        transaction.commit()
+
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
         self.assertEquals(
@@ -388,6 +401,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_suggestion = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=True)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])
@@ -398,6 +414,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=True)
         imported_translation.is_current = False
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])
@@ -407,6 +426,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current_translation = self.factory.makeSharedTranslationMessage(
             pofile=external_pofile, potmsgset=external_potmsgset,
             suggestion=False, is_imported=False)
+
+        transaction.commit()
+
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(serbian),
             [external_suggestion])

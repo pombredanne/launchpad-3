@@ -1,13 +1,23 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Generic Python utilities.
 
-"""Implementations of the XML-RPC APIs for codehosting."""
+Functions, lists and so forth. Nothing here that does system calls or network
+stuff.
+"""
 
 __metaclass__ = type
 __all__ = [
     'iter_split',
+    'synchronize',
+    'text_delta',
+    'value_string',
     ]
+
+
+from lazr.enum import BaseItem
+from zope.security.proxy import isinstance as zope_isinstance
 
 
 def iter_split(string, splitter):
@@ -27,3 +37,67 @@ def iter_split(string, splitter):
     tokens = string.split(splitter)
     for i in reversed(range(1, len(tokens) + 1)):
         yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
+
+
+def synchronize(source, target, add, remove):
+    """Update 'source' to match 'target' using 'add' and 'remove'.
+
+    Changes the container 'source' so that it equals 'target', calling 'add'
+    with any object in 'target' not in 'source' and 'remove' with any object
+    not in 'target' but in 'source'.
+    """
+    need_to_add = [obj for obj in target if obj not in source]
+    need_to_remove = [obj for obj in source if obj not in target]
+    for obj in need_to_add:
+        add(obj)
+    for obj in need_to_remove:
+        remove(obj)
+
+
+def value_string(item):
+    """Return a unicode string representing value.
+
+    This text is special cased for enumerated types.
+    """
+    if item is None:
+        return '(not set)'
+    elif zope_isinstance(item, BaseItem):
+        return item.title
+    else:
+        return unicode(item)
+
+
+def text_delta(instance_delta, delta_names, state_names, interface):
+    """Return a textual delta for a Delta object.
+
+    A list of strings is returned.
+
+    Only modified members of the delta will be shown.
+
+    :param instance_delta: The delta to generate a textual representation of.
+    :param delta_names: The names of all members to show changes to.
+    :param state_names: The names of all members to show only the new state
+        of.
+    :param interface: The Zope interface that the input delta compared.
+    """
+    output = []
+    indent = ' ' * 4
+
+    # Fields for which we have old and new values.
+    for field_name in delta_names:
+        delta = getattr(instance_delta, field_name, None)
+        if delta is None:
+            continue
+        title = interface[field_name].title
+        old_item = value_string(delta['old'])
+        new_item = value_string(delta['new'])
+        output.append("%s%s: %s => %s" % (indent, title, old_item, new_item))
+    for field_name in state_names:
+        delta = getattr(instance_delta, field_name, None)
+        if delta is None:
+            continue
+        title = interface[field_name].title
+        if output:
+            output.append('')
+        output.append('%s changed to:\n\n%s' % (title, delta))
+    return '\n'.join(output)

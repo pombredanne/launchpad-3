@@ -34,6 +34,7 @@ TLA_MAP = dict(
     tes='testing',
     tra='translations',
     pkg='registry',
+    hdb='hardwaredb',
     )
 
 RENAME_MAP = dict(
@@ -342,8 +343,10 @@ def get_special(doctests):
     code = ''.join(special_lines)
     helper_pattern = re.compile(r'\b(setUp|tearDown)=(\w*)\b')
     helpers = set(match.group(2) for match in helper_pattern.finditer(code))
-    helpers.remove('setUp')
-    helpers.remove('tearDown')
+    if 'setUp' in helpers:
+        helpers.remove('setUp')
+    if 'tearDown' in helpers:
+        helpers.remove('tearDown')
     # Extract the setup and teardown functions.
     lines = list(system_doc_lines)
     system_doc_lines = []
