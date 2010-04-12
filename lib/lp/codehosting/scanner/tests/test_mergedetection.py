@@ -69,6 +69,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
+        self.assertEqual(3, proposal.merged_revno)
 
     def test_auto_merge_proposals_real_merge_target_scanned_first(self):
         # If there is a merge proposal where the tip of the source is in the
@@ -210,7 +211,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # Other branches for the product are checked, but if the tip revision
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
-        source = self.factory.makeProductBranch(product=self.product)
+        self.factory.makeProductBranch(product=self.product)
         self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
