@@ -12,6 +12,7 @@ __all__ = [
     'value_string',
     ]
 
+import itertools
 
 from lazr.enum import BaseItem
 from zope.security.proxy import isinstance as zope_isinstance
@@ -91,18 +92,29 @@ class CachingIterator:
     Some generators and iterators are expensive to calculate, like calculating
     the merge sorted revision graph for a bazaar branch, so you don't want to
     call them too often.  Rearranging the code so it doesn't call the
-    expensive generator can make the code ackward.  This class provides a way
-    to have the generator called once, and the results stored.  The results
+    expensive iterator can make the code awkward.  This class provides a way
+    to have the iterator called once, and the results stored.  The results
     can then be iterated over again, and more values retrieved from the
     iterator if necessary.
     """
+
     def __init__(self, iterator):
         self.iterator = iterator
         self.data = []
+
     def __iter__(self):
-        for item in self.data:
-            yield item
-        while self.iterator is not None:
+        index = itertools.count()
+        while True:
+            pos = index.next()
+            try:
+                yield self.data[pos]
+            except IndexError:
+                # Defer to the iterator.
+                pass
+            else:
+                continue
+            if self.iterator is None:
+                break
             try:
                 item = self.iterator.next()
             except StopIteration:
