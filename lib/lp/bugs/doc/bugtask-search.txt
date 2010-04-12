@@ -1120,6 +1120,7 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
 
     >>> patch_attachment_bug_2 = factory.makeBugAttachment(
     ...     bug=bug_two, is_patch=True)
+    >>> transaction.commit()
     >>> patch_attachment_bug_10 = factory.makeBugAttachment(
     ...     bug=bug_ten, is_patch=True)
     >>> params = BugTaskSearchParams(
