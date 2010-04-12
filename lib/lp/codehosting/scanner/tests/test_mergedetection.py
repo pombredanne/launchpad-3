@@ -35,7 +35,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
     @run_as_db_user(config.launchpad.dbuser)
     def createProposal(self, source, target):
         # The scanner doesn't have insert rights, so do it here.
-        proposal = source.addLandingTarget(source.owner, target)
+        source.addLandingTarget(source.owner, target)
         transaction.commit()
 
     def _createBranchesAndProposal(self):
@@ -361,7 +361,6 @@ class TestFindMergedRevno(TestCase):
             self.assertIs(None, revno)
         else:
             self.assertEqual(expected, revno)
-
 
     def test_not_found(self):
         # If the rev_id passed into the function isn't in the merge sorted
