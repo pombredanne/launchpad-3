@@ -7,12 +7,16 @@ __metaclass__ = type
 __all__ = [
     'create_view',
     'create_initialized_view',
+    'YUITestFileView',
     ]
 
+import os
 
 from zope.component import getUtility, getMultiAdapter
 from zope.security.management import endInteraction, newInteraction
 
+from canonical.config import config
+from canonical.lazr import ExportedFolder
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -72,3 +76,10 @@ def create_initialized_view(context, name, form=None, layer=None,
         query_string, cookie, request, path_info)
     view.initialize()
     return view
+
+
+class YUITestFileView(ExportedFolder):
+    """Export the lib directory where the test assets reside."""
+
+    folder = os.path.join(config.root, 'lib/')
+    export_subdirectories = True

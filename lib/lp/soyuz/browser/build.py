@@ -33,9 +33,8 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.build import IBuild, IBuildRescoreForm
+from lp.soyuz.interfaces.build import IBuild, IBuildRescoreForm, IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -321,7 +320,7 @@ def setupCompleteBuilds(batch):
 
     prefetched_data = dict()
     build_ids = [build.id for build in builds]
-    results = getUtility(IBuildQueueSet).getForBuilds(build_ids)
+    results = getUtility(IBuildSet).getQueueEntriesForBuildIDs(build_ids)
     for (buildqueue, _builder, build_job) in results:
         # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
         # 'buildlog' (from the result set) respectively.

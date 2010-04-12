@@ -22,7 +22,9 @@ __all__ = [
 import operator
 import re
 from cStringIO import StringIO
+from datetime import datetime, timedelta
 from email.Utils import make_msgid
+from pytz import timezone
 
 from zope.contenttype import guess_content_type
 from zope.component import getUtility
@@ -33,7 +35,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -43,6 +45,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
@@ -244,8 +247,6 @@ class Bug(SQLBase):
             prejoins=["person"])
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
-        orderBy='id', prejoins=['libraryfile'])
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
@@ -260,6 +261,7 @@ class Bug(SQLBase):
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
     heat = IntCol(notNull=True, default=0)
+    heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
     @property
@@ -1531,11 +1533,28 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat):
+    def setHeat(self, heat, timestamp=None):
         """See `IBug`."""
+        if timestamp is None:
+            timestamp = UTC_NOW
+
         self.heat = heat
+        self.heat_last_updated = timestamp
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
+
+    @property
+    def attachments(self):
+        """See `IBug`."""
+        # We omit those bug attachments that do not have a
+        # LibraryFileContent record in order to avoid OOPSes as
+        # mentioned in bug 542274. These bug attachments will be
+        # deleted anyway during the next garbo_daily run.
+        store = Store.of(self)
+        return store.find(
+            BugAttachment, BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
 
 class BugSet:
@@ -1789,6 +1808,18 @@ class BugSet:
         store = IStore(Bug)
         result_set = store.find(Bug)
         return result_set.order_by('id')
+
+    def getBugsWithOutdatedHeat(self, max_heat_age):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        last_updated_cutoff = (
+            datetime.now(timezone('UTC')) -
+            timedelta(days=max_heat_age))
+        last_updated_clause = Or(
+            Bug.heat_last_updated < last_updated_cutoff,
+            Bug.heat_last_updated == None)
+
+        return store.find(Bug, last_updated_clause).order_by('id')
 
 
 class BugAffectsPerson(SQLBase):
