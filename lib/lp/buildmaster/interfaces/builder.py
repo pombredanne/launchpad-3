@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'CorruptBuildID',
+    'CorruptBuildCookie',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -46,7 +46,7 @@ class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
 
 
-class CorruptBuildID(BuildDaemonError):
+class CorruptBuildCookie(BuildDaemonError):
     """The build slave is working with mismatched information.
 
     It needs to be rescued.
@@ -229,8 +229,8 @@ class IBuilder(IHasOwner):
             the status.
         """
 
-    def verifySlaveBuildID(slave_build_id):
-        """Verify that a slave's build ID is consistent.
+    def verifySlaveBuildCookie(slave_build_id):
+        """Verify that a slave's build cookie is consistent.
 
         This should delegate to the current `IBuildFarmJobBehavior`.
         """

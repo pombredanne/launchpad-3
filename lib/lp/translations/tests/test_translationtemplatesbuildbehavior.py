@@ -20,7 +20,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -197,38 +196,6 @@ class TestTranslationTemplatesBuildBehavior(
         self.assertEqual(1, queue_item.destroySelf.call_count)
         self.assertEqual(1, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
-
-    def test_verifySlaveBuildID_success(self):
-        # TranslationTemplatesBuildJob.getName generates slave build ids
-        # that TranslationTemplatesBuildBehavior.verifySlaveBuildID
-        # accepts.
-        behavior = self.makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
-
-        # The test is that this not raise CorruptBuildID (or anything
-        # else, for that matter).
-        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
-
-    def test_verifySlaveBuildID_handles_dashes(self):
-        # TranslationTemplatesBuildBehavior.verifySlaveBuildID can deal
-        # with dashes in branch names.
-        behavior = self.makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
-        buildfarmjob.branch.name = 'x-y-z--'
-
-        # The test is that this not raise CorruptBuildID (or anything
-        # else, for that matter).
-        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
-
-    def test_verifySlaveBuildID_malformed(self):
-        behavior = self.makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, 'huh?')
-
-    def test_verifySlaveBuildID_notfound(self):
-        behavior = self.makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, '1-1')
 
 
 class TestTTBuildBehaviorTranslationsQueue(
