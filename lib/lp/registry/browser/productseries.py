@@ -13,6 +13,7 @@ __all__ = [
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
+    'ProductSeriesInvolvementView',
     'ProductSeriesLinkBranchView',
     'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
@@ -32,7 +33,6 @@ from operator import attrgetter
 from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
-from zope.component.globalregistry import provideAdapter
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib import form
 from zope.interface import implements, Interface
@@ -80,11 +80,12 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    INavigationMenu, NotFoundError, UnexpectedFormData)
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
     ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -189,9 +190,25 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
             target, 'Submit code', icon='code', enabled=enabled)
 
 
-class ProductSeriesPillarView(PillarView):
-    """A view to show the applications that the pillar uses."""
+class ProductSeriesInvolvementView(PillarView):
+    """Encourage configuration of involvement links for project series."""
+
     implements(IProductSeriesInvolved)
+    has_involvement = True
+    visible_disabled_link_names = ['submit_code']
+
+    def __init__(self, context, request):
+        super(ProductSeriesInvolvementView, self).__init__(context, request)
+        self.official_codehosting = self.context.branch is not None
+        self.official_answers = False
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        series_menu = MenuAPI(self.context).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure series branch'
+        return [set_branch]
 
 
 class ProductSeriesOverviewMenu(

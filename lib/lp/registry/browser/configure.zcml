@@ -501,20 +501,6 @@
         facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
-    <browser:page
-        name="+get-involved"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.pillar.ProductInvolvementView"
-        facet="overview"
-        permission="zope.Public"
-        template="../templates/pillar-involvement-portlet.pt"/>
-    <browser:page
-        name="+get-involved"
-        for="lp.registry.interfaces.product.IProductSeries"
-        class="lp.registry.browser.pillar.ProductSeriesInvolvementView"
-        facet="overview"
-        permission="zope.Public"
-        template="../templates/pillar-involvement-portlet.pt"/>
     <facet
         facet="overview">
         <browser:url
@@ -1390,6 +1376,13 @@
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
     <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.product.ProductInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
+    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+download"
         class="lp.registry.browser.product.ProductDownloadFilesView"
@@ -1626,7 +1619,7 @@
     <browser:page
         name="+get-involved"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        class="lp.registry.browser.productseries.ProductSeriesPillarView"
+        class="lp.registry.browser.productseries.ProductSeriesInvolvementView"
         facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
