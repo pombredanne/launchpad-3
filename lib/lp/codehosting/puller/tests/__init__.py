@@ -9,7 +9,7 @@ import os
 import shutil
 from StringIO import StringIO
 
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import HttpServer, TestCaseWithTransport
 from bzrlib import urlutils
 
 from lp.codehosting.vfs import branch_id_to_path
@@ -150,3 +150,19 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
             retcode=None)
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)
+
+    def serveOverHTTP(self, port=0):
+        """Serve the current directory over HTTP, returning the server URL."""
+        http_server = HttpServer()
+        http_server.port = port
+        http_server.start_server()
+        # Join cleanup added before the tearDown so the tearDown is executed
+        # first as this tells the thread to die.  We then join explicitly as
+        # the HttpServer.tearDown does not join.  There is a check in the
+        # BaseLayer to make sure that threads are not left behind by the
+        # tests, and the default behaviour of the HttpServer is to use daemon
+        # threads and let the garbage collector get them, however this causes
+        # issues with the test runner.
+        self.addCleanup(http_server._http_thread.join)
+        self.addCleanup(http_server.stop_server)
+        return http_server.get_url().rstrip('/')

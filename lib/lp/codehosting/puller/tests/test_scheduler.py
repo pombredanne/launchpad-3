@@ -15,6 +15,7 @@ import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
+from bzrlib.urlutils import join as urljoin
 
 from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringParseError
@@ -633,15 +634,14 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
-        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
+        self.bzr_tree = self.make_branch_and_tree('src-branch')
+        url = urljoin(self.serveOverHTTP(), 'src-branch')
+        self.bzr_tree.commit('rev1')
         branch_id = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED).id
+            branch_type=BranchType.MIRRORED, url=url).id
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchLookup).get(branch_id)
-        self.bzr_tree = self.make_branch_and_tree('src-branch')
-        self.bzr_tree.commit('rev1')
-        self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
 
     def run(self, result):
@@ -669,9 +669,8 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
             worker command line arguments, the destination branch and an
             instance of PullerWorkerProtocol.
         """
-        hosted_url = str('lp-internal:///' + self.db_branch.unique_name)
         puller_master = cls(
-            self.db_branch.id, hosted_url,
+            self.db_branch.id, str(self.db_branch.url),
             self.db_branch.unique_name[1:], self.db_branch.branch_type.name,
             '', logging.getLogger(), self.client,
             set([config.error_reports.oops_prefix]))
