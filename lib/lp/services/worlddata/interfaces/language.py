@@ -151,10 +151,10 @@ class ILanguage(Interface):
 
 class ILanguageSet(Interface):
     """The collection of languages.
-    
+
     By standard get method will only return the visible languages.
-    If you want to access all langauges known by Launchpad use 
-    getAllLanguages method. 
+    If you want to access all langauges known by Launchpad use
+    getAllLanguages method.
     """
 
     export_as_webservice_collection(ILanguage)
