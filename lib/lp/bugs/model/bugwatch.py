@@ -92,6 +92,20 @@ class BugWatch(SQLBase):
         return shortlist(tasks, 10, 100)
 
     @property
+    def bugtasks_to_update(self):
+        """Yield the bug tasks that are eligible for update."""
+        for bugtask in self.bugtasks:
+            # We don't update conjoined bug tasks; they must be
+            # updated through their conjoined masters.
+            if bugtask._isConjoinedBugTask():
+                continue
+            # We don't update tasks of duplicate bugs.
+            if bugtask.bug.duplicateof is not None:
+                continue
+            # Update this one.
+            yield bugtask
+
+    @property
     def title(self):
         """See `IBugWatch`."""
         return "%s #%s" % (self.bugtracker.title, self.remotebug)
@@ -125,19 +139,12 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToImportance(
                 malone_importance,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
             if linked_bugtask.importance != old_bugtask.importance:
                 event = ObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['importance'],
@@ -152,12 +159,7 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
@@ -282,7 +284,12 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         activity = BugWatchActivity()
         activity.bug_watch = self
-        activity.result = result
+        if result is None:
+            # If no result is passed we assume that the activity
+            # succeded and set the result field accordingly.
+            activity.result = BugWatchActivityStatus.SYNC_SUCCEEDED
+        else:
+            activity.result = result
         if message is not None:
             activity.message = unicode(message)
         if oops_id is not None:

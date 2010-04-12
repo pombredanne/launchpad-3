@@ -116,10 +116,6 @@
                     <br/>
                     <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
                   </p>
-                  <p tal:condition="not: trunk_visible">
-                    Development focus branch has not been specified
-                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
-                  </p>
                 </dd>
               </dl>
 

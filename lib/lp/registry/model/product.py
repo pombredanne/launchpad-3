@@ -34,6 +34,8 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -244,8 +246,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_answers', notNull=True, default=False)
     official_blueprints = BoolCol(
         dbName='official_blueprints', notNull=True, default=False)
-    official_codehosting = BoolCol(
-        dbName='official_codehosting', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
@@ -253,6 +253,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     max_bug_heat = Int()
+
+    @property
+    def official_codehosting(self):
+        # XXX Need to remove official_codehosting column from Product
+        # table.
+        return self.development_focus.branch is not None
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -1017,6 +1023,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             for series in series_list
             if include_inactive or series.active or
                series == self.development_focus]
+
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.branch import Branch
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id ==
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+            SourcePackageRecipeData.base_branch == Branch.id,
+            Branch.product == self)
 
 
 class ProductSet:

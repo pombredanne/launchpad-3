@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BATCH_SIZE_UNLIMITED',
     'BugNotFound',
     'BugTrackerAuthenticationError',
     'BugTrackerConnectError',
@@ -38,6 +39,9 @@ from lp.bugs.interfaces.externalbugtracker import (
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
+
+# To signify that all bug watches should be checked in a single run.
+BATCH_SIZE_UNLIMITED = 0
 
 
 #
@@ -133,7 +137,7 @@ class ExternalBugTracker:
 
     implements(IExternalBugTracker)
 
-    batch_size = 100
+    batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold
     comment_template = 'default_remotecomment_template.txt'
 

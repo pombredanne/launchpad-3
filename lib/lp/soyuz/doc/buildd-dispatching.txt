@@ -6,14 +6,9 @@
     >>> logger.setLevel(logging.DEBUG)
 
 The buildd dispatching basically consists of finding a available
-Buildd-slave in IDLE state, push required files to it, then request
-the it to start a build procedure.
-
-Those tasks are implemented by the BuilddMaster and BuilderGroup
-classes.
-
-    >>> from lp.buildmaster.master import BuilddMaster
-    >>> bm = BuilddMaster(logger, transaction)
+slave in IDLE state, pushing any required files to it, then requesting
+that it starts the build procedure. These tasks are implemented by the
+BuilderSet and Builder classes.
 
 Setup the test builder:
 
@@ -67,13 +62,12 @@ Clean up previous BuildQueue results from sampledata:
     u'bob'
     >>> lost_job.destroySelf()
 
-The BuilddMaster will be set up next. This involves checking the various
-builders and resetting the virtualized ones if needed. Please note that
-'frog' is a PPA builder and was reset due to a communication time-out.
+We'll next use BuilderSet to check the various builders and reset
+the virtualized ones if needed. Please note that 'frog' is a PPA
+builder and was reset due to a communication time-out.
 
-    >>> bm.addDistroArchSeries(hoary_i386)
-    >>> bm.setupBuilders(hoary_i386)
-    WARNING:root.builders.x86:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
+    >>> builder_set.checkBuilders(logger, transaction)
+    WARNING:root:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
     Traceback (most recent call last):
     ...
     error: (111, 'Connection refused')
