@@ -14,6 +14,7 @@ from lp.registry.tests.test_distroseries import (
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistributionCurrentSourceReleases(
@@ -72,6 +73,22 @@ class TestDistributionCurrentSourceReleases(
         series = distribution.series
         self.assertEqual(1, len(series))
         self.assertTrue(series is distribution._cached_series)
+
+
+class SeriesByStatusTests(TestCaseWithFactory):
+    """Test IDistribution.getSeriesByStatus().
+    """
+
+    def test_get_none(self):
+        distro = self.factory.makeDistribution()
+        self.assertEquals([], distro.getSeriesByStatus(SeriesStatus.FROZEN))
+
+    def test_get_current(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro, 
+            status=SeriesStatus.CURRENT)
+        self.assertEquals([series],
+            distro.getSeriesByStatus(SeriesStatus.CURRENT))
 
 
 def test_suite():
