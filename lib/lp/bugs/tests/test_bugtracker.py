@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 
 from pytz import utc
 
+import transaction
+
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctestunit import DocTestSuite
@@ -28,6 +30,10 @@ from lp.testing import TestCaseWithFactory
 
 class TestBugTracker(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTracker, self).setUp()
+        transaction.commit()
 
     def test_multi_product_constraints_observed(self):
         """BugTrackers for which multi_product=True should return None
