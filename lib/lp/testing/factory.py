@@ -149,8 +149,8 @@ SPACE = ' '
 
 DIFF = """\
 === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
---- yvo/yc/pbqr/vagresnprf/qvss.cl	2009-10-01 13:25:12 +0000
-+++ yvo/yc/pbqr/vagresnprf/qvss.cl	2010-02-02 15:48:56 +0000
+--- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000
++++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000
 @@ -121,6 +121,10 @@
                  'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
               ernqbayl=Gehr))
@@ -340,9 +340,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(account).status = status
         if email is None:
             email = self.getUniqueEmailAddress()
+        email_status = EmailAddressStatus.PREFERRED
+        if status != AccountStatus.ACTIVE:
+            email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
-            email, person=None, account=account,
-            email_status=EmailAddressStatus.PREFERRED)
+            email, person=None, account=account, email_status=email_status)
         if commit:
             transaction.commit()
         return account
@@ -635,7 +637,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProcessorFamily(self, name, title=None, description=None,
                             restricted=False):
         """Create a new processor family.
-        
+
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
@@ -1105,6 +1107,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
+        branch.startMirroring()
+        branch.mirrorComplete(parent.revision_id)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id, sequence=None):
@@ -1568,7 +1572,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         :param branch: If supplied, the branch to set as
             ProductSeries.branch.
-        :param product: If supplied, the name of the series.
+        :param name: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
         """
@@ -1622,12 +1626,14 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None):
+                          parent_series=None, name=None, displayname=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
         if name is None:
             name = self.getUniqueString()
+        if displayname is None:
+            displayname = name.capitalize()
         if version is None:
             version = "%s.0" % self.getUniqueInteger()
 
@@ -1637,7 +1643,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         series = naked_distribution.newSeries(
             version=version,
             name=name,
-            displayname=name.capitalize(),
+            displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
@@ -1716,7 +1722,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None):
+                    virtualized=True, vm_host=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -1740,7 +1746,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IBuilderSet).new(
             processor, url, name, title, description, owner, active,
-            virtualized, vm_host)
+            virtualized, vm_host, manual=manual)
 
     def makeRecipe(self, *branches):
         """Make a builder recipe that references `branches`.
@@ -1800,11 +1806,12 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,
-        sourcename=None):
+        sourcename=None, recipe_build=None):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
-        recipe_build = self.makeSourcePackageRecipeBuild(
-            sourcename=sourcename)
+        if recipe_build is None:
+            recipe_build = self.makeSourcePackageRecipeBuild(
+                sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)

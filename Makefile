@@ -182,7 +182,10 @@ bin/buildout: download-cache eggs
 		--download-base=download-cache/dist --eggs=eggs
 
 # This builds bin/py and all the other bin files except bin/buildout.
+# Remove the target before calling buildout to ensure that buildout
+# updates the timestamp.
 $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(RM) $@
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
@@ -203,9 +206,9 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-mpcreationjobs:
-	# Handle merge proposal creations.
-	$(PY) cronscripts/mpcreationjobs.py
+merge-proposal-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: inplace stop
 	$(RM) thread*.request
@@ -249,8 +252,7 @@ scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/scan_branches.py
 
-
-sync_branches: pull_branches scan_branches mpcreationjobs
+sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh

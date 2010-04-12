@@ -26,7 +26,7 @@ from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 import bzrlib.ui
-from bzrlib.urlutils import join as urljoin
+from bzrlib.urlutils import join as urljoin, local_path_from_url
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
@@ -581,7 +581,7 @@ class GitImportWorker(PullingImportWorker):
 
     def getExtraPullArgs(self):
         """See `PullingImportWorker.getExtraPullArgs`."""
-        return {'limit': config.codeimport.revisions_import_limit}
+        return {'limit': config.codeimport.git_revisions_import_limit}
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -591,8 +591,17 @@ class GitImportWorker(PullingImportWorker):
         it in the Bazaar tree, that is at '.bzr/repository/git.db'.
         """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
+        # Fetch the legacy cache from the store, if present.
         self.import_data_store.fetch(
             'git.db', tree.branch.repository._transport)
+        # The cache dir from newer bzr-gits is stored as a tarball.
+        local_name = 'git-cache.tar.gz'
+        if self.import_data_store.fetch(local_name):
+            repo_transport = tree.branch.repository._transport
+            repo_transport.mkdir('git')
+            git_db_dir = os.path.join(
+                local_path_from_url(repo_transport.base), 'git')
+            extract_tarball(local_name, git_db_dir)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
@@ -604,8 +613,12 @@ class GitImportWorker(PullingImportWorker):
         """
         non_trivial = PullingImportWorker.pushBazaarWorkingTree(
             self, bazaar_tree)
-        self.import_data_store.put(
-            'git.db', bazaar_tree.branch.repository._transport)
+        repo_transport = bazaar_tree.branch.repository._transport
+        git_db_dir = os.path.join(
+            local_path_from_url(repo_transport.base), 'git')
+        local_name = 'git-cache.tar.gz'
+        create_tarball(git_db_dir, local_name)
+        self.import_data_store.put(local_name)
         return non_trivial
 
 
@@ -655,7 +668,7 @@ class BzrSvnImportWorker(PullingImportWorker):
 
     def getExtraPullArgs(self):
         """See `PullingImportWorker.getExtraPullArgs`."""
-        return {'limit': config.codeimport.revisions_import_limit}
+        return {'limit': config.codeimport.svn_revisions_import_limit}
 
     @property
     def format_classes(self):

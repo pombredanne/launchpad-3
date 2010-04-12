@@ -366,7 +366,7 @@ priority was correctly munged to "extra":
     >>> print ed.build.processor.name
     386
     >>> print ed.build.buildstate
-    Successfully built
+    Successful build
     >>> print ed.build.distroarchseries.processorfamily.name
     x86
     >>> print ed.build.distroarchseries.architecturetag
@@ -730,7 +730,7 @@ batch.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
     >>> print proc.stderr.read()
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-gina.lock
     ...
     INFO    === Processing debian/lenny/release ===
     ...
