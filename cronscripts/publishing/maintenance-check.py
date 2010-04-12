@@ -65,20 +65,20 @@ BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
-#HINTS_DIR_URL = "http://people.canonical.com/~mvo/maintenance-check/%s.hints"
 HINTS_DIR_URL = "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS"
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
-#ARCHIVE_ROOT = "file:/srv/launchpad.net/ubuntu-archive/ubuntu"
 ARCHIVE_ROOT = "http://archive.ubuntu.com/ubuntu"
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
 
 def get_binaries_for_source_pkg(srcname):
-    """ 
-    get all binary package names for the given source package name
+    """ Return all binary package names for the given source package name.
+
+    :param srcname: The source package name.
+    :return: A list of binary package names.
     """
     pkgnames = set()
     recs = apt_pkg.GetPkgSrcRecords()
@@ -88,47 +88,63 @@ def get_binaries_for_source_pkg(srcname):
     return pkgnames
 
 def expand_src_pkgname(pkgname):
-    """ expand a given pkgname if prefixed with src: to a list of
-        binary package names, if not prefixed, just return the pkgname
+    """ Expand a package name if it is prefixed with src.
+
+    If the package name is prefixed with src it will be expanded
+    to a list of binary package names. Otherwise the original
+    package name will be returned.
+    
+    :param pkgname: The package name (that may include src:prefix).
+    :return: A list of binary package names (the list may be one element long).
     """
     if not pkgname.startswith("src:"):
         return [pkgname]
     return get_binaries_for_source_pkg(pkgname.split("src:")[1])
 
-def create_and_update_deb_src_source_list(distro):
-    """ 
-    create sources.list with deb-src entries for a given distro release
-    and update to make sure we are current
+def create_and_update_deb_src_source_list(distroseries):
+    """ Create sources.list and update cache.
+
+    This creates a sources.list file with deb-src entries for a given 
+    distroseries and apt.Cache.update() to make sure the data is up-to-date.
+    :param distro: The code name of the distribution series (e.g. lucid).
+    :return: None
+    :raises: IOError: When cache update fails.
     """
     # apt root dir
-    rootdir="./aptroot.%s" % distro
+    rootdir="./aptroot.%s" % distroseries
     sources_list_dir = os.path.join(rootdir, "etc","apt")
     if not os.path.exists(sources_list_dir):
         os.makedirs(sources_list_dir)
     sources_list = open(os.path.join(sources_list_dir, "sources.list"),"w")
-    for pocket in ["%s" % distro, 
-                   "%s-updates" % distro, 
-                   "%s-security" % distro]:
-        sources_list.write("deb-src %s %s main restricted\n" % (
+    for pocket in [
+        "%s" % distroseries, 
+        "%s-updates" % distroseries, 
+        "%s-security" % distroseries]:
+        sources_list.write(
+            "deb-src %s %s main restricted\n" % (
                 ARCHIVE_ROOT, pocket))
     sources_list.close()
     cache = apt.Cache(rootdir=rootdir)
     cache.update(apt.progress.FetchProgress())
 
-def get_structure(name, version):
-    """ 
-    get structure file for named distro and distro version 
-    (e.g. kubuntu, lucid)
+def get_structure(distroname, version):
+    """ Get structure file conent for named distro and distro version.
+    
+    :param name: Name of the distribution (e.g. kubuntu, ubuntu, xubuntu).
+    :param version: Code name of the distribution version (e.g. lucid).
+    :return: List of strings with the structure file content
     """
-    f = urllib2.urlopen("%s/%s.%s/structure" % (BASE_URL, name, version))
+    f = urllib2.urlopen("%s/%s.%s/structure" % (BASE_URL, distroname, version))
     structure = f.readlines()
     f.close()
     return structure
 
 def expand_seeds(structure, seedname):
-    """ 
-    expand seed by its dependencies using the strucure file
-    returns a set() for the seed dependencies (excluding the original seedname)
+    """ Expand seed by its dependencies using the strucure file.
+
+    :param structure: The content of the STRUCTURE file as string list.
+    :param seedname: The name of the seed as string that needs to be expanded.
+    :return: a set() for the seed dependencies (excluding the original seedname)
     """
     seeds = []
     for line in structure:
@@ -259,10 +275,13 @@ if __name__ == "__main__":
                             pass
                     else:
                         if pkg_support_time.get(pkgname) != support_time:
-                            sys.stderr.write("hints-file: changing %s from %s to %s\n" % (pkgname,  pkg_support_time.get(pkgname), support_time))
+                            sys.stderr.write(
+                                "hints-file: changing %s from %s to %s\n" % (
+                                    pkgname,  pkg_support_time.get(pkgname), 
+                                    support_time))
                             pkg_support_time[pkgname] = support_time
             except:
-                logging.exception("can not parts line '%s'" % line)
+                logging.exception("can not parse line '%s'" % line)
     except urllib2.HTTPError, e:
         if e.getcode() != 404:
             raise
@@ -270,7 +289,7 @@ if __name__ == "__main__":
     
     # output suitable for the extra-override file
     for pkgname in sorted(pkg_support_time.keys()):
-        # special case, the hints file may contain overwrites that
+        # special case, the hints file may contain overrides that
         # are arch-specific (like zsh-doc/armel)
         if "/" in pkgname:
             print "%s %s %s" % (
