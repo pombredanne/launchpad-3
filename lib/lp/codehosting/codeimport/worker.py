@@ -64,17 +64,22 @@ class BazaarBranchStore:
         """Return the URL that `db_branch` is stored at."""
         return urljoin(self.transport.base, '%08x' % db_branch_id)
 
-    def pull(self, db_branch_id, target_path, required_format):
-        """Pull down the Bazaar branch for `code_import` to `target_path`.
+    def pull(self, db_branch_id, target_path, required_format,
+             needs_tree=False):
+        """Pull down the Bazaar branch of an import to `target_path`.
 
-        :return: A Bazaar working tree for the branch of `code_import`.
+        :return: A Bazaar branch for the code import corresponding to the
+            database branch with id `db_branch_id`.
         """
         remote_url = self._getMirrorURL(db_branch_id)
         try:
             remote_bzr_dir = BzrDir.open(remote_url)
         except NotBranchError:
-            return BzrDir.create_standalone_workingtree(
-                target_path, required_format)
+            local_branch = BzrDir.create_branch_and_repo(
+                target_path, format=required_format)
+            if needs_tree:
+                local_branch.bzrdir.create_workingtree()
+            return local_branch
         # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
         # branches disabled.  Need an orderly upgrade process.
         if False and remote_bzr_dir.needs_format_conversion(
@@ -84,33 +89,33 @@ class BazaarBranchStore:
             except NoSuchFile:
                 pass
             upgrade(remote_url, required_format)
-        local_bzr_dir = remote_bzr_dir.sprout(target_path)
+        local_branch = remote_bzr_dir.sprout(
+            target_path, create_tree_if_local=needs_tree).open_branch()
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
         # We need to transfer them too.
-        local_bzr_dir.open_repository().fetch(
+        local_branch.repository.fetch(
             remote_bzr_dir.open_repository())
-        return local_bzr_dir.open_workingtree()
+        return local_branch
 
-    def push(self, db_branch_id, bzr_tree, required_format):
-        """Push up `bzr_tree` as the Bazaar branch for `code_import`.
+    def push(self, db_branch_id, bzr_branch, required_format):
+        """Push up `bzr_branch` as the Bazaar branch for `code_import`.
 
         :return: A boolean that is true if the push was non-trivial
             (i.e. actually transferred revisions).
         """
         self.transport.create_prefix()
-        branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch_id)
         try:
-            branch_to = Branch.open(target_url)
+            remote_branch = Branch.open(target_url)
         except NotBranchError:
-            branch_to = BzrDir.create_branch_and_repo(
+            remote_branch = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
-        pull_result = branch_to.pull(branch_from, overwrite=True)
+        pull_result = remote_branch.pull(bzr_branch, overwrite=True)
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
         # We need to transfer them too.
-        branch_to.repository.fetch(branch_from.repository)
+        remote_branch.repository.fetch(bzr_branch.repository)
         return pull_result.old_revid != pull_result.new_revid
 
 
@@ -352,7 +357,10 @@ class ImportWorker:
     """Oversees the actual work of a code import."""
 
     # Where the Bazaar working tree will be stored.
-    BZR_WORKING_TREE_PATH = 'bzr_working_tree'
+    BZR_BRANCH_PATH = 'bzr_branch'
+
+    # Should `getBazaarBranch` create a working tree?
+    needs_bzr_tree = True
 
     required_format = BzrDirFormat.get_default_format()
 
@@ -372,21 +380,22 @@ class ImportWorker:
             import_data_transport, self.source_details)
         self._logger = logger
 
-    def getBazaarWorkingTree(self):
-        """Return the Bazaar `WorkingTree` that we are importing into."""
-        if os.path.isdir(self.BZR_WORKING_TREE_PATH):
-            shutil.rmtree(self.BZR_WORKING_TREE_PATH)
+    def getBazaarBranch(self):
+        """Return the Bazaar `Branch` that we are importing into."""
+        if os.path.isdir(self.BZR_BRANCH_PATH):
+            shutil.rmtree(self.BZR_BRANCH_PATH)
         return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH,
-            self.required_format)
+            self.source_details.branch_id, self.BZR_BRANCH_PATH,
+            self.required_format, self.needs_bzr_tree)
 
-    def pushBazaarWorkingTree(self, bazaar_tree):
-        """Push the updated Bazaar working tree to the server.
+    def pushBazaarBranch(self, bazaar_branch):
+        """Push the updated Bazaar branch to the server.
 
         :return: True if revisions were transferred.
         """
         return self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree, self.required_format)
+            self.source_details.branch_id, bazaar_branch,
+            self.required_format)
 
     def getWorkingDirectory(self):
         """The directory we should change to and store all scratch files in.
@@ -455,14 +464,15 @@ class CSCVSImportWorker(ImportWorker):
         os.mkdir(self.FOREIGN_WORKING_TREE_PATH)
         return self.foreign_tree_store.fetch(self.FOREIGN_WORKING_TREE_PATH)
 
-    def importToBazaar(self, foreign_tree, bazaar_tree):
-        """Actually import `foreign_tree` into `bazaar_tree`.
+    def importToBazaar(self, foreign_tree, bazaar_branch):
+        """Actually import `foreign_tree` into `bazaar_branch`.
 
         :param foreign_tree: A `SubversionWorkingTree` or a `CVSWorkingTree`.
-        :param bazaar_tree: A `bzrlib.workingtree.WorkingTree`.
+        :param bazaar_tree: A `bzrlib.branch.Branch`, which must have a
+            colocated working tree.
         """
         foreign_directory = foreign_tree.local_path
-        bzr_directory = str(bazaar_tree.basedir)
+        bzr_directory = str(bazaar_branch.bzrdir.open_workingtree().basedir)
 
         scm_branch = SCM.branch(bzr_directory)
         last_commit = cscvs.findLastCscvsCommit(scm_branch)
@@ -500,9 +510,9 @@ class CSCVSImportWorker(ImportWorker):
 
     def _doImport(self):
         foreign_tree = self.getForeignTree()
-        bazaar_tree = self.getBazaarWorkingTree()
-        self.importToBazaar(foreign_tree, bazaar_tree)
-        non_trivial = self.pushBazaarWorkingTree(bazaar_tree)
+        bazaar_branch = self.getBazaarBranch()
+        self.importToBazaar(foreign_tree, bazaar_branch)
+        non_trivial = self.pushBazaarBranch(bazaar_branch)
         self.foreign_tree_store.archive(foreign_tree)
         if non_trivial:
             return CodeImportWorkerExitCode.SUCCESS
@@ -515,6 +525,8 @@ class PullingImportWorker(ImportWorker):
 
     Subclasses need to implement `format_classes`.
     """
+
+    needs_bzr_tree = False
 
     @property
     def format_classes(self):
@@ -531,13 +543,14 @@ class PullingImportWorker(ImportWorker):
         return {}
 
     def _doImport(self):
-        bazaar_tree = self.getBazaarWorkingTree()
-        self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_tree, self.required_format)
+        self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
         try:
+            self._logger.info(
+                "Getting exising bzr branch from central store.")
+            bazaar_branch = self.getBazaarBranch()
             transport = get_transport(self.source_details.url)
             for format_class in self.format_classes:
                 try:
@@ -549,11 +562,14 @@ class PullingImportWorker(ImportWorker):
                 raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
             foreign_branch_tip = foreign_branch.last_revision()
-            inter_branch = InterBranch.get(foreign_branch, bazaar_tree.branch)
+            inter_branch = InterBranch.get(foreign_branch, bazaar_branch)
+            self._logger.info("Importing foreign branch.")
             pull_result = inter_branch.pull(
                 overwrite=True, **self.getExtraPullArgs())
-            self.pushBazaarWorkingTree(bazaar_tree)
-            last_imported_revison = bazaar_tree.branch.last_revision()
+            self._logger.info("Pushing foreign branch to central store.")
+            self.pushBazaarBranch(bazaar_branch)
+            last_imported_revison = bazaar_branch.last_revision()
+            self._logger.info("Job complete.")
             if last_imported_revison == foreign_branch_tip:
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
@@ -583,39 +599,38 @@ class GitImportWorker(PullingImportWorker):
         """See `PullingImportWorker.getExtraPullArgs`."""
         return {'limit': config.codeimport.git_revisions_import_limit}
 
-    def getBazaarWorkingTree(self):
-        """See `ImportWorker.getBazaarWorkingTree`.
+    def getBazaarBranch(self):
+        """See `ImportWorker.getBazaarBranch`.
 
-        In addition to the superclass' behaviour, we retrieve the 'git.db'
-        shamap from the import data store and put it where bzr-git will find
-        it in the Bazaar tree, that is at '.bzr/repository/git.db'.
+        In addition to the superclass' behaviour, we retrieve bzr-git's
+        caches, both legacy and modern, from the import data store and put
+        them where bzr-git will find them in the Bazaar tree, that is at
+        '.bzr/repository/git.db' and '.bzr/repository/git'.
         """
-        tree = PullingImportWorker.getBazaarWorkingTree(self)
+        branch = PullingImportWorker.getBazaarBranch(self)
         # Fetch the legacy cache from the store, if present.
         self.import_data_store.fetch(
-            'git.db', tree.branch.repository._transport)
+            'git.db', branch.repository._transport)
         # The cache dir from newer bzr-gits is stored as a tarball.
         local_name = 'git-cache.tar.gz'
         if self.import_data_store.fetch(local_name):
-            repo_transport = tree.branch.repository._transport
+            repo_transport = branch.repository._transport
             repo_transport.mkdir('git')
             git_db_dir = os.path.join(
                 local_path_from_url(repo_transport.base), 'git')
             extract_tarball(local_name, git_db_dir)
-        return tree
+        return branch
 
-    def pushBazaarWorkingTree(self, bazaar_tree):
-        """See `ImportWorker.pushBazaarWorkingTree`.
+    def pushBazaarBranch(self, bazaar_branch):
+        """See `ImportWorker.pushBazaarBranch`.
 
-        In addition to the superclass' behaviour, we store the 'git.db' shamap
-        that bzr-git will have created at .bzr/repository/bzr.git into the
-        import data store.
+        In addition to the superclass' behaviour, we store bzr-git's cache
+        directory at .bzr/repository/git in the import data store.
         """
-        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
-            self, bazaar_tree)
-        repo_transport = bazaar_tree.branch.repository._transport
-        git_db_dir = os.path.join(
-            local_path_from_url(repo_transport.base), 'git')
+        non_trivial = PullingImportWorker.pushBazaarBranch(
+            self, bazaar_branch)
+        repo_base = bazaar_branch.repository._transport.base
+        git_db_dir = os.path.join(local_path_from_url(repo_base), 'git')
         local_name = 'git-cache.tar.gz'
         create_tarball(git_db_dir, local_name)
         self.import_data_store.put(local_name)
@@ -637,29 +652,29 @@ class HgImportWorker(PullingImportWorker):
         from bzrlib.plugins.hg import HgBzrDirFormat
         return [HgBzrDirFormat]
 
-    def getBazaarWorkingTree(self):
-        """See `ImportWorker.getBazaarWorkingTree`.
+    def getBazaarBranch(self):
+        """See `ImportWorker.getBazaarBranch`.
 
         In addition to the superclass' behaviour, we retrieve the 'hg-v2.db'
         map from the import data store and put it where bzr-hg will find
         it in the Bazaar tree, that is at '.bzr/repository/hg-v2.db'.
         """
-        tree = PullingImportWorker.getBazaarWorkingTree(self)
+        branch = PullingImportWorker.getBazaarBranch(self)
         self.import_data_store.fetch(
-            self.db_file, tree.branch.repository._transport)
-        return tree
+            self.db_file, branch.repository._transport)
+        return branch
 
-    def pushBazaarWorkingTree(self, bazaar_tree):
-        """See `ImportWorker.pushBazaarWorkingTree`.
+    def pushBazaarBranch(self, bazaar_branch):
+        """See `ImportWorker.pushBazaarBranch`.
 
-        In addition to the superclass' behaviour, we store the 'hg-v2.db' shamap
-        that bzr-hg will have created at .bzr/repository/hg-v2.db into the
-        import data store.
+        In addition to the superclass' behaviour, we store the 'hg-v2.db'
+        shamap that bzr-hg will have created at .bzr/repository/hg-v2.db into
+        the import data store.
         """
-        non_trivial = PullingImportWorker.pushBazaarWorkingTree(
-            self, bazaar_tree)
+        non_trivial = PullingImportWorker.pushBazaarBranch(
+            self, bazaar_branch)
         self.import_data_store.put(
-            self.db_file, bazaar_tree.branch.repository._transport)
+            self.db_file, bazaar_branch.repository._transport)
         return non_trivial
 
 
