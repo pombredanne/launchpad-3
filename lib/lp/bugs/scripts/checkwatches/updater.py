@@ -535,9 +535,14 @@ class BugWatchUpdater(object):
         # Try to hint at how many bug watches to check each time.
         suggest_batch_size(remotesystem_to_use, num_watches)
 
-        if (is_gnome_bugzilla and
-            isinstance(remotesystem_to_use, BugzillaAPI) and
-            len(self._syncable_gnome_products) > 0):
+        if (is_gnome_bugzilla and remotesystem_to_use.sync_comments):
+            # If there are no products to sync comments for, disable
+            # comment sync and return.
+            if len(self._syncable_gnome_products) == 0:
+                remotesystem_to_use.sync_comments = False
+                return [
+                    (remotesystem_to_use, bug_watches),
+                    ]
 
             syncable_watches = []
             other_watches = []
@@ -567,16 +572,14 @@ class BugWatchUpdater(object):
             remotesystem_for_others = copy(remotesystem_to_use)
             remotesystem_for_others.sync_comments = False
 
-            trackers_and_watches = [
+            return [
                 (remotesystem_for_syncables, syncable_watches),
                 (remotesystem_for_others, other_watches),
                 ]
         else:
-            trackers_and_watches = [
+            return [
                 (remotesystem_to_use, bug_watches),
                 ]
-
-        return trackers_and_watches
 
     def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
