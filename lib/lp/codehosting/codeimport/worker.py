@@ -549,6 +549,8 @@ class PullingImportWorker(ImportWorker):
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
         try:
+            self._logger.info(
+                "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             transport = get_transport(self.source_details.url)
             for format_class in self.format_classes:
@@ -562,8 +564,10 @@ class PullingImportWorker(ImportWorker):
             foreign_branch = format.open(transport).open_branch()
             foreign_branch_tip = foreign_branch.last_revision()
             inter_branch = InterBranch.get(foreign_branch, bazaar_branch)
+            self._logger.info("Importing foreign branch.")
             pull_result = inter_branch.pull(
                 overwrite=True, **self.getExtraPullArgs())
+            self._logger.info("Pushing foreign branch to central store.")
             self.pushBazaarBranch(bazaar_branch)
             last_imported_revison = bazaar_branch.last_revision()
             if last_imported_revison == foreign_branch_tip:
