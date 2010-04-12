@@ -949,7 +949,6 @@ class Archive(SQLBase):
             source_ids,
             archive=self)
 
-    # FROM HERE
     def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
@@ -1170,8 +1169,6 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
             self, sourcepackagename, person, distroseries)
-
-    # END HERE
 
     def getFileByName(self, filename):
         """See `IArchive`."""
