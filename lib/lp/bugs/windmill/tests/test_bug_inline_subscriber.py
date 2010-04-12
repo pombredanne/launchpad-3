@@ -85,7 +85,12 @@ class TestInlineSubscribing(WindmillTestCase):
         client.click(link=u'Subscribe someone else')
         client.waits.forElement(
             name=u'search', timeout=FOR_ELEMENT)
-        client.type(text=u'ubuntu-team', name=u'search')
+        client.type(
+            text=u'ubuntu-team',
+            xpath=u'//table[contains(@class, "yui-picker") '
+                   'and not(contains(@class, "yui-picker-hidden"))]'
+                   '//div[@class="yui-picker-search-box"]'
+                   '/input[@name="search"]')
         client.click(
             xpath=u'//table[contains(@class, "yui-picker") '
                    'and not(contains(@class, "yui-picker-hidden"))]'
@@ -94,13 +99,11 @@ class TestInlineSubscribing(WindmillTestCase):
             u'//table[contains(@class, "yui-picker") '
             'and not(contains(@class, "yui-picker-hidden"))]'
             '//ul[@class="yui-picker-results"]/li[1]/span')
-        # sleep() seems to be the only way to get this section to pass
-        # when running all of BugsWindmillLayer.
-        client.waits.sleep(milliseconds=SLEEP)
+        client.waits.forElement(
+            xpath=search_result_xpath, timeout=FOR_ELEMENT)
         client.click(xpath=search_result_xpath)
         client.waits.forElement(
-            id=u'subscribers-links', timeout=FOR_ELEMENT)
-        client.asserts.assertNode(xpath=PERSON_LINK % u'Ubuntu Team')
+            xpath=PERSON_LINK % u'Ubuntu Team', timeout=FOR_ELEMENT)
 
         # If we subscribe the user again,
         # the icon should still be the person icon.
@@ -219,10 +222,9 @@ class TestInlineSubscribing(WindmillTestCase):
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Now back to bug 5. Confirm there are 2 subscriptions.
         client.open(url=BUG_URL % 5)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertNode(
             id='direct-subscriber-12', timeout=FOR_ELEMENT)
-        client.asserts.assertNode(
-            id='dupe-subscriber-12', timeout=FOR_ELEMENT)
         # The first click unsubscribes the direct subscription, leaving
         # the duplicate subscription.
         client.click(xpath=SUBSCRIPTION_LINK)
