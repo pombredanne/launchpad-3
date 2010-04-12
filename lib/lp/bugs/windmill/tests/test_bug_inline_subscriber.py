@@ -18,7 +18,7 @@ class TestInlineSubscribing(WindmillTestCase):
     layer = BugsWindmillLayer
     suite_name = 'Inline bug page subscribers test'
 
-    def DISABLED_test_inline_subscriber(self):
+    def test_inline_subscriber(self):
         # This test fails intermittently.  See bug #516781.
         """Test inline subscribing on bugs pages.
 
@@ -94,7 +94,7 @@ class TestInlineSubscribing(WindmillTestCase):
             u'//table[contains(@class, "yui-picker") '
             'and not(contains(@class, "yui-picker-hidden"))]'
             '//ul[@class="yui-picker-results"]/li[1]/span')
-        # sleep() seems to be the only way to get this section to pass 
+        # sleep() seems to be the only way to get this section to pass
         # when running all of BugsWindmillLayer.
         client.waits.sleep(milliseconds=SLEEP)
         client.click(xpath=search_result_xpath)
