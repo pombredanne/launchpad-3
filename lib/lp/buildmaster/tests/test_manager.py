@@ -552,7 +552,7 @@ class TestBuilddManagerScan(TrialTestCase):
                'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
                '', '')),
              ('build',
-              ('11-2',
+              ('6358a89e2215e19b02bf91e2e4d009640fae5cf8',
                'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
                {'alsa-utils_1.0.9a-4ubuntu1.dsc':
                 '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
