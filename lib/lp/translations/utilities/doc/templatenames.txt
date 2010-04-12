@@ -1,4 +1,4 @@
-= Deriving template names template paths =
+= Deriving template names from template paths =
 
 Template names can be derived from template paths. The name usually matches
 the translation domain but translation domains may contain characters that

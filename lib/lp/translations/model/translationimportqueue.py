@@ -984,8 +984,9 @@ class TranslationImportQueue:
         num_files = 0
         conflict_files = []
 
+        tarball_io = StringIO(content)
         try:
-            tarball = tarfile.open('', 'r|*', StringIO(content))
+            tarball = tarfile.open('', 'r|*', tarball_io)
         except (tarfile.CompressionError, tarfile.ReadError):
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
@@ -1008,7 +1009,8 @@ class TranslationImportQueue:
 
         # Re-opening because we are using sequential access ("r|*") which is
         # so much faster.
-        tarball = tarfile.open('', 'r|*', StringIO(content))
+        tarball_io.seek(0)
+        tarball = tarfile.open('', 'r|*', tarball_io)
         for tarinfo in tarball:
             if tarinfo.name not in upload_files:
                 continue

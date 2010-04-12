@@ -50,10 +50,7 @@ class TranslationBranchApprover(object):
             is for.
         """
 
-        # Productseries and distroseries will be asserted in getSubset but
-        # not sourcepackagename.
-        assert (distroseries is None and sourcepackagename is None or
-                distroseries is not None and sourcepackagename is not None), (
+        assert (distroseries is None or sourcepackagename is not None), (
                 "Please specify distroseries and sourcepackagename together.")
 
         self._potemplates = {}
@@ -176,7 +173,7 @@ class TranslationBuildApprover(object):
     def _getOrCreateGenericTemplate(self, path):
         """Try to find or create a template for a generic path.
 
-        Because a generic path (i.e. messages.pot) does not provide
+        Because a generic path (e.g. messages.pot) does not provide
         a template name, the name of the product or sourcepackagename is used
         when creating a new template.
 
@@ -186,8 +183,8 @@ class TranslationBuildApprover(object):
         if len(self.filenames) != 1:
             # Generic paths can only be approved if they are alone.
             return None
-        len_potemplateset = len(self._potemplateset)
-        if len_potemplateset == 0:
+        potemplateset_size = len(self._potemplateset)
+        if potemplateset_size == 0:
             # Create template from product or sourcepackagename name.
             if self._potemplateset.productseries is not None:
                 domain = self._potemplateset.productseries.product.name
@@ -195,7 +192,7 @@ class TranslationBuildApprover(object):
                 domain = self._potemplateset.sourcepackagename.name
             name = domain
             return self._potemplateset.new(name, domain, path, self.owner)
-        elif len_potemplateset == 1:
+        elif potemplateset_size == 1:
             # Use the one template that is there.
             # Can only be accessed through iterator.
             for pot in self._potemplateset:

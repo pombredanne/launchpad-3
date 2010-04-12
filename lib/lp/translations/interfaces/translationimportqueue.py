@@ -376,7 +376,7 @@ class ITranslationImportQueue(Interface):
         :arg potemplate: is the link of this import with an IPOTemplate.
         :arg pofile: is the link of this import with an IPOFile.
         :arg format: a TranslationFileFormat.
-        :return: the entry or None if processing failed.
+        :return: the entry, or None if processing failed.
 
         The entry is either for a sourcepackage or a productseries, so
         only one of them can be specified.

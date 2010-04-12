@@ -34,7 +34,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             for path in filenames]
 
     def test_approve_all_new(self):
-        # The happy approval case, all new templates.
+        # A happy approval case, all new templates.
         filenames = [
             'po-domain1/domain1.pot',
             'po-domain2/domain2.pot',
@@ -66,7 +66,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             [entry.status for entry in entries])
 
     def test_approve_all_existing(self):
-        # The happy approval case, all existing templates.
+        # A happy approval case, all existing templates.
         filenames = [
             'po-domain1/domain1.pot',
             'po-domain2/domain2.pot',
@@ -90,7 +90,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             [entry.potemplate for entry in entries])
 
     def test_approve_some_existing(self):
-        # The happy approval case, some existing templates.
+        # A happy approval case, some existing templates.
         filenames = [
             'po-domain1/domain1.pot',
             'po-domain2/domain2.pot',

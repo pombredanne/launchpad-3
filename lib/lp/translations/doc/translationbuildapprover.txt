@@ -27,7 +27,7 @@ create a new template if none is found by that name.
     >>> entry = makeQueueEntry("po/my_domain.pot", productseries)
     >>> print entry.status.title
     Needs Review
-    >>> my_entry = approver.approve(entry)
+    >>> entry = approver.approve(entry)
     >>> print entry.status.title
     Approved
 
