@@ -504,7 +504,7 @@ list because he speaks an English variant, which is treated as English.
     carlos
 
     >>> answer_contacts = target.getAnswerContactsForLanguage(english)
-    >>> for person in answer_contacts:
+    >>> for person in sorted(answer_contacts, key=lambda person: person.name):
     ...     print person.name
     carlos
     daf
@@ -532,7 +532,7 @@ copied to the question.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
-    >>> from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> now = datetime.now(UTC)
