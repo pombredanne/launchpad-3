@@ -12,6 +12,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
+from canonical.cachedproperty import cachedproperty
 from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
@@ -21,7 +22,8 @@ from lp.bugs.browser.bugcomment import (
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugwatch import (
-    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, IBugWatch, IBugWatchSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)
@@ -98,6 +100,27 @@ class BugWatchEditView(LaunchpadFormView):
     def initial_values(self):
         """See `LaunchpadFormView.`"""
         return {'url' : self.context.url}
+
+    @cachedproperty
+    def recent_watch_activity(self):
+        """Return a list of dicts representing recent watch activity."""
+        activity_items = []
+        for activity in self.context.activity:
+            if status in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+                icon = "/@@/yes"
+                completion_message = "completed successfully"
+            else:
+                icon = "/@@/no"
+                completion_message = (
+                    "failed with error '%s'" % status.title)
+
+            activity_items.append({
+                'icon': icon,
+                'date': activity.activity_date,
+                'completion_message': completion_message,
+                })
+
+        return activity_items
 
     def validate(self, data):
         """See `LaunchpadFormView.`"""

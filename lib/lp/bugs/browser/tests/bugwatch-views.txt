@@ -1,4 +1,5 @@
-= Bug Watch Edit Page =
+Bug Watch Edit Page
+===================
 
 It's possible to edit a bug watch on +edit, as well as deleting it.
 Deleting a bug watch is only possible when the bug watch isn't linked to
@@ -28,3 +29,22 @@ a bug task.
     >>> [action.label for action in unlinked_bugwatch_view.actions
     ...  if action.available()]
     ['Change', 'Delete Bug Watch']
+
+
+Recent activity
+---------------
+
+The Bug Watch +edit page displays a list of the recent activity for the
+watch. This is provided by the view and can be accessed via the view's
+recent_watch_activity property.
+
+We'll create a new watch in order to demonstrate this.
+
+    >>> new_watch = factory.makeBugWatch()
+
+The view for the new watch will have an empty recent_watch_activity list
+since it hasn't been updated yet.
+
+    >>> new_watch_view = create_initialized_view(new_watch, '+edit')
+    >>> len(new_watch_view.recent_watch_activity)
+    0

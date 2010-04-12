@@ -1110,6 +1110,9 @@
                 name="+portlet-bugtasks"
                 template="../templates/bugwatch-portlet-bugtasks.pt"/>
             <browser:page
+                name="+portlet-activity"
+                template="../templates/bugwatch-portlet-activity.pt"/>
+            <browser:page
                 name="+portlet-details"
                 template="../templates/bugwatch-portlet-details.pt"/>
         </browser:pages>
