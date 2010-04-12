@@ -216,3 +216,6 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
         store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
+
+    def getName(self):
+        return "%s-%s" % (self.id, self.build_id)

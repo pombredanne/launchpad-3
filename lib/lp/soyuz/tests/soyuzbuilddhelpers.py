@@ -52,8 +52,9 @@ class MockBuilder:
     def slaveStatusSentence(self):
         return self.slave.status()
 
-    def verifySlaveBuildID(self, slave_build_id):
-        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+    def verifySlaveBuildCookie(self, slave_build_id):
+        return self.current_build_behavior.verifySlaveBuildCookie(
+            slave_build_id)
 
     def cleanSlave(self):
         print 'Cleaning slave'
