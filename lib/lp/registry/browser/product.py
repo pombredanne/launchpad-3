@@ -14,7 +14,6 @@ __all__ = [
     'ProductBugsMenu',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureBranchesView',
     'ProductConfigureBugTrackerView',
     'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',

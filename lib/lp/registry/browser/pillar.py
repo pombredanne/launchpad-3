@@ -13,14 +13,11 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.component.globalregistry import provideAdapter
 from zope.interface import implements, Interface
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import Link, NavigationMenu
-from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, nearest)
+from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
 
 from lp.registry.interfaces.distroseries import IDistroSeries
