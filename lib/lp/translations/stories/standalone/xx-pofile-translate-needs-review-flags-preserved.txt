@@ -75,8 +75,9 @@ translation, while no suggestions are displayed.
     ...     'evolution/+pots/man/es/1/+translate')
     >>> inputradio = admin_browser.getControl(
     ...    name='msgset_166_es_translation_0_radiobutton')
-    >>> inputradio.value = [ 'msgset_166_es_translation_0_new']
-    >>> inputfield = admin_browser.getControl(name='msgset_166_es_translation_0_new')
+    >>> inputradio.value = ['msgset_166_es_translation_0_new']
+    >>> inputfield = admin_browser.getControl(
+    ...     name='msgset_166_es_translation_0_new')
     >>> inputfield.value = 'New test translation'
     >>> admin_browser.getControl('Save & Continue').click()
     >>> print extract_text(find_tag_by_id(admin_browser.contents,
@@ -88,11 +89,15 @@ translation, while no suggestions are displayed.
     Located in ...
 
 'Someone should review this translation' can be used to reset the translation,
-and after clicking 'Save & Continue', all translations entered for this
+when a new emtpy translation is added and marked as needing review.
+After clicking 'Save & Continue', all translations entered for this
 message will be listed as suggestions.
 
     >>> admin_browser.getControl(
     ...     'Someone should review this translation').selected = True
+    >>> inputradio = admin_browser.getControl(
+    ...    name='msgset_166_es_translation_0_radiobutton')
+    >>> inputradio.value = ['msgset_166_es_translation_0_new']
     >>> admin_browser.getControl('Save & Continue').click()
     >>> print extract_text(find_tag_by_id(admin_browser.contents,
     ...                             'messages_to_translate'))
