@@ -217,7 +217,7 @@ class ProductSeriesOverviewMenu(
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
+        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
         'create_milestone', 'create_release', 'rdf', 'subscribe',
         'set_branch',
         ]
@@ -270,11 +270,6 @@ class ProductSeriesOverviewMenu(
             icon = 'edit'
             summary = 'Change the branch for this series'
         return Link('+setbranch', text, summary, icon=icon)
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = "Register a new Bazaar branch for this series' project"
-        return Link('+addbranch', text, summary, icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
@@ -975,7 +970,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     @property
     def target(self):
         """The branch target for the context."""
-        return IBranchTarget(self.context)
+        return IBranchTarget(self.context.product)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
