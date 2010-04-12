@@ -5,9 +5,10 @@
 
 __metaclass__ = type
 
+import itertools
 import unittest
 
-from lp.services.utils import iter_split
+from lp.services.utils import CachingIterator, iter_split
 from lp.testing import TestCase
 
 
@@ -27,6 +28,28 @@ class TestIterateSplit(TestCase):
              ('one', 'two/three')],
             list(iter_split('one/two/three', '/')))
 
+
+class TestCachingIterator(TestCase):
+    """Tests for CachingIterator."""
+
+    def test_reuse(self):
+        # The same iterator can be used multiple times.
+        iterator = CachingIterator(itertools.count())
+        self.assertEqual(
+            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+        self.assertEqual(
+            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+
+    def test_more_values(self):
+        # If a subsequent call to iter causes more values to be fetched, they
+        # are also cached.
+        iterator = CachingIterator(itertools.count())
+        self.assertEqual(
+            [0,1,2], list(itertools.islice(iterator, 0, 3)))
+        self.assertEqual([0,1,2], iterator.data)
+        self.assertEqual(
+            [0,1,2,3,4], list(itertools.islice(iterator, 0, 5)))
+        self.assertEqual([0,1,2,3,4], iterator.data)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

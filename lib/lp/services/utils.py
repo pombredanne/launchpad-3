@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'CachingIterator',
     'iter_split',
     'text_delta',
     'value_string',
@@ -82,3 +83,28 @@ def text_delta(instance_delta, delta_names, state_names, interface):
             output.append('')
         output.append('%s changed to:\n\n%s' % (title, delta))
     return '\n'.join(output)
+
+
+class CachingIterator:
+    """Remember the items extracted from the iterator for the next iteration.
+
+    Some generators and iterators are expensive to calculate, like calculating
+    the merge sorted revision graph for a bazaar branch, so you don't want to
+    call them too often.  Rearranging the code so it doesn't call the
+    expensive generator can make the code ackward.  This class provides a way
+    to have the generator called once, and the results stored.  The results
+    can then be iterated over again, and more values retrieved from the
+    iterator if necessary.
+    """
+    def __init__(self, iterator):
+        self.iterator = iterator
+        self.data = []
+    def __iter__(self):
+        for item in self.data:
+            yield item
+        while self.iterator is not None:
+            item = self.iterator.next()
+            self.data.append(item)
+            if item is None:
+                self.iterator = None
+            yield item
