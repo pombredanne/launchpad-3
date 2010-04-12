@@ -51,7 +51,7 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         # Check that the associated radio button is selected.
         client.asserts.assertChecked(id=radiobutton_id)
 
-    def _check_reset_translation_select(
+    def _checkResetTranslationSelect(
         self, client, checkbox, singular_new_select, singular_current_select,
         singular_new_field=None, plural_new_select=None):
         """Checks that the new translation select radio buttons are checked
@@ -137,7 +137,29 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         singular_new_field = u'msgset_144_es_translation_0_new'
         singular_current_select = u'msgset_144_es_translation_0_radiobutton'
         plural_new_select = u'msgset_144_es_translation_1_new_select'
-        self._check_reset_translation_select(
+        self._checkResetTranslationSelect(
+            client,
+            checkbox=checkbox,
+            singular_new_select=singular_new_select,
+            singular_new_field=singular_new_field,
+            singular_current_select=singular_current_select,
+            plural_new_select=plural_new_select)
+
+        # Go to the zoom in page for a pt_BR translation with plural forms.
+        # pt_BR is a language code using the same delimiter as HTTP form
+        # fields and are prone to errors.
+        self.client.open(
+            url='http://translations.launchpad.dev:8085/'
+                'ubuntu/hoary/+source/evolution/+pots/'
+                'evolution-2.2/pt_BR/15/+translate')
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+
+        checkbox = u'msgset_144_force_suggestion'
+        singular_new_select = u'msgset_144_pt_BR_translation_0_new_select'
+        singular_new_field = u'msgset_144_pt_BR_translation_0_new'
+        singular_current_select = u'msgset_144_pt_BR_translation_0_radiobutton'
+        plural_new_select = u'msgset_144_pt_BR_translation_1_new_select'
+        self._checkResetTranslationSelect(
             client,
             checkbox=checkbox,
             singular_new_select=singular_new_select,
@@ -151,12 +173,11 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
                 'ubuntu/hoary/+source/evolution/+pots/'
                 'evolution-2.2/es/19/+translate')
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        user.ensure_login(self.client)
 
         checkbox = u'msgset_148_force_suggestion'
         singular_new_select = u'msgset_148_es_translation_0_new_select'
         singular_current_select = u'msgset_148_es_translation_0_radiobutton'
-        self._check_reset_translation_select(
+        self._checkResetTranslationSelect(
             client,
             checkbox=checkbox,
             singular_new_select=singular_new_select,
@@ -168,12 +189,11 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
                 'ubuntu/hoary/+source/evolution/+pots/'
                 'evolution-2.2/es/+translate')
         self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        user.ensure_login(self.client)
 
         checkbox = u'msgset_130_force_suggestion'
         singular_new_select = u'msgset_130_es_translation_0_new_select'
         singular_current_select = u'msgset_130_es_translation_0_radiobutton'
-        self._check_reset_translation_select(
+        self._checkResetTranslationSelect(
             client,
             checkbox=checkbox,
             singular_new_select=singular_new_select,
