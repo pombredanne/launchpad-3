@@ -233,9 +233,6 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
         self.resetTimeout()
         self.runNotification(self.listener.startMirroring)
 
-    def do_mirrorDeferred(self):
-        self.reported_mirror_finished = True
-
     def do_mirrorSucceeded(self, revid_before, revid_after):
         def mirrorSucceeded():
             d = defer.maybeDeferred(

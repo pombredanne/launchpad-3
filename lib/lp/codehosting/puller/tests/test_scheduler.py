@@ -273,16 +273,6 @@ class TestPullerMonitorProtocol(
             [('mirrorSucceeded', 'rev1', 'rev2')], self.listener.calls)
         self.assertProtocolSuccess()
 
-    def test_mirrorDeferred(self):
-        # Receiving a mirrorDeferred message finishes mirroring and doesn't
-        # notify the listener.
-        self.protocol.do_startMirroring()
-        self.listener.calls = []
-        self.protocol.do_mirrorDeferred()
-        self.assertProtocolSuccess()
-        self.assertEqual(True, self.protocol.reported_mirror_finished)
-        self.assertEqual([], self.listener.calls)
-
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
         self.protocol.do_startMirroring()
@@ -470,15 +460,6 @@ class TestPullerMaster(TrialTestCase):
                 [('setStackedOn', self.arbitrary_branch_id,
                   stacked_on_location)],
                 self.status_client.calls)
-
-        return deferred.addCallback(checkSetStackedOn)
-
-    def test_setStackedOnBranchNotFound(self):
-        stacked_on_location = 'raise-branch-not-found'
-        deferred = self.eventHandler.setStackedOn(stacked_on_location)
-
-        def checkSetStackedOn(ignored):
-            self.assertEqual([], self.status_client.calls)
 
         return deferred.addCallback(checkSetStackedOn)
 

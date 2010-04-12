@@ -35,7 +35,6 @@ __all__ = [
     'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol',
-    'StackedOnBranchNotFound',
     ]
 
 
@@ -52,10 +51,6 @@ class BranchLoopError(Exception):
     In either case, it's possible for there to be a cycle in these references,
     and this exception is raised when we detect such a cycle.
     """
-
-
-class StackedOnBranchNotFound(Exception):
-    """Couldn't find the stacked-on branch."""
 
 
 def get_canonical_url_for_branch_name(unique_name):
@@ -96,11 +91,6 @@ class PullerWorkerProtocol:
 
     def startMirroring(self):
         self.sendEvent('startMirroring')
-
-    def mirrorDeferred(self):
-        # Called when we want to try mirroring again later without indicating
-        # success or failure.
-        self.sendEvent('mirrorDeferred')
 
     def mirrorSucceeded(self, revid_before, revid_after):
         self.sendEvent('mirrorSucceeded', revid_before, revid_after)
@@ -288,8 +278,6 @@ class BranchMirrorer(object):
                 errors.UnstackableBranchFormat,
                 errors.IncompatibleRepositories):
             stacked_on_url = None
-        except errors.NotBranchError:
-            raise StackedOnBranchNotFound()
         if stacked_on_url is None:
             # We use stacked_on_url == '' to mean "no stacked on location"
             # because XML-RPC doesn't support None.
@@ -480,9 +468,6 @@ class PullerWorker:
 
         except InvalidURIError, e:
             self._mirrorFailed(e)
-
-        except StackedOnBranchNotFound:
-            self.protocol.mirrorDeferred()
 
         except (KeyboardInterrupt, SystemExit):
             # Do not record OOPS for those exceptions.
