@@ -65,13 +65,14 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # results so we know we are referring to the right database object in
         # subsequent runs.
         buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.buildfarmjob.generateSlaveBuildCookie()
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
         args = self._extraBuildArgs(self.build)
         status, info = self._builder.slave.build(
-            buildid, "binarypackage", chroot_sha1, filemap, args)
+            cookie, "binarypackage", chroot_sha1, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
@@ -122,10 +123,11 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again 
         # here in case of programmer errors.
-        reason = check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
+        reason = check_upload_to_pocket(
+            build.archive, build.distroseries, build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s." % 
+                "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 
