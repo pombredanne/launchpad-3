@@ -21,6 +21,7 @@ from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from lp.hardwaredb.model.hwdb import HWSubmission
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -31,6 +32,7 @@ from canonical.launchpad.utilities.looptuner import (
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
@@ -782,6 +784,39 @@ class BugWatchActivityPruner(TunableLoop):
         return len(self.getPrunableBugWatchIds(1)) == 0
 
 
+class ObsoleteBugAttachmentDeleter(TunableLoop):
+    """Delete bug attachments without a LibraryFileContent record.
+
+    Our database schema allows LibraryFileAlias records that have no
+    corresponding LibraryFileContent records.
+
+    This class deletes bug attachments that reference such "content free"
+    and thus completely useless LFA records.
+    """
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
+        self.store = IMasterStore(BugAttachment)
+
+    def _to_remove(self):
+        return self.store.find(
+            BugAttachment.id,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content == None)
+
+    def isDone(self):
+        return self._to_remove().any() is None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        ids_to_remove = list(self._to_remove()[:chunk_size])
+        self.store.find(
+            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -888,6 +923,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugNotificationPruner,
         BranchJobPruner,
         BugWatchActivityPruner,
+        ObsoleteBugAttachmentDeleter,
         ]
     experimental_tunable_loops = [
         PersonPruner,
