@@ -32,8 +32,8 @@ class TestProductSeriesSetbranch(WindmillTestCase):
         # To demonstrate the Javascript is loaded we simply need to see that
         # one of the controls is deactivated when the radio button selections
         # change.  When "Link to a Bazaar branch" is selected the
-        # branch_location field should be enabled.  When any other radio button
-        # is selected the branch_location field is disabled.
+        # branch_location field should be enabled.  When any other radio
+        # button is selected the branch_location field is disabled.
         self.client.waits.forElement(id=u'field.branch_type.link-lp-bzr',
                                      timeout=u'20000')
 
