@@ -52,8 +52,8 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         client.asserts.assertChecked(id=radiobutton_id)
 
     def _check_reset_translation_select(
-        self, client, checkbox, singular_select, singular_current,
-        plural_select=None):
+        self, client, checkbox, singular_new_select, singular_current_select,
+        singular_new_field=None, plural_new_select=None):
         """Checks that the new translation select radio buttons are checked
         when ticking 'Someone should review this translation' checkbox.
         """
@@ -61,44 +61,61 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         client.waits.forElement(
             id=checkbox, timeout=constants.FOR_ELEMENT)
         client.waits.forElement(
-            id=singular_select, timeout=constants.FOR_ELEMENT)
-        if plural_select is not None:
+            id=singular_new_select, timeout=constants.FOR_ELEMENT)
+        client.waits.forElement(
+            id=singular_current_select, timeout=constants.FOR_ELEMENT)
+        if plural_new_select is not None:
             client.waits.forElement(
-                id=plural_select, timeout=constants.FOR_ELEMENT)        
+                id=plural_new_select, timeout=constants.FOR_ELEMENT)
+        if singular_new_field is not None:
+            client.waits.forElement(
+                id=singular_new_field, timeout=constants.FOR_ELEMENT)
 
         # Check that initialy the checkbox is not checked and
         # that the radio buttons are not selected.
         client.asserts.assertNotChecked(id=checkbox)
-        client.asserts.assertNotChecked(id=singular_select)
-        client.asserts.assertChecked(id=singular_current)
-        if plural_select is not None:
-            client.asserts.assertNotChecked(id=plural_select)
+        client.asserts.assertNotChecked(id=singular_new_select)
+        client.asserts.assertChecked(id=singular_current_select)
+        if plural_new_select is not None:
+            client.asserts.assertNotChecked(id=plural_new_select)
 
         # Check the checkbox
         client.click(id=checkbox)
-        
+
         # Check that the checkbox and the new translation radio buttons are
         # selected.
         client.asserts.assertChecked(id=checkbox)
-        client.asserts.assertChecked(id=singular_select)
-        client.asserts.assertNotChecked(id=singular_current)
-        if plural_select is not None:
-            client.asserts.assertChecked(id=plural_select)
-
-        # We select the current translation for the singular form.
-        client.click(id=singular_current)        
+        client.asserts.assertChecked(id=singular_new_select)
+        client.asserts.assertNotChecked(id=singular_current_select)
+        if plural_new_select is not None:
+            client.asserts.assertChecked(id=plural_new_select)
 
         # Then then we uncheck the 'Someone needs to review this translation'
         # checkbox.
         client.click(id=checkbox)
 
         # Unchecking the 'Someone needs to review this translation' checkbox
-        # will not change the state of the radio buttons.
+        # when the 'New translation' field is empty, will select the current
+        # translation.
         client.asserts.assertNotChecked(id=checkbox)
-        client.asserts.assertNotChecked(id=singular_select)
-        client.asserts.assertChecked(id=singular_current)
-        if plural_select is not None:
-            client.asserts.assertChecked(id=plural_select)
+        client.asserts.assertNotChecked(id=singular_new_select)
+        client.asserts.assertChecked(id=singular_current_select)
+        if plural_new_select is not None:
+            client.asserts.assertNotChecked(id=plural_new_select)
+
+        if singular_new_field is not None:
+            # Checking again the 'Someone need to review this translation'
+            # checkbox, type some text and unchecking it should keep the new
+            # translation fields selected
+            client.click(id=checkbox)
+            client.type(text=u'some test', id=singular_new_field)
+            client.click(id=checkbox)
+
+            client.asserts.assertNotChecked(id=checkbox)
+            client.asserts.assertChecked(id=singular_new_select)
+            client.asserts.assertNotChecked(id=singular_current_select)
+            if plural_new_select is not None:
+                client.asserts.assertNotChecked(id=plural_new_select)
 
     def test_pofile_reset_translation_select(self):
         """Test for automatically selecting new translation when
@@ -116,16 +133,18 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         user.ensure_login(self.client)
 
         checkbox = u'msgset_144_force_suggestion'
-        singular_select = u'msgset_144_es_translation_0_new_select'
-        singular_current = u'msgset_144_es_translation_0_radiobutton'
-        plural_select = u'msgset_144_es_translation_1_new_select'
+        singular_new_select = u'msgset_144_es_translation_0_new_select'
+        singular_new_field = u'msgset_144_es_translation_0_new'
+        singular_current_select = u'msgset_144_es_translation_0_radiobutton'
+        plural_new_select = u'msgset_144_es_translation_1_new_select'
         self._check_reset_translation_select(
             client,
             checkbox=checkbox,
-            singular_select=singular_select,
-            singular_current=singular_current,
-            plural_select=plural_select)
-        
+            singular_new_select=singular_new_select,
+            singular_new_field=singular_new_field,
+            singular_current_select=singular_current_select,
+            plural_new_select=plural_new_select)
+
         # Go to the zoom in page for a translation without plural forms.
         self.client.open(
             url='http://translations.launchpad.dev:8085/'
@@ -135,13 +154,13 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         user.ensure_login(self.client)
 
         checkbox = u'msgset_148_force_suggestion'
-        singular_select = u'msgset_148_es_translation_0_new_select'
-        singular_current = u'msgset_148_es_translation_0_radiobutton'
+        singular_new_select = u'msgset_148_es_translation_0_new_select'
+        singular_current_select = u'msgset_148_es_translation_0_radiobutton'
         self._check_reset_translation_select(
             client,
             checkbox=checkbox,
-            singular_select=singular_select,
-            singular_current=singular_current)
+            singular_new_select=singular_new_select,
+            singular_current_select=singular_current_select)
 
         # Go to the zoom out page for some translations.
         self.client.open(
@@ -152,14 +171,14 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         user.ensure_login(self.client)
 
         checkbox = u'msgset_130_force_suggestion'
-        singular_select = u'msgset_130_es_translation_0_new_select'
-        singular_current = u'msgset_130_es_translation_0_radiobutton'
+        singular_new_select = u'msgset_130_es_translation_0_new_select'
+        singular_current_select = u'msgset_130_es_translation_0_radiobutton'
         self._check_reset_translation_select(
             client,
             checkbox=checkbox,
-            singular_select=singular_select,
-            singular_current=singular_current)
-        
+            singular_new_select=singular_new_select,
+            singular_current_select=singular_current_select)
+
         # Ensure that the other radio buttons are not changed
         client.asserts.assertNotChecked(
             id=u'msgset_131_es_translation_0_new_select')
