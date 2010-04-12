@@ -127,10 +127,11 @@ class BuildFarmJobBehaviorBase:
         associated `Build`.
         """
         # Avoid circular import.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
         return self._helpVerifyBuildIDComponent(
-            raw_id, Build, getUtility(IBinaryPackageBuildSet).getByBuildID)
+            raw_id, BinaryPackageBuild,
+            getUtility(IBinaryPackageBuildSet).getByBuildID)
 
     def getVerifiedBuildQueue(self, raw_id):
         """Verify and retrieve the `BuildQueue` component of a slave build id.

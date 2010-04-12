@@ -20,7 +20,7 @@ from lp.soyuz.model.distroarchseries import *
 from lp.soyuz.model.distroarchseriesbinarypackage import *
 from lp.soyuz.model.distroarchseriesbinarypackagerelease import *
 from lp.soyuz.model.processor import *
-from lp.soyuz.model.build import *
+from lp.soyuz.model.binarypackagebuild import *
 from lp.buildmaster.model.builder import *
 from lp.soyuz.model.publishing import *
 from lp.soyuz.model.files import *

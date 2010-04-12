@@ -22,7 +22,7 @@ Import the bunch of required database classes:
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-    >>> from lp.soyuz.model.build import Build
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from lp.soyuz.model.distroarchseries import (
     ...     DistroArchSeries, PocketChroot)
 
@@ -307,7 +307,7 @@ one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
 Check that we only created new Build entries for the new hoary releases:
 
-    >>> new_builds = [build for build in Build.select()
+    >>> new_builds = [build for build in BinaryPackageBuild.select()
     ...               if build.id not in old_build_ids]
     >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
     ...   print build.title
@@ -325,7 +325,7 @@ Check that we only created new Build entries for the new hoary releases:
 
 And have a look at our architecture-independent-source's build:
 
-    >>> arch_indep_build = Build.selectOneBy(
+    >>> arch_indep_build = BinaryPackageBuild.selectOneBy(
     ...     sourcepackagerelease=pub_all.sourcepackagerelease)
 
     >>> print arch_indep_build.title

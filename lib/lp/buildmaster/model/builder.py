@@ -694,7 +694,7 @@ class BuilderSet(object):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
@@ -702,7 +702,7 @@ class BuilderSet(object):
         store = Store.of(processor)
         origin = (
             Archive,
-            Build,
+            BinaryPackageBuild,
             BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
@@ -711,11 +711,11 @@ class BuilderSet(object):
         queue = store.using(*origin).find(
             BuildQueue,
             BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == Build.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            Build.archive == Archive.id,
+            BuildPackageJob.build == BinaryPackageBuild.id,
+            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            Build.buildstate == BuildStatus.NEEDSBUILD,
+            BinaryPackageBuild.buildstate == BuildStatus.NEEDSBUILD,
             Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,

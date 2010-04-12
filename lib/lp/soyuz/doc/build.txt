@@ -544,11 +544,12 @@ The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
     >>> from storm.expr import In
-    >>> from lp.soyuz.model.build import Build
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> results = list(store.find(Build, In(Build.id, (2,6,7,8))))
+    >>> results = list(store.find(
+    ...     BinaryPackageBuild, In(BinaryPackageBuild.id, (2,6,7,8))))
     >>> rset = removeSecurityProxy(bs)._prefetchBuildData(results)
     >>> def filename_or_none(item):
     ...     if item is not None:

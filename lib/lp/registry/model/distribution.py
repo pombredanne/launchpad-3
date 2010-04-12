@@ -39,7 +39,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -1040,9 +1040,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            BinaryPackageRelease.build == Build.id,
-            Build.sourcepackagerelease == SourcePackageRelease.id,
+            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            (BinaryPackageBuild.sourcepackagerelease ==
+                SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
