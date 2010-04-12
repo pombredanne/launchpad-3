@@ -21,4 +21,4 @@ itself.
 
     >>> warning_link = find_tags_by_class(browser.contents, 'legal-warning')[0]
     >>> extract_link_from_tag(warning_link)
-    u'http://help.launchpad.net/Translations/ReusingPackagedTranslations'
+    u'https://help.launchpad.net/Translations/ReusingPackagedTranslations'

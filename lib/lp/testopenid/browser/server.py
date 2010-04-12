@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'PersistentIdentityView',
     'TestOpenIDApplicationNavigation',
-    'TestOpenIDIndexView'
+    'TestOpenIDIndexView',
     'TestOpenIDLoginView',
     'TestOpenIDRootUrlData',
     'TestOpenIDView',
@@ -21,6 +21,7 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
+from openid import oidutil
 from openid.server.server import CheckIDRequest, Server
 from openid.store.memstore import MemoryStore
 
@@ -45,6 +46,10 @@ from lp.testopenid.interfaces.server import (
 OPENID_REQUEST_SESSION_KEY = 'testopenid.request'
 SESSION_PKG_KEY = 'TestOpenID'
 openid_store = MemoryStore()
+
+
+# Shut up noisy OpenID library
+oidutil.log = lambda message, level=0: None
 
 
 class TestOpenIDRootUrlData:

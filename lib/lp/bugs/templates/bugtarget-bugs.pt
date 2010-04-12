@@ -169,9 +169,14 @@
         bug tracking.</strong></p>
 
         <p tal:condition="context/required:launchpad.Edit"
-           id="no-malone-edit">
-           <a tal:attributes="href string:${context/fmt:url/+edit}">Enable
-             bug tracking.</a>
+           id="no-malone-edit"
+           tal:define ="configure_bugtracker context/menu:overview/configure_bugtracker | nothing"
+           >
+          <a tal:condition="configure_bugtracker"
+             tal:replace="structure configure_bugtracker/fmt:link"/>
+          <a tal:condition="not: configure_bugtracker"
+             tal:attributes="href string:${context/fmt:url/+edit}">
+            Enable bug tracking.</a>
         </p>
     </tal:not_uses_malone>
 

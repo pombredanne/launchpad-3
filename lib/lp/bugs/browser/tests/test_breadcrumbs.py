@@ -43,6 +43,18 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
         self.assertEquals(texts[-2], "Bug #%d" % self.bug.id)
 
+    def test_bugtask_comment(self):
+        login('foo.bar@canonical.com')
+        comment = self.factory.makeBugComment(
+            bug=self.bug, owner=self.bug.owner,
+            subject="test comment subject", body="test comment body")
+        url = canonical_url(comment, rootsite='bugs')
+        urls = self._getBreadcrumbsURLs(url, self.traversed_objects)
+        texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
+        self.assertEquals(url, "%s/comments/1" % self.bugtask_url)
+        self.assertEquals(urls[-1], "%s" % self.bugtask_url)
+        self.assertEquals(texts[-1], "Bug #%d" % self.bug.id)
+
     def test_bugtask_private_bug(self):
         # A breadcrumb is not generated for a bug that the user does
         # not have permission to view.
