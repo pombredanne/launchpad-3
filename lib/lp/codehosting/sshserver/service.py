@@ -48,6 +48,19 @@ def get_key_path(key_filename):
     return os.path.join(config.root, key_directory, key_filename)
 
 
+def make_portal():
+    """Create and return a `Portal` for the SSH service.
+
+    This portal accepts SSH credentials and returns our customized SSH
+    avatars (see `lp.codehosting.sshserver.auth.LaunchpadAvatar`).
+    """
+    authentication_proxy = Proxy(
+        config.codehosting.authentication_endpoint)
+    branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
+    return get_portal(authentication_proxy, branchfs_proxy)
+
+
+
 class Factory(SSHFactory):
     """SSH factory that uses the codehosting custom authentication.
 
@@ -130,19 +143,9 @@ class Factory(SSHFactory):
 class SSHService(service.Service):
     """A Twisted service for the codehosting SSH server."""
 
-    def __init__(self):
+    def __init__(self, portal):
         self.service = self.makeService()
-
-    def makePortal(self):
-        """Create and return a `Portal` for the SSH service.
-
-        This portal accepts SSH credentials and returns our customized SSH
-        avatars (see `lp.codehosting.sshserver.auth.LaunchpadAvatar`).
-        """
-        authentication_proxy = Proxy(
-            config.codehosting.authentication_endpoint)
-        branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-        return get_portal(authentication_proxy, branchfs_proxy)
+        self._portal = portal
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in
@@ -150,7 +153,7 @@ class SSHService(service.Service):
         """
         ssh_factory = TimeoutFactory(
             Factory(
-                self.makePortal(),
+                self._portal,
                 public_key=Key.fromFile(get_key_path(PUBLIC_KEY_FILE)),
                 private_key=Key.fromFile(get_key_path(PRIVATE_KEY_FILE)),
                 banner=config.codehosting.banner),
