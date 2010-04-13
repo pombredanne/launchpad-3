@@ -159,7 +159,7 @@ class FileUploadClient:
                 id=contentID, filesize=size,
                 sha1=shaDigester.hexdigest(),
                 md5=md5Digester.hexdigest())
-            alias = LibraryFileAlias(
+            LibraryFileAlias(
                 id=aliasID, content=content, filename=name.decode('UTF-8'),
                 mimetype=contentType, expires=expires,
                 restricted=self.restricted)
@@ -356,6 +356,11 @@ class FileDownloadClient:
                     if  time.time() <= try_until:
                         time.sleep(1)
                     else:
+                        # There's a test (in
+                        # lib/c/l/browser/tests/test_librarian.py) which 
+                        # simulates a librarian server error by raising this
+                        # exception, so if you change the exception raised
+                        # here, make sure you update the test.
                         raise LibrarianServerError(str(error))
                 else:
                     raise

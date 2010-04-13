@@ -63,6 +63,7 @@
            <th> Component </th>
            <th> Section </th>
            <th> Priority </th>
+           <th> Sets </th>
            <th> Pocket </th>
            <th> When </th>
          </tr>
@@ -110,6 +111,11 @@
                     <tal:priority condition="is_source"
                          content="packageupload/sourcepackagerelease/urgency/name/lower">
                     </tal:priority>
+                  </td>
+                  <td style="padding-top: 5px">
+                    <tal:packagesets condition="is_source"
+                         content="packageupload/package_sets">
+                    </tal:packagesets>
                   </td>
                 </tal:is_source>
                 <td style="padding-top: 5px"

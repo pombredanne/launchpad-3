@@ -23,8 +23,10 @@ sampledata builder.
     >>> bob_builder.builderok = True
 
     # Set a known duration for the current job.
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build2 = getUtility(IBuildSet).getByQueueEntry(bob_builder.currentjob)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build2 = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+    ...     bob_builder.currentjob)
     >>> in_progress_build = removeSecurityProxy(build2)
     >>> one_minute = datetime.timedelta(seconds=60)
     >>> in_progress_build.buildqueue_record.estimated_duration = one_minute
@@ -62,7 +64,7 @@ component.
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
-    Needs building
+    Pending build
     Start in ... (2505) What's this?
     Build details
     Source: testing - 1.0
@@ -82,7 +84,7 @@ question.
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
-    Needs building
+    Pending build
     Build details
     Source: testing - 1.0
     Archive: Primary Archive for Ubuntu Test
@@ -134,7 +136,7 @@ new 'score' value is presented.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Needs building
+    Pending build
     Start in ... (0) Rescore build What's this?
 
 Eventually a pending build record will get started, and while it's
@@ -203,7 +205,7 @@ how long it took.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'status'))
     Build status
-    Failed to upload on Bob The Builder
+    Could not be uploaded correctly on Bob The Builder
     Started ... ago
     Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
@@ -229,7 +231,8 @@ Administrators can retry failed builds using the 'retry' icon in the
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Failed to upload on Bob The Builder Retry this build
+    Could not be uploaded correctly
+    on Bob The Builder Retry this build
     Started ... ago
     Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
@@ -246,7 +249,7 @@ the consequences of this action.
     Retry i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     The status of i386 build of testing 1.0 in ubuntutest
-    breezy-autotest RELEASE is Failed to upload.
+    breezy-autotest RELEASE is Could not be uploaded correctly.
     Retrying this build will destroy its history and logs.
     By default, this build will be retried only after other pending
     builds; please contact a build daemon administrator if you need
@@ -260,7 +263,7 @@ is changed.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Failed to upload on Bob The Builder Retry this build
+    Could not be uploaded correctly on Bob The Builder Retry this build
     Started ... ago
     Finished ... (took 1 minute, 0.0 seconds)
     buildlog (7 bytes)
@@ -278,7 +281,7 @@ retrying the build is not a possibility anymore.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
-    Needs building
+    Pending build
     Start in ... (0) Rescore build What's this?
 
     >>> admin_browser.getLink("Retry this build").click()
@@ -315,7 +318,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'status'))
     Build status
-    Successfully built on Bob The Builder
+    Successful build on Bob The Builder
     Started on 2008-01-01
     Finished on 2008-01-01 (took 5 minutes, 0.0 seconds)
     buildlog (6 bytes)
@@ -452,7 +455,7 @@ The 'Build status' section is identical for PPAs.
 
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
     Build status
-    Successfully built on Bob The Builder
+    Successful build on Bob The Builder
     Started on ...
     Finished on ... (took 5 minutes, 0.0 seconds)
     buildlog (6 bytes)

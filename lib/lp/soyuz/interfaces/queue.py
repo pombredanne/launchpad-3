@@ -139,7 +139,8 @@ class PackageUploadStatus(DBEnumeratedType):
 
 
 class IPackageUpload(Interface):
-    """A Queue item for Lucille"""
+    """A Queue item for the archive uploader."""
+
     export_as_webservice_entry()
 
     id = Int(
@@ -395,7 +396,7 @@ class IPackageUpload(Interface):
 
 
 class IPackageUploadBuild(Interface):
-    """A Queue item's related builds (for Lucille)"""
+    """A Queue item's related builds."""
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -431,7 +432,7 @@ class IPackageUploadBuild(Interface):
         """
 
 class IPackageUploadSource(Interface):
-    """A Queue item's related sourcepackagereleases (for Lucille)"""
+    """A Queue item's related sourcepackagereleases."""
 
     id = Int(
             title=_("ID"), required=True, readonly=True,

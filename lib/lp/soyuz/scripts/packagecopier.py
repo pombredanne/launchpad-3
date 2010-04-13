@@ -28,11 +28,12 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)
-from lp.soyuz.interfaces.queue import IPackageUpload, IPackageUploadSet
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload, IPackageUploadCustom, IPackageUploadSet)
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
@@ -74,7 +75,7 @@ def re_upload_file(libraryfile, restricted=False):
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
-    """Update file privacy according the publishing detination
+    """Update file privacy according the publishing destination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
@@ -82,7 +83,9 @@ def update_files_privacy(pub_record):
     :return: a list of re-uploaded `LibraryFileAlias` objects.
     """
     package_files = []
+    archive = None
     if ISourcePackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the package files files if necessary.
         sourcepackagerelease = pub_record.sourcepackagerelease
         package_files.extend(
@@ -96,6 +99,7 @@ def update_files_privacy(pub_record):
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the binary files if necessary.
         binarypackagerelease = pub_record.binarypackagerelease
         package_files.extend(
@@ -107,10 +111,15 @@ def update_files_privacy(pub_record):
         package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
         package_files.append((build, 'buildlog'))
+    elif IPackageUploadCustom.providedBy(pub_record):
+        # Re-upload the custom files included
+        package_files.append((pub_record, 'libraryfilealias'))
+        # And set archive to the right attribute for PUCs
+        archive = pub_record.packageupload.archive
     else:
         raise AssertionError(
-            "pub_record is not one of SourcePackagePublishingHistory "
-            "or BinaryPackagePublishingHistory.")
+            "pub_record is not one of SourcePackagePublishingHistory, "
+            "BinaryPackagePublishingHistory or PackageUploadCustom.")
 
     re_uploaded_files = []
     for obj, attr_name in package_files:
@@ -119,11 +128,11 @@ def update_files_privacy(pub_record):
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
         if (old_lfa is None or
-            old_lfa.restricted == pub_record.archive.private or
+            old_lfa.restricted == archive.private or
             old_lfa.restricted == False):
             continue
         new_lfa = re_upload_file(
-            old_lfa, restricted=pub_record.archive.private)
+            old_lfa, restricted=archive.private)
         setattr(obj, attr_name, new_lfa)
         re_uploaded_files.append(new_lfa)
 

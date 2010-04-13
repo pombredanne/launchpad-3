@@ -4,6 +4,7 @@
 """Unit tests for TranslationTemplatesBuildBehavior."""
 
 import logging
+import os
 from StringIO import StringIO
 import transaction
 from unittest import TestLoader
@@ -19,10 +20,13 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus, ITranslationImportQueue)
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode)
 
 
 class FakeChrootContent:
@@ -40,8 +44,7 @@ class FakeChroot:
 class FakeSlave:
     """Pretend build slave."""
     def __init__(self, builderstatus):
-        self.status = {
-            'build_status': 'BuildStatus.%s' % builderstatus.name,
+        self._status = {
             'test_build_started': False,
         }
 
@@ -50,14 +53,22 @@ class FakeSlave:
 
     def build(self, buildid, build_type, chroot_sha1, filemap, args):
         """Pretend to start a build."""
-        self.status['build_id'] = buildid
-        self.status['filemap'] = filemap
+        self._status['build_id'] = buildid
+        self._status['filemap'] = filemap
 
         # Chuck in some information that a real slave wouldn't store,
         # but which will allow tests to check up on the build call.
-        self.status['test_build_type'] = build_type
-        self.status['test_build_args'] = args
-        self.status['test_build_started'] = True
+        self._status['test_build_type'] = build_type
+        self._status['test_build_args'] = args
+        self._status['test_build_started'] = True
+
+    def status(self):
+        return (
+            'BuilderStatus.WAITING',
+            'BuildStatus.OK',
+            self._status.get('build_id'),
+            self._status.get('filemap'),
+            )
 
 
 class FakeBuilder:
@@ -67,7 +78,7 @@ class FakeBuilder:
         self.cleanSlave = FakeMethod()
 
     def slaveStatus(self):
-        return self.slave.status
+        return self.slave._status
 
 
 class FakeBuildQueue:
@@ -78,10 +89,29 @@ class FakeBuildQueue:
         Copies its builder from the behavior object.
         """
         self.builder = behavior._builder
+        self.specific_job = behavior.buildfarmjob
         self.destroySelf = FakeMethod()
 
 
-class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
+class MakeBehaviorMixin(object):
+    """Provide common test methods."""
+
+    def makeBehavior(self, branch=None):
+        """Create a TranslationTemplatesBuildBehavior.
+
+        Anything that might communicate with build slaves and such
+        (which we can't really do here) is mocked up.
+        """
+        specific_job = self.factory.makeTranslationTemplatesBuildJob(
+            branch=branch)
+        behavior = IBuildFarmJobBehavior(specific_job)
+        slave = FakeSlave(BuildStatus.NEEDSBUILD)
+        behavior._builder = FakeBuilder(slave)
+        return behavior
+
+
+class TestTranslationTemplatesBuildBehavior(
+        TestCaseWithFactory, MakeBehaviorMixin):
     """Test `TranslationTemplatesBuildBehavior`."""
 
     layer = LaunchpadZopelessLayer
@@ -90,18 +120,6 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         """Log into the database as the buildd master."""
         transaction.commit()
         self.layer.switchDbUser(config.builddmaster.dbuser)
-
-    def _makeBehavior(self):
-        """Create a TranslationTemplatesBuildBehavior.
-
-        Anything that might communicate with build slaves and such
-        (which we can't really do here) is mocked up.
-        """
-        specific_job = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = IBuildFarmJobBehavior(specific_job)
-        slave = FakeSlave(BuildStatus.NEEDSBUILD)
-        behavior._builder = FakeBuilder(slave)
-        return behavior
 
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
@@ -112,7 +130,7 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         # dispatchBuildToSlave ultimately causes the slave's build
         # method to be invoked.  The slave receives the URL of the
         # branch it should build from.
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         behavior._getChroot = FakeChroot
         buildqueue_item = self._getBuildQueueItem(behavior)
 
@@ -141,14 +159,14 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
         distroarchseries.addOrUpdateChroot(fake_chroot_file)
 
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         chroot = behavior._getChroot()
 
         self.assertNotEqual(None, chroot)
         self.assertEqual(fake_chroot_file, chroot)
 
     def test_readTarball(self):
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         buildqueue = FakeBuildQueue(behavior)
         path = behavior.templates_tarball_path
         self.assertEqual(
@@ -156,11 +174,10 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
             behavior._readTarball(buildqueue, {path: path}, logging))
 
     def test_updateBuild_WAITING(self):
-        behavior = self._makeBehavior()
+        behavior = self.makeBehavior()
         behavior._getChroot = FakeChroot
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
-        slave_status = behavior._builder.slave.status
         builder = behavior._builder
 
         behavior.dispatchBuildToSlave(queue_item, logging)
@@ -169,43 +186,100 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         self.assertEqual(0, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
 
+        slave_status = {
+            'builder_status': builder.slave.status()[0],
+            'build_status': builder.slave.status()[1],
+            }
+        behavior.updateSlaveStatus(builder.slave.status(), slave_status)
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
 
         self.assertEqual(1, queue_item.destroySelf.call_count)
         self.assertEqual(1, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
 
-    def test_verifySlaveBuildID_success(self):
-        # TranslationTemplatesBuildJob.getName generates slave build ids
-        # that TranslationTemplatesBuildBehavior.verifySlaveBuildID
-        # accepts.
-        behavior = self._makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
 
-        # The test is that this not raise CorruptBuildID (or anything
-        # else, for that matter).
-        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
+class TestTTBuildBehaviorTranslationsQueue(
+        TestCaseWithFactory, MakeBehaviorMixin):
+    """Test uploads to the import queue."""
 
-    def test_verifySlaveBuildID_handles_dashes(self):
-        # TranslationTemplatesBuildBehavior.verifySlaveBuildID can deal
-        # with dashes in branch names.
-        behavior = self._makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
-        buildfarmjob.branch.name = 'x-y-z--'
+    layer = LaunchpadZopelessLayer
 
-        # The test is that this not raise CorruptBuildID (or anything
-        # else, for that matter).
-        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
+    def setUp(self):
+        super(TestTTBuildBehaviorTranslationsQueue, self).setUp()
 
-    def test_verifySlaveBuildID_malformed(self):
-        behavior = self._makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, 'huh?')
+        self.queue = getUtility(ITranslationImportQueue)
+        self.productseries = self.factory.makeProductSeries()
+        self.branch = self.factory.makeProductBranch(
+            self.productseries.product)
+        self.productseries.branch = self.branch
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        self.dummy_tar = os.path.join(
+            os.path.dirname(__file__),'dummy_templates.tar.gz')
 
-    def test_verifySlaveBuildID_notfound(self):
-        behavior = self._makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, '1-1')
+    def test_uploadTarball(self):
+        # Files from the tarball end up in the import queue.
+        behavior = self.makeBehavior()
+        behavior._uploadTarball(
+            self.branch, file(self.dummy_tar).read(), None)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        expected_templates = [
+            'po/domain.pot',
+            'po-other/other.pot',
+            'po-thethird/templ3.pot'
+            ]
+
+        paths = [entry.path for entry in entries]
+        self.assertContentEqual(expected_templates, paths)
+
+    def test_uploadTarball_approved(self):
+        # Uploaded template files are automatically approved.
+        behavior = self.makeBehavior()
+        behavior._uploadTarball(
+            self.branch, file(self.dummy_tar).read(), None)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        statuses = [entry.status for entry in entries]
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED] * 3, statuses)
+
+    def test_uploadTarball_importer(self):
+        # Files from the tarball are owned by the branch owner.
+        behavior = self.makeBehavior()
+        behavior._uploadTarball(
+            self.branch, file(self.dummy_tar).read(), None)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        self.assertEqual(self.branch.owner, entries[0].importer)
+
+    def test_updateBuild_WAITING_uploads(self):
+        behavior = self.makeBehavior(branch=self.branch)
+        behavior._getChroot = FakeChroot
+        queue_item = FakeBuildQueue(behavior)
+        builder = behavior._builder
+
+        behavior.dispatchBuildToSlave(queue_item, logging)
+
+        builder.slave.getFile.result = open(self.dummy_tar)
+        builder.slave._status['filemap'] = {
+            'translation-templates.tar.gz': 'foo'}
+        slave_status = {
+            'builder_status': builder.slave.status()[0],
+            'build_status': builder.slave.status()[1],
+            'build_id': builder.slave.status()[2]
+            }
+        behavior.updateSlaveStatus(builder.slave.status(), slave_status)
+        behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        expected_templates = [
+            'po/domain.pot',
+            'po-other/other.pot',
+            'po-thethird/templ3.pot'
+            ]
+        self.assertContentEqual(
+            expected_templates, [entry.path for entry in entries])
 
 
 def test_suite():

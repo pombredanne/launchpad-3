@@ -2,9 +2,10 @@
 Build Notification System
 =========================
 
-IBuild instance implements the 'notify' method which sends a status
-report about the current record to the ISourcePackageRelease.creator
-and the package uploader's preferred email address.
+IBinaryPackageBuild instance implements the 'notify' method which sends
+a status report about the current record to the
+ISourcePackageRelease.creator and the package uploader's preferred email
+address.
 
 We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
@@ -15,9 +16,10 @@ The report is based on the emailtemplate/build-notification.txt.
 All build states are supported by the current implementation, however
 only failures should be reported this time.
 
-  >>> from lp.soyuz.interfaces.build import IBuildSet
+  >>> from lp.soyuz.interfaces.binarypackagebuild import (
+  ...     IBinaryPackageBuildSet)
   >>> from lp.testing.mail_helpers import pop_notifications
-  >>> buildset = getUtility(IBuildSet)
+  >>> buildset = getUtility(IBinaryPackageBuildSet)
 
 To avoid consequences of modified sampledata, specially if we add
 more builds for test we are going to pick a specific build record
@@ -178,7 +180,7 @@ Check the notification content:
    * Architecture: i386
    * Archive: ubuntu primary archive
    * Component: main
-   * State: Needs building
+   * State: Pending build
    * Duration: not available
    * Build Log: not available
    * Builder: not available
@@ -314,7 +316,7 @@ Check the notification content:
    * Architecture: i386
    * Archive: ubuntu primary archive
    * Component: main
-   * State: Build for superseded Source
+   * State: Could not build because source package was superseded
    * Duration: not available
    * Build Log: not available
    * Builder: not available

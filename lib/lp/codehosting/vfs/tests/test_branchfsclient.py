@@ -9,16 +9,13 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from lp.codehosting.vfs.branchfsclient import (
-    BranchFileSystemClient, NotInCache, trap_fault)
+    BranchFileSystemClient, NotInCache)
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 from lp.testing import FakeTime
-from canonical.launchpad.xmlrpc.tests.test_faults import (
-    TestFaultOne, TestFaultTwo)
 
 
 class TestBranchFileSystemClient(TestCase):
@@ -36,13 +33,14 @@ class TestBranchFileSystemClient(TestCase):
         """
         self.fake_time.advance(amount)
 
-    def makeClient(self, expiry_time=None):
+    def makeClient(self, expiry_time=None, seen_new_branch_hook=None):
         """Make a `BranchFileSystemClient`.
 
         The created client interacts with the InMemoryFrontend.
         """
         return BranchFileSystemClient(
             self._xmlrpc_client, self.user.id, expiry_time=expiry_time,
+            seen_new_branch_hook=seen_new_branch_hook,
             _now=self.fake_time.now)
 
     def test_translatePath(self):
@@ -213,55 +211,40 @@ class TestBranchFileSystemClient(TestCase):
         return deferred.addCallbacks(
             translated_successfully, failed_translation)
 
+    def test_seen_new_branch_hook_called_for_new_branch(self):
+        # A callable passed as the seen_new_branch_hook when constructing a
+        # BranchFileSystemClient will be called with a previously unseen
+        # branch's unique_name when a path for a that branch is translated for
+        # the first time.
+        seen_branches = []
+        client = self.makeClient(seen_new_branch_hook=seen_branches.append)
+        branch = self.factory.makeAnyBranch()
+        client.translatePath('/' + branch.unique_name + '/trailing')
+        self.assertEqual([branch.unique_name], seen_branches)
 
-class TestTrapFault(TestCase):
-    """Tests for `trap_fault`."""
+    def test_seen_new_branch_hook_called_for_each_branch(self):
+        # The seen_new_branch_hook is called for a each branch that is
+        # accessed.
+        seen_branches = []
+        client = self.makeClient(seen_new_branch_hook=seen_branches.append)
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        client.translatePath('/' + branch1.unique_name + '/trailing')
+        client.translatePath('/' + branch2.unique_name + '/trailing')
+        self.assertEqual(
+            [branch1.unique_name, branch2.unique_name], seen_branches)
 
-    def makeFailure(self, exception_factory, *args, **kwargs):
-        """Make a `Failure` from the given exception factory."""
-        try:
-            raise exception_factory(*args, **kwargs)
-        except:
-            return Failure()
-
-    def assertRaisesFailure(self, failure, function, *args, **kwargs):
-        try:
-            function(*args, **kwargs)
-        except Failure, raised_failure:
-            self.assertEqual(failure, raised_failure)
-
-    def test_raises_non_faults(self):
-        # trap_fault re-raises any failures it gets that aren't faults.
-        failure = self.makeFailure(RuntimeError, 'example failure')
-        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultOne)
-
-    def test_raises_faults_with_wrong_code(self):
-        # trap_fault re-raises any failures it gets that are faults but have
-        # the wrong fault code.
-        failure = self.makeFailure(TestFaultOne)
-        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultTwo)
-
-    def test_raises_faults_if_no_codes_given(self):
-        # If trap_fault is not given any fault codes, it re-raises the fault
-        # failure.
-        failure = self.makeFailure(TestFaultOne)
-        self.assertRaisesFailure(failure, trap_fault, failure)
-
-    def test_returns_fault_if_code_matches(self):
-        # trap_fault returns the Fault inside the Failure if the fault code
-        # matches what's given.
-        failure = self.makeFailure(TestFaultOne)
-        fault = trap_fault(failure, TestFaultOne)
-        self.assertEqual(TestFaultOne.error_code, fault.faultCode)
-        self.assertEqual(TestFaultOne.msg_template, fault.faultString)
-
-    def test_returns_fault_if_code_matches_one_of_set(self):
-        # trap_fault returns the Fault inside the Failure if the fault code
-        # matches even one of the given fault codes.
-        failure = self.makeFailure(TestFaultOne)
-        fault = trap_fault(failure, TestFaultOne, TestFaultTwo)
-        self.assertEqual(TestFaultOne.error_code, fault.faultCode)
-        self.assertEqual(TestFaultOne.msg_template, fault.faultString)
+    def test_seen_new_branch_hook_called_once_for_a_new_branch(self):
+        # The seen_new_branch_hook is only called once for a given branch.
+        seen_branches = []
+        client = self.makeClient(seen_new_branch_hook=seen_branches.append)
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        client.translatePath('/' + branch1.unique_name + '/trailing')
+        client.translatePath('/' + branch2.unique_name + '/trailing')
+        client.translatePath('/' + branch1.unique_name + '/different')
+        self.assertEqual(
+            [branch1.unique_name, branch2.unique_name], seen_branches)
 
 
 def test_suite():

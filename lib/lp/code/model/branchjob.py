@@ -56,9 +56,8 @@ from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
-from lp.registry.model.productseries import ProductSeries
-from lp.translations.model.translationbranchapprover import (
-    TranslationBranchApprover)
+from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.translations.model.approver import TranslationBranchApprover
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel)
@@ -724,20 +723,9 @@ class RosettaUploadJob(BranchJobDerived):
     @classmethod
     def providesTranslationFiles(cls, branch):
         """See `IRosettaUploadJobSource`."""
-        return not cls.findProductSeries(branch).is_empty()
-
-    @staticmethod
-    def findProductSeries(branch, force_translations_upload=False):
-        """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-        conditions = [ProductSeries.branch == branch]
-        if not force_translations_upload:
-            import_mode = ProductSeries.translations_autoimport_mode
-            conditions.append(
-                import_mode != TranslationsBranchImportMode.NO_IMPORT)
-
-        return store.find(ProductSeries, And(*conditions))
+        productseries = getUtility(
+            IProductSeriesSet).findByTranslationsImportBranch(branch)
+        return not productseries.is_empty()
 
     @classmethod
     def create(cls, branch, from_revision_id,
@@ -885,7 +873,8 @@ class RosettaUploadJob(BranchJobDerived):
         self._init_translation_file_lists()
         # Get the product series that are connected to this branch and
         # that want to upload translations.
-        productseries = self.findProductSeries(
+        productseriesset = getUtility(IProductSeriesSet)
+        productseries = productseriesset.findByTranslationsImportBranch(
             self.branch, self.force_translations_upload)
         translation_import_queue = getUtility(ITranslationImportQueue)
         for series in productseries:

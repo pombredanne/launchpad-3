@@ -15,9 +15,10 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select
+from storm.expr import Or, And, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
+from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
@@ -39,7 +40,9 @@ from canonical.launchpad.components.tokens import (
 from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageReleaseDownloadCount)
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -56,7 +59,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, CannotCopy, CannotSwitchPrivacy,
+    ArchivePurpose, ArchiveStatus, CannotCopy, CannotSwitchPrivacy,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
     InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
     NoTokensForTeams, PocketNotFound, VersionRequiresName,
@@ -68,7 +71,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -146,6 +149,9 @@ class Archive(SQLBase):
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
+    status = EnumCol(
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
+
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
 
@@ -205,7 +211,7 @@ class Archive(SQLBase):
         for (family, archive_arch) in restricted_families:
             if family == arm:
                 return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no 
+        # ARM doesn't exist or isn't restricted. Either way, there is no
         # need for an explicit association.
         return False
 
@@ -299,17 +305,6 @@ class Archive(SQLBase):
         return dependencies
 
     @property
-    def expanded_archive_dependencies(self):
-        """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive)
-        archives.append(self)
-        archives.extend(
-            [archive_dep.dependency for archive_dep in self.dependencies])
-        return archives
-
-    @property
     def debug_archive(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PRIMARY:
@@ -363,7 +358,7 @@ class Archive(SQLBase):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
-        return getUtility(IBuildSet).getBuildsForArchive(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             self, build_state, name, pocket, arch_tag)
 
     def getPublishedSources(self, name=None, version=None, status=None,
@@ -786,8 +781,13 @@ class Archive(SQLBase):
 
     def findDepCandidateByName(self, distroarchseries, name):
         """See `IArchive`."""
-        archives = [
-            archive.id for archive in self.expanded_archive_dependencies]
+        archives = []
+        if self.is_ppa:
+            archives.append(self.distribution.main_archive.id)
+        archives.append(self.id)
+        archives.extend(
+            IResultSet(self.dependencies).values(
+            ArchiveDependency.dependencyID))
 
         query = """
             binarypackagename = %s AND
@@ -873,17 +873,19 @@ class Archive(SQLBase):
         store = Store.of(self)
         extra_exprs = []
         if not include_needsbuild:
-            extra_exprs.append(Build.buildstate != BuildStatus.NEEDSBUILD)
+            extra_exprs.append(
+                BinaryPackageBuild.buildstate != BuildStatus.NEEDSBUILD)
 
         find_spec = (
-            Build.buildstate,
-            Count(Build.id)
+            BinaryPackageBuild.buildstate,
+            Count(BinaryPackageBuild.id)
             )
-        result = store.using(Build).find(
+        result = store.using(BinaryPackageBuild).find(
             find_spec,
-            Build.archive == self,
+            BinaryPackageBuild.archive == self,
             *extra_exprs
-            ).group_by(Build.buildstate).order_by(Build.buildstate)
+            ).group_by(BinaryPackageBuild.buildstate).order_by(
+                BinaryPackageBuild.buildstate)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -1128,6 +1130,25 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getBinaryPackageRelease(self, name, version, archtag):
+        """See `IArchive`."""
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        results = store.find(
+            BinaryPackageRelease,
+            BinaryPackageRelease.binarypackagename == name,
+            BinaryPackageRelease.version == version,
+            BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+            DistroArchSeries.id == BinaryPackageBuild.distroarchseriesID,
+            DistroArchSeries.architecturetag == archtag,
+            BinaryPackagePublishingHistory.archive == self,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id).config(distinct=True)
+        if results.count() > 1:
+            return None
+        return results.one()
+
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         results = store.find(
@@ -1316,16 +1337,46 @@ class Archive(SQLBase):
 
         extra_exprs = []
         if build_status is not None:
-            extra_exprs.append(Build.buildstate == build_status)
+            extra_exprs.append(BinaryPackageBuild.buildstate == build_status)
 
         result_set = store.find(
             SourcePackageRelease,
-            Build.sourcepackagereleaseID == SourcePackageRelease.id,
-            Build.archive == self,
+            (BinaryPackageBuild.sourcepackagereleaseID ==
+                SourcePackageRelease.id),
+            BinaryPackageBuild.archive == self,
             *extra_exprs)
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
+
+    def updatePackageDownloadCount(self, bpr, day, country, count):
+        """See `IArchive`."""
+        store = Store.of(self)
+        entry = store.find(
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
+        if entry is None:
+            entry = BinaryPackageReleaseDownloadCount(
+                archive=self, binary_package_release=bpr, day=day,
+                country=country, count=count)
+        else:
+            entry.count += count
+
+    def getPackageDownloadTotal(self, bpr):
+        """See `IArchive`."""
+        store = Store.of(self)
+        count = store.find(
+            Sum(BinaryPackageReleaseDownloadCount.count),
+            BinaryPackageReleaseDownloadCount.archive == self,
+            BinaryPackageReleaseDownloadCount.binary_package_release == bpr,
+            ).one()
+        return count or 0
+
+    def getPackageDownloadCount(self, bpr, day, country):
+        """See `IArchive`."""
+        return Store.of(self).find(
+            BinaryPackageReleaseDownloadCount, archive=self,
+            binary_package_release=bpr, day=day, country=country).one()
 
     def _setBuildStatuses(self, status):
         """Update the pending Build Jobs' status for this archive."""

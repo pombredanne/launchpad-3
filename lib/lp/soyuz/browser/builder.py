@@ -18,9 +18,7 @@ __all__ = [
     'BuilderView',
     ]
 
-import datetime
 import operator
-import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -31,7 +29,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
@@ -54,7 +52,7 @@ class BuilderSetNavigation(GetitemNavigation):
         except ValueError:
             return None
         try:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
         else:
@@ -235,14 +233,10 @@ class BuilderView(LaunchpadView):
 
     @property
     def current_build_duration(self):
-        """Return the delta representing the duration of the current job."""
-        if (self.context.currentjob is None or
-            self.context.currentjob.date_started is None):
+        if self.context.currentjob is None:
             return None
         else:
-            UTC = pytz.timezone('UTC')
-            date_started = self.context.currentjob.date_started
-            return datetime.datetime.now(UTC) - date_started
+            return self.context.currentjob.current_build_duration
 
     @property
     def page_title(self):

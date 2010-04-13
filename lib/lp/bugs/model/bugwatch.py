@@ -4,7 +4,11 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet']
+__all__ = [
+    'BugWatch',
+    'BugWatchActivity',
+    'BugWatchSet',
+    ]
 
 import re
 import urllib
@@ -17,7 +21,9 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
+from storm.base import Storm
 from storm.expr import Desc, In, Not
+from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -38,8 +44,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatch, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BugWatchActivityStatus, IBugWatch, IBugWatchActivity, IBugWatchSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -72,17 +78,32 @@ class BugWatch(SQLBase):
     remote_importance = StringCol(notNull=False, default=None)
     lastchanged = UtcDateTimeCol(notNull=False, default=None)
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
-    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
+    last_error_type = EnumCol(schema=BugWatchActivityStatus, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    next_check = UtcDateTimeCol()
 
     @property
     def bugtasks(self):
         tasks = Store.of(self).find(BugTask, BugTask.bugwatch == self.id)
         tasks = tasks.order_by(Desc(BugTask.datecreated))
         return shortlist(tasks, 10, 100)
+
+    @property
+    def bugtasks_to_update(self):
+        """Yield the bug tasks that are eligible for update."""
+        for bugtask in self.bugtasks:
+            # We don't update conjoined bug tasks; they must be
+            # updated through their conjoined masters.
+            if bugtask._isConjoinedBugTask():
+                continue
+            # We don't update tasks of duplicate bugs.
+            if bugtask.bug.duplicateof is not None:
+                continue
+            # Update this one.
+            yield bugtask
 
     @property
     def title(self):
@@ -118,19 +139,12 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToImportance(
                 malone_importance,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
             if linked_bugtask.importance != old_bugtask.importance:
                 event = ObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['importance'],
@@ -145,12 +159,7 @@ class BugWatch(SQLBase):
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
             self.sync()
-        for linked_bugtask in self.bugtasks:
-            # We don't updated conjoined bug tasks; they must be updated
-            # through their conjoined masters.
-            if linked_bugtask._isConjoinedBugTask():
-                continue
-
+        for linked_bugtask in self.bugtasks_to_update:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
@@ -176,27 +185,27 @@ class BugWatch(SQLBase):
             return None
 
         error_message_mapping = {
-            BugWatchErrorType.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+            BugWatchActivityStatus.BUG_NOT_FOUND: "%(bugtracker)s bug #"
                 "%(bug)s appears not to exist. Check that the bug "
                 "number is correct.",
-            BugWatchErrorType.CONNECTION_ERROR: "Launchpad couldn't "
+            BugWatchActivityStatus.CONNECTION_ERROR: "Launchpad couldn't "
                 "connect to %(bugtracker)s.",
-            BugWatchErrorType.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
+            BugWatchActivityStatus.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
                 "valid on %(bugtracker)s. Check that the bug ID is "
                 "correct.",
-            BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
+            BugWatchActivityStatus.TIMEOUT: "Launchpad's connection to "
                 "%(bugtracker)s timed out.",
-            BugWatchErrorType.UNKNOWN: "Launchpad couldn't import bug "
+            BugWatchActivityStatus.UNKNOWN: "Launchpad couldn't import bug "
                 "#%(bug)s from " "%(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
+            BugWatchActivityStatus.UNPARSABLE_BUG: "Launchpad couldn't "
                 "extract a status from %(bug)s on %(bugtracker)s.",
-            BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
+            BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER: "Launchpad "
                 "couldn't determine the version of %(bugtrackertype)s "
                 "running on %(bugtracker)s.",
-            BugWatchErrorType.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+            BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER: "Launchpad "
                 "doesn't support importing bugs from %(bugtrackertype)s"
                 " bug trackers.",
-            BugWatchErrorType.PRIVATE_REMOTE_BUG: "The bug is marked as "
+            BugWatchActivityStatus.PRIVATE_REMOTE_BUG: "The bug is marked as "
                 "private on the remote bug tracker. Launchpad cannot import "
                 "the status of private remote bugs.",
             }
@@ -270,6 +279,26 @@ class BugWatch(SQLBase):
             BugMessage.bug == self.bug.id,
             BugMessage.bugwatch == self.id,
             Not(BugMessage.remote_comment_id == None))
+
+    def addActivity(self, result=None, message=None, oops_id=None):
+        """See `IBugWatch`."""
+        activity = BugWatchActivity()
+        activity.bug_watch = self
+        activity.result = result
+        if message is not None:
+            activity.message = unicode(message)
+        if oops_id is not None:
+            activity.oops_id = unicode(oops_id)
+        store = IStore(BugWatchActivity)
+        store.add(activity)
+
+    @property
+    def activity(self):
+        store = Store.of(self)
+        return store.find(
+            BugWatchActivity,
+            BugWatchActivity.bug_watch == self).order_by(
+                Desc('activity_date'))
 
 
 class BugWatchSet(BugSetBase):
@@ -611,3 +640,19 @@ class BugWatchSet(BugSetBase):
         if bug_watch_ids is not None:
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
+
+
+class BugWatchActivity(Storm):
+    """See `IBugWatchActivity`."""
+
+    implements(IBugWatchActivity)
+
+    __storm_table__ = 'BugWatchActivity'
+
+    id = Int(primary=True)
+    bug_watch_id = Int(name='bug_watch')
+    bug_watch = Reference(bug_watch_id, BugWatch.id)
+    activity_date = UtcDateTimeCol(notNull=True)
+    result = EnumCol(enum=BugWatchActivityStatus, notNull=False)
+    message = Unicode()
+    oops_id = Unicode()

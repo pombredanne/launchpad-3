@@ -64,17 +64,18 @@ same library file, so both can be verified.
     >>> login('foo.bar@canonical.com')
 
     >>> from zope.component import getUtility
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
 
-    >>> build = getUtility(IBuildSet).getByBuildID(26)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByBuildID(26)
     >>> build.upload_log = build.buildlog
 
     >>> logout()
 
-IBuild 'build_log_url' and 'upload_log_url' are webapp URLs, relative
-to the build itself. This way API users can access private files
-(stored in the restricted librarian) directly because they will be
-proxied by the webapp.
+IBinaryPackageBuild 'build_log_url' and 'upload_log_url' are webapp
+URLs, relative to the build itself. This way API users can access
+private files (stored in the restricted librarian) directly because they
+will be proxied by the webapp.
 
     >>> builds = webservice.named_get(
     ...     source_pub['self_link'], 'getBuilds').jsonBody()

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -25,11 +25,11 @@ from twisted.python import log
 from twisted.web import xmlrpc
 
 from canonical.config import config
-from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
 from lp.services.scripts.base import LaunchpadScript
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class CodeImportWorker(LaunchpadScript):

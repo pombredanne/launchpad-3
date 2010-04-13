@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
@@ -180,6 +181,11 @@ class BranchNavigation(Navigation):
         for proposal in self.context.landing_targets:
             if proposal.id == id:
                 return proposal
+
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to the `ICodeImport` for the branch."""
+        return self.context.code_import
 
 
 class BranchEditMenu(NavigationMenu):
@@ -607,7 +613,7 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def _setBranchExists(self, existing_branch):
+    def _setBranchExists(self, existing_branch, field_name='name'):
         owner = existing_branch.owner
         if owner == self.user:
             prefix = "You already have"
@@ -617,7 +623,7 @@ class BranchNameValidationMixin:
             "%s a branch for <em>%s</em> called <em>%s</em>."
             % (prefix, existing_branch.target.displayname,
                existing_branch.name))
-        self.setFieldError('name', structured(message))
+        self.setFieldError(field_name, structured(message))
 
 
 class BranchEditSchema(Interface):

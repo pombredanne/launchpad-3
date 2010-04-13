@@ -26,12 +26,12 @@ from twisted.web import xmlrpc
 
 from zope.component import getUtility
 
-from canonical.buildd.utils import notes
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
-from canonical.twistedsupport.processmonitor import run_process_with_timeout
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
+from lp.services.twistedsupport.processmonitor import run_process_with_timeout
+
 
 buildd_success_result_map = {
     'ensurepresent': True,
@@ -236,9 +236,6 @@ class BuilddManager(service.Service):
     def startService(self):
         """Service entry point, run at the start of a scan/dispatch cycle."""
         self.logger.info('Starting scanning cycle.')
-
-        # Ensure there are no previous annotation from the previous cycle.
-        notes.notes = {}
 
         d = defer.maybeDeferred(self.scan)
         d.addCallback(self.resumeAndDispatch)
