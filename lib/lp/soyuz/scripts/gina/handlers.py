@@ -848,7 +848,7 @@ class BinaryPackageHandler:
     def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
         """Ensure a build record."""
         # Avoid circular imports.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
@@ -873,7 +873,7 @@ class BinaryPackageHandler:
                       % quote(archtag))
 
         try:
-            build = Build.selectOne(query, clauseTables)
+            build = BinaryPackageBuild.selectOne(query, clauseTables)
         except SQLObjectMoreThanOneResultError:
             # XXX kiko 2005-10-27: Untested.
             raise MultipleBuildError("More than one build was found "
@@ -896,7 +896,7 @@ class BinaryPackageHandler:
             key = None
 
             processor = distroarchinfo['processor']
-            build = Build(processor=processor.id,
+            build = BinaryPackageBuild(processor=processor.id,
                           distroarchseries=distroarchseries.id,
                           buildstate=BuildStatus.FULLYBUILT,
                           sourcepackagerelease=srcpkg.id,
