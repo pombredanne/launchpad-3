@@ -805,6 +805,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         'branch_type': LINK_LP_BZR,
         }
 
+    errors_in_action = False
+
+    @property
+    def next_url(self):
+        """Return the next_url.
+
+        Use the value from `ReturnToReferrerMixin` or None if there
+        are errors.
+        """
+        if self.errors_in_action:
+            return None
+        return super(ProductSeriesSetBranchView, self).next_url
+
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
@@ -1008,9 +1021,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     branch = self._createBzrBranch(
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
-
                     if branch is None:
-                        self.next_url = None
+                        self.errors_in_action = True
                         return
 
                     self.context.branch = branch
@@ -1039,8 +1051,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                             cvs_module=cvs_module)
                     except BranchExists, e:
                         self._setBranchExists(e.existing_branch,
-                        'branch_name')
-                        self.next_url = None
+                                              'branch_name')
+                        self.errors_in_action = True
                         return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
