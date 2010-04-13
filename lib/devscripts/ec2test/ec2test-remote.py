@@ -26,6 +26,8 @@ import bzrlib.errors
 import bzrlib.smtp_connection
 import bzrlib.workingtree
 
+import subunit
+
 
 class SummaryResult(unittest.TestResult):
     """Test result object used to generate the summary."""
@@ -217,13 +219,6 @@ class BaseTestRunner:
 
     def _gather_test_output(self, input_stream, summary_file, out_file):
         """Write the testrunner output to the logs."""
-        # XXX: JonathanLange 2010-01-23: This is evil. Hack the sys.path so
-        # that the 'lib' directory is included so that we can import subunit,
-        # then unhack it.
-        libs = os.path.join(os.path.dirname(__file__), 'test', 'lib')
-        sys.path.append(libs)
-        import subunit
-        sys.path.pop()
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
         result = SummaryResult(summary_file)
