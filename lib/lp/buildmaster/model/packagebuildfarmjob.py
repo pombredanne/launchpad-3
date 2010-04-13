@@ -12,7 +12,18 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 
 
 class PackageBuildFarmJob(BuildFarmJob):
-    """Mix-in class for `IBuildFarmJob` implementations for package builds."""
+    """An implementation of `IBuildFarmJob` for package builds."""
+
+    def __init__(self, build):
+        """Store the build for this package build farm job.
+
+        XXX 2010-04-12 michael.nelson bug=536700
+        The build param will no longer be necessary once BuildFarmJob is
+        itself a concrete class. This class will be renamed PackageBuild
+        and turned into a concrete class itself.
+        """
+        super(PackageBuildFarmJob, self).__init__()
+        self.build = build
 
     def getTitle(self):
         """See `IBuildFarmJob`."""

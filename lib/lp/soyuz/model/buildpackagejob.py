@@ -10,6 +10,7 @@ __all__ = [
 from datetime import datetime
 import pytz
 
+from lazr.delegates import delegates
 from storm.locals import Int, Reference, Storm
 
 from zope.interface import implements
@@ -18,6 +19,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -27,9 +29,10 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(PackageBuildFarmJob, Storm):
+class BuildPackageJob(Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
+    delegates(IBuildFarmJob, context='package_build_farm_job')
 
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
@@ -39,6 +42,13 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
 
     build_id = Int(name='build', allow_none=False)
     build = Reference(build_id, 'BinaryPackageBuild.id')
+
+    def __init__(self, *args, **kwargs):
+        """Ensure that we have a package build farm job to which we can
+        delegate.
+        """
+        super(BuildPackageJob, self).__init__(args, kwargs)
+        self.package_build_farm_job = PackageBuildFarmJob(self.build)
 
     def score(self):
         """See `IBuildPackageJob`."""

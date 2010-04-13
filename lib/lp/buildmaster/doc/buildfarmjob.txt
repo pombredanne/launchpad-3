@@ -4,10 +4,10 @@
     >>> from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 
 BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
-specific build farm job classes should inherit from it.
+specific build farm job classes should delegate to it.
 
     >>> buildfarmjob = BuildFarmJob()
-    >>> verifyObject(IBuildFarmJob, buildfarmjob) 
+    >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
 
 As a class, it also provides ISpecificBuildFarmJobClass so that
