@@ -143,18 +143,28 @@ class Factory(SSHFactory):
 class SSHService(service.Service):
     """A Twisted service for the codehosting SSH server."""
 
-    def __init__(self, portal, private_key_path, public_key_path):
+    def __init__(self, portal, private_key_path, public_key_path,
+                 port='tcp:22', idle_timeout=3600, banner=None):
         """Construct an SSH service.
 
         :param portal: The `Portal` that turns authentication requests into
             views on the system.
         :param private_key_path: The path to the SSH server's private key.
         :param public_key_path: The path to the SSH server's public key.
+        :param port: The port to run the server on, expressed in Twisted's
+            "strports" mini-language. Defaults to 'tcp:22'.
+        :param idle_timeout: The number of seconds to wait before killing a
+            connection that isn't doing anything. Defaults to 3600.
+        :param banner: An announcement printed to users when they connect.
+            By default, announce nothing.
         """
         self.service = self.makeService()
         self._portal = portal
         self._private_key_path = private_key_path
         self._public_key_path = public_key_path
+        self._port = port
+        self._idle_timeout = idle_timeout
+        self._banner = banner
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in
