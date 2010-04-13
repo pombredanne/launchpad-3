@@ -26,7 +26,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeRecipe(self):
-        chef = self.factory.makePersonNoCommit(displayname='Master Chef',
+        chef = self.factory.makePerson(displayname='Master Chef',
                 name='chef')
         chocolate = self.factory.makeProduct(name='chocolate')
         cake_branch = self.factory.makeProductBranch(

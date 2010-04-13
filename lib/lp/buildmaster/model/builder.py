@@ -42,7 +42,7 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
+    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
     ProtocolVersionMismatch)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
@@ -182,8 +182,8 @@ def rescueBuilderIfLost(builder, logger=None):
     slave_build_id = status_sentence[ident_position[status]]
 
     try:
-        builder.verifySlaveBuildID(slave_build_id)
-    except CorruptBuildID, reason:
+        builder.verifySlaveBuildCookie(slave_build_id)
+    except CorruptBuildCookie, reason:
         if status == 'BuilderStatus.WAITING':
             builder.cleanSlave()
         else:
@@ -454,9 +454,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuilder`."""
-        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+        return self.current_build_behavior.verifySlaveBuildCookie(
+            slave_build_id)
 
     def updateBuild(self, queueItem):
         """See `IBuilder`."""

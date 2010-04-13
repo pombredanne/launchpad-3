@@ -18,7 +18,7 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     CodeReviewVote)
 from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -48,6 +48,12 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment.branch_merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             notification_level)
+        # Email is not sent on construction, so fake a root message id on the
+        # merge proposal.
+        login_person(comment.branch_merge_proposal.registrant)
+        comment.branch_merge_proposal.root_message_id = 'fake-id'
+        # Log our test user back in.
+        login('test@canonical.com')
         return comment, subscriber
 
     def makeMailer(self, body=None, as_reply=False, vote=None, vote_tag=None):
@@ -210,7 +216,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         message = getUtility(IMessageSet).fromEmail(msg.as_string())
         bmp = self.factory.makeBranchMergeProposal()
         comment = bmp.createCommentFromMessage(message, None, None, msg)
-        mailer = CodeReviewCommentMailer.forCreation(comment, msg)
+        mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
         [outgoing_attachment] = mailer.attachments
         self.assertEqual('inc.diff', outgoing_attachment[1])

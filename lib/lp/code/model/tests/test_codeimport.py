@@ -10,6 +10,7 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
@@ -133,6 +134,26 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
             review_status=None)
+
+    def test_create_source_package_import(self):
+        """Test that we can create an import targetting a source package."""
+        registrant = self.factory.makePerson()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(registrant, code_import.branch.owner)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
 
 
 class TestCodeImportDeletion(TestCaseWithFactory):

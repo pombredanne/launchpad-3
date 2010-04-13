@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -281,7 +281,7 @@ def apply_patches_replicated():
         (fqn(nspname, relname), tab_id)
         for nspname, relname, tab_id in cur.fetchall())
 
-    # Generate a slonik script to remove tables from the replication set, 
+    # Generate a slonik script to remove tables from the replication set,
     # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     if tabs_to_drop:
         log.info("Dropping tables: %s" % ', '.join(

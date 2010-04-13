@@ -78,6 +78,9 @@ check_db_merge: $(PY)
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
+check_schema: build
+	${PY} utilities/check-db-revision.py
+
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
 check: clean build
@@ -182,7 +185,10 @@ bin/buildout: download-cache eggs
 		--download-base=download-cache/dist --eggs=eggs
 
 # This builds bin/py and all the other bin files except bin/buildout.
+# Remove the target before calling buildout to ensure that buildout
+# updates the timestamp.
 $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(RM) $@
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
@@ -203,21 +209,21 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-mpcreationjobs:
-	# Handle merge proposal creations.
-	$(PY) cronscripts/mpcreationjobs.py
+merge-proposal-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-run: inplace stop
+run: check_schema inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
-start-gdb: inplace stop support_files
+start-gdb: check_schema inplace stop support_files
 	$(RM) thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop hosted_branches
+run_all: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
 	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
@@ -231,7 +237,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
-run_codehosting: inplace stop hosted_branches
+run_codehosting: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
@@ -249,8 +255,7 @@ scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/scan_branches.py
 
-
-sync_branches: pull_branches scan_branches mpcreationjobs
+sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
@@ -437,4 +442,4 @@ lp-clustered.svg: lp-clustered.dot
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile
+	sprite_css sprite_image css_combine compile check_schema

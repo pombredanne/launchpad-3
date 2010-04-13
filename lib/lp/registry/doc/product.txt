@@ -479,12 +479,15 @@ version argument.
 
 == Products With Branches ==
 
-Products can now specify whether they officially support Launchpad as a
-location for their branches.
+Products are considered to officially support Launchpad as a location
+for their branches after a branch is set for the development focus
+series.
 
+    >>> print firefox.development_focus.branch
+    None
     >>> print firefox.official_codehosting
     False
-    >>> firefox.official_codehosting = True
+    >>> firefox.development_focus.branch = factory.makeBranch(product=firefox)
     >>> print firefox.official_codehosting
     True
 
