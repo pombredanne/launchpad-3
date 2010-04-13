@@ -152,8 +152,10 @@ not yet translated.
     This translation is managed by <...No Privileges Person<...>, assigned by
     <...>The PolyGlot Translation Group<...>.
 
-    >>> print get_detail_tag(browser, 'translation-access')
+    >>> print_tag_with_id(browser.contents, 'translation-access')
     You have full access to this translation.
+    Working in reviewer mode.
+    Switch to translator mode.
 
     >>> print find_no_translation_marker(browser.contents)
     (no translation yet)
