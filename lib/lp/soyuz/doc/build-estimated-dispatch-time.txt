@@ -58,8 +58,9 @@ Access the currently building job via the builder.
     >>> import pytz
     >>> bob_the_builder = builder_set.get(1)
     >>> cur_bqueue = bob_the_builder.currentjob
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> cur_build = getUtility(IBuildSet).getByQueueEntry(cur_bqueue)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> cur_build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(cur_bqueue)
 
 Make sure the job at hand is currently being built.
 

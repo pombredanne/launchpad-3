@@ -266,18 +266,18 @@ Builder.rescueIfLost() checks the build ID reported in the slave status
 against the database. If it isn't building what we think it should be,
 the current build will be aborted and the slave cleaned in preparation
 for a new task. The decision about the slave's correctness is left up
-to IBuildFarmJobBehavior.verifySlaveBuildID -- for these examples we
-will use a special behavior that just checks if the slave ID is 'good'.
+to IBuildFarmJobBehavior.verifySlaveBuildCookie -- for these examples we
+will use a special behavior that just checks if the cookie reads 'good'.
 
     >>> import logging
-    >>> from lp.buildmaster.interfaces.builder import CorruptBuildID
+    >>> from lp.buildmaster.interfaces.builder import CorruptBuildCookie
     >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
     ...    BuildingSlave, MockBuilder, OkSlave, WaitingSlave)
 
     >>> class TestBuildBehavior:
-    ...     def verifySlaveBuildID(self, build_id):
-    ...         if build_id != 'good':
-    ...             raise CorruptBuildID('Bad value')
+    ...     def verifySlaveBuildCookie(self, cookie):
+    ...         if cookie != 'good':
+    ...             raise CorruptBuildCookie('Bad value')
 
     >>> def rescue_slave_if_lost(slave):
     ...     builder = MockBuilder('mock', slave, TestBuildBehavior())

@@ -29,7 +29,8 @@ from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from lp.soyuz.model.build import Build, BuildSet
+from lp.soyuz.model.binarypackagebuild import (
+    BinaryPackageBuild, BinaryPackageBuildSet)
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
@@ -530,7 +531,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # We re-use the optional-parameter handling provided by BuildSet
         # here, but pass None for the name argument as we've already
         # matched on exact source package name.
-        BuildSet().handleOptionalParamsForBuildQueries(
+        BinaryPackageBuildSet().handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, build_state, name=None,
             pocket=pocket, arch_tag=arch_tag)
 
@@ -561,7 +562,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        return Build.select(' AND '.join(condition_clauses),
+        return BinaryPackageBuild.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)
 
     @property
