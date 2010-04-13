@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -532,7 +532,12 @@ class TestFactory(TrialTestCase):
 
     def makeFactory(self):
         """Create and start the factory that our SSH server uses."""
-        factory = service.Factory(auth.get_portal(None, None))
+        factory = service.Factory(
+            auth.get_portal(None, None),
+            private_key=Key.fromFile(
+                service.get_key_path(service.PRIVATE_KEY_FILE)),
+            public_key=Key.fromFile(
+                service.get_key_path(service.PUBLIC_KEY_FILE)))
         factory.startFactory()
         return factory
 

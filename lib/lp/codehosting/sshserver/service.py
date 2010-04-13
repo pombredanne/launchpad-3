@@ -43,6 +43,11 @@ class KeepAliveSettingSSHServerTransport(SSHServerTransport):
         self.transport.setTcpKeepAlive(True)
 
 
+def get_key_path(key_filename):
+    key_directory = config.codehosting.host_key_pair_path
+    return os.path.join(config.root, key_directory, key_filename)
+
+
 class Factory(SSHFactory):
     """SSH factory that uses the codehosting custom authentication.
 
@@ -53,12 +58,20 @@ class Factory(SSHFactory):
 
     protocol = KeepAliveSettingSSHServerTransport
 
-    def __init__(self, portal):
+    def __init__(self, portal, private_key, public_key):
+        """Construct an SSH factory.
+
+        :param portal: The portal used to turn credentials into users.
+        :param private_key: The private key of the server, must be RSA.
+        :param public_key: The public key of the server, must be RSA.
+        """
         # Although 'portal' isn't part of the defined interface for
         # `SSHFactory`, defining it here is how the `SSHUserAuthServer` gets
         # at it. (Look for the beautiful line "self.portal =
         # self.transport.factory.portal").
         self.portal = portal
+        self._private_key = private_key
+        self._public_key = public_key
         self.services['ssh-userauth'] = SSHUserAuthServer
 
     def buildProtocol(self, address):
@@ -93,26 +106,19 @@ class Factory(SSHFactory):
                 notify(accesslog.AuthenticationFailed(transport))
             notify(accesslog.UserDisconnected(transport))
 
-    def _loadKey(self, key_filename):
-        key_directory = config.codehosting.host_key_pair_path
-        key_path = os.path.join(config.root, key_directory, key_filename)
-        return Key.fromFile(key_path)
-
     def getPublicKeys(self):
         """Return the server's configured public key.
 
         See `SSHFactory.getPublicKeys`.
         """
-        public_key = self._loadKey(PUBLIC_KEY_FILE)
-        return {'ssh-rsa': public_key}
+        return {'ssh-rsa': self._public_key}
 
     def getPrivateKeys(self):
         """Return the server's configured private key.
 
         See `SSHFactory.getPrivateKeys`.
         """
-        private_key = self._loadKey(PRIVATE_KEY_FILE)
-        return {'ssh-rsa': private_key}
+        return {'ssh-rsa': self._private_key}
 
 
 class SSHService(service.Service):
@@ -137,7 +143,10 @@ class SSHService(service.Service):
         the constructor.
         """
         ssh_factory = TimeoutFactory(
-            Factory(self.makePortal()),
+            Factory(
+                self.makePortal(),
+                public_key=Key.fromFile(get_key_path(PUBLIC_KEY_FILE)),
+                private_key=Key.fromFile(get_key_path(PRIVATE_KEY_FILE))),
             timeoutPeriod=config.codehosting.idle_timeout)
         return strports.service(config.codehosting.port, ssh_factory)
 
