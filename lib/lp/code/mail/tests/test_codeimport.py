@@ -118,7 +118,7 @@ class TestNewCodeImports(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(
             name='manic', distribution=distro)
         fooix = self.factory.makeSourcePackage(
-            sourcename='fooix', distroseries=series)
+            sourcepackagename='fooix', distroseries=series)
         # Eric needs to be logged in for the mail to be sent.
         login_person(eric)
         code_import = self.factory.makePackageCodeImport(
