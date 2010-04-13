@@ -48,7 +48,9 @@ CREATEDB_83=createdb --encoding=UTF8
 CREATEDB_84=createdb --encoding=UTF8 --locale=C --template=template0
 CREATEDB=${CREATEDB_83}
 
-# Turn off silencing for now so we details on staging deployments.
+# Turn off output silencing so we can see details of staging deployments.
+# Without the timestamps, we are unable to estimate production deployment
+# times.
 #SHHH=../../utilities/shhh.py
 SHHH=
 
