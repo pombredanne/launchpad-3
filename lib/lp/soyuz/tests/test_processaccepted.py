@@ -10,6 +10,7 @@ from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
@@ -39,13 +40,36 @@ class TestProcessAccepted(TestCaseWithFactory):
         script.txn = self.layer.txn
         return script
 
-    def createWaitingAcceptancePackage(self, archive=None):
+    def createWaitingAcceptancePackage(self, archive=None, distroseries=None,
+            sourcename=None):
         """Create some pending publications."""
         if archive is None:
             archive = getUtility(
-                IDistributionSet).getByName('ubuntu').main_archive
+                IDistributionSet).getByName('ubuntutest').main_archive
+        if sourcename is None:
+            sourcename = self.test_package_name
         return self.stp.getPubSource(
-            archive=archive, sourcename=self.test_package_name, spr_only=True)
+            archive=archive, sourcename=sourcename, distroseries=distroseries,
+            spr_only=True)
+
+    def testRobustness(self):
+        """Test that a broken package doesn't block the publication of other 
+        packages."""
+        # Attempt to upload one source to a frozen series
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet).getByName('ubuntutest'))
+        broken_source = self.createWaitingAcceptancePackage(
+            distroseries=distroseries, sourcename="notaccepted")
+        distroseries.status = SeriesStatus.SUPPORTED
+        # Also upload some stuff in the main archive.
+        other_source = self.createWaitingAcceptancePackage()
+        script = self.getScript([])
+        script.main()
+
+        # The other source should be published now
+        published_main = self.stp.ubuntutest.main_archive.getPublishedSources(
+            name=self.test_package_name)
+        self.assertEqual(published_main.count(), 1)
 
     def testAcceptCopyArchives(self):
         """Test that publications in a copy archive are accepted properly."""
