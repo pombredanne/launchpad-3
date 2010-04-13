@@ -30,6 +30,12 @@ from lp.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
 
 
+# The names of the key files of the server itself. The directory itself is
+# given in config.codehosting.host_key_pair_path.
+PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
+PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
+
+
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
 
     def connectionMade(self):
@@ -97,7 +103,7 @@ class Factory(SSHFactory):
 
         See `SSHFactory.getPublicKeys`.
         """
-        public_key = self._loadKey('ssh_host_key_rsa.pub')
+        public_key = self._loadKey(PUBLIC_KEY_FILE)
         return {'ssh-rsa': public_key}
 
     def getPrivateKeys(self):
@@ -105,7 +111,7 @@ class Factory(SSHFactory):
 
         See `SSHFactory.getPrivateKeys`.
         """
-        private_key = self._loadKey('ssh_host_key_rsa')
+        private_key = self._loadKey(PRIVATE_KEY_FILE)
         return {'ssh-rsa': private_key}
 
 
