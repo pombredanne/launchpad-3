@@ -72,7 +72,11 @@ class Factory(SSHFactory):
         self.portal = portal
         self._private_key = private_key
         self._public_key = public_key
-        self.services['ssh-userauth'] = SSHUserAuthServer
+        self.services['ssh-userauth'] = self._makeAuthServer
+
+    def _makeAuthServer(self, *args, **kwargs):
+        kwargs['banner'] = config.codehosting.banner
+        return SSHUserAuthServer(*args, **kwargs)
 
     def buildProtocol(self, address):
         """Build an SSH protocol instance, logging the event.

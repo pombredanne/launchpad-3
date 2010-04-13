@@ -168,8 +168,9 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
     paste and change the implementations of these methods.
     """
 
-    def __init__(self, transport=None):
+    def __init__(self, transport=None, banner=None):
         self.transport = transport
+        self._banner = banner
         self._configured_banner_sent = False
         self._mind = UserDetailsMind()
         self.interfaceToMethod = userauth.SSHUserAuthServer.interfaceToMethod
@@ -181,10 +182,9 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
                                   NS(bytes) + NS(language))
 
     def _sendConfiguredBanner(self, passed_through):
-        if (not self._configured_banner_sent
-            and config.codehosting.banner is not None):
+        if not self._configured_banner_sent and self._banner:
             self._configured_banner_sent = True
-            self.sendBanner(config.codehosting.banner)
+            self.sendBanner(self._banner)
         return passed_through
 
     def ssh_USERAUTH_REQUEST(self, packet):

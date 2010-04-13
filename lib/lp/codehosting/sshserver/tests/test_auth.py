@@ -193,11 +193,6 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     layer = TwistedLayer
 
-    banner_conf = """
-        [codehosting]
-        banner: banner
-        """
-
     def setUp(self):
         UserAuthServerMixin.setUp(self)
         self.portal.registerChecker(MockChecker())
@@ -240,25 +235,22 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertMessageOrder([userauth.MSG_USERAUTH_SUCCESS])
         return d.addCallback(check)
 
-    def test_configuredBannerSentOnSuccess(self):
-        # If a banner is set in the codehosting config then we send it to the
+    def test_defaultBannerSentOnSuccess(self):
+        # If a banner was passed to the user auth agent then we send it to the
         # user when they log in.
-        config.push('codehosting_overlay', self.banner_conf)
+        self.user_auth._banner = "Boogedy boo"
         d = self.requestSuccessfulAuthentication()
         def check(ignored):
             self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_SUCCESS])
-            self.assertBannerSent(config.codehosting.banner + '\r\n')
-        def cleanup(ignored):
-            config.pop('codehosting_overlay')
-            return ignored
-        return d.addCallback(check).addBoth(cleanup)
+            self.assertBannerSent(self.user_auth._banner + '\r\n')
+        return d.addCallback(check)
 
-    def test_configuredBannerSentOnlyOnce(self):
+    def test_defaultBannerSentOnlyOnce(self):
         # We don't send the banner on each authentication attempt, just on the
         # first one. It is usual for there to be many authentication attempts
         # per SSH session.
-        config.push('codehosting_overlay', self.banner_conf)
+        self.user_auth._banner = "Boogedy boo"
 
         d = self.requestUnsupportedAuthentication()
         d.addCallback(lambda ignored: self.requestSuccessfulAuthentication())
@@ -268,17 +260,14 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_FAILURE, userauth.MSG_USERAUTH_BANNER,
                  userauth.MSG_USERAUTH_SUCCESS])
-            self.assertBannerSent(config.codehosting.banner + '\r\n')
+            self.assertBannerSent(self.user_auth._banner + '\r\n')
 
-        def cleanup(ignored):
-            config.pop('codehosting_overlay')
-            return ignored
-        return d.addCallback(check).addBoth(cleanup)
+        return d.addCallback(check)
 
-    def test_configuredBannerNotSentOnFailure(self):
-        # Failed authentication attempts do not get the configured banner
+    def test_defaultBannerNotSentOnFailure(self):
+        # Failed authentication attempts do not get the default banner
         # sent.
-        config.push('codehosting_overlay', self.banner_conf)
+        self.user_auth._banner = "You come away two hundred quid down"
 
         d = self.requestFailedAuthentication()
 
@@ -287,11 +276,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
             self.assertBannerSent(MockChecker.error_message + '\r\n')
 
-        def cleanup(ignored):
-            config.pop('codehosting_overlay')
-            return ignored
-
-        return d.addCallback(check).addBoth(cleanup)
+        return d.addCallback(check)
 
     def test_loggedToBanner(self):
         # When there's an authentication failure, we display an informative
