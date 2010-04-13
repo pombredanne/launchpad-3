@@ -44,10 +44,7 @@ __all__ = [
 
 
 from cgi import escape
-from datetime import datetime, timedelta
 from operator import attrgetter
-
-import pytz
 
 from zope.component import getUtility
 from zope.event import notify
