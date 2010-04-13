@@ -19,9 +19,10 @@
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-bugtasks" />
         </div>
-        <div class="yui-u">
-          <div tal:replace="structure context/@@+portlet-activity" />
-        </div>
+      </div>
+
+      <div class="yui-g" tal:condition="view/watch_has_activity">
+        <div tal:replace="structure context/@@+portlet-activity" />
       </div>
 
       <div class="yui-g">

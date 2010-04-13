@@ -69,6 +69,28 @@ class BugWatchView(LaunchpadView):
 
         return displayed_comments
 
+    @property
+    def recent_watch_activity(self):
+        """Return a list of dicts representing recent watch activity."""
+        activity_items = []
+        for activity in self.context.activity:
+            if activity.result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+                icon = "/@@/yes"
+                completion_message = "completed successfully"
+            else:
+                icon = "/@@/no"
+                completion_message = (
+                    "failed with error '%s'" % activity.result.title)
+
+            activity_items.append({
+                'icon': icon,
+                'date': activity.activity_date,
+                'completion_message': completion_message,
+                'result_text': activity.result.title,
+                })
+
+        return activity_items
+
 
 class BugWatchEditForm(Interface):
     """Form definition for the bug watch edit view."""
@@ -101,25 +123,9 @@ class BugWatchEditView(LaunchpadFormView):
         return {'url' : self.context.url}
 
     @property
-    def recent_watch_activity(self):
-        """Return a list of dicts representing recent watch activity."""
-        activity_items = []
-        for activity in self.context.activity:
-            if activity.result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
-                icon = "/@@/yes"
-                completion_message = "completed successfully"
-            else:
-                icon = "/@@/no"
-                completion_message = (
-                    "failed with error '%s'" % activity.result.title)
-
-            activity_items.append({
-                'icon': icon,
-                'date': activity.activity_date,
-                'completion_message': completion_message,
-                })
-
-        return activity_items
+    def watch_has_activity(self):
+        """Return True if there has been activity on the bug watch."""
+        return not self.context.activity.is_empty()
 
     def validate(self, data):
         """See `LaunchpadFormView.`"""
@@ -158,3 +164,4 @@ class BugWatchEditView(LaunchpadFormView):
         return canonical_url(getUtility(ILaunchBag).bug)
 
     cancel_url = next_url
+

@@ -35,8 +35,8 @@ Recent activity
 ---------------
 
 The Bug Watch +edit page displays a list of the recent activity for the
-watch. This is provided by the view and can be accessed via the view's
-recent_watch_activity property.
+watch. This is provided by the BugWatch activity portlet view and can be
+accessed via the recent_watch_activity property of BugWatchView.
 
 We'll create a new watch in order to demonstrate this.
 
@@ -47,7 +47,8 @@ We'll create a new watch in order to demonstrate this.
 The view for the new watch will have an empty recent_watch_activity list
 since it hasn't been updated yet.
 
-    >>> new_watch_view = create_initialized_view(new_watch, '+edit')
+    >>> new_watch_view = create_initialized_view(
+    ...     new_watch, '+portlet-activity')
     >>> len(new_watch_view.recent_watch_activity)
     0
 
@@ -66,7 +67,8 @@ about the activity.
     ...     pprint(activity_dict)
     {'completion_message': 'completed successfully',
      'date': datetime.datetime(...tzinfo=<UTC>),
-     'icon': '/@@/yes'}
+     'icon': '/@@/yes',
+     'result_text': 'Synchronisation succeeded'}
 
 If an activity entry records a failure, the 'icon' entry in the dict
 will point to the 'no' icon and the completion_message will explain the
@@ -84,7 +86,17 @@ different dates.
     ...     pprint(activity_dict)
     {'completion_message': "failed with error 'Bug Not Found'",
      'date': datetime.datetime(...tzinfo=<UTC>),
-     'icon': '/@@/no'}
+     'icon': '/@@/no',
+     'result_text': 'Bug Not Found'}
     {'completion_message': 'completed successfully',
      'date': datetime.datetime(...tzinfo=<UTC>),
-     'icon': '/@@/yes'}
+     'icon': '/@@/yes',
+     'result_text': 'Synchronisation succeeded'}
+
+The BugWatch +edit view has a watch_has_activity property, which is used
+to determine whether the recent activity portlet should be displayed.
+
+    >>> new_watch_edit_view = create_initialized_view(
+    ...     new_watch, '+edit')
+    >>> print new_watch_edit_view.watch_has_activity
+    True

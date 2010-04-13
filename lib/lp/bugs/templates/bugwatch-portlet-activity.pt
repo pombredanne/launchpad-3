@@ -4,5 +4,12 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     class="portlet" id="portlet-watches">
   <h2>Recent activity</h2>
-
+  <div id="recent-watch-activity">
+    <tal:activity repeat="activity view/recent_watch_activity">
+      <img tal:attributes="src activity/icon; title activity/result_text" />
+      Update
+      <tal:message replace="activity/completion_message" />
+      <tal:time replace="activity/date/fmt:displaydate" />
+    </tal:activity>
+  </div>
 </div>
