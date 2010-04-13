@@ -24,6 +24,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
+from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, TooNewRecipeFormat)
@@ -205,6 +206,8 @@ class SourcePackageRecipeData(Storm):
             self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
+        if base_branch is None:
+            raise NoSuchBranch(builder_recipe.url)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
         self._recordInstructions(
