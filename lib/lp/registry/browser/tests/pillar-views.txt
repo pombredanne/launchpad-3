@@ -49,19 +49,19 @@ The view provides a list of enabled links that is rendered by the template.
     report_bug ask_question
 
     >>> print view.render()
-    <div id="involvement" class="portlet involvement">
+    <div id="involvement" class="portlet">
       <h2>Get Involved</h2>
-      <ul>
+      <ul class="involvement">
         <li>
-          <a href="..." class="...bugs">Report a bug</a>
+          <a href=... class="...bugs">Report a bug</a>
         </li>
         <li>
-          <a href="..." class="...answers">Ask a question</a>
+          <a href=... class="...answers">Ask a question</a>
         </li>
       </ul>
-    </div>
+    ...
 
-Products are are supported.
+Products are supported.
 
     >>> product = factory.makeProduct(name='bread')
     >>> login_person(product.owner)
@@ -69,6 +69,24 @@ Products are are supported.
     >>> view = create_view(product, '+get-involved')
     >>> view.official_blueprints
     True
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    register_blueprint
+
+Products subclass the view to display disabled links to encourage
+configuring that service in Launchpad for the project. The project
+also has configuration links that make it easy to figure out where
+to configure each service.
+
+    >>> for link in view.visible_disabled_links:
+    ...     print link.name
+    submit_code
+    >>> for link in view.configuration_links:
+    ...     print link.name
+    configure_answers
+    configure_bugtracker
+    configure_translations
+    set_branch
 
 Project are supported too, but they only display the applications used by
 their products.
@@ -80,13 +98,27 @@ their products.
     >>> view.official_blueprints
     True
 
-Projects cannot make links to register a branch, so official_code is always
-false.
+The offical_codehosting for a project is based on whether the project's
+development focus series has a branch.
 
-    >>> product.official_codehosting = True
+    >>> print product.development_focus.branch
+    None
+    >>> product.official_codehosting
+    False
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_codehosting
+    False
+
+    >>> product.development_focus.branch = factory.makeBranch(
+    ...     product=product)
+    >>> product.official_codehosting
+    True
     >>> view = create_view(product, '+get-involved')
     >>> view.official_codehosting
     True
+
+Project groups cannot make links to register a branch, so
+official_codehosting is always false.
 
     >>> view = create_view(project_group, '+get-involved')
     >>> view.official_codehosting
@@ -108,7 +140,7 @@ but the answers link will be disbaled.
     >>> view = create_view(series, '+get-involved')
     >>> for link in view.enabled_links:
     ...     print link.name
-    submit_code register_blueprint
+    register_blueprint
 
 DistributionSourcePackages can use this view. The distribution is used to
 set the links.  Despite the fact that the distribution uses blueprints,

@@ -6,7 +6,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.browser.logintoken import (
-    ClaimTeamView, ResetPasswordView, ValidateEmailView, ValidateGPGKeyView)
+    ClaimTeamView, ValidateEmailView, ValidateGPGKeyView)
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -28,12 +28,6 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         self.person = self.factory.makePerson(name='test-user')
         self.email = self.person.preferredemail.email
         self.expected_next_url = 'http://127.0.0.1/~test-user'
-
-    def test_ResetPasswordView(self):
-        token = getUtility(ILoginTokenSet).new(
-            self.person, self.email, self.email,
-            LoginTokenType.PASSWORDRECOVERY)
-        self._testCancelAction(ResetPasswordView, token)
 
     def test_ClaimTeamView(self):
         token = getUtility(ILoginTokenSet).new(
