@@ -11,7 +11,7 @@ from canonical.launchpad.daemons import tachandler
 from lp.codehosting.sshserver.service import make_portal, SSHService
 
 
-# Construct an Application that includes a supermirror SFTP service.
+# Construct an Application that has the codehosting SSH server.
 application = service.Application('sftponly')
 svc = SSHService(make_portal())
 svc.setServiceParent(application)
