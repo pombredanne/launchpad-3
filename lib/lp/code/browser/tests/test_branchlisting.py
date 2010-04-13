@@ -335,6 +335,7 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
         # There is only one branch.
         batch = view.branches()
         [view_branch] = batch.branches
+        self.assertStatementCount(0, getattr, view_branch, 'bzr_identity')
         self.assertEqual(identity, view_branch.bzr_identity)
 
 

@@ -103,6 +103,11 @@ class PackageBranchTarget(_BaseBranchTarget):
         return True
 
     @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
     def supports_code_imports(self):
         """See `IBranchTarget`."""
         return False
@@ -195,6 +200,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         return False
 
     @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
     def supports_code_imports(self):
         """See `IBranchTarget`."""
         return False
@@ -272,6 +282,11 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_short_identites(self):
         """See `IBranchTarget`."""
         return True
 

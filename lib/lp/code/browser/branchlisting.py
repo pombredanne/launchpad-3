@@ -74,7 +74,7 @@ from lp.code.browser.branchmergeproposallisting import (
 from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchType)
 from lp.code.interfaces.branch import (
-    bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    BzrIdentityMixin, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchBatchNavigator, IBranchListingQueryOptimiser)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -137,7 +137,7 @@ class BranchBadges(HasBadgeBase):
             return HasBadgeBase.getBadge(self, badge_name)
 
 
-class BranchListingItem(BranchBadges):
+class BranchListingItem(BzrIdentityMixin, BranchBadges):
     """A decorated branch.
 
     Some attributes that we want to display are too convoluted or expensive
@@ -148,7 +148,7 @@ class BranchListingItem(BranchBadges):
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, show_mp_badge,
-                 associated_product_series, suite_source_packages, is_dev_focus):
+                 associated_product_series, suite_source_packages):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
@@ -157,7 +157,6 @@ class BranchListingItem(BranchBadges):
         self._now = now
         self.associated_product_series = associated_product_series
         self.suite_source_packages = suite_source_packages
-        self.is_development_focus = is_dev_focus
 
     def associatedProductSeries(self):
         """Override the IBranch.associatedProductSeries."""
@@ -171,11 +170,6 @@ class BranchListingItem(BranchBadges):
     def active_series(self):
         return [series for series in self.associated_product_series
                 if series.status != SeriesStatus.OBSOLETE]
-
-    @property
-    def bzr_identity(self):
-        """Produce the bzr identity from our known associated series."""
-        return bazaar_identity(self, self.is_development_focus)
 
     @property
     def since_updated(self):
@@ -397,30 +391,6 @@ class BranchListingItemsMixin:
             self._distro_series_map[distribution] = result
             return result
 
-    def isBranchDevFocus(self, branch,
-                         associated_product_series, suite_source_packages):
-        """Is the branch the development focus?
-
-        For product branches this means that the branch is linked to the
-        development focus series.
-
-        For package branches this means that the branch is linked to the
-        release pocket of the development series.
-        """
-        # Refactor this code to work for model.branch too?
-        # Do we care if a non-product branch is linked to the product series?
-        # Do we care if a non-package branch is linked to the package?
-        # A) not right now.
-        for series in associated_product_series:
-            if series.product.development_focus == series:
-                return True
-        for ssp in suite_source_packages:
-            if (ssp.pocket == PackagePublishingPocket.RELEASE and
-                ssp.distroseries == self.getDistroDevelSeries(
-                    ssp.distribution)):
-                return True
-        return False
-
     @cachedproperty
     def branch_ids_with_bug_links(self):
         """Return a set of branch ids that should show bug badges."""
@@ -470,12 +440,10 @@ class BranchListingItemsMixin:
         show_mp_badge = branch.id in self.branch_ids_with_merge_proposals
         associated_product_series = self.getProductSeries(branch)
         suite_source_packages = self.getSuiteSourcePackages(branch)
-        is_dev_focus = self.isBranchDevFocus(
-            branch, associated_product_series, suite_source_packages)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
             show_blueprint_badge, show_mp_badge,
-            associated_product_series, suite_source_packages, is_dev_focus)
+            associated_product_series, suite_source_packages)
 
     def decoratedBranches(self, branches):
         """Return the decorated branches for the branches passed in."""
@@ -1351,6 +1319,7 @@ class ProjectBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
     label_template = 'Bazaar branches of %(displayname)s'
+    show_series_links = True
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)

@@ -21,7 +21,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.scripts.buildd import QueueBuilder, RetryDepwait
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
@@ -228,7 +228,7 @@ class TestRetryDepwait(TestCronscriptBase):
         self.number_of_pending_builds = self.getPendingBuilds().count()
 
     def getPendingBuilds(self):
-        return Build.selectBy(buildstate=BuildStatus.NEEDSBUILD)
+        return BinaryPackageBuild.selectBy(buildstate=BuildStatus.NEEDSBUILD)
 
     def getRetryDepwait(self, distribution=None):
         test_args = ['-n']
@@ -268,7 +268,7 @@ class TestRetryDepwait(TestCronscriptBase):
 
     def testWorkingRun(self):
         """Modify sampledata and expects a new pending build to be created."""
-        depwait_build = Build.get(12)
+        depwait_build = BinaryPackageBuild.get(12)
 
         # Moving the target source to universe, so it can reach the only
         # published binary we have in sampledata.
@@ -287,7 +287,7 @@ class TestRetryDepwait(TestCronscriptBase):
         self.layer.commit()
 
         # Reload the build record after the multiple commits.
-        depwait_build = Build.get(12)
+        depwait_build = BinaryPackageBuild.get(12)
         self.assertEqual(
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
