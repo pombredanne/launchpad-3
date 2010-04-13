@@ -456,6 +456,8 @@
                     associatedProductSeries
                     getProductSeriesPushingTranslations
                     associatedSuiteSourcePackages
+                    branchIdentities
+                    branchLinks
                     subscribe
                     getSubscription
                     hasSubscription
