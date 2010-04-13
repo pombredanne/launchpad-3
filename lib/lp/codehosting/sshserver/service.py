@@ -175,9 +175,9 @@ class SSHService(service.Service):
                 self._portal,
                 private_key=Key.fromFile(self._private_key_path),
                 public_key=Key.fromFile(self._public_key_path),
-                banner=config.codehosting.banner),
-            timeoutPeriod=config.codehosting.idle_timeout)
-        return strports.service(config.codehosting.port, ssh_factory)
+                banner=self._banner),
+            timeoutPeriod=self._idle_timeout)
+        return strports.service(self._port, ssh_factory)
 
     def startService(self):
         """Start the SSH service."""
