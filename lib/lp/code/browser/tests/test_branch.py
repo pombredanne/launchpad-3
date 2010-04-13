@@ -291,12 +291,6 @@ class TestBranchAddView(TestCaseWithFactory):
         add_view = self.get_view(product)
         self.assertTrue(IBranchTarget.providedBy(add_view.target))
 
-    def test_target_productseries(self):
-        product = self.factory.makeProduct()
-        series = self.factory.makeProductSeries(product=product)
-        add_view = self.get_view(series)
-        self.assertTrue(IBranchTarget.providedBy(add_view.target))
-
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
     """Test the BranchReviewerEditView view."""
