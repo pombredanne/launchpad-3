@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import bz2
 import gzip
-import hashlib
 import os
 import shutil
 import stat
@@ -37,7 +36,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from lp.testing import get_lsb_information
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 

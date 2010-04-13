@@ -94,8 +94,7 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        action = diskpool.addFile(
-            component, source, filename, sha1, filealias)
+        action = diskpool.addFile(component, source, filename, sha1, filealias)
         if action == diskpool.results.FILE_ADDED:
             log.debug("Added %s from library" % path)
         elif action == diskpool.results.SYMLINK_ADDED:
