@@ -3,16 +3,16 @@
 
 # pylint: disable-msg=E0211,E0213
 
-"""Build interfaces."""
+"""BinaryPackageBuild interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
     'BuildSetStatus',
     'CannotBeRescored',
-    'IBuild',
+    'IBinaryPackageBuild',
     'IBuildRescoreForm',
-    'IBuildSet',
+    'IBinaryPackageBuildSet',
     ]
 
 from zope.interface import Interface, Attribute
@@ -38,7 +38,7 @@ class CannotBeRescored(Exception):
     _message_prefix = "Cannot rescore build"
 
 
-class IBuildView(IBuildBase):
+class IBinaryPackageBuildView(IBuildBase):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -151,7 +151,7 @@ class IBuildView(IBuildBase):
         """
 
 
-class IBuildEdit(Interface):
+class IBinaryPackageBuildEdit(Interface):
     """A Build interface for items requiring launchpad.Edit."""
 
     @export_write_operation()
@@ -163,7 +163,7 @@ class IBuildEdit(Interface):
         """
 
 
-class IBuildAdmin(Interface):
+class IBinaryPackageBuildAdmin(Interface):
     """A Build interface for items requiring launchpad.Admin."""
 
     @operation_parameters(score=Int(title=_("Score"), required=True))
@@ -172,9 +172,11 @@ class IBuildAdmin(Interface):
         """Change the build's score."""
 
 
-class IBuild(IBuildView, IBuildEdit, IBuildAdmin):
+class IBinaryPackageBuild(
+    IBinaryPackageBuildView, IBinaryPackageBuildEdit,
+    IBinaryPackageBuildAdmin):
     """A Build interface"""
-    export_as_webservice_entry()
+    export_as_webservice_entry(singular_name='build', plural_name='builds')
 
 
 class BuildSetStatus(EnumeratedType):
@@ -208,8 +210,8 @@ class BuildSetStatus(EnumeratedType):
                     description="There are some builds currently building.")
 
 
-class IBuildSet(Interface):
-    """Interface for BuildSet"""
+class IBinaryPackageBuildSet(Interface):
+    """Interface for BinaryPackageBuildSet"""
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""

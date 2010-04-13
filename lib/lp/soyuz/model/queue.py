@@ -1370,7 +1370,7 @@ class PackageUploadBuild(SQLBase):
         foreignKey='PackageUpload'
         )
 
-    build = ForeignKey(dbName='build', foreignKey='Build')
+    build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
