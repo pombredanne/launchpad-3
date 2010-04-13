@@ -667,11 +667,6 @@ ul.language, li.language             {
 .translationimportstatusBLOCKED a {color: blue;}
 .translationimportstatusNEEDS_INFORMATION,
 .translationimportstatusNEEDS_INFORMATION a {color: maroon;}
-#translation-switch-working-mode {
-    color: #093;
-    white-space:nowrap;
-    cursor: pointer;
-}
 
 /* ==== Translations hand-made forms ==== */
 

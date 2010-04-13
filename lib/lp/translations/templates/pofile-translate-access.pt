@@ -36,12 +36,6 @@
   <p id="translation-access">
     <tal:permission condition="view/user_can_edit">
       You have full access to this translation.
-        <span id="translation-current-working-mode">
-            Working in reviewer mode.
-        </span>
-        <span id="translation-switch-working-mode" class="sprite edit">
-          Switch to translator mode.
-        </span>
     </tal:permission>
 
     <tal:noedit condition="not: view/user_can_edit">

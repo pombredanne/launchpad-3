@@ -19,10 +19,9 @@ translation, and also reminds him that he has full editing privileges.
     This translation is managed by <...testing Spanish team<...>, assigned by
     <...Just a testing team<...>.
 
-    >>> print_tag_with_id(admin_browser.contents, 'translation-access')
+    >>> print_tag(admin_browser.contents, 'translation-access')
     You have full access to this translation.
-    Working in reviewer mode.
-    Switch to translator mode.
+
 
 == Displaying translation groups and reviewers ==
 

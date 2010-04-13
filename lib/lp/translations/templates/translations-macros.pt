@@ -126,6 +126,15 @@
             tal:define="link navigation_menu/details"
             tal:condition="link/enabled"
             tal:content="structure link/render"></li>
+        <li condition="view/user_can_edit">
+          <span id="translation-switch-working-mode"
+                class="sprite edit js-action widget-hd">
+            Enter translator mode
+          </span>
+          (<a href="/+help/working-modes.html" target="help">
+            What's this?
+          </a>)
+        </li>
       </ul>
 </metal:nav-pofile-subpages>
 

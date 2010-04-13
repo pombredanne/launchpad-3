@@ -92,9 +92,10 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
     test_user = lpuser.TRANSLATIONS_ADMIN
 
     switch_working_mode = u'translation-switch-working-mode'
-    current_working_mode = u'translation-current-working-mode'
-    force_suggestion = u'msgset_1_pt_BR_needsreview'
+    force_suggestion = u'msgset_1_force_suggestion'
     new_translation = u'msgset_1_pt_BR_translation_0_new'
+    js_code = ("lookupNode({id: '%s'}).innerHTML.search('translator') > 0" %
+            switch_working_mode)
 
     def test_pofile_reviewer_mode(self):
         """Test for reviewer mode.
@@ -110,6 +111,8 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
 
         self._ensureTranslationMode(reviewer=True)
 
+        self.client.waits.forElement(
+            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
         self.client.type(text=u'New translation', id=self.new_translation)
         self.client.asserts.assertNotChecked(id=self.force_suggestion)
 
@@ -127,14 +130,18 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
 
         self._ensureTranslationMode(translator=True)
 
+        self.client.waits.forElement(
+            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
         self.client.type(text=u'New translation', id=self.new_translation)
         self.client.asserts.assertChecked(id=self.force_suggestion)
 
         # The new translation will be forced only if the previous new
         # translation field is empty. Othewise the force suggestion checkbox
         # will remain unchecked.
-        self.click(id=self.force_suggestion)
-        self.client.type(text=u'... new stuff', id=self.new_translation)
+        self.client.click(id=self.force_suggestion)
+        self.client.keyPress(
+            id=self.new_translation,
+            options='a,true,false,false,false,false')
         self.client.asserts.assertNotChecked(id=self.force_suggestion)
 
     def _ensureTranslationMode(self, reviewer=False, translator=False):
@@ -145,11 +152,8 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
 
         self.client.waits.forElement(
             id=self.switch_working_mode, timeout=constants.FOR_ELEMENT)
-        code = (
-            "lookupNode({id: '%s'}).text == 'Working in reviewer mode.'" %
-            self.current_working_mode)
-        current_is_reviewer = self.client.execJS(js=code)
 
+        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
         need_to_switch_mode = False
         if reviewer and not current_is_reviewer:
             need_to_switch_mode = True
@@ -161,10 +165,7 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             return
 
         # We check that the mode was changed.
-        code = (
-            "lookupNode({id: '%s'}).text == 'Working in reviewer mode.'" %
-            self.current_working_mode)
-        current_is_reviewer = self.client.execJS(js=code)
+        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
 
         if reviewer and not current_is_reviewer:
             raise AssertionError("Could not set reviewer mode.")
