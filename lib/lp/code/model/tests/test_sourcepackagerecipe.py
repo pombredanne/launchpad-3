@@ -13,8 +13,7 @@ import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.testing import (
-    login_person, person_logged_in, TestCaseWithFactory)
+from lp.testing import (login_person, person_logged_in, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -58,6 +57,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.assertTrue(check_permission('launchpad.View', recipe))
         with person_logged_in(self.factory.makePerson()):
             self.assertTrue(check_permission('launchpad.View', recipe))
+        self.assertTrue(check_permission('launchpad.View', recipe))
 
     def test_view_private(self):
         """Recipes with private branches are restricted."""
@@ -68,6 +68,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.assertTrue(check_permission('launchpad.View', recipe))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
+        self.assertFalse(check_permission('launchpad.View', recipe))
 
 
 def test_suite():
