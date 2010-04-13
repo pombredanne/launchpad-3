@@ -52,10 +52,13 @@ class TestProcessAccepted(TestCaseWithFactory):
             archive=archive, sourcename=sourcename, distroseries=distroseries,
             spr_only=True)
 
-    def testRobustness(self):
+    def test_robustness(self):
         """Test that a broken package doesn't block the publication of other 
         packages."""
-        # Attempt to upload one source to a frozen series
+        # Attempt to upload one source to a supported series
+        # The record is created first and then the status of the series
+        # is changed from DEVELOPMENT to SUPPORTED, otherwise it's impossible 
+        # to create the record
         distroseries = self.factory.makeDistroSeries(distribution=self.distro)
         broken_source = self.createWaitingAcceptancePackage(
             distroseries=distroseries, sourcename="notaccepted")
@@ -81,10 +84,10 @@ class TestProcessAccepted(TestCaseWithFactory):
         fp = StringIO()
         error_report.write(fp)
         error_text = fp.getvalue()
-        self.failUnless("error-explanation=Failure processing queue_item" 
-            in error_text)
+        expected_error = "error-explanation=Failure processing queue_item" 
+        self.assertTrue(expected_error in error_text)
 
-    def testAcceptCopyArchives(self):
+    def test_accept_copy_archives(self):
         """Test that publications in a copy archive are accepted properly."""
         # Upload some pending packages in a copy archive.
         distroseries = self.factory.makeDistroSeries(distribution=self.distro)
