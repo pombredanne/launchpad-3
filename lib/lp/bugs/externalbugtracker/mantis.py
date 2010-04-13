@@ -18,9 +18,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.url import urlparse
 
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
-    ExternalBugTracker, InvalidBugId, LookupTree, UnknownRemoteStatusError,
-    UnparseableBugData)
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
+    BugWatchUpdateWarning, ExternalBugTracker, InvalidBugId, LookupTree,
+    UnknownRemoteStatusError, UnparseableBugData)
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
@@ -79,6 +79,10 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
 
         return url
 
+    def redirect_request(self, request, fp, code, msg, hdrs, new_url):
+        return urllib2.HTTPRedirectHandler.redirect_request(
+            self, request, fp, code, msg, hdrs, self.rewrite_url(new_url))
+
 
 class Mantis(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with Mantis instances.
@@ -89,9 +93,13 @@ class Mantis(ExternalBugTracker):
         https://dev.launchpad.net/Bugs/ExternalBugTrackers/Mantis
     """
 
-    # Custom opener that automatically sends anonymous credentials to
-    # Mantis if (and only if) needed.
-    _opener = urllib2.build_opener(MantisLoginHandler)
+    def __init__(self, baseurl):
+        super(Mantis, self).__init__(baseurl)
+        # Custom cookie aware opener that automatically sends anonymous
+        # credentials to Mantis if (and only if) needed.
+        self._cookie_handler = urllib2.HTTPCookieProcessor()
+        self._opener = urllib2.build_opener(
+            self._cookie_handler, MantisLoginHandler())
 
     @ensure_no_transaction
     def urlopen(self, request, data=None):
@@ -111,6 +119,10 @@ class Mantis(ExternalBugTracker):
         If the export fails (i.e. the response is 0-length), None will
         be returned.
         """
+        return self._csv_data()
+
+    def _csv_data(self):
+        """See `csv_data()."""
         # Next step is getting our query filter cookie set up; we need
         # to do this weird submit in order to get the closed bugs
         # included in the results; the default Mantis filter excludes
@@ -157,7 +169,16 @@ class Mantis(ExternalBugTracker):
         # Finally grab the full CSV export, which uses the
         # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
         # what's being viewed.
-        csv_data = self._getPage("csv_export.php")
+        try:
+            csv_data = self._getPage("csv_export.php")
+        except BugTrackerConnectError, value:
+            # Some Mantis installations simply return a 500 error
+            # when the csv_export.php page is accessed. Since the
+            # bug data may be nevertheless available from ordinary
+            # web pages, we simply ignore this error.
+            if value.error.startswith('HTTP Error 500'):
+                return None
+            raise
 
         if not csv_data:
             return None

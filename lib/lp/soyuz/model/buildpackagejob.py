@@ -22,7 +22,7 @@ from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
@@ -38,7 +38,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
     job = Reference(job_id, 'Job.id')
 
     build_id = Int(name='build', allow_none=False)
-    build = Reference(build_id, 'Build.id')
+    build = Reference(build_id, 'BinaryPackageBuild.id')
 
     def score(self):
         """See `IBuildPackageJob`."""
@@ -242,7 +242,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
 
         build = build_set.getByQueueEntry(job)
         if build.pocket == PackagePublishingPocket.SECURITY:
