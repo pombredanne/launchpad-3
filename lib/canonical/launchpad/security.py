@@ -26,6 +26,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -2151,6 +2152,18 @@ class EditArchiveSubscriber(AuthorizationBase):
         if auth_append.checkAuthenticated(user):
             return True
         return user.in_admin
+
+
+class ViewSourcePackageRecipe(AuthorizationBase):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipe
+
+    def checkAuthenticated(self, user):
+        for branch in self.obj.getReferencedBranches():
+            if not AccessBranch(branch).checkAuthenticated(user):
+                return False
+        return True
 
 
 class ViewSourcePackagePublishingHistory(ViewArchive):

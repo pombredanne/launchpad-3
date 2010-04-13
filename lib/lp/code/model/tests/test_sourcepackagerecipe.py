@@ -1,15 +1,20 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
+from __future__ import with_statement
+
+
 """Tests for SourcePackageRecipes."""
 
 __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.testing import (
-    login_person, run_with_login, TestCase, TestCaseWithFactory, time_counter)
+    login_person, person_logged_in, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -43,6 +48,26 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         login_person(recipe.owner)
         recipe.build_daily = True
         self.assertTrue(recipe.build_daily)
+
+    def test_view_public(self):
+        """Anyone can view a recipe with public branches."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner)
+        with person_logged_in(owner):
+            recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertTrue(check_permission('launchpad.View', recipe))
+
+    def test_view_private(self):
+        """Recipes with private branches are restricted."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        with person_logged_in(owner):
+            recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.View', recipe))
 
 
 def test_suite():

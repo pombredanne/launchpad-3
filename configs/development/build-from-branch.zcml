@@ -19,13 +19,13 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeView"
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
-            permission="zope.Public"/>
+            permission="launchpad.Edit"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
             name="+request-builds"
             template="../../lib/lp/code/templates/sourcepackagerecipe-request-builds.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
@@ -37,7 +37,7 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBuildView"
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
         <browser:menus
             classes="SourcePackageRecipeContextMenu"
             module="lp.code.browser.sourcepackagerecipe"/>
