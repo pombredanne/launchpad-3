@@ -11,11 +11,8 @@ __all__ = [
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INewPerson',
-    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
-    'IPersonChangePassword',
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
@@ -72,8 +69,7 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_person_email, validate_new_team_email)
+from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
@@ -86,6 +82,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -435,35 +432,10 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
-# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
-# to remove this.
-class IPersonChangePassword(Interface):
-    """The schema used by Person +changepassword form."""
-
-    currentpassword = PasswordField(
-        title=_('Current password'), required=True, readonly=False)
-
-    password = PasswordField(
-        title=_('New password'), required=True, readonly=False)
-
-
 class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
-
-
-class INewPerson(Interface):
-    """The schema used by IPersonSet's +newperson form."""
-
-    emailaddress = StrippedTextLine(
-        title=_('Email address'), required=True,
-        constraint=validate_new_person_email)
-    displayname = StrippedTextLine(title=_('Display name'), required=True)
-    creation_comment = Text(
-        title=_('Creation reason'), required=True,
-        description=_("The reason why you're creating this profile."))
 
 
 # This has to be defined here to avoid circular import problems.
@@ -486,7 +458,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs):
+                    IPrivacy, IHasBugs, IHasRecipes):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -871,6 +843,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
         """
+
+    def getRecipe(name):
+        """Return the person's recipe with the given name."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
@@ -1542,16 +1517,6 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
 PersonChoice.schema = IPerson
-
-
-class INewPersonForm(IPerson):
-    """Interface used to create new Launchpad accounts.
-
-    The only change with `IPerson` is a customised Password field.
-    """
-
-    password = PasswordField(
-        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeamPublic(Interface):
