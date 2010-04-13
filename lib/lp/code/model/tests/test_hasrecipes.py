@@ -26,10 +26,8 @@ class TestIHasRecipes(TestCaseWithFactory):
         # IBranch.recipes should provide all the SourcePackageRecipes attached
         # to that branch.
         base_branch = self.factory.makeBranch()
-        recipe1 = self.factory.makeSourcePackageRecipe(
-            None, None, None, None, None, None, base_branch)
-        recipe2 = self.factory.makeSourcePackageRecipe(
-            None, None, None, None, None, None, base_branch)
+        recipe1 = self.factory.makeSourcePackageRecipe(branches=[base_branch])
+        recipe2 = self.factory.makeSourcePackageRecipe(branches=[base_branch])
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, base_branch.getRecipes().count())
 
@@ -57,10 +55,8 @@ class TestIHasRecipes(TestCaseWithFactory):
         # to that product's branches.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
-        recipe1 = self.factory.makeSourcePackageRecipe(
-            None, None, None, None, None, None, branch)
-        recipe2 = self.factory.makeSourcePackageRecipe(
-            None, None, None, None, None, None, branch)
+        recipe1 = self.factory.makeSourcePackageRecipe(branches=[branch])
+        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, product.getRecipes().count())
 

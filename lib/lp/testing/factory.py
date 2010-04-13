@@ -41,7 +41,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -1713,7 +1713,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, description=None, *branches):
+                                name=None, description=None, branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1731,9 +1731,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
-        return getUtility(ISourcePackageRecipeSource).new(
+        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, [distroseries], sourcepackagename, name,
             recipe, description)
+        IStore(source_package_recipe).flush()
+        return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
