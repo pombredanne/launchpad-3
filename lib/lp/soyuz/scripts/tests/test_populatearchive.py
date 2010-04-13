@@ -23,7 +23,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequestSet, PackageCopyStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -130,7 +130,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have build records for the sources cloned.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             copy_archive, status=BuildStatus.NEEDSBUILD))
 
         # Please note: there will be no build for the pmount package
@@ -331,7 +331,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have zero build records for the sources cloned.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             copy_archive, status=BuildStatus.NEEDSBUILD))
         build_spns = [
             get_spn(removeSecurityProxy(build)).name for build in builds]
@@ -629,7 +629,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self._verifyClonedSourcePackages(copy_archive, hoary)
 
         # Now check that we have the build records expected.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             copy_archive, status=BuildStatus.NEEDSBUILD))
         build_spns = [
             get_spn(removeSecurityProxy(build)).name for build in builds]
@@ -669,7 +669,8 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         self._verifyClonedSourcePackages(archive, hoary)
 
         # Get the binary builds generated for the copy archive at hand.
-        builds = list(getUtility(IBuildSet).getBuildsForArchive(archive))
+        builds = list(getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+            archive))
         # At least one binary build was generated for the target copy archive.
         self.assertTrue(len(builds) > 0)
         # Now check that the binary builds and their associated job records
