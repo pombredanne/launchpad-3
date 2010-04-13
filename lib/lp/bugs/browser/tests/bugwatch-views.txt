@@ -52,12 +52,28 @@ since it hasn't been updated yet.
     >>> len(new_watch_view.recent_watch_activity)
     0
 
+The BugWatch +edit view has a watch_has_activity property, which is used
+to determine whether the recent activity portlet should be displayed.
+
+    >>> new_watch_edit_view = create_initialized_view(
+    ...     new_watch, '+edit')
+    >>> print new_watch_edit_view.watch_has_activity
+    False
+
 Adding a successful activity entry for the watch will cause it to show
-up on the recent_watch_activity property.
+up on the BugWatchView's recent_watch_activity property.
 
     >>> new_watch.addActivity()
     >>> len(new_watch_view.recent_watch_activity)
     1
+
+The BugWatch +edit view's watch_has_activity property will also have
+changed.
+
+    >>> new_watch_edit_view = create_initialized_view(
+    ...     new_watch, '+edit')
+    >>> print new_watch_edit_view.watch_has_activity
+    True
 
 Each entry in the recent_watch_activity list is a dict containing data
 about the activity.
@@ -93,10 +109,3 @@ different dates.
      'icon': '/@@/yes',
      'result_text': 'Synchronisation succeeded'}
 
-The BugWatch +edit view has a watch_has_activity property, which is used
-to determine whether the recent activity portlet should be displayed.
-
-    >>> new_watch_edit_view = create_initialized_view(
-    ...     new_watch, '+edit')
-    >>> print new_watch_edit_view.watch_has_activity
-    True
