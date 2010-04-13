@@ -38,7 +38,8 @@ class BinaryPackageRelease(SQLBase):
     version = StringCol(dbName='version', notNull=True)
     summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
-    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
+    build = ForeignKey(
+        dbName='build', foreignKey='BinaryPackageBuild', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
                                schema=BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',

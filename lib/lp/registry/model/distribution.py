@@ -39,7 +39,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -81,7 +81,7 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
     IBaseDistribution, IDerivativeDistribution, IDistribution,
@@ -799,8 +799,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
     def getSourcePackageCaches(self, archive=None):
@@ -1058,9 +1059,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            BinaryPackageRelease.build == Build.id,
-            Build.sourcepackagerelease == SourcePackageRelease.id,
+            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            (BinaryPackageBuild.sourcepackagerelease ==
+                SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
