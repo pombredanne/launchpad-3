@@ -125,6 +125,7 @@ Branch merge proposals can be fetched through the API.
     ...     subject='Not really', body='This is mediocre work.',
     ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
     ...     merge_proposal=fixit_proposal)
+    >>> transaction.commit()
 
     >>> proposal_url = fix_url(canonical_url(
     ...     fixit_proposal, request=request, rootsite='api'))

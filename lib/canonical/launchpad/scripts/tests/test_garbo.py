@@ -76,6 +76,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
@@ -292,7 +293,6 @@ class TestGarbo(TestCaseWithFactory):
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
         self.assertEqual(rev2.revision_author.person, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -301,7 +301,6 @@ class TestGarbo(TestCaseWithFactory):
         # Creating a person for an existing account creates a linkage.
         person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
         self.assertEqual(rev3.revision_author.person, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -339,7 +338,6 @@ class TestGarbo(TestCaseWithFactory):
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
         self.assertEqual(sub2.owner, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -348,7 +346,6 @@ class TestGarbo(TestCaseWithFactory):
         # Creating a person for an existing account creates a linkage.
         person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
         self.assertEqual(sub3.owner, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -362,7 +359,6 @@ class TestGarbo(TestCaseWithFactory):
         email = self.factory.makeEmail('secondary@example.org', person)
         transaction.commit()
         mailing_list.subscribe(person, email)
-        transaction.commit()
 
         # User remains subscribed if we run the garbage collector.
         self.runDaily()
@@ -372,7 +368,6 @@ class TestGarbo(TestCaseWithFactory):
         # garbage collector removes the subscription.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         Store.of(email).remove(email)
-        transaction.commit()
         self.runDaily()
         self.assertEqual(mailing_list.getSubscription(person), None)
 
@@ -390,7 +385,6 @@ class TestGarbo(TestCaseWithFactory):
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
             2008, 01, 01, tzinfo=UTC)
-        transaction.commit()
 
         # Normally, the garbage collector will do nothing because the
         # PersonPruner is experimental
@@ -453,7 +447,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(num_new, 8)
 
         # Run the garbage collector.
-        transaction.commit()
         self.runDaily()
 
         # We should have 9 BugNotifications left.
@@ -487,8 +480,6 @@ class TestGarbo(TestCaseWithFactory):
             EmailAddress, person=person).any()
         person.accountID = -1
 
-        transaction.commit()
-
         # Run the garbage collector. We should get two ERROR reports
         # about the corrupt data.
         collector = self.runDaily()
@@ -520,7 +511,7 @@ class TestGarbo(TestCaseWithFactory):
         db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-
+        Store.of(db_branch).flush()
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
@@ -530,7 +521,6 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob,
                 BranchJob.branch == db_branch.id).count(),
                 1)
-        transaction.commit()
 
         collector = self.runDaily()
 
@@ -561,7 +551,6 @@ class TestGarbo(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_KNIT_1)
         branch_job2 = BranchUpgradeJob.create(db_branch2)
         job_id_newer = branch_job2.job.id
-        transaction.commit()
 
         collector = self.runDaily()
 

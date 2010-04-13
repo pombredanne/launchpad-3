@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,
