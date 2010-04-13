@@ -1074,7 +1074,7 @@ class LpQueryDistro(LaunchpadScript):
                          SeriesStatus.FROZEN)
         for status in wanted_status:
             series = self.location.distribution.getSeriesByStatus(status)
-            if series:
+            if series.count() > 0:
                 break
         else:
             raise LaunchpadScriptFailure(
