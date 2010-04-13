@@ -6,7 +6,13 @@
 #  https://code.edge.launchpad.net/~mvo/ubuntu-maintenance-check/python-port
 # (where it will vanish once taken here)
 
+# this warning filter is only needed on older versions of python-apt,
+# once the machine runs lucid it can be removed
+import warnings
+warnings.filterwarnings("ignore","apt API not stable yet")
 import apt
+warnings.resetwarnings()
+
 import apt_pkg
 import logging
 import os
@@ -124,6 +130,16 @@ def create_and_update_deb_src_source_list(distroseries):
             "deb-src %s %s main restricted\n" % (
                 ARCHIVE_ROOT, pocket))
     sources_list.close()
+    # create required dirs/files for apt.Cache(rootdir) to work on older
+    # versions of python-apt. once lucid is used it can be removed
+    for d in  ["var/lib/dpkg", 
+               "var/cache/apt/archives/partial",
+               "var/lib/apt/lists/partial"]:
+        if not os.path.exists(os.path.join(rootdir,d)):
+            os.makedirs(os.path.join(rootdir,d))
+    if not os.path.exists(os.path.join(rootdir,"var/lib/dpkg/status")):
+        open(os.path.join(rootdir,"var/lib/dpkg/status"),"w")
+    # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
     cache.update(apt.progress.FetchProgress())
 
