@@ -833,3 +833,53 @@ ALTER TABLE ONLY openidrpsummary
 CREATE INDEX emailaddress__account__status__idx
     ON EmailAddress(account, status);
 
+
+-- Permissions for Ubuntu SSO server testing on staging.
+
+-- Mirrored from sso_auth user 2010-01-12.
+-- These tables will eventually not be available.
+--
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE account TO ubuntu_sso;
+GRANT USAGE ON SEQUENCE account_id_seq TO ubuntu_sso;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE accountpassword TO ubuntu_sso;
+GRANT USAGE ON SEQUENCE accountpassword_id_seq TO ubuntu_sso;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE authtoken TO ubuntu_sso;
+GRANT USAGE ON SEQUENCE authtoken_id_seq TO ubuntu_sso;
+GRANT SELECT ON TABLE person TO ubuntu_sso;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE emailaddress TO ubuntu_sso;
+GRANT USAGE ON SEQUENCE emailaddress_id_seq TO ubuntu_sso;
+GRANT SELECT,INSERT,DELETE ON TABLE openidassociation TO ubuntu_sso;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE openidauthorization TO ubuntu_sso;
+GRANT USAGE ON SEQUENCE openidauthorization_id_seq TO ubuntu_sso;
+GRANT SELECT,INSERT,DELETE ON TABLE openidnonce TO ubuntu_sso;
+GRANT SELECT,INSERT,UPDATE ON TABLE openidrpsummary TO ubuntu_sso;
+GRANT USAGE ON SEQUENCE openidrpsummary_id_seq TO ubuntu_sso;
+GRANT SELECT ON SEQUENCE person_id_seq TO ubuntu_sso;
+GRANT SELECT ON TABLE personlocation TO ubuntu_sso;
+GRANT SELECT ON SEQUENCE personlocation_id_seq TO ubuntu_sso;
+GRANT SELECT ON TABLE teamparticipation TO ubuntu_sso;
+GRANT SELECT ON SEQUENCE teamparticipation_id_seq TO ubuntu_sso;
+
+-- Permissions on the Ubuntu SSO tables.
+--
+GRANT SELECT, INSERT, DELETE, UPDATE ON TABLE auth_permission,
+auth_group_permissions, auth_group, auth_user, auth_user_groups,
+auth_user_user_permissions, auth_message, django_content_type,
+django_session, django_site, django_admin_log,
+ssoopenidrpconfig TO ubuntu_sso;
+
+GRANT USAGE ON SEQUENCE auth_group_id_seq,
+auth_group_permissions_id_seq, auth_message_id_seq,
+auth_permission_id_seq, auth_user_groups_id_seq, auth_user_id_seq,
+auth_user_user_permissions_id_seq, django_admin_log_id_seq,
+django_content_type_id_seq, django_site_id_seq,
+ssoopenidrpconfig_id_seq TO ubuntu_sso;
+
+-- Permissions on the lpmirror tables (mirrors of relevant Launchpad
+-- information, available even when Launchpad database upgrades are in
+-- progress).
+GRANT SELECT
+ON TABLE
+    lp_person, lp_personlocation, lp_teamparticipation, lp_account
+TO ubuntu_sso;
+

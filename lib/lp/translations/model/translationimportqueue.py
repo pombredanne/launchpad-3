@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -58,21 +58,14 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError,
+    translation_import_queue_entry_age,
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.approver import TranslationNullApprover
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-# Period to wait before entries with terminal statuses are removed from
-# the queue.
-entry_gc_age = {
-    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
-    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
-    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
-}
 
 
 def is_gettext_name(path):
@@ -273,26 +266,37 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename).one()
 
-    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
+    def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
         # As a special case, the Ubuntu translation group owners can
         # manage Ubuntu uploads.
         if self.is_targeted_to_ubuntu:
             group = self.distroseries.distribution.translationgroup
-            if group is not None and user.inTeam(group.owner):
+            if group is not None and roles.inTeam(group.owner):
                 return True
+        # Rosetta experts and admins can administer the entry.
+        return roles.in_rosetta_experts or roles.in_admin
+
+    def _canEditExcludeImporter(self, roles):
+        """All people that can edit the entry except the importer."""
+        # Admin rights include edit rights.
+        if self.canAdmin(roles):
+            return True
+        # The maintainer and the drivers can edit the entry.
+        if self.productseries is not None:
+            return (roles.isOwner(self.productseries.product) or
+                    roles.isOneOfDrivers(self.productseries))
+        if self.distroseries is not None:
+            return (roles.isOwner(self.distroseries.distribution) or
+                    roles.isOneOfDrivers(self.distroseries))
         return False
 
-    def isUserUploaderOrOwner(self, user):
+    def canEdit(self, roles):
         """See `ITranslationImportQueueEntry`."""
-        roles = IPersonRoles(user)
+        # The importer can edit the entry.
         if roles.inTeam(self.importer):
             return True
-        if self.productseries is not None:
-            return roles.isOwner(self.productseries.product)
-        if self.distroseries is not None:
-            return roles.isOwner(self.distroseries.distribution)
-        return False
+        return self._canEditExcludeImporter(roles)
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
@@ -300,13 +304,15 @@ class TranslationImportQueueEntry(SQLBase):
             # Anonymous user cannot do anything.
             return False
         roles = IPersonRoles(user)
-        can_admin = (roles.in_admin or roles.in_rosetta_experts or
-                     self.isUbuntuAndIsUserTranslationGroupOwner(user))
         if new_status == RosettaImportStatus.APPROVED:
             # Only administrators are able to set the APPROVED status, and
             # that's only possible if we know where to import it
             # (import_into not None).
-            return can_admin and self.import_into is not None
+            return self.canAdmin(roles) and self.import_into is not None
+        if new_status == RosettaImportStatus.NEEDS_INFORMATION:
+            # Only administrators are able to set the NEEDS_INFORMATION
+            # status.
+            return self.canAdmin(roles)
         if new_status == RosettaImportStatus.IMPORTED:
             # Only rosetta experts are able to set the IMPORTED status, and
             # that's only possible if we know where to import it
@@ -316,8 +322,11 @@ class TranslationImportQueueEntry(SQLBase):
         if new_status == RosettaImportStatus.FAILED:
             # Only rosetta experts are able to set the FAILED status.
             return roles.in_admin or roles.in_rosetta_experts
-        # All other statuses can bset set by all authorized persons.
-        return self.isUserUploaderOrOwner(user) or can_admin
+        if new_status == RosettaImportStatus.BLOCKED:
+            # Importers are not allowed to set BLOCKED
+            return self._canEditExcludeImporter(roles)
+        # All other statuses can be set set by all authorized persons.
+        return self.canEdit(roles)
 
     def setStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
@@ -618,8 +627,6 @@ class TranslationImportQueueEntry(SQLBase):
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
             # directory: koffice-i18n-LANG_CODE-VERSION
-            # Let's get the root directory that has the language information.
-            lang_directory = self.path.split('/')[0]
             # Extract the language information.
             match = re.match('koffice-i18n-(\S+)-(\S+)', self.path)
             if match is None:
@@ -938,80 +945,85 @@ class TranslationImportQueue:
 
         return entry
 
+    def _iterTarballFiles(self, tarball):
+        """Iterate through all non-emtpy files in the tarball."""
+        for tarinfo in tarball:
+            if tarinfo.isfile() and tarinfo.size > 0:
+                # Don't be tricked into reading directories, symlinks,
+                # or worst of all: devices.
+                yield tarinfo.name
+
+    def _makePath(self, name, path_filter):
+        """Make the file path from the name stored in the tarball."""
+        path = posixpath.normpath(name)
+        if path_filter:
+            path = path_filter(path)
+        return path
+
+    def _isTranslationFile(self, path):
+        """Is this a translation file that should be uploaded?"""
+        if path is None or path == '':
+            return False
+
+        translation_importer = getUtility(ITranslationImporter)
+        if translation_importer.isHidden(path):
+            # Dotfile.  Probably an editor backup or somesuch.
+            return False
+
+        base, ext = posixpath.splitext(path)
+        if ext not in translation_importer.supported_file_extensions:
+            # Doesn't look like a supported translation file type.
+            return False
+
+        return True
+
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None):
+        potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
-        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
-        # workaround for bug 44773 (Python's gzip support sometimes fails to
-        # work when using plain tarfile.open()). The issue is that we can't
-        # rely on tarfile's smart detection of filetypes and instead need to
-        # hardcode the type explicitly in the mode. We simulate magic
-        # here to avoid depending on the python-magic package. We can
-        # get rid of this when http://bugs.python.org/issue1488634 is
-        # fixed.
-        #
-        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
-        # bug #1982 (Python's bz2 support is not able to handle external file
-        # objects). That bug is worked around by using tarfile.open() which
-        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
-        # this when we upgrade to python2.5 everywhere.
         num_files = 0
         conflict_files = []
 
-        if content.startswith('BZh'):
-            mode = "r|bz2"
-        elif content.startswith('\037\213'):
-            mode = "r|gz"
-        elif content[257:262] == 'ustar':
-            mode = "r|tar"
-        else:
-            # Not a tarball, we ignore it.
-            return (num_files, conflict_files)
-
-        translation_importer = getUtility(ITranslationImporter)
-
+        tarball_io = StringIO(content)
         try:
-            tarball = tarfile.open('', mode, StringIO(content))
-        except tarfile.ReadError:
+            tarball = tarfile.open('', 'r|*', tarball_io)
+        except (tarfile.CompressionError, tarfile.ReadError):
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
             return (num_files, conflict_files)
 
+        # Build a list of files to upload.
+        upload_files = {}
+        for name in self._iterTarballFiles(tarball):
+            path = self._makePath(name, filename_filter)
+            if self._isTranslationFile(path):
+                upload_files[name] = path
+        tarball.close()
+
+        if approver_factory is None:
+            approver_factory = TranslationNullApprover
+        approver = approver_factory(
+            upload_files.values(),
+            productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+        # Re-opening because we are using sequential access ("r|*") which is
+        # so much faster.
+        tarball_io.seek(0)
+        tarball = tarfile.open('', 'r|*', tarball_io)
         for tarinfo in tarball:
-            if not tarinfo.isfile():
-                # Don't be tricked into reading directories, symlinks,
-                # or worst of all: devices.
+            if tarinfo.name not in upload_files:
                 continue
-
-            filename = posixpath.normpath(tarinfo.name)
-            if filename_filter:
-                filename = filename_filter(filename)
-            if filename is None or filename == '':
-                continue
-
-            if posixpath.basename(filename).startswith('.'):
-                # Dotfile.  Probably an editor backup or somesuch.
-                continue
-
-            base, ext = posixpath.splitext(filename)
-            if ext not in translation_importer.supported_file_extensions:
-                # Doesn't look like a supported translation file type.
-                continue
-
             file_content = tarball.extractfile(tarinfo).read()
 
-            if len(file_content) == 0:
-                # Empty.  Ignore.
-                continue
-
-            entry = self.addOrUpdateEntry(
-                filename, file_content, is_published, importer,
+            path = upload_files[tarinfo.name]
+            entry = approver.approve(self.addOrUpdateEntry(
+                path, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                potemplate=potemplate)
+                potemplate=potemplate))
             if entry == None:
-                conflict_files.append(filename)
+                conflict_files.append(path)
             else:
                 num_files += 1
 
@@ -1236,8 +1248,8 @@ class TranslationImportQueue:
         """
         now = datetime.datetime.now(pytz.UTC)
         deletion_clauses = []
-        for status, gc_age in entry_gc_age.iteritems():
-            cutoff = now - gc_age
+        for status, max_age in translation_import_queue_entry_age.iteritems():
+            cutoff = now - max_age
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))

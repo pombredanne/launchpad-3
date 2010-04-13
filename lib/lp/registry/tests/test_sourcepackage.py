@@ -22,6 +22,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.testing import TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -236,6 +237,80 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         self.assertRaises(
             Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
+
+
+class TestSourcePackageViews(TestCaseWithFactory):
+    """Tests for source package view classes."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.owner = self.factory.makePerson()
+        self.product = self.factory.makeProduct(
+            name='bonkers', displayname='Bonkers', owner=self.owner)
+
+        self.obsolete_productseries = self.factory.makeProductSeries(
+            name='obsolete', product=self.product)
+        self.obsolete_productseries.status = SeriesStatus.OBSOLETE
+
+        self.dev_productseries = self.factory.makeProductSeries(
+            name='current', product=self.product)
+        self.dev_productseries.status = SeriesStatus.DEVELOPMENT
+
+        self.distribution = self.factory.makeDistribution(
+            name='youbuntu', displayname='Youbuntu', owner=self.owner)
+        self.distroseries = self.factory.makeDistroRelease(name='busy',
+            distribution=self.distribution)
+        self.sourcepackagename = self.factory.makeSourcePackageName(
+            name='bonkers')
+        self.package = self.factory.makeSourcePackage(
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.distroseries)
+
+    def test_editpackaging_obsolete_series_in_vocabulary(self):
+        # The sourcepackage's current product series is included in
+        # the vocabulary even if it is obsolete.
+        self.package.setPackaging(self.obsolete_productseries, self.owner)
+        form = {
+            'field.product': 'bonkers',
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': 'sourcepackage_change_upstream_step1',
+            }
+        view = create_initialized_view(
+            self.package, name='+edit-packaging', form=form,
+            principal=self.owner)
+        self.assertEqual([], view.view.errors)
+        self.assertEqual(
+            self.obsolete_productseries,
+            view.view.form_fields['productseries'].field.default,
+            "The form's default productseries must be the current one.")
+        options = [term.token
+                   for term in view.view.widgets['productseries'].vocabulary]
+        self.assertEqual(
+            ['trunk', 'current', 'obsolete'], options,
+            "The obsolete series must be in the vocabulary.")
+
+    def test_editpackaging_obsolete_series_not_in_vocabulary(self):
+        # Obsolete productseries are normally not in the vocabulary.
+        form = {
+            'field.product': 'bonkers',
+            'field.actions.continue': 'Continue',
+            'field.__visited_steps__': 'sourcepackage_change_upstream_step1',
+            }
+        view = create_initialized_view(
+            self.package, name='+edit-packaging', form=form,
+            principal=self.owner)
+        self.assertEqual([], view.view.errors)
+        self.assertEqual(
+            None,
+            view.view.form_fields['productseries'].field.default,
+            "The form's default productseries must be None.")
+        options = [term.token
+                   for term in view.view.widgets['productseries'].vocabulary]
+        self.assertEqual(
+            ['trunk', 'current'], options,
+            "The obsolete series must NOT be in the vocabulary.")
 
 
 def test_suite():

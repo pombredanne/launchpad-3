@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Infrastructure for setting up doctests."""
 
 __metaclass__ = type
@@ -10,12 +12,14 @@ __all__ = [
     'SpecialOutputChecker',
     'setUp',
     'setGlobs',
+    'stop',
     'strip_prefix',
     'tearDown',
     ]
 
 import logging
 import os
+import pdb
 import pprint
 import sys
 
@@ -170,6 +174,16 @@ def ordered_dict_as_string(dict):
         "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
+def stop():
+    # Temporarily restore the real stdout.
+    old_stdout = sys.stdout
+    sys.stdout = sys.__stdout__
+    try:
+        pdb.set_trace()
+    finally:
+        sys.stdout = old_stdout
+
+
 def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
@@ -186,6 +200,8 @@ def setGlobs(test):
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
+    test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
 
 
 def setUp(test):

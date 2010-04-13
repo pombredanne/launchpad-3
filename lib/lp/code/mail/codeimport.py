@@ -31,10 +31,24 @@ def new_import(code_import, event):
         return
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
-        code_import.product.name, code_import.branch.name)
+        code_import.branch.target.name, code_import.branch.name)
+    if code_import.rcs_type == RevisionControlSystems.CVS:
+        location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
+    else:
+        location = code_import.url
+    rcs_type_map = {
+        RevisionControlSystems.CVS: 'CVS',
+        RevisionControlSystems.SVN: 'subversion',
+        RevisionControlSystems.BZR_SVN: 'subversion',
+        RevisionControlSystems.GIT: 'git',
+        RevisionControlSystems.HG: 'mercurial',
+        }
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
-        'branch': canonical_url(code_import.branch)}
+        'branch': canonical_url(code_import.branch),
+        'rcs_type': rcs_type_map[code_import.rcs_type],
+        'location': location,
+        }
 
     from_address = format_address(
         user.displayname, user.preferredemail.email)
@@ -42,7 +56,9 @@ def new_import(code_import, event):
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
-                   'Operator @%s' % vcs_imports.name}
+                   'Operator @%s' % vcs_imports.name,
+               'X-Launchpad-Notification-Type': 'code-import',
+               }
     for address in get_contact_email_addresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
@@ -96,17 +112,13 @@ def make_email_body_for_code_import_update(
                 details_change_prefix + '\n' + new_details +
                 "\ninstead of:\n" + old_details)
     elif code_import.rcs_type in (RevisionControlSystems.SVN,
-                                  RevisionControlSystems.BZR_SVN):
-        if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
+                                  RevisionControlSystems.BZR_SVN,
+                                  RevisionControlSystems.GIT,
+                                  RevisionControlSystems.HG):
+        if CodeImportEventDataType.OLD_URL in event_data:
+            old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(
-                details_change_prefix + '\n    ' +code_import.svn_branch_url +
-                "\ninstead of:\n    " + old_url)
-    elif code_import.rcs_type == RevisionControlSystems.GIT:
-        if CodeImportEventDataType.OLD_GIT_REPO_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_GIT_REPO_URL]
-            body.append(
-                details_change_prefix + '\n    ' +code_import.git_repo_url +
+                details_change_prefix + '\n    ' +code_import.url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(
@@ -135,7 +147,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
     subject = 'Code import %s/%s status: %s' % (
-        code_import.product.name, branch.name,
+        code_import.branch.target.name, branch.name,
         code_import.review_status.title)
 
     email_template = get_email_template('code-import-status-updated.txt')

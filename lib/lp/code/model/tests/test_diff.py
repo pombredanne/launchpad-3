@@ -15,6 +15,7 @@ from bzrlib.branch import Branch
 from bzrlib import trace
 import transaction
 
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
@@ -123,6 +124,7 @@ class TestDiff(DiffTestCase):
         content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertEqual(content, diff.text)
+        self.assertTrue(diff.diff_text.restricted)
 
     def test_oversized_normal(self):
         # A diff smaller than config.diff.max_read_size is not oversized.
@@ -376,6 +378,7 @@ class TestPreviewDiff(DiffTestCase):
         self.assertIs(None, preview.diff_text)
         self.assertEqual(0, preview.diff_lines_count)
         self.assertEqual(mp, preview.branch_merge_proposal)
+        self.assertFalse(preview.has_conflicts)
 
     def test_stale_allInSync(self):
         # If the revision ids of the preview diff match the source and target
@@ -419,6 +422,20 @@ class TestPreviewDiff(DiffTestCase):
         dep_branch.last_scanned_id = 'rev-d'
         self.assertEqual(True, mp.preview_diff.stale)
 
+    def test_fromPreviewDiff_with_no_conflicts(self):
+        """Test fromPreviewDiff when no conflicts are present."""
+        self.useBzrBranches()
+        bmp = self.factory.makeBranchMergeProposal()
+        bzr_target = self.createBzrBranch(bmp.target_branch)
+        self.commitFile(bmp.target_branch, 'foo', 'a\n')
+        self.createBzrBranch(bmp.source_branch, bzr_target)
+        source_rev_id = self.commitFile(bmp.source_branch, 'foo', 'a\nb\n')
+        target_rev_id = self.commitFile(bmp.target_branch, 'foo', 'c\na\n')
+        diff = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual('', diff.conflicts)
+        self.assertFalse(diff.has_conflicts)
+
+
     def test_fromBranchMergeProposal(self):
         # Correctly generates a PreviewDiff from a BranchMergeProposal.
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
@@ -445,6 +462,7 @@ class TestPreviewDiff(DiffTestCase):
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         preview = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('Text conflict in foo\n', preview.conflicts)
+        self.assertTrue(preview.has_conflicts)
 
     def test_fromBranchMergeProposal_does_not_warn_on_conflicts(self):
         """PreviewDiff generation emits no conflict warnings."""
@@ -461,6 +479,17 @@ class TestPreviewDiff(DiffTestCase):
             self.assertNotEqual(handler.records, [])
         finally:
             logger.removeHandler(handler)
+
+    def test_getFileByName(self):
+        diff = self._createProposalWithPreviewDiff().preview_diff
+        self.assertEqual(diff.diff_text, diff.getFileByName('preview.diff'))
+        self.assertRaises(
+            NotFoundError, diff.getFileByName, 'different.name')
+
+    def test_getFileByName_with_no_diff(self):
+        diff = self._createProposalWithPreviewDiff(content='').preview_diff
+        self.assertRaises(
+            NotFoundError, diff.getFileByName, 'preview.diff')
 
 
 def test_suite():

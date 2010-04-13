@@ -217,13 +217,13 @@ class DenyingServer:
         """
         self.schemes = schemes
 
-    def setUp(self):
+    def start_server(self):
         """Prevent transports being created for specified schemes."""
         for scheme in self.schemes:
             register_transport(scheme, self._deny)
         self._is_set_up = True
 
-    def tearDown(self):
+    def stop_server(self):
         """Re-enable creation of transports for specified schemes."""
         if not self._is_set_up:
             return

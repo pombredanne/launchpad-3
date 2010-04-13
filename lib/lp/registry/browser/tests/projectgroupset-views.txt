@@ -4,12 +4,12 @@ Project Group Set views
 Project groups cannot be administered by end-users.  Only members of the
 admins and registry admins teams can list, create, or review them.
 
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
-    >>> project_set = getUtility(IProjectSet)
+    >>> project_set = getUtility(IProjectGroupSet)
 
 
 Accessing the +index view

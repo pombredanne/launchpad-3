@@ -268,7 +268,7 @@ class BranchMailer(BaseMailer):
             # Give subscribers a link to unsubscribe.
             params['unsubscribe'] = (
                 "\nTo unsubscribe from this branch go to "
-                "%s/+edit-subscription." % canonical_url(branch))
+                "%s/+edit-subscription" % canonical_url(branch))
         else:
             params['unsubscribe'] = ''
         params['diff'] = self.contents or ''

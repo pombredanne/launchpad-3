@@ -9,7 +9,6 @@ __metaclass__ = type
 import _pythonpath
 
 import psycopg, sys, os, re
-from sets import Set
 from security import DbSchema, CursorWrapper
 from ConfigParser import SafeConfigParser, NoOptionError
 
@@ -51,8 +50,8 @@ class Universe:
         '''The universe contains everything'''
         return True
 
-all_tables = Set()
-graphed_tables = Set()
+all_tables = set()
+graphed_tables = set()
 
 def tartup(filename, outfile, section):
     dot = open(filename).read()

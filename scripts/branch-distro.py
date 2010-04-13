@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -26,7 +26,7 @@ class BranchDistroScript(LaunchpadScript):
         brancher = DistroBrancher.fromNames(self.logger, *self.args)
         server = get_multi_server(
             write_mirrored=True, write_hosted=True, direct_database=True)
-        server.setUp()
+        server.start_server()
         try:
             if self.options.check:
                 if not brancher.checkNewBranches():
@@ -34,7 +34,7 @@ class BranchDistroScript(LaunchpadScript):
             else:
                 brancher.makeNewBranches()
         finally:
-            server.tearDown()
+            server.stop_server()
 
 if __name__ == '__main__':
     BranchDistroScript("branch-distro", dbuser='branch-distro').run()

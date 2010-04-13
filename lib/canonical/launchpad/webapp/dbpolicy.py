@@ -15,9 +15,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+import logging
 from textwrap import dedent
 
 from storm.cache import Cache, GenerationalCache
+from storm.exceptions import TimeoutError
 from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -108,6 +110,17 @@ class BaseDatabasePolicy:
     def uninstall(self):
         """See `IDatabasePolicy`."""
         pass
+
+    def __enter__(self):
+        """See `IDatabasePolicy`."""
+        getUtility(IStoreSelector).push(self)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """See `IDatabasePolicy`."""
+        policy = getUtility(IStoreSelector).pop()
+        assert policy is self, (
+            "Unexpected database policy %s returned by store selector"
+            % repr(policy))
 
 
 class DatabaseBlockedPolicy(BaseDatabasePolicy):
@@ -291,8 +304,18 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # sl_status gives meaningful results only on the origin node.
         master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        return master_store.execute(
-            "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
+
+        # Retrieve the cached lag.
+        lag = master_store.execute("""
+            SELECT lag + (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - updated)
+            FROM DatabaseReplicationLag WHERE node=%d
+            """ % slave_node_id).get_one()
+        if lag is None:
+            logging.error(
+                "No data in DatabaseReplicationLag for node %d"
+                % slave_node_id)
+            return timedelta(days=999) # A long, long time.
+        return lag[0]
 
 
 def WebServiceDatabasePolicyFactory(request):

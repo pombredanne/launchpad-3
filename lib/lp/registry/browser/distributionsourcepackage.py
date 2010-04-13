@@ -49,7 +49,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.registry.browser.packaging import PackagingDeleteView
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin)
@@ -243,7 +242,7 @@ class DistributionSourcePackageBaseView:
 
 
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
-                                    PackagingDeleteView):
+                                    LaunchpadView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
 
@@ -255,14 +254,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for sourcepackage in self.context.get_distroseries_packages():
-            packaging = sourcepackage.direct_packaging
-            if packaging is not None:
-                yield packaging
 
     @property
     def all_published_in_active_distroseries(self):
@@ -408,16 +399,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         for distroseries in self.active_series:
             # The first row for each series is the "title" row.
             packaging = packages_by_series[distroseries].direct_packaging
-            if packaging is None:
-                delete_packaging_form_id = None
-                hidden_packaging_field = None
-            else:
-                delete_packaging_form_id = "delete_%s_%s_%s" % (
-                    packaging.distroseries.name,
-                    packaging.productseries.product.name,
-                    packaging.productseries.name)
-                hidden_packaging_field = self._renderHiddenPackagingField(
-                    packaging)
             package = packages_by_series[distroseries]
             title_row = {
                 'blank_row': False,
@@ -426,8 +407,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                 'distroseries': distroseries,
                 'series_package': package,
                 'packaging': packaging,
-                'hidden_packaging_field': hidden_packaging_field,
-                'delete_packaging_form_id': delete_packaging_form_id,
                 }
             rows.append(title_row)
 

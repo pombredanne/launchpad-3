@@ -15,8 +15,9 @@ __all__ = [
     'IBugBecameQuestionEvent',
     'IBugDelta',
     'IBugSet',
+    'IFileBugData',
     'IFrontPageBugAddForm',
-    'IProjectBugAddForm',
+    'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
     'UserCannotUnsubscribePerson',
@@ -32,11 +33,12 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus, IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.cve import ICve
 from canonical.launchpad.interfaces.launchpad import  IPrivacy, NotFoundError
 from canonical.launchpad.interfaces.message import IMessage
@@ -236,10 +238,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
-        CollectionField(
+        doNotSnapshot(CollectionField(
             title=_('Subscriptions.'),
             value_type=Reference(schema=Interface),
-            readonly=True))
+            readonly=True)))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
@@ -251,9 +253,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    linked_branches = Attribute(
-        "Branches associated with this bug, usually "
-        "branches on which this bug is being fixed.")
+    linked_branches = exported(
+        CollectionField(
+            title=_("Branches associated with this bug, usually "
+            "branches on which this bug is being fixed."),
+            value_type=Reference(schema=IBugBranch),
+            readonly=True))
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
@@ -271,20 +276,21 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             "a message was sent to the bug reporter, and the bug is "
             "associated with pillars that have enabled bug expiration."),
         readonly=True)
-    can_expire = Bool(
+    can_expire = exported(
+        Bool(
         title=_("Can the Incomplete bug expire if it becomes inactive? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-        readonly=True)
+        readonly=True))
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
-    number_of_duplicates = Int(
-        title=_('The number of bugs marked as duplicates of this bug'),
-        required=True, readonly=True)
-    message_count = Int(
-        title=_('The number of comments on this bug'),
-        required=True, readonly=True)
+    number_of_duplicates = exported(
+        Int(title=_('The number of bugs marked as duplicates of this bug'),
+            required=True, readonly=True))
+    message_count = exported(
+        Int(title=_('The number of comments on this bug'),
+        required=True, readonly=True))
     users_affected_count = exported(
         Int(title=_('The number of users affected by this bug '
                     '(not including duplicates)'),
@@ -298,23 +304,29 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         # general master bug.
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
-    users_affected = exported(CollectionField(
+    users_affected = exported(doNotSnapshot(CollectionField(
             title=_('Users affected (not including duplicates)'),
             value_type=Reference(schema=IPerson),
-            readonly=True))
-    users_unaffected = exported(CollectionField(
+            readonly=True)))
+    users_unaffected = exported(doNotSnapshot(CollectionField(
             title=_('Users explicitly marked as unaffected '
                     '(not including duplicates)'),
             value_type=Reference(schema=IPerson),
-            readonly=True))
+            readonly=True)))
     users_affected_count_with_dupes = exported(
       Int(title=_('The number of users affected by this bug '
                   '(including duplicates)'),
           required=True, readonly=True))
-    users_affected_with_dupes = exported(CollectionField(
+    users_affected_with_dupes = exported(doNotSnapshot(CollectionField(
             title=_('Users affected (including duplicates)'),
             value_type=Reference(schema=IPerson),
-            readonly=True))
+            readonly=True)))
+
+    heat = exported(
+        Int(title=_("The 'heat' of the bug"),
+        required=False, readonly=True))
+    heat_last_updated = Datetime(
+        title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
@@ -323,11 +335,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         "The number of comments on this bug, not including the initial "
         "comment.")
 
-    messages = CollectionField(
+    messages = doNotSnapshot(CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
-            value_type=Reference(schema=IMessage))
+            value_type=Reference(schema=IMessage)))
 
     indexed_messages = exported(
         CollectionField(
@@ -340,6 +352,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     followup_subject = Attribute("The likely subject of the next message.")
 
     has_patches = Attribute("Does this bug have any patches?")
+
+    latest_patch_uploaded = exported(
+        Datetime(
+            title=_('Date when the most recent patch was uploaded.'),
+            required=False, readonly=True))
+
+    latest_patch = Attribute("The most recent patch of this bug.")
 
     @operation_parameters(
         subject=optional_message_subject_field(),
@@ -355,11 +374,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
-    def subscribe(person, subscribed_by):
+    def subscribe(person, subscribed_by, send_notifications=False):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
+        :param send_notifications: send "suscribed by" notifications.
         :return: an `IBugSubscription`.
         """
 
@@ -501,6 +521,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         :is_patch: A boolean.
         """
 
+    def linkAttachment(owner, file_alias, comment, is_patch=False,
+                       description=None):
+        """Link an `ILibraryFileAlias` to this bug.
+
+        :owner: An IPerson.
+        :file_alias: The `ILibraryFileAlias` to link to this bug.
+        :description: A brief description of the attachment.
+        :comment: An IMessage or string.
+        :filename: A string.
+        :is_patch: A boolean.
+        """
+
     def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
@@ -582,7 +614,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Create an INullBugTask and return it for the given parameters."""
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @call_with(owner=REQUEST_USER)
     @export_factory_operation(Interface, [])
     def addNomination(owner, target):
@@ -596,7 +628,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @export_read_operation()
     def canBeNominatedFor(target):
         """Can this bug nominated for this target?
@@ -607,7 +639,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """
 
     @operation_parameters(
-        target=Reference(schema=IBugTarget, title=_('Target')))
+        target=Reference(schema=Interface, title=_('Target')))
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getNominationFor(target):
@@ -620,7 +652,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     @operation_parameters(
         target=Reference(
-            schema=IBugTarget, title=_('Target'), required=False),
+            schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
             value_type=Reference(schema=Interface), # IBugNomination
@@ -754,6 +786,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
+    def setHeat(heat, timestamp=None):
+        """Set the heat for the bug."""
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
@@ -876,8 +911,8 @@ class IBugAddForm(IBug):
         required=True, default=False)
 
 
-class IProjectBugAddForm(IBugAddForm):
-    """Create a bug for an IProject."""
+class IProjectGroupBugAddForm(IBugAddForm):
+    """Create a bug for an IProjectGroup."""
     product = Choice(
         title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
@@ -887,7 +922,7 @@ class IFrontPageBugAddForm(IBugAddForm):
     """Create a bug for any bug target."""
 
     bugtarget = Reference(
-        schema=IBugTarget, title=_("Where did you find the bug?"),
+        schema=Interface, title=_("Where did you find the bug?"),
         required=True)
 
 
@@ -991,6 +1026,40 @@ class IBugSet(Interface):
 
         Otherwise, return False.
         """
+
+    def dangerousGetAllBugs():
+        """DO NOT CALL THIS METHOD.
+
+        This method exists solely to allow the bug heat script to grab
+        all the bugs in the database - including private ones - and
+        iterate over them. DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE
+        DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
+        USE THIS ANYWAY.
+        """
+        # XXX 2010-01-08 gmb bug=505850:
+        #     Note, this method should go away when we have a proper
+        #     permissions system for scripts.
+
+    def getBugsWithOutdatedHeat(max_heat_age):
+        """Return the set of bugs whose heat is out of date.
+
+        :param max_heat_age: The maximum age, in days, that a bug's heat
+                             can be before it is included in the
+                             returned set.
+        """
+
+
+class IFileBugData(Interface):
+    """A class containing extra data to be used when filing a bug."""
+
+    initial_summary = Attribute("The initial summary for the bug.")
+    private = Attribute("Whether the bug should be private.")
+    extra_description = Attribute("A longer description of the bug.")
+    initial_tags = Attribute("The initial tags for the bug.")
+    subscribers = Attribute("The initial subscribers for the bug.")
+    comments = Attribute("Comments to add to the bug.")
+    attachments = Attribute("Attachments to add to the bug.")
+    hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
 
 
 class InvalidBugTargetType(Exception):

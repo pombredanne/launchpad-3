@@ -127,9 +127,9 @@ class TestDenyingServer(TestCaseWithTransport):
             branch.base.startswith('file://'),
             "make_branch() didn't make branch with file:// URL")
         file_denier = DenyingServer(['file://'])
-        file_denier.setUp()
+        file_denier.start_server()
         self.assertRaises(AssertionError, Branch.open, branch.base)
-        file_denier.tearDown()
+        file_denier.stop_server()
         # This is just "assertNotRaises":
         Branch.open(branch.base)
 
@@ -188,8 +188,8 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # RemoteBranch.
         vfs_branch = self.make_branch('.')
         smart_server = server.SmartTCPServer_for_testing()
-        smart_server.setUp(self.get_vfs_only_server())
-        self.addCleanup(smart_server.tearDown)
+        smart_server.start_server(self.get_vfs_only_server())
+        self.addCleanup(smart_server.stop_server)
         remote_branch = Branch.open(smart_server.get_url())
         # Check that our set up worked: remote_branch is Remote and
         # source_branch is not.

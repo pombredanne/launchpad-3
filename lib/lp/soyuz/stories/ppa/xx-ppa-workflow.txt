@@ -714,27 +714,36 @@ And direct access to the PPA page is also denied.
 == Enabling or disabling of PPAs by the owner ==
 
 Users with 'launchpad.Edit' permission for a PPA may disable or enable it.
+They may also change whether the PPA is published to disk or not.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
 
-Initially, the PPA is enabled.
+Initially, the PPA is enabled and publishes.
 
     >>> print no_priv_browser.getControl(name='field.enabled').value
+    True
+    >>> print no_priv_browser.getControl(name='field.publish').value
     True
 
 After disabling the PPA a warning message is displayed on its page.
 
     >>> no_priv_browser.getControl(name='field.enabled').value = False
+    >>> no_priv_browser.getControl(name='field.publish').value = False
     >>> no_priv_browser.getControl('Save').click()
     >>> print extract_text(
     ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
     This archive has been disabled.
 
-Once we re-enable the PPA the warning message is gone.
+Going back to the edit page, we can see the publish flag was cleared:
 
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> print no_priv_browser.getControl(name='field.publish').value
+    False
+
+Once we re-enable the PPA the "disabled" warning message will be gone.
+
     >>> print no_priv_browser.getControl(name='field.enabled').value
     False
 
@@ -743,3 +752,5 @@ Once we re-enable the PPA the warning message is gone.
     >>> (first_tag_by_class(no_priv_browser.contents, 'warning message')
     ...  is None)
     True
+
+

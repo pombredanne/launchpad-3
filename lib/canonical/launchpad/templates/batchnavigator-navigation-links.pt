@@ -29,8 +29,8 @@
           tal:condition="first_page_url"
           tal:attributes="href first_page_url"
           class="first"
+          id="batchnav_first"
           rel="first"
-          accesskey="A"
         >First</a>
         <span tal:condition="not:first_page_url" class="first inactive"
         >First</span>
@@ -39,8 +39,8 @@
           tal:condition="prev_page_url"
           tal:attributes="href prev_page_url"
           class="previous"
+          id="batchnav_previous"
           rel="previous"
-          accesskey="P"
         >Previous</a>
         <span tal:condition="not:prev_page_url" class="previous inactive"
         >Previous</span>
@@ -48,9 +48,9 @@
         <a
           tal:condition="next_page_url"
           tal:attributes="href next_page_url"
+          id="batchnav_next"
           class="next"
           rel="next"
-          accesskey="N"
         ><strong>Next</strong></a>
         <span tal:condition="not:next_page_url" class="next inactive"
         ><strong>Next</strong></span>
@@ -60,8 +60,8 @@
             tal:condition="last_page_url"
             tal:attributes="href last_page_url"
             class="last"
+            id="batchnav_last"
             rel="last"
-            accesskey="L"
           >Last</a>
           <span tal:condition="not:last_page_url" class="last inactive"
           >Last</span>

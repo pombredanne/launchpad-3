@@ -896,8 +896,8 @@ package is displayed if it exists.
 
 Projects display the "In" column to show the product name.
 
-    >>> from lp.registry.interfaces.project import IProjectSet
-    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
 
     >>> view = create_initialized_view(
     ...     mozilla, name="+questions", layer=AnswersLayer,

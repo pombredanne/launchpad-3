@@ -8,6 +8,7 @@ from __future__ import with_statement
 __all__ = [
     'CVSServer',
     'GitServer',
+    'MercurialServer',
     'SubversionServer',
     ]
 
@@ -81,8 +82,8 @@ class SubversionServer(Server):
         else:
             return local_path_to_url(self.repository_path)
 
-    def setUp(self):
-        super(SubversionServer, self).setUp()
+    def start_server(self):
+        super(SubversionServer, self).start_server()
         self.createRepository(self.repository_path)
         if self._use_svn_serve:
             conf_path = os.path.join(
@@ -108,8 +109,8 @@ class SubversionServer(Server):
                 raise AssertionError(
                     "svnserve didn't start accepting connections")
 
-    def tearDown(self):
-        super(SubversionServer, self).tearDown()
+    def stop_server(self):
+        super(SubversionServer, self).stop_server()
         if self._use_svn_serve:
             os.kill(self._svnserve.pid, signal.SIGINT)
             self._svnserve.communicate()
@@ -185,9 +186,9 @@ class CVSServer(Server):
             module=module_name, log="import", vendor="vendor",
             release=['release'], dir='.')
 
-    def setUp(self):
+    def start_server(self):
         # Initialize the repository.
-        super(CVSServer, self).setUp()
+        super(CVSServer, self).start_server()
         self._repository = self.createRepository(self._repository_path)
 
 
@@ -210,3 +211,23 @@ class GitServer(Server):
             builder.finish()
         finally:
             os.chdir(wd)
+
+
+class MercurialServer(Server):
+
+    def __init__(self, repo_url):
+        super(MercurialServer, self).__init__()
+        self.repo_url = repo_url
+
+    def makeRepo(self, tree_contents):
+        from mercurial.ui import ui
+        from mercurial.localrepo import localrepository
+        repo = localrepository(ui(), self.repo_url, create=1)
+        for filename, contents in tree_contents:
+            f = open(os.path.join(self.repo_url, filename), 'w')
+            try:
+                f.write(contents)
+            finally:
+                f.close()
+            repo.add([filename])
+        repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')

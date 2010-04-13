@@ -9,7 +9,7 @@ style widget) "speaks", i.e., its allowed values.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
+    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -249,7 +249,7 @@ NoSuchDistroSeries error.
 All the products in a project using Malone.
 
 
-    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> mozilla_project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> for product in mozilla_project.products:
     ...     print "%s: %s" % (product.name, product.official_malone)
     firefox: True

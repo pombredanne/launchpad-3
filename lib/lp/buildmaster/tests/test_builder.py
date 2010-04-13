@@ -8,13 +8,17 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
@@ -73,7 +77,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
         # Make a new PPA and give it some builds.
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
-        builds = self.publisher.getPubSource(
+        self.publisher.getPubSource(
             sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
             archive=self.ppa_joe).createMissingBuilds()
 
@@ -97,7 +101,10 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         self.assertEqual('joesppa', build.archive.name)
 
 
-class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
+class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
+
+    ppa_joe_private = False
+    ppa_jim_private = False
 
     def _setBuildsBuildingForArch(self, builds_list, num_builds,
                                   archtag="i386"):
@@ -115,11 +122,13 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
 
     def setUp(self):
         """Publish some builds for the test archive."""
-        super(TestFindBuildCandidatePPA, self).setUp()
+        super(TestFindBuildCandidatePPABase, self).setUp()
 
         # Create two PPAs and add some builds to each.
-        self.ppa_joe = self.factory.makeArchive(name="joesppa")
-        self.ppa_jim = self.factory.makeArchive(name="jimsppa")
+        self.ppa_joe = self.factory.makeArchive(
+            name="joesppa", private=self.ppa_joe_private)
+        self.ppa_jim = self.factory.makeArchive(
+            name="jimsppa", private=self.ppa_jim_private)
 
         self.joe_builds = []
         self.joe_builds.extend(
@@ -162,6 +171,9 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         num_free_builders = len(self.builders) - num_active_builders
         self.assertEqual(num_free_builders, 2)
 
+
+class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
+
     def test_findBuildCandidate_first_build_started(self):
         # A PPA cannot start a build if it would use 80% or more of the
         # builders.
@@ -177,11 +189,14 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
+
+class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
+
+    ppa_joe_private = True
+
     def test_findBuildCandidate_for_private_ppa(self):
         # If a ppa is private it will be able to have parallel builds
         # for the one architecture.
-        self.ppa_joe.private = True
-        self.ppa_joe.buildd_secret = 'sekrit'
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
@@ -194,15 +209,15 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         super(TestFindBuildCandidateDistroArchive, self).setUp()
         # Create a primary archive and publish some builds for the
         # queue.
-        non_ppa = self.factory.makeArchive(
+        self.non_ppa = self.factory.makeArchive(
             name="primary", purpose=ArchivePurpose.PRIMARY)
 
-        gedit_build = self.publisher.getPubSource(
+        self.gedit_build = self.publisher.getPubSource(
             sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=non_ppa).createMissingBuilds()[0]
-        firefox_build = self.publisher.getPubSource(
+            archive=self.non_ppa).createMissingBuilds()[0]
+        self.firefox_build = self.publisher.getPubSource(
             sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            archive=non_ppa).createMissingBuilds()[0]
+            archive=self.non_ppa).createMissingBuilds()[0]
 
     def test_findBuildCandidate_for_non_ppa(self):
         # Normal archives are not restricted to serial builds per
@@ -223,6 +238,60 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
         self.failUnlessEqual('firefox', build.sourcepackagerelease.name)
+
+    def test_findBuildCandidate_for_recipe_build(self):
+        # Recipe builds with a higher score are selected first.
+        # This test is run in a context with mixed recipe and binary builds.
+
+        self.assertIsNot(self.frog_builder.processor, None)
+        self.assertEqual(self.frog_builder.virtualized, True)
+
+        self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
+        self.assertEqual(self.firefox_build.buildqueue_record.lastscore, 2505)
+
+        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(9999)
+
+        self.assertEqual(recipe_build_job.lastscore, 9999)
+
+        next_job = removeSecurityProxy(
+            self.frog_builder)._findBuildCandidate()
+
+        self.failUnlessEqual(recipe_build_job, next_job)
+
+
+class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
+    # These tests operate in a "recipe builds only" setting.
+    # Please see also bug #507782.
+
+    def clearBuildQueue(self):
+        """Delete all `BuildQueue`, XXXJOb and `Job` instances."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        for bq in store.find(BuildQueue):
+            bq.destroySelf()
+
+    def setUp(self):
+        """Publish some builds for the test archive."""
+        super(TestFindRecipeBuildCandidates, self).setUp()
+        # Create a primary archive and publish some builds for the
+        # queue.
+        self.non_ppa = self.factory.makeArchive(
+            name="primary", purpose=ArchivePurpose.PRIMARY)
+
+        self.clearBuildQueue()
+        self.bq1 = self.factory.makeSourcePackageRecipeBuildJob(3333)
+        self.bq2 = self.factory.makeSourcePackageRecipeBuildJob(4333)
+
+    def test_findBuildCandidate_with_highest_score(self):
+        # The recipe build with the highest score is selected first.
+        # This test is run in a "recipe builds only" context.
+
+        self.assertIsNot(self.frog_builder.processor, None)
+        self.assertEqual(self.frog_builder.virtualized, True)
+
+        next_job = removeSecurityProxy(
+            self.frog_builder)._findBuildCandidate()
+
+        self.failUnlessEqual(self.bq2, next_job)
 
 
 class TestCurrentBuildBehavior(TestCaseWithFactory):

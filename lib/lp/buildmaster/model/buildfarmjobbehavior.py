@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildFarmJobBehaviorBase',
-    'IdleBuildBehavior'
+    'IdleBuildBehavior',
     ]
 
 import logging
@@ -22,6 +22,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
+
+from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
@@ -50,11 +52,17 @@ class BuildFarmJobBehaviorBase:
         """The default behavior is a no-op."""
         pass
 
-    def slaveStatus(self, raw_slave_status):
+    def updateSlaveStatus(self, raw_slave_status, status):
         """See `IBuildFarmJobBehavior`.
 
         The default behavior is that we don't add any extra values."""
-        return {}
+        pass
+
+    def verifySlaveBuildCookie(self, slave_build_cookie):
+        """See `IBuildFarmJobBehavior`."""
+        expected_cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        if slave_build_cookie != expected_cookie:
+            raise CorruptBuildCookie("Invalid slave build cookie.")
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -143,6 +151,20 @@ class BuildFarmJobBehaviorBase:
             queueItem.job.fail()
         queueItem.specific_job.jobAborted()
 
+    def extractBuildStatus(self, slave_status):
+        """Read build status name.
+
+        :param slave_status: build status dict as passed to the
+            updateBuild_* methods.
+        :return: the unqualified status name, e.g. "OK".
+        """
+        status_string = slave_status['build_status']
+        lead_string = 'BuildStatus.'
+        assert status_string.startswith(lead_string), (
+            "Malformed status string: '%s'" % status_string)
+
+        return status_string[len(lead_string):]
+
     def updateBuild_WAITING(self, queueItem, slave_status, logtail, logger):
         """Perform the actions needed for a slave in a WAITING state
 
@@ -157,13 +179,10 @@ class BuildFarmJobBehaviorBase:
           the uploader for processing.
         """
         librarian = getUtility(ILibrarianClient)
-        build_status = slave_status['build_status']
+        build_status = self.extractBuildStatus(slave_status)
 
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
-        assert build_status.startswith('BuildStatus.'), (
-            'Malformed status string: %s' % build_status)
 
-        build_status = build_status[len('BuildStatus.'):]
         queueItem.specific_job.build.handleStatus(
             build_status, librarian, slave_status)
 
@@ -193,3 +212,7 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
     def status(self):
         """See `IBuildFarmJobBehavior`."""
         return "Idle"
+
+    def verifySlaveBuildCookie(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        raise CorruptBuildCookie('No job assigned to builder')

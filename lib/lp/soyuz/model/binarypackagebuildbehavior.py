@@ -14,6 +14,8 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
+
+from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
@@ -63,13 +65,14 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # results so we know we are referring to the right database object in
         # subsequent runs.
         buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.buildfarmjob.generateSlaveBuildCookie()
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
         args = self._extraBuildArgs(self.build)
         status, info = self._builder.slave.build(
-            buildid, "debian", chroot_sha1, filemap, args)
+            cookie, "binarypackage", chroot_sha1, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
@@ -118,49 +121,32 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                     build.distroseries.name,
                     build.distroarchseries.architecturetag))
 
-        # The main distribution has policies to prevent uploads to some
-        # pockets (e.g. security) during different parts of the distribution
-        # series lifecycle. These do not apply to PPA builds nor any archive
-        # that allows release pocket updates.
-        if (build.archive.purpose != ArchivePurpose.PPA and
-            not build.archive.allowUpdatesToReleasePocket()):
-            # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
-            # exception yet because the callers have not been audited
-            assert build.distroseries.canUploadToPocket(build.pocket), (
+        # This should already have been checked earlier, but just check again 
+        # here in case of programmer errors.
+        reason = check_upload_to_pocket(
+            build.archive, build.distroseries, build.pocket)
+        assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s."
-                % (build.title, build.id, build.pocket.name,
-                   build.distroseries.name))
+                "to the series status of %s." %
+                    (build.title, build.id, build.pocket.name,
+                     build.distroseries.name))
 
-    def slaveStatus(self, raw_slave_status):
-        """Parse and return the binary build specific status info.
+    def updateSlaveStatus(self, raw_slave_status, status):
+        """Parse the binary build specific status info into the status dict.
 
         This includes:
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
-        * filename => dictionary or None
+        * filemap => dictionary or None
         * dependencies => string or None
         """
-        builder_status = raw_slave_status[0]
-        extra_info = {}
-        if builder_status == 'BuilderStatus.WAITING':
-            extra_info['build_status'] = raw_slave_status[1]
-            extra_info['build_id'] = raw_slave_status[2]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if extra_info['build_status'] in build_status_with_files:
-                extra_info['filemap'] = raw_slave_status[3]
-                extra_info['dependencies'] = raw_slave_status[4]
-        else:
-            extra_info['build_id'] = raw_slave_status[1]
-            if builder_status == 'BuilderStatus.BUILDING':
-                extra_info['logtail'] = raw_slave_status[2]
-
-        return extra_info
+        build_status_with_files = (
+            'BuildStatus.OK',
+            'BuildStatus.PACKAGEFAIL',
+            'BuildStatus.DEPFAIL',
+            )
+        if (status['builder_status'] == 'BuilderStatus.WAITING' and
+            status['build_status'] in build_status_with_files):
+            status['filemap'] = raw_slave_status[3]
+            status['dependencies'] = raw_slave_status[4]
 
     def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.
@@ -215,13 +201,15 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
-                get_primary_current_component(build))
+                get_primary_current_component(build.archive, 
+                    build.distroseries, build.sourcepackagerelease.name))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(build)
+        args['archives'] = get_sources_list_for_building(build, 
+            build.distroarchseries, build.sourcepackagerelease.name)
 
         # Let the build slave know whether this is a build in a private
         # archive.

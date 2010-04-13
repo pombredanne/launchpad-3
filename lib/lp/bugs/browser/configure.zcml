@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -108,6 +108,20 @@
             facet="bugs"
             permission="launchpad.Edit"
             template="../templates/official-bug-target-manage-tags.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
     </facet>
     <browser:page
         name="+bugtarget-macros-search"
@@ -399,13 +413,13 @@
         template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         name="+filebug"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.ProjectFileBugGuidedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
     <browser:page
         name="+filebug-advanced"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
         facet="bugs"
         permission="launchpad.AnyPerson"/>
@@ -718,6 +732,13 @@
         name="+edit"
         permission="launchpad.AnyPerson"
         template="../templates/bug-attachment-edit.pt"/>
+    <browser:page
+        for="lp.bugs.interfaces.bugattachment.IBugAttachment"
+        class="lp.bugs.browser.bugattachment.BugAttachmentPatchConfirmationView"
+        facet="bugs"
+        name="+confirm-is-patch"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-attachment-confirm-is-patch.pt"/>
     <browser:navigation
         module="lp.bugs.browser.bugattachment"
         classes="

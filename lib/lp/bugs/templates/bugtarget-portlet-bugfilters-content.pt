@@ -6,10 +6,14 @@
     template can be rendered by a view that does not have count
     information available.
   </tal:comment>
-  <tr>
-    <td class="bugs-count" tal:content="view/open_bugs_count|nothing" />
+  <tr tal:define="count view/open_bugs_count|nothing;
+                  plural string: Open bugs;
+                  singular string: Open bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/open_bugs_url">Open bugs</a>
+      <a tal:attributes="href string:${view/open_bugs_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
     </td>
   </tr>
   <tr>
@@ -18,16 +22,25 @@
       <a tal:attributes="href view/inprogress_bugs_url">In-progress bugs</a>
     </td>
   </tr>
-  <tr tal:condition="view/user">
-    <td class="bugs-count" tal:content="view/my_bugs_count|nothing" />
+  <tr tal:condition="view/user"
+      tal:define="count view/my_bugs_count|nothing;
+                  plural string: Bugs assigned to me;
+                  singular string: Bug assigned to me;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/my_bugs_url">Bugs assigned to me</a>
+      <a tal:attributes="href string:${view/my_bugs_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
     </td>
   </tr>
-  <tr>
-    <td class="bugs-count" tal:content="view/critical_bugs_count|nothing" />
+  <tr tal:define="count view/critical_bugs_count|nothing;
+                  plural string: Critical bugs;
+                  singular string: Critical bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/critical_bugs_url">Critical bugs</a>
+      <a tal:attributes="href string:${view/critical_bugs_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
     </td>
   </tr>
   <tr>
@@ -36,43 +49,73 @@
       <a tal:attributes="href view/high_bugs_url">High importance bugs</a>
     </td>
   </tr>
-  <tr>
-    <td class="bugs-count" tal:content="view/bugs_fixed_elsewhere_count|nothing" />
+  <tr tal:define="count view/bugs_fixed_elsewhere_count|nothing;
+                  plural string: Bugs fixed elsewhere;
+                  singular string: Bug fixed elsewhere;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/bugs_fixed_elsewhere_url">
-        Bugs fixed elsewhere
+      <a tal:attributes="href string:${view/bugs_fixed_elsewhere_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
       </a>
     </td>
   </tr>
-  <tr>
-    <td class="bugs-count" tal:content="view/new_bugs_count|nothing" />
+  <tr tal:define="count view/new_bugs_count|nothing;
+                  plural string: New bugs;
+                  singular string: New bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/new_bugs_url">New bugs</a>
+      <a tal:attributes="href string:${view/new_bugs_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
     </td>
   </tr>
-  <tr>
-    <td class="bugs-count" tal:content="view/open_cve_bugs_count|nothing" />
+  <tr tal:define="count view/open_cve_bugs_count|nothing;
+                  plural string: Open CVE bugs;
+                  singular string: Open CVE bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/open_cve_bugs_url">Open CVE bugs</a>
-      <span tal:condition="view/open_cve_bugs_has_report">
-        - <a tal:attributes="href context/fmt:url/+cve">CVE reports</a>
+      <a tal:attributes="href string:${view/open_cve_bugs_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
+      <span tal:condition="view/open_cve_bugs_has_report"
+            tal:define="plural string: CVE reports;
+                        singular string: CVE report;">
+      - <a tal:attributes="href string:${context/fmt:url/+cve}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
       </span>
     </td>
   </tr>
-  <tr tal:condition="view/expirable_bugs_url">
-    <td class="bugs-count" tal:content="view/expirable_bugs_count|nothing" />
+  <tr tal:condition="view/expirable_bugs_url"
+      tal:define="count view/expirable_bugs_count|nothing;
+                  plural string: Incomplete bugs;
+                  singular string: Incomplete bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/expirable_bugs_url">
-        Incomplete bugs
+      <a tal:attributes="href string:${view/expirable_bugs_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
       </a>
       (can expire)
     </td>
   </tr>
-  <tr tal:condition="view/pending_bugwatches_url">
-    <td class="bugs-count" tal:content="view/pending_bugwatches_count|nothing" />
+  <tr tal:condition="view/pending_bugwatches_url"
+      tal:define="count view/pending_bugwatches_count|nothing;
+                  plural string: Bugs need forwarding upstream;
+                  singular string: Bug needs forwarding upstream;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/pending_bugwatches_url">
-        Bugs need forwarding upstream
+      <a tal:attributes="href string:${view/pending_bugwatches_url}">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
+    </td>
+  </tr>
+  <tr tal:define="count view/bugs_with_patches_count|nothing;
+                  plural string: Bugs with patches;
+                  singular string: Bug with a patch;">
+    <td class="bugs-count" tal:content="count"/>
+    <td class="bugs-link">
+      <a tal:attributes="href string:${context/fmt:url}/+patches">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
       </a>
     </td>
   </tr>

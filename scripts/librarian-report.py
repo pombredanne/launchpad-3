@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -71,7 +71,7 @@ def main():
         cur.execute("""
             SELECT
                 COALESCE(SUM(filesize), 0),
-                pg_size_pretty(COALESCE(SUM(filesize), 0)),
+                pg_size_pretty(CAST(COALESCE(SUM(filesize), 0) AS bigint)),
                 COUNT(*)
             FROM (
                 SELECT DISTINCT ON (LFC.id) LFC.id, LFC.filesize

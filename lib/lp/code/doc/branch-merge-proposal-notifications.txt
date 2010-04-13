@@ -153,7 +153,7 @@ in the email.
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch,
-    ...     initial_comment=initial_comment, review_requests=reviewers)
+    ...     description=initial_comment, review_requests=reviewers)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
     >>> job.run(_create_preview=False)

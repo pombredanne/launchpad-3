@@ -11,12 +11,11 @@ __all__ = [
     'BranchSetAPI', 'IBranchSetAPI', 'IPublicCodehostingAPI',
     'PublicCodehostingAPI']
 
-import os
+
+from bzrlib import urlutils
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
-
-from lazr.uri import URI
 
 from canonical.config import config
 from lp.bugs.interfaces.bug import IBugSet
@@ -103,7 +102,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         try:
             unicode_branch_url = branch_url.decode('utf-8')
-            url = IBranch['url'].validate(unicode_branch_url)
+            IBranch['url'].validate(unicode_branch_url)
         except LaunchpadValidationError, exc:
             return faults.InvalidBranchUrl(branch_url, exc)
 
@@ -185,10 +184,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     supported_schemes = 'bzr+ssh', 'http'
 
-    def _getBazaarHost(self):
-        """Return the hostname for the codehosting server."""
-        return URI(config.codehosting.supermirror_root).host
-
     def _getResultDict(self, branch, suffix=None, supported_schemes=None):
         """Return a result dict with a list of URLs for the given branch.
 
@@ -207,16 +202,13 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     def _getUniqueNameResultDict(self, unique_name, suffix=None,
                                  supported_schemes=None):
+        from lp.code.model.branch import compose_public_url
         if supported_schemes is None:
             supported_schemes = self.supported_schemes
         result = dict(urls=[])
-        host = self._getBazaarHost()
-        path = '/' + unique_name
-        if suffix is not None:
-            path = os.path.join(path, suffix)
         for scheme in supported_schemes:
             result['urls'].append(
-                str(URI(host=host, scheme=scheme, path=path)))
+                compose_public_url(scheme, unique_name, suffix))
         return result
 
     @return_fault
@@ -248,23 +240,24 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         # the model code(blech) or some automated way of reraising as faults
         # or using a narrower range of faults (e.g. only one "NoSuch" fault).
         except InvalidProductName, e:
-            raise faults.InvalidProductIdentifier(e.name)
+            raise faults.InvalidProductIdentifier(urlutils.escape(e.name))
         except NoSuchProductSeries, e:
-            raise faults.NoSuchProductSeries(e.name, e.product)
+            raise faults.NoSuchProductSeries(
+                urlutils.escape(e.name), e.product)
         except NoSuchPerson, e:
-            raise faults.NoSuchPersonWithName(e.name)
+            raise faults.NoSuchPersonWithName(urlutils.escape(e.name))
         except NoSuchProduct, e:
-            raise faults.NoSuchProduct(e.name)
+            raise faults.NoSuchProduct(urlutils.escape(e.name))
         except NoSuchDistroSeries, e:
-            raise faults.NoSuchDistroSeries(e.name)
+            raise faults.NoSuchDistroSeries(urlutils.escape(e.name))
         except NoSuchSourcePackageName, e:
-            raise faults.NoSuchSourcePackageName(e.name)
+            raise faults.NoSuchSourcePackageName(urlutils.escape(e.name))
         except NoLinkedBranch, e:
             raise faults.NoLinkedBranch(e.component)
         except CannotHaveLinkedBranch, e:
             raise faults.CannotHaveLinkedBranch(e.component)
         except InvalidNamespace, e:
-            raise faults.InvalidBranchUniqueName(e.name)
+            raise faults.InvalidBranchUniqueName(urlutils.escape(e.name))
         return self._getResultDict(branch, suffix, supported_schemes)
 
     def resolve_lp_path(self, path):

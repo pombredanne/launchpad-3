@@ -10,16 +10,17 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import subprocess
+import hashlib
 import gettextpo
 import os
 import random
 import re
+import subprocess
 import tarfile
 import warnings
+
 from StringIO import StringIO
 from difflib import unified_diff
-import sha
 
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
@@ -462,7 +463,7 @@ def get_filename_from_message_id(message_id):
     """
     return '%s.msg' % (
             canonical.base.base(
-                long(sha.new(message_id).hexdigest(), 16), 62))
+                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
 
 
 def intOrZero(value):

@@ -46,8 +46,10 @@ bogus.
     Mozilla Firefox in Launchpad
 
     >>> owner_browser.getLink('All packages').click()
-    >>> owner_browser.getControl(
-    ...     name='field.actions.delete_packaging', index=1).click()
+    >>> link = owner_browser.getLink(
+    ...     url='/ubuntu/warty/+source/mozilla-firefox/+remove-packaging')
+    >>> link.click()
+    >>> owner_browser.getControl('Unlink').click()
 
 Then he returns to delete trunk. He is informed that deletion is permanent,
 and that the milestones, releases, and files will also be deleted. The

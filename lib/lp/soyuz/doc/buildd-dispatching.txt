@@ -6,14 +6,9 @@
     >>> logger.setLevel(logging.DEBUG)
 
 The buildd dispatching basically consists of finding a available
-Buildd-slave in IDLE state, push required files to it, then request
-the it to start a build procedure.
-
-Those tasks are implemented by the BuilddMaster and BuilderGroup
-classes.
-
-    >>> from lp.buildmaster.master import BuilddMaster
-    >>> bm = BuilddMaster(logger, transaction)
+slave in IDLE state, pushing any required files to it, then requesting
+that it starts the build procedure. These tasks are implemented by the
+BuilderSet and Builder classes.
 
 Setup the test builder:
 
@@ -61,19 +56,18 @@ Set IBuilder.builderok of all present builders:
 
 Clean up previous BuildQueue results from sampledata:
 
-    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
     >>> lost_job = getUtility(IBuildQueueSet).get(1)
     >>> lost_job.builder.name
     u'bob'
     >>> lost_job.destroySelf()
 
-The BuilddMaster will be set up next. This involves checking the various
-builders and resetting the virtualized ones if needed. Please note that
-'frog' is a PPA builder and was reset due to a communication time-out.
+We'll next use BuilderSet to check the various builders and reset
+the virtualized ones if needed. Please note that 'frog' is a PPA
+builder and was reset due to a communication time-out.
 
-    >>> bm.addDistroArchSeries(hoary_i386)
-    >>> bm.setupBuilders(hoary_i386)
-    WARNING:root.builders.x86:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
+    >>> builder_set.checkBuilders(logger, transaction)
+    WARNING:root:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
     Traceback (most recent call last):
     ...
     error: (111, 'Connection refused')
@@ -187,7 +181,7 @@ buildqueue record, so the build was eliminated:
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()
@@ -205,7 +199,7 @@ Create a new Build record of the same source targeted for a PPA archive:
 
 Create BuildQueue record and inspect some parameters:
 
-    >>> ppa_job = ppa_build.createBuildQueueEntry()
+    >>> ppa_job = ppa_build.queueBuild()
     >>> ppa_job.id
     3
     >>> ppa_job.builder == None
@@ -321,7 +315,7 @@ architecture and SECURITY pocket:
 
 Create BuildQueue record and inspect some parameters:
 
-    >>> sec_job = sec_build.createBuildQueueEntry()
+    >>> sec_job = sec_build.queueBuild()
     >>> sec_job.id
     4
     >>> print sec_job.builder
@@ -356,7 +350,7 @@ check if legitimate pending candidates will remain valid.
 
     >>> pending_build = sprf.sourcepackagerelease.createBuild(
     ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
-    >>> pending_job = pending_build.createBuildQueueEntry()
+    >>> pending_job = pending_build.queueBuild()
 
 We increase the score of the security job to ensure it is considered
 before the legitimate job.

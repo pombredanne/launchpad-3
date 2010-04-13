@@ -34,8 +34,8 @@ class TestFilesystem(TestCaseWithTransport):
         self.requester = self.factory.makePerson()
         self._server = LaunchpadServer(
             endpoint, self.requester.id, MemoryTransport(), MemoryTransport())
-        self._server.setUp()
-        self.addCleanup(self._server.tearDown)
+        self._server.start_server()
+        self.addCleanup(self._server.stop_server)
 
     def getTransport(self, relpath=None):
         return get_transport(self._server.get_url()).clone(relpath)

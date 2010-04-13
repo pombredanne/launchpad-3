@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import sha
 import shutil
 import tempfile
 import unittest

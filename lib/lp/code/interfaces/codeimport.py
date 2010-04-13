@@ -22,6 +22,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
 from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
+from lp.code.interfaces.branch import IBranch
+
+from lazr.restful.declarations import (
+    export_as_webservice_entry, exported)
+from lazr.restful.fields import ReferenceChoice
 
 
 def validate_cvs_root(cvsroot):
@@ -60,86 +65,62 @@ def validate_cvs_branch(branch):
 class ICodeImport(Interface):
     """A code import to a Bazaar Branch."""
 
+    export_as_webservice_entry()
+
     id = Int(readonly=True, required=True)
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    branch = Choice(
-        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
-        description=_("The Bazaar branch produced by the import system."))
+    branch = exported(
+        ReferenceChoice(
+            title=_('Branch'), required=True, readonly=True,
+            vocabulary='Branch', schema=IBranch,
+            description=_("The Bazaar branch produced by the "
+                "import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The community contact for this import."))
+    review_status = exported(
+        Choice(
+            title=_("Review Status"), vocabulary=CodeImportReviewStatus,
+            default=CodeImportReviewStatus.NEW, readonly=True,
+            description=_("Before a code import is performed, it is reviewed."
+                " Only reviewed imports are processed.")))
 
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person in charge of handling this import."))
+    rcs_type = exported(
+        Choice(title=_("Type of RCS"), readonly=True,
+            required=True, vocabulary=RevisionControlSystems,
+            description=_(
+                "The version control system to import from. "
+                "Can be CVS or Subversion.")))
 
-    product = Choice(
-        title=_("Project"), required=True,
-        readonly=True, vocabulary='Product',
-        description=_("The project this code import belongs to."))
+    url = exported(
+        URIField(title=_("URL"), required=False, readonly=True,
+            description=_("The URL of the VCS branch."),
+            allowed_schemes=["http", "https", "svn", "git"],
+            allow_userinfo=False, # Only anonymous access is supported.
+            allow_port=True,
+            allow_query=False,    # Query makes no sense in Subversion.
+            allow_fragment=False, # Fragment makes no sense in Subversion.
+            trailing_slash=False)) # See http://launchpad.net/bugs/56357.
 
-    series = Choice(
-        title=_("Series"),
-        readonly=True, vocabulary='ProductSeries',
-        description=_("The series this import is registered as the "
-                      "code for, or None if there is no such series."))
+    cvs_root = exported(
+        TextLine(title=_("Repository"), required=False, readonly=True,
+            constraint=validate_cvs_root,
+            description=_("The CVSROOT. "
+                "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome")))
 
-    review_status = Choice(
-        title=_("Review Status"), vocabulary=CodeImportReviewStatus,
-        default=CodeImportReviewStatus.NEW,
-        description=_("Before a code import is performed, it is reviewed."
-            " Only reviewed imports are processed."))
+    cvs_module = exported(
+        TextLine(title=_("Module"), required=False, readonly=True,
+            constraint=validate_cvs_module,
+            description=_("The path to import within the repository."
+                " Usually, it is the name of the project.")))
 
-    rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary=RevisionControlSystems,
-        description=_(
-            "The version control system to import from. "
-            "Can be CVS or Subversion."))
-
-    svn_branch_url = URIField(title=_("Branch URL"), required=False,
-        description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    git_repo_url = URIField(title=_("Repo URL"), required=False,
-        description=_(
-            "The URL of the git repository.  The MASTER branch will be "
-            "imported."),
-        allowed_schemes=["git"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    cvs_root = TextLine(title=_("Repository"), required=False,
-        constraint=validate_cvs_root,
-        description=_("The CVSROOT. "
-            "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
-
-    cvs_module = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module,
-        description=_("The path to import within the repository."
-            " Usually, it is the name of the project."))
-
-    date_last_successful = Datetime(
-        title=_("Last successful"), required=False)
+    date_last_successful = exported(
+        Datetime(title=_("Last successful"), required=False, readonly=True))
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(
@@ -200,22 +181,11 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None, git_repo_url=None,
-            review_status=None):
-        """Create a new CodeImport."""
+    def new(registrant, target, branch_name, rcs_type, url=None,
+            cvs_root=None, cvs_module=None, review_status=None):
+        """Create a new CodeImport.
 
-    def getAll():
-        """Return an iterable of all CodeImport objects."""
-
-    def getActiveImports(text=None):
-        """Return an iterable of all 'active' CodeImport objects.
-
-        Active is defined, somewhat arbitrarily, as having
-        review_status==REVIEWED and having completed at least once.
-
-        :param text: If specifed, limit to the results to those that contain
-            ``text`` in the product or project titles and descriptions.
+        :param target: An `IBranchTarget` that the code is associated with.
         """
 
     def get(id):
@@ -230,18 +200,17 @@ class ICodeImportSet(Interface):
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
 
-    def getByGitDetails(git_repo_url):
-        """Get the CodeImport with the specified Git details."""
-
-    def getBySVNDetails(svn_branch_url):
-        """Get the CodeImport with the specified SVN details."""
+    def getByURL(url):
+        """Get the CodeImport with the url."""
 
     def delete(id):
         """Delete a CodeImport given its id."""
 
-    def search(review_status):
-        """Find the CodeImports of the given status.
+    def search(review_status=None, rcs_type=None):
+        """Find the CodeImports of the given status and type.
 
         :param review_status: An entry from the `CodeImportReviewStatus`
-                              schema.
+            schema, or None, which signifies 'any status'.
+        :param rcs_type: An entry from the `RevisionControlSystems`
+            schema, or None, which signifies 'any type'.
         """

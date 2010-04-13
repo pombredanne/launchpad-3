@@ -11,10 +11,11 @@ __all__ = [
 
 
 import os
-import shutil
 
 import canonical
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+
+from lp.services.osutils import remove_tree
 
 
 class BuilddManagerTestSetup(TacTestSetup):
@@ -25,8 +26,7 @@ class BuilddManagerTestSetup(TacTestSetup):
 
         Remove the directory and create a new one if it exists.
         """
-        if os.path.exists(self.root):
-            shutil.rmtree(self.root)
+        remove_tree(self.root)
         os.makedirs(self.root)
 
     @property

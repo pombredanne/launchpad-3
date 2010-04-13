@@ -14,7 +14,7 @@ from lp.testing import login_person
 
 class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
         BaseBreadcrumbTestCase):
-    """Test Breadcrumbs for IQuestionTarget, IProject and IPerson on the
+    """Test Breadcrumbs for IQuestionTarget, IProjectGroup and IPerson on the
     answers vhost.
 
     Any page below them on the answers vhost will get an extra breadcrumb for

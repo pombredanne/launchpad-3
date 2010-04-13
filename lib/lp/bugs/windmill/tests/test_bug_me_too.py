@@ -5,11 +5,11 @@ from itertools import count
 
 import unittest
 
-from windmill.authoring import WindmillTestClient, WindmillTestClientException
+from windmill.authoring import WindmillTestClientException
 
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 AFFECTS_ME_TOO_XPATH = u"//span[@id='affectsmetoo']"
 DYNAMIC_SPAN_XPATH = AFFECTS_ME_TOO_XPATH + u"/span[@class='dynamic']"
@@ -39,9 +39,10 @@ def retry(client, attempts=3, delay=2000, initial_delay=1000):
     return decorator
 
 
-class TestMeToo(TestCaseWithFactory):
+class TestMeToo(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Bug "me too" test'
 
     def test_me_too(self):
         """Test the "this bug affects me too" options on bug pages.
@@ -49,7 +50,7 @@ class TestMeToo(TestCaseWithFactory):
         This test ensures that, with Javascript enabled, the "me too"
         status can be edited in-page.
         """
-        client = WindmillTestClient('Bug "me too" test')
+        client = self.client
 
         # Open bug 11 and wait for it to finish loading.
         client.open(

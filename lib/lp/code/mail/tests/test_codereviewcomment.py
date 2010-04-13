@@ -215,6 +215,14 @@ class TestCodeReviewComment(TestCaseWithFactory):
         [outgoing_attachment] = mailer.attachments
         self.assertEqual('inc.diff', outgoing_attachment[1])
         self.assertEqual('text/x-diff', outgoing_attachment[2])
+        # The attachments are attached to the outgoing message.
+        person = bmp.target_branch.owner
+        message = mailer.generateEmail(
+            person.preferredemail.email, person).makeMessage()
+        self.assertTrue(message.is_multipart())
+        attachment = message.get_payload()[1]
+        self.assertEqual('inc.diff', attachment.get_filename())
+        self.assertEqual('text/x-diff', attachment['content-type'])
 
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.

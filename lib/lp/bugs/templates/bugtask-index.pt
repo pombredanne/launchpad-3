@@ -38,10 +38,10 @@
       </tal:devmode>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
-                  'code.branchmergeproposal.popupdiff', function(Y) {
+                  'lp.code.branchmergeproposal.diff', function(Y) {
             Y.bugs.setup_bugtask_index();
             Y.on('load', function(e) {
-              Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
         });
       </script>
@@ -74,6 +74,7 @@
       <span
         tal:attributes="title context/bug/datecreated/fmt:datetime"
         tal:content="context/bug/datecreated/fmt:displaydate" />
+      <tal:heat replace="structure view/bug_heat_html" />
     </tal:registering>
 
     <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">

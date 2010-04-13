@@ -9,8 +9,6 @@ __all__ = []
 import transaction
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, logout
@@ -18,7 +16,7 @@ from canonical.launchpad.windmill.testing.lpuser import LaunchpadUser
 from canonical.launchpad.windmill.testing import constants
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.windmill.testing import SoyuzWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 ADD_ACCESS_LINK = u'//a[@class="js-action sprite add"]'
 CHOOSE_SUBSCRIBER_LINK = u'//a[@id="show-widget-field-subscriber"]'
@@ -31,9 +29,10 @@ FIRST_SUBSCRIBER_RESULT = (
 MESSAGE_WINDOW = u'//div[@class="informational message"]'
 
 
-class TestArchiveSubscribersIndex(TestCaseWithFactory):
+class TestArchiveSubscribersIndex(WindmillTestCase):
 
     layer = SoyuzWindmillLayer
+    suite_name = 'Adding private PPA subscribers.'
 
     def setUp(self):
         """Create a private PPA."""
@@ -57,7 +56,7 @@ class TestArchiveSubscribersIndex(TestCaseWithFactory):
 
     def test_add_subscriber(self):
         """Test adding a private PPA subscriber.."""
-        client = WindmillTestClient('Adding private PPA subscribers.')
+        client = self.client
 
         self.lpuser.ensure_login(client)
 

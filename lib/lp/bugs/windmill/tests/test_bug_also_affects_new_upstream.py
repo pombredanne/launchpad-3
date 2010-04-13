@@ -3,21 +3,20 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing.widgets import (
     FormPickerWidgetTest)
 from canonical.launchpad.windmill.testing import lpuser, constants
 from canonical.launchpad.windmill.testing.widgets import search_picker_widget
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 CHOOSE_AFFECTED_URL = ('http://bugs.launchpad.dev:8085/tomcat/+bug/3/'
                        '+choose-affected-product')
 
-class TestBugAlsoAffects(TestCaseWithFactory):
+class TestBugAlsoAffects(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'test_bug_also_affects_register_link'
 
     test_bug_also_affects_picker = FormPickerWidgetTest(
         name='test_bug_also_affects',
@@ -37,7 +36,7 @@ class TestBugAlsoAffects(TestCaseWithFactory):
         """
 
         choose_link_id = 'show-widget-field-product'
-        client = WindmillTestClient('test_bug_also_affects_register_link')
+        client = self.client
 
         # Open a bug page and wait for it to finish loading.
         client.open(url=CHOOSE_AFFECTED_URL)

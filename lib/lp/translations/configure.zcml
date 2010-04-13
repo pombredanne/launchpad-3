@@ -237,7 +237,7 @@
     <adapter
         name="translations"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.project.IProject"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
         permission="zope.Public"/>
     <adapter

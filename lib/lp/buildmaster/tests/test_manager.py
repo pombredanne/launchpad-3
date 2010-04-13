@@ -18,20 +18,21 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.buildd.tests import BuilddSlaveTestSetup
 from canonical.config import config
+from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.testing.layers import (
+    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     BaseDispatchResult, BuilddManager, FailDispatchResult, RecordingSlave,
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.scripts.logger import BufferLogger
+from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing.layers import (
-    LaunchpadScriptLayer, LaunchpadZopelessLayer, TwistedLayer)
 
 
 class TestRecordingSlaves(TrialTestCase):
@@ -43,11 +44,6 @@ class TestRecordingSlaves(TrialTestCase):
         TrialTestCase.setUp(self)
         self.slave = RecordingSlave(
             'foo', 'http://foo:8221/rpc', 'foo.host')
-        # XXX 2009-11-23, MichaelHudson,
-        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
-        # make sure the reactor is running when the test method is executed to
-        # work around the linked Twisted bug.
-        return task.deferLater(reactor, 0, lambda: None)
 
     def test_representation(self):
         """`RecordingSlave` has a custom representation.
@@ -482,7 +478,7 @@ class TestBuilddManagerScan(TrialTestCase):
         test_publisher = SoyuzTestPublisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
-        unused = test_publisher.setUpDefaultDistroSeries(hoary)
+        test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
         login(ANONYMOUS)
 
@@ -505,12 +501,14 @@ class TestBuilddManagerScan(TrialTestCase):
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
+        from lp.services.job.interfaces.job import JobStatus
         if logtail is None:
             logtail = 'Dummy sampledata entry, not processing'
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.job.status, JobStatus.RUNNING)
         build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
@@ -554,8 +552,8 @@ class TestBuilddManagerScan(TrialTestCase):
                'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
                '', '')),
              ('build',
-              ('11-2',
-               'debian', '0feca720e2c29dafb2c900713ba560e03b758711',
+              ('6358a89e2215e19b02bf91e2e4d009640fae5cf8',
+               'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
                {'alsa-utils_1.0.9a-4ubuntu1.dsc':
                 '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
                {'arch_indep': True,
@@ -673,7 +671,7 @@ class TestBuilddManagerScan(TrialTestCase):
         self.assertTrue(builder.builderok)
 
         job = getUtility(IBuildQueueSet).get(job.id)
-        self.assertBuildingJob(job, builder, logtail='Doing something ...')
+        self.assertBuildingJob(job, builder, logtail='This is a build log')
 
     def testScanUpdatesBuildingJobs(self):
         # The job assigned to a broken builder is rescued.
@@ -684,7 +682,7 @@ class TestBuilddManagerScan(TrialTestCase):
 
         login('foo.bar@canonical.com')
         builder.builderok = True
-        builder.setSlaveForTesting(SaneBuildingSlave())
+        builder.setSlaveForTesting(BuildingSlave(build_id='8-1'))
         transaction.commit()
         login(ANONYMOUS)
 

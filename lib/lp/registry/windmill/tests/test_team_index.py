@@ -8,24 +8,19 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.widgets import (
     search_and_select_picker_widget)
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestTeamIndex(TestCaseWithFactory):
+class TestTeamIndex(WindmillTestCase):
     """Test team index page."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        super(TestTeamIndex, self).setUp()
-        self.client = WindmillTestClient(__name__)
+    suite_name = __name__
 
     def test_addmember(self):
         self.client.open(

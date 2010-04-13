@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import logging
 import sys
 import unittest
 
@@ -23,6 +24,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file, touch_read_only_file)
 import canonical.launchpad.webapp.adapter as dbadapter
@@ -32,7 +34,7 @@ from canonical.launchpad.webapp.publication import (
     is_browser, LaunchpadBrowserPublication)
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 from lp.testing import TestCase, TestCaseWithFactory
 
 
@@ -60,6 +62,7 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
 
+
 class TestReadOnlyModeSwitches(TestCase):
     # At the beginning of every request (in publication.beforeTraversal()), we
     # check to see if we've changed from/to read-only/read-write and if there
@@ -79,6 +82,11 @@ class TestReadOnlyModeSwitches(TestCase):
         # Cleanup needed so that further tests can start processing other
         # requests (e.g. calling beforeTraversal).
         self.publication.endRequest(self.request, None)
+        # Force pending mode switches to actually happen and get logged so
+        # that we don't interfere with other tests.
+        assert not is_read_only(), (
+            "A test failed to clean things up properly, leaving the app "
+            "in read-only mode.")
 
     def setUp(self):
         TestCase.setUp(self)
@@ -127,7 +135,10 @@ class TestReadOnlyModeSwitches(TestCase):
             touch_read_only_file()
             self.publication.beforeTraversal(self.request)
         finally:
-            remove_read_only_file()
+            # Tell remove_read_only_file() to not assert that the mode switch
+            # actually happened, as we know it won't happen until this request
+            # is finished.
+            remove_read_only_file(assert_mode_switch=False)
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.
@@ -142,6 +153,37 @@ class TestReadOnlyModeSwitches(TestCase):
             # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
             # through private attributes to get to the store's database.
             master._connection._database.dsn_without_user.strip())
+
+
+class TestReadOnlyNotifications(TestCase):
+    """Tests for `LaunchpadBrowserPublication.maybeNotifyReadOnlyMode`."""
+
+    layer = FunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        touch_read_only_file()
+        self.addCleanup(remove_read_only_file, assert_mode_switch=False)
+
+    def test_notification(self):
+        # In read-only mode, maybeNotifyReadOnlyMode adds a warning that
+        # changes cannot be made to every request that supports notifications.
+        publication = LaunchpadBrowserPublication(None)
+        request = LaunchpadTestRequest()
+        publication.maybeNotifyReadOnlyMode(request)
+        self.assertEqual(1, len(request.notifications))
+        notification = request.notifications[0]
+        self.assertEqual(logging.WARNING, notification.level)
+        self.assertTrue('read-only mode' in notification.message)
+
+    def test_notification_xmlrpc(self):
+        # Even in read-only mode, maybeNotifyReadOnlyMode doesn't try to add a
+        # notification to a request that doesn't support notifications.
+        from canonical.launchpad.webapp.servers import PublicXMLRPCRequest
+        publication = LaunchpadBrowserPublication(None)
+        request = PublicXMLRPCRequest(None, {})
+        # This is just assertNotRaises
+        publication.maybeNotifyReadOnlyMode(request)
 
 
 class TestWebServicePublication(TestCaseWithFactory):

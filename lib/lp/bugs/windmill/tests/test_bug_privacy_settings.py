@@ -1,13 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/15'
 MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/table'
@@ -27,11 +25,17 @@ PRIVACY_LINK = u'privacy-link'
 PRIVACY_TEXT = u'privacy-text'
 PRIVACY_TEXT_STRONG = u'//div[@id="privacy-text"]/strong'
 SECURITY_MESSAGE = u'security-message'
+IS_PRIVATE_CLASS = (
+    u"(function() {var classes = element.getAttribute('class').split(' '); "
+    "return classes.indexOf('private') >= 0"
+    " && "
+    "classes.indexOf('public') < 0})()")
 
 
-class TestSecurityOverlay(TestCaseWithFactory):
+class TestSecurityOverlay(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = "Bug privacy settings test"
 
     def test_security_settings_form_overlay(self):
         """Test the change of the privacy settings on bug pages.
@@ -40,7 +44,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         is public[private]" on a bug page uses the formoverlay to update the
         flags "private" and "security vulnerability".
          """
-        client = WindmillTestClient("Bug privacy settings test")
+        client = self.client
 
         # Open a bug page and wait for it to finish loading.
         client.open(url=BUG_URL)
@@ -80,6 +84,11 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.asserts.assertElemJS(
             xpath=MAIN_FORM_ELEMENT, js=FORM_NOT_VISIBLE)
 
+        # After the bug has been toggled to private, both the document
+        # as a whole and the privacy div have the class 'private' and
+        # do not have the class 'public'.
+        client.asserts.assertElemJS(id=u'document', js=IS_PRIVATE_CLASS)
+        client.asserts.assertElemJS(id=u'privacy', js=IS_PRIVATE_CLASS)
 
         # These text changes are made via Javascript, thus avoiding a
         # complete page load. Let's reload the page, to check that
