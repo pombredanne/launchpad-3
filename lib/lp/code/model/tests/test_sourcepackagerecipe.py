@@ -70,6 +70,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))
 
+    def test_edit(self):
+        """Only the owner can edit a sourcepackagerecipe."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertFalse(check_permission('launchpad.Edit', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.Edit', recipe))
+        with person_logged_in(recipe.owner):
+            self.assertTrue(check_permission('launchpad.Edit', recipe))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
