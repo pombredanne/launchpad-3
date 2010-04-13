@@ -13,13 +13,16 @@ import pytz
 from lazr.delegates import delegates
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import implements
+from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -32,6 +35,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 class BuildPackageJob(Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
+    classProvides(ISpecificBuildFarmJobClass)
     delegates(IBuildFarmJob, context='package_build_farm_job')
 
     __storm_table__ = 'buildpackagejob'
@@ -43,12 +47,12 @@ class BuildPackageJob(Storm):
     build_id = Int(name='build', allow_none=False)
     build = Reference(build_id, 'BinaryPackageBuild.id')
 
-    def __init__(self, *args, **kwargs):
+    @property
+    def package_build_farm_job(self):
         """Ensure that we have a package build farm job to which we can
         delegate.
         """
-        super(BuildPackageJob, self).__init__(args, kwargs)
-        self.package_build_farm_job = PackageBuildFarmJob(self.build)
+        return PackageBuildFarmJob(self.build)
 
     def score(self):
         """See `IBuildPackageJob`."""
@@ -173,6 +177,15 @@ class BuildPackageJob(Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `ISpecificBuildFarmJobClass`.
+        This base implementation should work for most build farm job
+        types, but some need to override it.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
