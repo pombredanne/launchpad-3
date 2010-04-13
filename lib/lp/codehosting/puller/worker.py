@@ -261,7 +261,34 @@ class BranchMirrorer(object):
             bzrdir.clone_on_transport, dest_transport,
             revision_id=revision_id)
         branch = Branch.open(destination_url)
-        return branch
+        if self.policy._is_import:
+            from bzrlib.repofmt.pack_repo import Pack
+            r_from = source_branch.repository
+            r_from.lock_read()
+            r_to = branch.repository
+            r_to.lock_write()
+            try:
+                r_from._pack_collection.ensure_loaded()
+                pt_from = r_from._pack_collection._pack_transport
+                it_from = r_from._pack_collection._index_transport
+                pt_to = r_to._pack_collection._pack_transport
+                it_to = r_to._pack_collection._index_transport
+                pack_names = []
+                for name in r_from._pack_collection.names():
+                    pack_names.append(name + '.pack')
+                pt_from.copy_to(pack_names, pt_to)
+                index_names = []
+                for name in r_from._pack_collection.names():
+                    for ext, _ in Pack.index_definitions.values():
+                        index_names.append(name + ext)
+                it_from.copy_to(index_names, it_to)
+                r_from._transport.copy_to(['pack-names'], r_to._transport)
+            finally:
+                r_from.unlock()
+                r_to.unlock()
+            return Branch.open_from_transport(dest_transport)
+        else:
+            return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.

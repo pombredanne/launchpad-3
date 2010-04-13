@@ -697,6 +697,8 @@ class BranchPolicy:
     stacked.
     """
 
+    _is_import = False
+
     def getStackedOnURLForDestinationBranch(self, source_branch,
                                             destination_url):
         """Return the URL of the branch to stack the mirrored copy on.
@@ -923,6 +925,8 @@ class ImportedBranchPolicy(BranchPolicy):
      - don't follow references,
      - assert the URLs start with the prefix we expect for imported branches.
     """
+
+    _is_import = True
 
     def shouldFollowReferences(self):
         """See `BranchPolicy.shouldFollowReferences`.
