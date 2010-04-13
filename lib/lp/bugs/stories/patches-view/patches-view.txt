@@ -10,6 +10,7 @@ product.  At first, the product is new and has no bugs.
     >>> patchy_product = factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeProduct,
     ...     name='patchy-product-1', displayname="Patchy 1")
+    >>> transaction.commit()
 
 We don't see any patches when we open the patches view.
 
@@ -34,15 +35,18 @@ view, because that bug has no patch attachments.
     ...     title, product, importance=BugTaskImportance.UNDECIDED,
     ...     status=BugTaskStatus.NEW):
     ...     bug = factory.makeBug(title=title, product=product)
+    ...     transaction.commit()
     ...     bug.default_bugtask.transitionToImportance(
     ...         importance, product.owner)
     ...     bug.default_bugtask.transitionToStatus(
     ...         status, product.owner)
+    ...     transaction.commit()
     ...     return bug
 
     >>> bug_a = factory.doAsUser(
     ...     'foo.bar@canonical.com', make_bug,
     ...     title="bug_a title", product=patchy_product)
+    >>> transaction.commit()
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -54,6 +58,7 @@ still shows no patches.
     >>> factory.doAsUser('foo.bar@canonical.com', factory.makeBugAttachment,
     ...            bug=bug_a, is_patch=False)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
     There are no patches associated with Patchy 1 at this time.
@@ -64,12 +69,14 @@ patches view.
     >>> patch_submitter = factory.doAsUser(
     ...    'foo.bar@canonical.com', factory.makePerson,
     ...    name="patchy-person", displayname="Patchy Person")
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch a",
     ...     filename="patch_a.diff", owner=patch_submitter,
     ...     description="description of patch a", bug=bug_a, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -109,41 +116,48 @@ attachments, and various statuses...
     ...     filename="patch_b.diff", owner=patch_submitter,
     ...     description="description of patch b", bug=bug_b, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch c",
     ...     filename="patch_c.diff", owner=patch_submitter,
     ...     description="description of patch c", bug=bug_b, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...    'foo.bar@canonical.com', factory.makeBugAttachment,
     ...    bug=bug_c, is_patch=False)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch d",
     ...     filename="patch_d.diff", owner=patch_submitter,
     ...     description="description of patch d", bug=bug_c, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch e",
     ...     filename="patch_e.diff", owner=patch_submitter,
     ...     description="description of patch e", bug=bug_c, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch f",
     ...     filename="patch_f.diff", owner=patch_submitter,
     ...     description="description of patch f", bug=bug_c, is_patch=True)
     <BugAttachment at...
+    >>> transaction.commit()
     >>> factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makeBugAttachment,
     ...     comment="comment about patch g",
     ...     filename="patch_g.diff", owner=patch_submitter,
     ...     description="description of patch g", bug=bug_d, is_patch=True)
     <BugAttachment at...
-
+    >>> transaction.commit()
+    
 ...the youngest patch on each bug is visible in the patch report
 (except for bugs in "Fix Released" state, which aren't shown):
 

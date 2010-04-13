@@ -22,7 +22,7 @@ Import the bunch of required database classes:
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-    >>> from lp.soyuz.model.build import Build
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from lp.soyuz.model.distroarchseries import (
     ...     DistroArchSeries, PocketChroot)
 
@@ -119,7 +119,7 @@ Add the missing build queue entries.
 
 Store current status of the database:
 
-    >>> old_build_ids = [build.id for build in Build.select()]
+    >>> old_build_ids = [build.id for build in BinaryPackageBuild.select()]
     >>> old_job_ids = [build_queue.id for build_queue in BuildQueue.select()]
 
 
@@ -233,7 +233,8 @@ distroseries (see bug 181328).
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
@@ -306,7 +307,7 @@ one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
 Check that we only created new Build entries for the new hoary releases:
 
-    >>> new_builds = [build for build in Build.select()
+    >>> new_builds = [build for build in BinaryPackageBuild.select()
     ...               if build.id not in old_build_ids]
     >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
     ...   print build.title
@@ -324,7 +325,7 @@ Check that we only created new Build entries for the new hoary releases:
 
 And have a look at our architecture-independent-source's build:
 
-    >>> arch_indep_build = Build.selectOneBy(
+    >>> arch_indep_build = BinaryPackageBuild.selectOneBy(
     ...     sourcepackagerelease=pub_all.sourcepackagerelease)
 
     >>> print arch_indep_build.title
@@ -347,7 +348,8 @@ can be dispatched once operation is committed, i.e. dispatching can
 happen in parallel with build creation.
 
     >>> build_queue = active_jobs[0]
-    >>> build = getUtility(IBuildSet).getByQueueEntry(build_queue)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+    ...     build_queue)
     >>> print build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
     >>> build_queue.lastscore
@@ -364,7 +366,8 @@ i.e., the published component can be different than the original component.
 Missing BuildQueue records, resulting from given-back builds, are
 created in the last stage of the queue-builder script.
 
-    >>> given_back_build = getUtility(IBuildSet).getByQueueEntry(build_queue)
+    >>> given_back_build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+    ...     build_queue)
     >>> build_queue.destroySelf()
     >>> flush_database_updates()
 
