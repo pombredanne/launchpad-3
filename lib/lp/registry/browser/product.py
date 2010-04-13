@@ -1011,9 +1011,9 @@ class ProductPackagesPortletView(LaunchpadFormView):
     """View class for product packaging portlet."""
 
     schema = Interface
+    package_field_name = 'distributionsourcepackage'
     custom_widget(
-        'distributionsourcepackage', LaunchpadRadioWidget,
-        orientation='vertical')
+        package_field_name, LaunchpadRadioWidget, orientation='vertical')
     suggestions = None
     other_package = object()
 
@@ -1036,6 +1036,10 @@ class ProductPackagesPortletView(LaunchpadFormView):
         else:
             return True
 
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        return {self.package_field_name: self.other_package}
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -1056,23 +1060,22 @@ class ProductPackagesPortletView(LaunchpadFormView):
                     item_url, escape(package.name))
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
-        description = 'An unlisted package'
+        description = 'Choose another Ubuntu package'
         vocab_terms.append(
             SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
-            Choice(__name__='distributionsourcepackage',
+            Choice(__name__=self.package_field_name,
                    title=_('Ubuntu %s packages' %
                            ubuntu.currentseries.displayname),
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Link to Ubuntu Package'), name='link')
+    @action(_('Set Ubuntu package information'), name='link')
     def link(self, action, data):
         product = self.context
-        dsp = data.get('distributionsourcepackage')
-        assert dsp is not None, "distributionsourcepackage was not specified"
+        dsp = data.get(self.package_field_name)
         product_series = product.development_focus
         if dsp is self.other_package:
             # The user wants to link an alternate package to this project.

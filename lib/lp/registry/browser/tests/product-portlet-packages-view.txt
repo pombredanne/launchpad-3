@@ -63,7 +63,7 @@ appropriate message asking to suggest a match.
     There are no unlinked source packages that are a good match. Can you
     suggest one?
     Ubuntu Hoary packages:
-    An unlisted package
+    Choose another Ubuntu package
 
 A distribution source package in a distribution other than ubuntu will
 not be suggested.
@@ -261,7 +261,7 @@ The +portlet-packages view can create a Packaging link.
 
     >>> form = {
     ...     'field.distributionsourcepackage': 'bingo',
-    ...     'field.actions.link': 'Link to this Ubuntu Package',
+    ...     'field.actions.link': 'Set Ubuntu package information',
     ...     }
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", form=form)
@@ -281,11 +281,15 @@ The +portlet-packages view can create a Packaging link.
     ...     getUtility(ISourcePackageNameSet)['bingo'],
     ...     ubuntu.currentseries)
 
-Choosing the other_package option issues a redirect to the +ubuntupkg.
+Choosing the other_package option issues a redirect to the +ubuntupkg. The
+option is the default value.
+
+    >>> view.initial_values['distributionsourcepackage'] is view.other_package
+    True
 
     >>> form = {
     ...     'field.distributionsourcepackage': 'OTHER_PACKAGE',
-    ...     'field.actions.link': 'Link to this Ubuntu Package',
+    ...     'field.actions.link': 'Set Ubuntu package information',
     ...     }
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", form=form)
