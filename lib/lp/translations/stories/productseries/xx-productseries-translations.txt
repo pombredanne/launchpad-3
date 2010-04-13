@@ -159,14 +159,14 @@ When the owner now visits the upload page for trunk, there's a notice.
     ...     find_tag_by_id(
     ...         owner_browser.contents, 'not-translated-in-launchpad'))
     This project is not using Launchpad for translations.
-    You can change this in the project settings. (Getting
-    started with translating your project in Launchpad)
+    Configure translations
+    Getting started with translating your project in Launchpad
 
-The notice links to the project settings where the option can be set.
+The notice links to the page for configuring translations on the project.
 
-    >>> owner_browser.getLink('project settings').click()
+    >>> owner_browser.getLink('Configure translations').click()
     >>> print owner_browser.url
-    http://.../bazaar/+edit
+    http://.../bazaar/+configure-translations
 
 An administrator also sees the notice.
 
@@ -177,8 +177,8 @@ An administrator also sees the notice.
     ...     find_tag_by_id(
     ...         admin_browser.contents, 'not-translated-in-launchpad'))
     This project is not using Launchpad for translations.
-    You can change this in the project settings. (Getting
-    started with translating your project in Launchpad)
+    Configure translations
+    Getting started with translating your project in Launchpad
 
 A Translations admin who is neither a Launchpad admin nor the project
 owner (and so won't be able to change the project's settings) sees the
@@ -213,7 +213,7 @@ notice but not the link to the project's settings.
     ...     find_tag_by_id(
     ...         jtv_browser.contents, 'not-translated-in-launchpad'))
     This project is not using Launchpad for translations.
-    (Getting started with translating your project in Launchpad)
+    Getting started with translating your project in Launchpad
 
 
 Branch synchronization options

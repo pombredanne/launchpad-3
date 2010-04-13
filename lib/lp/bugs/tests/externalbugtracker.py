@@ -24,8 +24,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
-    ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
+    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError, Bugzilla,
+    DebBugs, ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac)
 from lp.bugs.externalbugtracker.trac import (
     FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
@@ -151,6 +151,8 @@ class TestExternalBugTracker(ExternalBugTracker):
     Implements all the methods required of an `IExternalBugTracker`
     implementation, though it doesn't actually do anything.
     """
+
+    batch_size = BATCH_SIZE_UNLIMITED
 
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)

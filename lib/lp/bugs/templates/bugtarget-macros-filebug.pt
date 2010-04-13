@@ -143,7 +143,7 @@
       <div class="highlight-message">
         <a tal:replace="structure product_or_distro/fmt:link">Alsa Utils</a>
         <strong>does not use</strong> Launchpad as its bug tracker.
-        <a tal:attributes="href context/menu:overview/edit/fmt:url"
+        <a tal:attributes="href context/menu:overview/configure_bugtracker/fmt:url"
            tal:condition="context/required:launchpad.Edit">
           Change this&nbsp;<span class="sprite edit"></span>
         </a>
