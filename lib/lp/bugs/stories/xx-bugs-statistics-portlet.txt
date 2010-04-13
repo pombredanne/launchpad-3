@@ -310,8 +310,8 @@ bugs is also shown.
     4 Open bugs
     0 In-progress bugs
     0 Bugs assigned to me
-    0 High importance bugs
     1 Critical bug
+    0 High importance bugs
     0 Bugs fixed elsewhere
     4 New bugs
     1 Open CVE bug
