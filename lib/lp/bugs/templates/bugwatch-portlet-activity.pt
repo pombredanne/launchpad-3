@@ -6,10 +6,12 @@
   <h2>Recent activity</h2>
   <div id="recent-watch-activity">
     <tal:activity repeat="activity view/recent_watch_activity">
-      <img tal:attributes="src activity/icon; title activity/result_text" />
-      Update
-      <tal:message replace="activity/completion_message" />
-      <tal:time replace="activity/date/fmt:displaydate" />
+      <div>
+        <img tal:attributes="src activity/icon; title activity/result_text" />
+        Update
+        <tal:message replace="activity/completion_message" />
+        <tal:time replace="activity/date/fmt:displaydate" />
+      </div>
     </tal:activity>
   </div>
 </div>
