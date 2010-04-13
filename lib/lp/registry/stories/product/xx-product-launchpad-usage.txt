@@ -28,19 +28,13 @@ so let's use Sample Person, the registrant of Firefox..
     >>> registrant_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getLink('Configure bug tracker').click()
     >>> registrant_browser.url
-    'http://launchpad.dev/firefox/+edit'
+    'http://launchpad.dev/firefox/+configure-bugtracker'
 
 Firefox is currently marked as using Bugs. Let's specify that it
 doesn't use any bug tracker at all.
 
-    >>> registrant_browser.getControl(
-    ...     'Translations for this project are done in Launchpad').selected
-    False
-    >>> registrant_browser.getControl(
-    ...     'People can ask questions in Launchpad Answers').selected
-    True
     >>> registrant_browser.getControl(
     ...     'In Launchpad').selected
     True
@@ -49,12 +43,39 @@ doesn't use any bug tracker at all.
     ...     'become inactive').selected
     False
     >>> registrant_browser.getControl('Somewhere else').selected = True
+    >>> registrant_browser.getControl('Change').click()
 
 We'll also set it as officially using codehosting.
 
-    >>> registrant_browser.getControl(
-    ...     'Code for this project is published in Bazaar branches on'
-    ...     ' Launchpad').selected = True
+    >>> registrant_browser.getLink('Configure project branch').click()
+    >>> registrant_browser.getControl(name='field.branch_location').value = (
+    ...     '~name12/firefox/main')
+    >>> registrant_browser.getControl('Update').click()
+
+Translations can be enabled.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox')
+    >>> registrant_browser.getLink('Configure translations').click()
+    >>> registrant_browser.url
+    'http://launchpad.dev/firefox/+configure-translations'
+    >>> control = registrant_browser.getControl(
+    ...     'Translations for this project are done in Launchpad')
+    >>> control.selected
+    False
+    >>> control.selected = True
+    >>> registrant_browser.getControl('Change').click()
+
+Answers can be disabled.
+
+    >>> registrant_browser.open('http://launchpad.dev/firefox')
+    >>> registrant_browser.getLink('Configure support tracker').click()
+    >>> registrant_browser.url
+    'http://launchpad.dev/firefox/+configure-answers'
+    >>> control = registrant_browser.getControl(
+    ...     'People can ask questions in Launchpad Answers')
+    >>> control.selected
+    True
+    >>> control.selected = False
     >>> registrant_browser.getControl('Change').click()
 
 On the product page, we can see that the product doesn't use any bug
@@ -62,7 +83,7 @@ tracker, not even Launchpad.
 
     >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers and Branches.
+    Uses Launchpad for: Branches and Translations.
 
 
 Tracking bugs by email
@@ -71,7 +92,8 @@ Tracking bugs by email
 Instead if using a web-based bug tracker, projects can specify an
 email address where bug reports should be sent.
 
-    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.open(
+    ...     'http://launchpad.dev/firefox/+configure-bugtracker')
     >>> registrant_browser.getControl(
     ...     'By emailing an upstream bug contact').selected = True
     >>> registrant_browser.getControl(
@@ -90,14 +112,15 @@ An Email Address bug tracker is automatically created.
 
 An error message is shown if the email address is not filled in.
 
-    >>> registrant_browser.open('http://launchpad.dev/firefox/+edit')
+    >>> registrant_browser.open(
+    ...     'http://launchpad.dev/firefox/+configure-bugtracker')
     >>> registrant_browser.getControl(
     ...     'By emailing an upstream bug contact').selected = True
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.upstream_email_address').value = ''
     >>> registrant_browser.getControl('Change').click()
     >>> registrant_browser.url
-    'http://launchpad.dev/firefox/+edit'
+    'http://launchpad.dev/firefox/+configure-bugtracker'
     >>> for message in find_tags_by_class(
     ...     registrant_browser.contents, 'message'):
     ...     print extract_text(message)
@@ -124,7 +147,7 @@ support JavaScript so this behaviour is easy to simulate.)
     >>> registrant_browser.title
     'Jokosher Audio Editor in Launchpad'
 
-    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getLink('Configure bug tracker').click()
     >>> registrant_browser.getControl('In Launchpad').selected
     True
 
@@ -145,7 +168,7 @@ The Status of Launchpad uses shows the bug tracker was changed.
 Reviewing the edit page again, Dafydd, can see that bug expiration was
 also disabled by the switch from Launchpad Bugs.
 
-    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getLink('Configure bug tracker').click()
     >>> registrant_browser.getControl('In Launchpad').selected
     False
 

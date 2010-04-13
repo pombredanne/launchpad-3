@@ -25,6 +25,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 class ICanHasLinkedBranch(Interface):
     """Something that has a linked branch."""
 
+    context = Attribute("The object that can have a linked branch.")
     branch = Attribute("The linked branch.")
     bzr_path = Attribute(
         'The Bazaar branch path for the linked branch. '

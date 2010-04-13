@@ -29,7 +29,7 @@ from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -416,7 +416,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             self.ubuntutest, ArchivePurpose.PRIMARY)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -575,7 +575,6 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     happen."""
 
     layer = LaunchpadZopelessLayer
-
 
     def test_checkArchivePermission_by_PPA_owner(self):
         # Uploading to a PPA should be allowed for a user that is the owner 

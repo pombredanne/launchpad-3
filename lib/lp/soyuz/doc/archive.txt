@@ -2146,7 +2146,7 @@ to someone else's PPA, even though he is not the owner.
 
 Carlos can now upload to Joe's PPA:
 
-    >>> joes_ppa.canUpload(carlos)
+    >>> joes_ppa.checkArchivePermission(carlos)
     True
 
 Note that when creating a new permission, trying to specify a component other
