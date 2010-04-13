@@ -143,9 +143,18 @@ class Factory(SSHFactory):
 class SSHService(service.Service):
     """A Twisted service for the codehosting SSH server."""
 
-    def __init__(self, portal):
+    def __init__(self, portal, private_key_path, public_key_path):
+        """Construct an SSH service.
+
+        :param portal: The `Portal` that turns authentication requests into
+            views on the system.
+        :param private_key_path: The path to the SSH server's private key.
+        :param public_key_path: The path to the SSH server's public key.
+        """
         self.service = self.makeService()
         self._portal = portal
+        self._private_key_path = private_key_path
+        self._public_key_path = public_key_path
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in
@@ -154,8 +163,8 @@ class SSHService(service.Service):
         ssh_factory = TimeoutFactory(
             Factory(
                 self._portal,
-                public_key=Key.fromFile(get_key_path(PUBLIC_KEY_FILE)),
-                private_key=Key.fromFile(get_key_path(PRIVATE_KEY_FILE)),
+                private_key=Key.fromFile(self._private_key_path),
+                public_key=Key.fromFile(self._public_key_path),
                 banner=config.codehosting.banner),
             timeoutPeriod=config.codehosting.idle_timeout)
         return strports.service(config.codehosting.port, ssh_factory)
