@@ -9,7 +9,7 @@ __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.archiveuploader.permission import (
@@ -2161,9 +2161,19 @@ class ViewSourcePackageRecipe(AuthorizationBase):
     permission = "launchpad.View"
     usedfor = ISourcePackageRecipe
 
-    def checkAuthenticated(self, user):
+    def iter_adapters(self):
         for branch in self.obj.getReferencedBranches():
-            if not AccessBranch(branch).checkAuthenticated(user):
+            yield getAdapter(branch, IAuthorization, self.permission)
+
+    def checkAuthenticated(self, user):
+        for adapter in self.iter_adapters():
+            if not adapter.checkAuthenticated(user):
+                return False
+        return True
+
+    def checkUnauthenticated(self):
+        for adapter in self.iter_adapters():
+            if not adapter.checkUnauthenticated():
                 return False
         return True
 
