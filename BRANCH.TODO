@@ -2,36 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-
-* Look through the changes between -r10577..10584 -- see if we can do them
-  separately to the move
-
-
-* Move codehosting/sshserver/auth.py to lp/services/sshserver/auth.py
-  * Move codehosting/test_auth to lp/services
-    * Move the codehosting-specific bits back to codehosting
-* Move codehosting/sshserver/service.py to lp/services/sshserver/???
-* Create a new codehosting/sshserver/daemon.py file that has the glue code
-  in lib/lp/codehosting/sshserver/service.py from ssh-key-auth
-* Move PatchedSSHSession to lp.services
-* Figure out which bit of accesslog is bigger: the events or the code
-  * Rename codehosting/accesslog to services/{bigger-bit}
-  * Move the smaller bit into a separate file in services
-* Move generic sftp bits over
-* Copy test keys over
-* Extract event test changes
-
-* Check __all__'s are defined correctly
-* Review any changed / moved docstrings
-  * Double check any "docstring" changes in other branch
-    * c10559
-    * c10585
-    * c10583    
-* Check for lint / flakes
-  * c10558
-
-* Check testfixing revisions
-  * c10590
-  * c10591
-  * c10576
