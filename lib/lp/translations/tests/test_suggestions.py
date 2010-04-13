@@ -159,6 +159,9 @@ class TestTranslationSuggestions(unittest.TestCase):
         oof_potmsgset = self.factory.makePOTMsgSet(
             oof_template, singular=text)
         oof_potmsgset.setSequence(oof_template, 1)
+        from storm.store import Store
+        Store.of(oof_template).flush()
+        transaction.commit()
         suggestions = oof_potmsgset.getExternallyUsedTranslationMessages(
             self.nl)
         self.assertEquals(len(suggestions), 1)
