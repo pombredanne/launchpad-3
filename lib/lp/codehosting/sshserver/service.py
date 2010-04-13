@@ -158,26 +158,14 @@ class SSHService(service.Service):
         :param banner: An announcement printed to users when they connect.
             By default, announce nothing.
         """
-        self.service = self.makeService()
-        self._portal = portal
-        self._private_key_path = private_key_path
-        self._public_key_path = public_key_path
-        self._port = port
-        self._idle_timeout = idle_timeout
-        self._banner = banner
-
-    def makeService(self):
-        """Return a service that provides an SFTP server. This is called in
-        the constructor.
-        """
         ssh_factory = TimeoutFactory(
             Factory(
-                self._portal,
-                private_key=Key.fromFile(self._private_key_path),
-                public_key=Key.fromFile(self._public_key_path),
-                banner=self._banner),
-            timeoutPeriod=self._idle_timeout)
-        return strports.service(self._port, ssh_factory)
+                portal,
+                private_key=Key.fromFile(private_key_path),
+                public_key=Key.fromFile(public_key_path),
+                banner=banner),
+            timeoutPeriod=idle_timeout)
+        self.service = strports.service(port, ssh_factory)
 
     def startService(self):
         """Start the SSH service."""
