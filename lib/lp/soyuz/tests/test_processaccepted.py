@@ -3,10 +3,13 @@
 
 """Test process-accepted.py"""
 
+from cStringIO import StringIO
+
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -61,7 +64,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         broken_source = self.createWaitingAcceptancePackage(
             distroseries=distroseries, sourcename="notaccepted")
         distroseries.status = SeriesStatus.SUPPORTED
-        # Also upload some stuff in the main archive.
+        # Also upload some other things
         other_source = self.createWaitingAcceptancePackage()
         script = self.getScript([])
         script.main()
@@ -70,6 +73,15 @@ class TestProcessAccepted(TestCaseWithFactory):
         published_main = self.stp.ubuntutest.main_archive.getPublishedSources(
             name=self.test_package_name)
         self.assertEqual(published_main.count(), 1)
+
+        # And an oops should be filed for the first
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        fp = StringIO()
+        error_report.write(fp)
+        error_text = fp.getvalue()
+        self.failUnless("error-explanation=Failure processing queue_item" 
+            in error_text)
 
     def testAcceptCopyArchives(self):
         """Test that publications in a copy archive are accepted properly."""
