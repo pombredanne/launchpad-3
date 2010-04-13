@@ -101,10 +101,6 @@ class SourcePackageRecipe(Storm):
     def base_branch(self):
         return self._recipe_data.base_branch
 
-    def getReferencedBranches(self):
-        """See `ISourcePackageRecipe.getReferencedBranches`."""
-        return self._recipe_data.getReferencedBranches()
-
     @staticmethod
     def new(registrant, owner, distroseries, sourcepackagename, name,
             builder_recipe, description):

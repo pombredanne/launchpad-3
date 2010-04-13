@@ -62,6 +62,10 @@ class ISourcePackageRecipeData(Interface):
         description = _(
             'The template that will be used to generate a deb version.'),)
 
+    def getReferencedBranches():
+        """An iterator of the branches referenced by this recipe."""
+
+
 
 class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
@@ -104,9 +108,6 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     base_branch = Reference(
         IBranch, title=_("The base branch used by this recipe."),
         required=True, readonly=True)
-
-    def getReferencedBranches():
-        """An iterator of the branches referenced by this recipe."""
 
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
