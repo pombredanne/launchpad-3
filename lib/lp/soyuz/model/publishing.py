@@ -22,6 +22,7 @@ import operator
 import os
 import pytz
 import re
+import sys
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -39,6 +40,8 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
@@ -60,7 +63,7 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
@@ -248,9 +251,18 @@ class ArchivePublisherBase:
 
     def publish(self, diskpool, log):
         """See `IPublishing`"""
-        for pub_file in self.files:
-            pub_file.publish(diskpool, log)
-        self.setPublished()
+        try:
+            for pub_file in self.files:
+                pub_file.publish(diskpool, log)
+        except PoolFileOverwriteError, e:
+            message = "PoolFileOverwriteError: %s, skipping." %  e
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            error_utility = ErrorReportingUtility()
+            error_utility.raising(sys.exc_info(), request)
+            log.error('%s (%s)' % (message, request.oopsid))
+        else:
+            self.setPublished()
 
     def getIndexStanza(self):
         """See `IPublishing`."""
