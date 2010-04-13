@@ -8,22 +8,25 @@ __metaclass__ = type
 import transaction
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts.logger import BufferLogger
 
 from lp.buildmaster.interfaces.builder import CannotBuild
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.manager import RecordingSlave
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
-from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
+from lp.soyuz.adapters.archivedependencies import (
+    get_sources_list_for_building)
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import (
     MockBuilder, OkSlave)
-from lp.soyuz.tests.test_binarypackagebuildbehavior import (
-    BaseTestVerifySlaveBuildID)
 from lp.soyuz.tests.test_publishing import (
     SoyuzTestPublisher,)
 from lp.testing import TestCaseWithFactory
@@ -63,6 +66,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, recipe=recipe, requester=requester)
         job = spb.makeJob()
+        job_id = removeSecurityProxy(job.job).id
+        BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
         job = IBuildFarmJobBehavior(job)
         return job
 
@@ -126,7 +131,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(["ensurepresent", "build"],
                           [call[0] for call in slave.calls])
         build_args = slave.calls[1][1]
-        self.assertEquals(build_args[0], "1-someid")
+        self.assertEquals(
+            build_args[0], job.buildfarmjob.generateSlaveBuildCookie())
         self.assertEquals(build_args[1], "sourcepackagerecipe")
         self.assertEquals(build_args[3], {})
         distroarchseries = job.build.distroseries.architectures[0]
@@ -149,27 +155,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
         transaction.commit()
         self.assertEquals(
             job.build, SourcePackageRecipeBuild.getById(job.build.id))
-
-
-class BaseTestCaseWithBuilds(TestCaseWithFactory):
-    def setUp(self):
-        super(BaseTestCaseWithBuilds, self).setUp()
-
-        self.builds = []
-
-        build = self.factory.makeSourcePackageRecipeBuild()
-        build.queueBuild()
-        self.builds.append(build)
-
-        build = self.factory.makeSourcePackageRecipeBuild()
-        build.queueBuild()
-        self.builds.append(build)
-
-
-class TestVerifySlaveBuildID(BaseTestVerifySlaveBuildID,
-                             BaseTestCaseWithBuilds):
-    """Run the tests from BaseTestVerifySlaveBuildID against recipe builds."""
-    pass
 
 
 def test_suite():

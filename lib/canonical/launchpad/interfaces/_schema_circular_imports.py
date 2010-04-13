@@ -32,7 +32,7 @@ from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
@@ -169,7 +169,7 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
         'params']['build_state'].vocabulary = BuildStatus
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
-        'return_type'].value_type.schema = IBuild
+        'return_type'].value_type.schema = IBinaryPackageBuild
 
 ISourcePackage['distroseries'].schema = IDistroSeries
 ISourcePackage['productseries'].schema = IProductSeries
@@ -189,7 +189,8 @@ IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
 ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = (
+        IBinaryPackageBuild)
 ISourcePackagePublishingHistoryPublic[
     'getPublishedBinaries'].queryTaggedValue(
         LAZR_WEBSERVICE_EXPORTED)[

@@ -9,7 +9,6 @@ __all__ = [
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
-    'ProductSeriesBranchTarget',
     ]
 
 from zope.component import getUtility

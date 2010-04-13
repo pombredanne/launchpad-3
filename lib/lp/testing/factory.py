@@ -307,7 +307,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         login(user)
         try:
             result = factory_method(**factory_args)
-            transaction.commit()
         finally:
             logout()
         return result
@@ -328,13 +327,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeAccount(self, displayname, email=None, password=None,
                     status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN,
-                    commit=True):
-        """Create and return a new Account.
-
-        If commit is True, we do a transaction.commit() at the end so that the
-        newly created objects can be seen in other stores as well.
-        """
+                    rationale=AccountCreationRationale.UNKNOWN):
+        """Create and return a new Account."""
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
@@ -345,23 +339,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
             email, person=None, account=account, email_status=email_status)
-        if commit:
-            transaction.commit()
         return account
-
-    def makePerson(self, *args, **kwargs):
-        """As makePersonNoCommit, except with an implicit transaction commit.
-
-        makePersonNoCommit makes changes to two seperate database connections,
-        and the returned Person can have odd behavior until a commit is
-        made. For example, person.preferredemail will be None as this
-        is looking in the main Store for email address details, not the
-        email address master Store (the auth Store).
-        """
-        person = self.makePersonNoCommit(*args, **kwargs)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
-        return person
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -376,20 +354,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             active=True,
             can_encrypt=False)
 
-    def _stuff_preferredemail_cache(self, person):
-        """Stuff the preferredemail cache.
-
-        cachedproperty does not get reset across transactions,
-        so person.preferredemail can contain a bogus value even after
-        a commit, despite all changes now being available in the main
-        store.
-        """
-        naked_person = removeSecurityProxy(person)
-        naked_person._preferredemail_cached = Store.of(person).find(
-            EmailAddress, personID=person.id,
-            status=EmailAddressStatus.PREFERRED).one()
-
-    def makePersonNoCommit(
+    def makePerson(
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None):
@@ -501,8 +466,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         getUtility(IEmailAddressSet).new(
             alternative_address, person, EmailAddressStatus.VALIDATED,
             account)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
         return person
 
     def makeEmail(self, address, person, account=None, email_status=None):
@@ -568,8 +531,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
-        transaction.commit()
-        self._stuff_preferredemail_cache(team)
         return team
 
     def makePoll(self, team, name, title, proposition):
@@ -680,24 +641,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             signature_content=signature_content,
             description=description)
 
-    def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an explicit transaction commit.
-
-        This ensures that generated owners and registrants are fully
-        flushed and available from all Stores.
-        """
-        product = self.makeProductNoCommit(*args, **kwargs)
-        transaction.commit()
-        return product
-
-    def makeProductNoCommit(
+    def makeProduct(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         official_rosetta=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -1128,9 +1079,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             to this URL.
         """
         if product is None:
-            product = self.makeProductNoCommit()
+            product = self.makeProduct()
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if title is None:
             title = self.getUniqueString()
         if comment is None:
@@ -1536,10 +1487,6 @@ class LaunchpadObjectFactory(ObjectFactory):
                               merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
-            # Until we commit, sender.preferredemail returns None
-            # because the email address changes pending in the auth Store
-            # are not available via the main Store.
-            transaction.commit()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -2448,6 +2395,5 @@ class LaunchpadObjectFactory(ObjectFactory):
         if blob is None:
             blob = self.getUniqueString()
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
-        transaction.commit()
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)

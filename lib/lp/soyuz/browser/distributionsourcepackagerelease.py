@@ -21,7 +21,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.archivepublisher.debversion import Version
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -47,7 +47,7 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
 
@@ -119,7 +119,7 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
         :return: a `list` of dictionaries containing 'distroseries' and its
              grouped 'builds' ordered by descending distroseries versions.
         """
-        # Build a local list of `IBuilds` ordered by ascending
+        # Build a local list of `IBinaryPackageBuilds` ordered by ascending
         # 'architecture_tag'.
         cached_builds = sorted(
             self.context.builds, key=operator.attrgetter('arch_tag'))
