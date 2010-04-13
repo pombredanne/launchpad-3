@@ -213,9 +213,9 @@ class LaunchpadBrowserPublication(
                     structured("""
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
-                        changes.</i> Please see the <a
-                        href="http://blog.launchpad.net/maintenance">Launchpad
-                        Blog</a> for details.
+                        changes.</i> You can find more information on the
+                        <a href="http://identi.ca/launchpadstatus">Launchpad
+                        system status</a> page.
                         """))
 
     def getPrincipal(self, request):

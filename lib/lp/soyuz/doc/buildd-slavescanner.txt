@@ -38,8 +38,15 @@ Import MockBuilder and a series of MockSlaves to be used in this test.
 Slave-scanner will deactivate a 'lost-building' builder that could not
 be aborted appropriately.
 
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.buildmaster.interfaces.builder import CorruptBuildCookie
+    >>> from lp.testing.fakemethod import FakeMethod
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Broken Slave', LostBuildingBrokenSlave())
+    >>> behavior = removeSecurityProxy(
+    ...     lostbuilding_builder.current_build_behavior)
+    >>> behavior.verifySlaveBuildCookie = FakeMethod(
+    ...     failure=CorruptBuildCookie("Hopelessly lost!"))
 
     >>> lostbuilding_builder.updateStatus(logger)
     Aborting slave
@@ -80,7 +87,6 @@ We want to get a Build and make BuildQueue items for it:
 To make testing easier we provide a convenience function to put a BuildQueue
 object into a preset fixed state:
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> default_start = datetime.datetime(2005, 1, 1, 8, 0, 0, tzinfo=UTC)
     >>> def setupBuildQueue(build_queue, builder):
     ...      build_queue.builder = builder

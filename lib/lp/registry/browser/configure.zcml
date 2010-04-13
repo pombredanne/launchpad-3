@@ -495,6 +495,20 @@
         facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.pillar.ProductInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.product.IProductSeries"
+        class="lp.registry.browser.pillar.ProductSeriesInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
     <facet
         facet="overview">
         <browser:url
@@ -1457,6 +1471,34 @@
         class="lp.registry.browser.product.ProductEditView"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-answers"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureAnswersView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-blueprints"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureBlueprintsView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-bugtracker"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureBugTrackerView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-translations"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
     <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"

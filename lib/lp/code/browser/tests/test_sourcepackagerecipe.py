@@ -29,7 +29,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     def setUp(self):
         """Provide useful defaults."""
         super(TestSourcePackageRecipeView, self).setUp()
-        self.chef = self.factory.makePersonNoCommit(
+        self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef)

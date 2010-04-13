@@ -21,7 +21,7 @@ from lp.codehosting.scanner.tests.test_bzrsync import (
 from canonical.config import config
 from lp.code.enums import BranchLifecycleStatus, BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -35,7 +35,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
     @run_as_db_user(config.launchpad.dbuser)
     def createProposal(self, source, target):
         # The scanner doesn't have insert rights, so do it here.
-        proposal = source.addLandingTarget(source.owner, target)
+        source.addLandingTarget(source.owner, target)
         transaction.commit()
 
     def _createBranchesAndProposal(self):
@@ -69,6 +69,7 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
         self.assertEqual(
             BranchMergeProposalStatus.MERGED,
             proposal.queue_status)
+        self.assertEqual(3, proposal.merged_revno)
 
     def test_auto_merge_proposals_real_merge_target_scanned_first(self):
         # If there is a merge proposal where the tip of the source is in the
@@ -210,7 +211,7 @@ class TestMergeDetection(TestCaseWithFactory):
         # Other branches for the product are checked, but if the tip revision
         # of the branch is not yet been set no merge event is emitted for that
         # branch.
-        source = self.factory.makeProductBranch(product=self.product)
+        self.factory.makeProductBranch(product=self.product)
         self.autoMergeBranches(self.db_branch, ['revid'])
         self.assertEqual([], self.merges)
 
@@ -331,6 +332,46 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         notify(events.ScanCompleted(target, None, ['23foo'], logger))
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
+
+
+class TestFindMergedRevno(TestCase):
+    """Tests for find_merged_revno."""
+
+    def get_merge_graph(self):
+        # Create a fake merge graph.
+        return [
+            ('rev-3', 0, (3,), False),
+            ('rev-3a', 1, (15, 4, 8), False),
+            ('rev-3b', 1, (15, 4, 7), False),
+            ('rev-3c', 1, (15, 4, 6), False),
+            ('rev-2', 0, (2,), False),
+            ('rev-2a', 1, (4, 4, 8), False),
+            ('rev-2b', 1, (4, 4, 7), False),
+            ('rev-2-1a', 2, (7, 2, 47), False),
+            ('rev-2-1b', 2, (7, 2, 45), False),
+            ('rev-2-1c', 2, (7, 2, 42), False),
+            ('rev-2c', 1, (4, 4, 6), False),
+            ('rev-1', 0, (1,), False),
+            ]
+
+    def assertFoundRevisionNumber(self, expected, rev_id):
+        merge_sorted = self.get_merge_graph()
+        revno = mergedetection.find_merged_revno(merge_sorted, rev_id)
+        if expected is None:
+            self.assertIs(None, revno)
+        else:
+            self.assertEqual(expected, revno)
+
+    def test_not_found(self):
+        # If the rev_id passed into the function isn't in the merge sorted
+        # graph, None is returned.
+        self.assertFoundRevisionNumber(None, 'not-there')
+
+    def test_existing_revision(self):
+        # If a revision is found, the last mainline revision is returned.
+        self.assertFoundRevisionNumber(3, 'rev-3b')
+        self.assertFoundRevisionNumber(2, 'rev-2-1c')
+        self.assertFoundRevisionNumber(1, 'rev-1')
 
 
 def test_suite():

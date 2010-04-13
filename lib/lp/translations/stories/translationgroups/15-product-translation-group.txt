@@ -10,9 +10,10 @@ First make sure it uses Launchpad for translations.
     ...     find_tag_by_id(netapplet_owner_browser.contents, 'uses'))
     Does not use Launchpad for development.
 
-    >>> netapplet_owner_browser.getLink('Change details').click()
+    >>> netapplet_owner_browser.getLink(
+    ...   'Configure translations').click()
     >>> print netapplet_owner_browser.title
-    Change Network Applet's details...
+    Configure Translations : NetApplet
 
     >>> netapplet_owner_browser.getControl(
     ...     'Translations for this project are done in Launchpad'
