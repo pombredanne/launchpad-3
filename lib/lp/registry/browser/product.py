@@ -12,11 +12,17 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductConfigureAnswersView',
+    'ProductConfigureBlueprintsView',
+    'ProductConfigureBranchesView',
+    'ProductConfigureBugTrackerView',
+    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
     'ProductEditView',
     'ProductFacets',
+    'ProductInvolvementView',
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
@@ -331,6 +337,30 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
+        return Link('+configure-bugtracker', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_translations(self):
+        text = 'Configure translations'
+        summary = 'Allow users to submit translations for this project'
+        return Link('+configure-translations', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_answers(self):
+        text = 'Configure support tracker'
+        summary = 'Allow users to ask questions on this project'
+        return Link('+configure-answers', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_blueprints(self):
+        text = 'Configure blueprints'
+        summary = 'Enable tracking of specifications and meetings'
+        return Link('+configure-blueprints', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def branding(self):
         text = 'Change branding'
         return Link('+branding', text, icon='edit')
@@ -374,6 +404,10 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     facet = 'overview'
     links = [
         'edit',
+        'configure_answers',
+        'configure_blueprints',
+        'configure_bugtracker',
+        'configure_translations',
         'reassign',
         'top_contributors',
         'distributions',
@@ -473,11 +507,12 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         return Link('+securitycontact', text, icon='edit')
 
 
-class ProductSpecificationsMenu(NavigationMenu,
+class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
                                 HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
+    links = ['configure_blueprints', 'listall', 'doc', 'assignments', 'new',
+             'register_sprint']
 
 
 def _cmp_distros(a, b):
@@ -1145,6 +1180,70 @@ class ProductBrandingView(BrandingChangeView):
         return canonical_url(self.context)
 
 
+class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
+    implements(IProductEditMenu)
+    schema = IProduct
+
+    @property
+    def page_title(self):
+        return self.label
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
+class ProductConfigureBugTrackerView(ProductConfigureBase):
+    """View class to configure the bug tracker for a project."""
+
+    label = "Configure bug tracker"
+    field_names = [
+        "bugtracker",
+        "enable_bug_expiration",
+        "remote_product",
+        "bug_reporting_guidelines",
+        ]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The constraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
+
+
+class ProductConfigureBlueprintsView(ProductConfigureBase):
+    """View class to configure the Launchpad Blueprints for a project."""
+
+    label = "Configure Blueprints"
+    field_names = [
+        "official_blueprints",
+        ]
+
+
+class ProductConfigureTranslationsView(ProductConfigureBase):
+    """View class to configure the Launchpad Translations for a project."""
+
+    label = "Configure Translations"
+    field_names = [
+        "official_rosetta",
+        ]
+
+
+class ProductConfigureAnswersView(ProductConfigureBase):
+    """View class to configure the Launchpad Answers for a project."""
+
+    label = "Configure Answers"
+    field_names = [
+        "official_answers",
+        ]
+
+
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1157,15 +1256,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "title",
         "summary",
         "description",
-        "bug_reporting_guidelines",
         "project",
-        "official_codehosting",
-        "bugtracker",
-        "enable_bug_expiration",
-        "official_blueprints",
-        "official_rosetta",
-        "official_answers",
-        "remote_product",
         "homepageurl",
         "sourceforgeproject",
         "freshmeatproject",
@@ -1178,7 +1269,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "license_info",
         ]
     custom_widget('licenses', LicenseWidget)
-    custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
 
     @property
@@ -1205,18 +1295,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if field_name == 'license_info':
             return False
         return super(ProductEditView, self).showOptionalMarker(field_name)
-
-    def validate(self, data):
-        """Constrain bug expiration to Launchpad Bugs tracker."""
-        # enable_bug_expiration is disabled by JavaScript when bugtracker
-        # is not 'In Launchpad'. The contraint is enforced here in case the
-        # JavaScript fails to activate or run. Note that the bugtracker
-        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
-        # 'In a registered bug tracker' : IBugTracker}.
-        bugtracker = data.get('bugtracker', None)
-        if bugtracker is None or IBugTracker.providedBy(bugtracker):
-            data['enable_bug_expiration'] = False
-        ProductLicenseMixin.validate(self, data)
 
     @action("Change", name='change')
     def change_action(self, action, data):

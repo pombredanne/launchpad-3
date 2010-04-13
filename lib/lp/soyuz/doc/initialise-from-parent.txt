@@ -23,6 +23,19 @@ with other tests)
   ...                                 'The Foobuntu', 'yeck', 'doom',
   ...                                 '888', hoary, hoary.owner)
 
+
+The script will check that there are no NEEDSBUILD builds in the parent
+distroseries' release pocket, so we need to tweak the status of the NEEDSBUILD
+builds that exist in Ubuntu Hoary in the sampledata:
+
+  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+  >>> pending_builds = hoary.getBuildRecords(BuildStatus.NEEDSBUILD,
+  ...     pocket=PackagePublishingPocket.RELEASE)
+  >>> for build in pending_builds:
+  ...     build.buildstate = BuildStatus.FAILEDTOBUILD
+
   >>> import transaction
   >>> transaction.commit()
 

@@ -46,9 +46,6 @@ from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 # We should probably split out all the stuff in this directory that
 # doesn't rely on Zope and migrate it to canonical/scripts.
 
-# XXX SteveAlexander 2005-04-11:
-# This is a total mess.  I need to work out what this all means.
-
 class NullItem:
     def __init__(self, context, handler, info, *argdata):
         newcontext = GroupingContextDecorator(context)

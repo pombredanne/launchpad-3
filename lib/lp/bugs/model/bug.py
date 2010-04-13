@@ -45,6 +45,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
     Message, MessageChunk, MessageSet)
 from canonical.launchpad.fields import DuplicateBug
@@ -102,7 +103,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import Person, ValidPersonCache
@@ -246,8 +246,6 @@ class Bug(SQLBase):
             prejoins=["person"])
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
-        orderBy='id', prejoins=['libraryfile'])
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
@@ -481,7 +479,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.latest_patch_uploaded is not None
 
-    def subscribe(self, person, subscribed_by):
+    def subscribe(self, person, subscribed_by, send_notifications=False):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
@@ -490,6 +488,9 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+
+        if send_notifications is True:
+            notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
         getUtility(ICalculateBugHeatJobSource).create(self)
 
@@ -781,7 +782,7 @@ class Bug(SQLBase):
         # data.
         activity_data = change.getBugActivity()
         if activity_data is not None:
-            bug_activity = getUtility(IBugActivitySet).new(
+            getUtility(IBugActivitySet).new(
                 self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
@@ -1543,6 +1544,19 @@ class Bug(SQLBase):
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
+
+    @property
+    def attachments(self):
+        """See `IBug`."""
+        # We omit those bug attachments that do not have a
+        # LibraryFileContent record in order to avoid OOPSes as
+        # mentioned in bug 542274. These bug attachments will be
+        # deleted anyway during the next garbo_daily run.
+        store = Store.of(self)
+        return store.find(
+            BugAttachment, BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
 
 class BugSet:

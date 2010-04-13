@@ -560,6 +560,30 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob).count(),
             1)
 
+    def test_ObsoleteBugAttachmentDeleter(self):
+        # Bug attachments without a LibraryFileContent record are removed.
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        bug = self.factory.makeBug()
+        attachment = self.factory.makeBugAttachment(bug=bug)
+        transaction.commit()
+
+        # Bug attachments that have a LibraryFileContent record are
+        # not deleted.
+        self.assertIsNot(attachment.libraryfile.content, None)
+        self.runDaily()
+        self.assertEqual(bug.attachments.count(), 1)
+
+        # But once we delete the LfC record, the attachment is deleted
+        # in the next daily garbo run.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        removeSecurityProxy(attachment.libraryfile).content = None
+        transaction.commit()
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(bug.attachments.count(), 0)
+
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

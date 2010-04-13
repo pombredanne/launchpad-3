@@ -288,9 +288,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     number_of_duplicates = exported(
         Int(title=_('The number of bugs marked as duplicates of this bug'),
             required=True, readonly=True))
-    message_count = Int(
-        title=_('The number of comments on this bug'),
-        required=True, readonly=True)
+    message_count = exported(
+        Int(title=_('The number of comments on this bug'),
+        required=True, readonly=True))
     users_affected_count = exported(
         Int(title=_('The number of users affected by this bug '
                     '(not including duplicates)'),
@@ -374,11 +374,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
-    def subscribe(person, subscribed_by):
+    def subscribe(person, subscribed_by, send_notifications=False):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
+        :param send_notifications: send "suscribed by" notifications.
         :return: an `IBugSubscription`.
         """
 

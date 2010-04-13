@@ -42,7 +42,7 @@ from lp.codehosting import sftp
 from lp.codehosting.sshserver import accesslog
 from lp.codehosting.sshserver.session import (
     launch_smart_server, PatchedSSHSession)
-from lp.codehosting.vfs.branchfsclient import trap_fault
+from lp.services.twistedsupport.xmlrpc import trap_fault
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 
