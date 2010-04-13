@@ -13,7 +13,6 @@ import pytz
 import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
-from zope.interface import implements
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -22,17 +21,23 @@ from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from lp.hardwaredb.model.hwdb import HWSubmission
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from canonical.launchpad.utilities.looptuner import (
+    DBLoopTuner, TunableLoop)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.scripts.checkwatches.scheduler import (
+    BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -45,29 +50,6 @@ from lp.services.scripts.base import (
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-class TunableLoop:
-    implements(ITunableLoop)
-
-    goal_seconds = 4
-    minimum_chunk_size = 1
-    maximum_chunk_size = None # Override
-    cooldown_time = 0
-
-    def __init__(self, log, abort_time=None):
-        self.log = log
-        self.abort_time = abort_time
-
-    def run(self):
-        assert self.maximum_chunk_size is not None, (
-            "Did not override maximum_chunk_size.")
-        DBLoopTuner(
-            self, self.goal_seconds,
-            minimum_chunk_size = self.minimum_chunk_size,
-            maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -141,19 +123,17 @@ class OpenIDConsumerNoncePruner(TunableLoop):
         transaction.commit()
 
 
-class OpenIDAssociationPruner(TunableLoop):
+class OpenIDConsumerAssociationPruner(TunableLoop):
     minimum_chunk_size = 3500
     maximum_chunk_size = 50000
 
-    table_name = 'OpenIDAssociation'
-    store_name = AUTH_STORE
+    table_name = 'OpenIDConsumerAssociation'
 
     _num_removed = None
 
     def __init__(self, log, abort_time=None):
-        super(OpenIDAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(
-            self.store_name, MASTER_FLAVOR)
+        super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     def __call__(self, chunksize):
         result = self.store.execute("""
@@ -170,11 +150,6 @@ class OpenIDAssociationPruner(TunableLoop):
 
     def isDone(self):
         return self._num_removed == 0
-
-
-class OpenIDConsumerAssociationPruner(OpenIDAssociationPruner):
-    table_name = 'OpenIDConsumerAssociation'
-    store_name = MAIN_STORE
 
 
 class RevisionCachePruner(TunableLoop):
@@ -755,6 +730,93 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
+class BugWatchActivityPruner(TunableLoop):
+    """A TunableLoop to prune BugWatchActivity entries."""
+
+    maximum_chunk_size = 1000
+
+    def getPrunableBugWatchIds(self, chunk_size):
+        """Return the set of BugWatch IDs whose activity is prunable."""
+        query = """
+            SELECT
+                watch_activity.id
+            FROM (
+                SELECT
+                    BugWatch.id AS id,
+                    COUNT(BugWatchActivity.id) as activity_count
+                FROM BugWatch, BugWatchActivity
+                WHERE BugWatchActivity.bug_watch = BugWatch.id
+                GROUP BY BugWatch.id) AS watch_activity
+            WHERE watch_activity.activity_count > %s
+            LIMIT %s;
+        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
+        store = IMasterStore(BugWatch)
+        results = store.execute(query)
+        return set(result[0] for result in results)
+
+    def pruneBugWatchActivity(self, bug_watch_ids):
+        """Prune the BugWatchActivity for bug_watch_ids."""
+        query = """
+            DELETE FROM BugWatchActivity
+            WHERE id IN (
+                SELECT id
+                FROM BugWatchActivity
+                WHERE bug_watch = %s
+                ORDER BY id DESC
+                OFFSET %s);
+        """
+        store = IMasterStore(BugWatch)
+        for bug_watch_id in bug_watch_ids:
+            results = store.execute(
+                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
+            self.log.debug(
+                "Pruned %s BugWatchActivity entries for watch %s" %
+                (results.rowcount, bug_watch_id))
+
+    def __call__(self, chunk_size):
+        transaction.begin()
+        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
+        self.pruneBugWatchActivity(prunable_ids)
+        transaction.commit()
+
+    def isDone(self):
+        """Return True if there are no watches left to prune."""
+        return len(self.getPrunableBugWatchIds(1)) == 0
+
+
+class ObsoleteBugAttachmentDeleter(TunableLoop):
+    """Delete bug attachments without a LibraryFileContent record.
+
+    Our database schema allows LibraryFileAlias records that have no
+    corresponding LibraryFileContent records.
+
+    This class deletes bug attachments that reference such "content free"
+    and thus completely useless LFA records.
+    """
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
+        self.store = IMasterStore(BugAttachment)
+
+    def _to_remove(self):
+        return self.store.find(
+            BugAttachment.id,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content == None)
+
+    def isDone(self):
+        return self._to_remove().any() is None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        ids_to_remove = list(self._to_remove()[:chunk_size])
+        self.store.find(
+            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -835,10 +897,10 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
-        OpenIDAssociationPruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         BugHeatUpdater,
+        BugWatchScheduler,
         ]
     experimental_tunable_loops = []
 
@@ -860,6 +922,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
+        BugWatchActivityPruner,
+        ObsoleteBugAttachmentDeleter,
         ]
     experimental_tunable_loops = [
         PersonPruner,

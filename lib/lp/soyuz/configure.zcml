@@ -225,6 +225,8 @@
         class="canonical.launchpad.database.PackageUploadCustom">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
+        <require
+            permission="launchpad.Admin" set_attributes="libraryfilealias"/>
     </class>
 
     <!-- PackageUploadSet -->

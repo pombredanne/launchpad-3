@@ -1428,6 +1428,13 @@ class ArchiveStatus(DBEnumeratedType):
         requested and short-lived status.
         """)
 
+    DELETED = DBItem(2, """
+        Deleted
+
+        This archive has been deleted and removed from disk.
+        """)
+
+
 
 default_name_by_purpose = {
     ArchivePurpose.PRIMARY: 'primary',

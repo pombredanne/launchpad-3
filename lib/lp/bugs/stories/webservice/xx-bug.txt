@@ -34,6 +34,7 @@ At the top level we provide a collection of bugs.
   id: 11
   latest_patch_uploaded: None
   linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
+  message_count: 7
   messages_collection_link: u'http://.../bugs/11/messages'
   name: None
   number_of_duplicates: 0
@@ -851,6 +852,7 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
+    ...     send_notifications=True,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -903,6 +905,7 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
+    ...     send_notifications=True,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -946,6 +949,7 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
+    ...     send_notifications=True,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -976,6 +980,7 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
+    ...     send_notifications=True,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
@@ -1025,6 +1030,7 @@ report described by the bugwatch.
   date_created: u'2004-10-04T01:00:00+00:00'
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
@@ -1096,6 +1102,7 @@ Following the redirect, we can see the new bug watch:
   date_created: u'...'
   date_last_changed: None
   date_last_checked: None
+  date_next_checked: None
   last_error_type: None
   owner_link: u'http://.../~salgado'
   remote_bug: u'9876'

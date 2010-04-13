@@ -208,26 +208,15 @@ Bar are now owned/driven by the registry admins team.
 
 == Reactivating user accounts ==
 
-Accounts can be reactivated. A comment is required to log why this was
-done, and a password is required too. There are two preconditions before
-this method can be called on an Account: The password and the preferred
-email address cannot not be None.
+Accounts can be reactivated. A comment and a non-None preferred email address
+are required to reactivate() an account, though.
 
     >>> foobar.account.reactivate(
-    ...     'This will raise an error.', password=None, preferred_email=None)
-    Traceback (most recent call last):
-     ...
-    AssertionError: Account ... cannot be reactivated without a password.
-
-    >>> foobar.account.reactivate(
-    ...     'This will raise an error.', password='ok', preferred_email=None)
+    ...     'This will raise an error.', password='', preferred_email=None)
     Traceback (most recent call last):
      ...
     AssertionError: Account ... cannot be activated without a preferred
                     email address.
-
-The account can be reactivated after the password and preferred email
-address are set.
 
     >>> foobar.reactivate(
     ...     'User reactivated the account using reset password.',
