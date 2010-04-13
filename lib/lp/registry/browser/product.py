@@ -45,7 +45,10 @@ __all__ = [
 
 
 from cgi import escape
+from datetime import datetime, timedelta
 from operator import attrgetter
+
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -1012,6 +1015,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
         'distributionsourcepackage', LaunchpadRadioWidget,
         orientation='vertical')
     suggestions = None
+    other_package = object()
 
     @cachedproperty
     def sourcepackages(self):
@@ -1025,7 +1029,14 @@ class ProductPackagesPortletView(LaunchpadFormView):
     @cachedproperty
     def can_show_portlet(self):
         """Are there packages, or can packages be suggested."""
-        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+        if len(self.sourcepackages) > 0:
+            return True
+        if self.user is None or config.launchpad.is_lpnet:
+            return False
+        last_check = self.context.date_last_packaging_check
+        return (
+            last_check is None
+            or last_check < datetime.now(tz=pytz.UTC) - timedelta(days=365))
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -1049,17 +1060,28 @@ class ProductPackagesPortletView(LaunchpadFormView):
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
-                   title=_('Ubuntu packages'),
+                   title=_('Ubuntu %s packages' %
+                           ubuntu.currentseries.displayname),
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Link to this Ubuntu Package'), name='link')
+    @action(_('This is Not Packaged in Ubuntu'), name='not-packaged')
+    def not_packaged(self, action, data):
+        self.context.date_last_packaging_check = datetime.now(tz=pytz.UTC)
+        self.next_url = self.request.getURL()
+
+    @action(_('Link to Ubuntu Package'), name='link')
     def link(self, action, data):
         product = self.context
         dsp = data.get('distributionsourcepackage')
         assert dsp is not None, "distributionsourcepackage was not specified"
         product_series = product.development_focus
+        if dsp is self.other_package:
+            # The user wants to link an alternate package to this project.
+            self.next_url = canonical_url(
+                product_series, view_name="+ubuntupkg")
+            return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         product_series.setPackaging(ubuntu.currentseries,
                                     dsp.sourcepackagename,

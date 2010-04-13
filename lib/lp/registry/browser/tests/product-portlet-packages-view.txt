@@ -27,7 +27,7 @@ does not happen automatically.
     ...     transaction.commit()
     ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     updated = ubuntu.updateCompleteSourcePackageCache(
+    ...     ignore = ubuntu.updateCompleteSourcePackageCache(
     ...         archive=ubuntu.main_archive, log=logger, ztm=transaction)
     ...     transaction.commit()
     ...     reconnect_stores('launchpad')
@@ -38,7 +38,6 @@ does not happen automatically.
     ...     spn = getUtility(ISourcePackageNameSet)['bingo']
     ...     login(ANONYMOUS)
     ...     return (ubuntu, product, spn)
-
 
 Let's create a test project.
 
@@ -63,8 +62,8 @@ appropriate message asking to suggest a match.
     translations efficiently.
     There are no unlinked source packages that are a good match. Can you
     suggest one?
-    Link to Ubuntu package
-
+    Ubuntu Hoary packages:
+    An unlisted package
 
 A distribution source package in a distribution other than ubuntu will
 not be suggested.
@@ -93,8 +92,9 @@ for the current Ubuntu series will NOT be suggested.
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
-    >>> for dsp in view.suggestions:
-    ...     print dsp.name
+    >>> view.suggestions
+    []
+
 
 A source package that does NOT have a publishing history in the PENDING
 or PUBLISHED statuses will NOT be suggested.
@@ -111,7 +111,8 @@ or PUBLISHED statuses will NOT be suggested.
     ...     print dsp.name
 
 A source package that does have a publishing history for the current
-Ubuntu series in the PUBLISHED status will be suggested.
+Ubuntu series will be suggested. The view as a distributionsourcepackage
+field.
 
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
@@ -123,9 +124,14 @@ Ubuntu series in the PUBLISHED status will be suggested.
     ...     print dsp.name
     bingo
 
+    >>> for field in view.form_fields:
+    ...     print field.__name__
+    distributionsourcepackage
+
 And the user is presented with a form to select the distribution
 source package.
 
+    >>> login_person(product.owner)
     >>> content = find_tag_by_id(view.render(), 'portlet-packages')
 
     >>> print extract_text(content)
@@ -135,7 +141,7 @@ source package.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     bingo...
 
 A distribution series with a matching name in the Ubuntu current
@@ -161,6 +167,7 @@ If multiple source packages match they will all be displayed.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
     >>> (ubuntu, product, spn) = updateCache()
+    >>> login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -177,7 +184,7 @@ If multiple source packages match they will all be displayed.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     bingo
     ba-bingo...
 
@@ -198,6 +205,17 @@ package then it will not be shown as one of the suggestions.
     ...     print dsp.name
     bingo
 
+The view is not rendered when there are no source packages and the user is
+anonymous.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.sourcepackages
+    []
+    >>> view.can_show_portlet
+    False
+
 The can_show_portlet property indicates that the portlet can be rendered. The
 portlet is not rendered if there are no source packages and the environment
 is lpnet.
@@ -205,6 +223,9 @@ is lpnet.
     >>> config.launchpad.is_lpnet
     False
 
+    >>> login_person(product.owner)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
     >>> view.sourcepackages
     []
 
@@ -233,15 +254,98 @@ is lpnet.
 
     >>> ignore = config.pop('test_data')
 
-The view's sourcepackages property filters out obsolete packages and
-reverses the order so that the latest packages for the current ubuntu
-series are shown first.
+The can_show_portlet property is False when product.date_last_packaging_check
+is None or the date is more than one year ago.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+
+    >>> print product.date_last_packaging_check
+    None
+
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    True
+
+    >>> now = datetime.now(tz=pytz.UTC)
+    >>> product.date_last_packaging_check = now
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    False
+
+
+    >>> product.date_last_packaging_check = now - timedelta(days=366)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    True
+
+The +portlet-packages view can set the product date_last_packaging_check
+attribute so that suggestions are disabled.
+
+    >>> product.date_last_packaging_check = None
+
+    >>> form = {
+    ...     'field.actions.not-packaged': 'This is Not Packaged in Ubuntu',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> print product.date_last_packaging_check is not None
+    True
+
+The +portlet-packages view can create a Packaging link.
+
+    >>> product.sourcepackages
+    []
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'bingo',
+    ...     'field.actions.link': 'Link to this Ubuntu Package',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> for sp in product.sourcepackages:
+    ...     print sp.name
+    bingo
 
     >>> from lp.registry.interfaces.packaging import (
     ...     IPackagingUtil, PackagingType)
 
     >>> packaging_util = getUtility(IPackagingUtil)
-    >>> series = ubuntu.currentseries
+    >>> packaging_util.deletePackaging(
+    ...     product.development_focus,
+    ...     getUtility(ISourcePackageNameSet)['bingo'],
+    ...     ubuntu.currentseries)
+
+Choosing the other_package option issues a redirect to the +ubuntupkg.
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'OTHER_PACKAGE',
+    ...     'field.actions.link': 'Link to this Ubuntu Package',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> product.sourcepackages
+    []
+
+    >>> print view.next_url
+    http://launchpad.dev/bingo/trunk/+ubuntupkg
+
+The view's sourcepackages property filters out obsolete packages and
+reverses the order so that the latest packages for the current ubuntu
+series are shown first.
+
     >>> spn = factory.makeSourcePackageName(name="a-obsolete-package")
     >>> packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
