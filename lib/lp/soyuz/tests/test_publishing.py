@@ -612,7 +612,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
 
-        # And an oops should be filed for the error
+        # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
         fp = StringIO()
