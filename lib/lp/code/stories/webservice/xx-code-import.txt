@@ -78,7 +78,7 @@ The same is true for package branches.
     >>> distroseries = factory.makeDistroSeries(
     ...     name='manic', distribution=distribution)
     >>> source_package = factory.makeSourcePackage(
-    ...     sourcename='scruff', distroseries=distroseries)
+    ...     sourcepackagename='scruff', distroseries=distroseries)
     >>> code_import = removeSecurityProxy(factory.makePackageCodeImport(
     ...    registrant=person, sourcepackage=source_package,
     ...    branch_name='import',
