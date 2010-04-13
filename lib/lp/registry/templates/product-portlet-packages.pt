@@ -52,7 +52,6 @@
       <div metal:use-macro="context/@@launchpad_form/form">
         <div class="actions" metal:fill-slot="buttons">
           <input tal:replace="structure view/link/render"/>
-          <input tal:replace="structure view/not_packaged/render"/>
         </div>
       </div>
     </div>

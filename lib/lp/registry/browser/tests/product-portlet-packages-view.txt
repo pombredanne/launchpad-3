@@ -254,50 +254,6 @@ is lpnet.
 
     >>> ignore = config.pop('test_data')
 
-The can_show_portlet property is False when product.date_last_packaging_check
-is None or the date is more than one year ago.
-
-    >>> from datetime import datetime, timedelta
-    >>> import pytz
-
-    >>> print product.date_last_packaging_check
-    None
-
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages", principal=product.owner)
-    >>> view.can_show_portlet
-    True
-
-    >>> now = datetime.now(tz=pytz.UTC)
-    >>> product.date_last_packaging_check = now
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages", principal=product.owner)
-    >>> view.can_show_portlet
-    False
-
-
-    >>> product.date_last_packaging_check = now - timedelta(days=366)
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages", principal=product.owner)
-    >>> view.can_show_portlet
-    True
-
-The +portlet-packages view can set the product date_last_packaging_check
-attribute so that suggestions are disabled.
-
-    >>> product.date_last_packaging_check = None
-
-    >>> form = {
-    ...     'field.actions.not-packaged': 'This is Not Packaged in Ubuntu',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages", form=form)
-    >>> view.errors
-    []
-
-    >>> print product.date_last_packaging_check is not None
-    True
-
 The +portlet-packages view can create a Packaging link.
 
     >>> product.sourcepackages

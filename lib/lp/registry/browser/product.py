@@ -1033,10 +1033,9 @@ class ProductPackagesPortletView(LaunchpadFormView):
             return True
         if self.user is None or config.launchpad.is_lpnet:
             return False
-        last_check = self.context.date_last_packaging_check
-        return (
-            last_check is None
-            or last_check < datetime.now(tz=pytz.UTC) - timedelta(days=365))
+        else:
+            return True
+
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -1057,6 +1056,9 @@ class ProductPackagesPortletView(LaunchpadFormView):
                     item_url, escape(package.name))
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
+        description = 'An unlisted package'
+        vocab_terms.append(
+            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
             Choice(__name__='distributionsourcepackage',
@@ -1065,11 +1067,6 @@ class ProductPackagesPortletView(LaunchpadFormView):
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
-
-    @action(_('This is Not Packaged in Ubuntu'), name='not-packaged')
-    def not_packaged(self, action, data):
-        self.context.date_last_packaging_check = datetime.now(tz=pytz.UTC)
-        self.next_url = self.request.getURL()
 
     @action(_('Link to Ubuntu Package'), name='link')
     def link(self, action, data):
