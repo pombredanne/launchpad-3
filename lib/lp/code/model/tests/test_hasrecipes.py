@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Tests for classes that implement IHasRecipes."""
 
 __metaclass__ = type
@@ -51,8 +53,8 @@ class TestIHasRecipes(TestCaseWithFactory):
         self.assertProvides(product, IHasRecipes)
 
     def test_product_getRecipes(self):
-        # IProduct.recipes should provide all the SourcePackageRecipes attached
-        # to that product's branches.
+        # IProduct.recipes should provide all the SourcePackageRecipes
+        # attached to that product's branches.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(product=product)
         recipe1 = self.factory.makeSourcePackageRecipe(branches=[branch])

@@ -1,6 +1,8 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Implementation of the recipe storage.
 
 This is purely an implementation detail of SourcePackageRecipe.recipe_data and

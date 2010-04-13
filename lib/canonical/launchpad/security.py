@@ -1,6 +1,8 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Security policies for using content objects."""
 
 __metaclass__ = type
@@ -2189,7 +2191,8 @@ class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
     usedfor = IBinaryPackagePublishingHistory
 
 
-class ViewBinaryPackageReleaseDownloadCount(ViewSourcePackagePublishingHistory):
+class ViewBinaryPackageReleaseDownloadCount(
+    ViewSourcePackagePublishingHistory):
     """Restrict viewing of binary package download counts."""
     usedfor = IBinaryPackageReleaseDownloadCount
 
