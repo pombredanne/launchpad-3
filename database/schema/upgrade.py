@@ -249,9 +249,10 @@ def apply_patches_replicated():
                     id=@holding_set,
                     provider=@master_node, receiver=@node%d_node, forward=yes);
                 echo 'Waiting for sync';
-                sync (id=1);
+                sync (id=@master_node);
                 wait for event (
-                    origin=ALL, confirmed=ALL, wait on=@master_node, timeout=0
+                    origin=@master_node, confirmed=ALL,
+                    wait on=@master_node, timeout=0
                     );
                 """ % (slave_node.node_id, slave_node.node_id))
 
