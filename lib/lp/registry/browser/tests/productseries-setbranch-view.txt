@@ -168,6 +168,7 @@ A correct URL is accepted.
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -335,5 +336,42 @@ in an error.
     This foreign branch URL is already specified for
     the imported branch <a href="http://code.launchpad.dev/~.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
 
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+Using a branch name that already exists results in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/different/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>chevette-branch</em>.
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+Bazaar external branches are handled differently but they also give an
+error if a duplicate name is used.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR',
+    ...     'field.branch_name': 'blazer-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'http://bzr.com/foo',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>blazer-branch</em>.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
