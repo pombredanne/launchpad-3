@@ -126,7 +126,7 @@
             tal:define="link navigation_menu/details"
             tal:condition="link/enabled"
             tal:content="structure link/render"></li>
-        <li condition="view/user_can_edit">
+        <li tal:condition="view/user_is_official_translator">
           <span id="translation-switch-working-mode"
                 class="sprite edit js-action widget-hd">
             Enter translator mode
