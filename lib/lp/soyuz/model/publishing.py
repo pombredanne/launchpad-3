@@ -60,8 +60,7 @@ from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackageFilePublishing, ISourcePackagePublishingHistory,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
+    PackagePublishingPriority, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
@@ -95,22 +94,15 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        try:
-            action = diskpool.addFile(
-                component, source, filename, sha1, filealias)
-            if action == diskpool.results.FILE_ADDED:
-                log.debug("Added %s from library" % path)
-            elif action == diskpool.results.SYMLINK_ADDED:
-                log.debug("%s created as a symlink." % path)
-            elif action == diskpool.results.NONE:
-                log.debug(
-                    "%s is already in pool with the same content." % path)
-        except PoolFileOverwriteError, info:
-            log.error("PoolFileOverwriteError: %s. Skipping. This indicates "
-                      "some bad data, and Team Soyuz should be informed. "
-                      "However, publishing of other packages is not affected."
-                      % info)
-            raise info
+        action = diskpool.addFile(
+            component, source, filename, sha1, filealias)
+        if action == diskpool.results.FILE_ADDED:
+            log.debug("Added %s from library" % path)
+        elif action == diskpool.results.SYMLINK_ADDED:
+            log.debug("%s created as a symlink." % path)
+        elif action == diskpool.results.NONE:
+            log.debug(
+                "%s is already in pool with the same content." % path)
 
     @property
     def archive_url(self):
@@ -257,13 +249,9 @@ class ArchivePublisherBase:
 
     def publish(self, diskpool, log):
         """See `IPublishing`"""
-        try:
-            for pub_file in self.files:
-                pub_file.publish(diskpool, log)
-        except PoolFileOverwriteError:
-            pass
-        else:
-            self.setPublished()
+        for pub_file in self.files:
+            pub_file.publish(diskpool, log)
+        self.setPublished()
 
     def getIndexStanza(self):
         """See `IPublishing`."""
