@@ -62,8 +62,8 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, CannotDeleteBranch,
+    BranchCannotBePrivate, BranchCannotBePublic,
+    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -73,7 +73,6 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
@@ -83,7 +82,7 @@ from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 
-class Branch(SQLBase):
+class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch, IBranchNavigationMenu)
@@ -463,21 +462,6 @@ class Branch(SQLBase):
     @property
     def browse_source_url(self):
         return self.codebrowse_url('files')
-
-    @property
-    def bzr_identity(self):
-        """See `IBranch`."""
-        # Should probably put this into the branch target.
-        if self.product is not None:
-            series_branch = self.product.development_focus.branch
-            is_dev_focus = (series_branch == self)
-        elif self.distroseries is not None:
-            distro_package = self.sourcepackage.distribution_sourcepackage
-            linked_branch = ICanHasLinkedBranch(distro_package)
-            is_dev_focus = (linked_branch.branch == self)
-        else:
-            is_dev_focus = False
-        return bazaar_identity(self, is_dev_focus)
 
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
@@ -1064,6 +1048,18 @@ class Branch(SQLBase):
                 can_access = self.stacked_on.visibleByUser(
                     user, checked_branches)
         return can_access
+
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData)
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id ==
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+            SourcePackageRecipeData.base_branch == self)
 
 
 class DeletionOperation:

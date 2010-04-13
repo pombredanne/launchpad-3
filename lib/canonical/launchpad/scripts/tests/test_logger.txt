@@ -7,13 +7,12 @@ by our logging handler.
     ...     import sys
     ...     import subprocess
     ...     from canonical.config import config
-    ...     # We want to make sure that the subprocess will have the benefit
-    ...     # of all of the dependency paths inserted by the buildout.
-    ...     # We pass them via PYTHONPATH.
-    ...     env = kw.get('env')
-    ...     if env is None:
-    ...         kw['env'] = env = dict(os.environ)
-    ...     env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
+    ...     if 'env' in kw:
+    ...         # We want to make sure that the subprocess will have the
+    ...         # benefit of all of the dependency paths inserted by the
+    ...         # buildout.  This is already set up in our environment's
+    ...         # PYTHONPATH, so use it.
+    ...         kw['env']['PYTHONPATH'] = os.environ['PYTHONPATH']
     ...     test_script_path = os.path.join(
     ...         config.root, 'lib', 'canonical', 'launchpad',
     ...         'scripts', 'tests', 'loglevels.py')

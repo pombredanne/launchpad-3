@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
@@ -614,7 +615,7 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def _setBranchExists(self, existing_branch):
+    def _setBranchExists(self, existing_branch, field_name='name'):
         owner = existing_branch.owner
         if owner == self.user:
             prefix = "You already have"
@@ -624,7 +625,7 @@ class BranchNameValidationMixin:
             "%s a branch for <em>%s</em> called <em>%s</em>."
             % (prefix, existing_branch.target.displayname,
                existing_branch.name))
-        self.setFieldError('name', structured(message))
+        self.setFieldError(field_name, structured(message))
 
 
 class BranchEditSchema(Interface):
