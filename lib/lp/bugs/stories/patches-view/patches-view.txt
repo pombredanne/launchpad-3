@@ -441,7 +441,9 @@ The patches view is linked to from a portlet on the product bugs page.
     ...     print_bugfilters_portlet_filled)
     >>> print_bugfilters_portlet_unfilled(anon_browser, 'patchy-product-1')
     Open bugs
+    In-progress bugs
     Critical bugs
+    High importance bugs
     Bugs fixed elsewhere
     New bugs
     Open CVE bugs - CVE reports
@@ -452,7 +454,9 @@ The patches view is linked to from a portlet on the product bugs page.
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'patchy-product-1')
     3 Open bugs
+    0 In-progress bugs
     1 Critical bug
+    0 High importance bugs
     0 Bugs fixed elsewhere
     1 New bug
     0 Open CVE bugs - CVE reports
@@ -463,7 +467,9 @@ It's also linked to from a portlet on the source package bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/+source/a52dec')
     1 Open bug
+    0 In-progress bugs
     0 Critical bugs
+    1 High importance bug
     1 Bug fixed elsewhere
     0 New bugs
     0 Open CVE bugs
@@ -473,7 +479,9 @@ And from a portlet on the distro series bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/hoary')
     2 Open bugs
+    0 In-progress bugs
     0 Critical bugs
+    0 High importance bugs
     0 Bugs fixed elsewhere
     2 New bugs
     1 Open CVE bug - CVE report
@@ -484,7 +492,9 @@ And from a portlet on the distro bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu')
     9 Open bugs
+    0 In-progress bugs
     0 Critical bugs
+    1 High importance bug
     2 Bugs fixed elsewhere
     6 New bugs
     2 Open CVE bugs - CVE reports
