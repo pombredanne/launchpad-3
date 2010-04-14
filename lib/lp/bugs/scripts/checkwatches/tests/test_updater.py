@@ -215,26 +215,6 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         self.assertTrue(
             last_oops.value.startswith('Spurious remote bug ID'))
 
-    def test_sql_log_cleared_in_oops_reporting(self):
-        # The log of SQL statements is cleared after an OOPS has been
-        # reported by checkwatches.base.report_oops().
-
-        # Enable SQL statment logging.
-        set_request_started()
-        try:
-            self.factory.makeBug()
-            self.assertTrue(
-                len(get_request_statements()) > 0,
-                "We need at least one statement in the SQL log.")
-            checkwatches.base.report_oops()
-            self.assertTrue(
-                len(get_request_statements()) == 0,
-                "SQL statement log not cleared by "
-                "checkwatches.base.report_oops().")
-        finally:
-            # stop SQL statemnet logging.
-            clear_request_started()
-
     def test_suggest_batch_size(self):
         class RemoteSystem: pass
         remote_system = RemoteSystem()
