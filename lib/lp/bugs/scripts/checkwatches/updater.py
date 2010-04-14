@@ -321,6 +321,23 @@ def suggest_batch_size(remote_system, num_watches):
             int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
 
 
+def get_remote_system_oops_properties(remote_system):
+    """Return (name, value) tuples describing a remote system.
+
+    Each item in the list is intended for use as an OOPS property.
+
+    :remote_system: The `ExternalBugTracker` instance from which the
+        OOPS properties should be extracted.
+    """
+    return [
+        ('batch_size', remote_system.batch_size),
+        ('batch_query_threshold', remote_system.batch_query_threshold),
+        ('sync_comments', remote_system.sync_comments),
+        ('externalbugtracker', remote_system.__class__.__name__),
+        ('baseurl', remote_system.baseurl)
+        ]
+
+
 class BugWatchUpdater(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
 
@@ -658,8 +675,10 @@ class BugWatchUpdater(WorkingBase):
         except UnknownRemoteStatusError:
             # We log the warning, since we need to know about statuses
             # that we don't handle correctly.
-            self.warning("Unknown remote status '%s'." % remote_status,
-                self._getOOPSProperties(remotesystem), sys.exc_info())
+            self.warning(
+                "Unknown remote status '%s'." % remote_status,
+                get_remote_system_oops_properties(remotesystem),
+                sys.exc_info())
 
             launchpad_status = BugTaskStatus.UNKNOWN
 
@@ -959,7 +978,7 @@ class BugWatchUpdater(WorkingBase):
                             ('URL', remote_bug_url),
                             ('bug_id', remote_bug_id),
                             ('local_ids', local_ids),
-                            ] + self._getOOPSProperties(remotesystem),
+                            ] + get_remote_system_oops_properties(remotesystem),
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
@@ -1004,7 +1023,7 @@ class BugWatchUpdater(WorkingBase):
                         ('URL', remote_bug_url),
                         ('bug_id', remote_bug_id),
                         ('local_ids', local_ids)] +
-                        self._getOOPSProperties(remotesystem))
+                        get_remote_system_oops_properties(remotesystem))
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
                 # re-check them every time checkwatches runs.
@@ -1107,7 +1126,7 @@ class BugWatchUpdater(WorkingBase):
                     self.warning(
                         "Unable to import remote comment author. No email "
                         "address or display name found.",
-                        self._getOOPSProperties(external_bugtracker),
+                        get_remote_system_oops_properties(external_bugtracker),
                         sys.exc_info())
                     continue
 
@@ -1260,18 +1279,6 @@ class BugWatchUpdater(WorkingBase):
 
             if other_bug_watch is None:
                 remotesystem.setLaunchpadBugId(remote_bug_id, local_bug_id)
-
-    def _getOOPSProperties(self, remotesystem):
-        """Return an iterable of 2-tuples (name, value) of OOPS properties.
-
-        :remotesystem: The `ExternalBugTracker` instance from which the
-            OOPS properties should be extracted.
-        """
-        return [('batch_size', remotesystem.batch_size),
-                ('batch_query_threshold', remotesystem.batch_query_threshold),
-                ('sync_comments', remotesystem.sync_comments),
-                ('externalbugtracker', remotesystem.__class__.__name__),
-                ('baseurl', remotesystem.baseurl)]
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
