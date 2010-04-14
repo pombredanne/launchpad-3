@@ -175,12 +175,6 @@ def report_oops(message=None, properties=None, info=None,
     request = ScriptRequest(properties, url)
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
-    # clear the SQL log.
-    if get_request_start_time() is not None:
-        clear_request_started()
-        set_request_started(
-            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
-            txn=transaction_manager, enable_timeout=False)
     return request
 
 
@@ -293,6 +287,22 @@ class WorkingBase:
         else:
             self._transaction_manager.commit()
 
+    def _statement_logging_start(self):
+        """Start logging SQL statements and other database activity."""
+        set_request_started(
+            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
+            txn=self._transaction_manager, enable_timeout=False)
+
+    def _statement_logging_stop(self):
+        """Stop logging SQL statements."""
+        clear_request_started()
+
+    def _statement_logging_reset(self):
+        """Reset the SQL statement log, if enabled."""
+        if get_request_start_time() is not None:
+            self._statement_logging_stop()
+            self._statement_logging_start()
+
     @property
     @contextmanager
     def statement_logging(self):
@@ -301,30 +311,32 @@ class WorkingBase:
         It does this by (mis)using the webapp statement logging
         machinery.
         """
-        set_request_started(
-            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
-            txn=self._transaction_manager, enable_timeout=False)
+        self._statement_logging_start()
         try:
             yield
         finally:
-            clear_request_started()
+            self._statement_logging_stop()
 
     def warning(self, message, properties=None, info=None):
-        """Record a warning related to this bug tracker."""
+        """Record a warning."""
         oops_info = report_warning(
             message, properties, info, self._transaction_manager)
         # Also put it in the log.
         self.logger.warning("%s (%s)" % (message, oops_info.oopsid))
+        # Reset statement logging, if enabled.
+        self._statement_logging_reset()
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
 
     def error(self, message, properties=None, info=None):
-        """Record an error related to this external bug tracker."""
+        """Record an error."""
         oops_info = report_oops(
             message, properties, info, self._transaction_manager)
         # Also put it in the log.
         self.logger.error("%s (%s)" % (message, oops_info.oopsid))
+        # Reset statement logging, if enabled.
+        self._statement_logging_reset()
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
