@@ -15,7 +15,6 @@ from twisted.python import log as tplog
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 
-from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
 from lp.codehosting.sshserver.events import ILoggingEvent
 from lp.services.utils import synchronize
@@ -24,11 +23,11 @@ from lp.services.utils import synchronize
 class LoggingManager:
     """Class for managing codehosting logging."""
 
-    def __init__(self):
+    def __init__(self, access_log_path):
         """Construct the logging manager."""
         self._main_log = get_codehosting_logger()
         self._access_log = get_access_logger()
-        self._access_log_path = config.codehosting.access_log
+        self._access_log_path = access_log_path
         self._is_set_up = False
 
     def setUp(self):

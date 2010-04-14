@@ -170,7 +170,8 @@ class SSHService(service.Service):
     def startService(self):
         """Start the SSH service."""
         set_up_oops_reporting('codehosting')
-        accesslog.LoggingManager().setUp()
+        manager = accesslog.LoggingManager(config.codehosting.access_log)
+        manager.setUp()
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask

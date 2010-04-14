@@ -7,7 +7,9 @@ __metaclass__ = type
 
 import codecs
 import logging
+import os
 from StringIO import StringIO
+import tempfile
 import unittest
 import sys
 
@@ -24,8 +26,12 @@ from lp.testing import TestCase
 
 class LoggingManagerMixin:
 
-    def installLoggingManager(self):
-        manager = LoggingManager()
+    def installLoggingManager(self, access_log_path=None):
+        if access_log_path is None:
+            fd, access_log_path = tempfile.mkstemp()
+            os.close(fd)
+            self.addCleanup(os.unlink, access_log_path)
+        manager = LoggingManager(access_log_path)
         manager.setUp()
         self.addCleanup(manager.tearDown)
         return manager
@@ -114,10 +120,12 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
     def test_access_handlers(self):
         # The logging setup installs a rotatable log handler that logs output
         # to config.codehosting.access_log.
-        self.installLoggingManager()
+        directory = self.makeTemporaryDirectory()
+        access_log_path = os.path.join(directory, 'access.log')
+        self.installLoggingManager(access_log_path=access_log_path)
         [handler] = get_access_logger().handlers
         self.assertIsInstance(handler, WatchedFileHandler)
-        self.assertEqual(config.codehosting.access_log, handler.baseFilename)
+        self.assertEqual(access_log_path, handler.baseFilename)
 
     def test_teardown_restores_access_handlers(self):
         log = get_access_logger()
