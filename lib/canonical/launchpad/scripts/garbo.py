@@ -26,9 +26,7 @@ from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import (
-    DBLoopTuner, TunableLoop)
+from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
@@ -42,7 +40,6 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
-from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
@@ -346,55 +343,6 @@ class HWSubmissionEmailLinker(TunableLoop):
         transaction.commit()
 
 
-class MailingListSubscriptionPruner(TunableLoop):
-    """Prune `MailingListSubscription`s pointing at deleted email addresses.
-
-    Users subscribe to mailing lists with one of their verified email
-    addresses.  When they remove an address, the mailing list
-    subscription should go away too.
-    """
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(MailingListSubscriptionPruner, self).__init__(log, abort_time)
-        self.subscription_store = IMasterStore(MailingListSubscription)
-        self.email_store = IMasterStore(EmailAddress)
-
-        (self.min_subscription_id,
-         self.max_subscription_id) = self.subscription_store.find(
-            (Min(MailingListSubscription.id),
-             Max(MailingListSubscription.id))).one()
-
-        self.next_subscription_id = self.min_subscription_id
-
-    def isDone(self):
-        return (self.min_subscription_id is None or
-                self.next_subscription_id > self.max_subscription_id)
-
-    def __call__(self, chunk_size):
-        result = self.subscription_store.find(
-            MailingListSubscription,
-            MailingListSubscription.id >= self.next_subscription_id,
-            MailingListSubscription.id < (self.next_subscription_id +
-                                          chunk_size))
-        used_ids = set(result.values(MailingListSubscription.email_addressID))
-        existing_ids = set(self.email_store.find(
-                EmailAddress.id, EmailAddress.id.is_in(used_ids)))
-        deleted_ids = used_ids - existing_ids
-
-        self.subscription_store.find(
-            MailingListSubscription,
-            MailingListSubscription.id >= self.next_subscription_id,
-            MailingListSubscription.id < (self.next_subscription_id +
-                                          chunk_size),
-            MailingListSubscription.email_addressID.is_in(deleted_ids)
-            ).remove()
-
-        self.next_subscription_id += chunk_size
-        transaction.commit()
-
-
 class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
@@ -567,7 +515,7 @@ class BranchJobPruner(TunableLoop):
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._ids_to_remove()[:chunk_size])
-        num_removed = self.job_store.find(
+        self.job_store.find(
             BranchJob,
             In(BranchJob.id, ids_to_remove)).remove()
         transaction.commit()
@@ -823,7 +771,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportResultPruner,
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
-        MailingListSubscriptionPruner,
         BugNotificationPruner,
         BranchJobPruner,
         BugWatchActivityPruner,

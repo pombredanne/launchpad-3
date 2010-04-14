@@ -21,7 +21,7 @@ ALTER TABLE Person ADD CONSTRAINT person__account__fk
 ALTER TABLE MailingListSubscription
     ADD CONSTRAINT mailinglistsubscription__email_address_fk
     FOREIGN KEY (email_address) REFERENCES EmailAddress
-    ON DELETE SET NULL;
+    ON DELETE CASCADE;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 48, 0);
 

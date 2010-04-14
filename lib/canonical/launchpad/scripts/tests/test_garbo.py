@@ -351,26 +351,6 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub3.owner, person3)
 
-    def test_MailingListSubscriptionPruner(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        team, mailing_list = self.factory.makeTeamAndMailingList(
-            'mlist-team', 'mlist-owner')
-        person = self.factory.makePerson(email='preferred@example.org')
-        email = self.factory.makeEmail('secondary@example.org', person)
-        transaction.commit()
-        mailing_list.subscribe(person, email)
-
-        # User remains subscribed if we run the garbage collector.
-        self.runDaily()
-        self.assertNotEqual(mailing_list.getSubscription(person), None)
-
-        # If we remove the email address that was subscribed, the
-        # garbage collector removes the subscription.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        Store.of(email).remove(email)
-        self.runDaily()
-        self.assertEqual(mailing_list.getSubscription(person), None)
-
     def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
         # Switch the DB user because the garbo_daily user isn't allowed to
