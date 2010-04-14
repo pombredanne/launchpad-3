@@ -73,8 +73,19 @@ from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadCronScript
 
 
+# The login of the user to run as.
+LOGIN = 'bugwatch@bugs.launchpad.net'
+
+# A list of product names for which comments should be synchronized.
 SYNCABLE_GNOME_PRODUCTS = []
+
+# For OOPS reporting keep up to this number of SQL statements.
 MAX_SQL_STATEMENTS_LOGGED = 10000
+
+# When syncing with a remote bug tracker that reports its idea of the
+# current time, this defined the maximum acceptable skew between the
+# local and remote clock.
+ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
 # The minimum batch size to suggest to an IExternalBugTracker.
 SUGGESTED_BATCH_SIZE_MIN = 100
@@ -231,9 +242,58 @@ def commit_before(func):
     """
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        self.txn.commit()
+        self._transaction_manager.commit()
         return func(self, *args, **kwargs)
     return wrapper
+
+
+class WorkingBase:
+
+    def __init__(self, login, transaction_manager):
+        self._login = login
+        self._principal = (
+            getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
+                self._login, want_password=False))
+        self._transaction_manager = transaction_manager
+
+    @property
+    @contextmanager
+    def interaction(self):
+        """Context manager for interaction as the Bug Watch Updater.
+
+        If an interaction is already in progress this is a no-op,
+        otherwise it sets up an interaction on entry and ends it on
+        exit.
+        """
+        if queryInteraction() is None:
+            setupInteraction(self._principal, login=self._login)
+            try:
+                yield
+            finally:
+                endInteraction()
+        else:
+            yield
+
+    @property
+    @contextmanager
+    def transaction(self):
+        """Context manager to ring-fence database activity.
+
+        Ensures that no transaction is in progress on entry, and
+        commits on a successful exit. Exceptions are propagated once
+        the transaction has been aborted.
+
+        This intentionally cannot be nested. Keep it simple.
+        """
+        check_no_transaction()
+        try:
+            yield self._transaction_manager
+        except:
+            self._transaction_manager.abort()
+            # Let the exception propagate.
+            raise
+        else:
+            self._transaction_manager.commit()
 
 
 def unique(iterator):
@@ -261,14 +321,11 @@ def suggest_batch_size(remote_system, num_watches):
             int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
 
 
-class BugWatchUpdater(object):
+class BugWatchUpdater(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
 
-    ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
-
-    LOGIN = 'bugwatch@bugs.launchpad.net'
-
-    def __init__(self, txn, log=default_log, syncable_gnome_products=None):
+    def __init__(self, transaction_manager, log=default_log,
+                 syncable_gnome_products=None):
         """Initialize a BugWatchUpdater.
 
         :param txn: A transaction manager on which `begin()`,
@@ -281,7 +338,8 @@ class BugWatchUpdater(object):
             provides a similar interface.
 
         """
-        self.txn = txn
+        super(BugWatchUpdater, self).__init__(LOGIN, transaction_manager)
+
         self.log = log
 
         # Override SYNCABLE_GNOME_PRODUCTS if necessary.
@@ -289,49 +347,6 @@ class BugWatchUpdater(object):
             self._syncable_gnome_products = syncable_gnome_products
         else:
             self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
-
-        self._principal = (
-            getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
-                self.LOGIN, want_password=False))
-
-    @property
-    @contextmanager
-    def interaction(self):
-        """Context manager for interaction as the Bug Watch Updater.
-
-        If an interaction is already in progress this is a no-op,
-        otherwise it sets up an interaction on entry and ends it on
-        exit.
-        """
-        if queryInteraction() is None:
-            setupInteraction(self._principal, login=self.LOGIN)
-            try:
-                yield
-            finally:
-                endInteraction()
-        else:
-            yield
-
-    @property
-    @contextmanager
-    def transaction(self):
-        """Context manager to ring-fence database activity.
-
-        Ensures that no transaction is in progress on entry, and
-        commits on a successful exit. Exceptions are propagated once
-        the transaction has been aborted.
-
-        This intentionally cannot be nested. Keep it simple.
-        """
-        check_no_transaction()
-        try:
-            yield self.txn
-        except:
-            self.txn.abort()
-            # Let the exception propagate.
-            raise
-        else:
-            self.txn.commit()
 
     @with_interaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
@@ -355,7 +370,7 @@ class BugWatchUpdater(object):
                     set_request_started(
                         request_statements=LimitedList(
                             MAX_SQL_STATEMENTS_LOGGED),
-                        txn=self.txn, enable_timeout=False)
+                        txn=self._transaction_manager, enable_timeout=False)
                     return self.updateBugTracker(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
@@ -674,7 +689,7 @@ class BugWatchUpdater(object):
             now = datetime.now(pytz.timezone('UTC'))
 
         if (server_time is not None and
-            abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
+            abs(server_time - now) > ACCEPTABLE_TIME_SKEW):
             raise TooMuchTimeSkew(abs(server_time - now))
 
         # We limit the number of watches we're updating by the
@@ -699,7 +714,7 @@ class BugWatchUpdater(object):
                 # Adjust for possible time skew, and some more, just to be
                 # safe.
                 oldest_lastchecked -= (
-                    self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
+                    ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
             # Collate the remote IDs.
             remote_old_ids = sorted(
                 set(bug_watch.remotebug for bug_watch in old_bug_watches))
@@ -1001,9 +1016,6 @@ class BugWatchUpdater(object):
                         bugwatch.last_error_type = errortype
                         bug_watch.addActivity(
                             result=errortype, oops_id=oops_id)
-            else:
-                # All is well, save it now.
-                self.txn.commit()
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):
@@ -1263,21 +1275,20 @@ class BugWatchUpdater(object):
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        oops_info = report_warning(message, properties, info, self.txn)
+        oops_info = report_warning(
+            message, properties, info, self._transaction_manager)
         # Also put it in the log.
         self.log.warning("%s (%s)" % (message, oops_info.oopsid))
-
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        oops_info = report_oops(message, properties, info, self.txn)
-
+        oops_info = report_oops(
+            message, properties, info, self._transaction_manager)
         # Also put it in the log.
         self.log.error("%s (%s)" % (message, oops_info.oopsid))
-
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
