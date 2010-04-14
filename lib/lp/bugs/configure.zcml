@@ -681,6 +681,7 @@
                     expireNotifications
                     setStatus
                     setPrivate
+                    setSecurityRelated
                     convertToQuestion
                     markUserAffected
                     addTask

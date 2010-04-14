@@ -1199,7 +1199,7 @@ security vulnerability. It can have the value "yes" or "no".
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
 
-    >>> bug_three.security_related = True
+    >>> bug_three.setSecurityRelated(True)
     >>> bug_three.security_related
     True
 
