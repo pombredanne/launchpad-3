@@ -29,6 +29,7 @@ class LoggingManager:
         self._main_log = get_codehosting_logger()
         self._access_log = get_access_logger()
         self._access_log_path = config.codehosting.access_log
+        self._is_set_up = False
 
     def setUp(self):
         """Set up logging for the smart server.
@@ -50,6 +51,7 @@ class LoggingManager:
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
         zope.component.provideHandler(self._log_event)
+        self._is_set_up = True
 
     @zope.component.adapter(ILoggingEvent)
     def _log_event(self, event):
@@ -57,6 +59,8 @@ class LoggingManager:
         self._access_log.log(event.level, event.message)
 
     def tearDown(self):
+        if not self._is_set_up:
+            return
         log = self._main_log
         log.level = self._orig_level
         synchronize(
@@ -70,6 +74,7 @@ class LoggingManager:
             tplog.addObserver, tplog.removeObserver)
         zope.component.getGlobalSiteManager().unregisterHandler(
             self._log_event)
+        self._is_set_up = False
 
 
 def get_codehosting_logger():
