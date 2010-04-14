@@ -57,7 +57,7 @@ if [ -z "$1" ]; then
             rev_option="-r thread:"
         else
             if test "$(bzr pipes | sed -n -e "/^\\*/q;p" | wc -l)" -gt 0 ; then
-                # This is a pipline with at least one pipe before the current,
+                # This is a pipeline with at least one pipe before the current,
                 # lint changes relative to the previous pipe
                 rev_option="-r ancestor::prev"
             else
