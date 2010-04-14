@@ -293,6 +293,22 @@ class WorkingBase:
         else:
             self._transaction_manager.commit()
 
+    @property
+    @contextmanager
+    def statement_logging(self):
+        """Context manager to start and stop SQL statement logging.
+
+        It does this by (mis)using the webapp statement logging
+        machinery.
+        """
+        set_request_started(
+            request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
+            txn=self._transaction_manager, enable_timeout=False)
+        try:
+            yield
+        finally:
+            clear_request_started()
+
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
         oops_info = report_warning(
@@ -401,15 +417,11 @@ class BugWatchUpdater(WorkingBase):
                 thread_name = thread.getName()
                 thread.setName(bug_tracker_name)
                 try:
-                    set_request_started(
-                        request_statements=LimitedList(
-                            MAX_SQL_STATEMENTS_LOGGED),
-                        txn=self._transaction_manager,
-                        enable_timeout=False)
-                    return self.updateBugTracker(bug_tracker_id, batch_size)
+                    with self.statement_logging:
+                        return self.updateBugTracker(
+                            bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
-                    clear_request_started()
             return updater
 
         for bug_tracker_name in bug_tracker_names:
