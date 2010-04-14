@@ -50,7 +50,12 @@ class LoggingManager:
             set_up_oops_reporting('codehosting')
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
-        zope.component.provideHandler(_log_event)
+        zope.component.provideHandler(self._log_event)
+
+    @zope.component.adapter(ILoggingEvent)
+    def _log_event(self, event):
+        """Log 'event' to the codehosting logger."""
+        get_access_logger().log(event.level, event.message)
 
     def tearDown(self):
         log = get_codehosting_logger()
@@ -65,7 +70,8 @@ class LoggingManager:
         synchronize(
             tplog.theLogPublisher.observers, self._orig_observers,
             tplog.addObserver, tplog.removeObserver)
-        zope.component.getGlobalSiteManager().unregisterHandler(_log_event)
+        zope.component.getGlobalSiteManager().unregisterHandler(
+            self._log_event)
 
 
 def get_codehosting_logger():
@@ -90,9 +96,3 @@ class _NullHandler(logging.Handler):
 
     def emit(self, record):
         pass
-
-
-@zope.component.adapter(ILoggingEvent)
-def _log_event(event):
-    """Log 'event' to the codehosting logger."""
-    get_access_logger().log(event.level, event.message)
