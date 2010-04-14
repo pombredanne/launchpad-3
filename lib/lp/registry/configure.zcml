@@ -1077,6 +1077,9 @@
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
+            permission="launchpad.View"
+            set_attributes="date_last_packaging_check"/>
+        <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
         <require

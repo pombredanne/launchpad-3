@@ -567,6 +567,15 @@ class IProductPublic(
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
+    date_last_packaging_check = exported(
+        Datetime(
+            title=_('Date last packaging checked'),
+            description=_(
+                "The date that the project was confirmed not be packaged in "
+                "Ubuntu. The projected can be rechecked after enough time "
+                "has passed."),
+            required=False))
+
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
