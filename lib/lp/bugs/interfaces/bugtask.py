@@ -171,6 +171,12 @@ class BugTaskStatus(DBEnumeratedType):
         fixing, or it might not be fixed in this release.
         """)
 
+    EXPIRED = DBItem(19, """
+        Expired
+
+        This bug is expired. There was no activity since a longer time.
+        """)
+
     CONFIRMED = DBItem(20, """
         Confirmed
 
@@ -228,7 +234,7 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
+        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
         'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
@@ -306,7 +312,8 @@ UNRESOLVED_BUGTASK_STATUSES = (
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
-    BugTaskStatus.WONTFIX)
+    BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED)
 
 BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
