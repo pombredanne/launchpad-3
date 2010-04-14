@@ -220,8 +220,8 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
         product_owner = self.factory.makePersonNoCommit(name='product-owner')
         bug_supervisor = self.factory.makePersonNoCommit(
             name='bug-supervisor')
-        product = self.factory.makeProductNoCommit(owner=product_owner)
-        removeSecurityProxy(product).bug_supervisor = bug_supervisor
+        product = self.factory.makeProductNoCommit(
+            owner=product_owner, bug_supervisor=bug_supervisor)
         self.bug = self.factory.makeBug(product=product)
 
     def getWidgetOptionTitles(self, widget):
@@ -270,8 +270,10 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     def test_status_field_bug_task_in_status_unknown(self):
         # If a bugtask has the status Unknown, this status is included
         # in the options.
-        removeSecurityProxy(self.bug.default_bugtask).status = (
-            BugTaskStatus.UNKNOWN)
+        owner = self.bug.default_bugtask.pillar.owner
+        login_person(owner)
+        self.bug.default_bugtask.transitionToStatus(
+            BugTaskStatus.UNKNOWN, owner)
         login('no-priv@canonical.com')
         view = BugTaskEditView(
             self.bug.default_bugtask, LaunchpadTestRequest())
@@ -282,7 +284,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
             self.getWidgetOptionTitles(view.form_fields['status']))
 
     def test_status_field_bug_task_in_status_expired(self):
-        # If a bugtask has the status Epired, this status is included
+        # If a bugtask has the status Expired, this status is included
         # in the options.
         removeSecurityProxy(self.bug.default_bugtask).status = (
             BugTaskStatus.EXPIRED)
