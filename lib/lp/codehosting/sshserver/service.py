@@ -173,6 +173,7 @@ class SSHService(service.Service):
         set_up_oops_reporting('codehosting')
         manager = accesslog.LoggingManager(
             logging.getLogger('codehosting'),
+            logging.getLogger('codehosting.access'),
             config.codehosting.access_log)
         manager.setUp()
         notify(events.ServerStarting())

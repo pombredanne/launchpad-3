@@ -18,25 +18,31 @@ from bzrlib.tests import TestCase as BzrTestCase
 import zope.component.event
 
 from canonical.launchpad.scripts import WatchedFileHandler
-from lp.codehosting.sshserver.accesslog import (get_access_logger, LoggingManager)
+from lp.codehosting.sshserver.accesslog import LoggingManager
 from lp.testing import TestCase
 
 
 class LoggingManagerMixin:
 
+    _log_count = 0
+
     def makeLogger(self, name=None):
         if name is None:
-            name = self.id().split('.')[-1]
+            self._log_count += 1
+            name = '%s-%s' % (self.id().split('.')[-1], self._log_count)
         return logging.getLogger(name)
 
-    def installLoggingManager(self, main_log=None, access_log_path=None):
+    def installLoggingManager(self, main_log=None, access_log=None,
+                              access_log_path=None):
         if main_log is None:
             main_log = self.makeLogger()
+        if access_log is None:
+            access_log = self.makeLogger()
         if access_log_path is None:
             fd, access_log_path = tempfile.mkstemp()
             os.close(fd)
             self.addCleanup(os.unlink, access_log_path)
-        manager = LoggingManager(main_log, access_log_path)
+        manager = LoggingManager(main_log, access_log, access_log_path)
         manager.setUp()
         self.addCleanup(manager.tearDown)
         return manager
@@ -120,16 +126,19 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
         # The logging setup installs a rotatable log handler that logs output
         # to config.codehosting.access_log.
         directory = self.makeTemporaryDirectory()
+        access_log = self.makeLogger()
         access_log_path = os.path.join(directory, 'access.log')
-        self.installLoggingManager(access_log_path=access_log_path)
-        [handler] = get_access_logger().handlers
+        self.installLoggingManager(
+            access_log=access_log,
+            access_log_path=access_log_path)
+        [handler] = access_log.handlers
         self.assertIsInstance(handler, WatchedFileHandler)
         self.assertEqual(access_log_path, handler.baseFilename)
 
     def test_teardown_restores_access_handlers(self):
-        log = get_access_logger()
+        log = self.makeLogger()
         handlers = list(log.handlers)
-        manager = self.installLoggingManager()
+        manager = self.installLoggingManager(access_log=log)
         manager.tearDown()
         self.assertEqual(handlers, log.handlers)
 

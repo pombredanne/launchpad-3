@@ -23,15 +23,16 @@ from lp.services.utils import synchronize
 class LoggingManager:
     """Class for managing codehosting logging."""
 
-    def __init__(self, main_log, access_log_path):
+    def __init__(self, main_log, access_log, access_log_path):
         """Construct the logging manager.
 
         :param main_log: The main log. Twisted will log to this.
+        :param access_log: The access log object.
         :param access_log_path: The path to the file where access log
             messages go.
         """
         self._main_log = main_log
-        self._access_log = get_access_logger()
+        self._access_log = access_log
         self._access_log_path = access_log_path
         self._is_set_up = False
 
@@ -79,10 +80,6 @@ class LoggingManager:
         zope.component.getGlobalSiteManager().unregisterHandler(
             self._log_event)
         self._is_set_up = False
-
-
-def get_access_logger():
-    return logging.getLogger('codehosting.access')
 
 
 class _NullHandler(logging.Handler):
