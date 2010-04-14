@@ -97,6 +97,9 @@ warnings.filterwarnings(
     'ignore', 'twisted.python.plugin', DeprecationWarning,
     )
 warnings.filterwarnings(
+    'ignore', 'zope.testing.doctest', DeprecationWarning,
+    )
+warnings.filterwarnings(
     'ignore', 'bzrlib.*was deprecated', DeprecationWarning
 )
 # The next one is caused by a lamosity in python-openid.  The following change
@@ -164,14 +167,7 @@ def listdir(path):
 os.listdir = listdir
 
 
-from canonical.testing.customresult import (
-    filter_tests,
-    list_tests,
-    patch_find_tests,
-    patch_zope_testresult,
-    replace_list_of_tests,
-    )
-from subunit import TestProtocolClient
+from canonical.testing.customresult import filter_tests, patch_find_tests
 
 
 if __name__ == '__main__':
@@ -195,41 +191,10 @@ if __name__ == '__main__':
     options.parser.add_option(
         '--load-list', type=str, action='callback', callback=load_list)
 
-    def list_test_option(option, opt, value, parser):
-        patch_find_tests(list_tests)
-    options.parser.add_option(
-        '--list', action='callback', callback=list_test_option)
-
-    def save_list_test_option(option, opt, value, parser):
-        # Replace zope.testing's list_of_tests() method with our own
-        # that prints test IDs to the file given at the command line.
-        replace_list_of_tests(open(value, 'wb'))
-        # Get zope.testing to produce a listing. This works because
-        # this option parser is actually called twice, once here and
-        # once again within zope.testing.
-        args.append('--list-tests')
-    options.parser.add_option(
-        '--save-list', action='callback',
-        callback=save_list_test_option, type="str")
-
-    def use_subunit(option, opt, value, parser):
-        patch_zope_testresult(TestProtocolClient(sys.stdout))
-    options.parser.add_option(
-        '--subunit', action='callback', callback=use_subunit)
-
     # tests_pattern is a regexp, so the parsed value is hard to compare
     # with the default value in the loop below.
     options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
     local_options = options.get_options(args=args)
-    if os.getenv("SUBUNIT_FORMATTER"):
-        try:
-            from subunit import get_default_formatter
-        except ImportError:
-            # Not a new enough subunit
-            pass
-        else:
-            stream = get_default_formatter()
-            patch_zope_testresult(TestProtocolClient(stream))
     # Set our default options, if the options aren't specified.
     for name, value in defaults.items():
         parsed_option = getattr(local_options, name)
