@@ -23,9 +23,9 @@ from lp.services.utils import synchronize
 class LoggingManager:
     """Class for managing codehosting logging."""
 
-    def __init__(self, access_log_path):
+    def __init__(self, main_log, access_log_path):
         """Construct the logging manager."""
-        self._main_log = get_codehosting_logger()
+        self._main_log = main_log
         self._access_log = get_access_logger()
         self._access_log_path = access_log_path
         self._is_set_up = False
@@ -74,14 +74,6 @@ class LoggingManager:
         zope.component.getGlobalSiteManager().unregisterHandler(
             self._log_event)
         self._is_set_up = False
-
-
-def get_codehosting_logger():
-    """Return the codehosting logger."""
-    # This is its own function to avoid spreading the string 'codehosting'
-    # everywhere and to avoid duplicating information about how log objects
-    # are acquired.
-    return logging.getLogger('codehosting')
 
 
 def get_access_logger():

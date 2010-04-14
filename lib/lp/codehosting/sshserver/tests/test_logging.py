@@ -17,21 +17,26 @@ from bzrlib.tests import TestCase as BzrTestCase
 
 import zope.component.event
 
-from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
-from lp.codehosting.sshserver.accesslog import (
-    get_access_logger, get_codehosting_logger, LoggingManager)
+from lp.codehosting.sshserver.accesslog import (get_access_logger, LoggingManager)
 from lp.testing import TestCase
 
 
 class LoggingManagerMixin:
 
-    def installLoggingManager(self, access_log_path=None):
+    def makeLogger(self, name=None):
+        if name is None:
+            name = self.id().split('.')[-1]
+        return logging.getLogger(name)
+
+    def installLoggingManager(self, main_log=None, access_log_path=None):
+        if main_log is None:
+            main_log = self.makeLogger()
         if access_log_path is None:
             fd, access_log_path = tempfile.mkstemp()
             os.close(fd)
             self.addCleanup(os.unlink, access_log_path)
-        manager = LoggingManager(access_log_path)
+        manager = LoggingManager(main_log, access_log_path)
         manager.setUp()
         self.addCleanup(manager.tearDown)
         return manager
@@ -64,27 +69,21 @@ class TestLoggingBazaarInteraction(BzrTestCase, LoggingManagerMixin):
         # Once logging setup is called, any messages logged to the
         # codehosting logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
-        self.installLoggingManager()
+        log = self.makeLogger()
+        self.installLoggingManager(log)
 
         # Make sure that a logged message does not go to stderr.
-        get_codehosting_logger().info('Hello hello')
+        log.info('Hello hello')
         self.assertEqual(sys.stderr.getvalue(), '')
 
 
 class TestLoggingManager(TestCase, LoggingManagerMixin):
 
-    def test_returns_codehosting_logger(self):
-        # get_codehosting_logger returns the 'codehosting' logger.
-        self.assertIs(
-            logging.getLogger('codehosting'), get_codehosting_logger())
-
-    def test_codehosting_handlers(self):
-        # There needs to be at least one handler for the codehosting root
-        # logger.
-        self.installLoggingManager()
-
-        handlers = get_codehosting_logger().handlers
-        self.assertNotEqual([], handlers)
+    def test_main_log_handlers(self):
+        # There needs to be at least one handler for the root logger.
+        log = self.makeLogger()
+        self.installLoggingManager(log)
+        self.assertNotEqual([], log.handlers)
 
     def _get_handlers(self):
         registrations = (
@@ -104,16 +103,16 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
         self.assertEqual(handlers, self._get_handlers())
 
     def test_teardown_restores_level(self):
-        log = get_codehosting_logger()
+        log = self.makeLogger()
         old_level = log.level
-        manager = self.installLoggingManager()
+        manager = self.installLoggingManager(log)
         manager.tearDown()
         self.assertEqual(old_level, log.level)
 
     def test_teardown_restores_handlers(self):
-        log = get_codehosting_logger()
+        log = self.makeLogger()
         handlers = list(log.handlers)
-        manager = self.installLoggingManager()
+        manager = self.installLoggingManager(log)
         manager.tearDown()
         self.assertEqual(handlers, log.handlers)
 
