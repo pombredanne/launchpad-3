@@ -43,6 +43,7 @@ from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
 PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
 
+OOPS_CONFIG_SECTION = 'codehosting'
 LOG_NAME = 'codehosting'
 ACCESS_LOG_NAME = 'codehosting.access'
 
@@ -179,7 +180,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SSH service."""
-        set_up_oops_reporting('codehosting')
+        set_up_oops_reporting(OOPS_CONFIG_SECTION)
         manager = accesslog.LoggingManager(
             logging.getLogger(LOG_NAME),
             logging.getLogger(ACCESS_LOG_NAME),
