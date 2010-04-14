@@ -293,6 +293,26 @@ class WorkingBase:
         else:
             self._transaction_manager.commit()
 
+    def warning(self, message, properties=None, info=None):
+        """Record a warning related to this bug tracker."""
+        oops_info = report_warning(
+            message, properties, info, self._transaction_manager)
+        # Also put it in the log.
+        self.logger.warning("%s (%s)" % (message, oops_info.oopsid))
+        # Return the OOPS ID so that we can use it in
+        # BugWatchActivity.
+        return oops_info.oopsid
+
+    def error(self, message, properties=None, info=None):
+        """Record an error related to this external bug tracker."""
+        oops_info = report_oops(
+            message, properties, info, self._transaction_manager)
+        # Also put it in the log.
+        self.logger.error("%s (%s)" % (message, oops_info.oopsid))
+        # Return the OOPS ID so that we can use it in
+        # BugWatchActivity.
+        return oops_info.oopsid
+
 
 def unique(iterator):
     """Generate only unique items from an iterator."""
@@ -1277,26 +1297,6 @@ class BugWatchUpdater(WorkingBase):
 
             if other_bug_watch is None:
                 remotesystem.setLaunchpadBugId(remote_bug_id, local_bug_id)
-
-    def warning(self, message, properties=None, info=None):
-        """Record a warning related to this bug tracker."""
-        oops_info = report_warning(
-            message, properties, info, self._transaction_manager)
-        # Also put it in the log.
-        self.logger.warning("%s (%s)" % (message, oops_info.oopsid))
-        # Return the OOPS ID so that we can use it in
-        # BugWatchActivity.
-        return oops_info.oopsid
-
-    def error(self, message, properties=None, info=None):
-        """Record an error related to this external bug tracker."""
-        oops_info = report_oops(
-            message, properties, info, self._transaction_manager)
-        # Also put it in the log.
-        self.logger.error("%s (%s)" % (message, oops_info.oopsid))
-        # Return the OOPS ID so that we can use it in
-        # BugWatchActivity.
-        return oops_info.oopsid
 
 
 class BaseScheduler:
