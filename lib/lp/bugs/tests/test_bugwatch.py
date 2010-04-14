@@ -11,6 +11,7 @@ import unittest
 from urlparse import urlunsplit
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
@@ -19,13 +20,14 @@ from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, login_person
 
 
 class ExtractBugTrackerAndBugTestBase:
@@ -327,6 +329,76 @@ class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
     bug_url = 'http://code.google.com/p/myproject/issues/detail?id=12345'
     base_url = 'http://code.google.com/p/myproject/issues'
     bug_id = '12345'
+
+
+class TestBugWatch(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_bugtasks_to_update(self):
+        # The bugtasks_to_update property should yield the linked bug
+        # tasks which are not conjoined and for which the bug is not a
+        # duplicate.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=product.owner)
+        product_task = bug.getBugTask(product)
+        watch = self.factory.makeBugWatch(bug=bug)
+        product_task.bugwatch = watch
+        # For a single-task bug the bug task is eligible for update.
+        self.failUnlessEqual(
+            [product_task], list(
+                removeSecurityProxy(watch).bugtasks_to_update))
+        # If we add a task such that the existing task becomes a
+        # conjoined slave, only thr master task will be eligible for
+        # update.
+        product_series_task = self.factory.makeBugTask(
+            bug=bug, target=product.development_focus)
+        product_series_task.bugwatch = watch
+        self.failUnlessEqual(
+            [product_series_task], list(
+                removeSecurityProxy(watch).bugtasks_to_update))
+        # But once the bug is marked as a duplicate,
+        # bugtasks_to_update yields nothing.
+        bug.markAsDuplicate(
+            self.factory.makeBug(product=product, owner=product.owner))
+        self.failUnlessEqual(
+            [], list(removeSecurityProxy(watch).bugtasks_to_update))
+
+    def test_updateStatus_with_duplicate_bug(self):
+        # Calling BugWatch.updateStatus() will not update the status
+        # of a task that is part of a duplicate bug.
+        bug = self.factory.makeBug()
+        bug.markAsDuplicate(self.factory.makeBug())
+        login_person(bug.owner)
+        bug_task = bug.default_bugtask
+        bug_task.bugwatch = self.factory.makeBugWatch()
+        bug_task_initial_status = bug_task.status
+        self.failIfEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+        bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
+        self.failUnlessEqual(bug_task_initial_status, bug_task.status)
+        # Once the task is no longer linked to a duplicate bug, the
+        # status will get updated.
+        bug.markAsDuplicate(None)
+        bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
+        self.failUnlessEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+
+    def test_updateImportance_with_duplicate_bug(self):
+        # Calling BugWatch.updateImportance() will not update the
+        # importance of a task that is part of a duplicate bug.
+        bug = self.factory.makeBug()
+        bug.markAsDuplicate(self.factory.makeBug())
+        login_person(bug.owner)
+        bug_task = bug.default_bugtask
+        bug_task.bugwatch = self.factory.makeBugWatch()
+        bug_task_initial_importance = bug_task.importance
+        self.failIfEqual(BugTaskImportance.HIGH, bug_task.importance)
+        bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
+        self.failUnlessEqual(bug_task_initial_importance, bug_task.importance)
+        # Once the task is no longer linked to a duplicate bug, the
+        # importance will get updated.
+        bug.markAsDuplicate(None)
+        bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
+        self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
 
 
 class TestBugWatchSet(TestCaseWithFactory):

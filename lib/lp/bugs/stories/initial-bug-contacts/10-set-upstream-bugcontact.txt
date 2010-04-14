@@ -122,9 +122,9 @@ available.
 We can change the settings to use Launchpad for bug tracking.
 
     >>> sample_browser.getLink(
-    ...     'Enable bug tracking.').click()
+    ...     'Configure bug tracker').click()
     >>> print sample_browser.title
-    Change A product for testing things's details : Bugs : Test Product
+    Configure bug tracker : Bugs : Test Product
     >>> sample_browser.getControl('In Launchpad').click()
     >>> sample_browser.getControl('Change').click()
 

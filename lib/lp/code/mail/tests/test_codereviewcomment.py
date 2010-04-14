@@ -6,6 +6,7 @@
 
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -216,6 +217,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         message = getUtility(IMessageSet).fromEmail(msg.as_string())
         bmp = self.factory.makeBranchMergeProposal()
         comment = bmp.createCommentFromMessage(message, None, None, msg)
+        # We need to make sure the Librarian is up-to-date, so we commit.
+        transaction.commit()
         mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
         [outgoing_attachment] = mailer.attachments

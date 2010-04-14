@@ -12,7 +12,8 @@ First we create some objects for use in the tests.
     >>> person = factory.makePerson(name='import-owner')
     >>> product = factory.makeProduct(name='scruff')
     >>> code_import = removeSecurityProxy(factory.makeProductCodeImport(
-    ...    registrant=person, product=product, branch_name='import'))
+    ...    registrant=person, product=product, branch_name='import',
+    ...    svn_branch_url="http://svn.domain.com/source"))
     >>> no_import_branch = removeSecurityProxy(factory.makeProductBranch(
     ...     owner=person, product=product, name='no-import'))
     >>> logout()
@@ -49,7 +50,55 @@ We can get some information about the import using this URL.
     >>> print representation['rcs_type']
     Subversion via CSCVS
     >>> print representation['url']
-    http://domain9.domain.com/path10
+    http://svn.domain.com/source
+    >>> print representation['cvs_root']
+    None
+    >>> print representation['cvs_module']
+    None
+    >>> print representation['date_last_successful']
+    None
+
+
+Package Branches
+----------------
+
+The same is true for package branches.
+
+    >>> login(ANONYMOUS)
+    >>> distribution = factory.makeDistribution(name='scruffbuntu')
+    >>> distroseries = factory.makeDistroSeries(
+    ...     name='manic', distribution=distribution)
+    >>> source_package = factory.makeSourcePackage(
+    ...     sourcepackagename='scruff', distroseries=distroseries)
+    >>> code_import = removeSecurityProxy(factory.makePackageCodeImport(
+    ...    registrant=person, sourcepackage=source_package,
+    ...    branch_name='import',
+    ...    svn_branch_url="http://svn.domain.com/package_source"))
+    >>> logout()
+
+There is a link on the branch object
+
+    >>> branch_url = '/' + code_import.branch.unique_name
+    >>> response = webservice.get(branch_url)
+    >>> representation = response.jsonBody()
+    >>> print representation['code_import_link']
+    http://.../~import-owner/scruffbuntu/manic/scruff/import/+code-import
+
+and there is information available about the import itsef.
+
+    >>> import_url = representation['code_import_link']
+    >>> response = webservice.get(import_url)
+    >>> representation = response.jsonBody()
+    >>> print representation['self_link'] == import_url
+    True
+    >>> print representation['branch_link']
+    http://.../~import-owner/scruffbuntu/manic/scruff/import
+    >>> print representation['review_status']
+    Pending Review
+    >>> print representation['rcs_type']
+    Subversion via CSCVS
+    >>> print representation['url']
+    http://svn.domain.com/package_source
     >>> print representation['cvs_root']
     None
     >>> print representation['cvs_module']

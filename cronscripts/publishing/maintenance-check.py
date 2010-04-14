@@ -31,7 +31,7 @@ PRIMARY_ARCHES =  ["i386", "amd64"]
 SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
 
 # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
-SERVER_SEEDS = [ "supported-server"]
+SERVER_SEEDS = [ "supported-server", "server-ship"]
 DESKTOP_SEEDS = ["ship", "supported-desktop"]
 SUPPORTED_SEEDS = [ "all" ]
 
@@ -51,7 +51,7 @@ SUPPORT_TIMEFRAME_LTS = [
 
 # distro names and if they get LTS support (order is important)
 DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
-                                 ("kubuntu",  False),
+                                 ("kubuntu",  True),
                                  ("edubuntu", False),
                                  ("netbook",  False),
                                ]

@@ -63,6 +63,13 @@
             zope.publisher.interfaces.http.IHTTPRequest
             canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
        provides="lazr.restful.interfaces.IFieldMarshaller"
+       factory="canonical.launchpad.webapp.marshallers.choiceMarshallerError"
+       />
+   <adapter
+       for="lazr.restful.interfaces.IReferenceChoice
+            zope.publisher.interfaces.http.IHTTPRequest
+            canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
+       provides="lazr.restful.interfaces.IFieldMarshaller"
        factory="lazr.restful.marshallers.ObjectLookupFieldMarshaller"
        />
 

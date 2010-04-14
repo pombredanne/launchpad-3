@@ -42,7 +42,7 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, CorruptBuildID, IBuilder, IBuilderSet,
+    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
     ProtocolVersionMismatch)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
@@ -55,7 +55,7 @@ from lp.services.job.interfaces.job import JobStatus
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
@@ -182,8 +182,8 @@ def rescueBuilderIfLost(builder, logger=None):
     slave_build_id = status_sentence[ident_position[status]]
 
     try:
-        builder.verifySlaveBuildID(slave_build_id)
-    except CorruptBuildID, reason:
+        builder.verifySlaveBuildCookie(slave_build_id)
+    except CorruptBuildCookie, reason:
         if status == 'BuilderStatus.WAITING':
             builder.cleanSlave()
         else:
@@ -428,7 +428,7 @@ class Builder(SQLBase):
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
             self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):
@@ -454,9 +454,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuilder`."""
-        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+        return self.current_build_behavior.verifySlaveBuildCookie(
+            slave_build_id)
 
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
@@ -694,7 +695,7 @@ class BuilderSet(object):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
@@ -702,7 +703,7 @@ class BuilderSet(object):
         store = Store.of(processor)
         origin = (
             Archive,
-            Build,
+            BinaryPackageBuild,
             BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
@@ -711,11 +712,11 @@ class BuilderSet(object):
         queue = store.using(*origin).find(
             BuildQueue,
             BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == Build.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            Build.archive == Archive.id,
+            BuildPackageJob.build == BinaryPackageBuild.id,
+            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            Build.buildstate == BuildStatus.NEEDSBUILD,
+            BinaryPackageBuild.buildstate == BuildStatus.NEEDSBUILD,
             Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,
