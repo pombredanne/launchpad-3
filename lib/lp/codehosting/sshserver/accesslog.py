@@ -24,7 +24,12 @@ class LoggingManager:
     """Class for managing codehosting logging."""
 
     def __init__(self, main_log, access_log_path):
-        """Construct the logging manager."""
+        """Construct the logging manager.
+
+        :param main_log: The main log. Twisted will log to this.
+        :param access_log_path: The path to the file where access log
+            messages go.
+        """
         self._main_log = main_log
         self._access_log = get_access_logger()
         self._access_log_path = access_log_path
