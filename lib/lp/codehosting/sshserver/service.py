@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 
+import logging
 import os
 
 from twisted.application import service, strports
@@ -170,7 +171,9 @@ class SSHService(service.Service):
     def startService(self):
         """Start the SSH service."""
         set_up_oops_reporting('codehosting')
-        manager = accesslog.LoggingManager(config.codehosting.access_log)
+        manager = accesslog.LoggingManager(
+            logging.getLogger('codehosting'),
+            config.codehosting.access_log)
         manager.setUp()
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
