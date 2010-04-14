@@ -28,6 +28,7 @@ from canonical.config import config
 from lp.codehosting.sshserver import accesslog, events
 from lp.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 # The names of the key files of the server itself. The directory itself is
@@ -58,7 +59,6 @@ def make_portal():
         config.codehosting.authentication_endpoint)
     branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
     return get_portal(authentication_proxy, branchfs_proxy)
-
 
 
 class Factory(SSHFactory):
@@ -169,7 +169,8 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SSH service."""
-        accesslog.LoggingManager().setUp(configure_oops_reporting=True)
+        set_up_oops_reporting('codehosting')
+        accesslog.LoggingManager().setUp()
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask

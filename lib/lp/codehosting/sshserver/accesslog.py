@@ -19,21 +19,17 @@ from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
 from lp.codehosting.sshserver.events import ILoggingEvent
 from lp.services.utils import synchronize
-from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class LoggingManager:
     """Class for managing codehosting logging."""
 
-    def setUp(self, configure_oops_reporting=False):
+    def setUp(self):
         """Set up logging for the smart server.
 
         This sets up a debugging handler on the 'codehosting' logger, makes
         sure that things logged there won't go to stderr (necessary because of
         bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
-
-        :param configure_oops_reporting: If True, install a Twisted log
-            observer that ensures unhandled exceptions get reported as OOPSes.
         """
         log = get_codehosting_logger()
         self._orig_level = log.level
@@ -46,8 +42,6 @@ class LoggingManager:
         handler.setFormatter(
             logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         access_log.addHandler(handler)
-        if configure_oops_reporting:
-            set_up_oops_reporting('codehosting')
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
         zope.component.provideHandler(self._log_event)
