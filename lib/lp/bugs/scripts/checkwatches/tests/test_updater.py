@@ -26,8 +26,9 @@ from canonical.launchpad.webapp.adapter import (
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches import (
-    BugWatchUpdater, CheckWatchesErrorUtility, TwistedThreadScheduler)
+from lp.bugs.scripts.checkwatches.updater import (
+    BugWatchUpdater, TwistedThreadScheduler)
+from lp.bugs.scripts.checkwatches.base import CheckWatchesErrorUtility
 from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
 from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
@@ -216,7 +217,7 @@ class TestBugWatchUpdater(TestCaseWithFactory):
 
     def test_sql_log_cleared_in_oops_reporting(self):
         # The log of SQL statements is cleared after an OOPS has been
-        # reported by checkwatches.report_oops().
+        # reported by checkwatches.base.report_oops().
 
         # Enable SQL statment logging.
         set_request_started()
@@ -225,11 +226,11 @@ class TestBugWatchUpdater(TestCaseWithFactory):
             self.assertTrue(
                 len(get_request_statements()) > 0,
                 "We need at least one statement in the SQL log.")
-            checkwatches.report_oops()
+            checkwatches.base.report_oops()
             self.assertTrue(
                 len(get_request_statements()) == 0,
                 "SQL statement log not cleared by "
-                "checkwatches.report_oops().")
+                "checkwatches.base.report_oops().")
         finally:
             # stop SQL statemnet logging.
             clear_request_started()

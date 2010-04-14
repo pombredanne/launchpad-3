@@ -63,7 +63,7 @@ OOPSes reported by the checkwatches process are raised using the
 CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix
 and their type is 'BugWatchUpdateWarning'.
 
-    >>> from lp.bugs.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches.base import (
     ...     CheckWatchesErrorUtility)
     >>> error_utility = CheckWatchesErrorUtility()
     >>> report = error_utility.getLastOopsReport()
