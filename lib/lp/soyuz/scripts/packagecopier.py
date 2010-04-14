@@ -348,7 +348,7 @@ class CopyChecker:
                 library_file = file_alias.libraryfile
                 file_conflicts[library_file.filename] = library_file
         for lf in source.sourcepackagerelease.files:
-            if lf.libraryfile.filename in dfc.keys():
+            if lf.libraryfile.filename in file_conflicts.keys():
                 if lf.libraryfile != file_conflicts[lf.libraryfile.filename]:
                     raise CannotCopy(
                         "%s already exists in destination archive with "
