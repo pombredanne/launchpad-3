@@ -16,9 +16,10 @@ Once a build result is recognised as FAILEDTOUPLOAD by the
 buildmaster/slave-scanner code, an build notification will be issued.
 See more information in build-notification.txt file.
 
-  >>> from lp.soyuz.interfaces.build import IBuildSet
+  >>> from lp.soyuz.interfaces.binarypackagebuild import (
+  ...     IBinaryPackageBuildSet)
   >>> from lp.testing.mail_helpers import pop_notifications
-  >>> buildset = getUtility(IBuildSet)
+  >>> buildset = getUtility(IBinaryPackageBuildSet)
 
 Let's use a sampledata build record in FAILEDTOUPLOAD:
 

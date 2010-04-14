@@ -28,7 +28,7 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)

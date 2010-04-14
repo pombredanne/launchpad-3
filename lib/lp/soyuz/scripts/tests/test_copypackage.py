@@ -30,7 +30,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
@@ -49,8 +49,7 @@ from lp.soyuz.scripts.packagecopier import (
     CopyChecker, do_copy, _do_delayed_copy, _do_direct_copy, PackageCopier,
     re_upload_file, UnembargoSecurityPackage, update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import (
-    TestCase, TestCaseWithFactory)
+from lp.testing import TestCaseWithFactory
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):

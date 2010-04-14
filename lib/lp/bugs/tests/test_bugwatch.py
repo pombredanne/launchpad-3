@@ -8,30 +8,26 @@ __metaclass__ = type
 import transaction
 import unittest
 
-from datetime import datetime, timedelta
-from pytz import utc
-
 from urlparse import urlunsplit
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.webapp import urlsplit
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
+from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
-from lp.bugs.scripts.checkwatches.scheduler import (
-    BugWatchScheduler, MAX_SAMPLE_SIZE)
+    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, login_person
 
 
 class ExtractBugTrackerAndBugTestBase:
@@ -335,6 +331,76 @@ class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
     bug_id = '12345'
 
 
+class TestBugWatch(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_bugtasks_to_update(self):
+        # The bugtasks_to_update property should yield the linked bug
+        # tasks which are not conjoined and for which the bug is not a
+        # duplicate.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=product.owner)
+        product_task = bug.getBugTask(product)
+        watch = self.factory.makeBugWatch(bug=bug)
+        product_task.bugwatch = watch
+        # For a single-task bug the bug task is eligible for update.
+        self.failUnlessEqual(
+            [product_task], list(
+                removeSecurityProxy(watch).bugtasks_to_update))
+        # If we add a task such that the existing task becomes a
+        # conjoined slave, only thr master task will be eligible for
+        # update.
+        product_series_task = self.factory.makeBugTask(
+            bug=bug, target=product.development_focus)
+        product_series_task.bugwatch = watch
+        self.failUnlessEqual(
+            [product_series_task], list(
+                removeSecurityProxy(watch).bugtasks_to_update))
+        # But once the bug is marked as a duplicate,
+        # bugtasks_to_update yields nothing.
+        bug.markAsDuplicate(
+            self.factory.makeBug(product=product, owner=product.owner))
+        self.failUnlessEqual(
+            [], list(removeSecurityProxy(watch).bugtasks_to_update))
+
+    def test_updateStatus_with_duplicate_bug(self):
+        # Calling BugWatch.updateStatus() will not update the status
+        # of a task that is part of a duplicate bug.
+        bug = self.factory.makeBug()
+        bug.markAsDuplicate(self.factory.makeBug())
+        login_person(bug.owner)
+        bug_task = bug.default_bugtask
+        bug_task.bugwatch = self.factory.makeBugWatch()
+        bug_task_initial_status = bug_task.status
+        self.failIfEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+        bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
+        self.failUnlessEqual(bug_task_initial_status, bug_task.status)
+        # Once the task is no longer linked to a duplicate bug, the
+        # status will get updated.
+        bug.markAsDuplicate(None)
+        bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
+        self.failUnlessEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+
+    def test_updateImportance_with_duplicate_bug(self):
+        # Calling BugWatch.updateImportance() will not update the
+        # importance of a task that is part of a duplicate bug.
+        bug = self.factory.makeBug()
+        bug.markAsDuplicate(self.factory.makeBug())
+        login_person(bug.owner)
+        bug_task = bug.default_bugtask
+        bug_task.bugwatch = self.factory.makeBugWatch()
+        bug_task_initial_importance = bug_task.importance
+        self.failIfEqual(BugTaskImportance.HIGH, bug_task.importance)
+        bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
+        self.failUnlessEqual(bug_task_initial_importance, bug_task.importance)
+        # Once the task is no longer linked to a duplicate bug, the
+        # importance will get updated.
+        bug.markAsDuplicate(None)
+        bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
+        self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
+
+
 class TestBugWatchSet(TestCaseWithFactory):
     """Tests for the bugwatch updating system."""
 
@@ -465,86 +531,6 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         messages = [activity.message for activity in self.bug_watch.activity]
         for i in range(MAX_SAMPLE_SIZE):
             self.failUnless("Activity %s" % i in messages)
-
-
-class TestBugWatchScheduler(TestCaseWithFactory):
-    """Tests for the BugWatchScheduler, which runs as part of garbo."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBugWatchScheduler, self).setUp('foo.bar@canonical.com')
-        # We'll make sure that all the other bug watches look like
-        # they've been scheduled so that only our watch gets scheduled.
-        for watch in getUtility(IBugWatchSet).search():
-            watch.next_check = datetime.now(utc)
-        self.bug_watch = self.factory.makeBugWatch()
-        self.scheduler = BugWatchScheduler(QuietFakeLogger())
-        transaction.commit()
-
-    def test_scheduler_schedules_unchecked_watches(self):
-        # The BugWatchScheduler will schedule a BugWatch that has never
-        # been checked to be checked immediately.
-        self.bug_watch.next_check = None
-        self.scheduler(1)
-
-        self.assertNotEqual(None, self.bug_watch.next_check)
-        self.assertTrue(
-            self.bug_watch.next_check <= datetime.now(utc))
-
-    def test_scheduler_schedules_working_watches(self):
-        # If a watch has been checked and has never failed its next
-        # check will be scheduled for 24 hours after its last check.
-        now = datetime.now(utc)
-        self.bug_watch.lastchecked = now
-        self.bug_watch.next_check = None
-        transaction.commit()
-        self.scheduler(1)
-
-        self.assertEqual(
-            now + timedelta(hours=24), self.bug_watch.next_check)
-
-    def test_scheduler_schedules_failing_watches(self):
-        # If a watch has failed once, it will be scheduled more than 24
-        # hours after its last check.
-        now = datetime.now(utc)
-        self.bug_watch.lastchecked = now
-
-        # The delay depends on the number of failures that the watch has
-        # had.
-        for failure_count in range(1, 6):
-            self.bug_watch.next_check = None
-            self.bug_watch.addActivity(
-                result=BugWatchActivityStatus.BUG_NOT_FOUND)
-            transaction.commit()
-            self.scheduler(1)
-
-            coefficient = self.scheduler.delay_coefficient * failure_count
-            self.assertEqual(
-                now + timedelta(days=1 + coefficient),
-                self.bug_watch.next_check)
-
-        # The scheduler only looks at the last 5 activity items, so even
-        # if there have been more failures the maximum delay will be 7
-        # days.
-        for count in range(10):
-            self.bug_watch.addActivity(
-                result=BugWatchActivityStatus.BUG_NOT_FOUND)
-        self.bug_watch.next_check = None
-        transaction.commit()
-        self.scheduler(1)
-        self.assertEqual(
-            now + timedelta(days=7), self.bug_watch.next_check)
-
-    def test_scheduler_doesnt_schedule_scheduled_watches(self):
-        # The scheduler will ignore watches whose next_check has been
-        # set.
-        next_check_date = datetime.now(utc) + timedelta(days=1)
-        self.bug_watch.next_check = next_check_date
-        transaction.commit()
-        self.scheduler(1)
-
-        self.assertEqual(next_check_date, self.bug_watch.next_check)
 
 
 def test_suite():

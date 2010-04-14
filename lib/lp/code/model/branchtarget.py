@@ -9,7 +9,6 @@ __all__ = [
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
-    'ProductSeriesBranchTarget',
     ]
 
 from zope.component import getUtility
@@ -99,6 +98,11 @@ class PackageBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_short_identites(self):
         """See `IBranchTarget`."""
         return True
 
@@ -195,6 +199,11 @@ class PersonBranchTarget(_BaseBranchTarget):
         return False
 
     @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
     def supports_code_imports(self):
         """See `IBranchTarget`."""
         return False
@@ -276,6 +285,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         return True
 
     @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
     def supports_code_imports(self):
         """See `IBranchTarget`."""
         return True
@@ -320,23 +334,6 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.product = self.product
         branch.distroseries = None
         branch.sourcepackagename = None
-
-
-class ProductSeriesBranchTarget(ProductBranchTarget):
-
-    def __init__(self, productseries):
-        self.productseries = productseries
-        self.product = productseries.product
-
-    @property
-    def context(self):
-        """See `IBranchTarget`."""
-        return self.productseries
-
-    @property
-    def supports_code_imports(self):
-        """See `IBranchTarget`."""
-        return False
 
 
 def get_canonical_url_data_for_target(branch_target):

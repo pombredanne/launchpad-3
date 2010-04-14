@@ -356,13 +356,15 @@ are building as well as the number of packages waiting to build.
 Let's set some builds appropriately to see the results.
 
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
     >>> ignore = source.sourcepackagerelease.createBuild(
     ...     distroarchseries=warty_hppa, archive=view.context,
     ...     pocket=source.pocket)
-    >>> builds = getUtility(IBuildSet).getBuildsForArchive(view.context)
+    >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+    ...     view.context)
     >>> for build in builds:
     ...     print build.title
     hppa build of cdrkit 1.0 in ubuntu warty RELEASE

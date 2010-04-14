@@ -213,6 +213,7 @@ known_canonical_non_lp_devs = \
                               u'Michael Vogt',
                               u'Sidnei da Silva',
                               u'Steve Kowalik',
+                              u'Dustin Kirkland',
                               )]
 
 # Some people have made commits using various names and/or email 
