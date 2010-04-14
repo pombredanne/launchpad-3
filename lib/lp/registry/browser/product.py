@@ -1090,6 +1090,9 @@ class ProductPackagesPortletView(LaunchpadFormView):
                     item_url, escape(package.name))
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
+        # Add an option to represent the user's decision to choose a
+        # different package. Note that source packages cannot have uppercase
+        # names with underscores, so the name is safe to use.
         description = 'Choose another Ubuntu package'
         vocab_terms.append(
             SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
