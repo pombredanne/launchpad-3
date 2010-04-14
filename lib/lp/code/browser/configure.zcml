@@ -70,6 +70,14 @@
       permission="zope.Public"
       />
 
+    <browser:page
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+recipes"
+        template="../templates/sourcepackagerecipe-listing.pt"/>
+
 
 </facet>
 
