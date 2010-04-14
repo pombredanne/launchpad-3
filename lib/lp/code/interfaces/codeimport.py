@@ -182,10 +182,14 @@ class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
     def new(registrant, target, branch_name, rcs_type, url=None,
-            cvs_root=None, cvs_module=None, review_status=None):
+            cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
         """Create a new CodeImport.
 
         :param target: An `IBranchTarget` that the code is associated with.
+        :param owner: The `IPerson` to set as the owner of the branch, or
+            None to use registrant. registrant must be a member of owner to
+            do this.
         """
 
     def get(id):

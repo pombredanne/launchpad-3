@@ -49,7 +49,8 @@ from lazr.restful.declarations import (
     export_as_webservice_collection, export_as_webservice_entry,
     export_destructor_operation, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, mutator_for, operation_parameters, operation_returns_entry)
+    exported, mutator_for, operation_parameters, operation_returns_entry,
+    webservice_error)
 
 from canonical.config import config
 
@@ -93,6 +94,8 @@ class BranchCreationException(Exception):
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
 
+    webservice_error(400)
+
     def __init__(self, existing_branch):
         # XXX: TimPenhey 2009-07-12 bug=405214: This error
         # message logic is incorrect, but the exact text is being tested
@@ -135,6 +138,8 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     the branch to a team that they are not a member of.
     """
 
+    webservice_error(400)
+
 
 class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
     """We forbid the creation of team-owned +junk branches.
@@ -157,6 +162,8 @@ class BranchCreatorNotOwner(BranchCreationException):
     Raised when a user is attempting to create a branch and set the owner of
     the branch to another user.
     """
+
+    webservice_error(400)
 
 
 class BranchTypeError(Exception):

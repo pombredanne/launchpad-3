@@ -131,8 +131,9 @@ The single BuildQueue found is a non-virtual pending build:
 
     >>> job.id
     2
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
     >>> build.buildstate.name
     'NEEDSBUILD'
     >>> job.builder is None
@@ -172,7 +173,7 @@ Verify if the job (BuildQueue) was updated appropriately:
     >>> job.builder.id == bob_builder.id
     True
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
     >>> build.buildstate.name
     'BUILDING'
 
@@ -209,7 +210,7 @@ Create BuildQueue record and inspect some parameters:
 
 The build job's archive requires virtualized builds.
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(ppa_job)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(ppa_job)
     >>> build.archive.require_virtualized
     True
 
