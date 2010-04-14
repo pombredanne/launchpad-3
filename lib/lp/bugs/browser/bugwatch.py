@@ -29,6 +29,9 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import structured
 
 
+WATCH_RESCHEDULE_THRESHOLD = 0.6
+
+
 class BugWatchSetNavigation(GetitemNavigation):
 
     usedfor = IBugWatchSet
@@ -136,6 +139,32 @@ class BugWatchEditView(LaunchpadFormView):
                 IBugWatchSet).extractBugTrackerAndBug(data['url'])
         except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
             self.setFieldError('url', 'Invalid bug tracker URL.')
+
+    @property
+    def user_can_reschedule(self):
+        """Return True if the current user can reschedule the bug watch."""
+        total_activity_count = self.context.activity.count()
+        if total_activity_count == 0:
+            # Don't show the reschedule button if the watch has never
+            # been checked.
+            return False
+
+        failed_activity_count = len([
+            activity for activity in self.context.activity if
+            activity.result not in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES])
+
+        if failed_activity_count == 0:
+            # Don't show the reschedule button if the watch has never
+            # failed.
+            return False
+
+        failure_ratio = float(failed_activity_count) / total_activity_count
+        if failure_ratio <= WATCH_RESCHEDULE_THRESHOLD:
+            # If the ratio is lower than the reschedule threshold, we
+            # can show the button.
+            return True
+        else:
+            return False
 
     @action('Change', name='change')
     def change_action(self, action, data):

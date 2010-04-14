@@ -109,3 +109,41 @@ different dates.
      'icon': '/@@/yes',
      'result_text': 'Synchronisation succeeded'}
 
+
+Rescheduling a watch
+--------------------
+
+The BugWatch +edit view provides a property, user_can_reschedule, which
+indicates whether or not a user can reschedule a bug watch for checking.
+For a new bug watch this will be False.
+
+    >>> schedulable_watch = factory.makeBugWatch()
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+edit')
+
+    >>> scheduling_view.user_can_reschedule
+    False
+
+If there's been activity on the watch but it's always been successful,
+user_can_reschedule will remain False.
+
+    >>> schedulable_watch.addActivity()
+    >>> scheduling_view.user_can_reschedule
+    False
+
+If the watch's updates have failed less than 60% of the time,
+user_can_reschedule will be True
+
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> scheduling_view.user_can_reschedule
+    True
+
+However, if the watch has failed more than 60% of the time the button
+will disappear again, since it's assumed that the watch needs attention
+in order for it to be able to work again.
+
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> scheduling_view.user_can_reschedule
+    False
