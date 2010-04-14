@@ -121,18 +121,14 @@ def get_bugwatcherrortype_for_error(error):
         return BugWatchActivityStatus.UNKNOWN
 
 
-#
-# OOPS reporting.
-#
-
-
 class CheckWatchesErrorUtility(ErrorReportingUtility):
     """An error utility that for the checkwatches process."""
 
     _default_config_section = 'checkwatches'
 
 
-def report_oops(message=None, properties=None, info=None, txn=None):
+def report_oops(message=None, properties=None, info=None,
+                transaction_manager=None):
     """Record an oops for the current exception.
 
     This must only be called while handling an exception.
@@ -150,8 +146,8 @@ def report_oops(message=None, properties=None, info=None, txn=None):
     :param info: Exception info.
     :type info: The return value of `sys.exc_info()`.
 
-    :param txn: A transaction manager. If specified, further txn.commit()
-        calls will be logged.
+    :param transaction_manager: A transaction manager. If specified,
+        further commit() calls will be logged.
     """
     # Get the current exception info first of all.
     if info is None:
@@ -184,11 +180,12 @@ def report_oops(message=None, properties=None, info=None, txn=None):
         clear_request_started()
         set_request_started(
             request_statements=LimitedList(MAX_SQL_STATEMENTS_LOGGED),
-            txn=txn, enable_timeout=False)
+            txn=transaction_manager, enable_timeout=False)
     return request
 
 
-def report_warning(message, properties=None, info=None, txn=None):
+def report_warning(message, properties=None, info=None,
+                   transaction_manager=None):
     """Create and report a warning as an OOPS.
 
     If no exception info is passed in this will create a generic
@@ -197,7 +194,7 @@ def report_warning(message, properties=None, info=None, txn=None):
     :param message: See `report_oops`.
     :param properties: See `report_oops`.
     :param info: See `report_oops`.
-    :param txn: See `report_oops`.
+    :param transaction_manager: See `report_oops`.
     """
     if info is None:
         # Raise and catch the exception so that sys.exc_info will
@@ -207,7 +204,7 @@ def report_warning(message, properties=None, info=None, txn=None):
         except BugWatchUpdateWarning:
             return report_oops(message, properties)
     else:
-        return report_oops(message, properties, info, txn)
+        return report_oops(message, properties, info, transaction_manager)
 
 
 def with_interaction(func):
@@ -237,8 +234,8 @@ def commit_before(func):
     that callers do not need to be responsible for committing before
     calling them.
 
-    It's intended for use with `BugWatchUpdater`, which provides a
-    `txn` property; this is the hook that's required.
+    It's intended for use with `WorkingBase`, which provides a
+    `_transaction_manager` property; this is the hook that's required.
     """
     @wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -345,11 +342,11 @@ class BugWatchUpdater(WorkingBase):
                  syncable_gnome_products=None):
         """Initialize a BugWatchUpdater.
 
-        :param txn: A transaction manager on which `begin()`,
-            `abort()` and `commit()` can be called. Additionally, it
-            should be safe for different threads to use its methods to
-            manage their own transactions (i.e. with thread-local
-            storage).
+        :param transaction_manager: A transaction manager on which
+            `begin()`, `abort()` and `commit()` can be
+            called. Additionally, it should be safe for different
+            threads to use its methods to manage their own
+            transactions (i.e. with thread-local storage).
 
         :param log: An instance of `logging.Logger`, or something that
             provides a similar interface.
@@ -387,7 +384,8 @@ class BugWatchUpdater(WorkingBase):
                     set_request_started(
                         request_statements=LimitedList(
                             MAX_SQL_STATEMENTS_LOGGED),
-                        txn=self._transaction_manager, enable_timeout=False)
+                        txn=self._transaction_manager,
+                        enable_timeout=False)
                     return self.updateBugTracker(bug_tracker_id, batch_size)
                 finally:
                     thread.setName(thread_name)
