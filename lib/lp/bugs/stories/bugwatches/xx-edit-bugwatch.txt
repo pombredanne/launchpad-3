@@ -77,3 +77,46 @@ Next check column.
     ...     admin_browser.contents, 'bugwatch-next_check')
     >>> print extract_text(data_tag.renderContents())
     Next check: 2010-04-08...
+
+
+Recent activity
+---------------
+
+Recent activity on a bug watch is shown on the page as a list of
+activity entries. When a watch has not been checked, no activity is
+shown.
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     admin_browser.contents, 'recent-watch-activity')
+    >>> print recent_activity_list
+    None
+
+Adding some activity to the watch will cause it to show up in the recent
+activity list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.addActivity()
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     admin_browser.contents, 'recent-watch-activity')
+    >>> print extract_text(recent_activity_list)
+    Update completed successfully ... ago
+
+If an update fails, that too will be reflected in the list.
+
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     admin_browser.contents, 'recent-watch-activity')
+    >>> print extract_text(recent_activity_list)
+    Update failed with error 'Bug Not Found' ... ago
+    Update completed successfully ... ago

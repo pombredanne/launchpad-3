@@ -39,7 +39,7 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import (
@@ -817,7 +817,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
             self.logger.debug("Build %s found" % build.id)
             # Ensure gathered binary is related to a FULLYBUILT build
             # record. It will be check in slave-scanner procedure to

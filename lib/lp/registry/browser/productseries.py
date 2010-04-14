@@ -13,6 +13,7 @@ __all__ = [
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
+    'ProductSeriesInvolvementView',
     'ProductSeriesLinkBranchView',
     'ProductSeriesLinkBranchFromCodeView',
     'ProductSeriesNavigation',
@@ -34,7 +35,7 @@ from bzrlib.revision import NULL_REVISION
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import implements, Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
@@ -84,11 +85,13 @@ from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
     ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.browser.pillar import InvolvedMenu, PillarView
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 
@@ -168,13 +171,53 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
         return Link(link, text, summary=summary)
 
 
+class IProductSeriesInvolved(Interface):
+    """A marker interface for getting involved."""
+
+
+class ProductSeriesInvolvedMenu(InvolvedMenu):
+    """The get involved menu."""
+    usedfor = IProductSeriesInvolved
+    links = [
+        'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
+
+    def submit_code(self):
+        product = self.context.context.product
+        target = canonical_url(
+            product, view_name='+addbranch', rootsite='code')
+        enabled = product.official_codehosting
+        return Link(
+            target, 'Submit code', icon='code', enabled=enabled)
+
+
+class ProductSeriesInvolvementView(PillarView):
+    """Encourage configuration of involvement links for project series."""
+
+    implements(IProductSeriesInvolved)
+    has_involvement = True
+    visible_disabled_link_names = ['submit_code']
+
+    def __init__(self, context, request):
+        super(ProductSeriesInvolvementView, self).__init__(context, request)
+        self.official_codehosting = self.context.branch is not None
+        self.official_answers = False
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        series_menu = MenuAPI(self.context).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure series branch'
+        return [set_branch]
+
+
 class ProductSeriesOverviewMenu(
     ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
+        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
         'create_milestone', 'create_release', 'rdf', 'subscribe',
         'set_branch',
         ]
@@ -227,11 +270,6 @@ class ProductSeriesOverviewMenu(
             icon = 'edit'
             summary = 'Change the branch for this series'
         return Link('+setbranch', text, summary, icon=icon)
-
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = "Register a new Bazaar branch for this series' project"
-        return Link('+addbranch', text, summary, icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def ubuntupkg(self):
@@ -507,7 +545,6 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
             # to this series, or any other series.
             pass
 
-
     @action('Update', name='continue')
     def continue_action(self, action, data):
         # set the packaging record for this productseries in the current
@@ -768,6 +805,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         'branch_type': LINK_LP_BZR,
         }
 
+    errors_in_action = False
+
+    @property
+    def next_url(self):
+        """Return the next_url.
+
+        Use the value from `ReturnToReferrerMixin` or None if there
+        are errors.
+        """
+        if self.errors_in_action:
+            return None
+        return super(ProductSeriesSetBranchView, self).next_url
+
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
@@ -879,8 +929,8 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         # Extend the allowed schemes for the repository URL based on
         # rcs_type.
         extra_schemes = {
-            RevisionControlSystemsExtended.BZR_SVN:['svn'],
-            RevisionControlSystemsExtended.GIT:['git'],
+            RevisionControlSystemsExtended.BZR_SVN: ['svn'],
+            RevisionControlSystemsExtended.GIT: ['git'],
             }
         schemes.update(extra_schemes.get(rcs_type, []))
         return schemes
@@ -933,7 +983,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     @property
     def target(self):
         """The branch target for the context."""
-        return IBranchTarget(self.context)
+        return IBranchTarget(self.context.product)
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
@@ -971,16 +1021,16 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     branch = self._createBzrBranch(
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
+                    if branch is None:
+                        self.errors_in_action = True
+                        return
 
-                    if branch is not None:
-                        self.context.branch = branch
-                        self.request.response.addInfoNotification(
-                            'Mirrored branch created and linked to '
-                            'the series.')
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'Mirrored branch created and linked to '
+                        'the series.')
                 else:
                     # We need to create an import request.
-
-                    # Ensure the URL has not already been imported.
                     if rcs_type == RevisionControlSystemsExtended.CVS:
                         cvs_root = data.get('repo_url')
                         cvs_module = data.get('cvs_module')
@@ -990,14 +1040,20 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_module = None
                         url = data.get('repo_url')
                     rcs_item = RevisionControlSystems.items[rcs_type.name]
-                    code_import = getUtility(ICodeImportSet).new(
-                        registrant=branch_owner,
-                        target=IBranchTarget(self.context.product),
-                        branch_name=branch_name,
-                        rcs_type=rcs_item,
-                        url=url,
-                        cvs_root=cvs_root,
-                        cvs_module=cvs_module)
+                    try:
+                        code_import = getUtility(ICodeImportSet).new(
+                            registrant=branch_owner,
+                            target=IBranchTarget(self.context.product),
+                            branch_name=branch_name,
+                            rcs_type=rcs_item,
+                            url=url,
+                            cvs_root=cvs_root,
+                            cvs_module=cvs_module)
+                    except BranchExists, e:
+                        self._setBranchExists(e.existing_branch,
+                                              'branch_name')
+                        self.errors_in_action = True
+                        return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
                         'Code import created and branch linked to the '

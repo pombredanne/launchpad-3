@@ -1103,6 +1103,12 @@
             class="lp.bugs.browser.bugwatch.BugWatchEditView"
             permission="launchpad.AnyPerson"
             template="../templates/bugwatch-editform.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugwatch.IBugWatch"
+            name="+portlet-activity"
+            class="lp.bugs.browser.bugwatch.BugWatchView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bugwatch-portlet-activity.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             permission="launchpad.AnyPerson">
