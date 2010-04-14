@@ -240,8 +240,13 @@ class BranchMirrorer(object):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
         if self.policy._is_import:
-            source_branch.bzrdir.transport.clone('..').copy_tree_to_transport(
-                dest_transport)
+            source_transport = source_branch.bzrdir.transport.clone('..')
+            while True:
+                files_before = list(source_transport.iter_files_recursive())
+                source_transport.copy_tree_to_transport(dest_transport)
+                files_after = list(source_transport.iter_files_recursive())
+                if files_before == files_after:
+                    break
             return Branch.open_from_transport(dest_transport)
         else:
             # We check to see if the stacked on branch exists in the mirrored
