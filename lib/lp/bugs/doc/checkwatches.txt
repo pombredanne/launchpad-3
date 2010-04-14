@@ -262,16 +262,16 @@ requests are actually made.
 
     >>> transaction.commit()
     >>> updater = BugWatchUpdater(transaction.manager)
-    >>> original_log = updater.log
+    >>> original_log = updater.logger
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
     ...     transaction.commit()
-    ...     updater.log = FakeLogger()
+    ...     updater.logger = FakeLogger()
     ...     updater.updateBugTrackers([example_bug_tracker_name])
     ... finally:
-    ...     updater.log = original_log
+    ...     updater.logger = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
     DEBUG No global batch size specified.
@@ -315,7 +315,7 @@ BugWatchUpdater's logger.
     >>> def update_all(bug_tracker_name, batch_size=None):
     ...     transaction.commit()
     ...     updater = BugWatchUpdater(transaction.manager)
-    ...     updater.log = FakeLogger()
+    ...     updater.logger = FakeLogger()
     ...     updater.forceUpdateAll(bug_tracker_name, batch_size)
 
     >>> update_all('savannah', batch_size)
@@ -384,7 +384,7 @@ made.
 
     >>> transaction.commit()
     >>> non_connecting_updater = NonConnectingUpdater(transaction.manager)
-    >>> non_connecting_updater.log = FakeLogger()
+    >>> non_connecting_updater.logger = FakeLogger()
     >>> non_connecting_updater.forceUpdateAll(empty_tracker_name, 1)
     INFO Resetting 5 bug watches for bug tracker 'auto-example.com'
     INFO Updating 5 watches on bug tracker 'auto-example.com'

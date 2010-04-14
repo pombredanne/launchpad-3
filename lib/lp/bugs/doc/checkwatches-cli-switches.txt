@@ -20,7 +20,7 @@ external connections.
     >>> transaction.commit()
 
     >>> transactionmgr = ZopelessTransactionManager._installed
-    >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
+    >>> updater = BugWatchUpdater(transactionmgr, logger=FakeLogger())
 
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
     DEBUG...No watches to update on http://bugs.debian.org
