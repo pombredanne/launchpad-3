@@ -155,13 +155,22 @@ class SSHService(service.Service):
     """A Twisted service for the codehosting SSH server."""
 
     def __init__(self, portal, private_key_path, public_key_path,
-                 port='tcp:22', idle_timeout=3600, banner=None):
+                 oops_configuration, main_log, access_log,
+                 access_log_path, port='tcp:22', idle_timeout=3600,
+                 banner=None):
         """Construct an SSH service.
 
         :param portal: The `Portal` that turns authentication requests into
             views on the system.
         :param private_key_path: The path to the SSH server's private key.
         :param public_key_path: The path to the SSH server's public key.
+        :param oops_configuration: The section of the configuration file with
+            the OOPS config details for this server.
+        :param main_log: A `logging.Logger` object to log most of the server
+            stuff to.
+        :param access_log: A `logging.Logger` object to log the server access
+            details to.
+        :param access_log_path: The path to the access log file.
         :param port: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
         :param idle_timeout: The number of seconds to wait before killing a
@@ -177,15 +186,19 @@ class SSHService(service.Service):
                 banner=banner),
             timeoutPeriod=idle_timeout)
         self.service = strports.service(port, ssh_factory)
+        self._oops_configuration = oops_configuration
+        self._main_log = main_log
+        self._access_log = access_log
+        self._access_log_path = access_log_path
 
     def startService(self):
         """Start the SSH service."""
-        set_up_oops_reporting(OOPS_CONFIG_SECTION)
         manager = accesslog.LoggingManager(
-            logging.getLogger(LOG_NAME),
-            logging.getLogger(ACCESS_LOG_NAME),
-            config.codehosting.access_log)
+            logging.getLogger(self._main_log),
+            logging.getLogger(self._access_log_path),
+            self._access_log_path)
         manager.setUp()
+        set_up_oops_reporting(self._oops_configuration)
         notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
