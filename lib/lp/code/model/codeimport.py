@@ -203,7 +203,8 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, target, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None, review_status=None):
+            url=None, cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
@@ -227,14 +228,16 @@ class CodeImportSet:
                 review_status = CodeImportReviewStatus.NEW
         if not target.supports_code_imports:
             raise AssertionError("%r doesn't support code imports" % target)
+        if owner is None:
+            owner = registrant
         # Create the branch for the CodeImport.
-        namespace = target.getNamespace(registrant)
+        namespace = target.getNamespace(owner)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)
 
         code_import = CodeImport(
-            registrant=registrant, owner=registrant, branch=import_branch,
+            registrant=registrant, owner=owner, branch=import_branch,
             rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
             review_status=review_status)
