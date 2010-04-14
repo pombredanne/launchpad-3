@@ -8,6 +8,12 @@ An `SSHService` object can be used to launch the SSH server.
 
 __metaclass__ = type
 __all__ = [
+    'ACCESS_LOG_NAME',
+    'get_key_path',
+    'LOG_NAME',
+    'make_portal',
+    'PRIVATE_KEY_FILE',
+    'PUBLIC_KEY_FILE',
     'SSHService',
     ]
 
@@ -36,6 +42,9 @@ from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 # given in config.codehosting.host_key_pair_path.
 PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
 PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
+
+LOG_NAME = 'codehosting'
+ACCESS_LOG_NAME = 'codehosting.access'
 
 
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
@@ -172,8 +181,8 @@ class SSHService(service.Service):
         """Start the SSH service."""
         set_up_oops_reporting('codehosting')
         manager = accesslog.LoggingManager(
-            logging.getLogger('codehosting'),
-            logging.getLogger('codehosting.access'),
+            logging.getLogger(LOG_NAME),
+            logging.getLogger(ACCESS_LOG_NAME),
             config.codehosting.access_log)
         manager.setUp()
         notify(events.ServerStarting())
