@@ -339,6 +339,20 @@ class CopyChecker:
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
 
+        # Check if files with the same filename already exist in the target
+        destination_file_conflicts = self.archive.getPublishedSources(
+            name=source.sourcepackagerelease.name)
+        dfc = {}
+        for file in destination_file_conflicts:
+            for inc_file in file.sourcepackagerelease.files:
+                dfc[inc_file.libraryfile.filename] = inc_file.libraryfile
+        for file in source.sourcepackagerelease.files:
+            if file.libraryfile.filename in dfc.keys():
+                if file.libraryfile != dfc[file.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % file.libraryfile.filename)
+
     def checkCopy(self, source, series, pocket):
         """Check if the source can be copied to the given location.
 
