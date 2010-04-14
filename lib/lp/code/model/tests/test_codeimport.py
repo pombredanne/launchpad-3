@@ -10,11 +10,13 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.interfaces.branch import BranchCreatorNotMemberOfOwnerTeam
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
@@ -133,6 +135,65 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
             review_status=None)
+
+    def test_create_source_package_import(self):
+        """Test that we can create an import targetting a source package."""
+        registrant = self.factory.makePerson()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(registrant, code_import.branch.owner)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_set_owner(self):
+        """Test that we can create an import owned by someone else."""
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam()
+        removeSecurityProxy(registrant).join(owner)
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None, owner=owner)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(owner, code_import.branch.owner)
+        self.assertEqual(registrant, code_import.branch.registrant)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_registrant_must_be_in_owner(self):
+        """Test that we can't create an import for an arbitrary team."""
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            CodeImportSet().new,
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None, owner=owner)
 
 
 class TestCodeImportDeletion(TestCaseWithFactory):

@@ -33,7 +33,8 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
@@ -173,8 +174,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin):
-
+              HasBugHeatMixin, HasCodeImportsMixin):
     """A Product."""
 
     implements(

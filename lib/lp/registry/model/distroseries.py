@@ -90,7 +90,7 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
@@ -1110,8 +1110,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
