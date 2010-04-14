@@ -68,6 +68,9 @@
       (can expire)
     </td>
   </tr>
+  <tal:comment condition="nothing">
+    This empty table row is used to create space between filter groups.
+  </tal:comment>
   <tr><td colspan="2"><br /></td></tr>
   <tr tal:condition="view/user"
       tal:define="count view/my_bugs_count|nothing;
