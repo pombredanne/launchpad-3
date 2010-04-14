@@ -24,6 +24,12 @@ from lp.services.utils import synchronize
 class LoggingManager:
     """Class for managing codehosting logging."""
 
+    def __init__(self):
+        """Construct the logging manager."""
+        self._main_log = get_codehosting_logger()
+        self._access_log = get_access_logger()
+        self._access_log_path = config.codehosting.access_log
+
     def setUp(self):
         """Set up logging for the smart server.
 
@@ -31,17 +37,16 @@ class LoggingManager:
         sure that things logged there won't go to stderr (necessary because of
         bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
         """
-        log = get_codehosting_logger()
+        log = self._main_log
         self._orig_level = log.level
         self._orig_handlers = list(log.handlers)
         self._orig_observers = list(tplog.theLogPublisher.observers)
         log.setLevel(logging.INFO)
         log.addHandler(_NullHandler())
-        access_log = get_access_logger()
-        handler = WatchedFileHandler(config.codehosting.access_log)
+        handler = WatchedFileHandler(self._access_log_path)
         handler.setFormatter(
             logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-        access_log.addHandler(handler)
+        self._access_log.addHandler(handler)
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
         zope.component.provideHandler(self._log_event)
@@ -49,18 +54,17 @@ class LoggingManager:
     @zope.component.adapter(ILoggingEvent)
     def _log_event(self, event):
         """Log 'event' to the codehosting logger."""
-        get_access_logger().log(event.level, event.message)
+        self._access_log.log(event.level, event.message)
 
     def tearDown(self):
-        log = get_codehosting_logger()
+        log = self._main_log
         log.level = self._orig_level
         synchronize(
             log.handlers, self._orig_handlers, log.addHandler,
             log.removeHandler)
-        access_log = get_access_logger()
         synchronize(
-            access_log.handlers, self._orig_handlers, access_log.addHandler,
-            access_log.removeHandler)
+            self._access_log.handlers, self._orig_handlers,
+            self._access_log.addHandler, self._access_log.removeHandler)
         synchronize(
             tplog.theLogPublisher.observers, self._orig_observers,
             tplog.addObserver, tplog.removeObserver)
