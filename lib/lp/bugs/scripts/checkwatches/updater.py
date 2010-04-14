@@ -246,12 +246,13 @@ def commit_before(func):
 
 class WorkingBase:
 
-    def __init__(self, login, transaction_manager):
+    def __init__(self, login, transaction_manager, logger):
         self._login = login
         self._principal = (
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
                 self._login, want_password=False))
         self._transaction_manager = transaction_manager
+        self.logger = logger
 
     @property
     @contextmanager
@@ -338,7 +339,7 @@ def get_remote_system_oops_properties(remote_system):
 class BugWatchUpdater(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
 
-    def __init__(self, transaction_manager, log=default_log,
+    def __init__(self, transaction_manager, logger=default_log,
                  syncable_gnome_products=None):
         """Initialize a BugWatchUpdater.
 
@@ -352,9 +353,8 @@ class BugWatchUpdater(WorkingBase):
             provides a similar interface.
 
         """
-        super(BugWatchUpdater, self).__init__(LOGIN, transaction_manager)
-
-        self.log = log
+        super(BugWatchUpdater, self).__init__(
+            LOGIN, transaction_manager, logger)
 
         # Override SYNCABLE_GNOME_PRODUCTS if necessary.
         if syncable_gnome_products is not None:
@@ -401,7 +401,7 @@ class BugWatchUpdater(WorkingBase):
                 #      to identify all bug trackers like this so
                 #      that hard-coding like this can be genericised
                 #      (Bug 138949).
-                self.log.debug(
+                self.logger.debug(
                     "Skipping updating Ubuntu Bugzilla watches.")
             else:
                 with self.transaction:
@@ -414,7 +414,7 @@ class BugWatchUpdater(WorkingBase):
                 if bug_tracker_active:
                     yield make_updater(bug_tracker_name, bug_tracker_id)
                 else:
-                    self.log.debug(
+                    self.logger.debug(
                         "Updates are disabled for bug tracker at %s" %
                         bug_tracker_baseurl)
 
@@ -431,11 +431,11 @@ class BugWatchUpdater(WorkingBase):
         will be used, which simply runs the jobs in order.
         """
         if batch_size is None:
-            self.log.debug("No global batch size specified.")
+            self.logger.debug("No global batch size specified.")
         elif batch_size == BATCH_SIZE_UNLIMITED:
-            self.log.debug("Using an unlimited global batch size.")
+            self.logger.debug("Using an unlimited global batch size.")
         else:
-            self.log.debug("Using a global batch size of %s" % batch_size)
+            self.logger.debug("Using a global batch size of %s" % batch_size)
 
         # Default to using the very simple SerialScheduler.
         if scheduler is None:
@@ -514,18 +514,18 @@ class BugWatchUpdater(WorkingBase):
                 IBugTrackerSet).getByName(bug_tracker_name)
             if bug_tracker is None:
                 # If the bug tracker is nonsense then just ignore it.
-                self.log.info(
+                self.logger.info(
                     "Bug tracker '%s' doesn't exist. Ignoring." %
                     bug_tracker_name)
                 return
             elif bug_tracker.watches.count() == 0:
                 # If there are no watches to update, ignore the bug tracker.
-                self.log.info(
+                self.logger.info(
                     "Bug tracker '%s' doesn't have any watches. Ignoring." %
                     bug_tracker_name)
                 return
             # Reset all the bug watches for the bug tracker.
-            self.log.info(
+            self.logger.info(
                 "Resetting %s bug watches for bug tracker '%s'" %
                 (bug_tracker.watches.count(), bug_tracker_name))
             bug_tracker.resetWatches()
@@ -533,7 +533,7 @@ class BugWatchUpdater(WorkingBase):
         # Loop over the bug watches in batches as specificed by
         # batch_size until there are none left to update.
         with self.transaction:
-            self.log.info(
+            self.logger.info(
                 "Updating %s watches on bug tracker '%s'" %
                 (bug_tracker.watches.count(), bug_tracker_name))
         has_watches_to_update = True
@@ -543,7 +543,7 @@ class BugWatchUpdater(WorkingBase):
             with self.transaction:
                 watches_left = (
                     bug_tracker.watches_needing_update.count())
-            self.log.info(
+            self.logger.info(
                 "%s watches left to check on bug tracker '%s'" %
                 (watches_left, bug_tracker_name))
             has_watches_to_update = watches_left > 0
@@ -648,7 +648,7 @@ class BugWatchUpdater(WorkingBase):
                         remotesystem, bug_watch_batch, batch_size=batch_size)
         else:
             with self.transaction:
-                self.log.debug(
+                self.logger.debug(
                     "No watches to update on %s" % bug_tracker.baseurl)
 
     def _convertRemoteStatus(self, remotesystem, remote_status):
@@ -862,9 +862,9 @@ class BugWatchUpdater(WorkingBase):
                 if bug_watch.remotebug not in remote_ids_to_check:
                     bug_watches.remove(bug_watch)
 
-        self.log.info("Updating %i watches for %i bugs on %s" %
-            (len(bug_watches), len(remote_ids_to_check),
-            bug_tracker_url))
+        self.logger.info(
+            "Updating %i watches for %i bugs on %s" % (
+                len(bug_watches), len(remote_ids_to_check), bug_tracker_url))
 
         try:
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
@@ -1168,7 +1168,7 @@ class BugWatchUpdater(WorkingBase):
                             bug_message,
                             user=bug_watch_updater))
 
-            self.log.info("Imported %(count)i comments for remote bug "
+            self.logger.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
                 {'count': len(imported_comments),
@@ -1228,7 +1228,7 @@ class BugWatchUpdater(WorkingBase):
             pushed_comments += 1
 
         if pushed_comments > 0:
-            self.log.info("Pushed %(count)i comments to remote bug "
+            self.logger.info("Pushed %(count)i comments to remote bug "
                 "%(remotebug)s on %(bugtracker_url)s from Launchpad bug "
                 "%(bug_id)s" %
                 {'count': pushed_comments,
@@ -1283,7 +1283,7 @@ class BugWatchUpdater(WorkingBase):
         oops_info = report_warning(
             message, properties, info, self._transaction_manager)
         # Also put it in the log.
-        self.log.warning("%s (%s)" % (message, oops_info.oopsid))
+        self.logger.warning("%s (%s)" % (message, oops_info.oopsid))
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
@@ -1293,7 +1293,7 @@ class BugWatchUpdater(WorkingBase):
         oops_info = report_oops(
             message, properties, info, self._transaction_manager)
         # Also put it in the log.
-        self.log.error("%s (%s)" % (message, oops_info.oopsid))
+        self.logger.error("%s (%s)" % (message, oops_info.oopsid))
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
