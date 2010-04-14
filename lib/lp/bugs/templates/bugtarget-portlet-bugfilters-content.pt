@@ -16,10 +16,14 @@
       </a>
     </td>
   </tr>
-  <tr>
-    <td class="bugs-count" tal:content="view/inprogress_bugs_count|nothing" />
+  <tr tal:define="count view/inprogress_bugs_count|nothing;
+                  plural string: In-progress bugs;
+                  singular string: In-progress bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/inprogress_bugs_url">In-progress bugs</a>
+      <a tal:attributes="href view/inprogress_bugs_url">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
     </td>
   </tr>
   <tr tal:condition="view/user"
@@ -43,10 +47,14 @@
       </a>
     </td>
   </tr>
-  <tr>
-    <td class="bugs-count" tal:content="view/high_bugs_count|nothing" />
+  <tr tal:define="count view/high_bugs_count|nothing;
+                  plural string: High importance bugs;
+                  singular string: High importance bug;">
+    <td class="bugs-count" tal:content="count" />
     <td class="bugs-link">
-      <a tal:attributes="href view/high_bugs_url">High importance bugs</a>
+      <a tal:attributes="href view/high_bugs_url">
+      <metal:message use-macro="context/@@+base-layout-macros/plural-message"/>
+      </a>
     </td>
   </tr>
   <tr tal:define="count view/bugs_fixed_elsewhere_count|nothing;
