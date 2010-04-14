@@ -1045,6 +1045,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
     custom_widget(
         package_field_name, LaunchpadRadioWidget, orientation='vertical')
     suggestions = None
+    max_suggestions = 8
     other_package = object()
 
     @cachedproperty
@@ -1082,7 +1083,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
         # term descriptions that include a link to the source package.
         self.suggestions = []
         vocab_terms = []
-        for package in distro_source_packages[:20]:
+        for package in distro_source_packages[:self.max_suggestions]:
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)

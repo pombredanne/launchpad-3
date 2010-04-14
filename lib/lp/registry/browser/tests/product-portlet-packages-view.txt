@@ -188,6 +188,11 @@ If multiple source packages match they will all be displayed.
     bingo
     ba-bingo...
 
+But the limit is 8 packages.
+
+    >>> view.max_suggestions
+    8
+
 If a package matches by name but is already linked to an Ubuntu
 package then it will not be shown as one of the suggestions.
 
