@@ -466,42 +466,6 @@ class TestGarbo(TestCaseWithFactory):
                 BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
             0)
 
-    def test_PersonEmailAddressLinkChecker(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-
-        # Make an EmailAddress record reference a non-existant Person.
-        emailaddress = IMasterStore(EmailAddress).get(EmailAddress, 16)
-        emailaddress.personID = -1
-
-        # Make a Person record reference a different Account to its
-        # EmailAddress records.
-        person = IMasterStore(Person).get(Person, 1)
-        person_email = Store.of(person).find(
-            EmailAddress, person=person).any()
-        person.accountID = -1
-
-        # Run the garbage collector. We should get two ERROR reports
-        # about the corrupt data.
-        collector = self.runDaily()
-
-        # The PersonEmailAddressLinkChecker is not intelligent enough
-        # to repair corruption. It is only there to alert us to the
-        # issue so data can be manually repaired and the cause
-        # tracked down and fixed.
-        self.assertEqual(emailaddress.personID, -1)
-        self.assertNotEqual(person.accountID, person_email.accountID)
-
-        # The corruption has been reported though as a ERROR messages.
-        log_output = collector.logger.output_file.getvalue()
-        error_message_1 = (
-            "ERROR Corruption - "
-            "'test@canonical.com' is linked to a non-existant Person.")
-        self.assertNotEqual(log_output.find(error_message_1), -1)
-        error_message_2 = (
-            "ERROR Corruption - "
-            "'mark@example.com' and 'mark' reference different Accounts")
-        self.assertNotEqual(log_output.find(error_message_2), -1)
-
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
         self.useBzrBranches()
