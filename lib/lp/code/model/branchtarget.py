@@ -9,7 +9,6 @@ __all__ = [
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
-    'ProductSeriesBranchTarget',
     ]
 
 from zope.component import getUtility
@@ -19,6 +18,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchtarget import (
     check_default_stacked_on, IBranchTarget)
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -35,6 +35,13 @@ class _BaseBranchTarget:
 
     def __ne__(self, other):
         return self.context != other.context
+
+    def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None, owner=None):
+        """See `IBranchTarget`."""
+        return getUtility(ICodeImportSet).new(
+            registrant, self, branch_name, rcs_type, url=url,
+            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
 
 
 class PackageBranchTarget(_BaseBranchTarget):
@@ -92,6 +99,16 @@ class PackageBranchTarget(_BaseBranchTarget):
 
     @property
     def supports_merge_proposals(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_code_imports(self):
         """See `IBranchTarget`."""
         return True
 
@@ -182,6 +199,16 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return False
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return False
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         return False
@@ -258,6 +285,16 @@ class ProductBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return True
 
+    @property
+    def supports_short_identites(self):
+        """See `IBranchTarget`."""
+        return True
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return True
+
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
         # Branches are mergable into a PackageTarget if the source package
@@ -303,13 +340,18 @@ class ProductBranchTarget(_BaseBranchTarget):
 class ProductSeriesBranchTarget(ProductBranchTarget):
 
     def __init__(self, productseries):
+        ProductBranchTarget.__init__(self, productseries.product)
         self.productseries = productseries
-        self.product = productseries.product
 
     @property
     def context(self):
         """See `IBranchTarget`."""
         return self.productseries
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
 
 
 def get_canonical_url_data_for_target(branch_target):

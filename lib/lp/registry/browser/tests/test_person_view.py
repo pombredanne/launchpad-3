@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
@@ -25,6 +26,7 @@ class TestPersonViewKarma(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
+        transaction.commit()
         self.view = PersonView(
             person, LaunchpadTestRequest())
         self._makeKarmaCache(
@@ -66,7 +68,7 @@ class TestPersonViewKarma(TestCaseWithFactory):
 
         # We must commit here so that the change is seen in other transactions
         # (e.g. when the callsite issues a switchDbUser() after we return).
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
         return karmacache
 
 

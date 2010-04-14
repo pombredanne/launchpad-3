@@ -10,10 +10,8 @@ __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'EmailToPersonView',
-    'PeopleSearchMenu'
     'PeopleSearchView',
     'PersonAccountAdministerView',
-    'PersonAddView',
     'PersonAdministerView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
@@ -163,9 +161,8 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    INewPerson, IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
-    PersonCreationRationale, PersonVisibility, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
+    PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, IPollSubset
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
@@ -176,7 +173,7 @@ from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
@@ -445,6 +442,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # archive subscriptions.
             return queryMultiAdapter(
                 (self.context, self.request), name ="+archivesubscriptions")
+
+    @stepthrough('+recipe')
+    def traverse_recipe(self, name):
+        """Traverse to this person's recipes."""
+        return self.context.getRecipe(name)
 
 
 class TeamNavigation(PersonNavigation):
@@ -1373,33 +1375,6 @@ class PeopleSearchView(LaunchpadView):
         else:
             results = self.context.find(name)
         return BatchNavigator(results, self.request)
-
-
-class PersonAddView(LaunchpadFormView):
-    """The page where users can create new Launchpad profiles."""
-
-    page_title = "Create a new Launchpad profile"
-    label = page_title
-    schema = INewPerson
-
-    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
-
-    @action(_("Create Profile"), name="create")
-    def create_action(self, action, data):
-        emailaddress = data['emailaddress']
-        displayname = data['displayname']
-        creation_comment = data['creation_comment']
-        person, ignored = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, PersonCreationRationale.USER_CREATED,
-            displayname=displayname, comment=creation_comment,
-            registrant=self.user)
-        self.next_url = canonical_url(person)
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            requester=self.user,
-            requesteremail=self.user.preferredemail.email,
-            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
-        token.sendProfileCreatedEmail(person, creation_comment)
 
 
 class DeactivateAccountSchema(Interface):
@@ -5214,7 +5189,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         the source package release.
         """
         # Calculate all the failed builds with one query.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
         package_release_ids = [
             package_release.id for package_release in package_releases]
         all_builds = build_set.getBuildsBySourcePackageRelease(

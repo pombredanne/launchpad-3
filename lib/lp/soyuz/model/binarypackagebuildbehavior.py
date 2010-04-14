@@ -65,13 +65,14 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # results so we know we are referring to the right database object in
         # subsequent runs.
         buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.buildfarmjob.generateSlaveBuildCookie()
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
         args = self._extraBuildArgs(self.build)
         status, info = self._builder.slave.build(
-            buildid, "debian", chroot_sha1, filemap, args)
+            cookie, "binarypackage", chroot_sha1, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
@@ -122,42 +123,30 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again 
         # here in case of programmer errors.
-        reason = check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
+        reason = check_upload_to_pocket(
+            build.archive, build.distroseries, build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s." % 
+                "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 
-    def slaveStatus(self, raw_slave_status):
-        """Parse and return the binary build specific status info.
+    def updateSlaveStatus(self, raw_slave_status, status):
+        """Parse the binary build specific status info into the status dict.
 
         This includes:
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
         * filemap => dictionary or None
         * dependencies => string or None
         """
-        builder_status = raw_slave_status[0]
-        extra_info = {}
-        if builder_status == 'BuilderStatus.WAITING':
-            extra_info['build_status'] = raw_slave_status[1]
-            extra_info['build_id'] = raw_slave_status[2]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if extra_info['build_status'] in build_status_with_files:
-                extra_info['filemap'] = raw_slave_status[3]
-                extra_info['dependencies'] = raw_slave_status[4]
-        else:
-            extra_info['build_id'] = raw_slave_status[1]
-            if builder_status == 'BuilderStatus.BUILDING':
-                extra_info['logtail'] = raw_slave_status[2]
-
-        return extra_info
+        build_status_with_files = (
+            'BuildStatus.OK',
+            'BuildStatus.PACKAGEFAIL',
+            'BuildStatus.DEPFAIL',
+            )
+        if (status['builder_status'] == 'BuilderStatus.WAITING' and
+            status['build_status'] in build_status_with_files):
+            status['filemap'] = raw_slave_status[3]
+            status['dependencies'] = raw_slave_status[4]
 
     def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.

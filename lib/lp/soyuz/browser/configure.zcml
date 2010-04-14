@@ -335,17 +335,17 @@
         attribute_to_parent="archive"
         urldata="lp.soyuz.browser.archivepermission.ArchivePermissionURL"/>
     <browser:defaultView
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         name="+index"/>
     <browser:url
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         urldata="lp.soyuz.browser.build.BuildUrl"/>
     <browser:navigation
         module="lp.soyuz.browser.build"
         classes="
             BuildNavigation"/>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildView"
         permission="launchpad.View">
         <browser:page
@@ -354,7 +354,7 @@
             template="../templates/build-index.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRetryView"
         permission="launchpad.Edit">
         <browser:page
@@ -363,7 +363,7 @@
             template="../templates/build-retry.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRescoringView"
         permission="launchpad.Admin">
         <browser:page
@@ -796,6 +796,11 @@
     <browser:url
         for="lp.soyuz.interfaces.archivedependency.IArchiveDependency"
         path_expression="string:+dependency/${dependency/id}"
+        attribute_to_parent="archive"
+        />
+    <browser:url
+        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distroarchseries/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
         attribute_to_parent="archive"
         />
 
