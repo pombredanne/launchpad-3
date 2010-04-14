@@ -37,10 +37,11 @@ class _BaseBranchTarget:
         return self.context != other.context
 
     def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
-                      cvs_root=None, cvs_module=None):
+                      cvs_root=None, cvs_module=None, owner=None):
+        """See `IBranchTarget`."""
         return getUtility(ICodeImportSet).new(
             registrant, self, branch_name, rcs_type, url=url,
-            cvs_root=cvs_root, cvs_module=cvs_module)
+            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
 
 
 class PackageBranchTarget(_BaseBranchTarget):
@@ -109,7 +110,7 @@ class PackageBranchTarget(_BaseBranchTarget):
     @property
     def supports_code_imports(self):
         """See `IBranchTarget`."""
-        return False
+        return True
 
     def areBranchesMergeable(self, other_target):
         """See `IBranchTarget`."""
@@ -334,6 +335,23 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.product = self.product
         branch.distroseries = None
         branch.sourcepackagename = None
+
+
+class ProductSeriesBranchTarget(ProductBranchTarget):
+
+    def __init__(self, productseries):
+        ProductBranchTarget.__init__(self, productseries.product)
+        self.productseries = productseries
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.productseries
+
+    @property
+    def supports_code_imports(self):
+        """See `IBranchTarget`."""
+        return False
 
 
 def get_canonical_url_data_for_target(branch_target):
