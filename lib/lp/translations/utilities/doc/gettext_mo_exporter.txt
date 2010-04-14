@@ -79,7 +79,8 @@ When we export more than one file, we get a tarball.
     ...         lines = len(tarfile.extractfile(member).readlines())
     ...     else:
     ...         lines = 0
-    ...     print "| %5d | %s" % (lines, member.name)
+    ...     print "| %5d | %s" % (lines, member.name +
+    ...                           ("/" if member.isdir() else ""))
     |     0 | es/
     |     0 | es/LC_MESSAGES/
     |    12 | es/LC_MESSAGES/foo.mo

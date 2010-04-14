@@ -620,9 +620,9 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
     >>> sorted(tarfile.getnames())
-    ['evolution-2.2/', 'evolution-2.2/evolution-2.2-es.po',
+    ['evolution-2.2', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
-     'po/', 'po/evolution-2.2.pot']
+     'po', 'po/evolution-2.2.pot']
 
 The *-es.po file is indeed the Spanish translation...
 

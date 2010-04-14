@@ -79,10 +79,8 @@ ignored, as well as empty files, and things whose names end in .po or
     True
     >>> 'empty.po' in anon_browser.contents
     False
-    >>> 'directory.po/' in tarball.getnames()
+    >>> 'directory.po' in tarball.getnames()
     True
-    >>> 'directory.po/' in anon_browser.contents
-    False
     >>> 'directory.po' in anon_browser.contents
     False
     >>> 'directory.po/.another-dotfile.po' in tarball.getnames()

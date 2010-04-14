@@ -91,9 +91,9 @@ Let's download it and make sure the contents look ok.
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
     ...   print name
-    evolution-2.2/
+    evolution-2.2
     evolution-2.2/evolution-2.2-es.po
-    po/
+    po
     po/evolution-2.2-test-pt_BR.po
     po/evolution-2.2-test.pot
     po/evolution-2.2.pot

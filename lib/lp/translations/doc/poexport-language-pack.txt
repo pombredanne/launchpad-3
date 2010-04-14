@@ -55,7 +55,8 @@ This is handy for examining the tar files that are generated.
     ...             size = 'bin'
     ...         else:
     ...             size = len(tarfile.extractfile(member).readlines())
-    ...         print "| %5s | %s" % (size, member.name)
+    ...         print "| %5s | %s" % (size, member.name +
+    ...                               ("/" if member.isdir() else ""))
 
 
 == Base language pack export using Librarian ==
@@ -92,8 +93,8 @@ Check that the log looks ok.
 
 The tarball has the right members.
 
-    >>> for name in tarfile.getnames():
-    ...     print name
+    >>> for member in tarfile.getmembers():
+    ...     print member.name + ("/" if member.isdir() else "")
     rosetta-hoary/
     ...
     rosetta-hoary/es/
@@ -105,7 +106,7 @@ The tarball has the right members.
 
 Directory permissions allow correct use of those directories:
 
-    >>> directory = tarfile.getmember('rosetta-hoary/')
+    >>> directory = tarfile.getmember('rosetta-hoary')
     >>> oct(directory.mode)
     '0755'
 

@@ -96,9 +96,9 @@ created.
     ...     'uno/dos/tres/cuatro': 'blah'
     ...     })
     >>> examine_tarfile(archive)
-    uno/                | 
-    uno/dos/            | 
-    uno/dos/tres/       | 
+    uno                 | 
+    uno/dos             | 
+    uno/dos/tres        | 
     uno/dos/tres/cuatro | blah
 
 Also, if there is a duplicated file, last one is the one that remains there.

@@ -56,7 +56,7 @@ def make_test_tarball_2():
     Check the expected files are in the archive.
 
     >>> tarball.getnames()
-    ['test/', 'test/cy.po', 'test/es.po', 'test/test.pot']
+    ['test', 'test/cy.po', 'test/es.po', 'test/test.pot']
 
     Check the contents.
 
