@@ -225,7 +225,7 @@ start-gdb: check_schema inplace stop support_files
 
 run_all: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
+	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -283,7 +283,7 @@ stop: build initscript-stop
 # servers, where we know we don't need the extra steps in a full
 # "make stop" because of how the code is deployed/built.
 initscript-stop:
-	bin/killservice librarian buildsequencer launchpad mailman
+	bin/killservice librarian launchpad mailman
 
 shutdown: scheduleoutage stop
 	$(RM) +maintenancetime.txt

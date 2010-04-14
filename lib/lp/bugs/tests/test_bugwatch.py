@@ -339,7 +339,7 @@ class TestBugWatch(TestCaseWithFactory):
         # The bugtasks_to_update property should yield the linked bug
         # tasks which are not conjoined and for which the bug is not a
         # duplicate.
-        product = self.factory.makeProductNoCommit()
+        product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product, owner=product.owner)
         product_task = bug.getBugTask(product)
         watch = self.factory.makeBugWatch(bug=bug)

@@ -833,19 +833,24 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
     def test_dismiss_empty_translation(self):
         # Set order of creation and review.
         self._setDateCreated(self.suggestion1)
+        transaction.commit()
         self._setDateCreated(self.suggestion2)
+        transaction.commit()
         # Make the translation a suggestion, too.
         suggestion3 = self.translation
         suggestion3.is_current = False
         self._setDateCreated(suggestion3)
+        transaction.commit()
         # All suggestions are visible.
         self.assertContentEqual(
             [self.suggestion1, self.suggestion2, suggestion3],
             self.potmsgset.getLocalTranslationMessages(
                 self.potemplate, self.pofile.language))
+        transaction.commit()
         # Dismiss suggestions, leaving the translation empty.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
+        transaction.commit()
         current = self.potmsgset.getCurrentTranslationMessage(
             self.potemplate, self.pofile.language)
         self.assertNotEqual(None, current)
