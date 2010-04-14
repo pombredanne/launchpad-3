@@ -242,9 +242,9 @@ class BranchMirrorer(object):
         if self.policy._is_import:
             source_transport = source_branch.bzrdir.transport.clone('..')
             while True:
-                files_before = list(source_transport.iter_files_recursive())
+                files_before = sorted(source_transport.iter_files_recursive())
                 source_transport.copy_tree_to_transport(dest_transport)
-                files_after = list(source_transport.iter_files_recursive())
+                files_after = sorted(source_transport.iter_files_recursive())
                 if files_before == files_after:
                     break
             return Branch.open_from_transport(dest_transport)
