@@ -16,11 +16,9 @@ from urlparse import urlparse
 import transaction
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, format_registry
-from bzrlib.config import TransportConfig
+from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.transport import get_transport
-from bzrlib.upgrade import upgrade
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -47,13 +45,11 @@ class TestBranchPuller(PullerBranchTestCase):
         PullerBranchTestCase.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
-        self.addCleanup(
-            shutil.rmtree, config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         self.addCleanup(
             shutil.rmtree, config.codehosting.mirrored_branches_root)
 
-    def assertMirrored(self, db_branch, source_branch=None,
+    def assertMirrored(self, db_branch, source_branch,
                        accessing_user=None):
         """Assert that 'db_branch' was mirrored succesfully.
 
@@ -70,8 +66,6 @@ class TestBranchPuller(PullerBranchTestCase):
             supplied create a fresh user for this -- but this won't work for a
             private branch.
         """
-        if source_branch is None:
-            source_branch = self.openBranchAsUser(db_branch, db_branch.owner)
         if accessing_user is None:
             accessing_user = self.factory.makePerson()
         transaction.commit()
@@ -217,7 +211,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.branch = default_branch
-        # Arrange for it to be pulled.
+        transaction.commit()
         self.pushBranch(default_branch)
         return default_branch
 
@@ -280,6 +274,8 @@ class TestBranchPuller(PullerBranchTestCase):
         tree.commit('rev1')
         self.serveOverHTTP(self._getImportMirrorPort())
 
+        transaction.commit()
+
         # Run the puller.
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
@@ -294,19 +290,22 @@ class TestBranchPuller(PullerBranchTestCase):
     def test_type_filtering(self):
         # When run with --branch-type arguments, the puller only mirrors those
         # branches of the specified types.
-        hosted_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED)
+        imported_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.IMPORTED)
+        imported_branch.requestMirror()
         mirrored_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED)
         mirrored_branch.requestMirror()
+        tree = self.setUpMirroredBranch(mirrored_branch)
+
         transaction.commit()
-        self.pushBranch(hosted_branch)
+
         command, retcode, output, error = self.runPuller(
-            '--branch-type', 'HOSTED')
+            '--branch-type', 'MIRRORED')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(hosted_branch)
+        self.assertMirrored(mirrored_branch, source_branch=tree.branch)
         self.assertIsNot(
-            None, mirrored_branch.next_mirror_time)
+            None, imported_branch.next_mirror_time)
 
     def test_records_script_activity(self):
         # A record gets created in the ScriptActivity table.
