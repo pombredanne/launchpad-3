@@ -239,55 +239,33 @@ class BranchMirrorer(object):
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
         bzrdir = source_branch.bzrdir
-        # We check to see if the stacked on branch exists in the mirrored area
-        # so that we can nicely signal to the scheduler that the pulling of
-        # this branch should be deferred before we even create the branch in
-        # the mirrored area.
-        stacked_on_url = (
-            self.policy.getStackedOnURLForDestinationBranch(
-                source_branch, destination_url))
-        if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-            try:
-                Branch.open(stacked_on_url)
-            except errors.NotBranchError:
-                raise StackedOnBranchNotFound()
-        if isinstance(source_branch, LoomSupport):
-            # Looms suck.
-            revision_id = None
-        else:
-            revision_id = 'null:'
-        self._runWithTransformFallbackLocationHookInstalled(
-            bzrdir.clone_on_transport, dest_transport,
-            revision_id=revision_id)
-        branch = Branch.open(destination_url)
         if self.policy._is_import:
-            from bzrlib.repofmt.pack_repo import Pack
-            r_from = source_branch.repository
-            r_from.lock_read()
-            r_to = branch.repository
-            r_to.lock_write()
-            try:
-                r_from._pack_collection.ensure_loaded()
-                pt_from = r_from._pack_collection._pack_transport
-                it_from = r_from._pack_collection._index_transport
-                pt_to = r_to._pack_collection._pack_transport
-                it_to = r_to._pack_collection._index_transport
-                pack_names = []
-                for name in r_from._pack_collection.names():
-                    pack_names.append(name + '.pack')
-                pt_from.copy_to(pack_names, pt_to)
-                index_names = []
-                for name in r_from._pack_collection.names():
-                    for ext, _ in Pack.index_definitions.values():
-                        index_names.append(name + ext)
-                it_from.copy_to(index_names, it_to)
-                r_from._transport.copy_to(['pack-names'], r_to._transport)
-            finally:
-                r_from.unlock()
-                r_to.unlock()
+            source_branch.bzrdir.transport.clone('..').copy_tree_to_transport(
+                dest_transport)
             return Branch.open_from_transport(dest_transport)
         else:
+            # We check to see if the stacked on branch exists in the mirrored
+            # area so that we can nicely signal to the scheduler that the
+            # pulling of this branch should be deferred before we even create
+            # the branch in the mirrored area.
+            stacked_on_url = (
+                self.policy.getStackedOnURLForDestinationBranch(
+                    source_branch, destination_url))
+            if stacked_on_url is not None:
+                stacked_on_url = urlutils.join(destination_url, stacked_on_url)
+                try:
+                    Branch.open(stacked_on_url)
+                except errors.NotBranchError:
+                    raise StackedOnBranchNotFound()
+            if isinstance(source_branch, LoomSupport):
+                # Looms suck.
+                revision_id = None
+            else:
+                revision_id = 'null:'
+            self._runWithTransformFallbackLocationHookInstalled(
+                bzrdir.clone_on_transport, dest_transport,
+                revision_id=revision_id)
+            branch = Branch.open(destination_url)
             return branch
 
     def openDestinationBranch(self, source_branch, destination_url):
