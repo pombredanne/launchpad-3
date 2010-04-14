@@ -39,7 +39,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from lp.codehosting import sftp
-from lp.codehosting.sshserver import accesslog
+from lp.codehosting.sshserver import events
 from lp.codehosting.sshserver.session import (
     launch_smart_server, PatchedSSHSession)
 from lp.services.twistedsupport.xmlrpc import trap_fault
@@ -71,7 +71,7 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.subsystemLookup = {'sftp': sftp.FileTransferServer}
 
     def logout(self):
-        notify(accesslog.UserLoggedOut(self))
+        notify(events.UserLoggedOut(self))
 
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
@@ -215,7 +215,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         # connection in the logs.
         avatar = self.transport.avatar
         avatar.transport = self.transport
-        notify(accesslog.UserLoggedIn(avatar))
+        notify(events.UserLoggedIn(avatar))
         return ret
 
     def _ebLogToBanner(self, reason):

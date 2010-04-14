@@ -25,7 +25,7 @@ from twisted.web.xmlrpc import Proxy
 from zope.event import notify
 
 from canonical.config import config
-from lp.codehosting.sshserver import accesslog
+from lp.codehosting.sshserver import accesslog, events
 from lp.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
 
@@ -103,7 +103,7 @@ class Factory(SSHFactory):
         transport._realConnectionLost = transport.connectionLost
         transport.connectionLost = (
             lambda reason: self.connectionLost(transport, reason))
-        notify(accesslog.UserConnected(transport, address))
+        notify(events.UserConnected(transport, address))
         return transport
 
     def connectionLost(self, transport, reason):
@@ -122,8 +122,8 @@ class Factory(SSHFactory):
             # b) the server doesn't normally generate a "go away" event.
             # Rather, the client simply stops trying.
             if getattr(transport, 'avatar', None) is None:
-                notify(accesslog.AuthenticationFailed(transport))
-            notify(accesslog.UserDisconnected(transport))
+                notify(events.AuthenticationFailed(transport))
+            notify(events.UserDisconnected(transport))
 
     def getPublicKeys(self):
         """Return the server's configured public key.
@@ -170,7 +170,7 @@ class SSHService(service.Service):
     def startService(self):
         """Start the SSH service."""
         accesslog.LoggingManager().setUp(configure_oops_reporting=True)
-        notify(accesslog.ServerStarting())
+        notify(events.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
         # managed by the startup script.
@@ -184,6 +184,6 @@ class SSHService(service.Service):
             defer.maybeDeferred(service.Service.stopService, self),
             defer.maybeDeferred(self.service.stopService)])
         def log_stopped(ignored):
-            notify(accesslog.ServerStopped())
+            notify(events.ServerStopped())
             return ignored
         return deferred.addBoth(log_stopped)

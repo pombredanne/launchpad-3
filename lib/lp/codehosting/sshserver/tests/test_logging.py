@@ -18,11 +18,12 @@ from twisted.python import log as tplog
 import zope.component.event
 from zope.event import notify
 
-from lp.codehosting.sshserver.accesslog import (
-    _log_event, get_access_logger, get_codehosting_logger, LoggingEvent,
-    LoggingManager)
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
+from lp.codehosting.sshserver.accesslog import (
+    _log_event, get_access_logger, get_codehosting_logger,
+    LoggingManager)
+from lp.codehosting.sshserver.events import LoggingEvent
 from lp.testing import TestCase
 
 
