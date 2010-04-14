@@ -168,5 +168,6 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
         self.assertEqual(0, self.build.getUploaderCommand.call_count)
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
