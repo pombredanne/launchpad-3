@@ -201,44 +201,8 @@ def report_warning(message, properties=None, info=None,
         return report_oops(message, properties, info, transaction_manager)
 
 
-def with_interaction(func):
-    """Wrap a method to ensure that it runs within an interaction.
-
-    If an interaction is already set up, this simply calls the
-    function. If no interaction exists, it will set one up, call the
-    function, then end the interaction.
-
-    This is intended to make sure the right thing happens whether or not
-    the function is run in a different thread.
-
-    It's intended for use with `BugWatchUpdater`, which provides an
-    `interaction` property; this is the hook that's required.
-    """
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        with self.interaction:
-            return func(self, *args, **kwargs)
-    return wrapper
-
-
-def commit_before(func):
-    """Wrap a method to commit any in-progress transactions.
-
-    This is chiefly intended for use with public-facing methods, so
-    that callers do not need to be responsible for committing before
-    calling them.
-
-    It's intended for use with `WorkingBase`, which provides a
-    `_transaction_manager` property; this is the hook that's required.
-    """
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        self._transaction_manager.commit()
-        return func(self, *args, **kwargs)
-    return wrapper
-
-
 class WorkingBase:
+    """A base class for writing a long-running process."""
 
     def __init__(self, login, transaction_manager, logger):
         self._login = login
@@ -340,6 +304,43 @@ class WorkingBase:
         # Return the OOPS ID so that we can use it in
         # BugWatchActivity.
         return oops_info.oopsid
+
+
+def with_interaction(func):
+    """Wrap a method to ensure that it runs within an interaction.
+
+    If an interaction is already set up, this simply calls the
+    function. If no interaction exists, it will set one up, call the
+    function, then end the interaction.
+
+    This is intended to make sure the right thing happens whether or not
+    the function is run in a different thread.
+
+    It's intended for use with `WorkingBase`, which provides an
+    `interaction` property; this is the hook that's required.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        with self.interaction:
+            return func(self, *args, **kwargs)
+    return wrapper
+
+
+def commit_before(func):
+    """Wrap a method to commit any in-progress transactions.
+
+    This is chiefly intended for use with public-facing methods, so
+    that callers do not need to be responsible for committing before
+    calling them.
+
+    It's intended for use with `WorkingBase`, which provides a
+    `_transaction_manager` property; this is the hook that's required.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self._transaction_manager.commit()
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 def unique(iterator):
