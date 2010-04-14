@@ -21,9 +21,8 @@ from zope.event import notify
 from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
 from lp.codehosting.sshserver.accesslog import (
-    _log_event, get_access_logger, get_codehosting_logger,
-    LoggingManager)
-from lp.codehosting.sshserver.events import LoggingEvent
+    get_access_logger, get_codehosting_logger, LoggingManager)
+from lp.codehosting.sshserver.events import ILoggingEvent, LoggingEvent
 from lp.testing import TestCase
 
 
@@ -88,14 +87,11 @@ class TestLoggingManager(TestCase):
             registration.factory
             for registration in registrations]
 
-    def test_log_event_handler_not_registered(self):
-        self.assertNotIn(_log_event, self._get_handlers())
-
     def test_set_up_registers_event_handler(self):
         manager = LoggingManager()
         manager.setUp()
         self.addCleanup(manager.tearDown)
-        self.assertIn(_log_event, self._get_handlers())
+        self.assertIn(manager._log_event, self._get_handlers())
 
     def test_teardown_restores_event_handlers(self):
         handlers = self._get_handlers()
@@ -119,13 +115,6 @@ class TestLoggingManager(TestCase):
         manager.setUp()
         manager.tearDown()
         self.assertEqual(handlers, log.handlers)
-
-    def test_teardown_restores_twisted_observers(self):
-        observers = list(tplog.theLogPublisher.observers)
-        manager = LoggingManager()
-        manager.setUp(True)
-        manager.tearDown()
-        self.assertEqual(observers, list(tplog.theLogPublisher.observers))
 
     def test_access_handlers(self):
         # The logging setup installs a rotatable log handler that logs output
@@ -187,12 +176,18 @@ class TestLoggingEvent(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
+        logger = logging.getLogger(self.factory.getUniqueString())
+        logger.setLevel(logging.DEBUG)
+        self.logger = logger
+
+        @zope.component.adapter(ILoggingEvent)
+        def _log_event(event):
+            logger.log(event.level, event.message)
+
         zope.component.provideHandler(_log_event)
         self.addCleanup(
             zope.component.getGlobalSiteManager().unregisterHandler,
             _log_event)
-        self.logger = get_codehosting_logger()
-        self.logger.setLevel(logging.DEBUG)
 
     def test_level(self):
         event = LoggingEvent(logging.CRITICAL, "foo")
