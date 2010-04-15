@@ -6,8 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AuthenticationFailed',
-    'BazaarSSHClosed',
-    'BazaarSSHStarted',
+    'AvatarEvent',
     'ILoggingEvent',
     'LoggingEvent',
     'ServerStarting',
@@ -143,15 +142,3 @@ class SFTPStarted(AvatarEvent):
 class SFTPClosed(AvatarEvent):
 
     template = '[%(session_id)s] %(username)s closed SFTP session.'
-
-
-# XXX: Move this back to codehosting
-class BazaarSSHStarted(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s started bzr+ssh session.'
-
-
-# XXX: Move this back to codehosting
-class BazaarSSHClosed(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s closed bzr+ssh session.'

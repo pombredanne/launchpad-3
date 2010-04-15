@@ -21,7 +21,17 @@ from twisted.python import log
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
-from lp.services.sshserver import events
+from lp.services.sshserver.events import AvatarEvent
+
+
+class BazaarSSHStarted(AvatarEvent):
+
+    template = '[%(session_id)s] %(username)s started bzr+ssh session.'
+
+
+class BazaarSSHClosed(AvatarEvent):
+
+    template = '[%(session_id)s] %(username)s closed bzr+ssh session.'
 
 
 class ForbiddenCommand(Exception):
@@ -47,7 +57,10 @@ class ExecOnlySession:
     def closed(self):
         """See ISession."""
         if self._transport is not None:
-            notify(events.BazaarSSHClosed(self.avatar))
+            # XXX: JonathanLange 2010-04-15: This is something of an
+            # abstraction violation. Apart from this line and its twin, this
+            # class knows nothing about Bazaar.
+            notify(BazaarSSHClosed(self.avatar))
             try:
                 self._transport.signalProcess('HUP')
             except (OSError, ProcessExitedAlready):
@@ -85,9 +98,9 @@ class ExecOnlySession:
                 "ERROR: %r already running a command on transport %r"
                 % (self, self._transport))
         # XXX: JonathanLange 2008-12-23: This is something of an abstraction
-        # violation. Apart from this line, this class knows nothing about
-        # Bazaar.
-        notify(events.BazaarSSHStarted(self.avatar))
+        # violation. Apart from this line and its twin, this class knows
+        # nothing about Bazaar.
+        notify(BazaarSSHStarted(self.avatar))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
