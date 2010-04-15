@@ -33,7 +33,8 @@ from zope.event import notify
 
 from canonical.config import config
 from lp.codehosting.sshserver import accesslog, events
-from lp.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
+from lp.codehosting.sshserver.auth import SSHUserAuthServer
+from lp.codehosting.sshserver.daemon import get_portal
 from lp.services.twistedsupport import gatherResults
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 

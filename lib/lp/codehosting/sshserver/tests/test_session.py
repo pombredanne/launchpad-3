@@ -14,7 +14,7 @@ from twisted.internet.protocol import ProcessProtocol
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
-from lp.codehosting.sshserver.auth import CodehostingAvatar
+from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
     ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
 from lp.codehosting.tests.helpers import AvatarTestCase
