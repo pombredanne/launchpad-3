@@ -674,7 +674,7 @@
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
             facet="overview"
-            class="canonical.launchpad.browser.ArchiveActivateView"
+            class="lp.soyuz.browser.archive.ArchiveActivateView"
             permission="launchpad.Edit"
             template="../templates/archive-activate.pt"/>
         <browser:page
