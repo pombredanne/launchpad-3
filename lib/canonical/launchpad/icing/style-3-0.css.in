@@ -1407,5 +1407,16 @@ body.tab-bugs #portlet-subscribers .sprite {
 .distromirrorstatusONEWEEKBEHIND {color: red;}
 .distromirrorstatusUNKNOWN {color: grey;}
 
+table.code {
+    margin-bottom: 1em;
+}
+table.code th {
+    text-align: left;
+    font-weight: bold;
+}
+table.code th, table.code td {
+    padding-right: 3em;
+}
+
 tr.bug-branch-summary td { padding: 0px 6px; }
 tr.bug-branch-summary td.first { padding-left: 0px; }
