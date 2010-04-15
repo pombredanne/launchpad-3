@@ -43,6 +43,6 @@ gzip'd tarfile containing the list's pickle data.
     >>> tarball = tarfile.open(backup_file, 'r:gz')
     >>> for name in sorted(tarball.getnames()):
     ...     print name
-    itest-one/
+    itest-one
     itest-one/config.pck
     itest-one/config.pck.last
