@@ -1106,21 +1106,18 @@
         <browser:page
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             name="+portlet-activity"
-            class="lp.bugs.browser.bugwatch.BugWatchView"
+            class="lp.bugs.browser.bugwatch.BugWatchActivityPortletView"
             permission="launchpad.AnyPerson"
             template="../templates/bugwatch-portlet-activity.pt"/>
-        <browser:page
-            for="lp.bugs.interfaces.bugwatch.IBugWatch"
-            name="+portlet-details"
-            class="lp.bugs.browser.bugwatch.BugWatchDetailsPortletView"
-            permission="launchpad.AnyPerson"
-            template="../templates/bugwatch-portlet-details.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             permission="launchpad.AnyPerson">
             <browser:page
                 name="+portlet-bugtasks"
                 template="../templates/bugwatch-portlet-bugtasks.pt"/>
+            <browser:page
+                name="+portlet-details"
+                template="../templates/bugwatch-portlet-details.pt"/>
         </browser:pages>
         <browser:url
             for="lp.bugs.interfaces.bugwatch.IBugWatchSet"
