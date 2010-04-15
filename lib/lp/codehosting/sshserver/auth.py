@@ -279,7 +279,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UserDisplayedUnauthorizedLogin(
             "No such Launchpad account: %s" % credentials.username)
 
-    def _checkForAuthorizedKey(self, userDict, credentials):
+    def _checkForAuthorizedKey(self, user_dict, credentials):
         """Check the key data in credentials against the keys found in LP."""
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
@@ -289,12 +289,12 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             # unknown key type
             return False
 
-        if len(userDict['keys']) == 0:
+        if len(user_dict['keys']) == 0:
             raise UserDisplayedUnauthorizedLogin(
                 "Launchpad user %r doesn't have a registered SSH key"
                 % credentials.username)
 
-        for keytype, keytext in userDict['keys']:
+        for keytype, keytext in user_dict['keys']:
             if keytype != wantKeyType:
                 continue
             try:

@@ -67,15 +67,17 @@ class Realm:
         self.authentication_proxy = authentication_proxy
         self.branchfs_proxy = branchfs_proxy
 
-    def requestAvatar(self, avatarId, mind, *interfaces):
+    def requestAvatar(self, avatar_id, mind, *interfaces):
         # Fetch the user's details from the authserver
-        deferred = mind.lookupUserDetails(self.authentication_proxy, avatarId)
+        deferred = mind.lookupUserDetails(
+            self.authentication_proxy, avatar_id)
 
         # Once all those details are retrieved, we can construct the avatar.
-        def gotUserDict(userDict):
-            avatar = CodehostingAvatar(userDict, self.branchfs_proxy)
+        def got_user_dict(user_dict):
+            avatar = CodehostingAvatar(user_dict, self.branchfs_proxy)
             return interfaces[0], avatar, avatar.logout
-        return deferred.addCallback(gotUserDict)
+
+        return deferred.addCallback(got_user_dict)
 
 
 def get_portal(authentication_proxy, branchfs_proxy):
@@ -101,5 +103,3 @@ def make_portal():
         config.codehosting.authentication_endpoint)
     branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
     return get_portal(authentication_proxy, branchfs_proxy)
-
-
