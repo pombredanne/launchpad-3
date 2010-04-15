@@ -18,7 +18,9 @@ from bzrlib.plugins.builder.recipe import (
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
+from storm.expr import Union
+from storm.locals import (
+    And, Int, Reference, ReferenceSet, Select, Store, Storm, Unicode)
 
 from zope.component import getUtility
 
@@ -133,6 +135,27 @@ class SourcePackageRecipeData(Storm):
         name='sourcepackage_recipe_build', allow_none=True)
     sourcepackage_recipe_build = Reference(
         sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
+
+    @staticmethod
+    def findRecipes(branch):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(branch)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id.is_in(Union(
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    SourcePackageRecipeData.base_branch == branch),
+                Select(
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+                And (
+                    _SourcePackageRecipeDataInstruction.recipe_data_id ==
+                    SourcePackageRecipeData.id,
+                    _SourcePackageRecipeDataInstruction.branch == branch)
+                )
+            ))
+        )
+
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""

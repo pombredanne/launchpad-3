@@ -120,6 +120,14 @@ class SourcePackageRecipe(Storm):
         store.add(sprecipe)
         return sprecipe
 
+    def destroySelf(self):
+        store = Store.of(self)
+        self.distroseries.clear()
+        for instruction in self._recipe_data.instructions:
+            store.remove(instruction)
+        store.remove(self._recipe_data)
+        store.remove(self)
+
     def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""
         if archive.purpose != ArchivePurpose.PPA:

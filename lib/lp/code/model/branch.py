@@ -23,7 +23,8 @@ from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
+from storm.expr import (
+    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -608,7 +609,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        # XXX MichaelHudson 2010-01-13: Handle sourcepackagerecipes here.
+        deletion_operations.extend(
+            DeletionCallable.forSourcePackageRecipe(recipe)
+            for recipe in self.getRecipes())
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1051,15 +1054,9 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRecipes(self):
         """See `IHasRecipes`."""
-        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)
-        store = Store.of(self)
-        return store.find(
-            SourcePackageRecipe,
-            SourcePackageRecipe.id ==
-                SourcePackageRecipeData.sourcepackage_recipe_id,
-            SourcePackageRecipeData.base_branch == self)
+        return SourcePackageRecipeData.findRecipes(self)
 
 
 class DeletionOperation:
@@ -1082,6 +1079,11 @@ class DeletionCallable(DeletionOperation):
 
     def __call__(self):
         self.func()
+
+    @classmethod
+    def forSourcePackageRecipe(cls, recipe):
+        return cls(
+            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
 
 
 class ClearDependentBranch(DeletionOperation):

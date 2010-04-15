@@ -33,6 +33,16 @@ class TestIHasRecipes(TestCaseWithFactory):
         recipe_ignored = self.factory.makeSourcePackageRecipe()
         self.assertEqual(2, base_branch.getRecipes().count())
 
+    def test_branch_getRecipes_nonbase(self):
+        # IBranch.recipes should provide all the SourcePackageRecipes
+        # that refer to the branch, even as a non-base branch.
+        base_branch = self.factory.makeBranch()
+        nonbase_branch = self.factory.makeBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[base_branch, nonbase_branch])
+        recipe_ignored = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(recipe, nonbase_branch.getRecipes().one())
+
     def test_person_implements_hasrecipes(self):
         # Person should implement IHasRecipes.
         person = self.factory.makeBranch()

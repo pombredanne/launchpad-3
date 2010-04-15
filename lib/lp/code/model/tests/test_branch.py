@@ -1230,6 +1230,32 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
 
+    def test_deletionRequirements_with_SourcePackageRecipe(self):
+        """Recipes are listed as deletion requirements."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(
+            {recipe: ('delete', 'This recipe uses this branch.')},
+            recipe.base_branch.deletionRequirements())
+
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        """If branch is a base_branch in a recipe, it is deleted."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        store = Store.of(recipe)
+        recipe.base_branch.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        """If branch is referred to by a recipe, it is deleted."""
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
+        store = Store.of(recipe)
+        branch2.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
+
 
 class StackedBranches(TestCaseWithFactory):
     """Tests for showing branches stacked on another."""
