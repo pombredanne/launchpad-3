@@ -34,7 +34,6 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-import copy
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
@@ -801,7 +800,7 @@ def run_script(cmd_line):
     script, passed as the `cmd_line` parameter, will fail if it doesn't set it
     up properly.
     """
-    env = copy.copy(os.environ)
+    env = os.environ.copy()
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
