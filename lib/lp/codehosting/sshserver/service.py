@@ -75,8 +75,10 @@ class Factory(SSHFactory):
         """Construct an SSH factory.
 
         :param portal: The portal used to turn credentials into users.
-        :param private_key: The private key of the server, must be RSA.
-        :param public_key: The public key of the server, must be RSA.
+        :param private_key: The private key of the server, must be an RSA
+            key, given as a `twisted.conch.ssh.keys.Key` object.
+        :param public_key: The public key of the server, must be an RSA
+            key, given as a `twisted.conch.ssh.keys.Key` object.
         :param banner: The text to display when users successfully log in.
         """
         # Although 'portal' isn't part of the defined interface for
@@ -144,14 +146,14 @@ class SSHService(service.Service):
     """A Twisted service for the codehosting SSH server."""
 
     def __init__(self, portal, private_key_path, public_key_path,
-                 port='tcp:22', idle_timeout=3600, banner=None):
+                 strport='tcp:22', idle_timeout=3600, banner=None):
         """Construct an SSH service.
 
         :param portal: The `Portal` that turns authentication requests into
             views on the system.
         :param private_key_path: The path to the SSH server's private key.
         :param public_key_path: The path to the SSH server's public key.
-        :param port: The port to run the server on, expressed in Twisted's
+        :param strport: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
         :param idle_timeout: The number of seconds to wait before killing a
             connection that isn't doing anything. Defaults to 3600.
@@ -165,7 +167,7 @@ class SSHService(service.Service):
                 public_key=Key.fromFile(public_key_path),
                 banner=banner),
             timeoutPeriod=idle_timeout)
-        self.service = strports.service(port, ssh_factory)
+        self.service = strports.service(strport, ssh_factory)
 
     def startService(self):
         """Start the SSH service."""
