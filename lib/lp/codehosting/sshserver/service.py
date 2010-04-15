@@ -73,7 +73,7 @@ def make_portal():
 
 
 class Factory(SSHFactory):
-    """SSH factory that uses the codehosting custom authentication.
+    """SSH factory that uses Launchpad's custom authentication.
 
     This class tells the SSH service to use our custom authentication service
     and configures the host keys for the SSH server. It also logs connection
@@ -154,7 +154,7 @@ class Factory(SSHFactory):
 
 
 class SSHService(service.Service):
-    """A Twisted service for the codehosting SSH server."""
+    """A Twisted service for the SSH server."""
 
     def __init__(self, portal, private_key_path, public_key_path,
                  oops_configuration, main_log, access_log,
