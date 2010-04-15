@@ -16,6 +16,7 @@ from storm.locals import Int, Reference, Storm
 from zope.interface import classProvides, implements
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.database.sqlbase import sqlvalues
@@ -47,12 +48,19 @@ class BuildPackageJob(Storm):
     build_id = Int(name='build', allow_none=False)
     build = Reference(build_id, 'BinaryPackageBuild.id')
 
-    @property
-    def package_build_farm_job(self):
-        """Ensure that we have a package build farm job to which we can
-        delegate.
+    def __init__(self, build, job):
+        """Set the attribute for the IBuildFarmJob delegation when
+        new items are created and added to the store.
         """
-        return PackageBuildFarmJob(self.build)
+        super(BuildPackageJob, self).__init__()
+        self.build, self.job = build, job
+        # Move the line below into a new class method, factoring out
+        # SPRBSource.new.
+        self.package_build_farm_job = PackageBuildFarmJob(self.build)
+
+    def __storm_loaded__(self):
+        """Set the attribute for our IBuildFarmJob delegation."""
+        self.package_build_farm_job = PackageBuildFarmJob(self.build)
 
     def score(self):
         """See `IBuildPackageJob`."""
@@ -180,10 +188,7 @@ class BuildPackageJob(Storm):
 
     @classmethod
     def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`.
-        This base implementation should work for most build farm job
-        types, but some need to override it.
-        """
+        """See `ISpecificBuildFarmJobClass`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
 
