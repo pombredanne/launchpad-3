@@ -57,11 +57,10 @@ class LaunchpadAvatar(avatar.ConchUser):
     :ivar username: The Launchpad username for this account.
     """
 
-    def __init__(self, userDict, branchfs_proxy):
+    def __init__(self, user_dict):
         avatar.ConchUser.__init__(self)
-        self.branchfs_proxy = branchfs_proxy
-        self.user_id = userDict['id']
-        self.username = userDict['name']
+        self.user_id = user_dict['id']
+        self.username = user_dict['name']
 
         # Set the only channel as a standard SSH session (with a couple of bug
         # fixes).
@@ -75,6 +74,10 @@ class LaunchpadAvatar(avatar.ConchUser):
 
 class CodehostingAvatar(LaunchpadAvatar):
     """An SSH avatar specific to codehosting."""
+
+    def __init__(self, user_dict, branchfs_proxy):
+        LaunchpadAvatar.__init__(self, user_dict)
+        self.branchfs_proxy = branchfs_proxy
 
 
 components.registerAdapter(launch_smart_server, CodehostingAvatar, ISession)

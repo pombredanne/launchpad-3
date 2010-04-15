@@ -43,9 +43,7 @@ class MockRealm:
             'id': avatarId, 'name': avatarId, 'teams': [],
             'initialBranches': []}
         return (
-            interfaces[0],
-            auth.LaunchpadAvatar(user_dict, None),
-            lambda: None)
+            interfaces[0], auth.LaunchpadAvatar(user_dict), lambda: None)
 
 
 class MockSSHTransport(SSHServerTransport):
