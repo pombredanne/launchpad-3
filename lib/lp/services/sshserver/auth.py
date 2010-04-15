@@ -39,8 +39,8 @@ from zope.event import notify
 from zope.interface import implements
 
 from lp.codehosting import sftp
-from lp.codehosting.sshserver.session import PatchedSSHSession
 from lp.services.sshserver import events
+from lp.services.sshserver.session import PatchedSSHSession
 from lp.services.twistedsupport.xmlrpc import trap_fault
 from canonical.launchpad.xmlrpc import faults
 
