@@ -26,7 +26,7 @@ from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -341,7 +341,7 @@ class SingleArchBuildsBase(TestBuildQueueBase):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -637,7 +637,7 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -843,7 +843,7 @@ class TestJobClasses(TestCaseWithFactory):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -922,7 +922,7 @@ class TestPlatformData(TestCaseWithFactory):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()

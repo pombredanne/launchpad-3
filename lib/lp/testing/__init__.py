@@ -6,15 +6,19 @@
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
+    'build_yui_unittest_suite',
     'capture_events',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
+    'launchpadlib_for',
+    'launchpadlib_credentials_for',
     'login',
     'login_person',
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
+    'oauth_access_token_for',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -29,6 +33,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
 
@@ -43,6 +48,7 @@ import subunit
 import sys
 import tempfile
 import time
+import unittest
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
@@ -70,6 +76,7 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 from canonical.launchpad.webapp import errorlog
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
@@ -78,6 +85,8 @@ from lp.testing._login import (
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
+from lp.testing._webservice import (
+    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -396,18 +405,23 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
 
-    def getUserBrowser(self, url=None):
+    def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
+
+        :param user: The user to open a browser for.
+        :param password: The password to use.  (This cannot be determined
+            because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
         from canonical.launchpad.testing.pages import setupBrowser
         login(ANONYMOUS)
-        user = self.factory.makePerson(password='test')
+        if user is None:
+            user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
         logout()
         browser = setupBrowser(
-            auth="Basic %s:test" % str(email))
+            auth="Basic %s:%s" % (str(email), password))
         if url is not None:
             browser.open(url)
         return browser
@@ -568,25 +582,65 @@ class WindmillTestCase(TestCaseWithFactory):
         self.client.open(url=u'http://launchpad.dev:8085')
 
 
-class WindmillTestCase(TestCaseWithFactory):
-    """A TestCase class for Windmill tests.
+class YUIUnitTestCase(WindmillTestCase):
 
-    It provides a WindmillTestClient (self.client) with Launchpad's front
-    page loaded.
-    """
-
+    layer = None
     suite_name = ''
 
+    _yui_results = None
+    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
+
+    def initialize(self, test_path):
+        self.test_path = test_path
+        self.yui_runner_url = self._view_name + test_path
+
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.client = WindmillTestClient(self.suite_name)
-        # Load the front page to make sure we don't get fooled by stale pages
-        # left by the previous test. (For some reason, when you create a new
-        # WindmillTestClient you get a new session and everything, but if you
-        # do anything before you open() something you'd be operating on the
-        # page that was last accessed by the previous test, which is the cause
-        # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        super(YUIUnitTestCase, self).setUp()
+        client = self.client
+        client.open(url=self.yui_runner_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(id='complete')
+        response = client.commands.getPageText()
+        self._yui_results = {}
+        # Maybe testing.pages should move to lp to avoid circular imports.
+        from canonical.launchpad.testing.pages import find_tags_by_class
+        entries = find_tags_by_class(
+            response['result'], 'yui-console-entry-TestRunner')
+        for entry in entries:
+            category = entry.find(
+                attrs={'class': 'yui-console-entry-cat'})
+            if category is None:
+                continue
+            result = category.string
+            if result not in ('pass', 'fail'):
+                continue
+            message = entry.pre.string
+            test_name, ignore = message.split(':', 1)
+            self._yui_results[test_name] = dict(
+                result=result, message=message)
+
+    def runTest(self):
+        if self._yui_results is None or len(self._yui_results) == 0:
+            self.fail("Test harness or js failed.")
+        for test_name in self._yui_results:
+            result = self._yui_results[test_name]
+            self.assertTrue('pass' == result['result'],
+                    'Failure in %s.%s: %s' % (
+                        self.test_path, test_name, result['message']))
+
+
+def build_yui_unittest_suite(app_testing_path, yui_test_class):
+    suite = unittest.TestSuite()
+    testing_path = os.path.join(config.root, 'lib', app_testing_path)
+    unit_test_names = [
+        file_name for file_name in os.listdir(testing_path)
+        if file_name.startswith('test_') and file_name.endswith('.html')]
+    for unit_test_name in unit_test_names:
+        test_path = os.path.join(app_testing_path, unit_test_name)
+        test_case = yui_test_class()
+        test_case.initialize(test_path)
+        suite.addTest(test_case)
+    return suite
 
 
 class ZopeTestInSubProcess:

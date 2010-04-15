@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUG_WATCH_ACTIVITY_SUCCESS_STATUSES',
     'BugWatchActivityStatus',
     'IBugWatch',
     'IBugWatchActivity',
@@ -93,6 +94,19 @@ class BugWatchActivityStatus(DBEnumeratedType):
         Launchpad cannot import the status of private remote bugs.
         """)
 
+    SYNC_SUCCEEDED = DBItem(9, """
+        Synchronisation succeeded
+
+        The remote bug's status was successfully synchronised to Launchpad.
+        """)
+
+
+# The set of BugWatchActivityStatuses that are considered to indicate
+# success.
+BUG_WATCH_ACTIVITY_SUCCESS_STATUSES = [
+    BugWatchActivityStatus.SYNC_SUCCEEDED,
+    ]
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
@@ -136,6 +150,9 @@ class IBugWatch(IHasBug):
         Reference(title=_('Owner'), required=True,
                   readonly=True, schema=Interface))
     activity = Attribute('The activity history of this BugWatch.')
+    next_check = exported(
+        Datetime(title=_('Next Check')),
+        exported_as='date_next_checked')
 
     # Useful joins.
     bugtasks = exported(

@@ -61,9 +61,9 @@ Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
    >>> from canonical.launchpad.interfaces import IPersonSet
-   >>> from lp.soyuz.model.build import Build
+   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-   >>> ff_ppa_build = Build.selectBy(
+   >>> ff_ppa_build = BinaryPackageBuild.selectBy(
    ...     archive=cprov_ppa, sourcepackagerelease=spr)
    >>> ff_ppa_build.count()
    1
@@ -168,6 +168,7 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
   >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
+  >>> changelog = None
 
 The other argurments are strings:
 
@@ -191,7 +192,7 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright,
   ...     build_conflicts=None, build_conflicts_indep=None,

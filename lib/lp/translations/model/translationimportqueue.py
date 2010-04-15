@@ -62,6 +62,7 @@ from lp.translations.interfaces.translationimportqueue import (
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.approver import TranslationNullApprover
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -626,8 +627,6 @@ class TranslationImportQueueEntry(SQLBase):
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
             # directory: koffice-i18n-LANG_CODE-VERSION
-            # Let's get the root directory that has the language information.
-            lang_directory = self.path.split('/')[0]
             # Extract the language information.
             match = re.match('koffice-i18n-(\S+)-(\S+)', self.path)
             if match is None:
@@ -946,56 +945,85 @@ class TranslationImportQueue:
 
         return entry
 
+    def _iterTarballFiles(self, tarball):
+        """Iterate through all non-emtpy files in the tarball."""
+        for tarinfo in tarball:
+            if tarinfo.isfile() and tarinfo.size > 0:
+                # Don't be tricked into reading directories, symlinks,
+                # or worst of all: devices.
+                yield tarinfo.name
+
+    def _makePath(self, name, path_filter):
+        """Make the file path from the name stored in the tarball."""
+        path = posixpath.normpath(name)
+        if path_filter:
+            path = path_filter(path)
+        return path
+
+    def _isTranslationFile(self, path):
+        """Is this a translation file that should be uploaded?"""
+        if path is None or path == '':
+            return False
+
+        translation_importer = getUtility(ITranslationImporter)
+        if translation_importer.isHidden(path):
+            # Dotfile.  Probably an editor backup or somesuch.
+            return False
+
+        base, ext = posixpath.splitext(path)
+        if ext not in translation_importer.supported_file_extensions:
+            # Doesn't look like a supported translation file type.
+            return False
+
+        return True
+
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None):
+        potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
 
-        translation_importer = getUtility(ITranslationImporter)
-
+        tarball_io = StringIO(content)
         try:
-            tarball = tarfile.open('', 'r|*', StringIO(content))
+            tarball = tarfile.open('', 'r|*', tarball_io)
         except (tarfile.CompressionError, tarfile.ReadError):
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
             return (num_files, conflict_files)
 
+        # Build a list of files to upload.
+        upload_files = {}
+        for name in self._iterTarballFiles(tarball):
+            path = self._makePath(name, filename_filter)
+            if self._isTranslationFile(path):
+                upload_files[name] = path
+        tarball.close()
+
+        if approver_factory is None:
+            approver_factory = TranslationNullApprover
+        approver = approver_factory(
+            upload_files.values(),
+            productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+        # Re-opening because we are using sequential access ("r|*") which is
+        # so much faster.
+        tarball_io.seek(0)
+        tarball = tarfile.open('', 'r|*', tarball_io)
         for tarinfo in tarball:
-            if not tarinfo.isfile():
-                # Don't be tricked into reading directories, symlinks,
-                # or worst of all: devices.
+            if tarinfo.name not in upload_files:
                 continue
-
-            filename = posixpath.normpath(tarinfo.name)
-            if filename_filter:
-                filename = filename_filter(filename)
-            if filename is None or filename == '':
-                continue
-
-            if translation_importer.isHidden(filename):
-                # Dotfile.  Probably an editor backup or somesuch.
-                continue
-
-            base, ext = posixpath.splitext(filename)
-            if ext not in translation_importer.supported_file_extensions:
-                # Doesn't look like a supported translation file type.
-                continue
-
             file_content = tarball.extractfile(tarinfo).read()
 
-            if len(file_content) == 0:
-                # Empty.  Ignore.
-                continue
-
-            entry = self.addOrUpdateEntry(
-                filename, file_content, is_published, importer,
+            path = upload_files[tarinfo.name]
+            entry = approver.approve(self.addOrUpdateEntry(
+                path, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                potemplate=potemplate)
+                potemplate=potemplate))
             if entry == None:
-                conflict_files.append(filename)
+                conflict_files.append(path)
             else:
                 num_files += 1
 

@@ -40,14 +40,13 @@ from canonical.launchpad.interfaces import IMasterObject, IMasterStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
-    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeViolation, SLAVE_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR,
+    ReadOnlyModeViolation, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import safe_hasattr
 
 
 __all__ = [
-    'DisconnectionError',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
@@ -109,7 +108,8 @@ class CommitLogger:
             now, now, None, 'Transaction completed, status: %s' % txn.status)
 
 
-def set_request_started(starttime=None, request_statements=None, txn=None):
+def set_request_started(
+    starttime=None, request_statements=None, txn=None, enable_timeout=True):
     """Set the start time for the request being served by the current
     thread.
 
@@ -121,6 +121,8 @@ def set_request_started(starttime=None, request_statements=None, txn=None):
     :type request_statements: mutable sequence.
     :param txn: The current transaction manager. If given, txn.commit() and
         txn.abort() calls are logged too.
+    :param enable_timeout: If True, a timeout error is raised if the request
+        runs for a longer time than the configured timeout.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
@@ -134,6 +136,7 @@ def set_request_started(starttime=None, request_statements=None, txn=None):
     else:
         _local.request_statements = request_statements
     _local.current_statement_timeout = None
+    _local.enable_timeout = enable_timeout
     if txn is not None:
         _local.commit_logger = CommitLogger(txn)
         txn.registerSynch(_local.commit_logger)
@@ -226,8 +229,8 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
-    if timeout is None:
-        return False # no timeout configured
+    if timeout is None or not getattr(_local, 'enable_timeout', True):
+        return False # no timeout configured or timeout disabled.
 
     starttime = getattr(_local, 'request_start_time', None)
     if starttime is None:
@@ -323,7 +326,7 @@ class LaunchpadDatabase(Postgres):
 
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
-        # or auth_slave.
+        # or main_slave.
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
         # pylint: disable-msg=W0231
@@ -352,7 +355,7 @@ class LaunchpadDatabase(Postgres):
                 'Connection uri %s does not match section-realm-flavor format'
                 % repr(self._uri.database))
 
-        assert realm in ('main', 'auth'), 'Unknown realm %s' % realm
+        assert realm == 'main', 'Unknown realm %s' % realm
         assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
 
         my_dbconfig = DatabaseConfig()
@@ -481,7 +484,8 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
-        if not dbconfig.db_statement_timeout:
+        if (not dbconfig.db_statement_timeout or
+            not getattr(_local, 'enable_timeout', True)):
             return None
         start_time = getattr(_local, 'request_start_time', None)
         if start_time is None:
@@ -567,14 +571,6 @@ class StoreSelector:
         return db_policy.getStore(name, flavor)
 
 
-# There are not many tables outside of the main replication set, so we
-# can just maintain a hardcoded list of what isn't in there for now.
-_auth_store_tables = frozenset([
-    'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
-    'OpenIDAssociation', 'OpenIDAuthorization', 'OpenIDNonce',
-    'OpenIDRPSummary'])
-
-
 # We want to be able to adapt a Storm class to an IStore, IMasterStore or
 # ISlaveStore. Unfortunately, the component architecture provides no
 # way for us to declare that a class, and all its subclasses, provides
@@ -583,9 +579,7 @@ _auth_store_tables = frozenset([
 def get_store(storm_class, flavor=DEFAULT_FLAVOR):
     """Return a flavored Store for the given database class."""
     table = getattr(removeSecurityProxy(storm_class), '__storm_table__', None)
-    if table in _auth_store_tables:
-        return getUtility(IStoreSelector).get(AUTH_STORE, flavor)
-    elif table is not None:
+    if table is not None:
         return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
     else:
         return None

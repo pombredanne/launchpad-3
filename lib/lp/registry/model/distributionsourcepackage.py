@@ -29,8 +29,9 @@ from lp.registry.model.structuralsubscription import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -58,7 +59,8 @@ class DistributionSourcePackage(BugTargetBase,
                                 StructuralSubscriptionTargetMixin,
                                 HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
-                                HasMergeProposalsMixin):
+                                HasMergeProposalsMixin,
+                                HasBugHeatMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -67,7 +69,8 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
+        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
+        IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution

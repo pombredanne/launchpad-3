@@ -22,7 +22,8 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasCodeImports, IHasMergeProposals)
 from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
@@ -32,7 +33,7 @@ from lazr.restful.declarations import (
 
 
 class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
-                     IHasOfficialBugTags):
+                     IHasOfficialBugTags, IHasCodeImports):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less

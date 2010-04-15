@@ -26,7 +26,8 @@ from lp.code.model.branch import Branch
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCase, TestCaseWithFactory, time_counter
+from lp.testing import (
+    TestCase, TestCaseWithFactory, login_person, time_counter)
 from lp.testing.views import create_initialized_view
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -98,6 +99,9 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
         self.barney = self.factory.makePerson(name='barney')
         self.bambam = self.factory.makeProduct(name='bambam')
 
@@ -331,6 +335,7 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
         # There is only one branch.
         batch = view.branches()
         [view_branch] = batch.branches
+        self.assertStatementCount(0, getattr, view_branch, 'bzr_identity')
         self.assertEqual(identity, view_branch.bzr_identity)
 
 

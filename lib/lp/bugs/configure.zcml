@@ -282,6 +282,11 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
             permission="zope.Public"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
+            factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- NullBugTask -->
 
@@ -354,16 +359,19 @@
             <require
                 permission="zope.Public"
                 attributes="
+                    active
                     aliases
                     baseurl
                     bugtrackertype
                     contactdetails
+                    getBugFilingAndSearchLinks
                     getBugsWatching
-                    getBugWatchesNeedingUpdate
                     getLinkedPersonByName
+                    has_lp_plugin
                     id
                     imported_bug_messages
                     latestwatches
+                    multi_product
                     name
                     owner
                     products
@@ -371,17 +379,27 @@
                     summary
                     title
                     watches
-                    getBugFilingAndSearchLinks
-                    has_lp_plugin
-                    multi_product
-                    active"/>
+                    watches_needing_update
+                    watches_ready_to_check
+                    watches_with_unpushed_comments
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf"
-                set_attributes="aliases baseurl bugtrackertype contactdetails                                                                                                         name owner summary title has_lp_plugin"/>
+                set_attributes="
+                    aliases
+                    baseurl
+                    bugtrackertype
+                    contactdetails
+                    has_lp_plugin
+                    name
+                    owner
+                    summary
+                    title
+                    "/>
             <require
                 permission="launchpad.Admin"
                 attributes="resetWatches"
@@ -565,8 +583,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    linkBranch
-                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -672,6 +688,8 @@
                     markAsDuplicate
                     linkHWSubmission
                     unlinkHWSubmission
+                    linkBranch
+                    unlinkBranch
                     linkAttachment"
                 set_attributes="
                     activity initial_message
@@ -839,6 +857,7 @@
                     lastchanged
                     lastchecked
                     needscheck
+                    next_check
                     owner
                     remote_importance
                     remotebug
@@ -858,7 +877,14 @@
                     addComment
                     updateImportance
                     updateStatus"
-                set_attributes="last_error_type lastchanged lastchecked needscheck                                                                                                 remote_importance remotestatus"/>
+                set_attributes="
+                    last_error_type
+                    lastchanged
+                    lastchecked
+                    needscheck
+                    next_check
+                    remote_importance
+                    remotestatus"/>
         </class>
 
         <!-- https://launchpad.net/bugs/98639 -->

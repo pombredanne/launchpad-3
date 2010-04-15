@@ -1,4 +1,6 @@
-= Edit a bug watch =
+Edit a bug watch
+================
+
 
 After a bug watch is recorded, it is possible to go back and change it.
 
@@ -36,3 +38,85 @@ Likewise, stupid URLs are rejected with a polite error message.
     ...     print extract_text(message)
     There is 1 error.
     "GELLER" is not a valid URI
+
+
+BugWatch details
+----------------
+
+The +edit page for a watch also displays some details about the watch.
+
+    >>> for data_tag in find_tags_by_class(
+    ...     admin_browser.contents, 'bugwatch-data'):
+    ...     print extract_text(data_tag.renderContents())
+    Tracker: The Mozilla.org Bug Tracker
+    Remote bug ID: 1000
+    Last status: None recorded
+    Changed: 2004-10-04
+    Checked: 2004-10-04
+    Next check: Not yet scheduled
+    Created: 2004-10-04
+    Created by: Mark Shuttleworth
+
+If we change the next_check date of the watch its will be shown in the
+Next check column.
+
+    >>> from datetime import datetime
+    >>> from pytz import utc
+    >>> from zope.component import getUtility
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.next_check = datetime(2010, 4, 8, 16, 07, tzinfo=utc)
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> data_tag = find_tag_by_id(
+    ...     admin_browser.contents, 'bugwatch-next_check')
+    >>> print extract_text(data_tag.renderContents())
+    Next check: 2010-04-08...
+
+
+Recent activity
+---------------
+
+Recent activity on a bug watch is shown on the page as a list of
+activity entries. When a watch has not been checked, no activity is
+shown.
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     admin_browser.contents, 'recent-watch-activity')
+    >>> print recent_activity_list
+    None
+
+Adding some activity to the watch will cause it to show up in the recent
+activity list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.addActivity()
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     admin_browser.contents, 'recent-watch-activity')
+    >>> print extract_text(recent_activity_list)
+    Update completed successfully ... ago
+
+If an update fails, that too will be reflected in the list.
+
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> logout()
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     admin_browser.contents, 'recent-watch-activity')
+    >>> print extract_text(recent_activity_list)
+    Update failed with error 'Bug Not Found' ... ago
+    Update completed successfully ... ago

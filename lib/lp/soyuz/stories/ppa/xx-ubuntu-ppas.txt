@@ -412,10 +412,12 @@ is also included in the statistics portlet.
 
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> login('foo.bar@canonical.com')
     >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-    >>> builds = getUtility(IBuildSet).getBuildsForArchive(cprov_ppa)
+    >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+    ...     cprov_ppa)
     >>> builds[0].buildstate = BuildStatus.BUILDING
     >>> logout()
 
