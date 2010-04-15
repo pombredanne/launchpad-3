@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import re
 import shutil
 import difflib
 from tempfile import mkdtemp
@@ -23,6 +24,13 @@ from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
+
+def sanitize_apt_ftparchive_Sources_output(text):
+    # XXX: maxb 2010-04-15 bug=563503: Filter Checksums-* stanzas out of
+    # apt-ftparchive Sources file content, such that the output of lucid
+    # apt-ftparchive is the same as on karmic.
+    return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
+    
 
 class SamplePublisher:
     """Publisher emulation test class."""
@@ -275,7 +283,8 @@ class TestFTPArchive(unittest.TestCase):
         self._verifyFile("Packages",
             os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
         self._verifyFile("Sources",
-            os.path.join(self._distsdir, "hoary-test", "main", "source"))
+            os.path.join(self._distsdir, "hoary-test", "main", "source"),
+            sanitize_apt_ftparchive_Sources_output)
 
         # XXX cprov 2007-03-21: see above, byte-to-byte configuration
         # comparing is weak.

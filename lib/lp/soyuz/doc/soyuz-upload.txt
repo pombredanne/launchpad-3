@@ -587,6 +587,8 @@ required entry for 'etherwake':
   >>> sources = open(
   ...    "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source"
   ...    "/Sources").read()
+  >>> import re
+  >>> sources = re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', sources)[0]
   >>> print sources + '\nEND'
   Package: etherwake
   Binary: etherwake
@@ -605,6 +607,10 @@ required entry for 'etherwake':
   <BLANKLINE>
   <BLANKLINE>
   END
+
+# XXX: maxb 2010-04-15 bug=563503 
+# The regex munging above can be removed once the tests no longer need to pass
+# on Karmic and earlier.
 
 Now we invoke changeOverride on just published etherwake, moving it to
 component 'multiverse'.
