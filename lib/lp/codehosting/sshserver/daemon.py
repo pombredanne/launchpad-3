@@ -5,21 +5,41 @@
 
 __metaclass__ = type
 __all__ = [
+    'ACCESS_LOG_NAME',
     'CodehostingAvatar',
+    'get_key_path',
     'get_portal',
+    'LOG_NAME',
+    'make_portal',
+    'PRIVATE_KEY_FILE',
+    'PUBLIC_KEY_FILE',
     ]
+
+import os
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import IRealm, Portal
 from twisted.python import components
+from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
 
+from canonical.config import config
 from lp.codehosting import sftp
 from lp.codehosting.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.codehosting.sshserver.session import launch_smart_server
+
+
+# The names of the key files of the server itself. The directory itself is
+# given in config.codehosting.host_key_pair_path.
+PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
+PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
+
+OOPS_CONFIG_SECTION = 'codehosting'
+LOG_NAME = 'codehosting'
+ACCESS_LOG_NAME = 'codehosting.access'
 
 
 class CodehostingAvatar(LaunchpadAvatar):
@@ -64,3 +84,22 @@ def get_portal(authentication_proxy, branchfs_proxy):
     portal.registerChecker(
         PublicKeyFromLaunchpadChecker(authentication_proxy))
     return portal
+
+
+def get_key_path(key_filename):
+    key_directory = config.codehosting.host_key_pair_path
+    return os.path.join(config.root, key_directory, key_filename)
+
+
+def make_portal():
+    """Create and return a `Portal` for the SSH service.
+
+    This portal accepts SSH credentials and returns our customized SSH
+    avatars (see `lp.codehosting.sshserver.auth.CodehostingAvatar`).
+    """
+    authentication_proxy = Proxy(
+        config.codehosting.authentication_endpoint)
+    branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
+    return get_portal(authentication_proxy, branchfs_proxy)
+
+

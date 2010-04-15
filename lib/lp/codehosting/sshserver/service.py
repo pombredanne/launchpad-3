@@ -8,12 +8,6 @@ An `SSHService` object can be used to launch the SSH server.
 
 __metaclass__ = type
 __all__ = [
-    'ACCESS_LOG_NAME',
-    'get_key_path',
-    'LOG_NAME',
-    'make_portal',
-    'PRIVATE_KEY_FILE',
-    'PUBLIC_KEY_FILE',
     'SSHService',
     ]
 
@@ -27,26 +21,13 @@ from twisted.conch.ssh.keys import Key
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.internet import defer
 from twisted.protocols.policies import TimeoutFactory
-from twisted.web.xmlrpc import Proxy
 
 from zope.event import notify
 
-from canonical.config import config
 from lp.codehosting.sshserver import accesslog, events
 from lp.codehosting.sshserver.auth import SSHUserAuthServer
-from lp.codehosting.sshserver.daemon import get_portal
 from lp.services.twistedsupport import gatherResults
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
-
-
-# The names of the key files of the server itself. The directory itself is
-# given in config.codehosting.host_key_pair_path.
-PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
-PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
-
-OOPS_CONFIG_SECTION = 'codehosting'
-LOG_NAME = 'codehosting'
-ACCESS_LOG_NAME = 'codehosting.access'
 
 
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
@@ -54,23 +35,6 @@ class KeepAliveSettingSSHServerTransport(SSHServerTransport):
     def connectionMade(self):
         SSHServerTransport.connectionMade(self)
         self.transport.setTcpKeepAlive(True)
-
-
-def get_key_path(key_filename):
-    key_directory = config.codehosting.host_key_pair_path
-    return os.path.join(config.root, key_directory, key_filename)
-
-
-def make_portal():
-    """Create and return a `Portal` for the SSH service.
-
-    This portal accepts SSH credentials and returns our customized SSH
-    avatars (see `lp.codehosting.sshserver.auth.CodehostingAvatar`).
-    """
-    authentication_proxy = Proxy(
-        config.codehosting.authentication_endpoint)
-    branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-    return get_portal(authentication_proxy, branchfs_proxy)
 
 
 class Factory(SSHFactory):

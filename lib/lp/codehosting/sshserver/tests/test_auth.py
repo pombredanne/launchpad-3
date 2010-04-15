@@ -26,7 +26,8 @@ from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
 from lp.codehosting.sshserver import auth, service
-from lp.codehosting.sshserver.daemon import get_portal
+from lp.codehosting.sshserver.daemon import (
+    get_key_path, get_portal, PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
 from lp.services.twistedsupport import suppress_stderr
 
 
@@ -519,9 +520,9 @@ class TestFactory(TrialTestCase):
         factory = service.Factory(
             get_portal(None, None),
             private_key=Key.fromFile(
-                service.get_key_path(service.PRIVATE_KEY_FILE)),
+                get_key_path(PRIVATE_KEY_FILE)),
             public_key=Key.fromFile(
-                service.get_key_path(service.PUBLIC_KEY_FILE)))
+                get_key_path(PUBLIC_KEY_FILE)))
         factory.startFactory()
         return factory
 
