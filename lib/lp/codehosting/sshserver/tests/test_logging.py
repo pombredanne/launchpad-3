@@ -86,8 +86,11 @@ class TestLoggingBazaarInteraction(BzrTestCase, LoggingManagerMixin):
 class TestLoggingManager(TestCase, LoggingManagerMixin):
 
     def test_main_log_handlers(self):
-        # There needs to be at least one handler for the root logger.
+        # There needs to be at least one handler for the root logger. If there
+        # isn't, we'll get constant errors complaining about the lack of
+        # logging handlers.
         log = self.makeLogger()
+        self.assertEqual([], log.handlers)
         self.installLoggingManager(log)
         self.assertNotEqual([], log.handlers)
 
@@ -115,10 +118,19 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
         manager.tearDown()
         self.assertEqual(old_level, log.level)
 
-    def test_teardown_restores_handlers(self):
+    def test_teardown_restores_main_log_handlers(self):
+        # tearDown restores log handlers for the main logger.
         log = self.makeLogger()
         handlers = list(log.handlers)
         manager = self.installLoggingManager(log)
+        manager.tearDown()
+        self.assertEqual(handlers, log.handlers)
+
+    def test_teardown_restores_access_log_handlers(self):
+        # tearDown restores log handlers for the access logger.
+        log = self.makeLogger()
+        handlers = list(log.handlers)
+        manager = self.installLoggingManager(access_log=log)
         manager.tearDown()
         self.assertEqual(handlers, log.handlers)
 
@@ -134,13 +146,6 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
         [handler] = access_log.handlers
         self.assertIsInstance(handler, WatchedFileHandler)
         self.assertEqual(access_log_path, handler.baseFilename)
-
-    def test_teardown_restores_access_handlers(self):
-        log = self.makeLogger()
-        handlers = list(log.handlers)
-        manager = self.installLoggingManager(access_log=log)
-        manager.tearDown()
-        self.assertEqual(handlers, log.handlers)
 
 
 def test_suite():
