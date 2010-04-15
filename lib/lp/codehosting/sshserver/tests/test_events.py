@@ -8,6 +8,8 @@ __metaclass__ = type
 import logging
 import unittest
 
+from zope.component import adapter, getGlobalSiteManager, provideHandler
+# This non-standard import is necessary to hook up the event system.
 import zope.component.event
 from zope.event import notify
 
@@ -61,14 +63,12 @@ class TestLoggingEvent(TestCase):
         logger.setLevel(logging.DEBUG)
         self.logger = logger
 
-        @zope.component.adapter(ILoggingEvent)
+        @adapter(ILoggingEvent)
         def _log_event(event):
             logger.log(event.level, event.message)
 
-        zope.component.provideHandler(_log_event)
-        self.addCleanup(
-            zope.component.getGlobalSiteManager().unregisterHandler,
-            _log_event)
+        provideHandler(_log_event)
+        self.addCleanup(getGlobalSiteManager().unregisterHandler, _log_event)
 
     def test_level(self):
         event = LoggingEvent(logging.CRITICAL, "foo")
