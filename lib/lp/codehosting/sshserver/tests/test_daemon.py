@@ -16,8 +16,8 @@ from canonical.testing.layers import TwistedLayer
 
 from lp.codehosting.sshserver.daemon import (
     get_key_path, get_portal, PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
-from lp.codehosting.sshserver.service import Factory
 from lp.services.sshserver.auth import SSHUserAuthServer
+from lp.services.sshserver.service import Factory
 
 
 class StringTransportWith_setTcpKeepAlive(StringTransport):

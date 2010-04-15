@@ -12,7 +12,7 @@ from canonical.launchpad.daemons import tachandler
 
 from lp.codehosting.sshserver.daemon import (
     get_key_path, make_portal, PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
-from lp.codehosting.sshserver.service import SSHService
+from lp.services.sshserver.service import SSHService
 
 
 # Construct an Application that has the codehosting SSH server.
