@@ -2760,7 +2760,7 @@ Base64 encoded attachments are decoded before being stored.
 Some mail clients append a filename to the content type of attachments.
 This is used if it hasn't already been set in Content-Disposition.
 The content type of the PGP signature is properly detected and thus no bug
-is attachment created.
+attachment is created.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
