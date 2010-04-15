@@ -1598,7 +1598,7 @@ class QuestionFormatterAPI(CustomizableFormatter):
 class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ISourcePackageRecipe objects."""
 
-    _link_summary_template = '%(name)s (%(owner)s)'
+    _link_summary_template = 'Recipe %(name)s for %(owner)s'
 
     def _link_summary_values(self):
         return {'name': self._context.name,
