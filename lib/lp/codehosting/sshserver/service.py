@@ -86,8 +86,10 @@ class Factory(SSHFactory):
         """Construct an SSH factory.
 
         :param portal: The portal used to turn credentials into users.
-        :param private_key: The private key of the server, must be RSA.
-        :param public_key: The public key of the server, must be RSA.
+        :param private_key: The private key of the server, must be an RSA
+            key, given as a `twisted.conch.ssh.keys.Key` object.
+        :param public_key: The public key of the server, must be an RSA
+            key, given as a `twisted.conch.ssh.keys.Key` object.
         :param banner: The text to display when users successfully log in.
         """
         # Although 'portal' isn't part of the defined interface for
@@ -156,7 +158,7 @@ class SSHService(service.Service):
 
     def __init__(self, portal, private_key_path, public_key_path,
                  oops_configuration, main_log, access_log,
-                 access_log_path, port='tcp:22', idle_timeout=3600,
+                 access_log_path, strport='tcp:22', idle_timeout=3600,
                  banner=None):
         """Construct an SSH service.
 
@@ -171,7 +173,7 @@ class SSHService(service.Service):
         :param access_log: A `logging.Logger` object to log the server access
             details to.
         :param access_log_path: The path to the access log file.
-        :param port: The port to run the server on, expressed in Twisted's
+        :param strport: The port to run the server on, expressed in Twisted's
             "strports" mini-language. Defaults to 'tcp:22'.
         :param idle_timeout: The number of seconds to wait before killing a
             connection that isn't doing anything. Defaults to 3600.
@@ -185,7 +187,7 @@ class SSHService(service.Service):
                 public_key=Key.fromFile(public_key_path),
                 banner=banner),
             timeoutPeriod=idle_timeout)
-        self.service = strports.service(port, ssh_factory)
+        self.service = strports.service(strport, ssh_factory)
         self._oops_configuration = oops_configuration
         self._main_log = main_log
         self._access_log = access_log
