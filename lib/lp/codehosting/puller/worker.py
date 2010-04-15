@@ -224,17 +224,14 @@ class BranchMirrorer(object):
         'source_branch'. Any content already at 'destination_url' will be
         deleted.
 
-        If 'source_branch' is stacked, then the destination branch will be
-        stacked on the same URL, relative to 'destination_url'.
-
         :param source_branch: The Bazaar branch that will be mirrored.
         :param destination_url: The place to make the destination branch. This
             URL must point to a writable location.
         :return: The destination branch.
         """
-        return self.policy.initialClone(
-            source_branch, destination_url,
-            self._runWithTransformFallbackLocationHookInstalled)
+        return self._runWithTransformFallbackLocationHookInstalled(
+            self.policy.createDestinationBranch, source_branch,
+            destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.
@@ -242,9 +239,7 @@ class BranchMirrorer(object):
         :param source_branch: The Bazaar branch that will be mirrored.
         :param destination_url: The place to make the destination branch. This
             URL must point to a writable location.
-        :return: (branch, up_to_date), where 'branch' is the destination
-            branch, and 'up_to_date' is a boolean saying whether the returned
-            branch is up-to-date with the source branch.
+        :return: The opened or created branch.
         """
         try:
             branch = Branch.open(destination_url)

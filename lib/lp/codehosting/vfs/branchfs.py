@@ -699,7 +699,23 @@ class BranchPolicy:
     stacked.
     """
 
-    def initialClone(self, source_branch, destination_url, _runWithTransformFallbackLocationHookInstalled):
+    def createDestinationBranch(self, source_branch, destination_url):
+        """Create a destination branch for 'source_branch'.
+
+        Creates a branch at 'destination_url' that is has the same format as
+        'source_branch'.  Any content already at 'destination_url' will be
+        deleted.  Generally the new branch will have no revisions, but they
+        will be copied for import branches, because this can be done safely
+        and efficiently with a vfs-level copy (see `ImportedBranchPolicy`,
+        below).
+
+        :param source_branch: The Bazaar branch that will be mirrored.
+        :param destination_url: The place to make the destination branch. This
+            URL must point to a writable location.
+        :return: The destination branch.
+        :raises StackedOnBranchNotFound: if the branch that the destination
+            branch will be stacked on does not yet exist in the mirrored area.
+        """
         dest_transport = get_transport(destination_url)
         if dest_transport.has('.'):
             dest_transport.delete_tree('.')
@@ -719,9 +735,8 @@ class BranchPolicy:
             revision_id = None
         else:
             revision_id = 'null:'
-        _runWithTransformFallbackLocationHookInstalled(
-            source_branch.bzrdir.clone_on_transport, dest_transport,
-            revision_id=revision_id)
+        source_branch.bzrdir.clone_on_transport(
+            dest_transport, revision_id=revision_id)
         return Branch.open(destination_url)
 
     def getStackedOnURLForDestinationBranch(self, source_branch,
@@ -942,10 +957,18 @@ class ImportedBranchPolicy(BranchPolicy):
      - assert the URLs start with the prefix we expect for imported branches.
     """
 
-    def initialClone(self, source_branch, destination_url, _):
+    def createDestinationBranch(self, source_branch, destination_url):
+        """See `BranchPolicy.createDestinationBranch`.
+
+        Because we control the process that creates import branches, a
+        vfs-level copy is safe and more efficient than a bzr fetch.
+        """
         source_transport = source_branch.bzrdir.root_transport
         dest_transport = get_transport(destination_url)
         while True:
+            # We loop until the remote file list before and after the copy is
+            # the same to catch the case where the remote side is being
+            # mutated as we copy it.
             if dest_transport.has('.'):
                 dest_transport.delete_tree('.')
             files_before = set(source_transport.iter_files_recursive())
