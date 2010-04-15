@@ -21,7 +21,7 @@ The menu presented in the build page depends on the targeted archive.
 For instance the 'PPA' action-menu link is not enabled for builds
 targeted to the PRIMARY archive.
 
-    >>> from canonical.launchpad.browser import BuildContextMenu
+    >>> from lp.soyuz.browser.build import BuildContextMenu
     >>> build_menu = BuildContextMenu(hoary_failed_build)
 
     >>> print build_menu.links
