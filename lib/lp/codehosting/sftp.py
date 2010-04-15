@@ -15,7 +15,6 @@ We call such a transport a "Twisted Transport".
 __metaclass__ = type
 __all__ = [
     'avatar_to_sftp_server',
-    'FileTransferServer',
     'TransportSFTPServer',
     ]
 
@@ -255,24 +254,6 @@ def avatar_to_sftp_server(avatar):
     transport = AsyncLaunchpadTransport(server, server.get_url())
     notify(events.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
-
-
-class FileTransferServer(filetransfer.FileTransferServer):
-
-    def __init__(self, data=None, avatar=None):
-        filetransfer.FileTransferServer.__init__(self, data, avatar)
-        self.avatar = avatar
-
-    def connectionLost(self, reason):
-        # This method gets called twice: once from `SSHChannel.closeReceived`
-        # when the client closes the channel and once from `SSHSession.closed`
-        # when the server closes the session. We change the avatar attribute
-        # to avoid logging the `SFTPClosed` event twice.
-        filetransfer.FileTransferServer.connectionLost(self, reason)
-        if self.avatar is not None:
-            avatar = self.avatar
-            self.avatar = None
-            notify(events.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:

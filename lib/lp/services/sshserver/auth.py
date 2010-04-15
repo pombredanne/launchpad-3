@@ -38,12 +38,12 @@ from twisted.python import failure
 from zope.event import notify
 from zope.interface import implements
 
-# XXX: None of this code should import from codehosting.
-from lp.codehosting import sftp
+from canonical.launchpad.xmlrpc import faults
+
 from lp.services.sshserver import events
+from lp.services.sshserver.sftp import FileTransferServer
 from lp.services.sshserver.session import PatchedSSHSession
 from lp.services.twistedsupport.xmlrpc import trap_fault
-from canonical.launchpad.xmlrpc import faults
 
 
 class LaunchpadAvatar(avatar.ConchUser):
@@ -69,7 +69,7 @@ class LaunchpadAvatar(avatar.ConchUser):
         # fixes).
         self.channelLookup = {'session': PatchedSSHSession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': sftp.FileTransferServer}
+        self.subsystemLookup = {'sftp': FileTransferServer}
 
     def logout(self):
         notify(events.UserLoggedOut(self))
