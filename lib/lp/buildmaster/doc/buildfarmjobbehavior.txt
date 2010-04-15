@@ -115,7 +115,7 @@ appropriate exception.
 If a slave is working on a job while we think it is idle, it will always be
 aborted.
 
-    >>> bob.current_build_behavior.verifySlaveBuildID('foo')
+    >>> bob.current_build_behavior.verifySlaveBuildCookie('foo')
     Traceback (most recent call last):
     ...
-    CorruptBuildID: No job assigned to builder
+    CorruptBuildCookie: No job assigned to builder

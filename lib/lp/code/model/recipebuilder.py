@@ -96,13 +96,14 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         # results so we know we are referring to the right database object in
         # subsequent runs.
         buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.buildfarmjob.generateSlaveBuildCookie()
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
         args = self._extraBuildArgs(distroarchseries)
         status, info = self._builder.slave.build(
-            buildid, "sourcepackagerecipe", chroot_sha1, {}, args)
+            cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
@@ -156,12 +157,3 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             status['build_status'] in build_status_with_files):
             status['filemap'] = raw_slave_status[3]
             status['dependencies'] = raw_slave_status[4]
-
-
-    def getVerifiedBuild(self, raw_id):
-        """See `IBuildFarmJobBehavior`."""
-        # This type of job has a build that is of type BuildBase but not
-        # actually a Build.
-        return self._helpVerifyBuildIDComponent(
-            raw_id, SourcePackageRecipeBuild,
-            getUtility(ISourcePackageRecipeBuildSource).getById)

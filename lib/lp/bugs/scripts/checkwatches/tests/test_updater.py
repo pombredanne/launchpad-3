@@ -109,6 +109,73 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
 
 
+class BugzillaAPIWithoutProducts(BugzillaAPI):
+    """None of the remote bugs have products."""
+    def getProductsForRemoteBugs(self, remote_bug_ids):
+        return {}
+
+
+def always_BugzillaAPIWithoutProducts_get_external_bugtracker(bugtracker):
+    """get_external_bugtracker that returns BugzillaAPIWithoutProducts."""
+    return BugzillaAPIWithoutProducts(bugtracker.baseurl)
+
+
+class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCheckwatchesWithoutSyncableGnomeProducts, self).setUp()
+        transaction.commit()
+
+        # We monkey-patch externalbugtracker.get_external_bugtracker()
+        # so that it always returns what we want.
+        self.original_get_external_bug_tracker = (
+            checkwatches.updater.externalbugtracker.get_external_bugtracker)
+        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
+            always_BugzillaAPIWithoutProducts_get_external_bugtracker)
+
+        # Create an updater with a limited set of syncable gnome
+        # products.
+        self.updater = checkwatches.BugWatchUpdater(
+            transaction.manager, QuietFakeLogger(), ['test-product'])
+
+    def tearDown(self):
+        checkwatches.externalbugtracker.get_external_bugtracker = (
+            self.original_get_external_bug_tracker)
+        super(TestCheckwatchesWithoutSyncableGnomeProducts, self).tearDown()
+
+    def test__getExternalBugTrackersAndWatches(self):
+        # When there are no syncable products defined, only one remote
+        # system should be returned, and it should have been modified
+        # to disable comment syncing
+        gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+        transaction.commit()
+        # If there are syncable GNOME products set, two remote systems
+        # are returned from _getExternalBugTrackersAndWatches().
+        remote_systems_and_watches = (
+            self.updater._getExternalBugTrackersAndWatches(
+                gnome_bugzilla, []))
+        self.failUnlessEqual(2, len(remote_systems_and_watches))
+        # One will have comment syncing enabled.
+        self.failUnless(
+            any(remote_system.sync_comments
+                for (remote_system, watches) in remote_systems_and_watches))
+        # One will have comment syncing disabled.
+        self.failUnless(
+            any(not remote_system.sync_comments
+                for (remote_system, watches) in remote_systems_and_watches))
+        # When there are no syncable products, only one remote system
+        # is returned, and comment syncing is disabled.
+        self.updater._syncable_gnome_products = []
+        remote_systems_and_watches = (
+            self.updater._getExternalBugTrackersAndWatches(
+                gnome_bugzilla, []))
+        self.failUnlessEqual(1, len(remote_systems_and_watches))
+        [(remote_system, watches)] = remote_systems_and_watches
+        self.failIf(remote_system.sync_comments)
+
+
 class TestBugWatchUpdater(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -154,7 +221,7 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         # Enable SQL statment logging.
         set_request_started()
         try:
-            bug = self.factory.makeBug()
+            self.factory.makeBug()
             self.assertTrue(
                 len(get_request_statements()) > 0,
                 "We need at least one statement in the SQL log.")

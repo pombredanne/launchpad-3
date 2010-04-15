@@ -78,6 +78,9 @@ check_db_merge: $(PY)
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
+check_schema: build
+	${PY} utilities/check-db-revision.py
+
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
 check: clean build
@@ -210,19 +213,19 @@ mpcreationjobs:
 	# Handle merge proposal creations.
 	$(PY) cronscripts/mpcreationjobs.py
 
-run: inplace stop
+run: check_schema inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
-start-gdb: inplace stop support_files
+start-gdb: check_schema inplace stop support_files
 	$(RM) thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop hosted_branches
+run_all: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
+	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -234,7 +237,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
-run_codehosting: inplace stop hosted_branches
+run_codehosting: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
@@ -280,7 +283,7 @@ stop: build initscript-stop
 # servers, where we know we don't need the extra steps in a full
 # "make stop" because of how the code is deployed/built.
 initscript-stop:
-	bin/killservice librarian buildsequencer launchpad mailman
+	bin/killservice librarian launchpad mailman
 
 shutdown: scheduleoutage stop
 	$(RM) +maintenancetime.txt
@@ -440,4 +443,4 @@ lp-clustered.svg: lp-clustered.dot
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile
+	sprite_css sprite_image css_combine compile check_schema
