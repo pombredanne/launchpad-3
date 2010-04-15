@@ -126,6 +126,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
+    def destroySelf():
+        """Remove this SourcePackageRecipe from the database.
+
+        This requires deleting any rows with non-nullable foreign key
+        references to this object.
+        """
+
 
 class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.

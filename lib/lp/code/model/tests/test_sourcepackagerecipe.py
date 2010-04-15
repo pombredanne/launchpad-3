@@ -9,7 +9,12 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
+
+from pytz import UTC
+from storm.locals import Store
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import check_permission
@@ -78,6 +83,20 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.assertFalse(check_permission('launchpad.Edit', recipe))
         with person_logged_in(recipe.owner):
             self.assertTrue(check_permission('launchpad.Edit', recipe))
+
+    def test_destroySelf(self):
+        """Should destroy associated builds, distroseries, etc."""
+        # recipe should have at least one datainstruction.
+        branches = [self.factory.makeBranch() for count in range(2)]
+        recipe = self.factory.makeSourcePackageRecipe(branches=branches)
+        pending_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        past_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
+        recipe.destroySelf()
+        # Show no database constraints were violated
+        Store.of(recipe).flush()
 
 
 def test_suite():

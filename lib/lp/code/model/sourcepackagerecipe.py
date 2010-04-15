@@ -125,6 +125,8 @@ class SourcePackageRecipe(Storm):
         self.distroseries.clear()
         for instruction in self._recipe_data.instructions:
             store.remove(instruction)
+        self.getBuilds(pending=True).remove()
+        self.getBuilds(pending=False).remove()
         store.remove(self._recipe_data)
         store.remove(self)
 
