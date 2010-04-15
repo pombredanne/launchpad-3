@@ -217,10 +217,9 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugTaskEditViewStatusField, self).setUp()
-        product_owner = self.factory.makePersonNoCommit(name='product-owner')
-        bug_supervisor = self.factory.makePersonNoCommit(
-            name='bug-supervisor')
-        product = self.factory.makeProductNoCommit(
+        product_owner = self.factory.makePerson(name='product-owner')
+        bug_supervisor = self.factory.makePerson(name='bug-supervisor')
+        product = self.factory.makeProduct(
             owner=product_owner, bug_supervisor=bug_supervisor)
         self.bug = self.factory.makeBug(product=product)
 
