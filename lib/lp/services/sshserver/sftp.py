@@ -16,9 +16,11 @@ from lp.services.sshserver import events
 
 
 class FileTransferServer(filetransfer.FileTransferServer):
+    """SFTP protocol implementation that logs key events."""
 
     def __init__(self, data=None, avatar=None):
         filetransfer.FileTransferServer.__init__(self, data, avatar)
+        notify(events.SFTPStarted(avatar))
         self.avatar = avatar
 
     def connectionLost(self, reason):
