@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugWatchSetNavigation',
+    'BugWatchDetailsPortletView',
     'BugWatchEditView',
     'BugWatchView']
 
@@ -144,50 +145,6 @@ class BugWatchEditView(LaunchpadFormView):
         except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
             self.setFieldError('url', 'Invalid bug tracker URL.')
 
-    def userCanReschedule(self, action=None):
-        """Return True if the current user can reschedule the bug watch."""
-        if (self.context.next_check is not None and
-            self.context.next_check <= datetime.now(utc)):
-            # If the watch is already scheduled for a time in the past
-            # (or for right now) it can't be rescheduled, since it
-            # should be be checked by the next checkwatches run anyway.
-            return False
-
-        total_activity_count = self.context.activity.count()
-        if total_activity_count == 0:
-            # Don't show the reschedule button if the watch has never
-            # been checked.
-            return False
-
-        failed_activity_count = len([
-            activity for activity in self.context.activity if
-            activity.result not in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES])
-
-        if failed_activity_count == 0:
-            # Don't show the reschedule button if the watch has never
-            # failed.
-            return False
-
-        failure_ratio = float(failed_activity_count) / total_activity_count
-        if failure_ratio <= WATCH_RESCHEDULE_THRESHOLD:
-            # If the ratio is lower than the reschedule threshold, we
-            # can show the button.
-            return True
-        else:
-            return False
-
-    @action('Reschedule', name='reschedule', condition=userCanReschedule)
-    def reschedule_action(self, action, data):
-        """Schedule the current bug watch for immediate checking."""
-        bugwatch = self.context
-        bugwatch.next_check = UTC_NOW
-        self.request.response.addInfoNotification(
-            structured(
-                'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '
-                'bug watch has been scheduled for immediate checking.',
-                url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
-                remote_bug=bugwatch.remotebug))
-
     @action('Change', name='change')
     def change_action(self, action, data):
         bugtracker, remote_bug = getUtility(
@@ -216,3 +173,55 @@ class BugWatchEditView(LaunchpadFormView):
 
     cancel_url = next_url
 
+
+class BugWatchDetailsPortletView(LaunchpadFormView):
+    """A portlet for displaying the details of a bug watch."""
+
+    schema = BugWatchEditForm
+
+    def userCanReschedule(self, action=None):
+        """Return True if the current user can reschedule the bug watch."""
+        if (self.context.next_check is not None and
+            self.context.next_check <= datetime.now(utc)):
+            # If the watch is already scheduled for a time in the past
+            # (or for right now) it can't be rescheduled, since it
+            # should be be checked by the next checkwatches run anyway.
+            return False
+
+        total_activity_count = self.context.activity.count()
+        if total_activity_count == 0:
+            # Don't show the reschedule button if the watch has never
+            # been checked.
+            return False
+
+        failed_activity_count = len([
+            activity for activity in self.context.activity if
+            activity.result not in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES])
+
+        if failed_activity_count == 0:
+            # Don't show the reschedule button if the watch has never
+            # failed.
+            return False
+
+        # If the ratio is lower than the reschedule threshold, we
+        # can show the button.
+        failure_ratio = float(failed_activity_count) / total_activity_count
+        return failure_ratio <= WATCH_RESCHEDULE_THRESHOLD
+
+    @action('Reschedule', name='reschedule', condition=userCanReschedule)
+    def reschedule_action(self, action, data):
+        """Schedule the current bug watch for immediate checking."""
+        bugwatch = self.context
+        bugwatch.next_check = UTC_NOW
+        self.request.response.addInfoNotification(
+            structured(
+                'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '
+                'bug watch has been scheduled for immediate checking.',
+                url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
+                remote_bug=bugwatch.remotebug))
+
+    @property
+    def next_url(self):
+        return canonical_url(getUtility(ILaunchBag).bug)
+
+    cancel_url = next_url

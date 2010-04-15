@@ -60,6 +60,17 @@
             tal:condition="not: context/next_check">
             Not yet scheduled
            </span>
+           <form
+               tal:attributes="action view/action_url;"
+               tal:condition="view/userCanReschedule"
+               name="launchpadform"
+               id="reschedule-form"
+               method="post"
+               enctype="multipart/form-data"
+               accept-charset="UTF-8">
+             <tal:reschedule-button
+                 replace="structure view/reschedule_action/render" />
+           </form>
         </dd>
       </dl>
       <dl class="bugwatch-data">

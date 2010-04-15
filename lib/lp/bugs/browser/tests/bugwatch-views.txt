@@ -113,7 +113,7 @@ different dates.
 Rescheduling a watch
 --------------------
 
-The BugWatch +edit view provides a method, userCanReschedule(), which
+The BugWatch details portlet provides a method, userCanReschedule(), which
 indicates whether or not a user can reschedule a bug watch for checking.
 For a new bug watch this will be False.
 
@@ -122,7 +122,7 @@ For a new bug watch this will be False.
     >>> schedulable_watch = factory.makeBugWatch()
     >>> schedulable_watch.next_check = None
     >>> scheduling_view = create_initialized_view(
-    ...     schedulable_watch, '+edit')
+    ...     schedulable_watch, '+portlet-details')
 
     >>> scheduling_view.userCanReschedule()
     False
