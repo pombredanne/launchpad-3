@@ -197,8 +197,7 @@ def run_publisher(options, txn, log=None):
         # Do we need to delete the archive or publish it?
         if archive.status == ArchiveStatus.DELETING:
             if archive.purpose == ArchivePurpose.PPA:
-                try_and_commit("deleting archive", publisher.deleteArchive,
-                               options.careful or options.careful_publishing)
+                try_and_commit("deleting archive", publisher.deleteArchive)
             else:
                 # Other types of archives do not currently support deletion.
                 pass
