@@ -30,10 +30,9 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IStore
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
-from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportJobState, CodeImportResultStatus,
@@ -41,8 +40,6 @@ from lp.code.enums import (
 from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace)
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.mail.codeimport import code_import_updated
 from lp.registry.interfaces.person import validate_public_person
@@ -206,7 +203,8 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, target, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None, review_status=None):
+            url=None, cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
@@ -228,14 +226,18 @@ class CodeImportSet:
                 review_status = CodeImportReviewStatus.REVIEWED
             else:
                 review_status = CodeImportReviewStatus.NEW
+        if not target.supports_code_imports:
+            raise AssertionError("%r doesn't support code imports" % target)
+        if owner is None:
+            owner = registrant
         # Create the branch for the CodeImport.
-        namespace = target.getNamespace(registrant)
+        namespace = target.getNamespace(owner)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)
 
         code_import = CodeImport(
-            registrant=registrant, owner=registrant, branch=import_branch,
+            registrant=registrant, owner=owner, branch=import_branch,
             rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
             review_status=review_status)
@@ -255,51 +257,6 @@ class CodeImportSet:
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
         CodeImport.delete(code_import.id)
-
-    def getActiveImports(self, text=None):
-        """See `ICodeImportSet`."""
-        query = self.composeQueryString(text)
-        return CodeImport.select(
-            query, orderBy=['product.name', 'branch.name'],
-            clauseTables=['Product', 'Branch'])
-
-    def composeQueryString(self, text=None):
-        """Build SQL "where" clause for `CodeImport` search.
-
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        """
-        conditions = [
-            "date_last_successful IS NOT NULL",
-            "review_status=%s" % sqlvalues(CodeImportReviewStatus.REVIEWED),
-            "CodeImport.branch = Branch.id",
-            "Branch.product = Product.id",
-            ]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """
-            codeimport.id IN
-            (SELECT codeimport.id FROM codeimport, branch, product, project
-             WHERE %s)
-            AND codeimport.branch = branch.id
-            AND branch.product = product.id""" % query
 
     def get(self, id):
         """See `ICodeImportSet`."""

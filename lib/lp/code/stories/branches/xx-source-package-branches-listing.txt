@@ -18,9 +18,11 @@ browsing to it.
     >>> branch1 = factory.makePackageBranch(
     ...     sourcepackage=source_package,
     ...     owner=factory.makePerson(name='owner1'), name='branch1')
+    >>> transaction.commit()
     >>> branch2 = factory.makePackageBranch(
     ...     sourcepackage=source_package,
     ...     owner=factory.makePerson(name='owner2'), name='branch2')
+    >>> transaction.commit()
     >>> source_package_url = canonical_url(source_package, rootsite='code')
     >>> logout()
 
@@ -56,6 +58,7 @@ distribution.
     ...     sourcepackage=source_package, owner=branch1.owner, name="branch3")
     >>> distro_source_package = factory.makeDistributionSourcePackage(
     ...     distribution=distro, sourcepackagename=branch1.sourcepackagename)
+    >>> transaction.commit()
     >>> distro_source_package_listing = canonical_url(
     ...     distro_source_package, view_name="+branches")
     >>> logout()

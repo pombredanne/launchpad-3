@@ -18,6 +18,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import Or, And, Select, Sum
 from storm.locals import Count, Join
 from storm.store import Store
+from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import alsoProvides, implements
@@ -41,7 +42,7 @@ from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -70,7 +71,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -210,7 +211,7 @@ class Archive(SQLBase):
         for (family, archive_arch) in restricted_families:
             if family == arm:
                 return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no 
+        # ARM doesn't exist or isn't restricted. Either way, there is no
         # need for an explicit association.
         return False
 
@@ -357,7 +358,7 @@ class Archive(SQLBase):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
-        return getUtility(IBuildSet).getBuildsForArchive(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
             self, build_state, name, pocket, arch_tag)
 
     def getPublishedSources(self, name=None, version=None, status=None,
@@ -784,10 +785,9 @@ class Archive(SQLBase):
         if self.is_ppa:
             archives.append(self.distribution.main_archive.id)
         archives.append(self.id)
-        dep = ArchiveDependency.selectOneBy(archive=self)
-        while dep is not None:
-            archives.append(dep.dependency.id)
-            dep = ArchiveDependency.selectOneBy(archive=dep.dependency)
+        archives.extend(
+            IResultSet(self.dependencies).values(
+            ArchiveDependency.dependencyID))
 
         query = """
             binarypackagename = %s AND
@@ -873,17 +873,19 @@ class Archive(SQLBase):
         store = Store.of(self)
         extra_exprs = []
         if not include_needsbuild:
-            extra_exprs.append(Build.buildstate != BuildStatus.NEEDSBUILD)
+            extra_exprs.append(
+                BinaryPackageBuild.buildstate != BuildStatus.NEEDSBUILD)
 
         find_spec = (
-            Build.buildstate,
-            Count(Build.id)
+            BinaryPackageBuild.buildstate,
+            Count(BinaryPackageBuild.id)
             )
-        result = store.using(Build).find(
+        result = store.using(BinaryPackageBuild).find(
             find_spec,
-            Build.archive == self,
+            BinaryPackageBuild.archive == self,
             *extra_exprs
-            ).group_by(Build.buildstate).order_by(Build.buildstate)
+            ).group_by(BinaryPackageBuild.buildstate).order_by(
+                BinaryPackageBuild.buildstate)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -1137,8 +1139,8 @@ class Archive(SQLBase):
             BinaryPackageRelease,
             BinaryPackageRelease.binarypackagename == name,
             BinaryPackageRelease.version == version,
-            Build.id == BinaryPackageRelease.buildID,
-            DistroArchSeries.id == Build.distroarchseriesID,
+            BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+            DistroArchSeries.id == BinaryPackageBuild.distroarchseriesID,
             DistroArchSeries.architecturetag == archtag,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
@@ -1335,12 +1337,13 @@ class Archive(SQLBase):
 
         extra_exprs = []
         if build_status is not None:
-            extra_exprs.append(Build.buildstate == build_status)
+            extra_exprs.append(BinaryPackageBuild.buildstate == build_status)
 
         result_set = store.find(
             SourcePackageRelease,
-            Build.sourcepackagereleaseID == SourcePackageRelease.id,
-            Build.archive == self,
+            (BinaryPackageBuild.sourcepackagereleaseID ==
+                SourcePackageRelease.id),
+            BinaryPackageBuild.archive == self,
             *extra_exprs)
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)

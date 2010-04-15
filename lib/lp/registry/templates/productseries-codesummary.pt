@@ -29,17 +29,17 @@
         <li>
           <p>
             If the code is in a Bazaar branch not yet on Launchpad
-            you can either
+            you can either:
           </p>
 
           <ul class="bulleted" style="margin-bottom: 0;">
             <li>
               Have the branch mirrored from a remote location by
-               <a tal:attributes="href context/menu:overview/branch_add/fmt:url">
+               <a tal:attributes="href context/product/menu:overview/branch_add/fmt:url">
               registering a mirrored branch</a>
             </li>
             <li id="ssh-key-directions">
-              Push the branch directly to Launchpad. eg. with <br />
+              Push the branch directly to Launchpad, e.g. with:<br />
               <tt><strong>
                 bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk
               </strong></tt>
@@ -58,7 +58,7 @@
           <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
         </li>
       </ul>
-      
+
       <ul class="horizontal">
         <li>
           <a tal:replace="structure context/menu:overview/link_branch/fmt:link" />

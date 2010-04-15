@@ -83,16 +83,17 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy, BranchFileSystemClient, trap_fault)
+    BlockingProxy, BranchFileSystemClient)
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
+from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
-from canonical.launchpad.xmlrpc import faults
+from lp.services.twistedsupport.xmlrpc import trap_fault
 
 
 class BadUrl(Exception):

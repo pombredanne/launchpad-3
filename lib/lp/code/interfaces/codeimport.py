@@ -182,20 +182,14 @@ class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
     def new(registrant, target, branch_name, rcs_type, url=None,
-            cvs_root=None, cvs_module=None, review_status=None):
+            cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
         """Create a new CodeImport.
 
         :param target: An `IBranchTarget` that the code is associated with.
-        """
-
-    def getActiveImports(text=None):
-        """Return an iterable of all 'active' CodeImport objects.
-
-        Active is defined, somewhat arbitrarily, as having
-        review_status==REVIEWED and having completed at least once.
-
-        :param text: If specifed, limit to the results to those that contain
-            ``text`` in the product or project titles and descriptions.
+        :param owner: The `IPerson` to set as the owner of the branch, or
+            None to use registrant. registrant must be a member of owner to
+            do this.
         """
 
     def get(id):
