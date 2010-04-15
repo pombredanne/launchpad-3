@@ -7,8 +7,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.security.management import endInteraction
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interaction import setupInteraction
+from canonical.launchpad.webapp.interaction import (
+    # Only for easy re-export.
+    ANONYMOUS, setupInteractionByEmail)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -20,13 +21,12 @@ __all__ = [
     'is_logged_in']
 
 
-ANONYMOUS = 'launchpad.anonymous'
-
 _logged_in = False
 
 def is_logged_in():
     global _logged_in
     return _logged_in
+
 
 def login(email, participation=None):
     """Simulates a login, using the specified email.
@@ -42,19 +42,6 @@ def login(email, participation=None):
     """
     global _logged_in
     _logged_in = True
-    authutil = getUtility(IPlacelessAuthUtility)
-
-    if email != ANONYMOUS:
-        # Create an anonymous interaction first because this calls
-        # IPersonSet.getByEmail() and since this is security wrapped, it needs
-        # an interaction available.
-        setupInteraction(authutil.unauthenticatedPrincipal())
-        principal = authutil.getPrincipalByLogin(email, want_password=False)
-        assert principal is not None, "Invalid login"
-        if principal.person is not None and principal.person.is_team:
-            raise AssertionError("Please do not try to login as a team")
-    else:
-        principal = authutil.unauthenticatedPrincipal()
 
     if participation is None:
         # we use the main site as the host name.  This is a guess, to make
@@ -64,7 +51,7 @@ def login(email, participation=None):
             environ={'HTTP_HOST': allvhosts.configs['mainsite'].hostname,
                      'SERVER_URL': allvhosts.configs['mainsite'].rooturl})
 
-    setupInteraction(principal, login=email, participation=participation)
+    setupInteractionByEmail(email, participation)
 
 
 def login_person(person, participation=None):

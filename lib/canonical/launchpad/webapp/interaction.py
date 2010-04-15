@@ -13,7 +13,19 @@ from zope.security.interfaces import IParticipation
 from zope.security.management import (
     endInteraction, newInteraction, queryInteraction)
 
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    IOpenLaunchBag, IPlacelessAuthUtility)
+
+
+__all__ = [
+    'ANONYMOUS',
+    'get_current_principal',
+    'setupInteraction',
+    'setupInteractionByEmail',
+    ]
+
+
+ANONYMOUS = 'launchpad.anonymous'
 
 
 def get_current_principal():
@@ -61,7 +73,40 @@ def setupInteraction(principal, login=None, participation=None):
         participation.principal = principal
 
 
+def setupInteractionByEmail(email, participation=None):
+    """Setup an interaction using an email.
+
+    If the ANONYMOUS constant is supplied as the email,
+    an interaction for the anonymous user will be used.
+
+    You can optionally pass in a participation to be used.  If no
+    participation is given, an empty participation is used.
+
+    If the participation provides IPublicationRequest, it must implement
+    setPrincipal(), otherwise it must allow setting its principal attribute.
+    """
+    authutil = getUtility(IPlacelessAuthUtility)
+
+    if email != ANONYMOUS:
+        # Create an anonymous interaction first because this calls
+        # IPersonSet.getByEmail() and since this is security wrapped, it needs
+        # an interaction available.
+        setupInteraction(authutil.unauthenticatedPrincipal())
+        principal = authutil.getPrincipalByLogin(email, want_password=False)
+        assert principal is not None, "Invalid login"
+        if principal.person is not None and principal.person.is_team:
+            raise AssertionError("Please do not try to login as a team")
+    else:
+        principal = authutil.unauthenticatedPrincipal()
+
+    if participation is None:
+        participation = Participation()
+
+    setupInteraction(principal, login=email, participation=participation)
+
+
 class Participation:
+    """A very simple participation."""
     implements(IParticipation)
 
     interaction = None
