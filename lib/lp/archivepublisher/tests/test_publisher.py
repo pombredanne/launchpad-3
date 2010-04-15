@@ -107,7 +107,7 @@ class TestPublisher(TestPublisherBase):
 
         # Create a file inside archiveroot to ensure we're recursive.
         open(os.path.join(
-                publisher._config.archiveroot, 'test_file'), 'w').close()
+            publisher._config.archiveroot, 'test_file'), 'w').close()
 
         publisher.deleteArchive()
         self.assertFalse(os.path.exists(publisher._config.archiveroot))
