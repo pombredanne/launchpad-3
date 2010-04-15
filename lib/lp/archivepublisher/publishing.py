@@ -16,7 +16,6 @@ import shutil
 
 from datetime import datetime
 
-from storm.store import Store
 from zope.component import getUtility
 
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
