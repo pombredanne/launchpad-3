@@ -98,8 +98,8 @@ def execute_zcml_for_scripts(use_web_security=False):
     # When in testing mode, prevent some cases of erroneous layer usage.
     # But we don't want to import that module in production usage, thus
     # the conditional block.
-    if 'lp.testing' in sys.modules:
-        from lp.testing.layers import (
+    if 'canonical.testing.layers' in sys.modules:
+        from canonical.testing.layers import (
                 FunctionalLayer, BaseLayer, ZopelessLayer)
         assert not FunctionalLayer.isSetUp, \
                 'Setting up Zopeless CA when Zopefull CA is already running'
