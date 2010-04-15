@@ -269,6 +269,7 @@ affects are subscribed to it.
     <BugTask at ...>
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.setSecurityRelated(True)
+    True
     >>> notify(ObjectModifiedEvent(bug, old_state, ['security_related']))
     >>> for subscriber_name in sorted(
     ...     s.displayname for s in bug.getDirectSubscribers()):
