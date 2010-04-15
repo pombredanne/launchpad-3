@@ -260,8 +260,9 @@ they were created.
     ...     name='test-rebuild')
 
     >>> bqc = setUpBuildQueueEntry(archive=copy)
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(bqc)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bqc)
     >>> bqc.score()
     >>> bqc.lastscore
     -10

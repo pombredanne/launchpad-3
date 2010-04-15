@@ -173,7 +173,7 @@ from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
@@ -442,6 +442,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # archive subscriptions.
             return queryMultiAdapter(
                 (self.context, self.request), name ="+archivesubscriptions")
+
+    @stepthrough('+recipe')
+    def traverse_recipe(self, name):
+        """Traverse to this person's recipes."""
+        return self.context.getRecipe(name)
 
 
 class TeamNavigation(PersonNavigation):
@@ -5184,7 +5189,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         the source package release.
         """
         # Calculate all the failed builds with one query.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
         package_release_ids = [
             package_release.id for package_release in package_releases]
         all_builds = build_set.getBuildsBySourcePackageRelease(

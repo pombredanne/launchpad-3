@@ -91,7 +91,8 @@ Checkbox widgets
 Checkboxes have their label to the right. One example is the checkbox for
 specifying whether your project uses Launchpad Translations.
 
-    >>> admin_browser.open('http://launchpad.dev/evolution/+edit')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/evolution/+configure-translations')
     >>> content = find_main_content(admin_browser.contents)
 
     >>> print content

@@ -61,22 +61,25 @@ from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from lp.bugs.externalbugtracker.bugzilla import (
-    BugzillaAPI)
+    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError,
+    BugWatchUpdateError, BugWatchUpdateWarning, InvalidBugId,
+    PrivateRemoteBug, UnknownBugTrackerTypeError, UnknownRemoteStatusError,
+    UnparseableBugData, UnparseableBugTrackerVersion,
+    UnsupportedBugTrackerVersion)
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking)
+from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.services.limitedlist import LimitedList
 from lp.services.scripts.base import LaunchpadCronScript
 
 
 SYNCABLE_GNOME_PRODUCTS = []
 MAX_SQL_STATEMENTS_LOGGED = 10000
+
+# The minimum batch size to suggest to an IExternalBugTracker.
+SUGGESTED_BATCH_SIZE_MIN = 100
+# The proportion of all watches to suggest as a batch size.
+SUGGESTED_BATCH_SIZE_PROPORTION = 0.02
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -242,6 +245,22 @@ def unique(iterator):
             yield item
 
 
+def suggest_batch_size(remote_system, num_watches):
+    """Suggest a value for batch_size if it's not set.
+
+    Given the number of bug watches for a `remote_system`, this sets a
+    suggested batch size on it. If `remote_system` already has a batch
+    size set, this does not override it.
+
+    :param remote_system: An `ExternalBugTracker`.
+    :param num_watches: The number of watches for `remote_system`.
+    """
+    if remote_system.batch_size is None:
+        remote_system.batch_size = max(
+            SUGGESTED_BATCH_SIZE_MIN,
+            int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
+
+
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
@@ -381,7 +400,12 @@ class BugWatchUpdater(object):
         `BaseScheduler`. If no scheduler is given, `SerialScheduler`
         will be used, which simply runs the jobs in order.
         """
-        self.log.debug("Using a global batch size of %s" % batch_size)
+        if batch_size is None:
+            self.log.debug("No global batch size specified.")
+        elif batch_size == BATCH_SIZE_UNLIMITED:
+            self.log.debug("Using an unlimited global batch size.")
+        else:
+            self.log.debug("Using a global batch size of %s" % batch_size)
 
         # Default to using the very simple SerialScheduler.
         if scheduler is None:
@@ -497,6 +521,7 @@ class BugWatchUpdater(object):
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
         with self.transaction:
+            num_watches = bug_tracker.watches.count()
             remotesystem = (
                 externalbugtracker.get_external_bugtracker(bug_tracker))
             # We special-case the Gnome Bugzilla.
@@ -506,9 +531,17 @@ class BugWatchUpdater(object):
         # Probe the remote system for additional capabilities.
         remotesystem_to_use = remotesystem.getExternalBugTrackerToUse()
 
-        if (is_gnome_bugzilla and
-            isinstance(remotesystem_to_use, BugzillaAPI) and
-            len(self._syncable_gnome_products) > 0):
+        # Try to hint at how many bug watches to check each time.
+        suggest_batch_size(remotesystem_to_use, num_watches)
+
+        if (is_gnome_bugzilla and remotesystem_to_use.sync_comments):
+            # If there are no products to sync comments for, disable
+            # comment sync and return.
+            if len(self._syncable_gnome_products) == 0:
+                remotesystem_to_use.sync_comments = False
+                return [
+                    (remotesystem_to_use, bug_watches),
+                    ]
 
             syncable_watches = []
             other_watches = []
@@ -538,16 +571,14 @@ class BugWatchUpdater(object):
             remotesystem_for_others = copy(remotesystem_to_use)
             remotesystem_for_others.sync_comments = False
 
-            trackers_and_watches = [
+            return [
                 (remotesystem_for_syncables, syncable_watches),
                 (remotesystem_for_others, other_watches),
                 ]
         else:
-            trackers_and_watches = [
+            return [
                 (remotesystem_to_use, bug_watches),
                 ]
-
-        return trackers_and_watches
 
     def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
@@ -656,11 +687,6 @@ class BugWatchUpdater(object):
             # by the ExternalBugTracker.
             batch_size = remotesystem.batch_size
 
-        if batch_size == 0:
-            # A batch_size of 0 means that there's no batch size limit
-            # for this bug tracker.
-            batch_size = None
-
         with self.transaction:
             old_bug_watches = set(
                 bug_watch for bug_watch in bug_watches
@@ -693,7 +719,7 @@ class BugWatchUpdater(object):
         # are actually some bugs that we're interested in so as to
         # avoid unnecessary network traffic.
         if server_time is not None and len(remote_old_ids) > 0:
-            if batch_size is None:
+            if batch_size == BATCH_SIZE_UNLIMITED:
                 remote_old_ids_to_check = (
                     remotesystem.getModifiedRemoteBugs(
                         remote_old_ids, oldest_lastchecked))
@@ -721,7 +747,7 @@ class BugWatchUpdater(object):
         remote_ids_to_check = chain(
             remote_ids_with_comments, remote_new_ids, remote_old_ids_to_check)
 
-        if batch_size is not None:
+        if batch_size != BATCH_SIZE_UNLIMITED:
             # Some remote bug IDs may appear in more than one list so
             # we must filter the list before slicing.
             remote_ids_to_check = islice(

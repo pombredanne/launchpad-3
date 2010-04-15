@@ -483,6 +483,12 @@
         for="lp.registry.interfaces.pillar.IPillarNameSet"
         path_expression="string:pillars"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        for="lp.registry.browser.pillar.IInvolved"
+        factory="lp.registry.browser.pillar.InvolvedMenu"
+        name="overview"
+        permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.pillar.IPillar"
         name="+listing-simple"
@@ -1370,6 +1376,13 @@
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
     <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.product.ProductInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
+    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+download"
         class="lp.registry.browser.product.ProductDownloadFilesView"
@@ -1457,6 +1470,34 @@
         class="lp.registry.browser.product.ProductEditView"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-answers"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureAnswersView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-blueprints"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureBlueprintsView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-bugtracker"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureBugTrackerView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="overview"
+        permission="launchpad.Edit"
+        name="+configure-translations"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
     <browser:page
         name="+branding"
         for="lp.registry.interfaces.product.IProduct"
@@ -1558,6 +1599,12 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         path_expression="name"
         attribute_to_parent="product"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        for="lp.registry.browser.productseries.IProductSeriesInvolved"
+        factory="lp.registry.browser.productseries.ProductSeriesInvolvedMenu"
+        name="overview"
+        permission="zope.Public"/>
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+index"/>
@@ -1569,6 +1616,13 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         facet="overview"
@@ -1661,6 +1715,13 @@
         name="+linkbranchtoseries"
         class="lp.registry.browser.productseries.ProductSeriesLinkBranchFromCodeView"
         template="../templates/productseries-linkbranch.pt"
+        facet="overview"
+        permission="launchpad.Edit"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        name="+setbranch"
+        class="lp.registry.browser.productseries.ProductSeriesSetBranchView"
+        template="../templates/productseries-setbranch.pt"
         facet="overview"
         permission="launchpad.Edit"/>
     <browser:page

@@ -18,7 +18,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
@@ -88,7 +88,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         # Asking frog to find a candidate should give us the joesppa build.
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.assertEqual('joesppa', build.archive.name)
 
         # If bob is in a failed state the joesppa build is still
@@ -97,7 +97,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         self.bob_builder.manual = False
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.assertEqual('joesppa', build.archive.name)
 
 
@@ -178,7 +178,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
         # A PPA cannot start a build if it would use 80% or more of the
         # builders.
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failIfEqual('joesppa', build.archive.name)
 
     def test_findBuildCandidate_first_build_finished(self):
@@ -186,7 +186,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
         # will be the next build candidate.
         self.joe_builds[0].buildstate = BuildStatus.FAILEDTOBUILD
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
 
@@ -198,7 +198,7 @@ class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
         # If a ppa is private it will be able to have parallel builds
         # for the one architecture.
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
 
@@ -225,7 +225,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
         self.failUnlessEqual('gedit', build.sourcepackagerelease.name)
 
@@ -235,7 +235,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         build.builder = self.frog_builder
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
-        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
         self.failUnlessEqual('firefox', build.sourcepackagerelease.name)
 
