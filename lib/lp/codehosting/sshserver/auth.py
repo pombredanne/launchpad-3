@@ -43,7 +43,6 @@ from lp.codehosting.sshserver import events
 from lp.codehosting.sshserver.session import (
     launch_smart_server, PatchedSSHSession)
 from lp.services.twistedsupport.xmlrpc import trap_fault
-from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -74,10 +73,14 @@ class LaunchpadAvatar(avatar.ConchUser):
         notify(events.UserLoggedOut(self))
 
 
-components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
+class CodehostingAvatar(LaunchpadAvatar):
+    """An SSH avatar specific to codehosting."""
+
+
+components.registerAdapter(launch_smart_server, CodehostingAvatar, ISession)
 
 components.registerAdapter(
-    sftp.avatar_to_sftp_server, LaunchpadAvatar, filetransfer.ISFTPServer)
+    sftp.avatar_to_sftp_server, CodehostingAvatar, filetransfer.ISFTPServer)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
@@ -97,7 +100,7 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = LaunchpadAvatar(userDict, self.branchfs_proxy)
+            avatar = CodehostingAvatar(userDict, self.branchfs_proxy)
             return interfaces[0], avatar, avatar.logout
         return deferred.addCallback(gotUserDict)
 

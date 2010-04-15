@@ -64,7 +64,7 @@ def make_portal():
     """Create and return a `Portal` for the SSH service.
 
     This portal accepts SSH credentials and returns our customized SSH
-    avatars (see `lp.codehosting.sshserver.auth.LaunchpadAvatar`).
+    avatars (see `lp.codehosting.sshserver.auth.CodehostingAvatar`).
     """
     authentication_proxy = Proxy(
         config.codehosting.authentication_endpoint)
