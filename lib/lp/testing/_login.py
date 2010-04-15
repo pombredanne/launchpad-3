@@ -5,7 +5,6 @@
 # pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
-from zope.component import getUtility
 from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interaction import (
     setupInteractionByEmail, setupInteractionForPerson)
