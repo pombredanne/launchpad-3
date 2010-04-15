@@ -2450,6 +2450,45 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         publish_copies(copied)
 
+    def testCopySourceWithConflictingFiles(self):
+        """We can copy source if the source files match, both in name and
+        contents. We can't if they don't.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(warty)
+        test_publisher.addFakeChroots(warty)
+
+        proposed_source = test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-2',
+            distroseries=warty, archive=warty.main_archive,
+            pocket=PackagePublishingPocket.PROPOSED,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='net')
+        proposed_tar = test_publisher.addMockFile(
+            'test-source_1.0.orig.tar.gz', filecontent='aaabbbccc')
+        proposed_source.sourcepackagerelease.addFile(proposed_tar)
+        updates_source = test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-1',
+            distroseries=warty, archive=warty.main_archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='misc')
+        updates_tar = test_publisher.addMockFile(
+            'test-source_1.0.orig.tar.gz', filecontent='zzzyyyxxx')
+        updates_source.sourcepackagerelease.addFile(updates_tar)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+
+        checker = CopyChecker(warty.main_archive, include_binaries=False)
+        self.assertRaisesWithContent(
+            CannotCopy,
+            "test-source_1.0.orig.tar.gz already exists in destination "
+            "archive with different contents.",
+            checker.checkCopy, proposed_source, warty,
+            PackagePublishingPocket.UPDATES)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
