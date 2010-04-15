@@ -37,9 +37,9 @@ class MockRealm:
 
     implements(IRealm)
 
-    def requestAvatar(self, avatarId, mind, *interfaces):
+    def requestAvatar(self, avatar_id, mind, *interfaces):
         user_dict = {
-            'id': avatarId, 'name': avatarId, 'teams': [],
+            'id': avatar_id, 'name': avatar_id, 'teams': [],
             'initialBranches': []}
         return (
             interfaces[0], auth.LaunchpadAvatar(user_dict), lambda: None)
