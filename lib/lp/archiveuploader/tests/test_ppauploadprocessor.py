@@ -1252,9 +1252,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         the size of the upload plus the current PPA size must be smaller
         than the PPA.authorized_size, otherwise the upload will be rejected.
         """
-        # Stuff 1024 MiB in name16 PPA, so anything will be above the
-        # default quota limit, 1024 MiB.
-        self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
+        # Stuff 2048 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 2048 MiB.
+        self._fillArchive(self.name16.archive, 2048 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         upload_results = self.processUpload(self.uploadprocessor, upload_dir)
@@ -1278,9 +1278,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The system start warning users for uploads exceeding 95 % of
         the current size limit.
         """
-        # Stuff 973 MiB into name16 PPA, approximately 95 % of
-        # the default quota limit, 1024 MiB.
-        self._fillArchive(self.name16.archive, 973 * (2 ** 20))
+        # Stuff 1945 MiB into name16 PPA, approximately 95 % of
+        # the default quota limit, 2048 MiB.
+        self._fillArchive(self.name16.archive, 1945 * (2 ** 20))
 
         # Ensure the warning is sent in the acceptance notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
