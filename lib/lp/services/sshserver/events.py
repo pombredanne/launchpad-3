@@ -27,7 +27,7 @@ from zope.interface import Attribute, implements, Interface
 class ILoggingEvent(Interface):
     """An event is a logging event if it has a message and a severity level.
 
-    Events that provide this interface will be logged in codehosting access
+    Events that provide this interface will be logged in the SSH server access
     log.
     """
 

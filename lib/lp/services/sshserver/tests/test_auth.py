@@ -21,7 +21,6 @@ from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
 from lp.services.sshserver import auth
@@ -224,7 +223,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def test_bannerNotSentOnSuccess(self):
         # No banner is printed when the user authenticates successfully.
-        self.assertEqual(None, config.codehosting.banner)
+        self.user_auth._banner = None
 
         d = self.requestSuccessfulAuthentication()
         def check(ignored):

@@ -71,9 +71,9 @@ class TestLoggingBazaarInteraction(BzrTestCase, LoggingManagerMixin):
         self.assertEqual(root_handlers, logging.getLogger('').handlers)
         self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
 
-    def test_codehosting_log_doesnt_go_to_stderr(self):
+    def test_log_doesnt_go_to_stderr(self):
         # Once logging setup is called, any messages logged to the
-        # codehosting logger should *not* be logged to stderr. If they are,
+        # SSH server logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
         log = self.makeLogger()
         self.installLoggingManager(log)
@@ -136,7 +136,7 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
 
     def test_access_handlers(self):
         # The logging setup installs a rotatable log handler that logs output
-        # to config.codehosting.access_log.
+        # to the SSH server access log.
         directory = self.makeTemporaryDirectory()
         access_log = self.makeLogger()
         access_log_path = os.path.join(directory, 'access.log')
