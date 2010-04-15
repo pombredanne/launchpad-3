@@ -230,7 +230,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -313,6 +313,14 @@ class BranchContextMenu(ContextMenu):
             enabled = True
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
+
+    def view_recipes(self):
+        text = 'View source package recipes'
+        enabled = False
+        if self.context.getRecipes():
+            enabled = True
+        return Link(
+            '+recipes', text, icon='info', enabled=enabled)
 
 
 class DecoratedBug:
