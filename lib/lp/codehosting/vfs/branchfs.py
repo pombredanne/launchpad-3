@@ -727,7 +727,7 @@ class BranchPolicy:
             try:
                 Branch.open(stacked_on_url)
             except NotBranchError:
-                from lp.codehosting.codeimport.worker import (
+                from lp.codehosting.puller.worker import (
                     StackedOnBranchNotFound)
                 raise StackedOnBranchNotFound()
         if isinstance(source_branch, LoomSupport):
