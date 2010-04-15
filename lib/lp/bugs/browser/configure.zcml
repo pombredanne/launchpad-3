@@ -1106,7 +1106,7 @@
         <browser:page
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             name="+portlet-activity"
-            class="lp.bugs.browser.bugwatch.BugWatchView"
+            class="lp.bugs.browser.bugwatch.BugWatchActivityPortletView"
             permission="launchpad.AnyPerson"
             template="../templates/bugwatch-portlet-activity.pt"/>
         <browser:pages

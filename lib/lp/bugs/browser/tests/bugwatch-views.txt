@@ -109,3 +109,59 @@ different dates.
      'icon': '/@@/yes',
      'result_text': 'Synchronisation succeeded'}
 
+
+Rescheduling a watch
+--------------------
+
+The BugWatch activity portlet provides a method, userCanReschedule(),
+which indicates whether or not a user can reschedule a bug watch for
+checking.  For a new bug watch this will be False.
+
+    >>> from pytz import utc
+    >>> from datetime import datetime
+    >>> schedulable_watch = factory.makeBugWatch()
+    >>> schedulable_watch.next_check = None
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+
+    >>> scheduling_view.userCanReschedule()
+    False
+
+If there's been activity on the watch but it's always been successful,
+userCanReschedule() will return False.
+
+    >>> schedulable_watch.addActivity()
+    >>> scheduling_view.userCanReschedule()
+    False
+
+If the watch's updates have failed less than 60% of the time,
+userCanReschedule() will return True
+
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> scheduling_view.userCanReschedule()
+    True
+
+If the watch is rescheduled, the button will disappear, since the
+next_check time for the watch will be in the past (or in this case is
+now) and therefore it will be checked with the next checkwatches run.
+
+    >>> schedulable_watch.next_check = datetime.now(utc)
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+    >>> scheduling_view.userCanReschedule()
+    False
+
+However, if the watch has failed more than 60% of the time the button
+will disappear again, since it's assumed that the watch needs attention
+in order for it to be able to work again.
+
+    >>> schedulable_watch.next_check = None
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+    >>> scheduling_view.userCanReschedule()
+    False
