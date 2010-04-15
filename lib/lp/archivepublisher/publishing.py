@@ -634,3 +634,5 @@ class Publisher(object):
 
         # Set archive's status to DELETED.
         self.archive.status = ArchiveStatus.DELETED
+        # Disable publishing for this archive.
+        self.archive.publish = False
