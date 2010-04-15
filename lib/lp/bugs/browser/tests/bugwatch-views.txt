@@ -118,7 +118,7 @@ indicates whether or not a user can reschedule a bug watch for checking.
 For a new bug watch this will be False.
 
     >>> from pytz import utc
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> schedulable_watch = factory.makeBugWatch()
     >>> schedulable_watch.next_check = None
     >>> scheduling_view = create_initialized_view(
