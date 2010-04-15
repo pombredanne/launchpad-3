@@ -681,31 +681,14 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             'https://help.launchpad.net/Packaging/PPA for more information.')
 
     def testPGPSignatureNotPreserved(self):
-        """PGP signatures should be removed from PPA changesfiles.
+        """PGP signatures should be removed from PPA .changes files.
 
-        Email notifications and the librarian file for the changesfile should
+        Email notifications and the librarian file for .changes file should
         both have the PGP signature removed.
         """
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        # Check the email.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-
-        # This is now a MIMEMultipart message.
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
-
-        self.assertTrue(
-            "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
-            "Unexpected PGP header found")
-        self.assertTrue(
-            "-----BEGIN PGP SIGNATURE-----" not in body,
-            "Unexpected start of PGP signature found")
-        self.assertTrue(
-            "-----END PGP SIGNATURE-----" not in body,
-            "Unexpected end of PGP signature found")
+        super(
+            TestUploadProcessorBase, self).testPGPSignatureNotPreserved(
+            "~name16/ubuntu")
 
     def doCustomUploadToPPA(self):
         """Helper method to do a custom upload to a PPA.

@@ -294,6 +294,37 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 content in body,
                 "Expect: '%s'\nGot:\n%s" % (content, body))
 
+    def testPGPSignatureNotPreserved(self, dir=None):
+        """PGP signatures should be removed from .changes files.
+
+        Email notifications and the librarian file for .changes file should
+        both have the PGP signature removed.
+        """
+        upload_dir = None
+        if dir is None:
+            upload_dir = self.queueUpload("bar_1.0-1")
+        else:
+            upload_dir = self.queueUpload("bar_1.0-1", dir)
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # Check the email.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+
+        # This is now a MIMEMultipart message.
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertTrue(
+            "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
+            "Unexpected PGP header found")
+        self.assertTrue(
+            "-----BEGIN PGP SIGNATURE-----" not in body,
+            "Unexpected start of PGP signature found")
+        self.assertTrue(
+            "-----END PGP SIGNATURE-----" not in body,
+            "Unexpected end of PGP signature found")
+
 
 class TestUploadProcessor(TestUploadProcessorBase):
     """Basic tests on uploadprocessor class.
@@ -1694,6 +1725,15 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Daniel Silverstone <daniel.silverstone@canonical.com>',
             ]
         self.assertEmail(contents, recipients=recipients)
+
+    def testPGPSignatureNotPreserved(self):
+        """PGP signatures should be removed from .changes files.
+
+        Email notifications and the librarian file for the .changes file
+        should both have the PGP signature removed.
+        """
+        super(TestUploadProcessorBase, self).testPGPSignatureNotPreserved()
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
