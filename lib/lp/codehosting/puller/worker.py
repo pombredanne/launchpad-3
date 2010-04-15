@@ -11,9 +11,6 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
-from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.transport import get_transport
-from bzrlib import urlutils
 from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
@@ -235,43 +232,9 @@ class BranchMirrorer(object):
             URL must point to a writable location.
         :return: The destination branch.
         """
-        dest_transport = get_transport(destination_url)
-        if dest_transport.has('.'):
-            dest_transport.delete_tree('.')
-        bzrdir = source_branch.bzrdir
-        if self.policy._is_import:
-            source_transport = source_branch.bzrdir.transport.clone('..')
-            while True:
-                files_before = sorted(source_transport.iter_files_recursive())
-                source_transport.copy_tree_to_transport(dest_transport)
-                files_after = sorted(source_transport.iter_files_recursive())
-                if files_before == files_after:
-                    break
-            return Branch.open_from_transport(dest_transport)
-        else:
-            # We check to see if the stacked on branch exists in the mirrored
-            # area so that we can nicely signal to the scheduler that the
-            # pulling of this branch should be deferred before we even create
-            # the branch in the mirrored area.
-            stacked_on_url = (
-                self.policy.getStackedOnURLForDestinationBranch(
-                    source_branch, destination_url))
-            if stacked_on_url is not None:
-                stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-                try:
-                    Branch.open(stacked_on_url)
-                except errors.NotBranchError:
-                    raise StackedOnBranchNotFound()
-            if isinstance(source_branch, LoomSupport):
-                # Looms suck.
-                revision_id = None
-            else:
-                revision_id = 'null:'
-            self._runWithTransformFallbackLocationHookInstalled(
-                bzrdir.clone_on_transport, dest_transport,
-                revision_id=revision_id)
-            branch = Branch.open(destination_url)
-            return branch
+        return self.policy.initialClone(
+            source_branch, destination_url,
+            self._runWithTransformFallbackLocationHookInstalled)
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.

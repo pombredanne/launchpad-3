@@ -66,10 +66,12 @@ __all__ = [
 
 import xmlrpclib
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.errors import (
     NoSuchFile, NotBranchError, NotStacked, PermissionDenied,
     TransportNotPossible, UnstackableBranchFormat)
+from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
 from bzrlib import urlutils
@@ -697,7 +699,30 @@ class BranchPolicy:
     stacked.
     """
 
-    _is_import = False
+    def initialClone(self, source_branch, destination_url, _runWithTransformFallbackLocationHookInstalled):
+        dest_transport = get_transport(destination_url)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
+        stacked_on_url = (
+            self.getStackedOnURLForDestinationBranch(
+                source_branch, destination_url))
+        if stacked_on_url is not None:
+            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
+            try:
+                Branch.open(stacked_on_url)
+            except NotBranchError:
+                from lp.codehosting.codeimport.worker import (
+                    StackedOnBranchNotFound)
+                raise StackedOnBranchNotFound()
+        if isinstance(source_branch, LoomSupport):
+            # Looms suck.
+            revision_id = None
+        else:
+            revision_id = 'null:'
+        _runWithTransformFallbackLocationHookInstalled(
+            source_branch.bzrdir.clone_on_transport, dest_transport,
+            revision_id=revision_id)
+        return Branch.open(destination_url)
 
     def getStackedOnURLForDestinationBranch(self, source_branch,
                                             destination_url):
@@ -767,15 +792,6 @@ class HostedBranchPolicy(BranchPolicy):
      - don't follow references,
      - assert we're pulling from a lp-hosted:/// URL.
     """
-
-    def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
-
-        We do not traverse references for HOSTED branches because that may
-        cause us to connect to remote locations, which we do not allow because
-        we want hosted branches to be mirrored quickly.
-        """
-        return False
 
     def _bzrdirExists(self, url):
         """Return whether a BzrDir exists at `url`."""
@@ -926,7 +942,18 @@ class ImportedBranchPolicy(BranchPolicy):
      - assert the URLs start with the prefix we expect for imported branches.
     """
 
-    _is_import = True
+    def initialClone(self, source_branch, destination_url, _):
+        source_transport = source_branch.bzrdir.root_transport
+        dest_transport = get_transport(destination_url)
+        while True:
+            if dest_transport.has('.'):
+                dest_transport.delete_tree('.')
+            files_before = set(source_transport.iter_files_recursive())
+            source_transport.copy_tree_to_transport(dest_transport)
+            files_after = set(source_transport.iter_files_recursive())
+            if files_before == files_after:
+                break
+        return Branch.open_from_transport(dest_transport)
 
     def shouldFollowReferences(self):
         """See `BranchPolicy.shouldFollowReferences`.

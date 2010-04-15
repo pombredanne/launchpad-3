@@ -20,7 +20,7 @@ from bzrlib import errors
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import local_path_from_url
+from bzrlib.urlutils import join as urljoin, local_path_from_url
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -397,7 +397,7 @@ class TestBranchPuller(PullerBranchTestCase):
         transaction.commit()
 
         # Create the Bazaar branch in the expected location.
-        branch_url = os.path.join(
+        branch_url = urljoin(
             config.launchpad.bzr_imports_root_url, '%08x' % db_branch.id)
         branch = BzrDir.create_branch_convenience(branch_url)
         tree = branch.bzrdir.open_workingtree()
