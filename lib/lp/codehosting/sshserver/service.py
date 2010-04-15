@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Twisted `service.Service` class for the codehosting SSH server.
+"""Twisted `service.Service` class for the Launchpad SSH server.
 
 An `SSHService` object can be used to launch the SSH server.
 """
@@ -24,8 +24,8 @@ from twisted.protocols.policies import TimeoutFactory
 
 from zope.event import notify
 
-from lp.codehosting.sshserver.auth import SSHUserAuthServer
 from lp.services.sshserver import accesslog, events
+from lp.services.sshserver.auth import SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
