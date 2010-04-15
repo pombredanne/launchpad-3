@@ -91,8 +91,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=branches)
         pending_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
+        self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=pending_build)
         past_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
+        self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=past_build)
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
         recipe.destroySelf()
         # Show no database constraints were violated

@@ -157,6 +157,16 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store.add(spbuild)
         return spbuild
 
+    def destroySelf(self):
+        store = Store.of(self)
+        job = self.buildqueue_record.job
+        store.remove(self.buildqueue_record)
+        results = store.find(
+            SourcePackageRecipeBuildJob,
+            SourcePackageRecipeBuildJob.build == self.id).remove()
+        store.remove(job)
+        store.remove(self)
+
     @classmethod
     def getById(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
