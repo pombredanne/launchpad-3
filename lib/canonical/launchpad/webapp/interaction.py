@@ -22,6 +22,7 @@ __all__ = [
     'get_current_principal',
     'setupInteraction',
     'setupInteractionByEmail',
+    'setupInteractionForPerson',
     ]
 
 
@@ -103,6 +104,17 @@ def setupInteractionByEmail(email, participation=None):
         participation = Participation()
 
     setupInteraction(principal, login=email, participation=participation)
+
+
+def setupInteractionForPerson(person, participation):
+    """Setup a participation for a person."""
+    from zope.security.proxy import removeSecurityProxy
+    if person is None:
+        return setupInteractionByEmail(ANONYMOUS, participation)
+    else:
+        # Bypass zope's security because IEmailAddress.email is not public.
+        naked_email = removeSecurityProxy(person.preferredemail)
+        return setupInteractionByEmail(naked_email.email, participation)
 
 
 class Participation:

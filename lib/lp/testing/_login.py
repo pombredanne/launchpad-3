@@ -8,8 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from canonical.launchpad.webapp.interaction import (
-    # Only for easy re-export.
-    ANONYMOUS, setupInteractionByEmail)
+    setupInteractionByEmail, setupInteractionForPerson)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -17,7 +16,6 @@ __all__ = [
     'login',
     'login_person',
     'logout',
-    'ANONYMOUS',
     'is_logged_in']
 
 
@@ -26,6 +24,23 @@ _logged_in = False
 def is_logged_in():
     global _logged_in
     return _logged_in
+
+
+def _test_login_impl(participation):
+    # Common implementation of the test login wrappers.
+    # It sets the global _logged_in flag and create a default
+    # participation if None was specified.
+    global _logged_in
+    _logged_in = True
+
+    if participation is None:
+        # we use the main site as the host name.  This is a guess, to make
+        # canonical_url produce a real-looking host name rather than
+        # 127.0.0.1.
+        participation = LaunchpadTestRequest(
+            environ={'HTTP_HOST': allvhosts.configs['mainsite'].hostname,
+                     'SERVER_URL': allvhosts.configs['mainsite'].rooturl})
+    return participation
 
 
 def login(email, participation=None):
@@ -40,29 +55,15 @@ def login(email, participation=None):
     If the participation provides IPublicationRequest, it must implement
     setPrincipal(), otherwise it must allow setting its principal attribute.
     """
-    global _logged_in
-    _logged_in = True
 
-    if participation is None:
-        # we use the main site as the host name.  This is a guess, to make
-        # canonical_url produce a real-looking host name rather than
-        # 127.0.0.1.
-        participation = LaunchpadTestRequest(
-            environ={'HTTP_HOST': allvhosts.configs['mainsite'].hostname,
-                     'SERVER_URL': allvhosts.configs['mainsite'].rooturl})
-
+    participation = _test_login_impl(participation)
     setupInteractionByEmail(email, participation)
 
 
 def login_person(person, participation=None):
     """Login the person with their preferred email."""
-    from zope.security.proxy import removeSecurityProxy
-    if person is None:
-        return login(ANONYMOUS, participation)
-    else:
-        # Bypass zope's security because IEmailAddress.email is not public.
-        naked_email = removeSecurityProxy(person.preferredemail)
-        return login(naked_email.email, participation)
+    participation = _test_login_impl(participation)
+    setupInteractionForPerson(person, participation)
 
 
 def logout():
