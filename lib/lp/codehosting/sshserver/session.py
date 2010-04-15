@@ -22,7 +22,7 @@ from twisted.python import log
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
-from lp.codehosting.sshserver import events
+from lp.services.sshserver import events
 
 
 class PatchedSSHSession(session.SSHSession, object):

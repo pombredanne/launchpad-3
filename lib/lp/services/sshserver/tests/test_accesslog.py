@@ -18,7 +18,7 @@ from bzrlib.tests import TestCase as BzrTestCase
 import zope.component.event
 
 from canonical.launchpad.scripts import WatchedFileHandler
-from lp.codehosting.sshserver.accesslog import LoggingManager
+from lp.services.sshserver.accesslog import LoggingManager
 from lp.testing import TestCase
 
 

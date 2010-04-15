@@ -24,8 +24,8 @@ from twisted.protocols.policies import TimeoutFactory
 
 from zope.event import notify
 
-from lp.codehosting.sshserver import accesslog, events
 from lp.codehosting.sshserver.auth import SSHUserAuthServer
+from lp.services.sshserver import accesslog, events
 from lp.services.twistedsupport import gatherResults
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 

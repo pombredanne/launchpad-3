@@ -37,9 +37,9 @@ from twisted.python import util
 from zope.event import notify
 from zope.interface import implements
 
-from lp.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
-from lp.codehosting.sshserver import events
 from canonical.config import config
+from lp.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
+from lp.services.sshserver import events
 from lp.services.twistedsupport import gatherResults
 
 
