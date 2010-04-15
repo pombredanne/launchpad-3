@@ -180,8 +180,9 @@ def run_publisher(options, txn, log=None):
 
     # Consider only archives that have their "to be published" flag turned on
     # or are pending deletion.
-    archives = [archive for archive in archives if archive.publish
-        or archive.status == ArchiveStatus.DELETING]
+    archives = [
+        archive for archive in archives 
+        if archive.publish or archive.status == ArchiveStatus.DELETING]
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
@@ -200,7 +201,9 @@ def run_publisher(options, txn, log=None):
                 try_and_commit("deleting archive", publisher.deleteArchive)
             else:
                 # Other types of archives do not currently support deletion.
-                pass
+                log.warning(
+                    "Deletion of %s skipped: operation not supported on %s"
+                    % archive.displayname)
         else:
             try_and_commit("publishing", publisher.A_publish,
                            options.careful or options.careful_publishing)
