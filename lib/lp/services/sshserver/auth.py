@@ -38,6 +38,7 @@ from twisted.python import failure
 from zope.event import notify
 from zope.interface import implements
 
+# XXX: None of this code should import from codehosting.
 from lp.codehosting import sftp
 from lp.services.sshserver import events
 from lp.services.sshserver.session import PatchedSSHSession
