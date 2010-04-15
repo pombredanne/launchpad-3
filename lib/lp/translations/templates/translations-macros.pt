@@ -128,7 +128,7 @@
             tal:content="structure link/render"></li>
         <li tal:condition="view/user_is_official_translator">
           <span id="translation-switch-working-mode">
-            You are in revier mode.
+            You are in reviewer mode.
           </span>
           <span id="translation-switch-working-mode-help" />
         </li>

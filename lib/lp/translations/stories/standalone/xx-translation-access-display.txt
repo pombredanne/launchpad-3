@@ -28,7 +28,7 @@ and reviewer working mode.
     >>> print_tag_with_id(
     ...     admin_browser.contents,
     ...     'translation-switch-working-mode')
-    You are in revier mode.
+    You are in reviewer mode.
 
 == Displaying translation groups and reviewers ==
 
