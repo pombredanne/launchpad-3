@@ -805,6 +805,19 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         'branch_type': LINK_LP_BZR,
         }
 
+    errors_in_action = False
+
+    @property
+    def next_url(self):
+        """Return the next_url.
+
+        Use the value from `ReturnToReferrerMixin` or None if there
+        are errors.
+        """
+        if self.errors_in_action:
+            return None
+        return super(ProductSeriesSetBranchView, self).next_url
+
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProductSeriesSetBranchView, self).setUpWidgets()
@@ -1008,16 +1021,16 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     branch = self._createBzrBranch(
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
+                    if branch is None:
+                        self.errors_in_action = True
+                        return
 
-                    if branch is not None:
-                        self.context.branch = branch
-                        self.request.response.addInfoNotification(
-                            'Mirrored branch created and linked to '
-                            'the series.')
+                    self.context.branch = branch
+                    self.request.response.addInfoNotification(
+                        'Mirrored branch created and linked to '
+                        'the series.')
                 else:
                     # We need to create an import request.
-
-                    # Ensure the URL has not already been imported.
                     if rcs_type == RevisionControlSystemsExtended.CVS:
                         cvs_root = data.get('repo_url')
                         cvs_module = data.get('cvs_module')
@@ -1027,14 +1040,20 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         cvs_module = None
                         url = data.get('repo_url')
                     rcs_item = RevisionControlSystems.items[rcs_type.name]
-                    code_import = getUtility(ICodeImportSet).new(
-                        registrant=branch_owner,
-                        target=IBranchTarget(self.context.product),
-                        branch_name=branch_name,
-                        rcs_type=rcs_item,
-                        url=url,
-                        cvs_root=cvs_root,
-                        cvs_module=cvs_module)
+                    try:
+                        code_import = getUtility(ICodeImportSet).new(
+                            registrant=branch_owner,
+                            target=IBranchTarget(self.context.product),
+                            branch_name=branch_name,
+                            rcs_type=rcs_item,
+                            url=url,
+                            cvs_root=cvs_root,
+                            cvs_module=cvs_module)
+                    except BranchExists, e:
+                        self._setBranchExists(e.existing_branch,
+                                              'branch_name')
+                        self.errors_in_action = True
+                        return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
                         'Code import created and branch linked to the '
