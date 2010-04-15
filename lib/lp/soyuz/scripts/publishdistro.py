@@ -178,8 +178,10 @@ def run_publisher(options, txn, log=None):
     else:
         archives = [distribution.main_archive]
 
-    # Consider only archives that have their "to be published" flag turned on.
-    archives = [archive for archive in archives if archive.publish]
+    # Consider only archives that have their "to be published" flag turned on
+    # or are pending deletion.
+    archives = [archive for archive in archives if archive.publish
+        or archive.status == ArchiveStatus.DELETING]
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
@@ -195,7 +197,6 @@ def run_publisher(options, txn, log=None):
         # Do we need to delete the archive or publish it?
         if archive.status == ArchiveStatus.DELETING:
             if archive.purpose == ArchivePurpose.PPA:
-                # Delete the archive.
                 try_and_commit("deleting archive", publisher.deleteArchive,
                                options.careful or options.careful_publishing)
             else:
