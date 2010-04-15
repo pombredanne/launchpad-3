@@ -9,9 +9,13 @@ __all__ = [
     'BugWatchEditView',
     'BugWatchView']
 
+from datetime import datetime
+from pytz import utc
+
 from zope.component import getUtility
 from zope.interface import Interface
 
+from canonical.database.constants import UTC_NOW
 from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
@@ -140,9 +144,15 @@ class BugWatchEditView(LaunchpadFormView):
         except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
             self.setFieldError('url', 'Invalid bug tracker URL.')
 
-    @property
-    def user_can_reschedule(self):
+    def userCanReschedule(self, action=None):
         """Return True if the current user can reschedule the bug watch."""
+        if (self.context.next_check is not None and
+            self.context.next_check <= datetime.now(utc)):
+            # If the watch is already scheduled for a time in the past
+            # (or for right now) it can't be rescheduled, since it
+            # should be be checked by the next checkwatches run anyway.
+            return False
+
         total_activity_count = self.context.activity.count()
         if total_activity_count == 0:
             # Don't show the reschedule button if the watch has never
@@ -165,6 +175,18 @@ class BugWatchEditView(LaunchpadFormView):
             return True
         else:
             return False
+
+    @action('Reschedule', name='reschedule', condition=userCanReschedule)
+    def reschedule_action(self, action, data):
+        """Schedule the current bug watch for immediate checking."""
+        bugwatch = self.context
+        bugwatch.next_check = UTC_NOW
+        self.request.response.addInfoNotification(
+            structured(
+                'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '
+                'bug watch has been scheduled for immediate checking.',
+                url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
+                remote_bug=bugwatch.remotebug))
 
     @action('Change', name='change')
     def change_action(self, action, data):

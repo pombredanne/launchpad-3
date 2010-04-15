@@ -120,3 +120,83 @@ If an update fails, that too will be reflected in the list.
     >>> print extract_text(recent_activity_list)
     Update failed with error 'Bug Not Found' ... ago
     Update completed successfully ... ago
+
+
+Rescheduling a watch
+--------------------
+
+It's possible to reschedule a failing watch via the BugWatch +edit page
+by clicking the "Reschedule" button.
+
+For a new watch, the "Reschedule" button isn't shown.
+
+    >>> from pytz import utc
+    >>> from datetime import datetime, timedelta
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch = factory.makeBugWatch()
+    >>> bug_watch.next_check = None
+    >>> watch_url = (
+    ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
+    ...     (bug_watch.bug.id, bug_watch.id))
+    >>> logout()
+
+    >>> admin_browser.open(watch_url)
+    >>> admin_browser.getControl('Reschedule')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Reschedule'
+
+If the watch has been checked but has never failed, the button will
+remain hidden.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch.addActivity()
+    >>> logout()
+
+    >>> admin_browser.open(watch_url)
+    >>> admin_browser.getControl('Reschedule')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Reschedule'
+
+If the watch has failed less than 60% of its recent checks, the button
+will appear on the page.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> logout()
+
+    >>> admin_browser.open(watch_url)
+    >>> reschedule_button = admin_browser.getControl('Reschedule')
+
+    >>> data_tag = find_tag_by_id(
+    ...     admin_browser.contents, 'bugwatch-next_check')
+    >>> print extract_text(data_tag.renderContents())
+    Next check: Not yet scheduled
+
+Clicking the Reschedule button will schedule it to be checked
+immediately.
+
+    >>> reschedule_button.click()
+
+    >>> for message in find_tags_by_class(
+    ...     admin_browser.contents, 'informational message'):
+    ...     print extract_text(message)
+    The ... bug watch has been scheduled for immediate checking.
+
+Looking at the watch +edit page again, we can see that the watch has
+been scheduled.
+
+    >>> admin_browser.open(watch_url)
+    >>> data_tag = find_tag_by_id(
+    ...     admin_browser.contents, 'bugwatch-next_check')
+    >>> print extract_text(data_tag.renderContents())
+    Next check: 2...
+
+The button will no longer be shown on the page.
+
+    >>> reschedule_button = admin_browser.getControl('Reschedule')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Reschedule'
+
