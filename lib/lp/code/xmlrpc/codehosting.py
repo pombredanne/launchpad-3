@@ -45,7 +45,6 @@ from canonical.launchpad.webapp.interfaces import (
     NameLookupFailed, NotFoundError)
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
-from canonical.launchpad.webapp.interaction import Participation
 
 
 UTC = pytz.timezone('UTC')
