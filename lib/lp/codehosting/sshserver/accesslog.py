@@ -22,7 +22,7 @@ from lp.services.utils import synchronize
 
 
 class LoggingManager:
-    """Class for managing codehosting logging."""
+    """Class for managing SSH server logging."""
 
     def __init__(self, main_log, access_log, access_log_path):
         """Construct the logging manager.
@@ -40,9 +40,9 @@ class LoggingManager:
     def setUp(self):
         """Set up logging for the smart server.
 
-        This sets up a debugging handler on the 'codehosting' logger, makes
-        sure that things logged there won't go to stderr (necessary because of
-        bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+        This sets up a debugging handler on the main logger and makes sure
+        that things logged there won't go to stderr. It also sets up an access
+        logger.
         """
         log = self._main_log
         self._orig_level = log.level
@@ -61,7 +61,7 @@ class LoggingManager:
 
     @adapter(ILoggingEvent)
     def _log_event(self, event):
-        """Log 'event' to the codehosting logger."""
+        """Log 'event' to the access log."""
         self._access_log.log(event.level, event.message)
 
     def tearDown(self):
@@ -86,7 +86,7 @@ class _NullHandler(logging.Handler):
     """Logging handler that does nothing with messages.
 
     At the moment, we don't want to do anything with the Twisted log messages
-    that go to the 'codehosting' logger, and we also don't want warnings about
+    that go to the SSH server logger, and we also don't want warnings about
     there being no handlers. Hence, we use this do-nothing handler.
     """
 
