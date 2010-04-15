@@ -101,23 +101,16 @@ class TestPublisher(TestPublisherBase):
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
-
         publisher = getPublisher(test_archive, None, self.logger)
 
-        pub_source = self.getPubSource(
-            sourcename="foo", filename="foo_1.dsc",
-            filecontent='I am a file.',
-            status=PackagePublishingStatus.PENDING, archive=test_archive)
-
-        publisher.A_publish(False)
-        self.layer.txn.commit()
-        publisher.C_writeIndexes(False)
-        publisher.D_writeReleaseFiles(False)
-        pub_source.sync()
-
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+                publisher._config.archiveroot, 'test_file'), 'w').close()
+
         publisher.deleteArchive()
-        self.assertTrue(not os.path.exists(publisher._config.archiveroot))
+        self.assertFalse(os.path.exists(publisher._config.archiveroot))
         self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
 
     def testPublishPartner(self):
