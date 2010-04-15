@@ -12,6 +12,7 @@ import logging
 
 from twisted.python import log as tplog
 
+from zope.component import adapter, getGlobalSiteManager, provideHandler
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 
@@ -55,10 +56,10 @@ class LoggingManager:
         self._access_log.addHandler(handler)
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
-        zope.component.provideHandler(self._log_event)
+        provideHandler(self._log_event)
         self._is_set_up = True
 
-    @zope.component.adapter(ILoggingEvent)
+    @adapter(ILoggingEvent)
     def _log_event(self, event):
         """Log 'event' to the codehosting logger."""
         self._access_log.log(event.level, event.message)
@@ -77,8 +78,7 @@ class LoggingManager:
         synchronize(
             tplog.theLogPublisher.observers, self._orig_observers,
             tplog.addObserver, tplog.removeObserver)
-        zope.component.getGlobalSiteManager().unregisterHandler(
-            self._log_event)
+        getGlobalSiteManager().unregisterHandler(self._log_event)
         self._is_set_up = False
 
 
