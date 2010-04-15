@@ -19,12 +19,13 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
 from bzrlib.transport import get_transport
+from bzrlib.urlutils import urljoin
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import BranchType
-from lp.codehosting.vfs import get_lp_server
+from lp.codehosting.vfs import branch_id_to_path, get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import IScriptActivitySet
@@ -153,28 +154,6 @@ class TestBranchPuller(PullerBranchTestCase):
         lp_server = self.getLPServerForUser(user)
         return Branch.open(lp_server.get_url() + db_branch.unique_name)
 
-    def pushBranch(self, db_branch, tree=None, format=None):
-        """Push a Bazaar branch to db_branch.
-
-        This method pushes the branch of the supplied tree (or an empty branch
-        containing one revision if no tree is suppplied) to the location
-        represented by the database branch 'db_branch'.
-        """
-        if tree is None:
-            tree = self.make_branch_and_tree(
-                self.factory.getUniqueString(), format=format)
-            tree.commit('rev1')
-        lp_server = self.getLPServerForUser(db_branch.owner)
-        dest_transport = get_transport(
-            lp_server.get_url() + db_branch.unique_name)
-        try:
-            dir_to = BzrDir.open_from_transport(dest_transport)
-        except errors.NotBranchError:
-            # create new branch
-            tree.branch.bzrdir.clone_on_transport(dest_transport)
-        else:
-            tree.branch.push(dir_to.open_branch())
-
     def setUpMirroredBranch(self, db_branch, format=None):
         """Make a tree in the cwd and serve it over HTTP, returning the URL.
         """
@@ -183,6 +162,9 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch.url = self.serveOverHTTP()
         db_branch.requestMirror()
         return tree
+
+    # XXX No loom test!
+    # XXX No format change test
 
     def test_mirror_mirrored_branch(self):
         # Run the puller on a populated mirrored branch pull queue.
@@ -197,11 +179,11 @@ class TestBranchPuller(PullerBranchTestCase):
     def _makeDefaultStackedOnBranch(self, private=False):
         """Make a default stacked-on branch.
 
-        This creates a database branch on a product that allows default
-        stacking, makes it the default stacked-on branch for that product,
-        creates a Bazaar branch for it and pulls it over into the mirrored
-        area.
+        This creates a database product branch, makes it the default
+        stacked-on branch for its product and creates a Bazaar branch for it.
 
+        :param private: Whether the created branch should be private or not
+            (defaults to not).
         :return: `IBranch`.
         """
         # Make the branch.
@@ -211,8 +193,11 @@ class TestBranchPuller(PullerBranchTestCase):
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.branch = default_branch
+        self.make_branch(
+            urljoin(
+                config.codehosting.mirrored_branches_root,
+                branch_id_to_path(default_branch.id)))
         transaction.commit()
-        self.pushBranch(default_branch)
         return default_branch
 
     def test_stack_mirrored_branch(self):
