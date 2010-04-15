@@ -56,9 +56,15 @@ if [ -z "$1" ]; then
             # This is a loom, lint changes relative to the lower thread.
             rev_option="-r thread:"
         else
-            # Lint changes relative to the parent.
-            rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-            rev_option="-r $rev"
+            if test "$(bzr pipes | sed -n -e "/^\\*/q;p" | wc -l)" -gt 0 ; then
+                # This is a pipeline with at least one pipe before the current,
+                # lint changes relative to the previous pipe
+                rev_option="-r ancestor::prev"
+            else
+                # Lint changes relative to the parent.
+                rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+                rev_option="-r $rev"
+            fi
         fi
     elif [ $diff_status -eq 1 ] ; then
         # Uncommitted changes in the tree, lint those changes.
