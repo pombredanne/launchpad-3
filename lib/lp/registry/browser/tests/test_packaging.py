@@ -84,7 +84,7 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
     def test_cannot_link_to_nonexistant_ubuntu_package(self):
         # In the case of full functionality distributions like Ubuntu, the
         # source package must be published in the distro series.
-        vapor_spn = self.factory.makeSourcePackageName('vapor')
+        self.factory.makeSourcePackageName('vapor')
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',
@@ -99,7 +99,7 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
     def test_link_older_distroseries(self):
         # The view allows users to link to older Ubuntu series.
         warty = self.ubuntu.getSeries('warty')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.sourcepackagename, distroseries=warty)
         form = {
             'field.distroseries': 'warty',
