@@ -549,12 +549,14 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
     def continue_action(self, action, data):
         # set the packaging record for this productseries in the current
         # ubuntu series. if none exists, one will be created
+        distroseries = data.get('distroseries', self.default_distroseries)
         sourcepackagename = data['sourcepackagename']
-        if self.default_sourcepackagename == sourcepackagename:
+        if getUtility(IPackagingUtil).packagingEntryExists(
+            sourcepackagename, distroseries, productseries=self.context):
             # There is no change.
             return
         self.context.setPackaging(
-            self.default_distroseries, sourcepackagename, self.user)
+            distroseries, sourcepackagename, self.user)
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
