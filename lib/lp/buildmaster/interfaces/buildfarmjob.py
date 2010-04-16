@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobDerived',
-    'IBuildFarmCandidateJobSelection',
     'BuildFarmJobType',
     ]
 
@@ -78,41 +77,6 @@ class IBuildFarmJob(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
-    processor = Reference(
-        IProcessor, title=_("Processor"),
-        description=_(
-            "The Processor required by this build farm job. "
-            "For processor-independent job types please return None."))
-
-    virtualized = Attribute(
-        _(
-            "The virtualization setting required by this build farm job. "
-            "For job types that do not care about virtualization please "
-            "return None."))
-
-
-class IBuildFarmJobDerived(Interface):
-    """Common functionality required by classes delegating IBuildFarmJob.
-
-    This mainly involves ensuring that the instance to which we delegate
-    is created.
-    """
-    # Define build_farm_job as read-only attribute of the interface?
-    def getByJob(job):
-        """Get the specific `IBuildFarmJob` for the given `Job`.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has an entry associated with `job`.
-        """
-
-class IBuildFarmCandidateJobSelection(Interface):
-    """Operations for refining candidate job selection (optional).
-
-    Job type classes that do *not* need to refine candidate job selection may
-    be derived from `BuildFarmJob` which provides a base implementation of
-    this interface.
-    """
-
     def addCandidateSelectionCriteria(processor, virtualized):
         """Provide a sub-query to refine the candidate job selection.
 
@@ -147,4 +111,31 @@ class IBuildFarmCandidateJobSelection(Interface):
 
         :return: True if the candidate job should be dispatched
             to a builder, False otherwise.
+        """
+
+    processor = Reference(
+        IProcessor, title=_("Processor"),
+        description=_(
+            "The Processor required by this build farm job. "
+            "For processor-independent job types please return None."))
+
+    virtualized = Attribute(
+        _(
+            "The virtualization setting required by this build farm job. "
+            "For job types that do not care about virtualization please "
+            "return None."))
+
+
+class IBuildFarmJobDerived(Interface):
+    """Common functionality required by classes delegating IBuildFarmJob.
+
+    This mainly involves ensuring that the instance to which we delegate
+    is created.
+    """
+    # Define build_farm_job as read-only attribute of the interface?
+    def getByJob(job):
+        """Get the specific `IBuildFarmJob` for the given `Job`.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has an entry associated with `job`.
         """

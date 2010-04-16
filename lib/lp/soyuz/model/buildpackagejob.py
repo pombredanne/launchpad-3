@@ -174,7 +174,7 @@ class BuildPackageJob(PackageBuildFarmJobDerived, Storm):
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         # Avoiding circular import.
         from lp.buildmaster.model.builder import Builder
 
@@ -244,7 +244,7 @@ class BuildPackageJob(PackageBuildFarmJobDerived, Storm):
 
     @staticmethod
     def postprocessCandidate(job, logger):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will

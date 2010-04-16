@@ -11,20 +11,18 @@ __all__ = [
 from lazr.delegates import delegates
 
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobDerived,
-    IBuildFarmCandidateJobSelection)
+    IBuildFarmJob, IBuildFarmJobDerived)
 
 
 class BuildFarmJob:
     """A base implementation for `IBuildFarmJob` classes."""
     implements(IBuildFarmJob)
-    classProvides(IBuildFarmCandidateJobSelection)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -66,12 +64,12 @@ class BuildFarmJob:
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         return ('')
 
     @staticmethod
     def postprocessCandidate(job, logger):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         return True
 
 
