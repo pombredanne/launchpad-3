@@ -1302,10 +1302,11 @@ class BugTaskEditView(LaunchpadEditFormView):
         # it uses based on the permissions of the user viewing form.
         if 'status' in self.editable_field_names:
             if self.user is None:
-                status_noshow = list(BugTaskStatus.items)
+                status_noshow = set(BugTaskStatus.items)
             else:
-                status_noshow = [BugTaskStatus.UNKNOWN, BugTaskStatus.EXPIRED]
-                status_noshow.extend(
+                status_noshow = set((
+                    BugTaskStatus.UNKNOWN, BugTaskStatus.EXPIRED))
+                status_noshow.update(
                     status for status in BugTaskStatus.items
                     if not self.context.canTransitionToStatus(
                         status, self.user))
