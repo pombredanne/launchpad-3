@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'PackageBuildFarmJob',
-    'PackageBuildFarmJobDelegate',
+    'PackageBuildFarmJobDerived',
     ]
 
 
@@ -12,7 +12,7 @@ from canonical.database.constants import UTC_NOW
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJob, BuildFarmJobDelegate)
+    BuildFarmJob, BuildFarmJobDerived)
 
 
 class PackageBuildFarmJob(BuildFarmJob):
@@ -49,7 +49,7 @@ class PackageBuildFarmJob(BuildFarmJob):
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
 
-class PackageBuildFarmJobDelegate(BuildFarmJobDelegate):
+class PackageBuildFarmJobDerived(BuildFarmJobDerived):
     """Override the base delegate to use a build farm job specific to
     packages.
     """

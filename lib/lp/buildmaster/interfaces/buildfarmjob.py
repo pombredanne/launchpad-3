@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
-    'IBuildFarmJobDelegate',
+    'IBuildFarmJobDerived',
     'IBuildFarmCandidateJobSelection',
     'BuildFarmJobType',
     ]
@@ -91,7 +91,7 @@ class IBuildFarmJob(Interface):
             "return None."))
 
 
-class IBuildFarmJobDelegate(Interface):
+class IBuildFarmJobDerived(Interface):
     """Common functionality required by classes delegating IBuildFarmJob.
 
     This mainly involves ensuring that the instance to which we delegate

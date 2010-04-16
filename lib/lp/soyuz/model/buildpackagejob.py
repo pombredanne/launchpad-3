@@ -10,7 +10,6 @@ __all__ = [
 from datetime import datetime
 import pytz
 
-from lazr.delegates import delegates
 from storm.locals import Int, Reference, Storm
 
 from zope.component import getUtility
@@ -19,9 +18,8 @@ from zope.interface import implements
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.model.packagebuildfarmjob import (
-    PackageBuildFarmJobDelegate)
+    PackageBuildFarmJobDerived)
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -30,10 +28,9 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(PackageBuildFarmJobDelegate, Storm):
+class BuildPackageJob(PackageBuildFarmJobDerived, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
-    delegates(IBuildFarmJob, context='_build_farm_job')
 
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)

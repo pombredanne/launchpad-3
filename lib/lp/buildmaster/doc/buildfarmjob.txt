@@ -10,14 +10,14 @@ specific build farm job classes should delegate to it.
     >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
 
-BuildFarmJobDelegate exists to encapsulate the functionality required
+BuildFarmJobDerived exists to encapsulate the functionality required
 by classes delegating IBuildFarmJob. This class also includes
 the getByJob() class method used to find the instance of a specific
 build-farm job implementation associated with a given Job instance.
 
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
-    ...     IBuildFarmJobDelegate)
-    >>> verifyObject(IBuildFarmJobDelegate, BuildFarmJobDelegate())
+    ...     IBuildFarmJobDerived)
+    >>> verifyObject(IBuildFarmJobDerived, BuildFarmJobDerived())
     True
 
 XXX The above should be in a unit-test, it is not good documentation.
