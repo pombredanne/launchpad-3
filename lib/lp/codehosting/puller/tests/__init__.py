@@ -135,6 +135,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path)
+        self.addCleanup(shutil.rmtree, path)
 
     def pushToBranch(self, branch, tree):
         """Push a Bazaar branch to a given Launchpad branch's hosted area.
@@ -151,10 +152,9 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)
 
-    def serveOverHTTP(self, port=0):
+    def serveOverHTTP(self):
         """Serve the current directory over HTTP, returning the server URL."""
         http_server = HttpServer()
-        http_server.port = port
         http_server.start_server()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
