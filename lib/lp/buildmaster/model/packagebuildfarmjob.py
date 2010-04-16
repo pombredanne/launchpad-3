@@ -8,17 +8,11 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
-from zope.interface import classProvides
-
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.database.constants import UTC_NOW
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import (
-    ISpecificBuildFarmJobClass)
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob, BuildFarmJobDelegate)
 
 
 class PackageBuildFarmJob(BuildFarmJob):
@@ -55,22 +49,11 @@ class PackageBuildFarmJob(BuildFarmJob):
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
 
-class PackageBuildFarmJobDelegate:
-    """Common functionality required by classes delegating IBuildFarmJob."""
-    classProvides(ISpecificBuildFarmJobClass)
-    def __init__(self):
-        self._set_build_farm_job()
-
-    def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation."""
-        self._set_build_farm_job()
-
+class PackageBuildFarmJobDelegate(BuildFarmJobDelegate):
+    """Override the base delegate to use a build farm job specific to
+    packages.
+    """
     def _set_build_farm_job(self):
         self._build_farm_job = PackageBuildFarmJob(self.build)
 
-    @classmethod
-    def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
 

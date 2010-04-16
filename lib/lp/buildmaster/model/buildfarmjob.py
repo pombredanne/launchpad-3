@@ -2,13 +2,21 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['BuildFarmJob']
+__all__ = [
+    'BuildFarmJob',
+    'BuildFarmJobDelegate',
+    ]
 
 
+from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmCandidateJobSelection)
+    IBuildFarmJob, IBuildFarmCandidateJobSelection,
+    ISpecificBuildFarmJobClass)
 
 
 class BuildFarmJob:
@@ -71,5 +79,20 @@ class BuildFarmJobDelegate:
     This mainly involves ensuring that the instance to which we delegate
     is created.
     """
+    classProvides(ISpecificBuildFarmJobClass)
+    def __init__(self):
+        self._set_build_farm_job()
 
+    def __storm_loaded__(self):
+        """Set the attribute for our IBuildFarmJob delegation."""
+        self._set_build_farm_job()
+
+    def _set_build_farm_job(self):
+        self._build_farm_job = BuildFarmJob()
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `ISpecificBuildFarmJobClass`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
 
