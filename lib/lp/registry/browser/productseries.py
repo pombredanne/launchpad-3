@@ -496,10 +496,14 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         return self.context.getPackagingInDistribution(
             self.default_distroseries.distribution)
 
+    def _getSubmittedSeries(self, data):
+        """Return the submitted or default series."""
+        return data.get('distroseries', self.default_distroseries)
+
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
-        distroseries = data.get('distroseries', self.default_distroseries)
+        distroseries = self._getSubmittedSeries(data)
 
         if sourcepackagename == self.default_sourcepackagename:
             # The data has not changed, so nothing else needs to be done.
@@ -549,7 +553,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
     def continue_action(self, action, data):
         # set the packaging record for this productseries in the current
         # ubuntu series. if none exists, one will be created
-        distroseries = data.get('distroseries', self.default_distroseries)
+        distroseries = self._getSubmittedSeries(data)
         sourcepackagename = data['sourcepackagename']
         if getUtility(IPackagingUtil).packagingEntryExists(
             sourcepackagename, distroseries, productseries=self.context):
