@@ -36,7 +36,7 @@ from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 class LoggingManager:
     """Class for managing codehosting logging."""
 
-    def setUp(self, configure_oops_reporting=False, mangle_stdout=False):
+    def setUp(self, configure_oops_reporting=False):
         """Set up logging for the smart server.
 
         This sets up a debugging handler on the 'codehosting' logger, makes
@@ -45,9 +45,6 @@ class LoggingManager:
 
         :param configure_oops_reporting: If True, install a Twisted log
             observer that ensures unhandled exceptions get reported as OOPSes.
-        :param mangle_stdout: If True and if configure_oops_reporting is True,
-            redirect standard error and standard output to the OOPS logging
-            observer.
         """
         log = get_codehosting_logger()
         self._orig_level = log.level

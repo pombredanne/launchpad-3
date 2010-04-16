@@ -9,12 +9,14 @@ stuff.
 
 __metaclass__ = type
 __all__ = [
+    'CachingIterator',
     'iter_split',
     'synchronize',
     'text_delta',
     'value_string',
     ]
 
+import itertools
 
 from lazr.enum import BaseItem
 from zope.security.proxy import isinstance as zope_isinstance
@@ -101,3 +103,41 @@ def text_delta(instance_delta, delta_names, state_names, interface):
             output.append('')
         output.append('%s changed to:\n\n%s' % (title, delta))
     return '\n'.join(output)
+
+
+class CachingIterator:
+    """Remember the items extracted from the iterator for the next iteration.
+
+    Some generators and iterators are expensive to calculate, like calculating
+    the merge sorted revision graph for a bazaar branch, so you don't want to
+    call them too often.  Rearranging the code so it doesn't call the
+    expensive iterator can make the code awkward.  This class provides a way
+    to have the iterator called once, and the results stored.  The results
+    can then be iterated over again, and more values retrieved from the
+    iterator if necessary.
+    """
+
+    def __init__(self, iterator):
+        self.iterator = iterator
+        self.data = []
+
+    def __iter__(self):
+        index = itertools.count()
+        while True:
+            pos = index.next()
+            try:
+                yield self.data[pos]
+            except IndexError:
+                # Defer to the iterator.
+                pass
+            else:
+                continue
+            if self.iterator is None:
+                break
+            try:
+                item = self.iterator.next()
+            except StopIteration:
+                self.iterator = None
+                break
+            self.data.append(item)
+            yield item

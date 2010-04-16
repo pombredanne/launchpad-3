@@ -59,12 +59,13 @@ class IBuildFarmJobBehavior(Interface):
            added to it.
         """
 
-    def verifySlaveBuildID(slave_build_id):
-        """Verify that a slave's build ID shows no signs of corruption.
+    def verifySlaveBuildCookie(slave_build_cookie):
+        """Verify that a slave's build cookie shows no signs of corruption.
 
-        :param slave_build_id: The slave's build ID, as specified in
-           dispatchBuildToSlave.
-        :raises CorruptBuildID: if the build ID is determined to be corrupt.
+        :param slave_build_cookie: The slave's build cookie, as specified in
+           `dispatchBuildToSlave`.
+        :raises CorruptBuildCookie: if the build cookie isn't what it's
+            supposed to be.
         """
 
     def updateBuild(queueItem):

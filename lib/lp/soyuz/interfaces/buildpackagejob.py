@@ -16,7 +16,7 @@ from zope.schema import Int
 from canonical.launchpad import _
 from lazr.restful.fields import Reference
 from lp.services.job.interfaces.job import IJob
-from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 
 
@@ -30,6 +30,6 @@ class IBuildPackageJob(IBuildFarmBuildJob):
         description=_("Data common to all job types."))
 
     build = Reference(
-        IBuild, title=_("Build"),
+        IBinaryPackageBuild, title=_("Build"),
         required=True, readonly=True,
         description=_("Build record associated with this job."))
