@@ -16,8 +16,10 @@ import transaction
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import join as urljoin, local_path_from_url
+from bzrlib.urlutils import (
+    join as urljoin, local_path_from_url, local_path_to_url)
 from bzrlib.workingtree import WorkingTree
 
 from zope.component import getUtility
@@ -219,10 +221,11 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.branch = default_branch
-        self.make_branch(
-            urljoin(
-                config.codehosting.mirrored_branches_root,
-                branch_id_to_path(default_branch.id)))
+        branch_location = urljoin(
+            local_path_to_url(config.codehosting.mirrored_branches_root),
+            branch_id_to_path(default_branch.id))
+        get_transport(branch_location).create_prefix()
+        BzrDir.create_branch_convenience(branch_location)
         transaction.commit()
         return default_branch
 
