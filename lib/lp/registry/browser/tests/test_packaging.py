@@ -53,7 +53,7 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
             self.productseries, '+ubuntupkg', form=form)
         self.assertEqual([], view.errors)
         other_productseries = self.factory.makeProductSeries(
-            product=self.product, name='hotest')
+            product=self.product, name='hottest')
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
