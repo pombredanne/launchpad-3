@@ -20,6 +20,12 @@
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
             permission="zope.Public"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
+            name="+request-builds"
+            template="../../lib/lp/code/templates/sourcepackagerecipe-request-builds.pt"
+            permission="zope.Public"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
@@ -32,5 +38,23 @@
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
             permission="zope.Public"/>
+        <browser:menus
+            classes="SourcePackageRecipeContextMenu"
+            module="lp.code.browser.sourcepackagerecipe"/>
+
     </facet>
+  <securedutility
+    name="BuildableDistroSeries"
+    component="lp.code.browser.sourcepackagerecipe.buildable_distroseries_vocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+  <securedutility
+    name="TargetPPAs"
+    component="lp.code.browser.sourcepackagerecipe.target_ppas_vocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 </configure>
