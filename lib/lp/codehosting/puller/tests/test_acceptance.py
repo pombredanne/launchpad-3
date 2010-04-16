@@ -7,9 +7,12 @@ __metaclass__ = type
 __all__ = []
 
 
+import datetime
 import os
 from subprocess import PIPE, Popen
 import unittest
+
+import pytz
 
 import transaction
 
@@ -26,6 +29,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import BranchType
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.codehosting.vfs import branch_id_to_path, get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.tests.helpers import LoomTestMixin
@@ -218,9 +222,12 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         product = self.factory.makeProduct()
         default_branch = self.factory.makeProductBranch(
             product=product, private=private)
+        default_branch.last_mirrored = datetime.datetime.now(pytz.UTC)
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.branch = default_branch
+        self.assertEqual(
+            default_branch, IBranchTarget(product).default_stacked_on_branch)
         branch_location = urljoin(
             local_path_to_url(config.codehosting.mirrored_branches_root),
             branch_id_to_path(default_branch.id))
