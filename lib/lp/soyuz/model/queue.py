@@ -700,11 +700,10 @@ class PackageUpload(SQLBase):
             unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
-        if self.isPPA():
-            # Leaving the PGP signature on a package uploaded to a PPA
-            # leaves the possibility of someone hijacking the notification
-            # and uploading to the Ubuntu archive as the signer.
-            changes_lines = self._stripPgpSignature(changes_lines)
+        # Leaving the PGP signature on a package uploaded 
+        # leaves the possibility of someone hijacking the notification
+        # and uploading to any archive as the signer.
+        changes_lines = self._stripPgpSignature(changes_lines)
 
         return changes, changes_lines
 
