@@ -9,8 +9,8 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmJobDelegate',
     'IBuildFarmCandidateJobSelection',
-    'ISpecificBuildFarmJobClass',
     'BuildFarmJobType',
     ]
 
@@ -91,22 +91,19 @@ class IBuildFarmJob(Interface):
             "return None."))
 
 
-class ISpecificBuildFarmJobClass(Interface):
-    """Class interface provided by `IBuildFarmJob` classes.
+class IBuildFarmJobDelegate(Interface):
+    """Common functionality required by classes delegating IBuildFarmJob.
 
-    Used by the `BuildQueue` to find the specific build-farm job objects
-    it needs to dispatch to builders.
+    This mainly involves ensuring that the instance to which we delegate
+    is created.
     """
-
+    # Define build_farm_job as read-only attribute of the interface?
     def getByJob(job):
         """Get the specific `IBuildFarmJob` for the given `Job`.
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.
         """
-
-class IBuildFarmJobDelegate(Interface):
-    """"""
 
 class IBuildFarmCandidateJobSelection(Interface):
     """Operations for refining candidate job selection (optional).

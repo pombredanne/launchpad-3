@@ -19,7 +19,7 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, ISpecificBuildFarmJobClass)
+    IBuildFarmJob, IBuildFarmJobDelegate)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -54,13 +54,11 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.specific_job = self.jobset.create(self.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
-        # TranslationTemplateBuildJob implements IBuildFarmJob and
-        # IBranchJob.
+        # TranslationTemplateBuildJob implements IBuildFarmJob,
+        # IBuildFarmJobDelegate, and IBranchJob.
         verifyObject(IBranchJob, self.specific_job)
+        verifyObject(IBuildFarmJobDelegate, self.specific_job)
         verifyObject(IBuildFarmJob, self.specific_job)
-
-        # The class also implements ISpecificBuildFarmJobClass.
-        verifyObject(ISpecificBuildFarmJobClass, TranslationTemplatesBuildJob)
 
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)
@@ -191,7 +189,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # branch, generatesTemplates returns False.
         branch = self._makeTranslationBranch()
         self.assertFalse(self.jobsource.generatesTemplates(branch))
-    
+
     def test_branch_not_used(self):
         # We don't generate templates branches not attached to series.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)

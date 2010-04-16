@@ -10,11 +10,14 @@ specific build farm job classes should delegate to it.
     >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
 
-As a class, it also provides ISpecificBuildFarmJobClass so that
-BuildQueue can find the instance of a specific build-farm job
-implementation associated with a given Job instance.
+BuildFarmJobDelegate exists to encapsulate the functionality required
+by classes delegating IBuildFarmJob. This class also includes
+the getByJob() class method used to find the instance of a specific
+build-farm job implementation associated with a given Job instance.
 
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
-    ...     ISpecificBuildFarmJobClass)
-    >>> verifyObject(ISpecificBuildFarmJobClass, BuildFarmJob)
+    ...     IBuildFarmJobDelegate)
+    >>> verifyObject(IBuildFarmJobDelegate, BuildFarmJobDelegate())
     True
+
+XXX The above should be in a unit-test, it is not good documentation.

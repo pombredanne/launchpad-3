@@ -15,8 +15,8 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmCandidateJobSelection,
-    ISpecificBuildFarmJobClass)
+    IBuildFarmJob, IBuildFarmJobDelegate,
+    IBuildFarmCandidateJobSelection)
 
 
 class BuildFarmJob:
@@ -79,9 +79,10 @@ class BuildFarmJobDelegate:
     This mainly involves ensuring that the instance to which we delegate
     is created.
     """
-    classProvides(ISpecificBuildFarmJobClass)
-    def __init__(self):
+    implements(IBuildFarmJobDelegate)
+    def __init__(self, *args, **kwargs):
         self._set_build_farm_job()
+        super(BuildFarmJobDelegate, self).__init__(*args, **kwargs)
 
     def __storm_loaded__(self):
         """Set the attribute for our IBuildFarmJob delegation."""
@@ -92,7 +93,7 @@ class BuildFarmJobDelegate:
 
     @classmethod
     def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
+        """See `IBuildFarmJobDelegate`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
 
