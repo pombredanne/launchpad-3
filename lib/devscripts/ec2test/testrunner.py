@@ -325,7 +325,7 @@ class EC2TestRunner:
             bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(
-                'email = %s\n' % (self._from_email,))
+                'email = %s\n' % (self._from_email.encode('utf-8'),))
             bazaar_conf_file.write(
                 'smtp_server = %s\n' % (self._smtp_server,))
             if self._smtp_username:
