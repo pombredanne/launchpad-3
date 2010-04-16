@@ -53,6 +53,10 @@ def setupInteraction(principal, login=None, participation=None):
         endInteraction()
         return
 
+    if principal == ANONYMOUS:
+        authutil = getUtility(IPlacelessAuthUtility)
+        principal = authutil.unauthenticatedPrincipal()
+
     if participation is None:
         participation = Participation()
 
@@ -110,7 +114,7 @@ def setupInteractionForPerson(person, participation):
     """Setup a participation for a person."""
     from zope.security.proxy import removeSecurityProxy
     if person is None:
-        return setupInteractionByEmail(ANONYMOUS, participation)
+        return setupInteraction(ANONYMOUS, participation)
     else:
         # Bypass zope's security because IEmailAddress.email is not public.
         naked_email = removeSecurityProxy(person.preferredemail)
