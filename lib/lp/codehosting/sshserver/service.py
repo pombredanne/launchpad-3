@@ -30,11 +30,35 @@ from lp.codehosting.sshserver.auth import get_portal, SSHUserAuthServer
 from lp.services.twistedsupport import gatherResults
 
 
+# The names of the key files of the server itself. The directory itself is
+# given in config.codehosting.host_key_pair_path.
+PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
+PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
+
+
 class KeepAliveSettingSSHServerTransport(SSHServerTransport):
 
     def connectionMade(self):
         SSHServerTransport.connectionMade(self)
         self.transport.setTcpKeepAlive(True)
+
+
+def get_key_path(key_filename):
+    key_directory = config.codehosting.host_key_pair_path
+    return os.path.join(config.root, key_directory, key_filename)
+
+
+def make_portal():
+    """Create and return a `Portal` for the SSH service.
+
+    This portal accepts SSH credentials and returns our customized SSH
+    avatars (see `lp.codehosting.sshserver.auth.LaunchpadAvatar`).
+    """
+    authentication_proxy = Proxy(
+        config.codehosting.authentication_endpoint)
+    branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
+    return get_portal(authentication_proxy, branchfs_proxy)
+
 
 
 class Factory(SSHFactory):
@@ -47,13 +71,29 @@ class Factory(SSHFactory):
 
     protocol = KeepAliveSettingSSHServerTransport
 
-    def __init__(self, portal):
+    def __init__(self, portal, private_key, public_key, banner=None):
+        """Construct an SSH factory.
+
+        :param portal: The portal used to turn credentials into users.
+        :param private_key: The private key of the server, must be an RSA
+            key, given as a `twisted.conch.ssh.keys.Key` object.
+        :param public_key: The public key of the server, must be an RSA
+            key, given as a `twisted.conch.ssh.keys.Key` object.
+        :param banner: The text to display when users successfully log in.
+        """
         # Although 'portal' isn't part of the defined interface for
         # `SSHFactory`, defining it here is how the `SSHUserAuthServer` gets
         # at it. (Look for the beautiful line "self.portal =
         # self.transport.factory.portal").
         self.portal = portal
-        self.services['ssh-userauth'] = SSHUserAuthServer
+        self.services['ssh-userauth'] = self._makeAuthServer
+        self._private_key = private_key
+        self._public_key = public_key
+        self._banner = banner
+
+    def _makeAuthServer(self, *args, **kwargs):
+        kwargs['banner'] = self._banner
+        return SSHUserAuthServer(*args, **kwargs)
 
     def buildProtocol(self, address):
         """Build an SSH protocol instance, logging the event.
@@ -87,58 +127,51 @@ class Factory(SSHFactory):
                 notify(accesslog.AuthenticationFailed(transport))
             notify(accesslog.UserDisconnected(transport))
 
-    def _loadKey(self, key_filename):
-        key_directory = config.codehosting.host_key_pair_path
-        key_path = os.path.join(config.root, key_directory, key_filename)
-        return Key.fromFile(key_path)
-
     def getPublicKeys(self):
         """Return the server's configured public key.
 
         See `SSHFactory.getPublicKeys`.
         """
-        public_key = self._loadKey('ssh_host_key_rsa.pub')
-        return {'ssh-rsa': public_key}
+        return {'ssh-rsa': self._public_key}
 
     def getPrivateKeys(self):
         """Return the server's configured private key.
 
         See `SSHFactory.getPrivateKeys`.
         """
-        private_key = self._loadKey('ssh_host_key_rsa')
-        return {'ssh-rsa': private_key}
+        return {'ssh-rsa': self._private_key}
 
 
 class SSHService(service.Service):
     """A Twisted service for the codehosting SSH server."""
 
-    def __init__(self):
-        self.service = self.makeService()
+    def __init__(self, portal, private_key_path, public_key_path,
+                 strport='tcp:22', idle_timeout=3600, banner=None):
+        """Construct an SSH service.
 
-    def makePortal(self):
-        """Create and return a `Portal` for the SSH service.
-
-        This portal accepts SSH credentials and returns our customized SSH
-        avatars (see `lp.codehosting.sshserver.auth.LaunchpadAvatar`).
-        """
-        authentication_proxy = Proxy(
-            config.codehosting.authentication_endpoint)
-        branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-        return get_portal(authentication_proxy, branchfs_proxy)
-
-    def makeService(self):
-        """Return a service that provides an SFTP server. This is called in
-        the constructor.
+        :param portal: The `Portal` that turns authentication requests into
+            views on the system.
+        :param private_key_path: The path to the SSH server's private key.
+        :param public_key_path: The path to the SSH server's public key.
+        :param strport: The port to run the server on, expressed in Twisted's
+            "strports" mini-language. Defaults to 'tcp:22'.
+        :param idle_timeout: The number of seconds to wait before killing a
+            connection that isn't doing anything. Defaults to 3600.
+        :param banner: An announcement printed to users when they connect.
+            By default, announce nothing.
         """
         ssh_factory = TimeoutFactory(
-            Factory(self.makePortal()),
-            timeoutPeriod=config.codehosting.idle_timeout)
-        return strports.service(config.codehosting.port, ssh_factory)
+            Factory(
+                portal,
+                private_key=Key.fromFile(private_key_path),
+                public_key=Key.fromFile(public_key_path),
+                banner=banner),
+            timeoutPeriod=idle_timeout)
+        self.service = strports.service(strport, ssh_factory)
 
     def startService(self):
         """Start the SSH service."""
-        accesslog.LoggingManager().setUp(
-            configure_oops_reporting=True, mangle_stdout=True)
+        accesslog.LoggingManager().setUp(configure_oops_reporting=True)
         notify(accesslog.ServerStarting())
         # By default, only the owner of files should be able to write to them.
         # Perhaps in the future this line will be deleted and the umask
