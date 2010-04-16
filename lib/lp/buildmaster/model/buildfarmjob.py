@@ -64,3 +64,12 @@ class BuildFarmJob:
         """See `IBuildFarmCandidateJobSelection`."""
         return True
 
+
+class BuildFarmJobDelegate:
+    """Common functionality required by classes delegating IBuildFarmJob.
+
+    This mainly involves ensuring that the instance to which we delegate
+    is created.
+    """
+
+

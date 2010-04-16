@@ -105,6 +105,8 @@ class ISpecificBuildFarmJobClass(Interface):
         has an entry associated with `job`.
         """
 
+class IBuildFarmJobDelegate(Interface):
+    """"""
 
 class IBuildFarmCandidateJobSelection(Interface):
     """Operations for refining candidate job selection (optional).

@@ -16,8 +16,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
@@ -27,10 +25,11 @@ from zope.interface import classProvides, implements
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
+    BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.buildmaster.model.packagebuildfarmjob import (
+    PackageBuildFarmJobDelegate)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -191,10 +190,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return
 
 
-class SourcePackageRecipeBuildJob(Storm):
-    classProvides(
-        ISourcePackageRecipeBuildJobSource, ISpecificBuildFarmJobClass)
-    delegates(IBuildFarmJob, context='package_build_farm_job')
+class SourcePackageRecipeBuildJob(PackageBuildFarmJobDelegate, Storm):
+    classProvides(ISourcePackageRecipeBuildJobSource)
+    delegates(IBuildFarmJob, context='_build_farm_job')
     implements(ISourcePackageRecipeBuildJob)
 
     __storm_table__ = 'sourcepackagerecipebuildjob'
@@ -212,13 +210,9 @@ class SourcePackageRecipeBuildJob(Storm):
     virtualized = True
 
     def __init__(self, build, job):
-        super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
-
-    def __storm_loaded__(self):
-        """Set the object for our IBuildFarmJob delegation."""
-        self.package_build_farm_job = PackageBuildFarmJob(self.build)
+        super(SourcePackageRecipeBuildJob, self).__init__()
 
     @classmethod
     def new(cls, build, job):
@@ -227,10 +221,3 @@ class SourcePackageRecipeBuildJob(Storm):
         store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
-

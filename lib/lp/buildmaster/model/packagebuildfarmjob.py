@@ -2,12 +2,22 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['PackageBuildFarmJob']
+__all__ = [
+    'PackageBuildFarmJob',
+    'PackageBuildFarmJobDelegate',
+    ]
 
 
+from zope.component import getUtility
+from zope.interface import classProvides
+
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.database.constants import UTC_NOW
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import (
+    ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 
 
@@ -19,8 +29,8 @@ class PackageBuildFarmJob(BuildFarmJob):
 
         XXX 2010-04-12 michael.nelson bug=536700
         The build param will no longer be necessary once BuildFarmJob is
-        itself a concrete class. This class will be renamed PackageBuild
-        and turned into a concrete class itself.
+        itself a concrete class. This class (PackageBuildFarmJob)
+        will be renamed PackageBuild and turned into a concrete class itself.
         """
         super(PackageBuildFarmJob, self).__init__()
         self.build = build
@@ -43,3 +53,24 @@ class PackageBuildFarmJob(BuildFarmJob):
     def jobAborted(self):
         """See `IBuildFarmJob`."""
         self.build.buildstate = BuildStatus.NEEDSBUILD
+
+
+class PackageBuildFarmJobDelegate:
+    """Common functionality required by classes delegating IBuildFarmJob."""
+    classProvides(ISpecificBuildFarmJobClass)
+    def __init__(self):
+        self._set_build_farm_job()
+
+    def __storm_loaded__(self):
+        """Set the attribute for our IBuildFarmJob delegation."""
+        self._set_build_farm_job()
+
+    def _set_build_farm_job(self):
+        self._build_farm_job = PackageBuildFarmJob(self.build)
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `ISpecificBuildFarmJobClass`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
+

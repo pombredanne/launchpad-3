@@ -13,18 +13,15 @@ import pytz
 from lazr.delegates import delegates
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import classProvides, implements
 from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, ISpecificBuildFarmJobClass)
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.model.packagebuildfarmjob import (
+    PackageBuildFarmJobDelegate)
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -33,11 +30,10 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(Storm):
+class BuildPackageJob(PackageBuildFarmJobDelegate, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
-    classProvides(ISpecificBuildFarmJobClass)
-    delegates(IBuildFarmJob, context='package_build_farm_job')
+    delegates(IBuildFarmJob, context='_build_farm_job')
 
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
@@ -52,15 +48,8 @@ class BuildPackageJob(Storm):
         """Set the attribute for the IBuildFarmJob delegation when
         new items are created and added to the store.
         """
-        super(BuildPackageJob, self).__init__()
         self.build, self.job = build, job
-        # Move the line below into a new class method, factoring out
-        # SPRBSource.new.
-        self.package_build_farm_job = PackageBuildFarmJob(self.build)
-
-    def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation."""
-        self.package_build_farm_job = PackageBuildFarmJob(self.build)
+        super(BuildPackageJob, self).__init__()
 
     def score(self):
         """See `IBuildPackageJob`."""
@@ -185,12 +174,6 @@ class BuildPackageJob(Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
