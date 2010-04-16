@@ -408,6 +408,9 @@ class AcceptanceTests(SSHTestCase):
         # then branches pushed to that location end up stacked on it by
         # default.
         product = self.factory.makeProduct()
+        LaunchpadZopelessTestSetup().txn.commit()
+
+        LaunchpadZopelessTestSetup().txn.begin()
 
         self.make_branch_and_tree('stacked-on')
         trunk_unique_name = '~testuser/%s/trunk' % product.name
@@ -433,6 +436,7 @@ class AcceptanceTests(SSHTestCase):
         # attribute of the database branch, and stacked on location of the new
         # branch is normalized to be a relative path.
         product = self.factory.makeProduct()
+        LaunchpadZopelessTestSetup().txn.commit()
 
         self.make_branch_and_tree('stacked-on')
         trunk_unique_name = '~testuser/%s/trunk' % product.name
