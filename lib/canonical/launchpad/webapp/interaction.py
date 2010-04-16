@@ -110,7 +110,7 @@ def setupInteractionByEmail(email, participation=None):
     setupInteraction(principal, login=email, participation=participation)
 
 
-def setupInteractionForPerson(person, participation):
+def setupInteractionForPerson(person, participation=None):
     """Setup a participation for a person."""
     from zope.security.proxy import removeSecurityProxy
     if person is None:
