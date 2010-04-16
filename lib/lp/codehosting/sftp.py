@@ -38,7 +38,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from lp.codehosting.vfs import AsyncLaunchpadTransport, LaunchpadServer
-from lp.codehosting.sshserver import accesslog
+from lp.codehosting.sshserver import events
 from canonical.config import config
 from lp.services.twistedsupport import gatherResults
 
@@ -253,7 +253,7 @@ def avatar_to_sftp_server(avatar):
         avatar.branchfs_proxy, user_id, hosted_transport, mirror_transport)
     server.start_server()
     transport = AsyncLaunchpadTransport(server, server.get_url())
-    notify(accesslog.SFTPStarted(avatar))
+    notify(events.SFTPStarted(avatar))
     return TransportSFTPServer(transport)
 
 
@@ -272,7 +272,7 @@ class FileTransferServer(filetransfer.FileTransferServer):
         if self.avatar is not None:
             avatar = self.avatar
             self.avatar = None
-            notify(accesslog.SFTPClosed(avatar))
+            notify(events.SFTPClosed(avatar))
 
 
 class TransportSFTPServer:

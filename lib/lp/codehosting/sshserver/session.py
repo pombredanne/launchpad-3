@@ -22,7 +22,7 @@ from twisted.python import log
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
-from lp.codehosting.sshserver import accesslog
+from lp.codehosting.sshserver import events
 
 
 class PatchedSSHSession(session.SSHSession, object):
@@ -116,7 +116,7 @@ class ExecOnlySession:
     def closed(self):
         """See ISession."""
         if self._transport is not None:
-            notify(accesslog.BazaarSSHClosed(self.avatar))
+            notify(events.BazaarSSHClosed(self.avatar))
             try:
                 self._transport.signalProcess('HUP')
             except (OSError, ProcessExitedAlready):
@@ -156,7 +156,7 @@ class ExecOnlySession:
         # XXX: JonathanLange 2008-12-23: This is something of an abstraction
         # violation. Apart from this line, this class knows nothing about
         # Bazaar.
-        notify(accesslog.BazaarSSHStarted(self.avatar))
+        notify(events.BazaarSSHStarted(self.avatar))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 

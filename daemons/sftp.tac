@@ -10,8 +10,10 @@ from twisted.application import service
 from canonical.config import config
 from canonical.launchpad.daemons import tachandler
 
-from lp.codehosting.sshserver.service import (
-    get_key_path, make_portal, PRIVATE_KEY_FILE, PUBLIC_KEY_FILE, SSHService)
+from lp.codehosting.sshserver.daemon import (
+    ACCESS_LOG_NAME, get_key_path, LOG_NAME, make_portal, OOPS_CONFIG_SECTION,
+    PRIVATE_KEY_FILE, PUBLIC_KEY_FILE)
+from lp.codehosting.sshserver.service import SSHService
 
 
 # Construct an Application that has the codehosting SSH server.
@@ -20,6 +22,10 @@ svc = SSHService(
     portal=make_portal(),
     private_key_path=get_key_path(PRIVATE_KEY_FILE),
     public_key_path=get_key_path(PUBLIC_KEY_FILE),
+    oops_configuration=OOPS_CONFIG_SECTION,
+    main_log=LOG_NAME,
+    access_log=ACCESS_LOG_NAME,
+    access_log_path=config.codehosting.access_log,
     strport=config.codehosting.port,
     idle_timeout=config.codehosting.idle_timeout,
     banner=config.codehosting.banner)

@@ -7,26 +7,48 @@ __metaclass__ = type
 
 import codecs
 import logging
+import os
 from StringIO import StringIO
+import tempfile
 import unittest
 import sys
 
 from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.python import log as tplog
-
 import zope.component.event
-from zope.event import notify
 
-from lp.codehosting.sshserver.accesslog import (
-    _log_event, get_access_logger, get_codehosting_logger, LoggingEvent,
-    LoggingManager)
-from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
+from lp.codehosting.sshserver.accesslog import LoggingManager
 from lp.testing import TestCase
 
 
-class TestLoggingBazaarInteraction(BzrTestCase):
+class LoggingManagerMixin:
+
+    _log_count = 0
+
+    def makeLogger(self, name=None):
+        if name is None:
+            self._log_count += 1
+            name = '%s-%s' % (self.id().split('.')[-1], self._log_count)
+        return logging.getLogger(name)
+
+    def installLoggingManager(self, main_log=None, access_log=None,
+                              access_log_path=None):
+        if main_log is None:
+            main_log = self.makeLogger()
+        if access_log is None:
+            access_log = self.makeLogger()
+        if access_log_path is None:
+            fd, access_log_path = tempfile.mkstemp()
+            os.close(fd)
+            self.addCleanup(os.unlink, access_log_path)
+        manager = LoggingManager(main_log, access_log, access_log_path)
+        manager.setUp()
+        self.addCleanup(manager.tearDown)
+        return manager
+
+
+class TestLoggingBazaarInteraction(BzrTestCase, LoggingManagerMixin):
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -44,9 +66,7 @@ class TestLoggingBazaarInteraction(BzrTestCase):
         root_handlers = logging.getLogger('').handlers
         bzr_handlers = logging.getLogger('bzr').handlers
 
-        manager = LoggingManager()
-        manager.setUp()
-        self.addCleanup(manager.tearDown)
+        self.installLoggingManager()
 
         self.assertEqual(root_handlers, logging.getLogger('').handlers)
         self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
@@ -55,30 +75,24 @@ class TestLoggingBazaarInteraction(BzrTestCase):
         # Once logging setup is called, any messages logged to the
         # codehosting logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
-        manager = LoggingManager()
-        manager.setUp()
-        self.addCleanup(manager.tearDown)
+        log = self.makeLogger()
+        self.installLoggingManager(log)
 
         # Make sure that a logged message does not go to stderr.
-        get_codehosting_logger().info('Hello hello')
+        log.info('Hello hello')
         self.assertEqual(sys.stderr.getvalue(), '')
 
 
-class TestLoggingManager(TestCase):
+class TestLoggingManager(TestCase, LoggingManagerMixin):
 
-    def test_returns_codehosting_logger(self):
-        # get_codehosting_logger returns the 'codehosting' logger.
-        self.assertIs(
-            logging.getLogger('codehosting'), get_codehosting_logger())
-
-    def test_codehosting_handlers(self):
-        # There needs to be at least one handler for the codehosting root
-        # logger.
-        manager = LoggingManager()
-        manager.setUp()
-        self.addCleanup(manager.tearDown)
-        handlers = get_codehosting_logger().handlers
-        self.assertNotEqual([], handlers)
+    def test_main_log_handlers(self):
+        # There needs to be at least one handler for the root logger. If there
+        # isn't, we'll get constant errors complaining about the lack of
+        # logging handlers.
+        log = self.makeLogger()
+        self.assertEqual([], log.handlers)
+        self.installLoggingManager(log)
+        self.assertNotEqual([], log.handlers)
 
     def _get_handlers(self):
         registrations = (
@@ -87,126 +101,51 @@ class TestLoggingManager(TestCase):
             registration.factory
             for registration in registrations]
 
-    def test_log_event_handler_not_registered(self):
-        self.assertNotIn(_log_event, self._get_handlers())
-
     def test_set_up_registers_event_handler(self):
-        manager = LoggingManager()
-        manager.setUp()
-        self.addCleanup(manager.tearDown)
-        self.assertIn(_log_event, self._get_handlers())
+        manager = self.installLoggingManager()
+        self.assertIn(manager._log_event, self._get_handlers())
 
     def test_teardown_restores_event_handlers(self):
         handlers = self._get_handlers()
-        manager = LoggingManager()
-        manager.setUp()
+        manager = self.installLoggingManager()
         manager.tearDown()
         self.assertEqual(handlers, self._get_handlers())
 
     def test_teardown_restores_level(self):
-        log = get_codehosting_logger()
+        log = self.makeLogger()
         old_level = log.level
-        manager = LoggingManager()
-        manager.setUp()
+        manager = self.installLoggingManager(log)
         manager.tearDown()
         self.assertEqual(old_level, log.level)
 
-    def test_teardown_restores_handlers(self):
-        log = get_codehosting_logger()
+    def test_teardown_restores_main_log_handlers(self):
+        # tearDown restores log handlers for the main logger.
+        log = self.makeLogger()
         handlers = list(log.handlers)
-        manager = LoggingManager()
-        manager.setUp()
+        manager = self.installLoggingManager(log)
         manager.tearDown()
         self.assertEqual(handlers, log.handlers)
 
-    def test_teardown_restores_twisted_observers(self):
-        observers = list(tplog.theLogPublisher.observers)
-        manager = LoggingManager()
-        manager.setUp(True)
+    def test_teardown_restores_access_log_handlers(self):
+        # tearDown restores log handlers for the access logger.
+        log = self.makeLogger()
+        handlers = list(log.handlers)
+        manager = self.installLoggingManager(access_log=log)
         manager.tearDown()
-        self.assertEqual(observers, list(tplog.theLogPublisher.observers))
+        self.assertEqual(handlers, log.handlers)
 
     def test_access_handlers(self):
         # The logging setup installs a rotatable log handler that logs output
         # to config.codehosting.access_log.
-        manager = LoggingManager()
-        manager.setUp()
-        self.addCleanup(manager.tearDown)
-        [handler] = get_access_logger().handlers
+        directory = self.makeTemporaryDirectory()
+        access_log = self.makeLogger()
+        access_log_path = os.path.join(directory, 'access.log')
+        self.installLoggingManager(
+            access_log=access_log,
+            access_log_path=access_log_path)
+        [handler] = access_log.handlers
         self.assertIsInstance(handler, WatchedFileHandler)
-        self.assertEqual(config.codehosting.access_log, handler.baseFilename)
-
-    def test_teardown_restores_access_handlers(self):
-        log = get_access_logger()
-        handlers = list(log.handlers)
-        manager = LoggingManager()
-        manager.setUp()
-        manager.tearDown()
-        self.assertEqual(handlers, log.handlers)
-
-
-class ListHandler(logging.Handler):
-    """Logging handler that just appends records to a list.
-
-    This handler isn't intended to be used by production code -- memory leak
-    city! -- instead it's useful for unit tests that want to make sure the
-    right events are being logged.
-    """
-
-    def __init__(self, logging_list):
-        """Construct a `ListHandler`.
-
-        :param logging_list: A list that will be appended to. The handler
-             mutates this list.
-        """
-        logging.Handler.__init__(self)
-        self._list = logging_list
-
-    def emit(self, record):
-        """Append 'record' to the list."""
-        self._list.append(record)
-
-
-class TestLoggingEvent(TestCase):
-
-    def assertLogs(self, records, function, *args, **kwargs):
-        """Assert 'function' logs 'records' when run with the given args."""
-        logged_events = []
-        handler = ListHandler(logged_events)
-        self.logger.addHandler(handler)
-        result = function(*args, **kwargs)
-        self.logger.removeHandler(handler)
-        self.assertEqual(
-            [(record.levelno, record.getMessage())
-             for record in logged_events], records)
-        return result
-
-    def assertEventLogs(self, record, logging_event):
-        self.assertLogs([record], notify, logging_event)
-
-    def setUp(self):
-        TestCase.setUp(self)
-        zope.component.provideHandler(_log_event)
-        self.addCleanup(
-            zope.component.getGlobalSiteManager().unregisterHandler,
-            _log_event)
-        self.logger = get_codehosting_logger()
-        self.logger.setLevel(logging.DEBUG)
-
-    def test_level(self):
-        event = LoggingEvent(logging.CRITICAL, "foo")
-        self.assertEventLogs((logging.CRITICAL, 'foo'), event)
-
-    def test_formatting(self):
-        event = LoggingEvent(logging.DEBUG, "foo: %(name)s", name="bar")
-        self.assertEventLogs((logging.DEBUG, 'foo: bar'), event)
-
-    def test_subclass(self):
-        class SomeEvent(LoggingEvent):
-            template = "%(something)s happened."
-            level = logging.INFO
-        self.assertEventLogs(
-            (logging.INFO, 'foo happened.'), SomeEvent(something='foo'))
+        self.assertEqual(access_log_path, handler.baseFilename)
 
 
 def test_suite():

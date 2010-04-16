@@ -5,235 +5,90 @@
 
 __metaclass__ = type
 __all__ = [
-    'AuthenticationFailed',
-    'BazaarSSHClosed',
-    'BazaarSSHStarted',
-    'LoggingEvent',
-    'ServerStarting',
-    'ServerStopped',
-    'SFTPClosed',
-    'SFTPStarted',
-    'UserConnected',
-    'UserDisconnected',
-    'UserLoggedIn',
-    'UserLoggedOut',
+    'LoggingManager',
     ]
 
 import logging
 
 from twisted.python import log as tplog
 
+from zope.component import adapter, getGlobalSiteManager, provideHandler
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
-from zope.interface import Attribute, implements, Interface
 
-from canonical.config import config
 from canonical.launchpad.scripts import WatchedFileHandler
+from lp.codehosting.sshserver.events import ILoggingEvent
 from lp.services.utils import synchronize
-from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 
 class LoggingManager:
-    """Class for managing codehosting logging."""
+    """Class for managing SSH server logging."""
 
-    def setUp(self, configure_oops_reporting=False):
+    def __init__(self, main_log, access_log, access_log_path):
+        """Construct the logging manager.
+
+        :param main_log: The main log. Twisted will log to this.
+        :param access_log: The access log object.
+        :param access_log_path: The path to the file where access log
+            messages go.
+        """
+        self._main_log = main_log
+        self._access_log = access_log
+        self._access_log_path = access_log_path
+        self._is_set_up = False
+
+    def setUp(self):
         """Set up logging for the smart server.
 
-        This sets up a debugging handler on the 'codehosting' logger, makes
-        sure that things logged there won't go to stderr (necessary because of
-        bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
-
-        :param configure_oops_reporting: If True, install a Twisted log
-            observer that ensures unhandled exceptions get reported as OOPSes.
+        This sets up a debugging handler on the main logger and makes sure
+        that things logged there won't go to stderr. It also sets up an access
+        logger.
         """
-        log = get_codehosting_logger()
+        log = self._main_log
         self._orig_level = log.level
         self._orig_handlers = list(log.handlers)
         self._orig_observers = list(tplog.theLogPublisher.observers)
         log.setLevel(logging.INFO)
         log.addHandler(_NullHandler())
-        access_log = get_access_logger()
-        handler = WatchedFileHandler(config.codehosting.access_log)
+        handler = WatchedFileHandler(self._access_log_path)
         handler.setFormatter(
             logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-        access_log.addHandler(handler)
-        if configure_oops_reporting:
-            set_up_oops_reporting('codehosting')
+        self._access_log.addHandler(handler)
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
-        zope.component.provideHandler(_log_event)
+        provideHandler(self._log_event)
+        self._is_set_up = True
+
+    @adapter(ILoggingEvent)
+    def _log_event(self, event):
+        """Log 'event' to the access log."""
+        self._access_log.log(event.level, event.message)
 
     def tearDown(self):
-        log = get_codehosting_logger()
+        if not self._is_set_up:
+            return
+        log = self._main_log
         log.level = self._orig_level
         synchronize(
             log.handlers, self._orig_handlers, log.addHandler,
             log.removeHandler)
-        access_log = get_access_logger()
         synchronize(
-            access_log.handlers, self._orig_handlers, access_log.addHandler,
-            access_log.removeHandler)
+            self._access_log.handlers, self._orig_handlers,
+            self._access_log.addHandler, self._access_log.removeHandler)
         synchronize(
             tplog.theLogPublisher.observers, self._orig_observers,
             tplog.addObserver, tplog.removeObserver)
-        zope.component.getGlobalSiteManager().unregisterHandler(_log_event)
-
-
-def get_codehosting_logger():
-    """Return the codehosting logger."""
-    # This is its own function to avoid spreading the string 'codehosting'
-    # everywhere and to avoid duplicating information about how log objects
-    # are acquired.
-    return logging.getLogger('codehosting')
-
-
-def get_access_logger():
-    return logging.getLogger('codehosting.access')
+        getGlobalSiteManager().unregisterHandler(self._log_event)
+        self._is_set_up = False
 
 
 class _NullHandler(logging.Handler):
     """Logging handler that does nothing with messages.
 
     At the moment, we don't want to do anything with the Twisted log messages
-    that go to the 'codehosting' logger, and we also don't want warnings about
+    that go to the SSH server logger, and we also don't want warnings about
     there being no handlers. Hence, we use this do-nothing handler.
     """
 
     def emit(self, record):
         pass
-
-
-class ILoggingEvent(Interface):
-    """An event is a logging event if it has a message and a severity level.
-
-    Events that provide this interface will be logged in codehosting access
-    log.
-    """
-
-    level = Attribute("The level to log the event at.")
-    message = Attribute("The message to log.")
-
-
-class LoggingEvent:
-    """An event that can be logged to a Python logger.
-
-    :ivar level: The level to log itself as. This should be defined as a
-        class variable in subclasses.
-    :ivar template: The format string of the message to log. This should be
-        defined as a class variable in subclasses.
-    """
-
-    implements(ILoggingEvent)
-
-    def __init__(self, level=None, template=None, **data):
-        """Construct a logging event.
-
-        :param level: The level to log the event as. If specified, overrides
-            the 'level' class variable.
-        :param template: The format string of the message to log. If
-            specified, overrides the 'template' class variable.
-        :param **data: Information to be logged. Entries will be substituted
-            into the template and stored as attributes.
-        """
-        if level is not None:
-            self._level = level
-        if template is not None:
-            self.template = template
-        self._data = data
-
-    @property
-    def level(self):
-        """See `ILoggingEvent`."""
-        return self._level
-
-    @property
-    def message(self):
-        """See `ILoggingEvent`."""
-        return self.template % self._data
-
-
-class ServerStarting(LoggingEvent):
-
-    level = logging.INFO
-    template = '---- Server started ----'
-
-
-class ServerStopped(LoggingEvent):
-
-    level = logging.INFO
-    template = '---- Server stopped ----'
-
-
-class UserConnected(LoggingEvent):
-
-    level = logging.INFO
-    template = '[%(session_id)s] %(address)s connected.'
-
-    def __init__(self, transport, address):
-        LoggingEvent.__init__(
-            self, session_id=id(transport), address=address)
-
-
-class AuthenticationFailed(LoggingEvent):
-
-    level = logging.INFO
-    template = '[%(session_id)s] failed to authenticate.'
-
-    def __init__(self, transport):
-        LoggingEvent.__init__(self, session_id=id(transport))
-
-
-class UserDisconnected(LoggingEvent):
-
-    level = logging.INFO
-    template = '[%(session_id)s] disconnected.'
-
-    def __init__(self, transport):
-        LoggingEvent.__init__(self, session_id=id(transport))
-
-
-class AvatarEvent(LoggingEvent):
-    """Base avatar event."""
-
-    level = logging.INFO
-
-    def __init__(self, avatar):
-        self.avatar = avatar
-        LoggingEvent.__init__(
-            self, session_id=id(avatar.transport), username=avatar.username)
-
-
-class UserLoggedIn(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s logged in.'
-
-
-class UserLoggedOut(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s disconnected.'
-
-
-class SFTPStarted(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s started SFTP session.'
-
-
-class SFTPClosed(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s closed SFTP session.'
-
-
-class BazaarSSHStarted(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s started bzr+ssh session.'
-
-
-class BazaarSSHClosed(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s closed bzr+ssh session.'
-
-
-@zope.component.adapter(ILoggingEvent)
-def _log_event(event):
-    """Log 'event' to the codehosting logger."""
-    get_access_logger().log(event.level, event.message)
