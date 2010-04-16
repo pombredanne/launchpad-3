@@ -328,22 +328,22 @@ class BranchMergeProposal(SQLBase):
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
         # See bug #281060.
-	if (self.queue_status == BranchMergeProposalStatus.QUEUED and
-	    status != BranchMergeProposalStatus.QUEUED):
-	    self.dequeue()
+        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
+            status != BranchMergeProposalStatus.QUEUED):
+            self.dequeue()
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
-	    self.approveBranch(user, revision_id)
+            self.approveBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.QUEUED:
             self.enqueue(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
-	elif status == BranchMergeProposalStatus.MERGE_FAILED:
+        elif status == BranchMergeProposalStatus.MERGE_FAILED:
             self._transitionToState(status)
         else:
             raise AssertionError('Unexpected queue status: ' % status)
@@ -467,14 +467,6 @@ class BranchMergeProposal(SQLBase):
 
         self.queue_position = first_entry.queue_position - 1
         self.syncUpdate()
-
-    def mergeFailed(self, merger):
-        """See `IBranchMergeProposal`."""
-        self._transitionToState(
-            BranchMergeProposalStatus.MERGE_FAILED, merger)
-        self.merger = merger
-        # Remove from the queue.
-        self.queue_position = None
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):

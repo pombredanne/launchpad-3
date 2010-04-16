@@ -117,7 +117,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         BranchMergeProposalStatus.CODE_APPROVED: 'approveBranch',
         BranchMergeProposalStatus.REJECTED: 'rejectBranch',
         BranchMergeProposalStatus.MERGED: 'markAsMerged',
-        BranchMergeProposalStatus.MERGE_FAILED: 'mergeFailed',
+        BranchMergeProposalStatus.MERGE_FAILED: 'setStatus',
         BranchMergeProposalStatus.QUEUED: 'enqueue',
         BranchMergeProposalStatus.SUPERSEDED: 'resubmit',
         }
@@ -140,9 +140,10 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
                         BranchMergeProposalStatus.REJECTED,
                         BranchMergeProposalStatus.QUEUED):
             args = [proposal.target_branch.owner, 'some_revision_id']
-        elif to_state in (BranchMergeProposalStatus.MERGE_FAILED,
-                          BranchMergeProposalStatus.SUPERSEDED):
+        elif to_state in (BranchMergeProposalStatus.SUPERSEDED,):
             args = [proposal.registrant]
+        elif to_state in (BranchMergeProposalStatus.MERGE_FAILED,):
+            args = [to_state] # transition via setStatus.
         else:
             args = []
         method(*args)
@@ -268,16 +269,16 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
 
     def test_transition_from_merge_failed_to_queued_non_reviewer(self):
-	# Contributors can requeue to retry after environmental issues fail a
-	# merge.
+        # Contributors can requeue to retry after environmental issues fail a
+        # merge.
         proposal = self.factory.makeBranchMergeProposal()
-	self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
-	    proposal.source_branch.owner))
+        self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
+            proposal.source_branch.owner))
         # It is always valid to go to the same state.
         self.assertValidTransitions(set([
-		BranchMergeProposalStatus.MERGE_FAILED,
-		BranchMergeProposalStatus.CODE_APPROVED,
-		BranchMergeProposalStatus.QUEUED]),
+                BranchMergeProposalStatus.MERGE_FAILED,
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.QUEUED]),
             proposal, BranchMergeProposalStatus.QUEUED,
             proposal.source_branch.owner)
 
@@ -312,7 +313,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.QUEUED)
-        proposal.mergeFailed(None)
+        proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
         self.assertProposalState(
             proposal, BranchMergeProposalStatus.MERGE_FAILED)
         self.assertIs(None, proposal.queue_position)
@@ -344,16 +345,16 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
 
     def test_set_status_approved_to_queued(self):
         # setState can change an approved merge proposal to Work In Progress,
-	# which will set the revision id to the reviewed revision id if not
-	# supplied.
+        # which will set the revision id to the reviewed revision id if not
+        # supplied.
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.CODE_APPROVED)
-	proposal.approveBranch(proposal.target_branch.owner, '250')
+        proposal.approveBranch(proposal.target_branch.owner, '250')
         proposal.setStatus(BranchMergeProposalStatus.QUEUED)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.QUEUED)
-	self.assertEqual(proposal.queued_revision_id, '250')
+        self.assertEqual(proposal.queued_revision_id, '250')
 
     def test_set_status_approved_to_work_in_progress(self):
         # setState can change an approved merge proposal to Work In Progress.
@@ -371,10 +372,10 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.MERGE_FAILED)
-	self.assertEqual(proposal.queuer, None)
-	self.assertEqual(proposal.queued_revision_id, None)
-	self.assertEqual(proposal.date_queued, None)
-	self.assertEqual(proposal.queue_position, None)
+        self.assertEqual(proposal.queuer, None)
+        self.assertEqual(proposal.queued_revision_id, None)
+        self.assertEqual(proposal.date_queued, None)
+        self.assertEqual(proposal.queue_position, None)
 
     def test_set_status_wip_to_needs_review(self):
         # setState can change the merge proposal to Needs Review.

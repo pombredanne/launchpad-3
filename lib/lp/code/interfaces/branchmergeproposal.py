@@ -339,8 +339,8 @@ class IBranchMergeProposal(IPrivacy):
         is called, approveBranch is called with the reviewer and revision_id
         specified.
 
-	If None is supplied as the revision_id, the proposals
-	reviewed_revision_id is used.
+        If None is supplied as the revision_id, the proposals
+        reviewed_revision_id is used.
         """
 
     def dequeue():
@@ -352,9 +352,6 @@ class IBranchMergeProposal(IPrivacy):
 
     def moveToFrontOfQueue():
         """Move the queue proposal to the front of the queue."""
-
-    def mergeFailed(merger):
-        """Mark the proposal as 'Code failed to merge'."""
 
     def markAsMerged(merged_revno=None, date_merged=None,
                      merge_reporter=None):
