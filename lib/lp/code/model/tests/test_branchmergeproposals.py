@@ -267,6 +267,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         """We can go from merge failed to any other state."""
         self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
 
+    def test_transition_from_merge_failed_to_queued_non_reviewer(self):
+	# Contributors can requeue to retry after environmental issues fail a
+	# merge.
+        proposal = self.factory.makeBranchMergeProposal()
+	self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
+	    proposal.source_branch.owner))
+        # It is always valid to go to the same state.
+        self.assertValidTransitions(set([
+		BranchMergeProposalStatus.MERGE_FAILED,
+		BranchMergeProposalStatus.CODE_APPROVED,
+		BranchMergeProposalStatus.QUEUED]),
+            proposal, BranchMergeProposalStatus.QUEUED,
+            proposal.source_branch.owner)
+
     def test_transitions_from_queued_dequeue(self):
         # When a proposal is dequeued it is set to code approved, and the
         # queue position is reset.
@@ -327,6 +341,19 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.target_branch = self.factory.makeProductBranch()
         login_person(self.target_branch.owner)
+
+    def test_set_status_approved_to_queued(self):
+        # setState can change an approved merge proposal to Work In Progress,
+	# which will set the revision id to the reviewed revision id if not
+	# supplied.
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+	proposal.approveBranch(proposal.target_branch.owner, '250')
+        proposal.setStatus(BranchMergeProposalStatus.QUEUED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.QUEUED)
+	self.assertEqual(proposal.queued_revision_id, '250')
 
     def test_set_status_approved_to_work_in_progress(self):
         # setState can change an approved merge proposal to Work In Progress.

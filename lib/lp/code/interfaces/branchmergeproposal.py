@@ -338,6 +338,9 @@ class IBranchMergeProposal(IPrivacy):
         If the proposal is not in the Approved state before this method
         is called, approveBranch is called with the reviewer and revision_id
         specified.
+
+	If None is supplied as the revision_id, the proposals
+	reviewed_revision_id is used.
         """
 
     def dequeue():

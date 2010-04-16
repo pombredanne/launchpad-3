@@ -84,9 +84,10 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     if (next_state == rejected and not valid_reviewer):
         return False
     # Non-reviewers can toggle between code_approved and queued, but not
-    # make anything else approved or queued.
+    # make anything else approved or queued. They can also take merge failed
+    # and requeue or bounce all the way out to approved again.
     elif (next_state in (code_approved, queued) and
-          from_state not in (code_approved, queued)
+          from_state not in (code_approved, queued, merge_failed)
           and not valid_reviewer):
         return False
     else:
@@ -327,17 +328,15 @@ class BranchMergeProposal(SQLBase):
         # XXX - rockstar - 9 Oct 2008 - jml suggested in a review that this
         # would be better as a dict mapping.
         # See bug #281060.
+	if (self.queue_status == BranchMergeProposalStatus.QUEUED and
+	    status != BranchMergeProposalStatus.QUEUED):
+	    self.dequeue()
         if status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
-            # Other half of the edge case.  If the status is currently queued,
-            # we need to dequeue, otherwise we just approve the branch.
-            if self.queue_status == BranchMergeProposalStatus.QUEUED:
-                self.dequeue()
-            else:
-                self.approveBranch(user, revision_id)
+	    self.approveBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.QUEUED:
@@ -381,7 +380,7 @@ class BranchMergeProposal(SQLBase):
 
     def _reviewProposal(self, reviewer, next_state, revision_id,
                         _date_reviewed=None):
-        """Set the proposal to one of the two review statuses."""
+        """Set the proposal to next_state."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
         if not self.target_branch.isPersonTrustedReviewer(reviewer):
@@ -435,7 +434,7 @@ class BranchMergeProposal(SQLBase):
         self.queue_status = BranchMergeProposalStatus.QUEUED
         self.queue_position = position
         self.queuer = queuer
-        self.queued_revision_id = revision_id
+        self.queued_revision_id = revision_id or self.reviewed_revision_id
         self.date_queued = UTC_NOW
         self.syncUpdate()
 
