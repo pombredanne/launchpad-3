@@ -476,15 +476,13 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         field = form.Fields(choice, render_context=self.render_context)
         self.form_fields = self.form_fields.omit(choice.__name__) + field
 
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`.
-
-        Set the current `ISourcePackageName` as the default value.
-        """
-        super(ProductSeriesUbuntuPackagingView, self).setUpWidgets()
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
         if self.default_sourcepackagename is not None:
-            widget = self.widgets.get('sourcepackagename')
-            widget.setRenderedValue(self.default_sourcepackagename)
+            return {'sourcepackagename': self.default_sourcepackagename}
+        else:
+            return {}
 
     @property
     def default_distroseries(self):
