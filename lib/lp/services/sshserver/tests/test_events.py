@@ -13,7 +13,7 @@ from zope.component import adapter, getGlobalSiteManager, provideHandler
 import zope.component.event
 from zope.event import notify
 
-from lp.codehosting.sshserver.events import ILoggingEvent, LoggingEvent
+from lp.services.sshserver.events import ILoggingEvent, LoggingEvent
 
 from lp.testing import TestCase
 

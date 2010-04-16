@@ -6,8 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AuthenticationFailed',
-    'BazaarSSHClosed',
-    'BazaarSSHStarted',
+    'AvatarEvent',
     'ILoggingEvent',
     'LoggingEvent',
     'ServerStarting',
@@ -28,7 +27,7 @@ from zope.interface import Attribute, implements, Interface
 class ILoggingEvent(Interface):
     """An event is a logging event if it has a message and a severity level.
 
-    Events that provide this interface will be logged in codehosting access
+    Events that provide this interface will be logged in the SSH server access
     log.
     """
 
@@ -143,13 +142,3 @@ class SFTPStarted(AvatarEvent):
 class SFTPClosed(AvatarEvent):
 
     template = '[%(session_id)s] %(username)s closed SFTP session.'
-
-
-class BazaarSSHStarted(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s started bzr+ssh session.'
-
-
-class BazaarSSHClosed(AvatarEvent):
-
-    template = '[%(session_id)s] %(username)s closed bzr+ssh session.'

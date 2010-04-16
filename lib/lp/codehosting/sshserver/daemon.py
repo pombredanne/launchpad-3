@@ -27,9 +27,9 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.codehosting import sftp
-from lp.codehosting.sshserver.auth import (
-    LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.codehosting.sshserver.session import launch_smart_server
+from lp.services.sshserver.auth import (
+    LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 
 
 # The names of the key files of the server itself. The directory itself is
@@ -97,7 +97,7 @@ def make_portal():
     """Create and return a `Portal` for the SSH service.
 
     This portal accepts SSH credentials and returns our customized SSH
-    avatars (see `lp.codehosting.sshserver.auth.CodehostingAvatar`).
+    avatars (see `CodehostingAvatar`).
     """
     authentication_proxy = Proxy(
         config.codehosting.authentication_endpoint)

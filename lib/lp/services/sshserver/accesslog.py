@@ -17,7 +17,7 @@ from zope.component import adapter, getGlobalSiteManager, provideHandler
 import zope.component.event
 
 from canonical.launchpad.scripts import WatchedFileHandler
-from lp.codehosting.sshserver.events import ILoggingEvent
+from lp.services.sshserver.events import ILoggingEvent
 from lp.services.utils import synchronize
 
 
