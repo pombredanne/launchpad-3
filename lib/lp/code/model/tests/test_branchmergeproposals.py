@@ -364,6 +364,18 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
+    def test_set_status_queued_to_merge_failed(self):
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=BranchMergeProposalStatus.QUEUED)
+        proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
+        self.assertEqual(proposal.queue_status,
+            BranchMergeProposalStatus.MERGE_FAILED)
+	self.assertEqual(proposal.queuer, None)
+	self.assertEqual(proposal.queued_revision_id, None)
+	self.assertEqual(proposal.date_queued, None)
+	self.assertEqual(proposal.queue_position, None)
+
     def test_set_status_wip_to_needs_review(self):
         # setState can change the merge proposal to Needs Review.
         proposal = self.factory.makeBranchMergeProposal(

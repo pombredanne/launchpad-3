@@ -343,6 +343,8 @@ class BranchMergeProposal(SQLBase):
             self.enqueue(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
+	elif status == BranchMergeProposalStatus.MERGE_FAILED:
+            self._transitionToState(status)
         else:
             raise AssertionError('Unexpected queue status: ' % status)
 
