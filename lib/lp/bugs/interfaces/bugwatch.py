@@ -97,7 +97,30 @@ class BugWatchActivityStatus(DBEnumeratedType):
     SYNC_SUCCEEDED = DBItem(9, """
         Synchronisation succeeded
 
-        The remote bug's status was successfully synchronised to Launchpad.
+        The remote bug's status was successfully synchronized to Launchpad.
+        """)
+
+    COMMENT_IMPORT_FAILED = DBItem(10, """
+        Unable to import comments
+
+        The remote bug's status was synchronized successfully but
+        comments could not be imported from the remote bug.
+        """)
+
+    COMMENT_PUSH_FAILED = DBItem(11, """
+        Unable to push comments
+
+        The remote bug's status was synchronized successfully and
+        its comments were successfully imported but Launchpad was unable
+        to push comments back to the remote bug.
+        """)
+
+    BACKLINK_FAILED = DBItem(12, """
+        Unable to set link remote bug to Launchpad
+
+        The remote bug's status and comments were synchronized
+        sucessfully with Launchpad but Launchpad was unable to set the
+        remote bug's link back to the relevant Launchpad bug.
         """)
 
 
