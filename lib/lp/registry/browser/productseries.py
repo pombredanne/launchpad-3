@@ -820,6 +820,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
+        self.initial_values['branch_location'] = self.context.branch
         super(ProductSeriesSetBranchView, self).setUpWidgets()
 
         def render(widget, term_value, current_value, label=None):
