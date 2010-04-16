@@ -25,10 +25,11 @@ translation, and also reminds him that he has full editing privileges.
 Users with full access will also have an option to switch between translator
 and reviewer working mode.
 
-    >>> print_tag_with_id(
+    >>> switch_working_mode = find_tag_by_id(
     ...     admin_browser.contents,
     ...     'translation-switch-working-mode')
-    You are in reviewer mode.
+    >>> switch_working_mode is not None
+    True
 
 == Displaying translation groups and reviewers ==
 
