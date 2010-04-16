@@ -18,7 +18,6 @@ __all__ = [
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
     'PersonBugsMenu',
-    'PersonClaimView',
     'PersonCodeOfConductEditView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
@@ -218,8 +217,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.login import (
-    logoutPerson, allowUnauthenticatedSession)
+from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
@@ -2347,9 +2345,9 @@ class PersonVouchersView(LaunchpadFormView):
             # The call to redeemVoucher returns True if it succeeds or it
             # raises an exception.  Therefore the return value does not need
             # to be checked.
-            result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
-                                                    self.context,
-                                                    project)
+            salesforce_proxy.redeemVoucher(voucher.voucher_id,
+                                           self.context,
+                                           project)
             project.redeemSubscriptionVoucher(
                 voucher=voucher.voucher_id,
                 registrant=self.context,
@@ -3340,7 +3338,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                     'The URL scheme "%(scheme)s" is not allowed.  '
                     'Only http or https URLs may be used.', scheme=uri.scheme)
                 return False
-        except InvalidURIError, e:
+        except InvalidURIError:
             self.error_message = structured(
                 '"%(url)s" is not a valid URL.', url=url)
             return False
@@ -4175,8 +4173,6 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
 
     @action(_("Leave"), name="leave")
     def action_save(self, action, data):
-        response = self.request.response
-
         if self.user_can_request_to_leave:
             self.user.leave(self.context)
 

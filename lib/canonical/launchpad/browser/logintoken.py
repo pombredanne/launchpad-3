@@ -35,7 +35,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler)
 from canonical.launchpad.interfaces.logintoken import (
     IGPGKeyValidationForm, ILoginTokenSet)
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPrincipal
@@ -44,10 +43,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+from canonical.widgets import LaunchpadRadioWidget
 
 from lp.registry.browser.team import HasRenewalPolicyMixin
-from lp.registry.interfaces.person import IPerson, IPersonSet, ITeam
+from lp.registry.interfaces.person import IPersonSet, ITeam
 
 
 UTC = pytz.UTC
@@ -304,7 +303,8 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
         # We compare the word-splitted content to avoid failures due
         # to whitepace differences.
-        if signature.plain_data.split() != self.context.validation_phrase.split():
+        if (signature.plain_data.split()
+            != self.context.validation_phrase.split()):
             self.addError(_(
                 'The signed content does not match the message found '
                 'in the email.'))
