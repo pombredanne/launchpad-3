@@ -155,7 +155,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
 
         # If, on the other hand, the bug is security_related,
         # _getHeatFromSecurity() will return BugHeatConstants.SECURITY
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
         self.assertEqual(
             BugHeatConstants.SECURITY, self.calculator._getHeatFromSecurity())
 
@@ -179,7 +179,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         dupe = self.factory.makeBug()
         dupe.duplicateof = self.bug
         self.bug.setPrivate(True, self.bug.owner)
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
 
         expected_heat += (
             BugHeatConstants.DUPLICATE +
