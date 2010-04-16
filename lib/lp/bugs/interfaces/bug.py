@@ -207,7 +207,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability"),
-             required=False, default=False))
+             required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -701,6 +701,17 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
             :private: True/False.
             :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
+    @mutator_for(security_related)
+    @operation_parameters(security_related=copy_field(security_related))
+    @export_write_operation()
+    def setSecurityRelated(security_related):
+        """Set bug security.
+
+            :security_related: True/False.
 
         Return True if a change is made, False otherwise.
         """

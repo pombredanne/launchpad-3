@@ -17,9 +17,10 @@ First we create some objects for use in the tests.
     >>> other_person = factory.makePerson(name='other-person')
     >>> removeSecurityProxy(person).join(team)
     >>> product = factory.makeProduct(name='scruff')
+    >>> svn_branch_url = "http://svn.domain.com/source"
     >>> code_import = removeSecurityProxy(factory.makeProductCodeImport(
     ...    registrant=person, product=product, branch_name='import',
-    ...    svn_branch_url="http://svn.domain.com/source"))
+    ...    svn_branch_url=svn_branch_url))
     >>> no_import_branch = removeSecurityProxy(factory.makeProductBranch(
     ...     owner=person, product=product, name='no-import'))
     >>> logout()
@@ -83,6 +84,8 @@ The same is true for package branches.
     ...    branch_name='import',
     ...    svn_branch_url="http://svn.domain.com/package_source"))
     >>> logout()
+    >>> import_webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PUBLIC)
 
 There is a link on the branch object
 
@@ -225,4 +228,26 @@ If we wish to create a branch owned by a team we are part of then we can.
     >>> print representation['cvs_module']
     None
     >>> print representation['date_last_successful']
+    None
+
+
+== Requesting an Import ==
+
+You can request that an approved, working import happen soon over the
+API using the requestImport() method.
+
+    >>> login(ANONYMOUS)
+    >>> git_import = factory.makeProductCodeImport(
+    ...     registrant=person, product=product, branch_name='git-import',
+    ...     git_repo_url=factory.getUniqueURL())
+    >>> git_import_url = (
+    ...    '/' + git_import.branch.unique_name + '/+code-import')
+    >>> logout()
+    >>> import_webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> response = import_webservice.named_post(
+    ...     git_import_url, 'requestImport')
+    >>> print response.status
+    200
+    >>> print response.jsonBody()
     None
