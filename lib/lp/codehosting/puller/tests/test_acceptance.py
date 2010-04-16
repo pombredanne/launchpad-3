@@ -8,6 +8,7 @@ __all__ = []
 
 
 import os
+import socket
 from subprocess import PIPE, Popen
 import unittest
 
@@ -18,6 +19,8 @@ from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 from bzrlib.tests import HttpServer
+from bzrlib.tests.http_server import (
+    TestingHTTPServer, TestingThreadingHTTPServer)
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import join as urljoin, local_path_from_url
@@ -31,6 +34,38 @@ from lp.codehosting.puller.tests import PullerBranchTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
+
+
+# XXX MichaelHudson, bug=564375: With changes to the SocketServer module in
+# Python 2.6 the thread created in serveOverHTTP cannot be joined, because
+# HttpServer.stop_server doesn't do enough to get the thread out of the select
+# call in SocketServer.BaseServer.handle_request().  So what follows is
+# slightly horrible code to use the version of handle_request from Python 2.5.
+
+def fixed_handle_request(self):
+    """Handle one request, possibly blocking. """
+    try:
+        request, client_address = self.get_request()
+    except socket.error:
+        return
+    if self.verify_request(request, client_address):
+        try:
+            self.process_request(request, client_address)
+        except:
+            self.handle_error(request, client_address)
+            self.close_request(request)
+
+
+class FixedTHS(TestingHTTPServer):
+    handle_request = fixed_handle_request
+
+
+class FixedTTHS(TestingThreadingHTTPServer):
+    handle_request = fixed_handle_request
+
+
+class FixedHttpServer(HttpServer):
+    http_server_class = {'HTTP/1.0': FixedTHS, 'HTTP/1.1': FixedTTHS}
 
 
 class TestBranchPuller(PullerBranchTestCase):
@@ -135,7 +170,7 @@ class TestBranchPuller(PullerBranchTestCase):
 
     def serveOverHTTP(self):
         """Serve the current directory over HTTP, returning the server URL."""
-        http_server = HttpServer()
+        http_server = FixedHttpServer()
         http_server.start_server()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
@@ -147,7 +182,7 @@ class TestBranchPuller(PullerBranchTestCase):
         # XXX: Salgado, 2010-04-08: This causes the test suite to hang, so
         # I've commented it out to see if we can run the test suite to
         # completion.
-        #self.addCleanup(http_server._http_thread.join)
+        self.addCleanup(http_server._http_thread.join)
         self.addCleanup(http_server.stop_server)
         return http_server.get_url().rstrip('/')
 
