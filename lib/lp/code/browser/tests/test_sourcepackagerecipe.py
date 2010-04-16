@@ -1,5 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=F0401
 
 """Tests for the product view classes and templates."""
 
@@ -18,34 +19,48 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import extract_text, find_main_content
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
-from lp.testing import (TestCaseWithFactory)
+from lp.testing import (ANONYMOUS, login, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipeView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        """Provide useful defaults."""
+        super(TestSourcePackageRecipeView, self).setUp()
+        self.chef = self.factory.makePerson(
+            displayname='Master Chef', name='chef', password='test')
+        self.ppa = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef)
+        self.squirrel = self.factory.makeDistroSeries(
+            displayname='Secret Squirrel', name='secret')
+
     def makeRecipe(self):
-        chef = self.factory.makePersonNoCommit(displayname='Master Chef',
-                name='chef')
+        """Create and return a specific recipe."""
         chocolate = self.factory.makeProduct(name='chocolate')
         cake_branch = self.factory.makeProductBranch(
-            owner=chef, name='cake', product=chocolate)
-        distroseries = self.factory.makeDistroSeries(
-            displayname='Secret Squirrel')
+            owner=self.chef, name='cake', product=chocolate)
         return self.factory.makeSourcePackageRecipe(
-            None, chef, distroseries, None, u'cake_recipe',
+            None, self.chef, self.squirrel, None, u'cake_recipe',
             u'This recipe builds a foo for disto bar, with my Secret Squirrel'
             ' changes.', cake_branch)
 
-    def getMainText(self, recipe):
-        browser = self.getUserBrowser(canonical_url(recipe))
+    def getRecipeBrowser(self, recipe, view_name=None):
+        """Return a browser for the specified recipe, opened as Chef."""
+        login(ANONYMOUS)
+        url = canonical_url(recipe, view_name=view_name)
+        return self.getUserBrowser(url, self.chef)
+
+    def getMainText(self, recipe, view_name=None):
+        """Return the main text of a recipe page, as seen by Chef."""
+        browser = self.getRecipeBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
 
     def test_index(self):
         recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe))
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
         pattern = re.compile(dedent("""\
@@ -63,7 +78,15 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Distribution series:
             Secret Squirrel
             Build records
-            Successful build.on 2010-03-16
+            Status
+            Time
+            Distribution series
+            Archive
+            Successful build
+            on 2010-03-16
+            Secret Squirrel
+            Secret PPA
+            Request build\(s\)
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake"""), re.S)
@@ -72,28 +95,45 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe))
+        removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         pattern = re.compile(dedent("""\
             Build records
+            Status
+            Time
+            Distribution series
+            Archive
             No suitable builders
-            Recipe contents"""), re.S)
+            Secret Squirrel
+            Secret PPA
+            Request build\(s\)"""), re.S)
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
 
     def makeBuildJob(self, recipe):
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
-        buildjob = self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=build)
+        """Return a build associated with a buildjob."""
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa )
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         return build
 
     def test_index_pending(self):
+        """Test the listing of a pending build."""
         recipe = self.makeRecipe()
-        buildjob = self.makeBuildJob(recipe)
-        builder = self.factory.makeBuilder()
+        self.makeBuildJob(recipe)
+        self.factory.makeBuilder()
         pattern = re.compile(dedent("""\
             Build records
-            Pending build.in .*\(estimated\)
+            Status
+            Time
+            Distribution series
+            Archive
+            Pending build
+            in .*
+            \(estimated\)
+            Secret Squirrel
+            Secret PPA
+            Request build\(s\)
             Recipe contents"""), re.S)
         main_text = self.getMainText(recipe)
         self.assertTrue(pattern.search(main_text), main_text)
@@ -125,4 +165,41 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         set_day(build4, 13)
         set_day(build5, 12)
         set_day(build6, 11)
-        self.assertEqual([build5, build4, build3, build2, build1], view.builds)
+        self.assertEqual(
+            [build5, build4, build3, build2, build1], view.builds)
+
+    def test_request_builds_page(self):
+        """Ensure the +request-builds page is sane."""
+        recipe = self.makeRecipe()
+        text = self.getMainText(recipe, '+request-builds')
+        self.assertEqual(dedent(u"""\
+            Request builds for cake_recipe
+            Master Chef
+            Branches
+            Request builds for cake_recipe
+            Archive:
+            Secret PPA (chef/ppa)
+            Distribution series:
+            Warty
+            Hoary
+            Six
+            7.0
+            Woody
+            Sarge
+            Guada2005
+            Secret Squirrel
+            or
+            Cancel"""), text)
+
+    def test_request_builds_action(self):
+        """Requesting a build creates pending builds."""
+        recipe = self.makeRecipe()
+        browser = self.getRecipeBrowser(recipe, '+request-builds')
+        browser.getControl('Woody').click()
+        browser.getControl('Request builds').click()
+        build_distros = [
+            build.distroseries.displayname for build in
+            recipe.getBuilds(True)]
+        build_distros.sort()
+        # Secret Squirrel is checked by default.
+        self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)

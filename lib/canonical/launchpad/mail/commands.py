@@ -279,7 +279,7 @@ class SecurityEmailCommand(EmailCommand):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.security_related = security_related
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 

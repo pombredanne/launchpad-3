@@ -488,6 +488,7 @@ When the product is not linked to a source package in Ubuntu the
 the user to make the connection.
 
     >>> product = factory.makeProduct(name="bingo")
+    >>> transaction.commit()
     >>> login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",

@@ -20,12 +20,11 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    RosettaImportStatus, ITranslationImportQueue)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 
@@ -198,38 +197,6 @@ class TestTranslationTemplatesBuildBehavior(
         self.assertEqual(1, builder.cleanSlave.call_count)
         self.assertEqual(0, behavior._uploadTarball.call_count)
 
-    def test_verifySlaveBuildID_success(self):
-        # TranslationTemplatesBuildJob.getName generates slave build ids
-        # that TranslationTemplatesBuildBehavior.verifySlaveBuildID
-        # accepts.
-        behavior = self.makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
-
-        # The test is that this not raise CorruptBuildID (or anything
-        # else, for that matter).
-        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
-
-    def test_verifySlaveBuildID_handles_dashes(self):
-        # TranslationTemplatesBuildBehavior.verifySlaveBuildID can deal
-        # with dashes in branch names.
-        behavior = self.makeBehavior()
-        buildfarmjob = behavior.buildfarmjob
-        job = buildfarmjob.job
-        buildfarmjob.branch.name = 'x-y-z--'
-
-        # The test is that this not raise CorruptBuildID (or anything
-        # else, for that matter).
-        behavior.verifySlaveBuildID(behavior.buildfarmjob.getName())
-
-    def test_verifySlaveBuildID_malformed(self):
-        behavior = self.makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, 'huh?')
-
-    def test_verifySlaveBuildID_notfound(self):
-        behavior = self.makeBehavior()
-        self.assertRaises(CorruptBuildID, behavior.verifySlaveBuildID, '1-1')
-
 
 class TestTTBuildBehaviorTranslationsQueue(
         TestCaseWithFactory, MakeBehaviorMixin):
@@ -250,9 +217,6 @@ class TestTTBuildBehaviorTranslationsQueue(
         self.dummy_tar = os.path.join(
             os.path.dirname(__file__),'dummy_templates.tar.gz')
 
-    def _getPaths(self, entries):
-        return [entry.path for entry in entries]
-
     def test_uploadTarball(self):
         # Files from the tarball end up in the import queue.
         behavior = self.makeBehavior()
@@ -261,11 +225,24 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         entries = self.queue.getAllEntries(target=self.productseries)
         expected_templates = [
-            'po/messages.pot',
+            'po/domain.pot',
             'po-other/other.pot',
             'po-thethird/templ3.pot'
             ]
-        self.assertContentEqual(expected_templates, self._getPaths(entries))
+
+        paths = [entry.path for entry in entries]
+        self.assertContentEqual(expected_templates, paths)
+
+    def test_uploadTarball_approved(self):
+        # Uploaded template files are automatically approved.
+        behavior = self.makeBehavior()
+        behavior._uploadTarball(
+            self.branch, file(self.dummy_tar).read(), None)
+
+        entries = self.queue.getAllEntries(target=self.productseries)
+        statuses = [entry.status for entry in entries]
+        self.assertEqual(
+            [RosettaImportStatus.APPROVED] * 3, statuses)
 
     def test_uploadTarball_importer(self):
         # Files from the tarball are owned by the branch owner.
@@ -297,11 +274,12 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         entries = self.queue.getAllEntries(target=self.productseries)
         expected_templates = [
-            'po/messages.pot',
+            'po/domain.pot',
             'po-other/other.pot',
             'po-thethird/templ3.pot'
             ]
-        self.assertContentEqual(expected_templates, self._getPaths(entries))
+        self.assertContentEqual(
+            expected_templates, [entry.path for entry in entries])
 
 
 def test_suite():
