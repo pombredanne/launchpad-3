@@ -800,12 +800,15 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
     custom_widget('branch_type', LaunchpadRadioWidget)
-    initial_values = {
-        'rcs_type': RevisionControlSystemsExtended.BZR,
-        'branch_type': LINK_LP_BZR,
-        }
 
     errors_in_action = False
+
+    @property
+    def initial_values(self):
+        return dict(
+            rcs_type=RevisionControlSystemsExtended.BZR,
+            branch_type=LINK_LP_BZR,
+            branch_location=self.context.branch)
 
     @property
     def next_url(self):
@@ -820,7 +823,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
-        self.initial_values['branch_location'] = self.context.branch
         super(ProductSeriesSetBranchView, self).setUpWidgets()
 
         def render(widget, term_value, current_value, label=None):
