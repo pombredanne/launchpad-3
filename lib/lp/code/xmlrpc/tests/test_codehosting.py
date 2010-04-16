@@ -431,13 +431,6 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         """See `AcquireBranchToPullTests`."""
         self.storage.startMirroring(branch.id)
 
-    def test_branch_type_returned_hosted(self):
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull(())
-        _, _, _, _, branch_type = pull_info
-        self.assertEqual('HOSTED', branch_type)
-
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
@@ -453,7 +446,8 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.assertEqual('IMPORTED', branch_type)
 
     def test_default_stacked_on_branch_returned(self):
-        branch = self.factory.makeProductBranch()
+        branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED)
         self.factory.enableDefaultStackingForProduct(branch.product)
         branch.requestMirror()
         pull_info = self.storage.acquireBranchToPull(())
