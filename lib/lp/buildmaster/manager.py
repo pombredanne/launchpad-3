@@ -15,10 +15,11 @@ __all__ = [
     ]
 
 import logging
+import StringIO
 import transaction
 
 from twisted.application import service
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor, protocol
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -57,6 +58,53 @@ class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
     noisy = False
     # Use the protocol with timeout support.
     protocol = QueryWithTimeoutProtocol
+
+
+class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
+    """Run a process and capture its output while applying a timeout."""
+
+    def __init__(self, deferred, timeout, clock):
+        self.deferred = deferred
+        self._clock = clock
+        self._timeout = timeout
+        self.outBuf = StringIO.StringIO()
+        self.errBuf = StringIO.StringIO()
+        self.outReceived = self.outBuf.write
+        self.errReceived = self.errBuf.write
+        # Set later after process is spawned.
+        self.processTransport = None
+
+    def callLater(self, period, func):
+        """Override TimeoutMixin.callLater so we use self._clock.
+
+        This allows us to write unit tests that don't depend on actual wall
+        clock time.
+        """
+        return self._clock.callLater(period, func)
+
+    def connectionMade(self):
+        """Start the timeout counter when connection is made."""
+        self.setTimeout(self._timeout)
+
+    def timeoutConnection(self):
+        """When a timeout occurs, kill the process and record a TimeoutError.
+        """
+        #self.unexpectedError(Failure(error.TimeoutError()))
+        self.processTransport.signalProcess("KILL")
+        # Process ended will get called now?
+
+    def processEnded(self, reason):
+        self.setTimeout(None)
+        out = self.outBuf.getvalue()
+        err = self.errBuf.getvalue()
+        e = reason.value
+        code = e.exitCode
+        if e.signal:
+            self.deferred.errback((out, err, e.signal))
+        else:
+            self.deferred.callback((out, err, code))
+
+
 
 
 class RecordingSlave:
@@ -128,9 +176,15 @@ class RecordingSlave:
             'vm_host': self.vm_host}
         # Twisted API require string and the configuration provides unicode.
         resume_argv = [str(term) for term in resume_command.split()]
-        d = run_process_with_timeout(
-            tuple(resume_argv), timeout=config.builddmaster.socket_timeout)
+
+        d = defer.Deferred()
+        p = ProcessWithTimeout(d, config.builddmaster.socket_timeout)
+        reactor.spawnProcess(p, tuple(resume_argv))
         return d
+
+        #d = run_process_with_timeout(
+        #    tuple(resume_argv), timeout=config.builddmaster.socket_timeout)
+        #return d
 
 
 class BaseDispatchResult:
@@ -180,7 +234,7 @@ class ResetDispatchResult(BaseDispatchResult):
     """Represents a failure to reset a builder.
 
     When evaluated this object simply cleans up the running job
-    (`IBuildQueue`).
+    (`IBuildQueue`) and marks the builder down.
     """
 
     def __repr__(self):
@@ -192,6 +246,7 @@ class ResetDispatchResult(BaseDispatchResult):
         from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
+        builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
 
@@ -362,13 +417,15 @@ class BuilddManager(service.Service):
         If it failed, it returns a corresponding `ResetDispatchResult`
         dispatch result.
         """
-        if not isinstance(response, Failure):
+        out, err, code = response
+        if code == 0:
+            # Process exited normally.
             return None
 
-        self.logger.error(
-            '%s resume failure: %s' % (slave, response.getErrorMessage()))
+        error_text = '%s\n%s' % (out, err)
+        self.logger.error( '%s resume failure: %s' % error_text)
         self.slaveDone(slave)
-        return self.reset_result(slave)
+        return self.reset_result(slave, error_text)
 
     def checkDispatch(self, response, method, slave):
         """Verify the results of a slave xmlrpc call.
