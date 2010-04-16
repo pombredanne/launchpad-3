@@ -74,20 +74,21 @@ class BuildFarmJob:
 
 
 class BuildFarmJobDerived:
-    """Common functionality required by classes delegating IBuildFarmJob.
-
-    This mainly involves ensuring that the instance to which we delegate
-    is created.
-    """
+    """See `IBuildFarmJobDerived`."""
     implements(IBuildFarmJobDerived)
     delegates(IBuildFarmJob, context='_build_farm_job')
 
     def __init__(self, *args, **kwargs):
+        """Ensure the instance to which we delegate is set on creation."""
         self._set_build_farm_job()
         super(BuildFarmJobDerived, self).__init__(*args, **kwargs)
 
     def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation."""
+        """Set the attribute for our IBuildFarmJob delegation.
+
+        This is needed here as __init__() is not called when a storm object
+        is loaded from the database.
+        """
         self._set_build_farm_job()
 
     def _set_build_farm_job(self):

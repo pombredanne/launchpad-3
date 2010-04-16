@@ -1,23 +1,43 @@
-= BuildFarmJob =
+BuildFarmJob
+============
 
     >>> from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-    >>> from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+    >>> from lp.buildmaster.model.buildfarmjob import (
+    ...     BuildFarmJob, BuildFarmJobDerived)
 
 BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
-specific build farm job classes should delegate to it.
+specific build farm job classes will automatically delegate to
+BuildFarmJob by inheriting BuildFarmJobDerived.
 
     >>> buildfarmjob = BuildFarmJob()
     >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
 
+The BuildFarmJob class does not (yet) do a lot itself, other than
+providing default implementations for its methods.
+
+    >>> print buildfarmjob.getLogFileName()
+    buildlog.txt
+
+    >>> buildfarmjob.getName()
+    Traceback (most recent call last):
+    ...
+    NotImplementedError
+
+
+BuildFarmJobDerived
+===================
+
 BuildFarmJobDerived exists to encapsulate the functionality required
-by classes delegating IBuildFarmJob. This class also includes
-the getByJob() class method used to find the instance of a specific
-build-farm job implementation associated with a given Job instance.
+by classes delegating IBuildFarmJob.
 
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
     ...     IBuildFarmJobDerived)
     >>> verifyObject(IBuildFarmJobDerived, BuildFarmJobDerived())
     True
 
-XXX The above should be in a unit-test, it is not good documentation.
+This class also includes the getByJob() class method used to find the
+instance of a specific build-farm job implementation associated with a
+given Job instance which must be called in the context of a concrete
+derived class. See lp.buildmaster.tests.test_buildqueue for examples.
+

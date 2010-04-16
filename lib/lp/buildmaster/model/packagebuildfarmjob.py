@@ -24,7 +24,7 @@ class PackageBuildFarmJob(BuildFarmJob):
         XXX 2010-04-12 michael.nelson bug=536700
         The build param will no longer be necessary once BuildFarmJob is
         itself a concrete class. This class (PackageBuildFarmJob)
-        will be renamed PackageBuild and turned into a concrete class itself.
+        will also be renamed PackageBuild and turned into a concrete class.
         """
         super(PackageBuildFarmJob, self).__init__()
         self.build = build

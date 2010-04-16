@@ -129,10 +129,8 @@ class IBuildFarmJob(Interface):
 class IBuildFarmJobDerived(Interface):
     """Common functionality required by classes delegating IBuildFarmJob.
 
-    This mainly involves ensuring that the instance to which we delegate
-    is created.
+    An implementation of this class must setup the necessary delagation.
     """
-    # Define build_farm_job as read-only attribute of the interface?
     def getByJob(job):
         """Get the specific `IBuildFarmJob` for the given `Job`.
 
