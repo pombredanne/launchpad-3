@@ -66,36 +66,17 @@
             being experts in
             <tal:language replace="view/language_name">
               Espa&ntilde;ol
-            </tal:language>
-            :
+            </tal:language>:
           </p>
-          <table>
-            <tr tal:repeat="expert_info view/translation_teams">
-              <td>
-                <img tal:condition="expert_info/expert/isTeam"
-                   src="/@@/team" />
-                <img tal:condition="not:expert_info/expert/isTeam"
-                   src="/@@/person" />
-              </td>
-              <td>
-                <div>
-                  <a
-                  tal:attributes="
-                    href expert_info/expert/fmt:url;
-                    title expert_info/expert/displayname/fmt:shorten/80"
-                  tal:content="expert_info/expert/displayname"
-                  >Expert name</a>(
-                  <tal:groups repeat="group expert_info/groups">
-                    <a tal:attributes="
-                         href group/fmt:url;
-                         title group/title/fmt:shorten/80"
-                       tal:content="group/title"
-                       >Translation group title</a>
-                  </tal:groups>)
-                </div>
-              </td>
-            </tr>
-          </table>
+          <div tal:repeat="expert_info view/translation_teams">
+            <a tal:replace="structure expert_info/expert/fmt:link">Person</a>
+            (<tal:groups repeat="group expert_info/groups"
+               ><a tal:replace="structure group/fmt:link"
+                   >Translation group title</a
+                ><tal:comma
+                    condition="not:repeat/group/end">, </tal:comma
+                  ></tal:groups>)
+          </div>
           <p tal:condition="not:view/translation_teams">
             <tal:language replace="view/language_name">
               Espa&ntilde;ol

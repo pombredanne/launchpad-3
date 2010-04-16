@@ -8,6 +8,9 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalExists',
+    'CodeImportAlreadyRequested',
+    'CodeImportAlreadyRunning',
+    'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
@@ -68,3 +71,23 @@ class WrongBranchMergeProposal(Exception):
 
 class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
+
+
+class CodeImportNotInReviewedState(Exception):
+    """Raised when the user requests an import of a non-automatic import."""
+
+    webservice_error(400)
+
+
+class CodeImportAlreadyRequested(Exception):
+    """Raised when the user requests an import that is already requested."""
+
+    def __init__(self, msg, requesting_user):
+        super(CodeImportAlreadyRequested, self).__init__(msg)
+        self.requesting_user = requesting_user
+
+
+class CodeImportAlreadyRunning(Exception):
+    """Raised when the user requests an import that is already running."""
+
+    webservice_error(400)
