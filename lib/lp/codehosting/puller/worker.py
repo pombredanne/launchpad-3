@@ -219,6 +219,9 @@ class BranchMirrorer(object):
             URL must point to a writable location.
         :return: The destination branch.
         """
+        return self._runWithTransformFallbackLocationHookInstalled(
+            self.policy.createDestinationBranch, source_branch,
+            destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.

@@ -16,7 +16,9 @@ import transaction
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
+from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import join as urljoin, local_path_from_url
+from bzrlib.workingtree import WorkingTree
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -24,12 +26,13 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path, get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
+from lp.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.testing import ZopelessAppServerLayer
 
 
-class TestBranchPuller(PullerBranchTestCase):
+class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
     """Integration tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
@@ -160,14 +163,40 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch.requestMirror()
         return tree
 
-    # XXX No loom test!
-    # XXX No format change test
-
     def test_mirror_mirrored_branch(self):
-        # Run the puller on a populated mirrored branch pull queue.
+        # Run the puller with a mirrored branch ready to be pulled.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED)
         tree = self.setUpMirroredBranch(db_branch)
+        transaction.commit()
+        command, retcode, output, error = self.runPuller()
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(db_branch, source_branch=tree.branch)
+
+    def test_mirror_mirrored_loom_branch(self):
+        # Run the puller with a mirrored loom branch ready to be pulled.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        tree = self.setUpMirroredBranch(db_branch)
+        self.loomify(tree.branch)
+        transaction.commit()
+        command, retcode, output, error = self.runPuller()
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(db_branch, source_branch=tree.branch)
+
+    def test_format_change(self):
+        # Run the puller with XXX
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        tree = self.setUpMirroredBranch(db_branch, format='pack-0.92')
+        transaction.commit()
+        command, retcode, output, error = self.runPuller()
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(db_branch, source_branch=tree.branch)
+        transaction.begin()
+        db_branch.requestMirror()
+        upgrade(tree.basedir)
+        tree = WorkingTree.open(tree.basedir)
         transaction.commit()
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
