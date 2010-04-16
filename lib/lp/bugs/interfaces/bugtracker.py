@@ -378,7 +378,7 @@ class IBugTrackerSet(Interface):
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
         baseurl='base_url', bugtrackertype='bug_tracker_type',
-        contactdetails='contat_details')
+        contactdetails='contact_details')
     @export_factory_operation(
         IBugTracker,
         ['baseurl', 'bugtrackertype', 'title', 'summary',

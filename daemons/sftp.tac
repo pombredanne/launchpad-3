@@ -21,7 +21,7 @@ svc = SSHService(
     portal=make_portal(),
     private_key_path=get_key_path(PRIVATE_KEY_FILE),
     public_key_path=get_key_path(PUBLIC_KEY_FILE),
-    port=config.codehosting.port,
+    strport=config.codehosting.port,
     idle_timeout=config.codehosting.idle_timeout,
     banner=config.codehosting.banner)
 svc.setServiceParent(application)

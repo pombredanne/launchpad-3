@@ -16,6 +16,7 @@ __all__ = [
 from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.lifecycle.snapshot import doNotSnapshot
 
 from lazr.restful.declarations import (
     collection_default_content, exported, export_as_webservice_collection,
@@ -75,9 +76,9 @@ class ILanguage(Interface):
             required=False),
         exported_as='plural_expression')
 
-    translators = Field(
+    translators = doNotSnapshot(Field(
         title=u'List of Person/Team that translate into this language.',
-        required=True)
+        required=True))
 
     translators_count = exported(
         Int(
