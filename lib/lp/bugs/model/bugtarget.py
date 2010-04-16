@@ -294,10 +294,10 @@ class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
     This class is inteneded to be used as a mixin for the classes
-    Distribution, Product and Project, which can define official
+    Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
-    Using this call in Project requires a fix of bug 341203, see
+    Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
     """
 

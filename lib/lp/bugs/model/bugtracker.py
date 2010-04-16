@@ -602,11 +602,11 @@ class BugTrackerSet:
     def getPillarsForBugtrackers(self, bugtrackers):
         """See `IBugTrackerSet`."""
         from lp.registry.model.product import Product
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         ids = [str(b.id) for b in bugtrackers]
         products = Product.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")
-        projects = Project.select(
+        projects = ProjectGroup.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")
         ret = {}
         for product in products:

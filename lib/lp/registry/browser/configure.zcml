@@ -315,7 +315,7 @@
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt"/>
 
-        <!-- Projects portlets -->
+        <!-- ProjectGroups portlets -->
 
         <browser:page
             name="+details"

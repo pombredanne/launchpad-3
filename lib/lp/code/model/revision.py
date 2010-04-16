@@ -437,7 +437,7 @@ class RevisionSet:
 
     @staticmethod
     def _getPublicRevisionsHelper(obj, day_limit):
-        """Helper method for Products and Projects."""
+        """Helper method for Products and ProjectGroups."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.registry.model.product import Product
@@ -472,7 +472,7 @@ class RevisionSet:
         return cls._getPublicRevisionsHelper(product, day_limit)
 
     @classmethod
-    def getPublicRevisionsForProject(cls, project, day_limit=30):
+    def getPublicRevisionsForProjectGroup(cls, project, day_limit=30):
         """See `IRevisionSet`."""
         return cls._getPublicRevisionsHelper(project, day_limit)
 

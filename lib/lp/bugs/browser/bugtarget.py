@@ -950,7 +950,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         to the inline bug filing form via the returned URL.
 
         The URL returned will be the URL of the first of the current
-        Project's products, since that's the product that will be
+        ProjectGroup's products, since that's the product that will be
         selected by default when the view is rendered.
         """
         url = canonical_url(
@@ -964,7 +964,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         """Return the URL to the inline duplicate search view.
 
         The URL returned will be the URL of the first of the current
-        Project's products, since that's the product that will be
+        ProjectGroup's products, since that's the product that will be
         selected by default when the view is rendered.
         """
         url = canonical_url(
