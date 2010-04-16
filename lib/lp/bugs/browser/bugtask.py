@@ -1798,6 +1798,12 @@ class BugsInfoMixin:
             status=BugTaskStatus.NEW.title)
 
     @property
+    def inprogress_bugs_url(self):
+        """A URL to a page of inprogress bugs."""
+        return get_buglisting_search_filter_url(
+            status=BugTaskStatus.INPROGRESS.title)
+
+    @property
     def open_bugs_url(self):
         """A URL to a list of open bugs."""
         return canonical_url(self.context, view_name='+bugs')
@@ -1808,6 +1814,13 @@ class BugsInfoMixin:
         return get_buglisting_search_filter_url(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=BugTaskImportance.CRITICAL.title)
+
+    @property
+    def high_bugs_url(self):
+        """A URL to a list of high priority bugs."""
+        return get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            importance=BugTaskImportance.HIGH.title)
 
     @property
     def my_bugs_url(self):
@@ -1878,9 +1891,19 @@ class BugsStatsMixin(BugsInfoMixin):
         return self.context.open_bugtasks.count()
 
     @property
+    def inprogress_bugs_count(self):
+        """A count of in-progress bugs."""
+        return self.context.inprogress_bugtasks.count()
+
+    @property
     def critical_bugs_count(self):
         """A count of critical bugs."""
         return self.context.critical_bugtasks.count()
+
+    @property
+    def high_bugs_count(self):
+        """A count of high priority bugs."""
+        return self.context.high_bugtasks.count()
 
     @property
     def my_bugs_count(self):
