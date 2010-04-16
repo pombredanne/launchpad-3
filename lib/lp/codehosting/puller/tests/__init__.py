@@ -135,6 +135,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path)
+        self.addCleanup(shutil.rmtree, path)
 
     def pushToBranch(self, branch, tree):
         """Push a Bazaar branch to a given Launchpad branch's hosted area.

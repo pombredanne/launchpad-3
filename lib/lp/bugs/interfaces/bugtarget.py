@@ -50,6 +50,8 @@ class IHasBugs(Interface):
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
+    high_bugtasks = Attribute(
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
