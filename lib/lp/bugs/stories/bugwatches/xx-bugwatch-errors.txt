@@ -54,6 +54,14 @@ should now be displayed to the user.
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
     that the bug number is correct.
 
+It's also shown in the tooltip of the warning icon next to the bug watch
+in the bugtask table.
+
+    >>> icon = find_tag_by_id(user_browser.contents, 'bugwatch-error-sprite')
+    >>> print icon.get('title')
+    The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
+    that the bug number is correct.
+
 We can observe this for each of the BugWatchActivityStatus failure values:
 
     >>> from lp.bugs.interfaces.bugwatch import (
