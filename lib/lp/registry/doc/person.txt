@@ -186,6 +186,7 @@ latter can be used only for people and the former only for teams)
 
 Unlike people, teams don't need a contact address, so we can pass None
 to setContactAddress() to leave a team without a contact address.
+# XXX sinzui 2010-04-16: this address should be deleted.
 
     >>> shipit_admins.setContactAddress(None)
     >>> email.status

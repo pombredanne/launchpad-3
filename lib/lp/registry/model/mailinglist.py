@@ -538,6 +538,8 @@ class MailingList(SQLBase):
         # mailing list we really want an UnsafeToPurge exception instead of an
         # AssertionError.  Fitting that in to transitionToStatus()'s logic is
         # a bit tortured, so just do it here.
+        # XXX sinzui 2010-04-16: delete the address. The address is
+        # recreated when the during activation.
         if self.status in PURGE_STATES:
             self.status = MailingListStatus.PURGED
         else:
