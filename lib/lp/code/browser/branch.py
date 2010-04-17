@@ -317,7 +317,7 @@ class BranchContextMenu(ContextMenu):
     def view_recipes(self):
         text = 'View source package recipes'
         enabled = False
-        if self.context.getRecipes():
+        if self.context.getRecipes().count():
             enabled = True
         return Link(
             '+recipes', text, icon='info', enabled=enabled)
