@@ -1,0 +1,35 @@
+====================
+Recipe Listing Pages
+====================
+
+Pages that want to display lists of recipes use the recipe-listing
+page template, and views derived from RecipeListingView.
+
+
+Branch Recipe Listings
+======================
+
+Create a branch and some recipes where the created branch is base_branch for
+the recipe.
+
+    >>> login('foo.bar@canonical.com')
+    >>> branch = factory.makeBranch()
+    >>> recipe1 = factory.makeSourcePackageRecipe(
+    ...     None, None, None, None, None, None, branch)
+    >>> recipe2 = factory.makeSourcePackageRecipe(
+    ...     None, None, None, None, None, None, branch)
+    >>> recipe3 = factory.makeSourcePackageRecipe(
+    ...     None, None, None, None, None, None, branch)
+    >>> branch_url = canonical_url(branch)
+    >>> logout()
+
+TODO: Test that "View source package recipes" doesn't show up when there are
+none.
+
+The branch page should have a link on it to view all the recipes that it is the
+base_branch for.
+
+    >>> anon_browser.open(branch_url)
+    >>> anon_browser.getLink('View source package recipes').click()
+    >>> print anon_browser.url
+    http://code.launchpad.dev/~person-name.../product-name.../branch.../+recipes

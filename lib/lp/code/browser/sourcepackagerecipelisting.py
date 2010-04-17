@@ -21,6 +21,8 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
 from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 
 
 class RecipeListingSort(EnumeratedType):
@@ -48,6 +50,11 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
     branch_enabled = True
     owner_enabled = True
 
+    @property
+    def page_title(self):
+        return 'Source Package Recipes for %(displayname)s' % {
+            'displayname': self.context.displayname}
+
 
 class BranchRecipeListingView(RecipeListingView):
 
@@ -55,7 +62,16 @@ class BranchRecipeListingView(RecipeListingView):
 
     branch_enabled = False
 
-    @property
-    def page_title(self):
-        return 'Source Package Recipes for %(displayname)s' % {
-            'displayname': self.context.displayname}
+
+class PersonRecipeListingView(RecipeListingView):
+
+    __used_for__ = IPerson
+
+    owner_enabled = False
+
+
+class PersonRecipeListingView(RecipeListingView):
+
+    __used_for__ = IProduct
+
+    product_enabled = False
