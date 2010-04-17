@@ -12,7 +12,6 @@ from datetime import datetime
 import httplib
 import logging
 import os
-import re
 from StringIO import StringIO
 import unittest
 
