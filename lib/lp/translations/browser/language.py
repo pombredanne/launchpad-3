@@ -49,6 +49,7 @@ def describe_language(language):
 
 class LanguageBreadcrumb(Breadcrumb):
     """`Breadcrumb` for `ILanguage`."""
+
     @property
     def text(self):
         return self.context.englishname
@@ -95,6 +96,7 @@ class ILanguageSetSearch(Interface):
     search_lang = TextLine(
         title=u'Name of the language to search for.',
         required=True)
+
 
 class LanguageSetView(LaunchpadFormView):
     """View class to render main ILanguageSet page."""
@@ -222,7 +224,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
         merged will be returned.
         """
         top_translators = []
-        for translator in self.context.translators[:40]:
+        for translator in self.context.translators[:30]:
             # Get only the top 20 contributors
             if (len(top_translators) >= 20):
                 break
@@ -268,6 +270,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
             view_name='+addquestion',
             rootsite='answers')
 
+
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
 
@@ -311,4 +314,3 @@ class LanguageAdminView(LaunchpadEditFormView):
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
-

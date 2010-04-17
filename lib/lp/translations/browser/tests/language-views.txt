@@ -149,7 +149,7 @@ accounts.
 Langauge.translators is Monkey-patched to avoid fetching KarmaCache.
 Language.translator is a list containing all contributors decreasingly sorted
 according to their karma value.
- 
+
     >>> serbian.translators = translators
     >>> language_view = create_initialized_view(serbian, '+index',
     ...     layer=TranslationsLayer)
