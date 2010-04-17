@@ -28,20 +28,17 @@
                  tal:content="recipe/name">Recipe name</a>
             </td>
             <td tal:condition="view/product_enabled">
-              <a tal:attributes="href recipe/base_branch/product/fmt:url"
-                 tal:content="recipe/base_branch/product/displayname">
+              <a tal:replace="structure recipe/base_branch/product/fmt:link">
                 Product
               </a>
             </td>
             <td tal:condition="view/owner_enabled">
-              <a tal:attributes="href recipe/owner/fmt:url"
-                 tal:content="recipe/owner/displayname">
+              <a tal:replace="structure recipe/owner/fmt:link">
                 Owner
               </a>
             </td>
             <td tal:condition="view/branch_enabled">
-              <a tal:attributes="href recipe/base_branch/fmt:url"
-                 tal:content="recipe/base_branch/displayname">
+              <a tal:replace="structure recipe/base_branch/fmt:link">
                 Owner
               </a>
             </td>
