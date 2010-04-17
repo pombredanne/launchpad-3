@@ -221,10 +221,10 @@ class LanguageView(TranslationsMixin, LaunchpadView):
         If an account has been merged, the account into which it was
         merged will be returned.
         """
-        translators = []
-        for translator in reversed(list(self.context.translators)):
+        top_translators = []
+        for translator in list(self.context.translators):
             # Get only the top 20 contributors
-            if (len(translators) >= 20):
+            if (len(top_translators) >= 20):
                 break
 
             # For merged account add the target account
@@ -235,10 +235,10 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
             # Add translator only if it was not previouly added as a
             # merged account
-            if translator_target not in translators:
-                translators.append(translator_target)
+            if translator_target not in top_translators:
+                top_translators.append(translator_target)
 
-        return translators
+        return top_translators
 
     @property
     def friendly_plural_forms(self):

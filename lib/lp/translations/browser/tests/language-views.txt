@@ -113,10 +113,6 @@ Create some translators and a merged account.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> translators = []
-    >>> for translator_nr in range(22):
-    ...     translators.append(factory.makePerson(
-    ...         name='translator-' + str(translator_nr),
-    ...         displayname='Translator No.' + str(translator_nr)))
     >>> translator_main = factory.makePerson(
     ...     name='translator-main',
     ...     displayname='Translator Main')
@@ -126,6 +122,10 @@ Create some translators and a merged account.
     ...     displayname='Translator Merged'))
     >>> translators.append(translator_merged)
     >>> translator_merged.merged = translator_main
+    >>> for translator_nr in range(22):
+    ...     translators.append(factory.makePerson(
+    ...         name='translator-' + str(translator_nr),
+    ...         displayname='Translator No.' + str(translator_nr)))
 
 Create a product, a template with one msgset and a pofile
 
@@ -147,7 +147,9 @@ accounts.
     ...     pofile=pofile, translator=translator_main, potmsgset=potmsgset)
 
 Langauge.translators is Monkey-patched to avoid fetching KarmaCache.
-
+Language.translator is a list containing all contributors decreasingly sorted
+according to their karma value.
+ 
     >>> serbian.translators = translators
     >>> language_view = create_initialized_view(serbian, '+index',
     ...     layer=TranslationsLayer)
@@ -156,6 +158,12 @@ Langauge.translators is Monkey-patched to avoid fetching KarmaCache.
     True
     >>> translator_merged in top_contributors
     False
+    >>> for translator in top_contributors:
+    ...     print translator.name
+    translator-main
+    translator-0
+    translator-1
+    translator-2 ...
 
 In the end, the changes done to Language class are reverted.
 
