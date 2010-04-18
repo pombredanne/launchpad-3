@@ -78,13 +78,6 @@ class LoginTokenType(DBEnumeratedType):
         needs to be validated.
         """)
 
-    PROFILECLAIM = DBItem(8, """
-        Claim an unvalidated Launchpad profile
-
-        A user has found an unvalidated profile in Launchpad and is trying
-        to claim it.
-        """)
-
     NEWPROFILE = DBItem(9, """
         A user created a new Launchpad profile for another person.
 

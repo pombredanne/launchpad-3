@@ -6,11 +6,16 @@ claiming an email address or a OpenPGP key require the user to use the login
 token sent to him in an email.
 
 
-== Claiming a profile ==
+== Validating GPG keys ==
 
-The ClaimProfileView allows users to claim accounts created by Launchpad
-processes. The user profile for Matsubara was created during an import.
-The user profile does not have a preferred email address or a password.
+In order to add a GPG key to Launchpad we require that the person
+registering it decrypt an email and follow the instructions in it.
+The last step in that workflow is the +validategpg page, which can
+be accessed by non-logged-in users. That page will attempt to access
+all email addresses of the requester but that may fail when the user
+is not logged in and the requester has chosen to hide his email
+addresses, so here we'll make sure that even non-logged-in users can
+perform the last step of the workflow for adding a GPG key.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -24,79 +29,6 @@ The user profile does not have a preferred email address or a password.
     # to remove the security proxy of the person objects all the time.
     >>> person_set = PersonSet()
     >>> login_token_set = getUtility(ILoginTokenSet)
-
-    >>> matsubara = person_set.getByEmail('matsubara@async.com.br')
-    >>> matsubara.name
-    u'matsubara'
-    >>> matsubara.displayname
-    u'Diogo Matsubara'
-    >>> print matsubara.preferredemail
-    None
-
-    >>> matsubara.account.status
-    <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print matsubara.account.password
-    None
-    >>> matsubara.is_valid_person
-    False
-
-The user can claim his profile by providing the email address that
-is associated with the profile. If the correct address is provided,
-the user is sent an email with a link to a LoginToken.
-
-    >>> login_token = login_token_set.new(
-    ...     matsubara, 'matsubara@async.com.br',
-    ...     'matsubara@async.com.br', LoginTokenType.PROFILECLAIM)
-
-The user is asked to provide a display name and password, and to
-indicate if his email address can be shown to other Launchpad users.
-
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+claimprofile' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.displayname': 'D. Matsubara',
-    ...         'field.hide_email_addresses': 'on',
-    ...         'field.password': 'test4',
-    ...         'field.password_dupe': 'test4',
-    ...         'field.actions.confirm': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> claimprofile_view = getMultiAdapter(
-    ...     (login_token, request), name="+claimprofile")
-    >>> claimprofile_view.initialize()
-    >>> claimprofile_view.errors
-    []
-    >>> transaction.commit()
-
-The user's Person, EmailAddress, and Account objects are updated.
-
-    >>> matsubara.displayname
-    u'D. Matsubara'
-    >>> matsubara.hide_email_addresses
-    True
-    >>> matsubara.account.preferredemail.email
-    u'matsubara@async.com.br'
-
-    >>> matsubara.account.status
-    <DBItem AccountStatus.ACTIVE, ...>
-    >>> matsubara.account.status_comment
-    u'Activated by claim profile.'
-    >>> matsubara.is_valid_person
-    True
-
-
-== Validating GPG keys ==
-
-In order to add a GPG key to Launchpad we require that the person
-registering it decrypt an email and follow the instructions in it.
-The last step in that workflow is the +validategpg page, which can
-be accessed by non-logged-in users. That page will attempt to access
-all email addresses of the requester but that may fail when the user
-is not logged in and the requester has chosen to hide his email
-addresses, so here we'll make sure that even non-logged-in users can
-perform the last step of the workflow for adding a GPG key.
 
     >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> sample_person.hide_email_addresses
