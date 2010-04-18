@@ -121,6 +121,10 @@ def main():
             build_state=target_state, pocket=pocket)
 
         for build in target_builds:
+            # Skip builds for superseded sources; they won't ever
+            # actually build.
+            if not build.current_source_publication:
+                continue
 
             if not build.can_be_retried:
                 log.warn('Can not retry %s (%s)' % (build.title, build.id))
