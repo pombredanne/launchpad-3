@@ -1302,10 +1302,11 @@ class BugTaskEditView(LaunchpadEditFormView):
         # it uses based on the permissions of the user viewing form.
         if 'status' in self.editable_field_names:
             if self.user is None:
-                status_noshow = list(BugTaskStatus.items)
+                status_noshow = set(BugTaskStatus.items)
             else:
-                status_noshow = [BugTaskStatus.UNKNOWN]
-                status_noshow.extend(
+                status_noshow = set((
+                    BugTaskStatus.UNKNOWN, BugTaskStatus.EXPIRED))
+                status_noshow.update(
                     status for status in BugTaskStatus.items
                     if not self.context.canTransitionToStatus(
                         status, self.user))
@@ -2587,7 +2588,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=10)
+        return helpers.shortlist(widget_values, longest_expected=11)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3367,7 +3368,8 @@ class BugTaskTableRowView(LaunchpadView):
             # the title as the token for backwards compatibility.
             status_items = [
                 (item.title, item) for item in BugTaskStatus.items
-                if item != BugTaskStatus.UNKNOWN]
+                if item not in (BugTaskStatus.UNKNOWN,
+                                BugTaskStatus.EXPIRED)]
 
             disabled_items = [status for status in BugTaskStatus.items
                 if not self.context.canTransitionToStatus(status, self.user)]
