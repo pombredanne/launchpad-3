@@ -62,7 +62,7 @@
     <!-- lazr.batchnavigator hook -->
     <adapter
         factory='.batching.FiniteSequenceAdapter' />
-    
+
     <adapter
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
@@ -216,7 +216,7 @@
         />
 
     <adapter
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"

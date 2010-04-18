@@ -810,7 +810,8 @@ class BugTask(SQLBase, BugTaskMixin):
         if (user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
             user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id):
+            user.id == celebrities.bug_importer.id or
+            user.id == celebrities.janitor.id):
             return True
         else:
             return (self.status is not BugTaskStatus.WONTFIX and
@@ -2467,6 +2468,9 @@ class BugTaskSet:
             sum_template % (
                 'BugTask.status %s' % search_value_to_where_condition(
                     BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+            sum_template % (
+                'BugTask.importance %s' % search_value_to_where_condition(
+                    BugTaskImportance.HIGH), 'open_high_bugs'),
             ]
 
         conditions = [
@@ -2495,7 +2499,8 @@ class BugTaskSet:
         counts = []
         for (distro_id, spn_id, open_bugs,
              open_critical_bugs, open_unassigned_bugs,
-             open_inprogress_bugs) in shortlist(cur.fetchall()):
+             open_inprogress_bugs,
+             open_high_bugs) in shortlist(cur.fetchall()):
             distribution = distribution_set.get(distro_id)
             sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
@@ -2510,6 +2515,7 @@ class BugTaskSet:
                 open_critical=open_critical_bugs,
                 open_unassigned=open_unassigned_bugs,
                 open_inprogress=open_inprogress_bugs,
+                open_high=open_high_bugs,
                 )
             counts.append(package_counts)
 
@@ -2523,7 +2529,7 @@ class BugTaskSet:
             package_counts = dict(
                 package=distribution.getSourcePackage(sourcepackagename),
                 open=0, open_critical=0, open_unassigned=0,
-                open_inprogress=0)
+                open_inprogress=0, open_high=0)
             counts.append(package_counts)
 
         return counts
