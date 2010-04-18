@@ -8,9 +8,12 @@ __metaclass__ = type
 import transaction
 from unittest import TestLoader
 
+from zope.component import getUtility
+
 from storm.store import Store
 
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -27,9 +30,15 @@ class TestTeamContactAddress(TestCaseWithFactory):
             EmailAddress, EmailAddress.personID == self.team.id)
         return [address for address in all_addresses.order_by('email')]
 
+    def createMailingListAndGetAddress(self):
+        mailing_list = self.factory.makeMailingList(
+            self.team, self.team.teamowner)
+        return getUtility(IEmailAddressSet).getByEmail(
+                mailing_list.address)
+
     def setUp(self):
         super(TestTeamContactAddress, self).setUp()
-        self.team = self.factory.makeTeam()
+        self.team = self.factory.makeTeam(name='alpha')
         self.address = self.factory.makeEmail('team@noplace.org', self.team)
         self.store = IMasterStore(self.address)
 
@@ -45,15 +54,34 @@ class TestTeamContactAddress(TestCaseWithFactory):
         self.assertEqual([], self.getAllEmailAddresses())
 
     def test_setContactAddress_to_new_address(self):
-        old_address = self.factory.makeEmail('old@noplace.org', self.team)
-        self.team.setContactAddress(old_address)
-        self.assertEqual(old_address, self.team.preferredemail)
-        self.assertEqual([old_address], self.getAllEmailAddresses())
-
-        self.address = self.factory.makeEmail('team@noplace.org', self.team)
         self.team.setContactAddress(self.address)
-        self.assertEqual(self.address, self.team.preferredemail)
-        self.assertEqual([self.address], self.getAllEmailAddresses())
+        new_address = self.factory.makeEmail('new@noplace.org', self.team)
+        self.team.setContactAddress(new_address)
+        self.assertEqual(new_address, self.team.preferredemail)
+        self.assertEqual([new_address], self.getAllEmailAddresses())
+
+    def test_setContactAddress_to_mailing_list(self):
+        self.team.setContactAddress(self.address)
+        list_address = self.createMailingListAndGetAddress()
+        self.team.setContactAddress(list_address)
+        self.assertEqual(list_address, self.team.preferredemail)
+        self.assertEqual([list_address], self.getAllEmailAddresses())
+
+    def test_setContactAddress_from_mailing_list(self):
+        list_address = self.createMailingListAndGetAddress()
+        self.team.setContactAddress(list_address)
+        new_address = self.factory.makeEmail('new@noplace.org', self.team)
+        self.team.setContactAddress(new_address)
+        self.assertEqual(new_address, self.team.preferredemail)
+        self.assertEqual(
+            [list_address, new_address], self.getAllEmailAddresses())
+
+    def test_setContactAddress_from_mailing_list_to_none(self):
+        list_address = self.createMailingListAndGetAddress()
+        self.team.setContactAddress(list_address)
+        self.team.setContactAddress(None)
+        self.assertEqual(None, self.team.preferredemail)
+        self.assertEqual([list_address], self.getAllEmailAddresses())
 
 
 def test_suite():
