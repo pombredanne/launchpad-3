@@ -195,23 +195,26 @@ class BaseTestRunner:
             try:
                 summary_file.close()
                 if self.email is not None:
-                    subject = 'Test results: %s' % (
-                        result and 'FAILURE' or 'SUCCESS')
-                    summary_file = open(self.logger.summary_filename, 'r')
-                    out_file = open(self.logger.out_filename, 'r')
-                    bzrlib.email_message.EmailMessage.send(
-                        config, config.username(), self.email,
-                        subject, summary_file.read(),
-                        attachment=out_file.read(),
-                        attachment_filename='%s.log' % self.get_nick(),
-                        attachment_mime_subtype='subunit')
-                    summary_file.close()
+                    self.send_email(
+                        result, self.logger.summary_filename,
+                        self.logger.out_filename, config)
             finally:
                 # we do this at the end because this is a trigger to
                 # ec2test.py back at home that it is OK to kill the process
                 # and take control itself, if it wants to.
                 out_file.close()
                 self.logger.close_logs()
+
+    def send_email(self, result, summary_filename, out_filename, config):
+        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
+        summary_file = open(self.logger.summary_filename, 'r')
+        out_file = open(self.logger.out_filename, 'r')
+        bzrlib.email_message.EmailMessage.send(
+            config, config.username(), self.email, subject,
+            summary_file.read(), attachment=out_file.read(),
+            attachment_filename='%s.log' % self.get_nick(),
+            attachment_mime_subtype='subunit')
+        summary_file.close()
 
     def get_nick(self):
         """Return the nick name of the branch that we are testing."""
