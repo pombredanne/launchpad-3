@@ -269,58 +269,6 @@ class BranchPullerTest(TestCaseWithFactory):
 
         self.assertIs(None, branch.next_mirror_time)
 
-    def test_mirrorComplete_requests_mirror_for_incomplete_stacked(self):
-        # After successfully mirroring a branch on which others are stacked,
-        # any stacked branches with incomplete mirrors should have a mirror
-        # requested. This prevents them from being trapped in a failed state.
-        # See bug 261334.
-        branch = self.factory.makeAnyBranch()
-        stacked_branch = self.factory.makeAnyBranch(stacked_on=branch)
-
-        # Note that no mirror is requested.
-        self.assertIs(None, stacked_branch.next_mirror_time)
-
-        self.storage.startMirroring(stacked_branch.id)
-        self.storage.startMirroring(branch.id)
-        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
-        self.assertSqlAttributeEqualsDate(
-            stacked_branch, 'next_mirror_time', UTC_NOW)
-
-    def test_mirrorCompleteRequestsMirrorForIncompleteStackedOnPrivate(self):
-        # After successfully mirroring a *private* branch on which others are
-        # stacked, any stacked branches with incomplete mirrors have a mirror
-        # requested. See bug 261334.
-        branch = removeSecurityProxy(
-            self.factory.makeAnyBranch(private=True))
-        stacked_branch = removeSecurityProxy(
-            self.factory.makeAnyBranch(stacked_on=branch, private=True))
-
-        # Note that no mirror is requested.
-        self.assertIs(None, stacked_branch.next_mirror_time)
-
-        self.storage.startMirroring(stacked_branch.id)
-        self.storage.startMirroring(branch.id)
-        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
-        self.assertSqlAttributeEqualsDate(
-            stacked_branch, 'next_mirror_time', UTC_NOW)
-
-    def test_mirrorCompletePrivateStackedOnPublic(self):
-        # After successfully mirroring a *public* branch on which *private*
-        # branche are stacked, any stacked branches with incomplete mirrors
-        # have a mirror requested. See bug 261334.
-        branch = self.factory.makeAnyBranch()
-        stacked_branch = removeSecurityProxy(
-            self.factory.makeAnyBranch(stacked_on=branch, private=True))
-
-        # Note that no mirror is requested.
-        self.assertIs(None, stacked_branch.next_mirror_time)
-
-        self.storage.startMirroring(stacked_branch.id)
-        self.storage.startMirroring(branch.id)
-        self.storage.mirrorComplete(branch.id, self.factory.getUniqueString())
-        self.assertSqlAttributeEqualsDate(
-            stacked_branch, 'next_mirror_time', UTC_NOW)
-
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into ScriptActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)

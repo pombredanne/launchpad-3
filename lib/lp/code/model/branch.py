@@ -426,18 +426,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
 
-    def getStackedBranchesWithIncompleteMirrors(self):
-        """See `IBranch`."""
-        store = Store.of(self)
-        return store.find(
-            Branch, Branch.stacked_on == self,
-            # Have been started.
-            Branch.last_mirror_attempt != None,
-            # Either never successfully mirrored or started since the last
-            # successful mirror.
-            Or(Branch.last_mirrored == None,
-               Branch.last_mirror_attempt > Branch.last_mirrored))
-
     def getMergeQueue(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""

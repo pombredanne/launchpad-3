@@ -818,13 +818,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
-    def getStackedBranchesWithIncompleteMirrors():
-        """Branches that are stacked on this one but aren't done mirroring.
-
-        In particular, these are branches that have started mirroring but have
-        not yet succeeded. Failed branches are included.
-        """
-
     merge_queue = Attribute(
         "The queue that contains the QUEUED proposals for this branch.")
 
