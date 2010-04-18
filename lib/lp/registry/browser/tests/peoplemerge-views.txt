@@ -251,10 +251,9 @@ A team with a mailing list cannot be deleted.
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
 
-The registry experts should be able to delete a team with an
-validated email address, which will be invisible, since only
+The registry experts can delete a team with an validated email address (from
+registering a new address), which will be invisible, since only
 preferred email addresses are shown for teams.
-# XXX sinzui 2010-04-16: only the mailing list address can be hidden.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     IEmailAddressSet)
@@ -262,8 +261,8 @@ preferred email addresses are shown for teams.
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> registry_expert.inTeam(admin)
     False
-    >>> deletable_team = factory.makeTeam(email="del@example.com")
-    >>> deletable_team.setContactAddress(None)
+    >>> deletable_team = factory.makeTeam()
+    >>> email = factory.makeEmail("del@example.com", deletable_team)
     >>> for email in getUtility(IEmailAddressSet).getByPerson(deletable_team):
     ...     print email.email, email.status.title
     del@example.com Validated Email Address
