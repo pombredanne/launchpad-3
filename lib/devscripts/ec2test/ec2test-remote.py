@@ -193,16 +193,15 @@ class BaseTestRunner:
             # It probably isn't safe to close the log files ourselves,
             # since someone else might try to write to them later.
             try:
-                summary_file.close()
                 if self.email is not None:
                     self.send_email(
                         result, self.logger.summary_filename,
                         self.logger.out_filename, config)
             finally:
+                summary_file.close()
                 # we do this at the end because this is a trigger to
                 # ec2test.py back at home that it is OK to kill the process
                 # and take control itself, if it wants to.
-                out_file.close()
                 self.logger.close_logs()
 
     def send_email(self, result, summary_filename, out_filename, config):
