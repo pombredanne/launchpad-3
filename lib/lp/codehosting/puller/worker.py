@@ -11,9 +11,6 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
-from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.transport import get_transport
-from bzrlib import urlutils
 from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
@@ -227,41 +224,14 @@ class BranchMirrorer(object):
         'source_branch'. Any content already at 'destination_url' will be
         deleted.
 
-        If 'source_branch' is stacked, then the destination branch will be
-        stacked on the same URL, relative to 'destination_url'.
-
         :param source_branch: The Bazaar branch that will be mirrored.
         :param destination_url: The place to make the destination branch. This
             URL must point to a writable location.
         :return: The destination branch.
         """
-        dest_transport = get_transport(destination_url)
-        if dest_transport.has('.'):
-            dest_transport.delete_tree('.')
-        bzrdir = source_branch.bzrdir
-        # We check to see if the stacked on branch exists in the mirrored area
-        # so that we can nicely signal to the scheduler that the pulling of
-        # this branch should be deferred before we even create the branch in
-        # the mirrored area.
-        stacked_on_url = (
-            self.policy.getStackedOnURLForDestinationBranch(
-                source_branch, destination_url))
-        if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-            try:
-                Branch.open(stacked_on_url)
-            except errors.NotBranchError:
-                raise StackedOnBranchNotFound()
-        if isinstance(source_branch, LoomSupport):
-            # Looms suck.
-            revision_id = None
-        else:
-            revision_id = 'null:'
-        self._runWithTransformFallbackLocationHookInstalled(
-            bzrdir.clone_on_transport, dest_transport,
-            revision_id=revision_id)
-        branch = Branch.open(destination_url)
-        return branch
+        return self._runWithTransformFallbackLocationHookInstalled(
+            self.policy.createDestinationBranch, source_branch,
+            destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.
@@ -269,9 +239,7 @@ class BranchMirrorer(object):
         :param source_branch: The Bazaar branch that will be mirrored.
         :param destination_url: The place to make the destination branch. This
             URL must point to a writable location.
-        :return: (branch, up_to_date), where 'branch' is the destination
-            branch, and 'up_to_date' is a boolean saying whether the returned
-            branch is up-to-date with the source branch.
+        :return: The opened or created branch.
         """
         try:
             branch = Branch.open(destination_url)

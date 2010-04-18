@@ -43,6 +43,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -1370,7 +1371,7 @@ class PackageUploadBuild(SQLBase):
         foreignKey='PackageUpload'
         )
 
-    build = ForeignKey(dbName='build', foreignKey='Build')
+    build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
@@ -1701,9 +1702,11 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         sourcepackagerelease = self.packageupload.sourcepackagerelease
 
-        # Ignore translation coming from PPA.
-        if self.packageupload.isPPA():
-            debug(logger, "Skipping translations since it is a PPA.")
+        # Ignore translations not with main distribution purposes.
+        if self.packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+            debug(logger,
+                  "Skipping translations since its purpose is not "
+                  "in MAIN_ARCHIVE_PURPOSES.")
             return
 
         valid_pockets = (

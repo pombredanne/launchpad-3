@@ -7,9 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase',
     'adapt_suite',
-    'BranchTestCase',
     'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
     'LoomTestMixin',
