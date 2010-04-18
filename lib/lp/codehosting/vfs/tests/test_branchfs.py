@@ -11,7 +11,7 @@ import os
 import unittest
 
 from bzrlib import errors
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.tests import (
     TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
 from bzrlib.transport import (
@@ -826,10 +826,10 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.disable_directory_isolation()
 
     def _replacement_branchChanged(self, branch_id, stacked_on_url,
-                                   last_revision):
+                                   last_revision, format_strings):
         self._branch_changed_log.append(dict(
             branch_id=branch_id, stacked_on_url=stacked_on_url,
-            last_revision=last_revision))
+            last_revision=last_revision, format_strings=format_strings))
 
     def get_server(self):
         if self._server is None:
@@ -948,6 +948,22 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.assertEqual(
             stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
         self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+
+    def assertFormatStringsPassed(self, branch):
+        self.assertEqual(1, len(self._branch_changed_log))
+        control_format_string = branch.bzrdir._format.get_format_string()
+        branch_format_string = branch._format.get_format_string()
+        repository_format_string = branch.repository._format.get_format_string()
+        self.assertEqual(
+            (control_format_string, branch_format_string, repository_format_string),
+            self._branch_changed_log[0]['format_strings'])
+
+    def test_format_2a(self):
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name,
+                                  format=format_registry.get('2a')())
+        self.assertFormatStringsPassed(branch)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):

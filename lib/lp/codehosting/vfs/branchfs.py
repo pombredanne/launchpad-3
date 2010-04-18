@@ -682,7 +682,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             if stacked_on_url is None:
                 stacked_on_url = ''
             return self._authserver.branchChanged(
-                data['id'], stacked_on_url, last_revision)
+                data['id'], stacked_on_url, last_revision, ('', '', ''))
 
         # It gets really confusing if we raise an exception from this method
         # (the branch remains locked, but this isn't obvious to the client) so
