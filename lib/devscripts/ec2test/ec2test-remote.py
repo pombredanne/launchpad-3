@@ -7,11 +7,14 @@
 __metatype__ = type
 
 import datetime
+from email import MIMEApplication, MIMEMultipart, MIMEText
+import gzip
 import optparse
 import os
 import pickle
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import traceback
@@ -208,13 +211,34 @@ class BaseTestRunner:
         return open(filename, 'r').read()
 
     def send_email(self, result, summary_filename, out_filename, config):
+        message = MIMEMultipart.MIMEMultipart()
+        message['To'] = ', '.join(self.email)
+        message['From'] = config.username()
         subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
-        message = bzrlib.email_message.EmailMessage(
-            config.username(), self.email, subject,
-            self._read_file(summary_filename))
-        message.add_inline_attachment(
-            self._read_file(out_filename), '%s.log' % self.get_nick(),
-            'subunit')
+        message['Subject'] = subject
+
+        # Make the body
+        body = MIMEText.MIMEText(
+            self._read_file(summary_filename), 'plain', 'utf8')
+        body['Content-Disposition'] = 'inline'
+        message.attach(body)
+
+        # gzip up the full log
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        gz = gzip.open(path, 'wb')
+        full_log = open(out_filename, 'rb')
+        gz.writelines(full_log)
+        gz.close()
+
+        # Attach the gzipped log
+        zipped_log = MIMEApplication.MIMEApplication(
+            open(path, 'rb').read(), 'x-gzip')
+        zipped_log.add_header(
+            'Content-Disposition', 'attachment',
+            filename='%s.log.gz' % self.get_nick())
+        message.attach(zipped_log)
+
         bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
 
     def get_nick(self):
