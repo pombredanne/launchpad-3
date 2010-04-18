@@ -126,6 +126,17 @@ class HasBugsBase:
         return self.searchTasks(open_tasks_query)
 
     @property
+    def high_bugtasks(self):
+        """See `IHasBugs`."""
+        high_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            importance=BugTaskImportance.HIGH,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(high_tasks_query)
+
+    @property
     def critical_bugtasks(self):
         """See `IHasBugs`."""
         critical_tasks_query = BugTaskSearchParams(
@@ -140,7 +151,8 @@ class HasBugsBase:
     def inprogress_bugtasks(self):
         """See `IHasBugs`."""
         inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
+            user=getUtility(ILaunchBag).user,
+            status=BugTaskStatus.INPROGRESS,
             omit_dupes=True)
 
         return self.searchTasks(inprogress_tasks_query)

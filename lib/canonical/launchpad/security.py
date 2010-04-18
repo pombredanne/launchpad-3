@@ -1629,9 +1629,19 @@ def can_edit_team(team, user):
         return team in user.person.getAdministratedTeams()
 
 
+class ViewLanguageSet(AnonymousAuthorization):
+    """Anyone can view an ILangaugeSet."""
+    usedfor = ILanguageSet
+
+
 class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguageSet
+
+
+class ViewLanguage(AnonymousAuthorization):
+    """Anyone can view an ILangauge."""
+    usedfor = ILanguage
 
 
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):

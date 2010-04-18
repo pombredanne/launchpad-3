@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+import re
 import shutil
 import difflib
 from tempfile import mkdtemp
@@ -24,19 +25,12 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
-def sanitize_feisty_apt_ftparchive_output(text):
-    # See XXX BarryWarsaw 2007-05-18 bug=116048:
-    #
-    # This function filters feisty's apt-ftparchive output to look more like
-    # dapper's output.  Specifically, it removes any lines that start with
-    # SHA1: or SHA256: since dapper's version doesn't have these lines.  Start
-    # by splitting the original text by lines, keeping the original line
-    # endings.
-    lines = text.splitlines(True)
-    return ''.join(line for line in lines
-                   if not (line.startswith('SHA256:') or
-                           line.startswith('SHA1:')))
-
+def sanitize_apt_ftparchive_Sources_output(text):
+    # XXX: maxb 2010-04-15 bug=563503: Filter Checksums-* stanzas out of
+    # apt-ftparchive Sources file content, such that the output of lucid
+    # apt-ftparchive is the same as on karmic.
+    return re.subn(r'(?sm)^Checksums-.*?(?=^[^ ])', '', text)[0]
+    
 
 class SamplePublisher:
     """Publisher emulation test class."""
@@ -286,20 +280,11 @@ class TestFTPArchive(unittest.TestCase):
         # check'. Although they should remain active in PQM to avoid possible
         # regressions.
         assert fa.runApt(apt_conf) == 0
-        # XXX barry 2007-05-18 bug=116048:
-        # This is a hack to make this test pass on dapper and feisty.
-        # Feisty's apt-ftparchive outputs SHA256 and MD5 hash
-        # lines which don't appear in dapper's version.  We can't change the
-        # sample data to include these lines because that would break pqm,
-        # which runs dapper.  But without those lines, a straight byte
-        # comparison will fail on developers' feisty boxes.  The hack then is
-        # to filter these lines out of the output from apt-ftparchive.
-        # Feisty's apt-ftparchive also includes an extra blank line. :(
         self._verifyFile("Packages",
-            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"),
-                         sanitize_feisty_apt_ftparchive_output)
+            os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
         self._verifyFile("Sources",
-            os.path.join(self._distsdir, "hoary-test", "main", "source"))
+            os.path.join(self._distsdir, "hoary-test", "main", "source"),
+            sanitize_apt_ftparchive_Sources_output)
 
         # XXX cprov 2007-03-21: see above, byte-to-byte configuration
         # comparing is weak.
