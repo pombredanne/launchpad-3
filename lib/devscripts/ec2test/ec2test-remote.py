@@ -7,7 +7,8 @@
 __metatype__ = type
 
 import datetime
-from email import MIMEApplication, MIMEMultipart, MIMEText
+from email import MIMEMultipart, MIMEText
+from email.application import MIMEApplication
 import gzip
 import optparse
 import os
@@ -232,8 +233,7 @@ class BaseTestRunner:
         gz.close()
 
         # Attach the gzipped log
-        zipped_log = MIMEApplication.MIMEApplication(
-            open(path, 'rb').read(), 'x-gzip')
+        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
             filename='%s.log.gz' % self.get_nick())
