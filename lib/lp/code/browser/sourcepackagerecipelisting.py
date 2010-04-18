@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'RecipeListingView',
-
-    #'BranchRecipeListingView',
-    #'PersonRecipeListingView',
-    #'ProductRecipeListingView',
+    'BranchRecipeListingView',
+    'PersonRecipeListingView',
+    'ProductRecipeListingView',
     ]
 
 from lazr.enum import EnumeratedType, Item
@@ -70,7 +68,7 @@ class PersonRecipeListingView(RecipeListingView):
     owner_enabled = False
 
 
-class PersonRecipeListingView(RecipeListingView):
+class ProductRecipeListingView(RecipeListingView):
 
     __used_for__ = IProduct
 

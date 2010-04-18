@@ -77,6 +77,21 @@
         facet="branches"
         name="+recipes"
         template="../templates/sourcepackagerecipe-listing.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.code.browser.sourcepackagerecipelisting.ProductRecipeListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+recipes"
+        template="../templates/sourcepackagerecipe-listing.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.person.IPerson"
+        class="lp.code.browser.sourcepackagerecipelisting.PersonRecipeListingView"
+        permission="zope.Public"
+        facet="branches"
+        name="+recipes"
+        template="../templates/sourcepackagerecipe-listing.pt"/>
+
 
 
 </facet>

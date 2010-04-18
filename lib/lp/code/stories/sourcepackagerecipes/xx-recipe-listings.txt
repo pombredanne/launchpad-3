@@ -21,6 +21,7 @@ Branch Recipe Listings
 ======================
 
 Create a sample branch.
+
     >>> login('foo.bar@canonical.com')
     >>> recipeless_branch = factory.makeBranch()
     >>> recipeless_branch_url = canonical_url(recipeless_branch)
@@ -42,6 +43,7 @@ to go along with them.
     >>> login('foo.bar@canonical.com')
     >>> branch = factory.makeBranch()
     >>> branch_url = canonical_url(branch)
+    >>> product_url = canonical_url(branch.product)
     >>> recipe1 = factory.makeSourcePackageRecipe(
     ...     None, None, None, None, None, None, branch)
     >>> recipe2 = factory.makeSourcePackageRecipe(
@@ -72,3 +74,61 @@ base_branch for.
     generic-string... Product-name... Person-name...
     generic-string... Product-name... Person-name...
     generic-string... Product-name... Person-name...
+
+
+Product Recipe Listings
+=======================
+
+TODO: Add a link to +recipes.
+
+Let's use the product from the former test.
+
+    >>> nopriv_browser.open(product_url + '/+recipes')
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Owner
+    Base Branch
+    Registered
+
+The listings should now show all recipes whose base branch is a branch from
+this product.
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    generic-string... Person-name... lp://dev/... ...
+    generic-string... Person-name... lp://dev/... ...
+    generic-string... Person-name... lp://dev/... ...
+
+
+Person Recipe Listings
+======================
+
+Create a person, make some recipes for that person.
+
+    >>> login('foo.bar@canonical.com')
+    >>> person = factory.makePerson()
+    >>> person_url = canonical_url(person)
+    >>> recipe1 = factory.makeSourcePackageRecipe(owner=person)
+    >>> recipe2 = factory.makeSourcePackageRecipe(owner=person)
+    >>> recipe3 = factory.makeSourcePackageRecipe(owner=person)
+    >>> logout()
+
+TODO: Add a link to +recipes.
+
+Let's use the product from the former test.
+
+    >>> nopriv_browser.open(person_url + '/+recipes')
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Project
+    Base Branch
+    Registered
+
+The listings should now show all recipes whose base branch is a branch from
+this product.
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    generic-string... Product-name... lp://dev/... ...
+    generic-string... Product-name... lp://dev/... ...
+    generic-string... Product-name... lp://dev/... ...
