@@ -756,9 +756,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # If the id passed in doesn't match an existing branch, the fault
         # "NoBranchWithID" is returned.
         unused_id = -1
-        self.assertFaultEqual(
-            faults.NoBranchWithID(unused_id),
-            self.branchfs.branchChanged(unused_id, '', ''))
+        expected_fault = faults.NoBranchWithID(unused_id)
+        received_fault = self.branchfs.branchChanged(unused_id, '', '')
+        self.assertEqual(
+            (expected_fault.faultCode, expected_fault.faultString),
+            (received_fault.faultCode, received_fault.faultString))
 
     def test_branchChanged_creates_scan_job(self):
         # branchChanged() creates a scan job for the branch.
