@@ -204,16 +204,18 @@ class BaseTestRunner:
                 # and take control itself, if it wants to.
                 self.logger.close_logs()
 
+    def _read_file(self, filename):
+        return open(filename, 'r').read()
+
     def send_email(self, result, summary_filename, out_filename, config):
         subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
-        summary_file = open(self.logger.summary_filename, 'r')
-        out_file = open(self.logger.out_filename, 'r')
-        bzrlib.email_message.EmailMessage.send(
-            config, config.username(), self.email, subject,
-            summary_file.read(), attachment=out_file.read(),
-            attachment_filename='%s.log' % self.get_nick(),
-            attachment_mime_subtype='subunit')
-        summary_file.close()
+        message = bzrlib.email_message.EmailMessage(
+            config.username(), self.email, subject,
+            self._read_file(summary_filename))
+        message.add_inline_attachment(
+            self._read_file(out_filename), '%s.log' % self.get_nick(),
+            'subunit')
+        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
 
     def get_nick(self):
         """Return the nick name of the branch that we are testing."""
