@@ -241,7 +241,7 @@ class TestHWDBSubmissionParser(TestCase):
         expected_data = {
             'live_cd': False,
             'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
-            'distribution': 'Ubuntu',
+            'ion': 'Ubuntu',
             'distroseries': '7.04',
             'architecture': 'amd64',
             'private': False,
