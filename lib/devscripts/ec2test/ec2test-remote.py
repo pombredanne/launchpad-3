@@ -8,7 +8,7 @@ __metatype__ = type
 
 import datetime
 from email import MIMEMultipart, MIMEText
-from email.application import MIMEApplication
+from email.mime.application import MIMEApplication
 import gzip
 import optparse
 import os
