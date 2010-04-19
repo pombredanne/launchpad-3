@@ -124,6 +124,7 @@ Create a person, make some recipes for that person.
     >>> nopriv_browser.open(person_url)
     >>> nopriv_browser.getLink('View source package recipes').click()
     >>> print nopriv_browser.url
+    http://launchpad.dev/~person-name.../+recipes
 
 The "Owner" section should be missing.
 
