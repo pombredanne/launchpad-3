@@ -1258,7 +1258,7 @@ Project groups are not contained in this vocabulary:
 All products, project groups and distributions. Note that the value type is
 heterogeneous.
 
-    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1298,7 +1298,7 @@ Inactive projects and project groups are not available.
     >>> apache in vocab
     False
 
-    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1308,7 +1308,7 @@ Inactive projects and project groups are not available.
     >>> product_set.getByName('tomcat').active = True
     >>> getUtility(IProjectGroupSet).getByName('apache').active = True
     >>> flush_database_updates()
-    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__

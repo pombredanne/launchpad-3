@@ -169,7 +169,7 @@ class BugTracker(SQLBase):
     contactdetails = StringCol(notNull=False)
     has_lp_plugin = BoolCol(notNull=False, default=False)
     projects = SQLMultipleJoin(
-        'Project', joinColumn='bugtracker', orderBy='name')
+        'ProjectGroup', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
         'Product', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin(
