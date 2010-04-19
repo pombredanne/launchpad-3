@@ -42,14 +42,18 @@ to go along with them.
 
     >>> login('foo.bar@canonical.com')
     >>> branch = factory.makeBranch()
-    >>> branch_url = canonical_url(branch)
-    >>> product_url = canonical_url(branch.product)
     >>> recipe1 = factory.makeSourcePackageRecipe(
     ...     None, None, None, None, None, None, branch)
     >>> recipe2 = factory.makeSourcePackageRecipe(
     ...     None, None, None, None, None, None, branch)
     >>> recipe3 = factory.makeSourcePackageRecipe(
     ...     None, None, None, None, None, None, branch)
+
+Keep these urls, including the product url.  We'll use these later.
+
+    >>> branch_url = canonical_url(branch)
+    >>> product_url = canonical_url(branch.product)
+
     >>> logout()
 
 The link to source package recipes should now be shown.  Let's click through.
@@ -79,11 +83,15 @@ base_branch for.
 Product Recipe Listings
 =======================
 
-TODO: Add a link to +recipes.
+Let's use the product from the former branch test.
 
-Let's use the product from the former test.
+    >>> nopriv_browser.open(product_url)
+    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> print nopriv_browser.url
+    http://launchpad.dev/product-name.../+recipes
 
-    >>> nopriv_browser.open(product_url + '/+recipes')
+The "Project" column should be missing, since, well, all of these recipes are
+from the same product.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
@@ -113,11 +121,11 @@ Create a person, make some recipes for that person.
     >>> recipe3 = factory.makeSourcePackageRecipe(owner=person)
     >>> logout()
 
-TODO: Add a link to +recipes.
+    >>> nopriv_browser.open(person_url)
+    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> print nopriv_browser.url
 
-Let's use the product from the former test.
-
-    >>> nopriv_browser.open(person_url + '/+recipes')
+The "Owner" section should be missing.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name

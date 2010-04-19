@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BranchRecipeListingView',
+    'HasRecipesMenuMixin',
     'PersonRecipeListingView',
     'ProductRecipeListingView',
     ]
@@ -17,10 +18,22 @@ from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView
+from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView, Link
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+
+
+class HasRecipesMenuMixin:
+    """A mixin for context menus for objects that implement IHasRecipes."""
+
+    def view_recipes(self):
+        text = 'View source package recipes'
+        enabled = False
+        if self.context.getRecipes().count():
+            enabled = True
+        return Link(
+            '+recipes', text, icon='info', enabled=enabled)
 
 
 class RecipeListingSort(EnumeratedType):

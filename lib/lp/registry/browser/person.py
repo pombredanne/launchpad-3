@@ -152,6 +152,7 @@ from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -916,7 +917,8 @@ class PersonMenuMixin(CommonMenuLinks):
         return Link(target, text, icon='edit')
 
 
-class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
+class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
+                         HasRecipesMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -927,7 +929,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
              'codesofconduct', 'karma', 'administer', 'administer_account',
              'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary']
+             'related_software_summary', 'view_recipes']
 
     def related_software_summary(self):
         target = '+related-software'

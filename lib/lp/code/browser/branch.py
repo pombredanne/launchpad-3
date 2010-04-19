@@ -79,6 +79,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, CodeImportJobState,
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
@@ -222,7 +223,7 @@ class BranchEditMenu(NavigationMenu):
         return Link('+reviewer', text, icon='edit')
 
 
-class BranchContextMenu(ContextMenu):
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
@@ -313,14 +314,6 @@ class BranchContextMenu(ContextMenu):
             enabled = True
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
-
-    def view_recipes(self):
-        text = 'View source package recipes'
-        enabled = False
-        if self.context.getRecipes().count():
-            enabled = True
-        return Link(
-            '+recipes', text, icon='info', enabled=enabled)
 
 
 class DecoratedBug:
