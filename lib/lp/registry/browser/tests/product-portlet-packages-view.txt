@@ -292,7 +292,7 @@ The +portlet-packages view can set the product next_suggest_packaging_date
 attribute so that suggestions are disabled.
 
     >>> product.next_suggest_packaging_date = None
-
+    >>> almost_a_year = datetime.now(tz=pytz.UTC) + timedelta(days=364)
     >>> form = {
     ...     'field.distributionsourcepackage': 'NOT_PACKAGED',
     ...     'field.actions.link': 'Set Ubuntu Package Information',
@@ -302,7 +302,7 @@ attribute so that suggestions are disabled.
     >>> view.errors
     []
 
-    >>> print product.next_suggest_packaging_date is not None
+    >>> print product.next_suggest_packaging_date > almost_a_year
     True
 
 The +portlet-packages view can create a Packaging link.
