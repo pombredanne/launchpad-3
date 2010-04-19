@@ -86,7 +86,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_destroySelf(self):
         """Should destroy associated builds, distroseries, etc."""
-        # recipe should have at least one datainstruction.
+        # Recipe should have at least one datainstruction.
         branches = [self.factory.makeBranch() for count in range(2)]
         recipe = self.factory.makeSourcePackageRecipe(branches=branches)
         pending_build = self.factory.makeSourcePackageRecipeBuild(

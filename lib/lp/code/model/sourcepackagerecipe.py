@@ -123,8 +123,7 @@ class SourcePackageRecipe(Storm):
     def destroySelf(self):
         store = Store.of(self)
         self.distroseries.clear()
-        for instruction in self._recipe_data.instructions:
-            store.remove(instruction)
+        self._recipe_data.instructions.find().remove()
         def destroyBuilds(pending):
             builds = self.getBuilds(pending=pending)
             for build in builds:
