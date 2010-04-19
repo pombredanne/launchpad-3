@@ -64,6 +64,7 @@ appropriate message asking to suggest a match.
     suggest one?
     Ubuntu Hoary packages:
     Choose another Ubuntu package
+    This project is not packaged in Ubuntu
 
 A distribution source package in a distribution other than ubuntu will
 not be suggested.
@@ -258,6 +259,54 @@ is lpnet.
     <BLANKLINE>
 
     >>> ignore = config.pop('test_data')
+
+
+The can_show_portlet property is False when
+product.next_suggest_packaging_date is None or the date is more than one
+year ago.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+
+    >>> print product.next_suggest_packaging_date
+    None
+
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    True
+
+    >>> year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
+    >>> product.next_suggest_packaging_date = year_from_now
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    False
+
+    >>> yesterday = datetime.now(tz=pytz.UTC) - timedelta(days=1)
+    >>> product.next_suggest_packaging_date = yesterday
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    True
+
+The +portlet-packages view can set the product next_suggest_packaging_date
+attribute so that suggestions are disabled.
+
+    >>> product.next_suggest_packaging_date = None
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'NOT_PACKAGED',
+    ...     'field.actions.link': 'Set Ubuntu package information',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> print product.next_suggest_packaging_date is not None
+    True
+
 
 The +portlet-packages view can create a Packaging link.
 
