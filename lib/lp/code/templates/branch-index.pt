@@ -185,8 +185,7 @@
     </ul>
   </div>
 
-      <div id="nearby-branches" class="related"
-           tal:define="context_menu context/menu:context">
+      <div id="nearby-branches" class="related">
 
   <h2>Nearby</h2>
   <ul>
@@ -216,7 +215,7 @@
 
   <div
     style="margin-top: 1.5em"
-    tal:define="link context_menu/view_recipes"
+    tal:define="link context/menu:context/view_recipes"
     tal:condition="link/enabled"
     >
     <a tal:replace="structure link/fmt:link" />

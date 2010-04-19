@@ -12,11 +12,13 @@
       <li tal:define="link context/menu:overview/activate_ppa"
           tal:condition="link/enabled"
           tal:content="structure link/fmt:icon-link" />
+
       <tal:is-person condition="not: context/is_team">
         <li tal:define="link context/menu:overview/view_ppa_subscriptions"
             tal:condition="link/enabled"
             tal:replace="structure link/fmt:icon-link" />
       </tal:is-person>
+
     </ul>
   </div>
 </tal:root>
