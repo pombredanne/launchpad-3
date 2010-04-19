@@ -19,7 +19,7 @@ from zope.schema import Choice
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView, Link
+from canonical.launchpad.webapp import LaunchpadView, Link
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
