@@ -959,6 +959,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             self._branch_changed_log[0]['format_strings'])
 
     def test_format_2a(self):
+        # Creating a 2a branch reports the format to branchChanged.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(
@@ -966,6 +967,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.assertFormatStringsPassed(branch)
 
     def test_format_knits(self):
+        # Creating a knits branch reports the format to branchChanged.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(
@@ -973,6 +975,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.assertFormatStringsPassed(branch)
 
     def test_format_packs(self):
+        # Creating a packs branch reports the format to branchChanged.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(
