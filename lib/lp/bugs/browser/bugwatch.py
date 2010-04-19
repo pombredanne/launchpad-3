@@ -10,8 +10,6 @@ __all__ = [
     'BugWatchEditView',
     'BugWatchView']
 
-from datetime import datetime
-from pytz import utc
 
 from zope.component import getUtility
 from zope.interface import Interface
@@ -163,7 +161,7 @@ class BugWatchActivityPortletView(LaunchpadFormView):
     def reschedule_action(self, action, data):
         """Schedule the current bug watch for immediate checking."""
         bugwatch = self.context
-        bugwatch.setNextCheck(datetime.now(utc))
+        bugwatch.setNextCheck(UTC_NOW)
         self.request.response.addInfoNotification(
             structured(
                 'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '
