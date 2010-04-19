@@ -700,6 +700,9 @@ class BugWatchUpdater(WorkingBase):
         can_push_comments = (
             ISupportsCommentPushing.providedBy(remotesystem) and
             remotesystem.sync_comments)
+        can_back_link = (
+            ISupportsBackLinking.providedBy(remotesystem) and
+            remotesystem.sync_comments)
 
         if can_import_comments and server_time is None:
             can_import_comments = False
@@ -798,20 +801,26 @@ class BugWatchUpdater(WorkingBase):
                         if new_malone_importance is not None:
                             bug_watch.updateImportance(
                                 new_remote_importance, new_malone_importance)
-                        # Only sync comments and backlink if the local
-                        # bug isn't a duplicate, *and* if the bug
-                        # watch is associated with a bug task. This
-                        # helps us to avoid spamming upstream.
+                        # Only sync comments and backlink if there was no
+                        # earlier error, the local bug isn't a duplicate,
+                        # *and* if the bug watch is associated with a bug
+                        # task. This helps us to avoid spamming upstream.
                         do_sync = (
+                            error is None and
                             bug_watch.bug.duplicateof is None and
-                            len(bug_watch.bugtasks) > 0)
+                            len(bug_watch.bugtasks) > 0
+                            )
 
+                    # XXX: Exception handling is all wrong! If any of these
+                    # throw an exception, *all* the watches in bug_watches,
+                    # even those that have not errored, will have negative
+                    # activity added yet last_error_type will not be updated.
                     if do_sync:
                         if can_import_comments:
                             self.importBugComments(remotesystem, bug_watch)
                         if can_push_comments:
                             self.pushBugComments(remotesystem, bug_watch)
-                        if ISupportsBackLinking.providedBy(remotesystem):
+                        if can_back_link:
                             self.linkLaunchpadBug(remotesystem, bug_watch)
 
                     with self.transaction:
