@@ -276,7 +276,7 @@ class IProjectGroupPublic(
         """
 
     def getSeries(series_name):
-        """Return a ProjectSeries object with name `series_name`."""
+        """Return a ProjectGroupSeries object with name `series_name`."""
 
 
 class IProjectGroup(IProjectGroupPublic, IStructuralSubscriptionTarget,

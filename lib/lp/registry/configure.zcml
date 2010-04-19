@@ -335,24 +335,24 @@
     <facet
         facet="answers"/>
 
-    <!-- ProjectSet-->
+    <!-- ProjectGroupSet-->
 
     <class
-        class="lp.registry.model.project.ProjectSet">
+        class="lp.registry.model.projectgroup.ProjectGroupSet">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </class>
     <securedutility
-        class="lp.registry.model.project.ProjectSet"
+        class="lp.registry.model.projectgroup.ProjectGroupSet"
         provides="lp.registry.interfaces.projectgroup.IProjectGroupSet">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </securedutility>
 
-    <!-- ProjectSeries -->
+    <!-- ProjectGroupSeries -->
 
     <class
-        class="lp.registry.model.project.ProjectSeries">
+        class="lp.registry.model.projectgroup.ProjectGroupSeries">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSeries"/>
     </class>

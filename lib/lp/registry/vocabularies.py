@@ -231,7 +231,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
     """All `IProjectGroup` objects vocabulary."""
     implements(IHugeVocabulary)
 
-    _table = Project
+    _table = ProjectGroup
     _orderBy = 'displayname'
     displayname = 'Select a project group'
 
