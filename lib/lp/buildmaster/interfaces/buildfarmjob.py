@@ -57,6 +57,16 @@ class BuildFarmJobType(DBEnumeratedType):
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
 
+    def generateSlaveBuildCookie():
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie need not be unique, but should be hard for a
+        compromised slave to guess.
+
+        :return: a hard-to-guess ASCII string that can be reproduced
+            accurately based on this job's properties.
+        """
+
     def score():
         """Calculate a job score appropriate for the job type in question."""
 

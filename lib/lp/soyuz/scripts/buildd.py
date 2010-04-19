@@ -19,12 +19,11 @@ from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # XXX cprov 2009-04-16: This function should live in
@@ -162,7 +161,7 @@ class QueueBuilder(LaunchpadCronScript):
         """Create missing Buildd Jobs. """
         self.logger.info("Scanning for build queue entries that are missing")
 
-        buildset = getUtility(IBuildSet)
+        buildset = getUtility(IBinaryPackageBuildSet)
         builds = buildset.getPendingBuildsForArchSet(archseries)
 
         if not builds:
@@ -187,14 +186,15 @@ class QueueBuilder(LaunchpadCronScript):
             return
 
         # Get the current build job candidates.
-        bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(archseries)
+        candidates = getUtility(IBinaryPackageBuildSet).calculateCandidates(
+            archseries)
 
         self.logger.info("Found %d build in NEEDSBUILD state. Rescoring"
                          % candidates.count())
 
         for job in candidates:
-            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
+            uptodate_build = getUtility(
+                IBinaryPackageBuildSet).getByQueueEntry(job)
             if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
                 continue
             job.score()
@@ -252,7 +252,7 @@ class RetryDepwait(LaunchpadCronScript):
                 "Could not find distribution: %s" % self.options.distribution)
 
         # Iterate over all supported distroarchseries with available chroot.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
         for distroseries in distribution:
             if distroseries.status == SeriesStatus.OBSOLETE:
                 self.logger.debug(

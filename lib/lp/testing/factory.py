@@ -149,8 +149,8 @@ SPACE = ' '
 
 DIFF = """\
 === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
---- yvo/yc/pbqr/vagresnprf/qvss.cl	2009-10-01 13:25:12 +0000
-+++ yvo/yc/pbqr/vagresnprf/qvss.cl	2010-02-02 15:48:56 +0000
+--- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000
++++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000
 @@ -121,6 +121,10 @@
                  'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
               ernqbayl=Gehr))
@@ -307,7 +307,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         login(user)
         try:
             result = factory_method(**factory_args)
-            transaction.commit()
         finally:
             logout()
         return result
@@ -328,38 +327,19 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeAccount(self, displayname, email=None, password=None,
                     status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN,
-                    commit=True):
-        """Create and return a new Account.
-
-        If commit is True, we do a transaction.commit() at the end so that the
-        newly created objects can be seen in other stores as well.
-        """
+                    rationale=AccountCreationRationale.UNKNOWN):
+        """Create and return a new Account."""
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
         if email is None:
             email = self.getUniqueEmailAddress()
+        email_status = EmailAddressStatus.PREFERRED
+        if status != AccountStatus.ACTIVE:
+            email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
-            email, person=None, account=account,
-            email_status=EmailAddressStatus.PREFERRED)
-        if commit:
-            transaction.commit()
+            email, person=None, account=account, email_status=email_status)
         return account
-
-    def makePerson(self, *args, **kwargs):
-        """As makePersonNoCommit, except with an implicit transaction commit.
-
-        makePersonNoCommit makes changes to two seperate database connections,
-        and the returned Person can have odd behavior until a commit is
-        made. For example, person.preferredemail will be None as this
-        is looking in the main Store for email address details, not the
-        email address master Store (the auth Store).
-        """
-        person = self.makePersonNoCommit(*args, **kwargs)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
-        return person
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -374,20 +354,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             active=True,
             can_encrypt=False)
 
-    def _stuff_preferredemail_cache(self, person):
-        """Stuff the preferredemail cache.
-
-        cachedproperty does not get reset across transactions,
-        so person.preferredemail can contain a bogus value even after
-        a commit, despite all changes now being available in the main
-        store.
-        """
-        naked_person = removeSecurityProxy(person)
-        naked_person._preferredemail_cached = Store.of(person).find(
-            EmailAddress, personID=person.id,
-            status=EmailAddressStatus.PREFERRED).one()
-
-    def makePersonNoCommit(
+    def makePerson(
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None):
@@ -499,8 +466,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         getUtility(IEmailAddressSet).new(
             alternative_address, person, EmailAddressStatus.VALIDATED,
             account)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
         return person
 
     def makeEmail(self, address, person, account=None, email_status=None):
@@ -566,8 +531,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
-        transaction.commit()
-        self._stuff_preferredemail_cache(team)
         return team
 
     def makePoll(self, team, name, title, proposition):
@@ -635,7 +598,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProcessorFamily(self, name, title=None, description=None,
                             restricted=False):
         """Create a new processor family.
-        
+
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
@@ -678,24 +641,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             signature_content=signature_content,
             description=description)
 
-    def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an explicit transaction commit.
-
-        This ensures that generated owners and registrants are fully
-        flushed and available from all Stores.
-        """
-        product = self.makeProductNoCommit(*args, **kwargs)
-        transaction.commit()
-        return product
-
-    def makeProductNoCommit(
+    def makeProduct(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        official_rosetta=None):
+        official_rosetta=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -723,6 +676,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             product.official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
+        if bug_supervisor is not None:
+            naked_product = removeSecurityProxy(product)
+            naked_product.bug_supervisor = bug_supervisor
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1126,9 +1082,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             to this URL.
         """
         if product is None:
-            product = self.makeProductNoCommit()
+            product = self.makeProduct()
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if title is None:
             title = self.getUniqueString()
         if comment is None:
@@ -1406,6 +1362,13 @@ class LaunchpadObjectFactory(ObjectFactory):
         return target.newFAQ(
             owner=target.owner, title=title, content='content')
 
+    def makePackageCodeImport(self, sourcepackage=None, **kwargs):
+        """Make a code import targetting a sourcepackage."""
+        if sourcepackage is None:
+           sourcepackage = self.makeSourcePackage()
+        target = IBranchTarget(sourcepackage)
+        return self.makeCodeImport(target=target, **kwargs)
+
     def makeProductCodeImport(self, product=None, **kwargs):
         """Make a code import targetting a product."""
         if product is None:
@@ -1527,10 +1490,6 @@ class LaunchpadObjectFactory(ObjectFactory):
                               merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
-            # Until we commit, sender.preferredemail returns None
-            # because the email address changes pending in the auth Store
-            # are not available via the main Store.
-            transaction.commit()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -1568,7 +1527,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         :param branch: If supplied, the branch to set as
             ProductSeries.branch.
-        :param product: If supplied, the name of the series.
+        :param name: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
         """
@@ -1674,7 +1633,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
-                    virtualized=True, description=None):
+                    virtualized=True, description=None, displayname=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1707,8 +1666,9 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled,
-            require_virtualized=virtualized, description=description)
+            distribution=distribution, name=name, displayname=displayname,
+            enabled=enabled, require_virtualized=virtualized,
+            description=description)
 
         if private:
             archive.private = True
@@ -1771,8 +1731,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
         if description is None:
@@ -1784,12 +1747,16 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
-                                     sourcename=None):
+                                     sourcename=None, distroseries=None):
         """Make a new SourcePackageRecipeBuild."""
-        if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe()
+            recipe = self.makeSourcePackageRecipe(
+                sourcepackagename=self.makeSourcePackageName(sourcename))
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if sourcepackage is None:
+            sourcepackage = distroseries.getSourcePackage(
+                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
         if archive is None:
@@ -2059,11 +2026,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(
-        self, sourcepackagename=None, distroseries=None, sourcename=None):
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName(sourcename)
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
@@ -2247,14 +2216,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         if pocket is None:
             pocket = self.getAnyPocket()
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if distribution is None:
             distribution = self.makeDistribution()
 
@@ -2428,6 +2403,5 @@ class LaunchpadObjectFactory(ObjectFactory):
         if blob is None:
             blob = self.getUniqueString()
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
-        transaction.commit()
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)

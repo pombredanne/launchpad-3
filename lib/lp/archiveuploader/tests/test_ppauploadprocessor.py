@@ -9,12 +9,12 @@
 
 __metaclass__ = type
 
+from email import message_from_string
 import os
 import shutil
 import unittest
 
-from email import message_from_string
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -488,6 +488,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         email = "contact@example.com"
         name = "Team"
         team = self.factory.makeTeam(email=email, displayname=name)
+        transaction.commit()
         name12 = getUtility(IPersonSet).getByName("name12")
         cprov.archive.newComponentUploader(name12, "main")
         cprov.archive.newComponentUploader(team, "main")
@@ -1251,9 +1252,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         the size of the upload plus the current PPA size must be smaller
         than the PPA.authorized_size, otherwise the upload will be rejected.
         """
-        # Stuff 1024 MiB in name16 PPA, so anything will be above the
-        # default quota limit, 1024 MiB.
-        self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
+        # Stuff 2048 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 2048 MiB.
+        self._fillArchive(self.name16.archive, 2048 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         upload_results = self.processUpload(self.uploadprocessor, upload_dir)
@@ -1266,7 +1267,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Rejected:",
-            "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
+            "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)
@@ -1277,9 +1278,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The system start warning users for uploads exceeding 95 % of
         the current size limit.
         """
-        # Stuff 973 MiB into name16 PPA, approximately 95 % of
-        # the default quota limit, 1024 MiB.
-        self._fillArchive(self.name16.archive, 973 * (2 ** 20))
+        # Stuff 1945 MiB into name16 PPA, approximately 95 % of
+        # the default quota limit, 2048 MiB.
+        self._fillArchive(self.name16.archive, 2000 * (2 ** 20))
 
         # Ensure the warning is sent in the acceptance notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
@@ -1287,7 +1288,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         contents = [
             "Subject: [PPA name16] [ubuntu/breezy] bar 1.0-1 (Accepted)",
             "Upload Warnings:",
-            "PPA exceeded 95 % of its size limit (973.00 of 1024.00 MiB). "
+            "PPA exceeded 95 % of its size limit (2000.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)

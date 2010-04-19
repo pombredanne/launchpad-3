@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'bazaar_identity',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'branch_name_validator',
     'BranchCannotBePrivate',
@@ -21,6 +20,7 @@ __all__ = [
     'BranchExists',
     'BranchTargetError',
     'BranchTypeError',
+    'BzrIdentityMixin',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'get_blacklisted_hostnames',
@@ -32,12 +32,10 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'NoSuchBranch',
-    'UnknownBranchTypeError',
     'user_has_special_branch_access',
     ]
 
 from cgi import escape
-from operator import attrgetter
 import re
 
 from zope.component import getUtility
@@ -51,7 +49,8 @@ from lazr.restful.declarations import (
     export_as_webservice_collection, export_as_webservice_entry,
     export_destructor_operation, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, mutator_for, operation_parameters, operation_returns_entry)
+    exported, mutator_for, operation_parameters, operation_returns_entry,
+    webservice_error)
 
 from canonical.config import config
 
@@ -69,12 +68,14 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import (
     ITableBatchNavigator, NameLookupFailed)
 from canonical.launchpad.webapp.menu import structured
@@ -92,6 +93,8 @@ class BranchCreationException(Exception):
 
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
+
+    webservice_error(400)
 
     def __init__(self, existing_branch):
         # XXX: TimPenhey 2009-07-12 bug=405214: This error
@@ -135,6 +138,8 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     the branch to a team that they are not a member of.
     """
 
+    webservice_error(400)
+
 
 class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
     """We forbid the creation of team-owned +junk branches.
@@ -157,6 +162,8 @@ class BranchCreatorNotOwner(BranchCreationException):
     Raised when a user is attempting to create a branch and set the owner of
     the branch to another user.
     """
+
+    webservice_error(400)
 
 
 class BranchTypeError(Exception):
@@ -925,6 +932,37 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     def associatedSuiteSourcePackages():
         """Return the suite source packages that this branch is linked to."""
 
+    def branchLinks():
+        """Return a sorted list of ICanHasLinkedBranch objects.
+
+        There is one result for each related linked object that the branch is
+        linked to.  For example in the case where a branch is linked to the
+        development series of a project, the link objects for both the project
+        and the development series are returned.
+
+        The sorting uses the defined order of the linked objects where the
+        more important links are sorted first.
+        """
+
+    def branchIdentities():
+        """A list of aliases for a branch.
+
+        Returns a list of tuples of bzr identity and context object.  There is
+        at least one alias for any branch, and that is the branch itself.  For
+        linked branches, the context object is the appropriate linked object.
+
+        Where a branch is linked to a product series or a suite source
+        package, the branch is available through a number of different urls.
+        These urls are the aliases for the branch.
+
+        For example, a branch linked to the development focus of the 'fooix'
+        project is accessible using:
+          lp:fooix - the linked object is the product fooix
+          lp:fooix/trunk - the linked object is the trunk series of fooix
+          lp:~owner/fooix/name - the unique name of the branch where the linked
+            object is the branch itself.
+        """
+
     # subscription-related methods
     @operation_parameters(
         person=Reference(
@@ -1303,50 +1341,48 @@ class IBranchCloud(Interface):
         """
 
 
-def bazaar_identity(branch, is_dev_focus):
-    """Return the shortest lp: style branch identity."""
-    lp_prefix = config.codehosting.bzr_lp_prefix
+class BzrIdentityMixin:
+    """This mixin class determines the bazaar identities.
 
-    # XXX: TimPenhey 2008-05-06 bug=227602: Since at this stage the launchpad
-    # name resolution is not authenticated, we can't resolve series branches
-    # that end up pointing to private branches, so don't show short names for
-    # the branch if it is private.
-    if branch.private:
-        return lp_prefix + branch.unique_name
+    Used by both the model branch class and the browser branch listing item.
+    This allows the browser code to cache the associated links which reduces
+    query counts.
+    """
 
-    use_series = None
-    # XXX: JonathanLange 2009-03-21 spec=package-branches: This should
-    # probably delegate to IBranch.target. I would do it now if I could figure
-    # what all the optimization code is for.
-    if branch.product is not None:
-        if is_dev_focus:
-            return lp_prefix + branch.product.name
+    @property
+    def bzr_identity(self):
+        """See `IBranch`."""
+        identity, context = self.branchIdentities()[0]
+        return identity
 
-        # If there are no associated series, then use the unique name.
-        associated_series = sorted(
-            branch.associatedProductSeries(), key=attrgetter('datecreated'))
-        if len(associated_series) == 0:
-            return lp_prefix + branch.unique_name
-        # Use the most recently created series.
-        use_series = associated_series[-1]
-        return "%(prefix)s%(product)s/%(series)s" % {
-            'prefix': lp_prefix,
-            'product': use_series.product.name,
-            'series': use_series.name}
+    def branchIdentities(self):
+        """See `IBranch`."""
+        lp_prefix = config.codehosting.bzr_lp_prefix
+        if self.private or not self.target.supports_short_identites:
+            # XXX: thumper 2010-04-08, bug 261609
+            # We have to get around to fixing this
+            identities = []
+        else:
+            identities = [
+                (lp_prefix + link.bzr_path, link.context)
+                for link in self.branchLinks()]
+        identities.append((lp_prefix + self.unique_name, self))
+        return identities
 
-    if branch.sourcepackage is not None:
-        if is_dev_focus:
-            return "%(prefix)s%(distro)s/%(packagename)s" % {
-            'prefix': lp_prefix,
-            'distro': branch.distroseries.distribution.name,
-            'packagename': branch.sourcepackagename.name}
-        suite_sourcepackages = branch.associatedSuiteSourcePackages()
-        # Take the first link if there is one.
-        if len(suite_sourcepackages) > 0:
-            suite_source_package = suite_sourcepackages[0]
-            return lp_prefix + suite_source_package.path
-
-    return lp_prefix + branch.unique_name
+    def branchLinks(self):
+        """See `IBranch`."""
+        links = []
+        for suite_sp in self.associatedSuiteSourcePackages():
+            links.append(ICanHasLinkedBranch(suite_sp))
+            if (suite_sp.distribution.currentseries == suite_sp.distroseries
+                and suite_sp.pocket == PackagePublishingPocket.RELEASE):
+                links.append(ICanHasLinkedBranch(
+                        suite_sp.sourcepackage.distribution_sourcepackage))
+        for series in self.associatedProductSeries():
+            links.append(ICanHasLinkedBranch(series))
+            if series.product.development_focus == series:
+                links.append(ICanHasLinkedBranch(series.product))
+        return sorted(links)
 
 
 def user_has_special_branch_access(user):

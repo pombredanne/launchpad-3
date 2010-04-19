@@ -29,7 +29,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
@@ -52,7 +52,7 @@ class BuilderSetNavigation(GetitemNavigation):
         except ValueError:
             return None
         try:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
         else:

@@ -32,7 +32,7 @@ from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
@@ -45,7 +45,7 @@ from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+    IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
@@ -130,6 +130,10 @@ patch_collection_return_type(
     IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
 patch_collection_return_type(
     IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
+patch_entry_return_type(
+    IHasCodeImports, 'newCodeImport', ICodeImport)
+patch_plain_parameter_type(
+    IHasCodeImports, 'newCodeImport', 'owner', IPerson)
 
 # IBugTask
 
@@ -165,7 +169,7 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
         'params']['build_state'].vocabulary = BuildStatus
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
-        'return_type'].value_type.schema = IBuild
+        'return_type'].value_type.schema = IBinaryPackageBuild
 
 ISourcePackage['distroseries'].schema = IDistroSeries
 ISourcePackage['productseries'].schema = IProductSeries
@@ -185,7 +189,8 @@ IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
 ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = (
+        IBinaryPackageBuild)
 ISourcePackagePublishingHistoryPublic[
     'getPublishedBinaries'].queryTaggedValue(
         LAZR_WEBSERVICE_EXPORTED)[
