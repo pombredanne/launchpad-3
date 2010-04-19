@@ -1,7 +1,11 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401,C0301
+# pylint: disable-msg=W0401,C0301,F0401
+
+
+from __future__ import with_statement
+
 
 __metaclass__ = type
 __all__ = [
@@ -37,6 +41,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
@@ -765,16 +770,22 @@ def with_anonymous_login(function):
     return mergeFunctionMetadata(function, wrapped)
 
 
-def run_with_login(person, function, *args, **kwargs):
-    """Run 'function' with 'person' logged in."""
+@contextmanager
+def person_logged_in(person):
     current_person = getUtility(ILaunchBag).user
     logout()
     login_person(person)
     try:
-        return function(*args, **kwargs)
+        yield
     finally:
         logout()
         login_person(current_person)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    with person_logged_in(person):
+        return function(*args, **kwargs)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):

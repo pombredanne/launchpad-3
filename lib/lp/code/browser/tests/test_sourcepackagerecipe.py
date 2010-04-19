@@ -42,9 +42,9 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         cake_branch = self.factory.makeProductBranch(
             owner=self.chef, name='cake', product=chocolate)
         return self.factory.makeSourcePackageRecipe(
-            None, self.chef, self.squirrel, None, u'cake_recipe',
-            u'This recipe builds a foo for disto bar, with my Secret Squirrel'
-            ' changes.', cake_branch)
+            owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
+            description=u'This recipe builds a foo for disto bar, with my'
+            ' Secret Squirrel changes.', branches=[cake_branch])
 
     def getRecipeBrowser(self, recipe, view_name=None):
         """Return a browser for the specified recipe, opened as Chef."""
