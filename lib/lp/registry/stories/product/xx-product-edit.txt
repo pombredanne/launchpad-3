@@ -332,27 +332,27 @@ Deactivate a product
 
 The Admins and Registry Experts can deactivate a project.
 
-    >>> registry_browser.open('http://launchpad.dev/firefox/+review-license')
+    >>> registry_browser.open('http://launchpad.dev/bzr/+review-license')
     >>> registry_browser.getControl(name='field.active').value = False
     >>> registry_browser.getControl(name='field.actions.change').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox
+    http://launchpad.dev/bzr
 
 The product overview page should show a notice that a product is
 inactive with a link to a form to re-activate it. Admins and Commercial
 Admins can still see the product, but regular users can't.
 
-    >>> registry_browser.open('http://launchpad.dev/firefox')
+    >>> registry_browser.open('http://launchpad.dev/bzr')
     >>> contents = find_main_content(registry_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
     This project is currently inactive ...
 
-    >>> admin_browser.open('http://launchpad.dev/firefox')
+    >>> admin_browser.open('http://launchpad.dev/bzr')
     >>> contents = find_main_content(admin_browser.contents)
     >>> print extract_text(contents.find(id='project-inactive'))
     This project is currently inactive ...
 
-    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> user_browser.open('http://launchpad.dev/bzr')
     Traceback (most recent call last):
     ...
     NotFound...
@@ -361,12 +361,12 @@ The product can then be reactivated.
 
     >>> registry_browser.getLink('Review project').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox/+review-license
+    http://launchpad.dev/bzr/+review-license
 
     >>> registry_browser.getControl(name='field.active').value = True
     >>> registry_browser.getControl(name='field.actions.change').click()
     >>> print registry_browser.url
-    http://launchpad.dev/firefox
+    http://launchpad.dev/bzr
 
     >>> contents = find_main_content(registry_browser.contents)
     >>> print contents.find(id='project-inactive')

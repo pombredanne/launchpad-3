@@ -19,12 +19,38 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import syncUpdate
 
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import License
+from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.model.product import Product
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from lp.testing import TestCaseWithFactory
+
+class TestProduct(TestCaseWithFactory):
+    """Tests product object."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_deactivation_failure(self):
+        # Ensure that a product cannot be deactivated if
+        # it is linked to source packages.
+        login('admin@canonical.com')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        self.assertEqual(True, firefox.active)
+        self.failUnless(len(firefox.sourcepackages) > 0)
+        self.assertRaises(
+            AssertionError,
+            setattr, firefox, 'active', False)
+
+    def test_deactivation_success(self):
+        # Ensure that a product can be deactivated if
+        # it is not linked to source packages.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        self.assertEqual(True, product.active)
+        product.active = False
+        self.assertEqual(False, product.active)
+
 
 class TestProductFiles(unittest.TestCase):
     """Tests for downloadable product files."""

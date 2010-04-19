@@ -1444,6 +1444,15 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
         """See `LaunchpadFormView`."""
         self.validate_private_bugs(data)
 
+        if data['active'] == False and self.context.active == True:
+            if len(self.context.sourcepackages) > 0:
+                self.setFieldError('active',
+                    structured(
+                        'This project cannot be deactivated since it is '
+                        'linked to '
+                        '<a href="%s/+packages">source packages</a>.',
+                        canonical_url(self.context)))
+
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
@@ -1490,6 +1499,15 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
+
+        if data['active'] == False and self.context.active == True:
+            if len(self.context.sourcepackages) > 0:
+                self.setFieldError('active',
+                    structured(
+                        'This project cannot be deactivated since it is '
+                        'linked to '
+                        '<a href="%s/+packages">source packages</a>.',
+                        canonical_url(self.context)))
 
 
 class ProductAddSeriesView(LaunchpadFormView):
