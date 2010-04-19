@@ -644,7 +644,6 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # Assume it's a relative path.
             return stacked_on_url
         uri = URI(stacked_on_url)
-        # XXX Maaaybe we could complain on stderr here?
         if uri.scheme not in ['http', 'bzr+ssh', 'sftp']:
             return stacked_on_url
         launchpad_domain = config.vhost.mainsite.hostname
@@ -723,7 +722,6 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_directory=None,
 
     branch_url = urlutils.local_path_to_url(branch_directory)
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
-    # XXX: JonathanLange 2007-05-29: The 'chroot' line lacks a unit test.
     branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(
         BlockingProxy(codehosting_client), user_id, branch_transport,
