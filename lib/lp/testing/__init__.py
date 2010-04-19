@@ -74,13 +74,14 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.launchpad.webapp import errorlog
 from canonical.config import config
+from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    ANONYMOUS, is_logged_in, login, login_person, logout)
+    is_logged_in, login, login_person, logout)
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales

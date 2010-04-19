@@ -440,56 +440,71 @@ The patches view is linked to from a portlet on the product bugs page.
     ...     print_bugfilters_portlet_unfilled,
     ...     print_bugfilters_portlet_filled)
     >>> print_bugfilters_portlet_unfilled(anon_browser, 'patchy-product-1')
-    Open bugs
-    Critical bugs
-    Bugs fixed elsewhere
     New bugs
+    Open bugs
+    In-progress bugs
+    Critical bugs
+    High importance bugs
+    <BLANKLINE>
+    Bugs with patches
+    Bugs fixed elsewhere
     Open CVE bugs - CVE reports
     Bugs need forwarding upstream
-    Bugs with patches
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/patchy-product-1/+subscribe
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'patchy-product-1')
-    3 Open bugs
-    1 Critical bug
-    0 Bugs fixed elsewhere
     1 New bug
+    3 Open bugs
+    0 In-progress bugs
+    1 Critical bug
+    0 High importance bugs
+    <BLANKLINE>
+    3 Bugs with patches
+    0 Bugs fixed elsewhere
     0 Open CVE bugs - CVE reports
     3 Bugs need forwarding upstream
-    3 Bugs with patches
 
 It's also linked to from a portlet on the source package bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/+source/a52dec')
-    1 Open bug
-    0 Critical bugs
-    1 Bug fixed elsewhere
     0 New bugs
-    0 Open CVE bugs
+    1 Open bug
+    0 In-progress bugs
+    0 Critical bugs
+    1 High importance bug
+    <BLANKLINE>
     1 Bug with a patch
+    1 Bug fixed elsewhere
+    0 Open CVE bugs
 
 And from a portlet on the distro series bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu/hoary')
-    2 Open bugs
-    0 Critical bugs
-    0 Bugs fixed elsewhere
     2 New bugs
-    1 Open CVE bug - CVE report
+    2 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    0 High importance bugs
     0 Incomplete bugs (can expire)
+    <BLANKLINE>
     1 Bug with a patch
+    0 Bugs fixed elsewhere
+    1 Open CVE bug - CVE report
 
 And from a portlet on the distro bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu')
-    9 Open bugs
-    0 Critical bugs
-    2 Bugs fixed elsewhere
     6 New bugs
-    2 Open CVE bugs - CVE reports
+    9 Open bugs
+    0 In-progress bugs
+    0 Critical bugs
+    1 High importance bug
     0 Incomplete bugs (can expire)
+    <BLANKLINE>
     5 Bugs with patches
+    2 Bugs fixed elsewhere
+    2 Open CVE bugs - CVE reports
 
 The number of bugs with patches shown in the bugfilter stats portlet
 might be lower than the number of bugs (bugtasks) listed on the

@@ -37,6 +37,8 @@ from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.management import (
+    endInteraction, queryInteraction)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -54,9 +56,8 @@ from canonical.launchpad.webapp.adapter import (
     clear_request_started, get_request_start_time, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
+from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction, queryInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs import externalbugtracker

@@ -790,12 +790,6 @@
             permission="launchpad.AnyPerson"
             template="../templates/person-claim-team.pt"/>
         <browser:page
-            name="+claim"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonClaimView"
-            permission="zope.Public"
-            template="../templates/person-claim.pt"/>
-        <browser:page
             name="+editlanguages"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonLanguagesView"
