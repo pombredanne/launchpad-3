@@ -373,10 +373,11 @@ the user to select the package.
     ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
     All packages...
     Packages in Ubuntu...
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     pmount...
 
-    >>> user_browser.getControl(name='field.distributionsourcepackage').value = ['pmount']
-    >>> user_browser.getControl('Link to this Ubuntu Package').click()
+    >>> user_browser.getControl(
+    ...     name='field.distributionsourcepackage').value = ['pmount']
+    >>> user_browser.getControl('Set Ubuntu package information').click()
     >>> print_feedback_messages(user_browser.contents)
     This project was linked to the source package "pmount in ubuntu"
