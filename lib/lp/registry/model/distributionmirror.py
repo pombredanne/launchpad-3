@@ -457,8 +457,8 @@ class DistributionMirror(SQLBase):
                         # mirror on its last probe.
                         if ((series.status == SeriesStatus.OBSOLETE or
                                 not arch_series.official) and
-                                not self._getMirrorDistroArchSeries(arch_series,
-                                    pocket, component)):
+                                not self._getMirrorDistroArchSeries(
+                                    arch_series, pocket, component)):
                             continue
 
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
@@ -476,8 +476,8 @@ class DistributionMirror(SQLBase):
                     # Skip sources for series which are obsolete and ones
                     # which were not on the mirror on its last probe.
                     if (series.status == SeriesStatus.OBSOLETE and
-                        not self._getMirrorDistroSeriesSource(series, pocket,
-                            component)):
+                        not self._getMirrorDistroSeriesSource(
+                            series, pocket, component)):
                         continue
 
                     path = ('dists/%s%s/%s/source/Sources.gz'
