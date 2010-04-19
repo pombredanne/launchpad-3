@@ -63,7 +63,7 @@ of the intermediate failed states (FAILEDTOBUILD, MANUALDEPWAIT,
 CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
 
     >>> firefox_build.buildstate
-    <DBItem BuildStatus.FULLYBUILT, (1) Successful build>
+    <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
 
 Builds which were already processed also offer additional information
 about its process such as the time it was started and finished and its
