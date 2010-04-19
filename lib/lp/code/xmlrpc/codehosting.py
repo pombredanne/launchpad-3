@@ -107,7 +107,7 @@ class Codehosting(LaunchpadXMLRPCView):
             except KeyError:
                 raise UnknownBranchTypeError(
                     'Unknown branch type: %r' % (branch_type_name,))
-        branch = getUtility(branchpuller.ICodehosting).acquireBranchToPull(
+        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull(
             *branch_types)
         if branch is not None:
             branch = removeSecurityProxy(branch)

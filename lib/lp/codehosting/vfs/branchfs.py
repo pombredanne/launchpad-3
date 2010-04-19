@@ -68,8 +68,8 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.config import TransportConfig
 from bzrlib.errors import (
-    NoSuchFile, NotBranchError, NotStacked, PermissionDenied,
-    TransportNotPossible, UnstackableBranchFormat)
+    NoSuchFile, NotStacked, PermissionDenied, TransportNotPossible,
+    UnstackableBranchFormat)
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport

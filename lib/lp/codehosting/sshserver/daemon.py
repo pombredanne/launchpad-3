@@ -45,8 +45,8 @@ ACCESS_LOG_NAME = 'codehosting.access'
 class CodehostingAvatar(LaunchpadAvatar):
     """An SSH avatar specific to codehosting.
 
-    :ivar branchfs_proxy: A Twisted XML-RPC client for the authserver. The
-        server must implement `IBranchFileSystem`.
+    :ivar codehosting_proxy: A Twisted XML-RPC client for the authserver. The
+        server must implement `ICodehosting`.
     """
 
     def __init__(self, user_dict, codehosting_proxy):
@@ -65,7 +65,7 @@ class Realm:
 
     def __init__(self, authentication_proxy, codehosting_proxy):
         self.authentication_proxy = authentication_proxy
-        self.branchfs_proxy = codehosting_proxy
+        self.codehosting_proxy = codehosting_proxy
 
     def requestAvatar(self, avatar_id, mind, *interfaces):
         # Fetch the user's details from the authserver
@@ -101,5 +101,5 @@ def make_portal():
     """
     authentication_proxy = Proxy(
         config.codehosting.authentication_endpoint)
-    codehosting_proxy = Proxy(config.codehosting.branchfs_endpoint)
+    codehosting_proxy = Proxy(config.codehosting.codehosting_endpoint)
     return get_portal(authentication_proxy, codehosting_proxy)
