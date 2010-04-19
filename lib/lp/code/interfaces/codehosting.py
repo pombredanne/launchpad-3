@@ -9,7 +9,7 @@ __metaclass__ = type
 __all__ = [
     'BRANCH_TRANSPORT',
     'CONTROL_TRANSPORT',
-    'ICodehosting',
+    'ICodehostingAPI',
     'ICodehostingApplication',
     'LAUNCHPAD_ANONYMOUS',
     'LAUNCHPAD_SERVICES',
@@ -50,7 +50,7 @@ class ICodehostingApplication(ILaunchpadApplication):
     """Branch Puller application root."""
 
 
-class ICodehosting(Interface):
+class ICodehostingAPI(Interface):
     """The codehosting XML-RPC interface to Launchpad.
 
     Published at 'codehosting' on the private XML-RPC server.

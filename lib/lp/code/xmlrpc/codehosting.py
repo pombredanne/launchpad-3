@@ -5,8 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BranchFileSystem',
-    'BranchPuller',
+    'CodehostingAPI',
     'datetime_from_tuple',
     ]
 
@@ -43,7 +42,7 @@ from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehosting, LAUNCHPAD_ANONYMOUS,
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
@@ -95,13 +94,13 @@ def run_with_login(login_id, function, *args, **kwargs):
 
 
 
-class Codehosting(LaunchpadXMLRPCView):
-    """See `ICodehosting`."""
+class CodehostingAPI(LaunchpadXMLRPCView):
+    """See `ICodehostingAPI`."""
 
-    implements(ICodehosting)
+    implements(ICodehostingAPI)
 
     def acquireBranchToPull(self, branch_type_names):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         branch_types = []
         for branch_type_name in branch_type_names:
             try:
@@ -127,7 +126,7 @@ class Codehosting(LaunchpadXMLRPCView):
             return ()
 
     def mirrorComplete(self, branch_id, last_revision_id):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
@@ -137,7 +136,7 @@ class Codehosting(LaunchpadXMLRPCView):
         return True
 
     def mirrorFailed(self, branch_id, reason):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
@@ -146,7 +145,7 @@ class Codehosting(LaunchpadXMLRPCView):
         return True
 
     def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         date_started = datetime_from_tuple(started_tuple)
         date_completed = datetime_from_tuple(completed_tuple)
         getUtility(IScriptActivitySet).recordSuccess(
@@ -155,7 +154,7 @@ class Codehosting(LaunchpadXMLRPCView):
         return True
 
     def startMirroring(self, branch_id):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
@@ -165,7 +164,7 @@ class Codehosting(LaunchpadXMLRPCView):
         return True
 
     def setStackedOn(self, branch_id, stacked_on_location):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         # We don't want the security proxy on the branch set because this
         # method should be able to see all branches and set stacking
         # information on any of them.
@@ -188,7 +187,7 @@ class Codehosting(LaunchpadXMLRPCView):
         return True
 
     def createBranch(self, login_id, branch_path):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         def create_branch(requester):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
@@ -233,7 +232,7 @@ class Codehosting(LaunchpadXMLRPCView):
                 and check_permission('launchpad.Edit', branch))
 
     def requestMirror(self, login_id, branchID):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         def request_mirror(requester):
             branch = getUtility(IBranchLookup).get(branchID)
             # We don't really care who requests a mirror of a branch.
@@ -243,7 +242,7 @@ class Codehosting(LaunchpadXMLRPCView):
 
     def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
                       control_string, branch_string, repository_string):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         branch_set = removeSecurityProxy(getUtility(IBranchLookup))
         branch = branch_set.get(branch_id)
         if branch is None:
@@ -317,7 +316,7 @@ class Codehosting(LaunchpadXMLRPCView):
             trailing_path)
 
     def translatePath(self, requester_id, path):
-        """See `ICodehosting`."""
+        """See `ICodehostingAPI`."""
         @return_fault
         def translate_path(requester):
             if not path.startswith('/'):

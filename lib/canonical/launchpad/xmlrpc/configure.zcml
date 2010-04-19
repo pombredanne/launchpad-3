@@ -35,8 +35,8 @@
 
   <xmlrpc:view
     for="lp.code.interfaces.codehosting.ICodehostingApplication"
-    interface="lp.code.interfaces.codehosting.ICodehosting"
-    class="lp.code.xmlrpc.codehosting.Codehosting"
+    interface="lp.code.interfaces.codehosting.ICodehostingAPI"
+    class="lp.code.xmlrpc.codehosting.CodehostingAPI"
     permission="zope.Public"
     />
 

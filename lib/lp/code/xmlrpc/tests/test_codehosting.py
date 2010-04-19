@@ -37,7 +37,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
-    Codehosting, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES, run_with_login)
+    CodehostingAPI, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES, run_with_login)
 
 from lp.codehosting.inmemory import InMemoryFrontend
 
@@ -125,7 +125,7 @@ class TestRunWithLogin(TestCaseWithFactory):
 
 
 class CodehostingTest(TestCaseWithFactory):
-    """Tests for the implementation of `ICodehosting`.
+    """Tests for the implementation of `ICodehostingAPI`.
 
     :ivar frontend: A nullary callable that returns an object that implements
         getCodehostingEndpoint, getLaunchpadObjectFactory and getBranchLookup.
@@ -1014,7 +1014,7 @@ class CodehostingTest(TestCaseWithFactory):
 
 class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
                                           AcquireBranchToPullTests):
-    """Tests for `acquireBranchToPull` method of `ICodehosting`."""
+    """Tests for `acquireBranchToPull` method of `ICodehostingAPI`."""
 
     def setUp(self):
         super(AcquireBranchToPullTestsViaEndpoint, self).setUp()
@@ -1108,7 +1108,7 @@ class LaunchpadDatabaseFrontend:
 
     def getCodehostingEndpoint(self):
         """Return the branch filesystem endpoint for testing."""
-        return Codehosting(None, None)
+        return CodehostingAPI(None, None)
 
     def getLaunchpadObjectFactory(self):
         """Return the Launchpad object factory for testing.
