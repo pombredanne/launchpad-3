@@ -96,7 +96,6 @@ for the current Ubuntu series will NOT be suggested.
     >>> view.suggestions
     []
 
-
 A source package that does NOT have a publishing history in the PENDING
 or PUBLISHED statuses will NOT be suggested.
 
@@ -112,7 +111,7 @@ or PUBLISHED statuses will NOT be suggested.
     ...     print dsp.name
 
 A source package that does have a publishing history for the current
-Ubuntu series will be suggested. The view as a distributionsourcepackage
+Ubuntu series will be suggested. The view has a distributionsourcepackage
 field.
 
     >>> spph = factory.makeSourcePackagePublishingHistory(
@@ -260,7 +259,6 @@ is lpnet.
 
     >>> ignore = config.pop('test_data')
 
-
 The can_show_portlet property is False when
 product.next_suggest_packaging_date is None or the date is more than one
 year ago.
@@ -306,7 +304,6 @@ attribute so that suggestions are disabled.
 
     >>> print product.next_suggest_packaging_date is not None
     True
-
 
 The +portlet-packages view can create a Packaging link.
 

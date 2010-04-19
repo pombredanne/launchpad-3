@@ -1110,10 +1110,10 @@ class ProductPackagesPortletView(LaunchpadFormView):
         vocab_terms.append(
             SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
         vocabulary = SimpleVocabulary(vocab_terms)
+        series_display_name = ubuntu.currentseries.displayname
         self.form_fields = form.Fields(
             Choice(__name__=self.package_field_name,
-                   title=_('Ubuntu %s packages' %
-                           ubuntu.currentseries.displayname),
+                   title=_('Ubuntu %s packages') % series_display_name,
                    default=None,
                    vocabulary=vocabulary,
                    required=True))

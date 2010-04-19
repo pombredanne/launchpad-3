@@ -225,7 +225,8 @@ packages.
     >>> print evo.next_suggest_packaging_date
     None
 
-Any logged in user can set the date.
+Any logged in user can set next_suggest_packaging_date, just like any
+logged in user can can link a project to a source package.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
