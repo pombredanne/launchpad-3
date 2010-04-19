@@ -811,10 +811,11 @@ class BugWatchUpdater(WorkingBase):
                             len(bug_watch.bugtasks) > 0
                             )
 
-                    # XXX: Exception handling is all wrong! If any of these
-                    # throw an exception, *all* the watches in bug_watches,
-                    # even those that have not errored, will have negative
-                    # activity added yet last_error_type will not be updated.
+                    # XXX: Gavin Panella 2010-04-19 bug=509223:
+                    # Exception handling is all wrong! If any of these
+                    # throw an exception, *all* the watches in
+                    # bug_watches, even those that have not errored,
+                    # will have negative activity added.
                     if do_sync:
                         if can_import_comments:
                             self.importBugComments(remotesystem, bug_watch)
