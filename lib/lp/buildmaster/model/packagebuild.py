@@ -8,15 +8,40 @@ __all__ = [
     ]
 
 
+from storm.locals import Int, Reference, Storm, Unicode
+
+from zope.interface import implements
+
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import DBEnum
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob, BuildFarmJobDerived)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
-class PackageBuild(BuildFarmJob):
+class PackageBuild(Storm, BuildFarmJob):
     """An implementation of `IBuildFarmJob` for package builds."""
+
+    __storm_table__ = 'PackageBuild'
+
+    implements(IPackageBuild)
+
+    id = Int(primary=True)
+
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
+
+    pocket = DBEnum(
+        name='pocket', allow_none=False,
+        enum=PackagePublishingPocket)
+
+    upload_log_id = Int(name='upload_log', allow_none=True)
+    upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
+
+    dependencies = Unicode(name='dependencies', allow_none=True)
 
     def __init__(self, build):
         """Store the build for this package build farm job.
