@@ -9,18 +9,18 @@ __all__ = [
     'XMLRPCWrapper',
     ]
 
-import datetime
 import operator
 from xmlrpclib import Fault
 
 from bzrlib.urlutils import escape, unescape
 
-import pytz
-
 from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.xmlrpc import faults
+
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.model.branchnamespace import BranchNamespaceSet
@@ -32,12 +32,10 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
+from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.utils import iter_split
 from lp.testing.factory import ObjectFactory
-from canonical.launchpad.validators import LaunchpadValidationError
-from lp.code.xmlrpc.codehosting import datetime_from_tuple
-from canonical.launchpad.xmlrpc import faults
 
 
 class FakeStore:
@@ -639,7 +637,7 @@ class FakeBranchFilesystem:
                 branch.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_location)
         branch.stacked_on = stacked_on_branch
-        branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+        branch.last_mirrored = UTC_NOW
         if branch.last_mirrored_id != last_revision_id:
             branch.last_mirrored_id = last_revision_id
 
