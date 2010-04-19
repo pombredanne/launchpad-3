@@ -16,7 +16,6 @@ from bzrlib.urlutils import escape
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.codehosting.inmemory import InMemoryFrontend
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from lp.services.scripts.interfaces.scriptactivity import (
@@ -41,6 +40,8 @@ from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
     run_with_login)
+
+from lp.codehosting.inmemory import InMemoryFrontend
 
 
 UTC = pytz.timezone('UTC')
@@ -700,9 +701,11 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
             branch.id, '', '', self.arbitrary_format_strings)
-        # We can't test "now" precisely, but lets check that last_mirrored was
-        # set to _something_.
-        self.assertIsNot(None, branch.last_mirrored)
+        if self.frontend == LaunchpadDatabaseFrontend:
+            self.assertSqlAttributeEqualsDate(
+                branch, 'last_mirrored', UTC_NOW)
+        else:
+            self.assertIs(UTC_NOW, branch.last_mirrored)
 
     def test_branchChanged_records_bogus_stacked_on_url(self):
         # If a bogus location is passed in as the stacked_on parameter,
@@ -736,7 +739,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
 
     def test_branchChanged_creates_scan_job(self):
         # branchChanged() creates a scan job for the branch.
-        if not isinstance(self.frontend, LaunchpadDatabaseFrontend):
+        if self.frontend != LaunchpadDatabaseFrontend:
             return
         branch = self.factory.makeAnyBranch()
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
@@ -747,7 +750,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertEqual(1, len(jobs))
 
     def test_branchChanged_doesnt_create_scan_job_for_noop_change(self):
-        if not isinstance(self.frontend, LaunchpadDatabaseFrontend):
+        if self.frontend != LaunchpadDatabaseFrontend:
             return
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).last_mirrored_id = 'rev1'

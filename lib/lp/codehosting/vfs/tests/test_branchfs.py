@@ -17,6 +17,7 @@ from bzrlib.tests import (
 from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
     unregister_transport)
+from bzrlib.transport.chroot import ChrootTransport
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.urlutils import escape, local_path_to_url
 
@@ -26,7 +27,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from lp.codehosting.vfs.branchfs import (
     AsyncLaunchpadTransport, BranchTransportDispatch,
     DirectDatabaseLaunchpadServer, LaunchpadInternalServer, LaunchpadServer,
-    TransportDispatch, UnknownTransportType, branch_id_to_path)
+    TransportDispatch, UnknownTransportType, branch_id_to_path, get_lp_server)
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.sftp import FatLocalTransport
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
@@ -1044,6 +1045,17 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             errors.TransportNotPossible,
             self.lp_transport.rename, self.writable_file,
             '/%s/.bzr/goodbye.txt' % self.read_only_branch)
+
+
+class TestGetLPServer(TestCase):
+    """Tests for `get_lp_server`."""
+
+    def test_chrooting(self):
+        # Test that get_lp_server return a server that ultimately backs onto a
+        # ChrootTransport.
+        lp_server = get_lp_server(1, 'http://xmlrpc.example.invalid', '')
+        transport = lp_server._transport_dispatch._rw_dispatch.base_transport
+        self.assertIsInstance(transport, ChrootTransport)
 
 
 def test_suite():
