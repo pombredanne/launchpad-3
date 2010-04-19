@@ -20,8 +20,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.webapp.adapter import (
-    clear_request_started, get_request_statements, set_request_started)
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
