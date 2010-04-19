@@ -1,0 +1,47 @@
+==============
+Project Groups
+==============
+
+
+Project group collection
+------------------------
+
+It is possible to get a batched list of all the project groups.
+
+    >>> from launchpadlib.launchpad import Launchpad
+    >>> from lp.testing._login import ANONYMOUS, login, logout
+    >>> logout()
+    >>> lp_anon = Launchpad.login_anonymously('launchpadlib test', 'http://api.launchpad.dev/')
+    >>> len(lp_anon.project_groups)
+    7
+
+    >>> project_groups = sorted(lp_anon.project_groups, key=lambda X: X.name)
+    >>> project_groups[0].self_link
+    u'http://.../aaa'
+
+    >>> for project_group in project_groups:
+    ...     print "%s (%s)" % (project_group.name, project_group.display_name)
+    aaa (the Test Project)
+    apache (Apache)
+    gimp (the GiMP Project)
+    gnome (GNOME)
+    iso-codes-project (iso-codes)
+    launchpad-mirrors (Launchpad SCM Mirrors)
+    mozilla (the Mozilla Project)
+
+It's possible to search the list and get a subset of the project groups.
+
+    >>> import httplib2
+    >>> httplib2.debuglevel = 1
+    >>> lp_anon = Launchpad.login_anonymously('launchpadlib test', 'http://api.launchpad.dev/')
+    >>> collection = lp_anon.project_groups.search(text="Apache")
+    >>> for project_group in collection:
+    ...   print project_group.display_name
+    Apache
+
+Searching without providing a search string is the same as getting all
+the project groups.
+
+    >>> collection = lp_anon.project_groups.search()
+    >>> for project_group in collection:
+    ...   print project_group.display_name
