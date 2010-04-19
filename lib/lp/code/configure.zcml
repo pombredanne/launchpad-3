@@ -467,7 +467,6 @@
                     getMainlineBranchRevisions
                     getMergeProposals
                     getStackedBranches
-                    getStackedBranchesWithIncompleteMirrors
                     createBranchRevision
                     getTipRevision
                     updateScannedDetails
