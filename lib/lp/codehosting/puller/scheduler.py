@@ -296,7 +296,7 @@ class PullerMaster:
         self.branch_type_name = branch_type_name
         self.default_stacked_on_url = default_stacked_on_url
         self.logger = logger
-        self.branch_puller_endpoint = client
+        self.codehosting_endpoint = client
         self._available_oops_prefixes = available_oops_prefixes
 
     @cachedproperty
@@ -348,7 +348,7 @@ class PullerMaster:
         return deferred
 
     def setStackedOn(self, stacked_on_location):
-        deferred = self.branch_puller_endpoint.callRemote(
+        deferred = self.codehosting_endpoint.callRemote(
             'setStackedOn', self.branch_id, stacked_on_location)
         def no_such_branch(failure):
             # If there's no branch for stacked_on_location, then we just
@@ -365,7 +365,7 @@ class PullerMaster:
     def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded %s', oops)
         self.logger.info('Recorded failure: %s', str(reason))
-        return self.branch_puller_endpoint.callRemote(
+        return self.codehosting_endpoint.callRemote(
             'mirrorFailed', self.branch_id, reason)
 
     def mirrorSucceeded(self, revid_before, revid_after):
@@ -377,7 +377,7 @@ class PullerMaster:
             'Successfully mirrored %s branch %d %s to %s to from rev %s to %s'
             ' (%s)', self.branch_type_name, self.branch_id, self.source_url,
             self.destination_url, revid_before, revid_after, was_noop)
-        return self.branch_puller_endpoint.callRemote(
+        return self.codehosting_endpoint.callRemote(
             'mirrorComplete', self.branch_id, revid_after)
 
     def log(self, message):
@@ -411,8 +411,8 @@ class JobScheduler:
     branches.
     """
 
-    def __init__(self, branch_puller_endpoint, logger, branch_type_names):
-        self.branch_puller_endpoint = branch_puller_endpoint
+    def __init__(self, codehosting_endpoint, logger, branch_type_names):
+        self.codehosting_endpoint = codehosting_endpoint
         self.logger = logger
         self.branch_type_names = branch_type_names
         self.actualLock = None
@@ -445,11 +445,11 @@ class JobScheduler:
         master = PullerMaster(
             branch_id, pull_url, unique_name, branch_type_name,
             default_stacked_on_url, self.logger,
-            self.branch_puller_endpoint, self.available_oops_prefixes)
+            self.codehosting_endpoint, self.available_oops_prefixes)
         return master.run
 
     def _poll(self):
-        deferred = self.branch_puller_endpoint.callRemote(
+        deferred = self.codehosting_endpoint.callRemote(
             'acquireBranchToPull', self.branch_type_names)
         deferred.addCallback(self._turnJobTupleIntoTask)
         return deferred
@@ -483,7 +483,7 @@ class JobScheduler:
         """Record successful completion of the script."""
         started_tuple = tuple(date_started.utctimetuple())
         completed_tuple = tuple(date_completed.utctimetuple())
-        return self.branch_puller_endpoint.callRemote(
+        return self.codehosting_endpoint.callRemote(
             'recordSuccess', self.name, socket.gethostname(), started_tuple,
             completed_tuple)
 

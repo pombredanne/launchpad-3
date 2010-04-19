@@ -40,7 +40,7 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
 from lp.testing.factory import ObjectFactory
 
 
-class FakePullerEndpointProxy:
+class FakeCodehostingEndpointProxy:
 
     def __init__(self):
         self.calls = []
@@ -81,7 +81,8 @@ class TestJobScheduler(TrialTestCase):
 
     def makeJobScheduler(self, branch_type_names=()):
         return scheduler.JobScheduler(
-            FakePullerEndpointProxy(), logging.getLogger(), branch_type_names)
+            FakeCodehostingEndpointProxy(), logging.getLogger(),
+            branch_type_names)
 
     def testManagerCreatesLocks(self):
         manager = self.makeJobScheduler()
@@ -105,7 +106,7 @@ class TestJobScheduler(TrialTestCase):
         manager.run()
         self.assertEqual(
             [('acquireBranchToPull', ('MIRRORED',))],
-            manager.branch_puller_endpoint.calls)
+            manager.codehosting_endpoint.calls)
 
 
 class TestPullerWireProtocol(TrialTestCase):
@@ -421,7 +422,7 @@ class TestPullerMaster(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.status_client = FakePullerEndpointProxy()
+        self.status_client = FakeCodehostingEndpointProxy()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
@@ -528,7 +529,7 @@ class TestPullerMasterSpawning(TrialTestCase):
             branch_type_name=branch_type_name,
             default_stacked_on_url=default_stacked_on_url,
             logger=logging.getLogger(),
-            client=FakePullerEndpointProxy(),
+            client=FakeCodehostingEndpointProxy(),
             available_oops_prefixes=oops_prefixes)
 
     @property
@@ -642,7 +643,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
             branch_type=BranchType.MIRRORED, url=url).id
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchLookup).get(branch_id)
-        self.client = FakePullerEndpointProxy()
+        self.client = FakeCodehostingEndpointProxy()
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.

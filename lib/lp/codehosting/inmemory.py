@@ -451,10 +451,18 @@ class FakeObjectFactory(ObjectFactory):
         return branch
 
 
-class FakeBranchPuller:
+class FakeCodehosting:
 
-    def __init__(self, branch_set, script_activity_set):
+    def __init__(self, branch_set, person_set, product_set, distribution_set,
+                 distroseries_set, sourcepackagename_set, factory,
+                 script_activity_set):
         self._branch_set = branch_set
+        self._person_set = person_set
+        self._product_set = product_set
+        self._distribution_set = distribution_set
+        self._distroseries_set = distroseries_set
+        self._sourcepackagename_set = sourcepackagename_set
+        self._factory = factory
         self._script_activity_set = script_activity_set
 
     def acquireBranchToPull(self, branch_type_names):
@@ -539,19 +547,6 @@ class FakeBranchPuller:
         else:
             return faults.NoSuchBranch(stacked_on_location)
         return True
-
-
-class FakeBranchFilesystem:
-
-    def __init__(self, branch_set, person_set, product_set, distribution_set,
-                 distroseries_set, sourcepackagename_set, factory):
-        self._branch_set = branch_set
-        self._person_set = person_set
-        self._product_set = product_set
-        self._distribution_set = distribution_set
-        self._distroseries_set = distroseries_set
-        self._sourcepackagename_set = sourcepackagename_set
-        self._factory = factory
 
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
@@ -782,31 +777,22 @@ class InMemoryFrontend:
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
             self._sourcepackagename_set)
-        self._puller = FakeBranchPuller(
-            self._branch_set, self._script_activity_set)
-        self._branchfs = FakeBranchFilesystem(
+        self._codehosting = FakeCodehosting(
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
-            self._sourcepackagename_set, self._factory)
+            self._sourcepackagename_set, self._factory,
+            self._script_activity_set)
         sm = getSiteManager()
         sm.registerAdapter(fake_product_to_branch_target)
         sm.registerAdapter(fake_source_package_to_branch_target)
 
-    def getFilesystemEndpoint(self):
+    def getCodehostingEndpoint(self):
         """See `LaunchpadDatabaseFrontend`.
 
         Return an in-memory implementation of IBranchFileSystem that passes
         the tests in `test_codehosting`.
         """
-        return self._branchfs
-
-    def getPullerEndpoint(self):
-        """See `LaunchpadDatabaseFrontend`.
-
-        Return an in-memory implementation of IBranchPuller that passes the
-        tests in `test_codehosting`.
-        """
-        return self._puller
+        return self._codehosting
 
     def getLaunchpadObjectFactory(self):
         """See `LaunchpadDatabaseFrontend`.

@@ -175,7 +175,7 @@ class MixinBaseLaunchpadServerTests:
 
     def setUp(self):
         frontend = InMemoryFrontend()
-        self.authserver = frontend.getFilesystemEndpoint()
+        self.authserver = frontend.getCodehostingEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.requester = self.factory.makePerson()
         self.server = self.getLaunchpadServer(
@@ -471,7 +471,7 @@ class LaunchpadTransportTests:
     def setUp(self):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        authserver = frontend.getFilesystemEndpoint()
+        authserver = frontend.getCodehostingEndpoint()
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.server = self.getServer(
@@ -819,7 +819,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self._branch_changed_log = []
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.authserver = frontend.getFilesystemEndpoint()
+        self.authserver = frontend.getCodehostingEndpoint()
         self.authserver.branchChanged = self._replacement_branchChanged
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
@@ -1002,7 +1002,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self._frontend = InMemoryFrontend()
         self.factory = self._frontend.getLaunchpadObjectFactory()
 
-        authserver = self._frontend.getFilesystemEndpoint()
+        authserver = self._frontend.getCodehostingEndpoint()
         self.requester = self.factory.makePerson()
 
         self.writable_branch = self.factory.makeAnyBranch(

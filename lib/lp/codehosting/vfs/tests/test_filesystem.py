@@ -30,7 +30,7 @@ class TestFilesystem(TestCaseWithTransport):
         self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        endpoint = XMLRPCWrapper(frontend.getCodehostingEndpoint())
         self.requester = self.factory.makePerson()
         self._server = LaunchpadServer(
             endpoint, self.requester.id, MemoryTransport())
