@@ -17,21 +17,72 @@ from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.bugs.externalbugtracker.isolation import (
+    TransactionInProgress, is_transaction_in_progress)
+
 from lp.testing import TestCaseWithFactory
 
 from ..base import WorkingBase
+
+
+class StubTransactionManager:
+    def __init__(self):
+        self.log = []
+    def abort(self):
+        self.log.append('abort')
+    def commit(self):
+        self.log.append('commit')
 
 
 class TestWorkingBase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(TestWorkingBase, self).setUp()
+        self.person = self.factory.makePerson()
+        self.email = self.person.preferredemail.email
+        self.logger = QuietFakeLogger()
+
+    def test_transaction(self):
+        transaction_manager = StubTransactionManager()
+        base = WorkingBase(self.email, transaction_manager, self.logger)
+        transaction.commit()
+        with base.transaction:
+            self.assertFalse(is_transaction_in_progress())
+            self.assertEqual([], transaction_manager.log)
+            self.factory.makeEmail('numpty@example.com', self.person)
+            self.assertTrue(is_transaction_in_progress())
+            self.assertEqual([], transaction_manager.log)
+        self.assertEqual(['commit'], transaction_manager.log)
+
+    def test_transaction_with_open_transaction(self):
+        # On entry, WorkingBase.transaction will raise an exception if
+        # a transaction is in progress.
+        transaction_manager = StubTransactionManager()
+        base = WorkingBase(self.email, transaction_manager, self.logger)
+        self.assertTrue(is_transaction_in_progress())
+        self.assertRaises(TransactionInProgress, base.transaction.__enter__)
+
+    def test_transaction_with_exception(self):
+        # If an exception is raised when the transaction context
+        # manager is active, the transaction will be aborted and the
+        # exception re-raised.
+        transaction_manager = StubTransactionManager()
+        base = WorkingBase(self.email, transaction_manager, self.logger)
+        transaction.commit()
+        try:
+            with base.transaction:
+                raise RuntimeError("Nothing really.")
+        except RuntimeError:
+            self.assertFalse(is_transaction_in_progress())
+            self.assertEqual(['abort'], transaction_manager.log)
+        else:
+            self.fail("Exception not re-raised from context manager.")
+
     def test_statement_logging(self):
-        person = self.factory.makePerson()
-        email = person.preferredemail.email
-        logger = QuietFakeLogger()
-        base = WorkingBase(email, transaction.manager, logger)
-        self.factory.makeEmail('numpty1@example.com', person)
+        base = WorkingBase(self.email, transaction.manager, self.logger)
+        self.factory.makeEmail('numpty1@example.com', self.person)
         self.assertEqual(
             0, len(get_request_statements()),
             "The statement log should be empty because "
@@ -40,7 +91,7 @@ class TestWorkingBase(TestCaseWithFactory):
             self.assertEqual(
                 0, len(get_request_statements()),
                 "There should be no statements in the log yet.")
-            self.factory.makeEmail('numpty2@example.com', person)
+            self.factory.makeEmail('numpty2@example.com', self.person)
             self.assertTrue(
                 len(get_request_statements()) > 0,
                 "There should be at least one statement in the log.")
