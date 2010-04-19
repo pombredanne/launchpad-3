@@ -353,7 +353,7 @@ class IProductPublic(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
-            vocabulary='Project',
+            vocabulary='ProjectGroup',
             schema=IProjectGroup,
             description=_(
                 'Project group. This is an overarching initiative that '

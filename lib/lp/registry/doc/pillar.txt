@@ -183,7 +183,7 @@ queries.
     >>> for row in pillar_set.search('mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Project: The Mozilla Project (mozilla)
+    ProjectGroup: The Mozilla Project (mozilla)
     ProductWithLicenses: Mozilla Firefox (firefox)
     ProductWithLicenses: Mozilla Thunderbird (thunderbird)
 
@@ -209,7 +209,7 @@ Note that inactive products and projects won't be included in the results.
     >>> for row in pillar_set.search('mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Project: The Mozilla Project (mozilla)
+    ProjectGroup: The Mozilla Project (mozilla)
     ProductWithLicenses: Mozilla Thunderbird (thunderbird)
 
     >>> pillar_set['applets'].active = False
