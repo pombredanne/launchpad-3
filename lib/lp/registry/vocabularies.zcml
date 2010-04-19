@@ -195,14 +195,14 @@
 
 
   <securedutility
-    name="Project"
-    component="lp.registry.vocabularies.ProjectVocabulary"
+    name="ProjectGroup"
+    component="lp.registry.vocabularies.ProjectGroupVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="lp.registry.vocabularies.ProjectVocabulary">
+  <class class="lp.registry.vocabularies.ProjectGroupVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
@@ -374,14 +374,14 @@
 
 
   <securedutility
-    name="DistributionOrProductOrProject"
-    component="lp.registry.vocabularies.DistributionOrProductOrProjectVocabulary"
+    name="DistributionOrProductOrProjectGroup"
+    component="lp.registry.vocabularies.DistributionOrProductOrProjectGroupVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     >
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class="lp.registry.vocabularies.DistributionOrProductOrProjectVocabulary">
+  <class class="lp.registry.vocabularies.DistributionOrProductOrProjectGroupVocabulary">
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 

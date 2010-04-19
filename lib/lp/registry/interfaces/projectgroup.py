@@ -3,7 +3,7 @@
 
 # pylint: disable-msg=E0211,E0213
 
-"""Project-related interfaces for Launchpad."""
+"""ProjectGroup-related interfaces for Launchpad."""
 
 __metaclass__ = type
 
@@ -281,7 +281,7 @@ class IProjectGroupPublic(
 
 class IProjectGroup(IProjectGroupPublic, IStructuralSubscriptionTarget,
                ITranslationPolicy):
-    """A Project."""
+    """A ProjectGroup."""
 
     export_as_webservice_entry('project_group')
 
@@ -340,13 +340,13 @@ class IProjectGroupSet(Interface):
         applications."""
 
     def forReview():
-        """Return a list of Projects which need review, or which have
+        """Return a list of ProjectGroups which need review, or which have
         products that needs review."""
 
 
 class IProjectGroupSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                      IHasOwner):
-    """Interface for ProjectSeries.
+    """Interface for ProjectGroupSeries.
 
     This class provides the specifications related to a "virtual project
     series", i.e., to those specifactions that are assigned to a series

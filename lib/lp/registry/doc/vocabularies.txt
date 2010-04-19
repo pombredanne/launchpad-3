@@ -508,7 +508,7 @@ All the products in a project.
     thunderbird: Mozilla Thunderbird
 
 
-=== ProjectVocabulary ===
+=== ProjectGroupVocabulary ===
 
 The list of selectable projects. The results are ordered by displayname.
 
@@ -522,7 +522,7 @@ The list of selectable projects. The results are ordered by displayname.
     >>> mozilla.title
     u'The Mozilla Project'
 
-  The ProjectVocabulary does not list inactive projects.
+  The ProjectGroupVocabulary does not list inactive projects.
 
     >>> from canonical.launchpad.interfaces import IProjectGroupSet
     >>> moz_project = getUtility(IProjectGroupSet)['mozilla']
@@ -1253,9 +1253,9 @@ Project groups are not contained in this vocabulary:
     False
 
 
-=== DistributionOrProductOrProjectVocabulary ===
+=== DistributionOrProductOrProjectGroupVocabulary ===
 
-All products, projects and distributions. Note that the value type is
+All products, project groups and distributions. Note that the value type is
 heterogeneous.
 
     >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
@@ -1323,7 +1323,7 @@ Inactive projects and project groups are not available.
 
 The featured project vocabulary contains all the projects that are
 featured on Launchpad. It is a subset of the
-DistributionOrProductOrProjectVocabulary (defined using the
+DistributionOrProductOrProjectGroupVocabulary (defined using the
 _clauseTables).
 
     >>> featured_project_vocabulary = get_naked_vocab(

@@ -209,7 +209,7 @@
     </securedutility>
 
     <!-- Breadcrumbs for DistroSeries, Distribution, ProductSeries, Product,
-         Project, TranslationsPerson -->
+         ProjectGroup, TranslationsPerson -->
     <adapter
         name="translations"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

@@ -265,10 +265,10 @@
             interface="lp.registry.interfaces.irc.IIrcIDSet"/>
     </securedutility>
 
-    <!-- Project -->
+    <!-- ProjectGroup -->
 
     <class
-        class="lp.registry.model.project.Project">
+        class="lp.registry.model.projectgroup.ProjectGroup">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
