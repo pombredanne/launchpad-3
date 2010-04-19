@@ -849,6 +849,7 @@
                     bug
                     bugtasks
                     bugtracker
+                    can_be_rescheduled
                     datecreated
                     getLastErrorMessage
                     hasComment

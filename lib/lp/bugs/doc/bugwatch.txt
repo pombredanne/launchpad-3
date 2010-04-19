@@ -523,6 +523,7 @@ whether or not the wathc can be rescheduled. For a new bug watch this
 will be False.
 
     >>> schedulable_watch = factory.makeBugWatch()
+    >>> schedulable_watch.next_check = None
     >>> schedulable_watch.can_be_rescheduled
     False
 
@@ -536,6 +537,7 @@ can_be_rescheduled will be False.
 If the watch's updates have failed less than 60% of the time,
 can_be_rescheduled will be True
 
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
     >>> schedulable_watch.addActivity(
     ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> schedulable_watch.can_be_rescheduled
@@ -545,6 +547,8 @@ If the watch is rescheduled, can_be_rescheduled will be False, since the
 next_check time for the watch will be in the past (or in this case is
 now) and therefore it will be checked with the next checkwatches run.
 
+    >>> from pytz import utc
+    >>> from datetime import datetime, timedelta
     >>> schedulable_watch.next_check = datetime.now(utc)
     >>> schedulable_watch.can_be_rescheduled
     False

@@ -210,6 +210,10 @@ class IBugWatch(IHasBug):
         Text(title=_('The URL at which to view the remote bug.'),
              readonly=True))
 
+    can_be_rescheduled = Attribute(
+        "A True or False indicator of whether or not this watch can be "
+        "rescheduled.")
+
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.
 
