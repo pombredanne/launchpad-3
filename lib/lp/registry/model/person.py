@@ -1161,11 +1161,8 @@ class Person(
                 "You need to specify a reviewer when a team joins another.")
             requester = self
 
-        expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
@@ -1260,7 +1257,7 @@ class Person(
                 comment=comment)
             # Accessing the id attribute ensures that the team
             # creation has been flushed to the database.
-            tm_id = tm.id
+            tm.id
             notify(event(person, self))
         else:
             # We can't use tm.setExpirationDate() here because the reviewer

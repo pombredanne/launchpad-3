@@ -10,14 +10,12 @@ from unittest import TestLoader
 
 from zope.component import getUtility
 
-from storm.store import Store
-
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.testing import TestCaseWithFactory, login_person, logout
+from lp.testing import TestCaseWithFactory
 
 
 class TestTeamContactAddress(TestCaseWithFactory):

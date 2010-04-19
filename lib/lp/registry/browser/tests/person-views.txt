@@ -211,9 +211,6 @@ It is possible for a team to have more than two addresses (from a mailing
 list), but only the preferred address is listed in the visible_email_addresses
 property.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     EmailAddressStatus)
-
     >>> email_address = factory.makeEmail(
     ...     'ubuntu_team@canonical.com', ubuntu_team)
     >>> ubuntu_team.setContactAddress(email_address)
