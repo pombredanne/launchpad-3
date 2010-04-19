@@ -91,9 +91,6 @@ class BranchPuller(LaunchpadXMLRPCView):
         # See comment in startMirroring.
         branch = removeSecurityProxy(branch)
         branch.mirrorComplete(last_revision_id)
-        branches = branch.getStackedBranchesWithIncompleteMirrors()
-        for stacked_branch in branches:
-            stacked_branch.requestMirror()
         return True
 
     def mirrorFailed(self, branch_id, reason):
