@@ -246,6 +246,8 @@ class ResetDispatchResult(BaseDispatchResult):
         from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
+        # Builders that fail to reset should be disabled as per bug
+        # 563353.
         builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
@@ -417,6 +419,8 @@ class BuilddManager(service.Service):
         If it failed, it returns a corresponding `ResetDispatchResult`
         dispatch result.
         """
+        # 'response' is the tuple that's constructed in
+        # ProcessWithTimeout.processEnded().
         out, err, code = response
         if code == 0:
             # Process exited normally.
