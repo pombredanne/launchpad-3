@@ -347,7 +347,7 @@ class CodehostingTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         name = self.factory.getUniqueString()
-        branch_id = self.branchfs.createBranch(
+        branch_id = self.storage.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, product.name, name)))
         login(ANONYMOUS)
         branch = self.branch_lookup.get(branch_id)
@@ -360,7 +360,7 @@ class CodehostingTest(TestCaseWithFactory):
     def test_createBranch_no_preceding_slash(self):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
-        fault = self.branchfs.createBranch(requester.id, path)
+        fault = self.storage.createBranch(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(faults.InvalidPath(path), fault)
 
@@ -368,7 +368,7 @@ class CodehostingTest(TestCaseWithFactory):
         # createBranch can create +junk branches.
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
-        branch_id = self.branchfs.createBranch(
+        branch_id = self.storage.createBranch(
             owner.id, escape('/~%s/%s/%s' % (owner.name, '+junk', name)))
         login(ANONYMOUS)
         branch = self.branch_lookup.get(branch_id)
@@ -383,7 +383,7 @@ class CodehostingTest(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         team = self.factory.makeTeam(registrant)
         name = self.factory.getUniqueString()
-        branch_id = self.branchfs.createBranch(
+        branch_id = self.storage.createBranch(
             registrant.id, escape('/~%s/+junk/%s' % (team.name, name)))
         login(ANONYMOUS)
         branch = self.branch_lookup.get(branch_id)
@@ -398,7 +398,7 @@ class CodehostingTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
         message = "Project 'no-such-product' does not exist."
-        fault = self.branchfs.createBranch(
+        fault = self.storage.createBranch(
             owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -410,7 +410,7 @@ class CodehostingTest(TestCaseWithFactory):
         name = self.factory.getUniqueString()
         message = ("%s cannot create branches owned by %s"
                    % (creator.displayname, other_person.displayname))
-        fault = self.branchfs.createBranch(
+        fault = self.storage.createBranch(
             creator.id,
             escape('/~%s/%s/%s' % (other_person.name, product.name, name)))
         self.assertEqual(faults.PermissionDenied(message), fault)
@@ -422,7 +422,7 @@ class CodehostingTest(TestCaseWithFactory):
         invalid_name = 'invalid name!'
         message = ("Invalid branch name '%s'. %s"
                    % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
-        fault = self.branchfs.createBranch(
+        fault = self.storage.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
         self.assertEqual(faults.PermissionDenied(message), fault)
@@ -435,7 +435,7 @@ class CodehostingTest(TestCaseWithFactory):
         message = ("Invalid branch name '%s'. %s"
                    % (invalid_name.encode('utf-8'),
                       str(BRANCH_NAME_VALIDATION_ERROR_MESSAGE)))
-        fault = self.branchfs.createBranch(
+        fault = self.storage.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
         self.assertEqual(
@@ -447,7 +447,7 @@ class CodehostingTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         name = self.factory.getUniqueString()
         message = "User/team 'no-one' does not exist."
-        fault = self.branchfs.createBranch(
+        fault = self.storage.createBranch(
             owner.id, escape('/~no-one/%s/%s' % (product.name, name)))
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -458,7 +458,7 @@ class CodehostingTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         name = self.factory.getUniqueString()
         message = "User/team 'no-one' does not exist."
-        fault = self.branchfs.createBranch(
+        fault = self.storage.createBranch(
             owner.id, escape('/~no-one/no-product/%s' % (name,)))
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -467,7 +467,7 @@ class CodehostingTest(TestCaseWithFactory):
         # raises a PermissionDenied fault.
         owner = self.factory.makePerson()
         path = escape('/~%s' % owner.name)
-        fault = self.branchfs.createBranch(owner.id, path)
+        fault = self.storage.createBranch(owner.id, path)
         message = "Cannot create branch at '%s'" % path
         self.assertEqual(faults.PermissionDenied(message), fault)
 
@@ -483,7 +483,7 @@ class CodehostingTest(TestCaseWithFactory):
             sourcepackage.distroseries.name,
             sourcepackage.sourcepackagename.name,
             branch_name)
-        branch_id = self.branchfs.createBranch(owner.id, escape(unique_name))
+        branch_id = self.storage.createBranch(owner.id, escape(unique_name))
         login(ANONYMOUS)
         branch = self.branch_lookup.get(branch_id)
         self.assertEqual(owner, branch.owner)
@@ -504,7 +504,7 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
             owner.name, distroseries.name, sourcepackagename.name,
             branch_name)
-        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        fault = self.storage.createBranch(owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -518,7 +518,7 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/%s/ningnangnong/%s/%s' % (
             owner.name, distribution.name, sourcepackagename.name,
             branch_name)
-        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        fault = self.storage.createBranch(owner.id, escape(unique_name))
         message = "No such distribution series: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -531,7 +531,7 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
             owner.name, distroseries.distribution.name, distroseries.name,
             branch_name)
-        fault = self.branchfs.createBranch(owner.id, escape(unique_name))
+        fault = self.storage.createBranch(owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -546,7 +546,7 @@ class CodehostingTest(TestCaseWithFactory):
         # current time.
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        self.branchfs.requestMirror(requester.id, branch.id)
+        self.storage.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
@@ -555,7 +555,7 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(owner=requester, private=True)
         branch = removeSecurityProxy(branch)
-        self.branchfs.requestMirror(requester.id, branch.id)
+        self.storage.requestMirror(requester.id, branch.id)
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
@@ -575,7 +575,7 @@ class CodehostingTest(TestCaseWithFactory):
         # branchChanged sets the last_mirrored_id attribute on the branch.
         revid = self.factory.getUniqueString()
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', revid, self.arbitrary_format_strings)
         self.assertEqual(revid, branch.last_mirrored_id)
 
@@ -584,7 +584,7 @@ class CodehostingTest(TestCaseWithFactory):
         # passed in.
         branch = self.factory.makeAnyBranch()
         stacked_on = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, stacked_on.unique_name, '',
             self.arbitrary_format_strings)
         self.assertEqual(stacked_on, branch.stacked_on)
@@ -594,7 +594,7 @@ class CodehostingTest(TestCaseWithFactory):
         # passed in as the stacked_on location.
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).stacked_on = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', '', self.arbitrary_format_strings)
         self.assertIs(None, branch.stacked_on)
 
@@ -602,7 +602,7 @@ class CodehostingTest(TestCaseWithFactory):
         # branchChanged sets the last_mirrored attribute on the branch to the
         # current time.
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', '', self.arbitrary_format_strings)
         # We can't test "now" precisely, but lets check that last_mirrored was
         # set to _something_.
@@ -613,7 +613,7 @@ class CodehostingTest(TestCaseWithFactory):
         # mirror_status_message is set to indicate the problem and stacked_on
         # set to None.
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '~does/not/exist', '', self.arbitrary_format_strings)
         self.assertIs(None, branch.stacked_on)
         self.assertTrue('~does/not/exist' in branch.mirror_status_message)
@@ -623,7 +623,7 @@ class CodehostingTest(TestCaseWithFactory):
         # mirror_status_message.
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).mirror_status_message = 'foo'
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', '', self.arbitrary_format_strings)
         self.assertIs(None, branch.mirror_status_message)
 
@@ -632,7 +632,7 @@ class CodehostingTest(TestCaseWithFactory):
         # "NoBranchWithID" is returned.
         unused_id = -1
         expected_fault = faults.NoBranchWithID(unused_id)
-        received_fault = self.branchfs.branchChanged(
+        received_fault = self.storage.branchChanged(
             unused_id, '', '', self.arbitrary_format_strings)
         self.assertEqual(
             (expected_fault.faultCode, expected_fault.faultString),
@@ -645,7 +645,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', 'rev1',  self.arbitrary_format_strings)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(1, len(jobs))
@@ -657,14 +657,14 @@ class CodehostingTest(TestCaseWithFactory):
         removeSecurityProxy(branch).last_mirrored_id = 'rev1'
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', 'rev1', self.arbitrary_format_strings)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
 
     def test_branchChanged_2a_format(self):
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', 'rev1', self.getFormatStringsForFormatName('2a'))
         self.assertEqual(
             (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_7,
@@ -674,7 +674,7 @@ class CodehostingTest(TestCaseWithFactory):
 
     def test_branchChanged_packs_format(self):
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', 'rev1',
             self.getFormatStringsForFormatName('pack-0.92'))
         self.assertEqual(
@@ -685,7 +685,7 @@ class CodehostingTest(TestCaseWithFactory):
 
     def test_branchChanged_knits_format(self):
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(
+        self.storage.branchChanged(
             branch.id, '', 'rev1',
             self.getFormatStringsForFormatName('knit'))
         self.assertEqual(
@@ -696,21 +696,21 @@ class CodehostingTest(TestCaseWithFactory):
 
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
-        fault = self.branchfs.translatePath(requester.id, path)
+        fault = self.storage.translatePath(requester.id, path)
         self.assertEqual(faults.PathTranslationError(path), fault)
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
-        fault = self.branchfs.translatePath(requester, path)
+        fault = self.storage.translatePath(requester, path)
         self.assertEqual(faults.PathTranslationError(path), fault)
 
     def assertPermissionDenied(self, requester, path):
         """Assert that looking at the given path gives permission denied."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
-        fault = self.branchfs.translatePath(requester, path)
+        fault = self.storage.translatePath(requester, path)
         self.assertEqual(faults.PermissionDenied(), fault)
 
     def _makeProductWithDevFocus(self, private=False):
@@ -738,14 +738,14 @@ class CodehostingTest(TestCaseWithFactory):
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
-        fault = self.branchfs.translatePath(requester.id, path)
+        fault = self.storage.translatePath(requester.id, path)
         self.assertEqual(faults.InvalidPath(path), fault)
 
     def test_translatePath_branch(self):
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -755,7 +755,7 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         path = escape(u'/%s/' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -765,7 +765,7 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         path = escape(u'/%s/child' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'child'),
@@ -775,7 +775,7 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         path = escape(u'/%s/a/b' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'a/b'),
@@ -789,7 +789,7 @@ class CodehostingTest(TestCaseWithFactory):
         # escaped.
         self.assertNotEqual(escape(child_path), child_path.encode('utf-8'))
         path = escape(u'/%s/%s' % (branch.unique_name, child_path))
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT,
@@ -826,7 +826,7 @@ class CodehostingTest(TestCaseWithFactory):
             self.factory.makeAnyBranch(
                 branch_type=BranchType.HOSTED, private=True, owner=requester))
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
@@ -847,7 +847,7 @@ class CodehostingTest(TestCaseWithFactory):
     def test_translatePath_launchpad_services_private(self):
         branch = removeSecurityProxy(self.factory.makeAnyBranch(private=True))
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(LAUNCHPAD_SERVICES, path)
+        translation = self.storage.translatePath(LAUNCHPAD_SERVICES, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -861,7 +861,7 @@ class CodehostingTest(TestCaseWithFactory):
     def test_translatePath_anonymous_public_branch(self):
         branch = self.factory.makeAnyBranch()
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(LAUNCHPAD_ANONYMOUS, path)
+        translation = self.storage.translatePath(LAUNCHPAD_ANONYMOUS, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
             translation)
@@ -871,7 +871,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=requester)
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
@@ -883,7 +883,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=team)
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': True}, ''),
@@ -895,7 +895,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=team)
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -906,7 +906,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED, owner=requester)
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -917,7 +917,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_type=BranchType.IMPORTED, owner=requester)
         path = escape(u'/%s' % branch.unique_name)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -937,7 +937,7 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         product, branch = self._makeProductWithDevFocus()
         path = escape(u'/~%s/%s/.bzr' % (requester.name, product.name))
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
@@ -963,7 +963,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = removeSecurityProxy(branch)
         requester = branch.owner
         path = escape(u'/~%s/%s/.bzr/' % (requester.name, product.name))
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
@@ -975,7 +975,7 @@ class CodehostingTest(TestCaseWithFactory):
         product, branch = self._makeProductWithDevFocus()
         owner = self.factory.makePerson()
         path = escape(u'/~%s/%s/.bzr' % (owner.name, product.name))
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
@@ -1001,7 +1001,7 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertIsNot(
             None, IBranchTarget(package).default_stacked_on_branch)
         path = '/~%s/%s/.bzr/' % (requester.name, package.path)
-        translation = self.branchfs.translatePath(requester.id, path)
+        translation = self.storage.translatePath(requester.id, path)
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
