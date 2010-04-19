@@ -21,8 +21,8 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
+from zope.security.management import endInteraction
 
-from canonical.launchpad.ftests import login_person, logout
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
@@ -42,11 +42,11 @@ from lp.services.utils import iter_split
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interaction import setupInteractionForPerson
 from canonical.launchpad.webapp.interfaces import (
     NameLookupFailed, NotFoundError)
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
-from canonical.launchpad.webapp.interaction import Participation
 
 
 UTC = pytz.timezone('UTC')
@@ -181,15 +181,11 @@ def run_with_login(login_id, function, *args, **kwargs):
         requester = getUtility(IPersonSet).get(login_id)
     if requester is None:
         raise NotFoundError("No person with id %s." % login_id)
-    # XXX gary 21-Oct-2008 bug 285808
-    # We should reconsider using a ftest helper for production code.  For now,
-    # we explicitly keep the code from using a test request by using a basic
-    # participation.
-    login_person(requester, Participation())
+    setupInteractionForPerson(requester)
     try:
         return function(requester, *args, **kwargs)
     finally:
-        logout()
+        endInteraction()
 
 
 class BranchFileSystem(LaunchpadXMLRPCView):
