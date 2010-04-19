@@ -18,7 +18,6 @@ __all__ = [
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
     'PersonBugsMenu',
-    'PersonClaimView',
     'PersonCodeOfConductEditView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
@@ -218,8 +217,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.login import (
-    logoutPerson, allowUnauthenticatedSession)
+from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
@@ -1397,11 +1395,14 @@ class PersonDeactivateAccountView(LaunchpadFormView):
         self.next_url = self.request.getApplicationURL()
 
 
-class PersonClaimView(LaunchpadFormView):
-    """The page where a user can claim an unvalidated profile."""
+class BeginTeamClaimView(LaunchpadFormView):
+    """Where you can claim an unvalidated profile turning it into a team.
 
+    This is actually just the first step, where you enter the email address
+    of the team and we email further instructions to that address.
+    """
+    label = 'Claim team'
     schema = IPersonClaim
-    label = 'Claim account'
 
     def initialize(self):
         if self.context.is_valid_person_or_team:
@@ -1431,28 +1432,17 @@ class PersonClaimView(LaunchpadFormView):
                      "associated with."
                      % self.context.name)
         elif email.personID != self.context.id:
-            if email.person.is_valid_person:
-                error = structured(
-                         "This email address is associated with yet another "
-                         "Launchpad profile, which you seem to have used at "
-                         "some point. If that's the case, you can "
-                         '<a href="/people/+requestmerge'
-                         '?field.dupe_person=%s">combine '
-                         "this profile with the other one</a> (you'll "
-                         "have to log in with the other profile first, "
-                         "though). If that's not the case, please try with a "
-                         "different email address.",
-                         self.context.name)
-            else:
-                # There seems to be another unvalidated profile for you!
-                error = structured(
-                         "Although this email address is not associated with "
-                         "this profile, it's associated with yet another "
-                         'one. You can <a href="%s/+claim">claim that other '
-                         'profile</a> and then later '
-                         '<a href="/people/+requestmerge">combine</a> both '
-                         'of them into a single one.',
-                         canonical_url(email.person))
+            error = structured(
+                        "This email address is associated with yet another "
+                        "Launchpad profile, which you seem to have used at "
+                        "some point. If that's the case, you can "
+                        '<a href="/people/+requestmerge'
+                        '?field.dupe_person=%s">combine '
+                        "this profile with the other one</a> (you'll "
+                        "have to log in with the other profile first, "
+                        "though). If that's not the case, please try with a "
+                        "different email address.",
+                        self.context.name)
         else:
             # Yay! You got the right email this time.
             pass
@@ -1462,34 +1452,6 @@ class PersonClaimView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-    @action(_("E-mail Me"), name="confirm")
-    def confirm_action(self, action, data):
-        email = data['emailaddress']
-        token = getUtility(ILoginTokenSet).new(
-            requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.PROFILECLAIM)
-        token.sendClaimProfileEmail()
-        # A dance to assert that we want to break the rules about no
-        # unauthenticated sessions. Only after this next line is it safe
-        # to use the ``addNoticeNotification`` method.
-        allowUnauthenticatedSession(self.request)
-        self.request.response.addInfoNotification(_(
-            "A confirmation  message has been sent to '${email}'. "
-            "Follow the instructions in that message to finish claiming this "
-            "profile. "
-            "(If the message doesn't arrive in a few minutes, your mail "
-            "provider might use 'greylisting', which could delay the message "
-            "for up to an hour or two.)", mapping=dict(email=email)))
-
-
-class BeginTeamClaimView(PersonClaimView):
-    """Where you can claim an unvalidated profile turning it into a team.
-
-    This is actually just the first step, where you enter the email address
-    of the team and we email further instructions to that address.
-    """
-    label = 'Claim team'
 
     @action(_("Continue"), name="confirm")
     def confirm_action(self, action, data):
@@ -1858,6 +1820,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         totals = {
             'open_bugs_count': 0,
             'critical_bugs_count': 0,
+            'high_bugs_count': 0,
             'unassigned_bugs_count': 0,
             'inprogress_bugs_count': 0,
             }
@@ -1884,6 +1847,8 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
                 'open_bugs_url': self.getOpenBugsURL(package),
                 'critical_bugs_count': package_counts['open_critical'],
                 'critical_bugs_url': self.getCriticalBugsURL(package),
+                'high_bugs_count': package_counts['open_high'],
+                'high_bugs_url': self.getHighBugsURL(package),
                 'unassigned_bugs_count': package_counts['open_unassigned'],
                 'unassigned_bugs_url': self.getUnassignedBugsURL(package),
                 'inprogress_bugs_count': package_counts['open_inprogress'],
@@ -1971,6 +1936,18 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=critical_bugs_params)
+
+    def getHighBugsURL(self, distributionsourcepackage):
+        """Return the URL for high importance bugs on distributionsourcepackage."""
+        high_bugs_params = {
+            'field.status': [], 'field.importance': "High"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            high_bugs_params["field.status"].append(status.title)
+
+        return self.getBugSubscriberPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=high_bugs_params)
 
     def getUnassignedBugsURL(self, distributionsourcepackage):
         """Return the URL for unassigned bugs on distributionsourcepackage."""
@@ -2383,9 +2360,9 @@ class PersonVouchersView(LaunchpadFormView):
             # The call to redeemVoucher returns True if it succeeds or it
             # raises an exception.  Therefore the return value does not need
             # to be checked.
-            result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
-                                                    self.context,
-                                                    project)
+            salesforce_proxy.redeemVoucher(voucher.voucher_id,
+                                           self.context,
+                                           project)
             project.redeemSubscriptionVoucher(
                 voucher=voucher.voucher_id,
                 registrant=self.context,
@@ -3376,7 +3353,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                     'The URL scheme "%(scheme)s" is not allowed.  '
                     'Only http or https URLs may be used.', scheme=uri.scheme)
                 return False
-        except InvalidURIError, e:
+        except InvalidURIError:
             self.error_message = structured(
                 '"%(url)s" is not a valid URL.', url=url)
             return False
@@ -4211,8 +4188,6 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
 
     @action(_("Leave"), name="leave")
     def action_save(self, action, data):
-        response = self.request.response
-
         if self.user_can_request_to_leave:
             self.user.leave(self.context)
 
