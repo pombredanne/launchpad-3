@@ -701,6 +701,22 @@ table.summary ul, table.summary ul li {
   padding: 0;
 }
 
+/* === Collapsible sections === */
+/* Some page sections are hidden by default, expanded by clicking a link. */
+/* see launchpad.js:activateCollapsibles() */
+fieldset.collapsible {
+  border: none;
+  margin: 0;
+  padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
+}
+.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
+img.collapseIcon {text-decoration: none; vertical-align: middle;}
+.collapsible legend a span {text-decoration: underline;}
+.collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
+fieldset.collapsible legend {font-weight: normal;}
+
 
 /* --- Sortable tables --- */
 
@@ -798,6 +814,131 @@ ul.language, li.language             {
   /* Disable .language sprite. */
   background: inherit;
 }
+
+/* === Universal page layout === */
+
+/* === Location hierarchy === */
+ol.breadcrumbs {
+    margin-left: 0;
+    list-style-type: none;
+    clear: both;
+    margin-bottom: 2em;
+    font-size: 80%;
+}
+ol.breadcrumbs li {
+    display:inline;
+    padding: 0;
+}
+ol.breadcrumbs li a {
+    color: #494949;
+}
+ol.breadcrumbs li:after { content: "\00BB \0020" }
+/* The following leaves a small margin in chrome/webkit, but using none
+ * doesn't hide the » in webkit either (both work for FF3.5).
+ */
+ol.breadcrumbs li:last-child:after { content: ''; }
+ol.breadcrumbs li:last-child {
+    font-weight: bold;
+}
+
+/* === Login control === */
+/* At the top right of the page is a link to log in or a button to log out: */
+#logincontrol {
+    float: right;
+}
+
+/* push image a little bit down to make it line up better with the text */
+#logincontrol img {
+    margin-bottom: -2px;
+}
+/* The 'Log Out' button lacks the right margin that buttons usually have: */
+#logincontrol input[type='submit'] {
+  font-size: smaller;
+  margin-right: 0;
+}
+
+/* === Help pane === */
+/*
+Inline help is contained in a <div> and dynamically positioned by JavaScript.
+
+This should appear above all other content.  Needs to be
+above the Google Maps element on the profile pages, which
+has a z-index of 9999.  See bug #380349.
+*/
+#help-pane {
+  position: absolute;
+  border: 1px solid black;
+  padding: 1px 1px 5px 10px;
+  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
+  background-color: #fff;
+  width: 600px; /* based on the help wiki, should change later */
+}
+/* We want the hidden pane to have dimensions so that we can position the
+frame with them.  This works because the element an absolute position, taking
+it out of the page flow. */
+#help-pane.invisible {
+    position: absolute;
+    visibility: hidden;
+    display: block;
+    left: 0px;
+    top: 0px;
+}
+
+#help-body {
+    background: url(/@@/spinner) no-repeat center center;
+}
+#help-pane iframe {width: 100%; height: 300px; border: 0;}
+#help-pane iframe.invisible {
+    visibility: hidden;
+    display: block;
+}
+#help-footer {
+  padding: 3px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+#help-footer button {
+  margin-bottom: 10px;
+  margin-top: 3px;
+}
+
+span.help {font-weight: normal;}
+
+/* === Public/private status === */
+/* The first portlet on many pages discloses whether the object is private: */
+#privacy.private {
+  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
+  padding-top: 12px; /* = 8px + the usual 4px top padding */
+}
+
+/* Some pages end with links to related items. */
+/* Examples: branch page, bug page. */
+.related {
+  margin-top: 4em;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 1em;
+}
+.related ul {
+  list-style: none;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0.5em;
+}
+
+.related ul.sourcepackage-links li.sourcepackage-not-dev-focus:before {
+    content: "";
+    display: inline-block;
+    width: 1.5em;
+}
+.related ul.sourcepackage-links li.sourcepackage-dev-focus:before {
+    content: "⇒ ";
+    display: inline-block;
+    width: 1.5em;
+}
+
+.related ul li:before {content: "\00BB \0020";}
+
+
 
 /* ==== Translations styles ==== */
 
