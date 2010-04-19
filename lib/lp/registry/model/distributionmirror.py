@@ -28,6 +28,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
@@ -322,10 +323,12 @@ class DistributionMirror(SQLBase):
         Return that MirrorDistroArchSeries.
         """
 
-        return MirrorDistroArchSeries.selectOneBy(
+        return IStore(MirrorDistroArchSeries).find(
+            MirrorDistroArchSeries,
             distribution_mirror=self,
-            distro_arch_series=distro_arch_series, pocket=pocket,
-            component=component)
+            distro_arch_series=distro_arch_series,
+            pocket=pocket,
+            component=component).one()
 
     def ensureMirrorDistroArchSeries(self, distro_arch_series, pocket,
                                      component):
@@ -347,9 +350,12 @@ class DistributionMirror(SQLBase):
 
         Return that MirrorDistroSeriesSource."""
 
-        return MirrorDistroSeriesSource.selectOneBy(
-            distribution_mirror=self, distroseries=distroseries,
-            pocket=pocket, component=component)
+        return IStore(MirrorDistroSeriesSource).find(
+            MirrorDistroSeriesSource,
+            distribution_mirror=self,
+            distroseries=distroseries,
+            pocket=pocket,
+            component=component).one()
 
     def ensureMirrorDistroSeriesSource(self, distroseries, pocket, component):
         """See `IDistributionMirror`."""
