@@ -624,6 +624,7 @@ class FakeBranchFilesystem:
         branch = self._branch_set._find(id=branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
+        branch.mirror_status_message = None
         if stacked_on_location == '':
             stacked_on_branch = None
         else:

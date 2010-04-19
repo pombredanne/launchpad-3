@@ -752,6 +752,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertIs(None, branch.stacked_on)
         self.assertTrue('~does/not/exist' in branch.mirror_status_message)
 
+    def test_branchChanged_clears_mirror_status_message_if_no_error(self):
+        # branchChanged() clears any error that's currently mentioned in
+        # mirror_status_message.
+        branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(branch).mirror_status_message = 'foo'
+        self.branchfs.branchChanged(branch.id, '', '')
+        self.assertIs(None, branch.mirror_status_message)
+
     def test_branchChanged_fault_on_unknown_id(self):
         # If the id passed in doesn't match an existing branch, the fault
         # "NoBranchWithID" is returned.
