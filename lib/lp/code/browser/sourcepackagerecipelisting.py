@@ -39,24 +39,6 @@ class HasRecipesMenuMixin:
             '+recipes', text, icon='info', enabled=enabled)
 
 
-class RecipeListingSort(EnumeratedType):
-    """Choices for how to sort recipe listings."""
-
-    NEWEST = Item("""
-        by newest
-
-        Sort recipes by newest
-        """)
-
-
-class IRecipeListingFilter(Interface):
-    """The schema for the branch listing ordering form."""
-
-    sort_by = Choice(
-        title=_('ordered by'), vocabulary=RecipeListingSort,
-        default=RecipeListingSort.NEWEST)
-
-
 class RecipeListingView(LaunchpadView, FeedsMixin):
 
     feed_types = ()
