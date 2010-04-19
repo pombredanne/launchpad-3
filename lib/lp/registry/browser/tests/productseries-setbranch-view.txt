@@ -74,6 +74,14 @@ Providing a valid branch results in a successful linking.
     >>> print series.branch.name
     impala-branch
 
+Revisiting the +setbranch page when the branch is already set will
+show the branch location pre-populated with the existing value.
+
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> print view.widgets.get('branch_location')._getFormValue().unique_name
+    ~person.../chevy/impala-branch
+
 
 Creating a new branch
 ---------------------

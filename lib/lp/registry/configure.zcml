@@ -392,6 +392,7 @@
                 open_bugtasks
                 closed_bugtasks
                 critical_bugtasks
+                high_bugtasks
                 inprogress_bugtasks
                 unassigned_bugtasks
                 new_bugtasks

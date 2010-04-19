@@ -6,12 +6,18 @@
 __metaclass__ = type
 __all__ = [
     'BugWatchSetNavigation',
+    'BugWatchActivityPortletView',
     'BugWatchEditView',
     'BugWatchView']
+
+from datetime import datetime
+from pytz import utc
 
 from zope.component import getUtility
 from zope.interface import Interface
 
+from canonical.cachedproperty import cachedproperty
+from canonical.database.constants import UTC_NOW
 from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
@@ -27,6 +33,9 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.menu import structured
+
+
+WATCH_RESCHEDULE_THRESHOLD = 0.6
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -68,28 +77,6 @@ class BugWatchView(LaunchpadView):
                 displayed_comments.append(bug_comment)
 
         return displayed_comments
-
-    @property
-    def recent_watch_activity(self):
-        """Return a list of dicts representing recent watch activity."""
-        activity_items = []
-        for activity in self.context.activity:
-            if activity.result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
-                icon = "/@@/yes"
-                completion_message = "completed successfully"
-            else:
-                icon = "/@@/no"
-                completion_message = (
-                    "failed with error '%s'" % activity.result.title)
-
-            activity_items.append({
-                'icon': icon,
-                'date': activity.activity_date,
-                'completion_message': completion_message,
-                'result_text': activity.result.title,
-                })
-
-        return activity_items
 
 
 class BugWatchEditForm(Interface):
@@ -165,3 +152,85 @@ class BugWatchEditView(LaunchpadFormView):
 
     cancel_url = next_url
 
+
+class BugWatchActivityPortletView(LaunchpadFormView):
+    """A portlet for displaying the activity of a bug watch."""
+
+    schema = BugWatchEditForm
+
+    @cachedproperty
+    def total_watch_activity_count(self):
+        return self.context.activity.count()
+
+    @cachedproperty
+    def failed_watch_activity_count(self):
+        failed_activity_count = len([
+            activity for activity in self.context.activity if
+            activity.result not in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES])
+        return failed_activity_count
+
+    def userCanReschedule(self, action=None):
+        """Return True if the current user can reschedule the bug watch."""
+        if (self.context.next_check is not None and
+            self.context.next_check <= datetime.now(utc)):
+            # If the watch is already scheduled for a time in the past
+            # (or for right now) it can't be rescheduled, since it
+            # should be be checked by the next checkwatches run anyway.
+            return False
+
+        if self.total_watch_activity_count == 0:
+            # Don't show the reschedule button if the watch has never
+            # been checked.
+            return False
+
+        if self.failed_watch_activity_count == 0:
+            # Don't show the reschedule button if the watch has never
+            # failed.
+            return False
+
+        # If the ratio is lower than the reschedule threshold, we
+        # can show the button.
+        failure_ratio = (
+            float(self.failed_watch_activity_count) /
+            self.total_watch_activity_count)
+        return failure_ratio <= WATCH_RESCHEDULE_THRESHOLD
+
+    @action('Update Now', name='reschedule', condition=userCanReschedule)
+    def reschedule_action(self, action, data):
+        """Schedule the current bug watch for immediate checking."""
+        bugwatch = self.context
+        bugwatch.next_check = UTC_NOW
+        self.request.response.addInfoNotification(
+            structured(
+                'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '
+                'bug watch has been scheduled for immediate checking.',
+                url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
+                remote_bug=bugwatch.remotebug))
+
+    @property
+    def next_url(self):
+        return canonical_url(getUtility(ILaunchBag).bug)
+
+    cancel_url = next_url
+
+    @property
+    def recent_watch_activity(self):
+        """Return a list of dicts representing recent watch activity."""
+        activity_items = []
+        for activity in self.context.activity:
+            if activity.result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+                icon = "/@@/yes"
+                completion_message = "completed successfully"
+            else:
+                icon = "/@@/no"
+                completion_message = (
+                    "failed with error '%s'" % activity.result.title)
+
+            activity_items.append({
+                'icon': icon,
+                'date': activity.activity_date,
+                'completion_message': completion_message,
+                'result_text': activity.result.title,
+                })
+
+        return activity_items

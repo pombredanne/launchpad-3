@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -18,14 +18,12 @@ from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import sibpath
-from twisted.test.proto_helpers import StringTransport
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer
-from lp.codehosting.sshserver import auth, service
+from lp.services.sshserver import auth
 from lp.services.twistedsupport import suppress_stderr
 
 
@@ -38,14 +36,12 @@ class MockRealm:
 
     implements(IRealm)
 
-    def requestAvatar(self, avatarId, mind, *interfaces):
+    def requestAvatar(self, avatar_id, mind, *interfaces):
         user_dict = {
-            'id': avatarId, 'name': avatarId, 'teams': [],
+            'id': avatar_id, 'name': avatar_id, 'teams': [],
             'initialBranches': []}
         return (
-            interfaces[0],
-            auth.LaunchpadAvatar(user_dict, None),
-            lambda: None)
+            interfaces[0], auth.LaunchpadAvatar(user_dict), lambda: None)
 
 
 class MockSSHTransport(SSHServerTransport):
@@ -193,11 +189,6 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     layer = TwistedLayer
 
-    banner_conf = """
-        [codehosting]
-        banner: banner
-        """
-
     def setUp(self):
         UserAuthServerMixin.setUp(self)
         self.portal.registerChecker(MockChecker())
@@ -232,7 +223,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def test_bannerNotSentOnSuccess(self):
         # No banner is printed when the user authenticates successfully.
-        self.assertEqual(None, config.codehosting.banner)
+        self.user_auth._banner = None
 
         d = self.requestSuccessfulAuthentication()
         def check(ignored):
@@ -240,25 +231,22 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertMessageOrder([userauth.MSG_USERAUTH_SUCCESS])
         return d.addCallback(check)
 
-    def test_configuredBannerSentOnSuccess(self):
-        # If a banner is set in the codehosting config then we send it to the
+    def test_defaultBannerSentOnSuccess(self):
+        # If a banner was passed to the user auth agent then we send it to the
         # user when they log in.
-        config.push('codehosting_overlay', self.banner_conf)
+        self.user_auth._banner = "Boogedy boo"
         d = self.requestSuccessfulAuthentication()
         def check(ignored):
             self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_SUCCESS])
-            self.assertBannerSent(config.codehosting.banner + '\r\n')
-        def cleanup(ignored):
-            config.pop('codehosting_overlay')
-            return ignored
-        return d.addCallback(check).addBoth(cleanup)
+            self.assertBannerSent(self.user_auth._banner + '\r\n')
+        return d.addCallback(check)
 
-    def test_configuredBannerSentOnlyOnce(self):
+    def test_defaultBannerSentOnlyOnce(self):
         # We don't send the banner on each authentication attempt, just on the
         # first one. It is usual for there to be many authentication attempts
         # per SSH session.
-        config.push('codehosting_overlay', self.banner_conf)
+        self.user_auth._banner = "Boogedy boo"
 
         d = self.requestUnsupportedAuthentication()
         d.addCallback(lambda ignored: self.requestSuccessfulAuthentication())
@@ -268,17 +256,14 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_FAILURE, userauth.MSG_USERAUTH_BANNER,
                  userauth.MSG_USERAUTH_SUCCESS])
-            self.assertBannerSent(config.codehosting.banner + '\r\n')
+            self.assertBannerSent(self.user_auth._banner + '\r\n')
 
-        def cleanup(ignored):
-            config.pop('codehosting_overlay')
-            return ignored
-        return d.addCallback(check).addBoth(cleanup)
+        return d.addCallback(check)
 
-    def test_configuredBannerNotSentOnFailure(self):
-        # Failed authentication attempts do not get the configured banner
+    def test_defaultBannerNotSentOnFailure(self):
+        # Failed authentication attempts do not get the default banner
         # sent.
-        config.push('codehosting_overlay', self.banner_conf)
+        self.user_auth._banner = "You come away two hundred quid down"
 
         d = self.requestFailedAuthentication()
 
@@ -287,11 +272,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
             self.assertBannerSent(MockChecker.error_message + '\r\n')
 
-        def cleanup(ignored):
-            config.pop('codehosting_overlay')
-            return ignored
-
-        return d.addCallback(check).addBoth(cleanup)
+        return d.addCallback(check)
 
     def test_loggedToBanner(self):
         # When there's an authentication failure, we display an informative
@@ -515,69 +496,6 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         d.addCallback(check_one_call)
         return d
 
-
-class StringTransportWith_setTcpKeepAlive(StringTransport):
-    def __init__(self, hostAddress=None, peerAddress=None):
-        StringTransport.__init__(self, hostAddress, peerAddress)
-        self._keepAlive = False
-
-    def setTcpKeepAlive(self, flag):
-        self._keepAlive = flag
-
-
-class TestFactory(TrialTestCase):
-    """Tests for our SSH factory."""
-
-    layer = TwistedLayer
-
-    def makeFactory(self):
-        """Create and start the factory that our SSH server uses."""
-        factory = service.Factory(auth.get_portal(None, None))
-        factory.startFactory()
-        return factory
-
-    def startConnecting(self, factory):
-        """Connect to the `factory`."""
-        server_transport = factory.buildProtocol(None)
-        server_transport.makeConnection(StringTransportWith_setTcpKeepAlive())
-        return server_transport
-
-    def test_set_keepalive_on_connection(self):
-        # The server transport sets TCP keep alives on the underlying
-        # transport.
-        factory = self.makeFactory()
-        server_transport = self.startConnecting(factory)
-        self.assertTrue(server_transport.transport._keepAlive)
-
-    def beginAuthentication(self, factory):
-        """Connect to `factory` and begin authentication on this connection.
-
-        :return: The `SSHServerTransport` after the process of authentication
-            has begun.
-        """
-        server_transport = self.startConnecting(factory)
-        server_transport.ssh_SERVICE_REQUEST(NS('ssh-userauth'))
-        self.addCleanup(server_transport.service.serviceStopped)
-        return server_transport
-
-    def test_authentication_uses_our_userauth_service(self):
-        # The service of a SSHServerTransport after authentication has started
-        # is an instance of our SSHUserAuthServer class.
-        factory = self.makeFactory()
-        transport = self.beginAuthentication(factory)
-        self.assertIsInstance(transport.service, auth.SSHUserAuthServer)
-
-    def test_two_connections_two_minds(self):
-        # Two attempts to authenticate do not share the user-details cache.
-        factory = self.makeFactory()
-
-        server_transport1 = self.beginAuthentication(factory)
-        server_transport2 = self.beginAuthentication(factory)
-
-        mind1 = server_transport1.service.getMind()
-        mind2 = server_transport2.service.getMind()
-
-        self.assertNotIdentical(mind1.cache, mind2.cache)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

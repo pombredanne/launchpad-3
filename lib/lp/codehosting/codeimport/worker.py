@@ -89,14 +89,18 @@ class BazaarBranchStore:
             except NoSuchFile:
                 pass
             upgrade(remote_url, required_format)
-        local_branch = remote_bzr_dir.sprout(
-            target_path, create_tree_if_local=needs_tree).open_branch()
-        # Because of the way we do incremental imports, there may be revisions
-        # in the branch's repo that are not in the ancestry of the branch tip.
-        # We need to transfer them too.
-        local_branch.repository.fetch(
-            remote_bzr_dir.open_repository())
-        return local_branch
+        # The proper thing to do here would be to call
+        # "remote_bzr_dir.sprout()".  But 2a fetch slowly checks which
+        # revisions are in the ancestry of the tip of the remote branch, which
+        # we strictly don't care about, so we just copy the whole thing down
+        # at the vfs level.
+        target = get_transport(target_path)
+        target.ensure_base()
+        remote_bzr_dir.root_transport.copy_tree_to_transport(target)
+        local_bzr_dir = BzrDir.open_from_transport(target)
+        if needs_tree:
+            local_bzr_dir.create_workingtree()
+        return local_bzr_dir.open_branch()
 
     def push(self, db_branch_id, bzr_branch, required_format):
         """Push up `bzr_branch` as the Bazaar branch for `code_import`.
