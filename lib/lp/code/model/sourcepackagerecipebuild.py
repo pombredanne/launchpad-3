@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
+# pylint: disable-msg=F0401,E1002
 
 """Implementation code for source package builds."""
 
@@ -163,7 +163,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store = Store.of(self)
         job = self.buildqueue_record.job
         store.remove(self.buildqueue_record)
-        results = store.find(
+        store.find(
             SourcePackageRecipeBuildJob,
             SourcePackageRecipeBuildJob.build == self.id).remove()
         store.remove(job)
