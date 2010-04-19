@@ -16,6 +16,7 @@ from lazr.enum import EnumeratedType, Item
 from zope.interface import Interface
 from zope.schema import Choice
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import LaunchpadFormView, LaunchpadView, Link
@@ -32,6 +33,8 @@ class HasRecipesMenuMixin:
         enabled = False
         if self.context.getRecipes().count():
             enabled = True
+        if not config.build_from_branch.enabled:
+            enabled = False
         return Link(
             '+recipes', text, icon='info', enabled=enabled)
 
