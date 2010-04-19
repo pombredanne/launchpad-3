@@ -277,7 +277,7 @@ class PillarName(SQLBase):
     product = ForeignKey(
         foreignKey='Product', dbName='product')
     project = ForeignKey(
-        foreignKey='Project', dbName='project')
+        foreignKey='ProjectGroup', dbName='project')
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)

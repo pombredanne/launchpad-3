@@ -199,7 +199,7 @@ An IProjectGroupSeries object can be retrieved by IProjectGroup.getSeries.
     >>> from canonical.launchpad.interfaces import IProjectGroupSeries
     >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
     >>> mozilla_series_1_0
-    <lp.registry.model.project.ProjectGroupSeries object at...
+    <lp.registry.model.projectgroup.ProjectGroupSeries object at...
 
     >>> IProjectGroupSeries.providedBy(mozilla_series_1_0)
     True
