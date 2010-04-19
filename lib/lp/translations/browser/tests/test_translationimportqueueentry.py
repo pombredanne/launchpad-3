@@ -184,7 +184,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         self.assertEqual(domain, view.initial_values['translation_domain'])
 
     def test_initial_values_potemplate(self):
-        # Without a given otemplate, a name will be suggested from the file
+        # Without a given potemplate, a name will be suggested from the file
         # name. The name is converted to be suitable as a template name.
         series = self._makeProductSeries()
         entry = self._makeEntry(
