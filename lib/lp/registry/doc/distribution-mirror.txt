@@ -396,8 +396,7 @@ getExpectedPackagesPaths() and getExpectedSourcesPaths() methods of
 IDistributionMirror.
 
     >>> paths = mirror.getExpectedPackagesPaths()
-    >>> [path for (series, pocket, component, path) in paths
-    ...  if 'hoary' in path]
+    >>> [path for (series, pocket, component, path) in paths]
     [u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
      u'dists/hoary-backports/main/binary-i386/Packages.gz',
@@ -410,8 +409,7 @@ IDistributionMirror.
      u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
 
     >>> paths = mirror.getExpectedSourcesPaths()
-    >>> [path for (series, pocket, component, path) in paths
-    ...  if 'hoary' in path]
+    >>> [path for (series, pocket, component, path) in paths]
     [u'dists/hoary/main/source/Sources.gz',
      u'dists/hoary/restricted/source/Sources.gz',
      u'dists/hoary-backports/main/source/Sources.gz',
