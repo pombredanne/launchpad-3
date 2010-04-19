@@ -21,6 +21,7 @@ import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
+from lazr.uri import URI
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter, getMultiAdapter
@@ -42,27 +43,26 @@ from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
     IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
     LicenseStatus, NotFoundError)
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
-from lp.registry.interfaces.person import IPerson, IPersonSet
+import canonical.launchpad.pagetitles
+from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
-import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url, urlappend
-from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 
 
 SEPARATOR = ' : '
@@ -540,7 +540,8 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        if IPrivacy.providedBy(self._context) and self._context.private:
+        privacy = IPrivacy(self._context, None)
+        if privacy is not None and privacy.private:
             return 'private'
         else:
             return 'public'
@@ -1348,7 +1349,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         file_size = NumberFormatterAPI(
             file_.libraryfile.content.filesize).bytes()
         if file_.description is not None:
-            description = file_.description
+            description = cgi.escape(file_.description)
         else:
             description = file_.libraryfile.filename
         link_title = "%s (%s)" % (description, file_size)
@@ -1493,12 +1494,12 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(target)s: %(branch)s')
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {'product': self._context.product.displayname,
+        return {'target': self._context.branch.target.displayname,
                 'branch': self._context.branch.bzr_identity,
                }
 
@@ -1511,6 +1512,26 @@ class CodeImportFormatterAPI(CustomizableFormatter):
             self._context.branch, path_only_if_possible=True,
             view_name=view_name)
         return url
+
+
+class BuildBaseFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IBuildBase` objects."""
+    def _composeArchiveReference(self, archive):
+        if archive.is_ppa:
+            return " [%s/%s]" % (
+                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+        else:
+            return ""
+
+    def link(self, view_name, rootsite=None):
+        build = self._context
+        if not check_permission('launchpad.View', build):
+            return 'private source'
+
+        url = self.url(view_name=view_name, rootsite=rootsite)
+        title = cgi.escape(build.title)
+        archive = self._composeArchiveReference(build.archive)
+        return '<a href="%s">%s</a>%s' % (url, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
@@ -2893,7 +2914,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text

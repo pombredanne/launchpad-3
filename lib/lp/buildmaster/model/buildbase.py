@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=E0211,E0213
 
+from __future__ import with_statement
+
 """Common build base classes."""
 
 __metaclass__ = type
@@ -14,18 +16,26 @@ import logging
 import os
 import pytz
 import subprocess
+from cStringIO import StringIO
 
 from storm.store import Store
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
+from canonical.launchpad.helpers import filenameToContentType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
 from lp.registry.interfaces.pocket import pocketsuffix
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.model.buildqueue import BuildQueue
+
+
+UPLOAD_LOG_FILENAME = 'uploader.log'
 
 
 class BuildBase:
@@ -33,7 +43,7 @@ class BuildBase:
     package.
 
     Note: this class does not implement IBuildBase as we currently duplicate
-    the properties defined on IBuildBase on the inheriting class tables. 
+    the properties defined on IBuildBase on the inheriting class tables.
     BuildBase cannot therefore implement IBuildBase itself, as storm requires
     that the corresponding __storm_table__ be defined for the class. Instead,
     the classes using the BuildBase mixin must ensure that they implement IBuildBase.
@@ -92,9 +102,35 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
+    def getUploadLogContent(self, root, leaf):
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+        # Retrieve log file content.
+        possible_locations = (
+            'failed', 'failed-to-move', 'rejected', 'accepted')
+        for location_dir in possible_locations:
+            log_filepath = os.path.join(root, location_dir, leaf,
+                UPLOAD_LOG_FILENAME)
+            if os.path.exists(log_filepath):
+                with open(log_filepath, 'r') as uploader_log_file:
+                    return uploader_log_file.read()
+        else:
+            return 'Could not find upload log file'
+
+    @property
+    def upload_log_url(self):
+        """See `IBuildBase`."""
+        if self.upload_log is None:
+            return None
+        return self._getProxiedFileURL(self.upload_log)
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
-        logger = logging.getLogger()
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
 
         method = getattr(self, '_handleStatus_' + status, None)
 
@@ -112,11 +148,11 @@ class BuildBase:
         directory, store build information and push them through the
         uploader.
         """
-        # XXX cprov 2007-07-11 bug=129487: untested code path.
-        buildid = slave_status['build_id']
         filemap = slave_status['filemap']
 
-        logger.debug("Processing successful build %s" % buildid)
+        logger.info("Processing successful build %s from builder %s" % (
+            self.buildqueue_record.specific_job.build.title,
+            self.buildqueue_record.builder.name))
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -129,7 +165,8 @@ class BuildBase:
         root = os.path.abspath(config.builddmaster.root)
 
         # create a single directory to store build result files
-        upload_leaf = self.getUploadLeaf(buildid)
+        upload_leaf = self.getUploadLeaf(
+            '%s-%s' % (self.id, self.buildqueue_record.id))
         upload_dir = self.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 
@@ -144,36 +181,52 @@ class BuildBase:
         os.makedirs(upload_path)
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
+        successful_copy_from_slave = True
         for filename in filemap:
-            slave_file = slave.getFile(filemap[filename])
+            logger.info("Grabbing file: %s" % filename)
             out_file_name = os.path.join(upload_path, filename)
+            # If the evaluated output file name is not within our
+            # upload path, then we don't try to copy this or any
+            # subsequent files.
+            if not os.path.realpath(out_file_name).startswith(upload_path):
+                successful_copy_from_slave = False
+                logger.warning(
+                    "A slave tried to upload the file '%s' "
+                    "for the build %d." % (filename, self.id))
+                break
             out_file = open(out_file_name, "wb")
+            slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
-        uploader_command = self.getUploaderCommand(
-            upload_leaf, uploader_logfilename)
-        logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
+        # We only attempt the upload if we successfully copied all the
+        # files from the slave.
+        if successful_copy_from_slave:
+            uploader_logfilename = os.path.join(
+                upload_dir, UPLOAD_LOG_FILENAME)
+            uploader_command = self.getUploaderCommand(
+                upload_leaf, uploader_logfilename)
+            logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
-        logger.debug("Invoking uploader on %s" % root)
-        logger.debug("%s" % uploader_command)
+            logger.info("Invoking uploader on %s" % root)
+            logger.info("%s" % uploader_command)
 
-        uploader_process = subprocess.Popen(
-            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            uploader_process = subprocess.Popen(
+                uploader_command, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
 
-        # Nothing should be written to the stdout/stderr.
-        upload_stdout, upload_stderr = uploader_process.communicate()
+            # Nothing should be written to the stdout/stderr.
+            upload_stdout, upload_stderr = uploader_process.communicate()
 
-        # XXX cprov 2007-04-17: we do not check uploader_result_code
-        # anywhere. We need to find out what will be best strategy
-        # when it failed HARD (there is a huge effort in process-upload
-        # to not return error, it only happen when the code is broken).
-        uploader_result_code = uploader_process.returncode
-        logger.debug("Uploader returned %d" % uploader_result_code)
+            # XXX cprov 2007-04-17: we do not check uploader_result_code
+            # anywhere. We need to find out what will be best strategy
+            # when it failed HARD (there is a huge effort in process-upload
+            # to not return error, it only happen when the code is broken).
+            uploader_result_code = uploader_process.returncode
+            logger.info("Uploader returned %d" % uploader_result_code)
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
-            logger.debug("The upload directory did not get moved.")
+            logger.warning("The upload directory did not get moved.")
             failed_dir = os.path.join(root, "failed-to-move")
             if not os.path.exists(failed_dir):
                 os.mkdir(failed_dir)
@@ -225,35 +278,21 @@ class BuildBase:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         if (self.buildstate != BuildStatus.FULLYBUILT or
-            self.binarypackages.count() == 0):
-            logger.debug("Build %s upload failed." % self.id)
+            not successful_copy_from_slave or
+            not self.verifySuccessfulUpload()):
+            logger.warning("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
-            # Retrieve log file content.
-            possible_locations = (
-                'failed', 'failed-to-move', 'rejected', 'accepted')
-            for location_dir in possible_locations:
-                upload_final_location = os.path.join(
-                    root, location_dir, upload_leaf)
-                if os.path.exists(upload_final_location):
-                    log_filepath = os.path.join(
-                        upload_final_location, 'uploader.log')
-                    uploader_log_file = open(log_filepath)
-                    try:
-                        uploader_log_content = uploader_log_file.read()
-                    finally:
-                        uploader_log_file.close()
-                    break
-            else:
-                uploader_log_content = 'Could not find upload log file'
+            uploader_log_content = self.getUploadLogContent(root,
+                upload_leaf)
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
             self.storeUploadLog(uploader_log_content)
             # Notify the build failure.
             self.notify(extra_info=uploader_log_content)
         else:
-            logger.debug(
-                "Gathered build %s completely" %
-                self.sourcepackagerelease.name)
+            logger.info(
+                "Gathered %s %d completely" % (
+                self.__class__.__name__, self.id))
 
         # Release the builder for another job.
         self.buildqueue_record.builder.cleanSlave()
@@ -326,7 +365,7 @@ class BuildBase:
         ZERO.
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
-                       % (slave_status['build_id'],
+                       % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
         self.storeBuildInfo(librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not
@@ -354,7 +393,31 @@ class BuildBase:
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
-        self.dependencies = slave_status.get('dependencies')
+        if slave_status.get('dependencies') is not None:
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
+        assert self.upload_log is None, (
+            "Upload log information already exists and cannot be overridden.")
+
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.is_private
+
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
 
     def queueBuild(self, suspended=False):
         """See `IBuildBase`"""

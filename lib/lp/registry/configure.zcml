@@ -107,6 +107,8 @@
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IHasQueueItems"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
@@ -270,6 +272,8 @@
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
@@ -358,6 +362,8 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
 
         <allow
@@ -386,10 +392,12 @@
                 open_bugtasks
                 closed_bugtasks
                 critical_bugtasks
+                high_bugtasks
                 inprogress_bugtasks
                 unassigned_bugtasks
                 new_bugtasks
                 all_bugtasks
+                has_bugtasks
                 getUsedBugTags
                 getUsedBugTagsWithOpenCounts
                 bugtargetdisplayname
@@ -910,6 +918,8 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
+        <allow
             interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
         <require
             permission="launchpad.Edit"
@@ -1061,6 +1071,8 @@
         class="lp.registry.model.product.Product">
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
@@ -1307,6 +1319,8 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
             interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
@@ -1374,6 +1388,8 @@
         class="lp.registry.model.distribution.Distribution">
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
@@ -1505,6 +1521,8 @@
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackage"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
@@ -1627,18 +1645,60 @@
     <!-- DistributionMirror -->
     <class class="lp.registry.model.distributionmirror.DistributionMirror">
         <allow
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorPublic" />
+            attributes="
+                id
+                name
+                displayname
+                description
+                distribution
+                http_base_url
+                ftp_base_url
+                rsync_base_url
+                enabled
+                speed
+                status
+                country
+                content
+                owner
+                title
+                cdimage_series
+                source_series
+                arch_series
+                last_probe_record
+                all_probe_records
+                has_ftp_or_rsync_base_url
+                base_url
+                date_created
+                country_dns_mirror
+                mirrorMustHaveHTTPOrFTPURL
+                getSummarizedMirroredSourceSeries
+                getSummarizedMirroredArchSeries
+                getOverallFreshness
+                isOfficial
+                shouldDisable
+                disable
+                newProbeRecord
+                deleteMirrorDistroArchSeries
+                ensureMirrorDistroArchSeries
+                ensureMirrorDistroSeriesSource
+                deleteMirrorDistroSeriesSource
+                ensureMirrorCDImageSeries
+                deleteMirrorCDImageSeries
+                deleteAllMirrorCDImageSeries
+                getExpectedPackagesPaths
+                getExpectedSourcesPaths
+                canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorEditRestricted"
             set_attributes="name displayname description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
-                            speed country content official_candidate owner" />
+                            speed country content official_candidate owner"
+            attributes="official_candidate whiteboard" />
         <require
             permission="launchpad.Admin"
-            interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorAdminRestricted"
             set_attributes="status reviewer date_reviewed"
-            attributes="destroySelf" />
+            attributes="reviewer date_reviewed destroySelf
+                transitionToCountryMirror" />
     </class>
 
     <adapter

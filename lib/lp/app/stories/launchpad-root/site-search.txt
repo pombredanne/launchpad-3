@@ -39,15 +39,6 @@ omitted.
     ...
     LookupError
 
-And on the login and registration pages, the global form is also omitted to
-reduce confusion.
-
-    >>> anon_browser.open('http://launchpad.dev/+login')
-    >>> global_search_form = anon_browser.getForm('globalsearch')
-    Traceback (most recent call last):
-    ...
-    LookupError
-
 If by chance someone ends up at /+search with no search parameters, they get
 an explanation of the search function.
 

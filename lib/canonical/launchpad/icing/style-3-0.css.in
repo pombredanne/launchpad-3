@@ -525,6 +525,19 @@ ul.super-add-action li a {
     display: block;
     padding: 0.3em;
     }
+.involvement li.disabled {
+    color: #cccccc;
+    }
+.involvement-service-links li.disabled img {
+    margin-bottom: 0;
+    }
+.involvement-service-links li.disabled span {
+    margin-bottom: 0;
+    }
+.involvement-service-links li.disabled table {
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    }
 .involvement a.bugs {
     color: #b9413e;
     background: url(/@@/bugs-arrow-right.png) right center no-repeat;
@@ -812,14 +825,22 @@ div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
     padding: 2px 0 5px 18px;
     line-height: 18px;
 }
-input[type="submit"].icon-only {
-    vertical-align: middle;
-    border: 0; 
+.icon-only {
+    border: 0;
     padding: 0;
-    height: 16px;
-    width: 16px;
+    width: 14px;
+}
+div.icon-only {
+    height: 14px;
+}
+input[type="submit"].icon-only {
+    height: 14px;
     background-color: inherit;
     cursor: pointer;
+}
+span.icon-only {
+    padding-right: 14px;
+    line-height: 14px;
 }
 .vertical .sprite {
     /* XXX: EdwinGrubbs 2009-10-29 bug=463032
@@ -1385,3 +1406,17 @@ body.tab-bugs #portlet-subscribers .sprite {
 .distromirrorstatusTWODAYSBEHIND {color: red;}
 .distromirrorstatusONEWEEKBEHIND {color: red;}
 .distromirrorstatusUNKNOWN {color: grey;}
+
+table.code {
+    margin-bottom: 1em;
+}
+table.code th {
+    text-align: left;
+    font-weight: bold;
+}
+table.code th, table.code td {
+    padding-right: 3em;
+}
+
+tr.bug-branch-summary td { padding: 0px 6px; }
+tr.bug-branch-summary td.first { padding-left: 0px; }

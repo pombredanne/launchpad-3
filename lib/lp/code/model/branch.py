@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'compose_public_url',
     ]
 
 from datetime import datetime
+import os.path
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
@@ -26,6 +28,8 @@ from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin)
+
+from lazr.uri import URI
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -58,8 +62,8 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, CannotDeleteBranch,
+    BranchCannotBePrivate, BranchCannotBePublic,
+    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -69,18 +73,16 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 
-class Branch(SQLBase):
+class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch, IBranchNavigationMenu)
@@ -312,7 +314,7 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, review_requests=None,
+                         description=None, review_requests=None,
                          review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
@@ -366,11 +368,8 @@ class Branch(SQLBase):
             date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message)
-
-        if initial_comment is not None:
-            bmp.createComment(
-                registrant, None, initial_comment, _notify_listeners=False)
+            commit_message=commit_message,
+            description=description)
 
         for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
@@ -394,14 +393,15 @@ class Branch(SQLBase):
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
             registrant, target_branch, prerequisite_branch,
-            needs_review=needs_review, initial_comment=initial_comment,
+            needs_review=needs_review, description=initial_comment,
             commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets]
+                for target in self.active_landing_targets
+                if target.target_branch.last_scanned_id is not None]
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
@@ -463,20 +463,13 @@ class Branch(SQLBase):
     def browse_source_url(self):
         return self.codebrowse_url('files')
 
-    @property
-    def bzr_identity(self):
+    def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
-        # Should probably put this into the branch target.
-        if self.product is not None:
-            series_branch = self.product.development_focus.branch
-            is_dev_focus = (series_branch == self)
-        elif self.distroseries is not None:
-            distro_package = self.sourcepackage.distribution_sourcepackage
-            linked_branch = ICanHasLinkedBranch(distro_package)
-            is_dev_focus = (linked_branch.branch == self)
-        else:
-            is_dev_focus = False
-        return bazaar_identity(self, is_dev_focus)
+        # Not all protocols work for private branches.
+        public_schemes = ['http']
+        assert not (self.private and scheme in public_schemes), (
+            "Private branch %s has no public URL." % self.unique_name)
+        return compose_public_url(scheme, self.unique_name)
 
     @property
     def warehouse_url(self):
@@ -598,7 +591,7 @@ class Branch(SQLBase):
 
         for bugbranch in self.bug_branches:
             deletion_operations.append(
-                DeletionCallable(bugbranch,
+                DeletionCallable(bugbranch.bug.default_bugtask,
                 _('This bug is linked to this branch.'),
                 bugbranch.destroySelf))
         for spec_link in self.spec_links:
@@ -1056,6 +1049,18 @@ class Branch(SQLBase):
                     user, checked_branches)
         return can_access
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData)
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id ==
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+            SourcePackageRecipeData.base_branch == self)
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
@@ -1287,3 +1292,18 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def compose_public_url(scheme, unique_name, suffix=None):
+    # Avoid circular imports.
+    from lp.code.xmlrpc.branch import PublicCodehostingAPI
+
+    # Accept sftp as a legacy protocol.
+    accepted_schemes = set(PublicCodehostingAPI.supported_schemes)
+    accepted_schemes.add('sftp')
+    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+    host = URI(config.codehosting.supermirror_root).host
+    path = '/' + urlutils.escape(unique_name)
+    if suffix is not None:
+        path = os.path.join(path, suffix)
+    return str(URI(scheme=scheme, host=host, path=path))

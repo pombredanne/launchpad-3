@@ -36,6 +36,9 @@ __all__ = [
     'pocket_dependencies',
     ]
 
+import logging
+import traceback
+
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
@@ -143,12 +146,25 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
 
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
-    dependencies = build.archive.external_dependencies
-    if dependencies is not None:
-        for archive_dep in dependencies.splitlines():
-            line = archive_dep % (
-                {'series': distroarchseries.distroseries.name})
-            sources_list_lines.append(line)
+    try:
+        dependencies = build.archive.external_dependencies
+        if dependencies is not None:
+            for archive_dep in dependencies.splitlines():
+                line = archive_dep % (
+                    {'series': distroarchseries.distroseries.name})
+                sources_list_lines.append(line)
+    except StandardError, e:
+        # Malformed external dependencies can incapacitate the build farm
+        # manager (lp:516169). That's obviously not acceptable.
+        # Log the error, and disable the PPA.
+        logger = logging.getLogger()
+        logger.error(
+            'Exception during external dependency processing:\n%s'
+            % traceback.format_exc())
+        # Disable the PPA if needed. This will suspend all the pending binary
+        # builds associated with the problematic PPA.
+        if build.archive.enabled == True:
+            build.archive.disable()
 
     # Consider user-selected archive dependencies.
     primary_component = get_primary_current_component(

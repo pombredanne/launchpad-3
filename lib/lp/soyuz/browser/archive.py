@@ -21,6 +21,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
+    'make_archive_vocabulary',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
@@ -46,7 +47,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import english_list
 from canonical.lazr.utils import smartquote
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
@@ -60,10 +63,10 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet, IPPAActivateForm, NoSuchPPA)
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus, IBuildSet)
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -191,7 +194,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         except ValueError:
             return None
         try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
 
@@ -217,6 +220,56 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             return results[0]
 
         return None
+
+    @stepthrough('+binaryhits')
+    def traverse_binaryhits(self, name_str):
+        """Traverse to an `IBinaryPackageReleaseDownloadCount`.
+
+        A matching path is something like this:
+
+          +binaryhits/foopkg/1.0/i386/2010-03-11/AU
+
+        To reach one where the country is None, use:
+
+          +binaryhits/foopkg/1.0/i386/2010-03-11/unknown
+        """
+
+        if len(self.request.stepstogo) < 4:
+            return None
+
+        version = self.request.stepstogo.consume()
+        archtag = self.request.stepstogo.consume()
+        date_str = self.request.stepstogo.consume()
+        country_str = self.request.stepstogo.consume()
+
+        try:
+            name = getUtility(IBinaryPackageNameSet)[name_str]
+        except NotFoundError:
+            return None
+
+        # This will return None if there are multiple BPRs with the same
+        # name in the archive's history, but in that case downloads
+        # won't be counted either.
+        bpr = self.context.getBinaryPackageRelease(name, version, archtag)
+        if bpr is None:
+            return None
+
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+
+        # 'unknown' should always be safe, since the key is the two letter
+        # ISO code, and 'unknown' has more than two letters.
+        if country_str == 'unknown':
+            country = None
+        else:
+            try:
+                country = getUtility(ICountrySet)[country_str]
+            except NotFoundError:
+                return None
+
+        return self.context.getPackageDownloadCount(bpr, date, country)
 
     @stepthrough('+subscriptions')
     def traverse_subscription(self, person_name):
@@ -1090,6 +1143,15 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+def make_archive_vocabulary(archives):
+    terms = []
+    for archive in archives:
+        token = '%s/%s' % (archive.owner.name, archive.name)
+        label = '%s (%s)' % (archive.displayname, token)
+        terms.append(SimpleTerm(archive, token, label))
+    return SimpleVocabulary(terms)
+
+
 class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     """Archive package copying view class.
 
@@ -1149,27 +1211,15 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
-        terms = []
-        required = True
-
-        for ppa in self.ppas_for_user:
-            # Do not include the context PPA in the dropdown widget
-            # and make this field not required. This way we can safely
-            # default to the context PPA when copying.
-            if self.can_copy_to_context_ppa and self.context == ppa:
-                required = False
-                continue
-            token = '%s/%s' % (ppa.owner.name, ppa.name)
-            terms.append(
-                SimpleTerm(ppa, token, '%s (%s)' % (ppa.displayname, token)))
-
+        # Do not include the context PPA in the dropdown widget.
+        ppas = [ppa for ppa in self.ppas_for_user if self.context != ppa]
         return form.Fields(
             Choice(__name__='destination_archive',
                    title=_('Destination PPA'),
-                   vocabulary=SimpleVocabulary(terms),
+                   vocabulary=make_archive_vocabulary(ppas),
                    description=_("Select the destination PPA."),
                    missing_value=self.context,
-                   required=required))
+                   required=not self.can_copy_to_context_ppa))
 
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""
@@ -1781,7 +1831,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description', 'enabled']
+    field_names = ['displayname', 'description', 'enabled', 'publish']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
@@ -1790,7 +1840,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
     field_names = ['enabled', 'private', 'require_virtualized',
                    'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies']
+                   'external_dependencies', 'arm_builds_allowed']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 
@@ -1801,6 +1851,14 @@ class ArchiveAdminView(BaseArchiveEditView):
         this is a private archive.
         """
         form.getWidgetsData(self.widgets, 'field', data)
+
+        if data.get('private') != self.context.private:
+            # The privacy is being switched.
+            if self.context.getPublishedSources().count() > 0:
+                self.setFieldError(
+                    'private',
+                    'This archive already has published sources. It is '
+                    'not possible to switch the privacy.')
 
         if data.get('buildd_secret') is None and data['private']:
             self.setFieldError(

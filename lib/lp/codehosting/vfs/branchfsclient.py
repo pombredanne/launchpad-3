@@ -11,13 +11,11 @@ __all__ = [
     'BlockingProxy',
     'BranchFileSystemClient',
     'NotInCache',
-    'trap_fault',
     ]
 
 import time
 
 from twisted.internet import defer
-from twisted.web.xmlrpc import Fault
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 
@@ -46,18 +44,24 @@ class BranchFileSystemClient:
     """
 
     def __init__(self, branchfs_endpoint, user_id, expiry_time=None,
-                 _now=time.time):
+                 seen_new_branch_hook=None, _now=time.time):
         """Construct a caching branchfs_endpoint.
 
         :param branchfs_endpoint: An XML-RPC proxy that implements callRemote.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
+        :param expiry_time: If supplied, only cache the results of
+            translatePath for this many seconds.  If not supplied, cache the
+            results of translatePath for as long as this instance exists.
+        :param seen_new_branch_hook: A callable that will be called with the
+            unique_name of each new branch that is accessed.
         """
         self._branchfs_endpoint = branchfs_endpoint
         self._cache = {}
         self._user_id = user_id
         self.expiry_time = expiry_time
         self._now = _now
+        self.seen_new_branch_hook = seen_new_branch_hook
 
     def _getMatchedPart(self, path, transport_tuple):
         """Return the part of 'path' that the endpoint actually matched."""
@@ -77,6 +81,8 @@ class BranchFileSystemClient:
         (transport_type, data, trailing_path) = transport_tuple
         matched_part = self._getMatchedPart(path, transport_tuple)
         if transport_type == BRANCH_TRANSPORT:
+            if self.seen_new_branch_hook:
+                self.seen_new_branch_hook(matched_part.strip('/'))
             self._cache[matched_part] = (transport_type, data, self._now())
         return transport_tuple
 
@@ -128,19 +134,3 @@ class BranchFileSystemClient:
                 'translatePath', self._user_id, path)
             deferred.addCallback(self._addToCache, path)
             return deferred
-
-
-def trap_fault(failure, *fault_classes):
-    """Trap a fault, based on fault code.
-
-    :param failure: A Twisted L{Failure}.
-    :param *fault_codes: `LaunchpadFault` subclasses.
-    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
-        does not match the given codes.
-    :return: The Fault if it matches one of the codes.
-    """
-    failure.trap(Fault)
-    fault = failure.value
-    if fault.faultCode in [cls.error_code for cls in fault_classes]:
-        return fault
-    raise failure

@@ -15,7 +15,6 @@ __all__ = [
     'FeedsNavigation',
     'FeedsRootUrlData',
     'PersonBranchesFeedLink',
-    'PersonLatestBugsFeedLink',
     'PersonRevisionsFeedLink',
     'ProductBranchesFeedLink',
     'ProductRevisionsFeedLink',
@@ -187,15 +186,6 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
                          'latest-bugs.atom')
 
 
-class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
-    """Child class of BugTargetLatestBugsFeedLink.
-
-    This uses the same title and href attributes as the superclass.
-    The canonical_url takes care of the differences between the classes.
-    """
-    usedfor = IPerson
-
-
 class AnnouncementsFeedLink(FeedLinkBase):
     usedfor = IHasAnnouncements
 
@@ -326,7 +316,6 @@ class FeedsMixin:
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
         PersonBranchesFeedLink,
-        PersonLatestBugsFeedLink,
         PersonRevisionsFeedLink,
         ProductBranchesFeedLink,
         ProductRevisionsFeedLink,

@@ -14,19 +14,16 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.soyuz.model.build import Build
-from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory)
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from lp.soyuz.scripts.buildd import (
-    QueueBuilder, RetryDepwait)
-from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
     DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.scripts.buildd import QueueBuilder, RetryDepwait
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
 class TestCronscriptBase(unittest.TestCase):
@@ -231,7 +228,7 @@ class TestRetryDepwait(TestCronscriptBase):
         self.number_of_pending_builds = self.getPendingBuilds().count()
 
     def getPendingBuilds(self):
-        return Build.selectBy(buildstate=BuildStatus.NEEDSBUILD)
+        return BinaryPackageBuild.selectBy(buildstate=BuildStatus.NEEDSBUILD)
 
     def getRetryDepwait(self, distribution=None):
         test_args = ['-n']
@@ -271,14 +268,13 @@ class TestRetryDepwait(TestCronscriptBase):
 
     def testWorkingRun(self):
         """Modify sampledata and expects a new pending build to be created."""
-        depwait_build = Build.get(12)
+        depwait_build = BinaryPackageBuild.get(12)
 
         # Moving the target source to universe, so it can reach the only
         # published binary we have in sampledata.
         source_release = depwait_build.distributionsourcepackagerelease
-        pub_id = source_release.publishing_history[0].id
-        secure_pub = SecureSourcePackagePublishingHistory.get(pub_id)
-        secure_pub.component = getUtility(IComponentSet)['universe']
+        pub = source_release.publishing_history[0]
+        pub.component = getUtility(IComponentSet)['universe']
 
         # Make it dependend on the only binary that can be satisfied in
         # the sampledata.
@@ -291,7 +287,7 @@ class TestRetryDepwait(TestCronscriptBase):
         self.layer.commit()
 
         # Reload the build record after the multiple commits.
-        depwait_build = Build.get(12)
+        depwait_build = BinaryPackageBuild.get(12)
         self.assertEqual(
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())

@@ -37,7 +37,7 @@
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
-           canonical.launchpad.event.interfaces.IReviewerNominatedEvent"
+           lp.code.interfaces.event.IReviewerNominatedEvent"
       handler="lp.code.mail.branchmergeproposal.send_review_requested_notifications"/>
 
   <!-- CodeImportMachine -->
@@ -206,6 +206,7 @@
                     source_branch
                     target_branch
                     prerequisite_branch
+                    description
                     whiteboard
                     queue_status
                     private
@@ -229,7 +230,6 @@
                     next_preview_diff_job
                     preview_diff
                     votes
-                    root_comment
                     all_comments
                     related_bugs
                     isMergable
@@ -243,7 +243,8 @@
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
-        set_attributes="whiteboard merged_revno commit_message                                                                                                 root_message_id review_diff"
+        set_attributes="description whiteboard merged_revno commit_message
+                        root_message_id review_diff"
         attributes="
                     deleteProposal
                     setStatus
@@ -267,6 +268,9 @@
   <adapter
       factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
       name="commit_message"/>
+  <adapter
+      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
+      name="description"/>
 
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
@@ -275,7 +279,7 @@
   </class>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
+           lp.code.interfaces.event.INewBranchMergeProposalEvent"
       handler="lp.code.mail.branchmergeproposal.send_merge_proposal_created_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
@@ -283,11 +287,11 @@
       handler="lp.code.mail.branchmergeproposal.send_merge_proposal_modified_notifications"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           canonical.launchpad.event.interfaces.INewBranchMergeProposalEvent"
+           lp.code.interfaces.event.INewBranchMergeProposalEvent"
       handler="canonical.launchpad.subscribers.karma.branch_merge_proposed"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
-           canonical.launchpad.event.interfaces.IBranchMergeProposalStatusChangeEvent"
+           lp.code.interfaces.event.IBranchMergeProposalStatusChangeEvent"
       handler="canonical.launchpad.subscribers.karma.branch_merge_status_changed"/>
   <adapter
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -395,6 +399,7 @@
                     branch_type
                     name
                     url
+                    composePublicURL
                     whiteboard
                     target
                     mirror_status_message
@@ -451,6 +456,8 @@
                     associatedProductSeries
                     getProductSeriesPushingTranslations
                     associatedSuiteSourcePackages
+                    branchIdentities
+                    branchLinks
                     subscribe
                     getSubscription
                     hasSubscription
@@ -491,11 +498,12 @@
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
+                    getRecipes
                     "/>
     <require
         permission="launchpad.Edit"
-        attributes="destroySelf destroySelfBreakReferences setPrivate 
-		            setOwner setTarget requestUpgrade"
+        attributes="destroySelf destroySelfBreakReferences setPrivate
+                    setOwner setTarget requestUpgrade"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
@@ -528,6 +536,30 @@
       for="lp.code.interfaces.branch.IBranch
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
       handler="canonical.launchpad.subscribers.karma.branch_created"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.email.queue_tip_changed_email_jobs"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_diff_updates"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_translation_templates_build"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.ITipChanged"
+      handler="lp.codehosting.scanner.bzrsync.schedule_translation_upload"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IRevisionsRemoved"
+      handler="lp.codehosting.scanner.email.send_removed_revision_emails"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.INewRevision"
+      handler="lp.codehosting.scanner.buglinks.got_new_revision"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IScanCompleted"
+      handler="lp.codehosting.scanner.mergedetection.auto_merge_proposals"/>
+  <subscriber
+      for="lp.codehosting.scanner.events.IScanCompleted"
+      handler="lp.codehosting.scanner.mergedetection.auto_merge_branches"/>
 
   <!-- Temporarily disabling queues
        <browser:page
@@ -642,10 +674,6 @@
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.ProductBranchTarget"/>
   <adapter
-      for="lp.registry.interfaces.product.IProductSeries"
-      provides="lp.code.interfaces.branchtarget.IBranchTarget"
-      factory="lp.code.model.branchtarget.ProductSeriesBranchTarget"/>
-  <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
       factory="lp.code.model.branchtarget.get_canonical_url_data_for_target"/>
@@ -672,11 +700,11 @@
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
+           lp.code.interfaces.event.INewCodeReviewCommentEvent"
       handler="lp.code.mail.codereviewcomment.send"/>
   <subscriber
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment
-           canonical.launchpad.event.interfaces.INewCodeReviewCommentEvent"
+           lp.code.interfaces.event.INewCodeReviewCommentEvent"
       handler="canonical.launchpad.subscribers.karma.code_review_comment_added"/>
   <adapter
       for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
@@ -761,7 +789,8 @@
                        getImportDetailsForDisplay"/>
     <require
        permission="launchpad.AnyPerson"
-       attributes="tryFailingImportAgain"/>
+       attributes="tryFailingImportAgain
+                   requestImport"/>
     <require
        permission="launchpad.Edit"
        attributes="updateFromData"/>
@@ -928,7 +957,9 @@
     <allow interface="lp.code.interfaces.diff.IStaticDiff" />
   </class>
   <class class="lp.code.model.diff.PreviewDiff">
-    <allow interface="lp.code.interfaces.diff.IPreviewDiff" />
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.diff.IPreviewDiff"/>
   </class>
   <securedutility
       component="lp.code.model.diff.StaticDiff"
@@ -948,6 +979,9 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
+    <!-- This is needed for UploadProcessor to run. The permission isn't
+         important; launchpad.Edit isn't actually held by anybody. -->
+    <require permission="launchpad.Edit" set_attributes="buildstate upload_log" />
   </class>
 
   <securedutility
@@ -970,13 +1004,20 @@
   <adapter factory="lp.code.model.recipebuilder.RecipeBuildBehavior"
            permission="zope.Public" />
 
+  <!-- SourcePackageRecipeData -->
+  <class
+     class="lp.code.model.sourcepackagerecipedata.SourcePackageRecipeData">
+    <allow
+    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeData"/>
+  </class>
   <!-- SourcePackageRecipe -->
   <class
      class="lp.code.model.sourcepackagerecipe.SourcePackageRecipe">
-    <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    <allow
+    interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe"/>
+       set_attributes="builder_recipe build_daily"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

@@ -8,13 +8,19 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalExists',
+    'CodeImportAlreadyRequested',
+    'CodeImportAlreadyRunning',
+    'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'UnknownBranchTypeError',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
 ]
+
+from lazr.restful.declarations import webservice_error
 
 
 class BadBranchMergeProposalSearchContext(Exception):
@@ -39,6 +45,8 @@ class InvalidBranchMergeProposal(Exception):
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
+    webservice_error(400) #Bad request.
+
 
 class ReviewNotPending(Exception):
     """The requested review is not in a pending state."""
@@ -59,3 +67,27 @@ class UserNotBranchReviewer(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
+
+
+class CodeImportNotInReviewedState(Exception):
+    """Raised when the user requests an import of a non-automatic import."""
+
+    webservice_error(400)
+
+
+class CodeImportAlreadyRequested(Exception):
+    """Raised when the user requests an import that is already requested."""
+
+    def __init__(self, msg, requesting_user):
+        super(CodeImportAlreadyRequested, self).__init__(msg)
+        self.requesting_user = requesting_user
+
+
+class CodeImportAlreadyRunning(Exception):
+    """Raised when the user requests an import that is already running."""
+
+    webservice_error(400)

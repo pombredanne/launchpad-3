@@ -5,14 +5,18 @@ __metaclass__ = type
 __all__ = ['BuildFarmJob']
 
 
+import hashlib
+
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, IBuildFarmCandidateJobSelection,
     ISpecificBuildFarmJobClass)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
 class BuildFarmJob:
@@ -20,6 +24,26 @@ class BuildFarmJob:
     implements(IBuildFarmJob)
     classProvides(
         IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
+
+    def generateSlaveBuildCookie(self):
+        """See `IBuildFarmJob`."""
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+
+        if buildqueue.processor is None:
+            processor = '*'
+        else:
+            processor = repr(buildqueue.processor.id)
+
+        contents = ';'.join([
+            repr(removeSecurityProxy(self.job).id),
+            self.job.date_created.isoformat(),
+            repr(buildqueue.id),
+            buildqueue.job_type.name,
+            processor,
+            self.getName(),
+            ])
+
+        return hashlib.sha1(contents).hexdigest()
 
     def score(self):
         """See `IBuildFarmJob`."""

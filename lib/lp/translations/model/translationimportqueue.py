@@ -58,25 +58,14 @@ from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationImportQueueConflictError,
+    translation_import_queue_entry_age,
     UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.approver import TranslationNullApprover
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-
-
-# Approximate number of days in a 6-month period.
-half_year = 366 / 2
-
-# Period after which entries with certain statuses are culled from the
-# queue.
-entry_gc_age = {
-    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
-    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
-    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
-    RosettaImportStatus.NEEDS_REVIEW: datetime.timedelta(days=half_year),
-}
 
 
 def is_gettext_name(path):
@@ -638,8 +627,6 @@ class TranslationImportQueueEntry(SQLBase):
               self.path.startswith('koffice-i18n-')):
             # This package has the language information included as part of a
             # directory: koffice-i18n-LANG_CODE-VERSION
-            # Let's get the root directory that has the language information.
-            lang_directory = self.path.split('/')[0]
             # Extract the language information.
             match = re.match('koffice-i18n-(\S+)-(\S+)', self.path)
             if match is None:
@@ -958,80 +945,85 @@ class TranslationImportQueue:
 
         return entry
 
+    def _iterTarballFiles(self, tarball):
+        """Iterate through all non-emtpy files in the tarball."""
+        for tarinfo in tarball:
+            if tarinfo.isfile() and tarinfo.size > 0:
+                # Don't be tricked into reading directories, symlinks,
+                # or worst of all: devices.
+                yield tarinfo.name
+
+    def _makePath(self, name, path_filter):
+        """Make the file path from the name stored in the tarball."""
+        path = posixpath.normpath(name)
+        if path_filter:
+            path = path_filter(path)
+        return path
+
+    def _isTranslationFile(self, path):
+        """Is this a translation file that should be uploaded?"""
+        if path is None or path == '':
+            return False
+
+        translation_importer = getUtility(ITranslationImporter)
+        if translation_importer.isHidden(path):
+            # Dotfile.  Probably an editor backup or somesuch.
+            return False
+
+        base, ext = posixpath.splitext(path)
+        if ext not in translation_importer.supported_file_extensions:
+            # Doesn't look like a supported translation file type.
+            return False
+
+        return True
+
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None):
+        potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
-        # XXX: kiko 2008-02-08 bug=4473: This whole set of ifs is a
-        # workaround for bug 44773 (Python's gzip support sometimes fails to
-        # work when using plain tarfile.open()). The issue is that we can't
-        # rely on tarfile's smart detection of filetypes and instead need to
-        # hardcode the type explicitly in the mode. We simulate magic
-        # here to avoid depending on the python-magic package. We can
-        # get rid of this when http://bugs.python.org/issue1488634 is
-        # fixed.
-        #
-        # XXX: 2008-02-08 kiko bug=1982: Incidentally, this also works around
-        # bug #1982 (Python's bz2 support is not able to handle external file
-        # objects). That bug is worked around by using tarfile.open() which
-        # wraps the fileobj in a tarfile._Stream instance. We can get rid of
-        # this when we upgrade to python2.5 everywhere.
         num_files = 0
         conflict_files = []
 
-        if content.startswith('BZh'):
-            mode = "r|bz2"
-        elif content.startswith('\037\213'):
-            mode = "r|gz"
-        elif content[257:262] == 'ustar':
-            mode = "r|tar"
-        else:
-            # Not a tarball, we ignore it.
-            return (num_files, conflict_files)
-
-        translation_importer = getUtility(ITranslationImporter)
-
+        tarball_io = StringIO(content)
         try:
-            tarball = tarfile.open('', mode, StringIO(content))
-        except tarfile.ReadError:
+            tarball = tarfile.open('', 'r|*', tarball_io)
+        except (tarfile.CompressionError, tarfile.ReadError):
             # If something went wrong with the tarfile, assume it's
             # busted and let the user deal with it.
             return (num_files, conflict_files)
 
+        # Build a list of files to upload.
+        upload_files = {}
+        for name in self._iterTarballFiles(tarball):
+            path = self._makePath(name, filename_filter)
+            if self._isTranslationFile(path):
+                upload_files[name] = path
+        tarball.close()
+
+        if approver_factory is None:
+            approver_factory = TranslationNullApprover
+        approver = approver_factory(
+            upload_files.values(),
+            productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+        # Re-opening because we are using sequential access ("r|*") which is
+        # so much faster.
+        tarball_io.seek(0)
+        tarball = tarfile.open('', 'r|*', tarball_io)
         for tarinfo in tarball:
-            if not tarinfo.isfile():
-                # Don't be tricked into reading directories, symlinks,
-                # or worst of all: devices.
+            if tarinfo.name not in upload_files:
                 continue
-
-            filename = posixpath.normpath(tarinfo.name)
-            if filename_filter:
-                filename = filename_filter(filename)
-            if filename is None or filename == '':
-                continue
-
-            if posixpath.basename(filename).startswith('.'):
-                # Dotfile.  Probably an editor backup or somesuch.
-                continue
-
-            base, ext = posixpath.splitext(filename)
-            if ext not in translation_importer.supported_file_extensions:
-                # Doesn't look like a supported translation file type.
-                continue
-
             file_content = tarball.extractfile(tarinfo).read()
 
-            if len(file_content) == 0:
-                # Empty.  Ignore.
-                continue
-
-            entry = self.addOrUpdateEntry(
-                filename, file_content, is_published, importer,
+            path = upload_files[tarinfo.name]
+            entry = approver.approve(self.addOrUpdateEntry(
+                path, file_content, is_published, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                potemplate=potemplate)
+                potemplate=potemplate))
             if entry == None:
-                conflict_files.append(filename)
+                conflict_files.append(path)
             else:
                 num_files += 1
 
@@ -1256,8 +1248,8 @@ class TranslationImportQueue:
         """
         now = datetime.datetime.now(pytz.UTC)
         deletion_clauses = []
-        for status, gc_age in entry_gc_age.iteritems():
-            cutoff = now - gc_age
+        for status, max_age in translation_import_queue_entry_age.iteritems():
+            cutoff = now - max_age
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))

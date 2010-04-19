@@ -567,11 +567,15 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # There's usually only one item in queue_item.sources.
-            for source in queue_item.sources:
-                source.sourcepackagerelease.override(component=component,
-                                                     section=section)
-                self.displayInfo(queue_item)
+            # We delegate to the queue_item itself to override any/all
+            # of its sources.
+            if queue_item.contains_source:
+                queue_item.overrideSource(
+                    component, section, [
+                        component,
+                        queue_item.sourcepackagerelease.component
+                        ])
+            self.displayInfo(queue_item)
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""

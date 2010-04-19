@@ -136,3 +136,6 @@ class IPreviewDiff(IDiff):
                 'If the preview diff is stale, it is out of date when '
                 'compared to the tip revisions of the source, target, and '
                 'possibly prerequisite branches.')))
+
+    def getFileByName(filename):
+        """Return the file under +files with specified name."""

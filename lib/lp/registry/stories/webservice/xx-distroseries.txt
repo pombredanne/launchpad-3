@@ -68,6 +68,7 @@ For distroseries we publish a subset of its attributes.
     displayname: u'Hoary'
     distribution_link: u'http://.../ubuntu'
     driver_link: None
+    drivers_collection_link: u'http://.../ubuntu/hoary/drivers'
     fullseriesname: u'Ubuntu Hoary'
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'

@@ -130,7 +130,7 @@ class BaseStormOpenIDStore(OpenIDStore):
             return False
 
         server_url = server_url.decode('UTF-8')
-        salt = server_url.decode('ASCII')
+        salt = salt.decode('ASCII')
 
         store = IMasterStore(self.Nonce)
         old_nonce = store.get(self.Nonce, (server_url, timestamp, salt))

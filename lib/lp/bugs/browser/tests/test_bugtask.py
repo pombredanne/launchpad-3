@@ -6,16 +6,19 @@ __metaclass__ = type
 
 import unittest
 
+from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctest import DocTestSuite
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.bugs.browser import bugtask
-from lp.bugs.browser.bugtask import BugTasksAndNominationsView
+from lp.bugs.browser.bugtask import (
+    BugTaskEditView, BugTasksAndNominationsView)
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import TestCaseWithFactory
 
 
@@ -205,9 +208,99 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             self.view.anon_affected_statement)
 
 
+class TestBugTaskEditViewStatusField(TestCaseWithFactory):
+    """We show only those options as possible value in the status
+    field that the user can select.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskEditViewStatusField, self).setUp()
+        product_owner = self.factory.makePerson(name='product-owner')
+        bug_supervisor = self.factory.makePerson(name='bug-supervisor')
+        product = self.factory.makeProduct(
+            owner=product_owner, bug_supervisor=bug_supervisor)
+        self.bug = self.factory.makeBug(product=product)
+
+    def getWidgetOptionTitles(self, widget):
+        """Return the titles of options of the given choice widget."""
+        return [
+            item.value.title for item in widget.field.vocabulary]
+
+    def test_status_field_items_for_anonymous(self):
+        # Anonymous users see only the current value.
+        login(ANONYMOUS)
+        view = BugTaskEditView(
+            self.bug.default_bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            ['New'], self.getWidgetOptionTitles(view.form_fields['status']))
+
+    def test_status_field_items_for_ordinary_users(self):
+        # Ordinary users can set the status to all values except Won't fix,
+        # Expired, Triaged, Unknown.
+        login('no-priv@canonical.com')
+        view = BugTaskEditView(
+            self.bug.default_bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            ['New', 'Incomplete', 'Invalid', 'Confirmed', 'In Progress',
+             'Fix Committed', 'Fix Released'],
+            self.getWidgetOptionTitles(view.form_fields['status']))
+
+    def test_status_field_privileged_persons(self):
+        # The bug target owner and the bug target supervisor can set
+        # the status to any value except Unknown and Expired.
+        for user in (
+            self.bug.default_bugtask.pillar.owner,
+            self.bug.default_bugtask.pillar.bug_supervisor):
+            login_person(user)
+            view = BugTaskEditView(
+                self.bug.default_bugtask, LaunchpadTestRequest())
+            view.initialize()
+            self.assertEqual(
+                ['New', 'Incomplete', 'Invalid', "Won't Fix", 'Confirmed',
+                 'Triaged', 'In Progress', 'Fix Committed', 'Fix Released'],
+                self.getWidgetOptionTitles(view.form_fields['status']),
+                'Unexpected set of settable status options for %s'
+                % user.name)
+
+    def test_status_field_bug_task_in_status_unknown(self):
+        # If a bugtask has the status Unknown, this status is included
+        # in the options.
+        owner = self.bug.default_bugtask.pillar.owner
+        login_person(owner)
+        self.bug.default_bugtask.transitionToStatus(
+            BugTaskStatus.UNKNOWN, owner)
+        login('no-priv@canonical.com')
+        view = BugTaskEditView(
+            self.bug.default_bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            ['New', 'Incomplete', 'Invalid', 'Confirmed', 'In Progress',
+             'Fix Committed', 'Fix Released', 'Unknown'],
+            self.getWidgetOptionTitles(view.form_fields['status']))
+
+    def test_status_field_bug_task_in_status_expired(self):
+        # If a bugtask has the status Expired, this status is included
+        # in the options.
+        removeSecurityProxy(self.bug.default_bugtask).status = (
+            BugTaskStatus.EXPIRED)
+        login('no-priv@canonical.com')
+        view = BugTaskEditView(
+            self.bug.default_bugtask, LaunchpadTestRequest())
+        view.initialize()
+        self.assertEqual(
+            ['New', 'Incomplete', 'Invalid', 'Expired', 'Confirmed',
+             'In Progress', 'Fix Committed', 'Fix Released'],
+            self.getWidgetOptionTitles(view.form_fields['status']))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestBugTasksAndNominationsView))
+    suite.addTest(unittest.makeSuite(TestBugTaskEditViewStatusField))
     suite.addTest(DocTestSuite(bugtask))
     suite.addTest(LayeredDocFileSuite(
         'bugtask-target-link-titles.txt', setUp=setUp, tearDown=tearDown,

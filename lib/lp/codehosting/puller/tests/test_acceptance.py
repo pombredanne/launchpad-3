@@ -8,10 +8,8 @@ __all__ = []
 
 
 import os
-import shutil
 from subprocess import PIPE, Popen
 import unittest
-from urlparse import urlparse
 
 import transaction
 
@@ -22,6 +20,7 @@ from bzrlib import errors
 from bzrlib.tests import HttpServer
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
+from bzrlib.urlutils import join as urljoin, local_path_from_url
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -49,11 +48,9 @@ class TestBranchPuller(PullerBranchTestCase):
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.hosted_branches_root)
-        self.addCleanup(
-            shutil.rmtree, config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
-        self.addCleanup(
-            shutil.rmtree, config.codehosting.mirrored_branches_root)
+        self.makeCleanDirectory(
+            local_path_from_url(config.launchpad.bzr_imports_root_url))
 
     def assertMirrored(self, db_branch, source_branch=None,
                        accessing_user=None):
@@ -122,7 +119,7 @@ class TestBranchPuller(PullerBranchTestCase):
         output, error = process.communicate()
         return process.returncode, output, error
 
-    def runPuller(self):
+    def runPuller(self, *args):
         """Run the puller script for the given branch type.
 
         :param branch_type: One of 'upload', 'mirror' or 'import'
@@ -132,14 +129,13 @@ class TestBranchPuller(PullerBranchTestCase):
             stdout and stderr respectively.
         """
         command = [
-            '%s/bin/py' % config.root, self._puller_script, '-q']
+            '%s/bin/py' % config.root, self._puller_script, '-q'] + list(args)
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
-    def serveOverHTTP(self, port=0):
+    def serveOverHTTP(self):
         """Serve the current directory over HTTP, returning the server URL."""
         http_server = HttpServer()
-        http_server.port = port
         http_server.start_server()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
@@ -392,18 +388,6 @@ class TestBranchPuller(PullerBranchTestCase):
         self.assertRaises(
             errors.NotStacked, mirrored_branch.get_stacked_on_url)
 
-    def _getImportMirrorPort(self):
-        """Return the port used to serve imported branches, as specified in
-        config.launchpad.bzr_imports_root_url.
-        """
-        address = urlparse(config.launchpad.bzr_imports_root_url)[1]
-        host, port = address.split(':')
-        self.assertEqual(
-            'localhost', host,
-            'bzr_imports_root_url must be configured on localhost: %s'
-            % (config.launchpad.bzr_imports_root_url,))
-        return int(port)
-
     def test_mirror_imported_branch(self):
         # Run the puller on a populated imported branch pull queue.
         # Create the branch in the database.
@@ -412,23 +396,40 @@ class TestBranchPuller(PullerBranchTestCase):
         db_branch.requestMirror()
         transaction.commit()
 
-        # Create the Bazaar branch and serve it in the expected location.
-        branch_path = '%08x' % db_branch.id
-        os.mkdir(branch_path)
-        tree = self.make_branch_and_tree(branch_path)
+        # Create the Bazaar branch in the expected location.
+        branch_url = urljoin(
+            config.launchpad.bzr_imports_root_url, '%08x' % db_branch.id)
+        branch = BzrDir.create_branch_convenience(branch_url)
+        tree = branch.bzrdir.open_workingtree()
         tree.commit('rev1')
-        self.serveOverHTTP(self._getImportMirrorPort())
 
         # Run the puller.
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
 
-        self.assertMirrored(db_branch, source_branch=tree.branch)
+        self.assertMirrored(db_branch, source_branch=branch)
 
     def test_mirror_empty(self):
         # Run the puller on an empty pull queue.
         command, retcode, output, error = self.runPuller()
         self.assertRanSuccessfully(command, retcode, output, error)
+
+    def test_type_filtering(self):
+        # When run with --branch-type arguments, the puller only mirrors those
+        # branches of the specified types.
+        hosted_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED)
+        mirrored_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.MIRRORED)
+        mirrored_branch.requestMirror()
+        transaction.commit()
+        self.pushBranch(hosted_branch)
+        command, retcode, output, error = self.runPuller(
+            '--branch-type', 'HOSTED')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(hosted_branch)
+        self.assertIsNot(
+            None, mirrored_branch.next_mirror_time)
 
     def test_records_script_activity(self):
         # A record gets created in the ScriptActivity table.

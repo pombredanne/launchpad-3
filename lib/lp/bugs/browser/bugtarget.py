@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     "BugsVHostBreadcrumb",
+    "BugsPatchesView",
     "BugTargetBugListingView",
     "BugTargetBugTagsView",
     "BugTargetBugsView",
@@ -19,11 +20,13 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
-from email import message_from_string
+from datetime import datetime
 from operator import itemgetter
+from pytz import timezone
 from simplejson import dumps
-import tempfile
 import urllib
+
+from sqlobject import SQLObjectNotFound
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
@@ -33,17 +36,18 @@ from zope import formlib
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -54,27 +58,30 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, NotFoundError, UnexpectedFormData)
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectGroupBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.job.interfaces.job import JobStatus
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
@@ -83,175 +90,6 @@ from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.bugtask import NewLineToSpacesWidget
 
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
-
-
-class FileBugDataParser:
-    """Parser for a message containing extra bug information.
-
-    Applications like Apport upload such messages, before filing the
-    bug.
-    """
-
-    def __init__(self, blob_file):
-        self.blob_file = blob_file
-        self.headers = {}
-        self._buffer = ''
-        self.extra_description = None
-        self.comments = []
-        self.attachments = []
-        self.BUFFER_SIZE = 8192
-
-    def _consumeBytes(self, end_string):
-        """Read bytes from the message up to the end_string.
-
-        The end_string is included in the output.
-
-        If end-of-file is reached, '' is returned.
-        """
-        while end_string not in self._buffer:
-            data = self.blob_file.read(self.BUFFER_SIZE)
-            self._buffer += data
-            if len(data) < self.BUFFER_SIZE:
-                # End of file.
-                if end_string not in self._buffer:
-                    # If the end string isn't present, we return
-                    # everything.
-                    buffer = self._buffer
-                    self._buffer = ''
-                    return buffer
-                break
-        end_index = self._buffer.index(end_string)
-        bytes = self._buffer[:end_index+len(end_string)]
-        self._buffer = self._buffer[end_index+len(end_string):]
-        return bytes
-
-    def readHeaders(self):
-        """Read the next set of headers of the message."""
-        header_text = self._consumeBytes('\n\n')
-        # Use the email package to return a dict-like object of the
-        # headers, so we don't have to parse the text ourselves.
-        return message_from_string(header_text)
-
-    def readLine(self):
-        """Read a line of the message."""
-        data = self._consumeBytes('\n')
-        if data == '':
-            raise AssertionError('End of file reached.')
-        return data
-
-    def _setDataFromHeaders(self, data, headers):
-        """Set the data attributes from the message headers."""
-        if 'Subject' in headers:
-            data.initial_summary = unicode(headers['Subject'])
-        if 'Tags' in headers:
-            tags_string = unicode(headers['Tags'])
-            data.initial_tags = tags_string.lower().split()
-        if 'Private' in headers:
-            private = headers['Private']
-            if private.lower() == 'yes':
-                data.private = True
-            elif private.lower() == 'no':
-                data.private = False
-            else:
-                # If the value is anything other than yes or no we just
-                # ignore it as we cannot currently give the user an error
-                pass
-        if 'Subscribers' in headers:
-            subscribers_string = unicode(headers['Subscribers'])
-            data.subscribers = subscribers_string.lower().split()
-        if 'HWDB-Submission' in headers:
-            submission_string = unicode(headers['HWDB-Submission'])
-            data.hwdb_submission_keys = (
-                part.strip() for part in submission_string.split(','))
-
-    def parse(self):
-        """Parse the message and  return a FileBugData instance.
-
-            * The Subject header is the initial bug summary.
-            * The Tags header specifies the initial bug tags.
-            * The Private header sets the visibility of the bug.
-            * The Subscribers header specifies additional initial subscribers
-            * The first inline part will be added to the description.
-            * All other inline parts will be added as separate comments.
-            * All attachment parts will be added as attachment.
-
-        When parsing each part of the message is stored in a temporary
-        file on the file system. After using the returned data,
-        removeTemporaryFiles() must be called.
-        """
-        headers = self.readHeaders()
-        data = FileBugData()
-        self._setDataFromHeaders(data, headers)
-
-        # The headers is a Message instance.
-        boundary = "--" + headers.get_param("boundary")
-        line = self.readLine()
-        while not line.startswith(boundary + '--'):
-            part_file = tempfile.TemporaryFile()
-            part_headers = self.readHeaders()
-            content_encoding = part_headers.get('Content-Transfer-Encoding')
-            if content_encoding is not None and content_encoding != 'base64':
-                raise AssertionError(
-                    "Unknown encoding: %r." % content_encoding)
-            line = self.readLine()
-            while not line.startswith(boundary):
-                # Decode the file.
-                if content_encoding is not None:
-                    line = line.decode(content_encoding)
-                part_file.write(line)
-                line = self.readLine()
-            # Prepare the file for reading.
-            part_file.seek(0)
-            disposition = part_headers['Content-Disposition']
-            disposition = disposition.split(';')[0]
-            disposition = disposition.strip()
-            if disposition == 'inline':
-                assert part_headers.get_content_type() == 'text/plain', (
-                    "Inline parts have to be plain text.")
-                charset = part_headers.get_content_charset()
-                assert charset, (
-                    "A charset has to be specified for text parts.")
-                inline_content = part_file.read().rstrip()
-                part_file.close()
-                inline_content = inline_content.decode(charset)
-
-                if data.extra_description is None:
-                    # The first inline part is extra description.
-                    data.extra_description = inline_content
-                else:
-                    data.comments.append(inline_content)
-            elif disposition == 'attachment':
-                attachment = dict(
-                    filename=unicode(part_headers.get_filename().strip("'")),
-                    content_type=unicode(part_headers['Content-type']),
-                    content=part_file)
-                if 'Content-Description' in part_headers:
-                    attachment['description'] = unicode(
-                        part_headers['Content-Description'])
-                else:
-                    attachment['description'] = attachment['filename']
-                data.attachments.append(attachment)
-            else:
-                # If the message include other disposition types,
-                # simply ignore them. We don't want to break just
-                # because some extra information is included.
-                continue
-        return data
-
-
-class FileBugData:
-    """Extra data to be added to the bug."""
-
-    def __init__(self):
-        self.initial_summary = None
-        self.initial_summary = None
-        self.initial_tags = []
-        self.private = None
-        self.subscribers = []
-        self.extra_description = None
-        self.comments = []
-        self.attachments = []
-        self.hwdb_submission_keys = []
 
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
@@ -276,7 +114,8 @@ class FileBugViewBase(LaunchpadFormView):
     def initialize(self):
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
-            self.extra_data_token is not None):
+            self.extra_data_token is not None and
+            not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
@@ -459,6 +298,14 @@ class FileBugViewBase(LaunchpadFormView):
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
         self.form_fields += formlib.form.Fields(subscribe_field)
 
+        security_related_field = Bool(
+            __name__='security_related',
+            title=_("This bug is a security vulnerability"),
+            required=False, default=False)
+
+        self.form_fields = self.form_fields.omit('security_related')
+        self.form_fields += formlib.form.Fields(security_related_field)
+
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
         if IProjectGroup.providedBy(self.context):
@@ -618,15 +465,13 @@ class FileBugViewBase(LaunchpadFormView):
                         cgi.escape(filename))
 
             for attachment in extra_data.attachments:
-                bug.addAttachment(
-                    owner=self.user, data=attachment['content'],
+                bug.linkAttachment(
+                    owner=self.user, file_alias=attachment['file_alias'],
                     description=attachment['description'],
-                    comment=attachment_comment,
-                    filename=attachment['filename'],
-                    content_type=attachment['content_type'])
+                    comment=attachment_comment)
                 notifications.append(
                     'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['filename']))
+                        cgi.escape(attachment['file_alias'].filename))
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug
@@ -740,14 +585,8 @@ class FileBugViewBase(LaunchpadFormView):
             # expected.
             raise NotFound(self, name, request=request)
 
-        extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
-        if extra_bug_data is not None:
-            self.extra_data_token = name
-            extra_bug_data.file_alias.open()
-            self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
-            self.extra_data = self.data_parser.parse()
-            extra_bug_data.file_alias.close()
-        else:
+        self.extra_data_token = name
+        if self.extra_data_processing_job is None:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
             #      We should handle this case better, since a user might
@@ -755,6 +594,9 @@ class FileBugViewBase(LaunchpadFormView):
             #      registration. In that case we should inform the user
             #      that the blob has expired.
             raise NotFound(self, name, request=request)
+        else:
+            self.extra_data = self.extra_data_processing_job.getFileBugData()
+
         return self
 
     def browserDefault(self, request):
@@ -862,6 +704,31 @@ class FileBugViewBase(LaunchpadFormView):
                             "content": content,
                             })
         return guidelines
+
+    @cachedproperty
+    def extra_data_processing_job(self):
+        """Return the ProcessApportBlobJob for a given BLOB token."""
+        if self.extra_data_token is None:
+            # If there's no extra data token, don't bother looking for a
+            # ProcessApportBlobJob.
+            return None
+
+        try:
+            return getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+                self.extra_data_token)
+        except SQLObjectNotFound:
+            return None
+
+    @property
+    def extra_data_to_process(self):
+        """Return True if there is extra data to process."""
+        apport_processing_job = self.extra_data_processing_job
+        if apport_processing_job is None:
+            return False
+        elif apport_processing_job.job.status == JobStatus.COMPLETED:
+            return False
+        else:
+            return True
 
 
 class FileBugInlineFormView(FileBugViewBase):
@@ -1197,7 +1064,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     feed_types = (
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
         )
 
     # XXX: Bjorn Tillenius 2007-02-13:
@@ -1410,3 +1276,81 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
 class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
     text = 'Bugs'
+
+
+class BugsPatchesView(LaunchpadView):
+    """View list of patch attachments associated with bugs."""
+
+    @property
+    def label(self):
+        """The display label for the view."""
+        if IPerson.providedBy(self.context):
+            return 'Patch attachments for %s' % self.context.displayname
+        else:
+            return 'Patch attachments in %s' % self.context.displayname
+
+    @property
+    def patch_task_orderings(self):
+        """The list of possible sort orderings for the patches view.
+
+        The orderings are a list of tuples of the form:
+          [(DisplayName, InternalOrderingName), ...]
+        For example:
+          [("Patch age", "-latest_patch_uploaded"),
+           ("Importance", "-importance"),
+           ...]
+        """
+        orderings = [("patch age", "-latest_patch_uploaded"),
+                     ("importance", "-importance"),
+                     ("status", "status"),
+                     ("oldest first", "datecreated"),
+                     ("newest first", "-datecreated")]
+        targetname = self.targetName()
+        if targetname is not None:
+            # Lower case for consistency with the other orderings.
+            orderings.append((targetname.lower(), "targetname"))
+        return orderings
+
+
+    def batchedPatchTasks(self):
+        """Return a BatchNavigator for bug tasks with patch attachments."""
+        orderby = self.request.get("orderby", "-latest_patch_uploaded")
+        if orderby not in [x[1] for x in self.patch_task_orderings]:
+            raise UnexpectedFormData(
+                "Unexpected value for field 'orderby': '%s'" % orderby)
+        return BatchNavigator(
+            self.context.searchTasks(
+                None, user=self.user, order_by=orderby,
+                status=UNRESOLVED_BUGTASK_STATUSES,
+                omit_duplicates=True, has_patch=True),
+            self.request)
+
+    def targetName(self):
+        """Return the name of the current context's target type, or None.
+
+        The name is something like "Package" or "Project" (meaning
+        Product); it is intended to be appropriate to use as a column
+        name in a web page, for example.  If no target type is
+        appropriate for the current context, then return None.
+        """
+        if (IDistribution.providedBy(self.context) or
+            IDistroSeries.providedBy(self.context)):
+            return "Package"
+        elif (IProjectGroup.providedBy(self.context) or
+              IPerson.providedBy(self.context)):
+            # In the case of an IPerson, the target column can vary
+            # row-by-row, showing both packages and products.  We
+            # decided to go with the table header "Project" for both,
+            # as its meaning is broad and could conceivably cover
+            # packages too.  We also considered "Target", but rejected
+            # it because it's used as a verb elsewhere in Launchpad's
+            # UI, with a totally different meaning.  If anyone can
+            # think of a better term than "Project", please JFDI here.
+            return "Project"  # "Project" meaning Product, of course
+        else:
+            return None
+
+    def patchAge(self, patch):
+        """Return a timedelta object for the age of a patch attachment."""
+        now = datetime.now(timezone('UTC'))
+        return now - patch.message.datecreated

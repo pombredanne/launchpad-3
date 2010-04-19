@@ -96,7 +96,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                         <p>
                         Manage bug reports entirely through your mail client, using the Launchpad Bugs email interface.
 <br /><br />
-						Report, subscribe, comment on, assign, prioritise and make just about any other update to bugs tracked in Launchpad using email. Launchpad will also mail you with updates on any bug you're interested in, whether an individual bug or all the bugs associated with a particular project or package. Read more about <a href="https://help.launchpad.net/Bugs/EmailInterface">the bug tracker's e-mail interface &gt;</a><br /><br />
+						Report, subscribe, comment on, assign, prioritize and make just about any other update to bugs tracked in Launchpad using email. Launchpad will also mail you with updates on any bug you're interested in, whether an individual bug or all the bugs associated with a particular project or package. Read more about <a href="https://help.launchpad.net/Bugs/EmailInterface">the bug tracker's e-mail interface &gt;</a><br /><br />
 						And, if you prefer, you can also subscribe to bug information in your feed reader with our Atom feeds. <img src="https://edge.launchpad.net/@@/rss" alt="Feed logo" />
                         </p>
                     </div>

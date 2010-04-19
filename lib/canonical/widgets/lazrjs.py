@@ -329,11 +329,16 @@ class InlineEditPickerWidget:
             # The user may not have write access on the attribute itself, but
             # the REST API may have a mutator method configured, such as
             # transitionToAssignee.
-            exported_tag = self.interface_attribute.getTaggedValue(
+            #
+            # We look at the top of the annotation stack, since Ajax
+            # requests always go to the most recent version of the web
+            # service.
+            exported_tag_stack = self.interface_attribute.getTaggedValue(
                 'lazr.restful.exported')
-            mutator = exported_tag.get('mutated_by')
-            if mutator is not None:
-                return canAccess(self.context, mutator.__name__)
+            mutator_info = exported_tag_stack.get('mutator_annotations')
+            if mutator_info is not None:
+                mutator_method, mutator_extra = mutator_info
+                return canAccess(self.context, mutator_method.__name__)
             else:
                 return False
 

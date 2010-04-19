@@ -55,7 +55,7 @@
         </div>
 
         <div class="yui-u">
-          <div tal:replace="structure context/@@+portlet-latestuploads" />
+          <div tal:replace="structure context/@@+portlet-package-summary" />
         </div>
       </div>
 
@@ -74,14 +74,15 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div
+            tal:replace="structure context/@@+portlet-architectures" />
+          <div
             tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/@@+get-involved/official_malone" />
-
-          <div
-            tal:replace="structure context/@@+portlet-architectures" />
         </div>
 
         <div class="yui-u">
+          <div tal:replace="structure context/@@+portlet-latestuploads" />
+
           <div
             tal:content="structure context/@@+portlet-latestspecs"
             tal:condition="context/@@+get-involved/official_blueprints" />

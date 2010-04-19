@@ -30,6 +30,7 @@ from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
 from lp.code.enums import BranchType
+from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -136,13 +137,6 @@ class BranchPullerTest(TestCaseWithFactory):
         self.branch_lookup = frontend.getBranchLookup()
         self.getLastActivity = frontend.getLastActivity
 
-    def assertFaultEqual(self, expected_fault, observed_fault):
-        """Assert that `expected_fault` equals `observed_fault`."""
-        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
-        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
-        self.assertEqual(
-            expected_fault.faultString, observed_fault.faultString)
-
     def assertMirrorFailed(self, branch, failure_message, num_failures=1):
         """Assert that `branch` failed to mirror.
 
@@ -203,7 +197,7 @@ class BranchPullerTest(TestCaseWithFactory):
         # exist.
         invalid_id = self.getUnusedBranchID()
         fault = self.storage.startMirroring(invalid_id)
-        self.assertFaultEqual(faults.NoBranchWithID(invalid_id), fault)
+        self.assertEqual(faults.NoBranchWithID(invalid_id), fault)
 
     def test_mirrorFailed(self):
         branch = self.factory.makeAnyBranch()
@@ -219,7 +213,7 @@ class BranchPullerTest(TestCaseWithFactory):
         branch_id = self.getUnusedBranchID()
         failure_message = self.factory.getUniqueString()
         fault = self.storage.mirrorFailed(branch_id, failure_message)
-        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
+        self.assertEqual(faults.NoBranchWithID(branch_id), fault)
 
     def test_mirrorComplete(self):
         # mirrorComplete marks the branch as having been successfully
@@ -239,7 +233,7 @@ class BranchPullerTest(TestCaseWithFactory):
         branch_id = self.getUnusedBranchID()
         fault = self.storage.mirrorComplete(
             branch_id, self.factory.getUniqueString())
-        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
+        self.assertEqual(faults.NoBranchWithID(branch_id), fault)
 
     def test_mirrorComplete_resets_failure_count(self):
         # mirrorComplete marks the branch as successfully mirrored and removes
@@ -387,7 +381,7 @@ class BranchPullerTest(TestCaseWithFactory):
         stacked_branch = self.factory.makeAnyBranch()
         url = self.factory.getUniqueURL()
         fault = self.storage.setStackedOn(stacked_branch.id, url)
-        self.assertFaultEqual(faults.NoSuchBranch(url), fault)
+        self.assertEqual(faults.NoSuchBranch(url), fault)
 
     def test_setStackedOnNoBranchWithID(self):
         # If setStackedOn is called for a branch that doesn't exist, it will
@@ -396,106 +390,7 @@ class BranchPullerTest(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED)
         branch_id = self.getUnusedBranchID()
         fault = self.storage.setStackedOn(branch_id, stacked_on_branch.url)
-        self.assertFaultEqual(faults.NoBranchWithID(branch_id), fault)
-
-
-class BranchPullQueueTest(TestCaseWithFactory):
-    """Tests for the pull queue methods of `IBranchPuller`."""
-
-    def setUp(self):
-        super(BranchPullQueueTest, self).setUp()
-        frontend = self.frontend()
-        self.storage = frontend.getPullerEndpoint()
-        self.factory = frontend.getLaunchpadObjectFactory()
-
-    def assertBranchQueues(self, hosted, mirrored, imported):
-        expected_hosted = [
-            self.storage._getBranchPullInfo(branch) for branch in hosted]
-        expected_mirrored = [
-            self.storage._getBranchPullInfo(branch) for branch in mirrored]
-        expected_imported = [
-            self.storage._getBranchPullInfo(branch) for branch in imported]
-        self.assertEqual(
-            expected_hosted, self.storage.getBranchPullQueue('HOSTED'))
-        self.assertEqual(
-            expected_mirrored, self.storage.getBranchPullQueue('MIRRORED'))
-        self.assertEqual(
-            expected_imported, self.storage.getBranchPullQueue('IMPORTED'))
-
-    def test_pullQueuesEmpty(self):
-        """getBranchPullQueue returns an empty list when there are no branches
-        to pull.
-        """
-        self.assertBranchQueues([], [], [])
-
-    def makeBranchAndRequestMirror(self, branch_type):
-        """Make a branch of the given type and call requestMirror on it."""
-        branch = self.factory.makeAnyBranch(branch_type=branch_type)
-        branch.requestMirror()
-        # The pull queues contain branches that have next_mirror_time strictly
-        # in the past, but requestMirror sets this field to UTC_NOW, so we
-        # push the time back slightly here to get the branch to show up in the
-        # queue.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.next_mirror_time -= datetime.timedelta(seconds=1)
-        return branch
-
-    def test_getBranchPullInfo_no_default_stacked_branch(self):
-        # If there's no default stacked branch for the project that a branch
-        # is on, then _getBranchPullInfo returns (id, url, unique_name, '').
-        branch = self.factory.makeAnyBranch()
-        info = self.storage._getBranchPullInfo(branch)
-        self.assertEqual(
-            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
-
-    def test_getBranchPullInfo_default_stacked_branch(self):
-        # If there's a default stacked branch for the project that a branch is
-        # on, then _getBranchPullInfo returns (id, url, unique_name,
-        # default_branch_unique_name).
-        product = self.factory.makeProduct()
-        default_branch = self.factory.enableDefaultStackingForProduct(product)
-        branch = self.factory.makeProductBranch(product=product)
-        info = self.storage._getBranchPullInfo(branch)
-        self.assertEqual(
-            (branch.id, branch.getPullURL(), branch.unique_name,
-             '/' + default_branch.unique_name), info)
-
-    def test_getBranchPullInfo_private_branch(self):
-        # We don't want to stack mirrored branches onto private branches:
-        # mirrored branches are public by their nature. Thus, if the default
-        # stacked-on branch for the project is private and the branch is
-        # MIRRORED then we don't include the default stacked-on branch's
-        # details in the tuple.
-        product = self.factory.makeProduct()
-        default_branch = self.factory.makeProductBranch(
-            product=product, private=True)
-        self.factory.enableDefaultStackingForProduct(product, default_branch)
-        mirrored_branch = self.factory.makeProductBranch(
-            branch_type=BranchType.MIRRORED, product=product)
-        info = self.storage._getBranchPullInfo(mirrored_branch)
-        self.assertEqual(
-            (mirrored_branch.id, mirrored_branch.getPullURL(),
-             mirrored_branch.unique_name, ''), info)
-
-    def test_getBranchPullInfo_junk(self):
-        # _getBranchPullInfo returns (id, url, unique_name, '') for junk
-        # branches.
-        branch = self.factory.makePersonalBranch()
-        info = self.storage._getBranchPullInfo(branch)
-        self.assertEqual(
-            (branch.id, branch.getPullURL(), branch.unique_name, ''), info)
-
-    def test_requestMirrorPutsBranchInQueue_hosted(self):
-        branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
-        self.assertBranchQueues([branch], [], [])
-
-    def test_requestMirrorPutsBranchInQueue_mirrored(self):
-        branch = self.makeBranchAndRequestMirror(BranchType.MIRRORED)
-        self.assertBranchQueues([], [branch], [])
-
-    def test_requestMirrorPutsBranchInQueue_imported(self):
-        branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
-        self.assertBranchQueues([], [], [branch])
+        self.assertEqual(faults.NoBranchWithID(branch_id), fault)
 
 
 class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
@@ -508,15 +403,17 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         self.storage = frontend.getPullerEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
 
-    def assertNoBranchIsAquired(self):
+    def assertNoBranchIsAquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
-        pull_info = self.storage.acquireBranchToPull()
+        branch_types = tuple(branch_type.name for branch_type in branch_types)
+        pull_info = self.storage.acquireBranchToPull(branch_types)
         self.assertEqual((), pull_info)
 
-    def assertBranchIsAquired(self, branch):
+    def assertBranchIsAquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
         branch = removeSecurityProxy(branch)
-        pull_info = self.storage.acquireBranchToPull()
+        branch_types = tuple(branch_type.name for branch_type in branch_types)
+        pull_info = self.storage.acquireBranchToPull(branch_types)
         default_branch = branch.target.default_stacked_on_branch
         if default_branch:
             default_branch_name = default_branch
@@ -536,21 +433,21 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
     def test_branch_type_returned_hosted(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, _, branch_type = pull_info
         self.assertEqual('HOSTED', branch_type)
 
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, _, branch_type = pull_info
         self.assertEqual('MIRRORED', branch_type)
 
     def test_branch_type_returned_import(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, _, branch_type = pull_info
         self.assertEqual('IMPORTED', branch_type)
 
@@ -558,7 +455,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         branch = self.factory.makeProductBranch()
         self.factory.enableDefaultStackingForProduct(branch.product)
         branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             default_stacked_on_branch,
@@ -574,10 +471,15 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         mirrored_branch = self.factory.makeProductBranch(
             branch_type=BranchType.MIRRORED, product=product)
         mirrored_branch.requestMirror()
-        pull_info = self.storage.acquireBranchToPull()
+        pull_info = self.storage.acquireBranchToPull(())
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             '', default_stacked_on_branch)
+
+    def test_unknown_branch_type_name_raises(self):
+        self.assertRaises(
+            UnknownBranchTypeError, self.storage.acquireBranchToPull,
+            ('NO_SUCH_TYPE',))
 
 
 class BranchFileSystemTest(TestCaseWithFactory):
@@ -589,13 +491,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.branchfs = frontend.getFilesystemEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.branch_lookup = frontend.getBranchLookup()
-
-    def assertFaultEqual(self, expected_fault, observed_fault):
-        """Assert that `expected_fault` equals `observed_fault`."""
-        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
-        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
-        self.assertEqual(
-            expected_fault.faultString, observed_fault.faultString)
 
     def test_createBranch(self):
         # createBranch creates a branch with the supplied details and the
@@ -618,7 +513,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape(u'invalid')
         fault = self.branchfs.createBranch(requester.id, path)
         login(ANONYMOUS)
-        self.assertFaultEqual(faults.InvalidPath(path), fault)
+        self.assertEqual(faults.InvalidPath(path), fault)
 
     def test_createBranch_junk(self):
         # createBranch can create +junk branches.
@@ -656,7 +551,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "Project 'no-such-product' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~%s/no-such-product/%s' % (owner.name, name)))
-        self.assertFaultEqual(faults.NotFound(message), fault)
+        self.assertEqual(faults.NotFound(message), fault)
 
     def test_createBranch_other_user(self):
         # Creating a branch under another user's directory fails.
@@ -669,19 +564,33 @@ class BranchFileSystemTest(TestCaseWithFactory):
         fault = self.branchfs.createBranch(
             creator.id,
             escape('/~%s/%s/%s' % (other_person.name, product.name, name)))
-        self.assertFaultEqual(faults.PermissionDenied(message), fault)
+        self.assertEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_name(self):
         # Creating a branch with an invalid name fails.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         invalid_name = 'invalid name!'
-        message = ("Invalid branch name %r. %s"
+        message = ("Invalid branch name '%s'. %s"
                    % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
         fault = self.branchfs.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
-        self.assertFaultEqual(faults.PermissionDenied(message), fault)
+        self.assertEqual(faults.PermissionDenied(message), fault)
+
+    def test_createBranch_unicode_name(self):
+        # Creating a branch with an invalid name fails.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        invalid_name = u'invalid\N{LATIN SMALL LETTER E WITH ACUTE}'
+        message = ("Invalid branch name '%s'. %s"
+                   % (invalid_name.encode('utf-8'),
+                      str(BRANCH_NAME_VALIDATION_ERROR_MESSAGE)))
+        fault = self.branchfs.createBranch(
+            owner.id, escape(
+                '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
+        self.assertEqual(
+            faults.PermissionDenied(message), fault)
 
     def test_createBranch_bad_user(self):
         # Creating a branch under a non-existent user fails.
@@ -691,7 +600,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/%s/%s' % (product.name, name)))
-        self.assertFaultEqual(faults.NotFound(message), fault)
+        self.assertEqual(faults.NotFound(message), fault)
 
     def test_createBranch_bad_user_bad_product(self):
         # If both the user and the product are not found, then the missing
@@ -702,7 +611,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         message = "User/team 'no-one' does not exist."
         fault = self.branchfs.createBranch(
             owner.id, escape('/~no-one/no-product/%s' % (name,)))
-        self.assertFaultEqual(faults.NotFound(message), fault)
+        self.assertEqual(faults.NotFound(message), fault)
 
     def test_createBranch_not_branch(self):
         # Trying to create a branch at a path that's not valid for branches
@@ -711,7 +620,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         path = escape('/~%s' % owner.name)
         fault = self.branchfs.createBranch(owner.id, path)
         message = "Cannot create branch at '%s'" % path
-        self.assertFaultEqual(faults.PermissionDenied(message), fault)
+        self.assertEqual(faults.PermissionDenied(message), fault)
 
     def test_createBranch_source_package(self):
         # createBranch can take the path to a source package branch and create
@@ -748,7 +657,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
-        self.assertFaultEqual(faults.NotFound(message), fault)
+        self.assertEqual(faults.NotFound(message), fault)
 
     def test_createBranch_invalid_distroseries(self):
         # If createBranch is called with the path to a non-existent
@@ -762,7 +671,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such distribution series: 'ningnangnong'."
-        self.assertFaultEqual(faults.NotFound(message), fault)
+        self.assertEqual(faults.NotFound(message), fault)
 
     def test_createBranch_invalid_sourcepackagename(self):
         # If createBranch is called with the path to an invalid source
@@ -775,7 +684,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
             branch_name)
         fault = self.branchfs.createBranch(owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
-        self.assertFaultEqual(faults.NotFound(message), fault)
+        self.assertEqual(faults.NotFound(message), fault)
 
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
@@ -804,21 +713,21 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""
         fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(faults.PathTranslationError(path), fault)
+        self.assertEqual(faults.PathTranslationError(path), fault)
 
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
-        self.assertFaultEqual(faults.PathTranslationError(path), fault)
+        self.assertEqual(faults.PathTranslationError(path), fault)
 
     def assertPermissionDenied(self, requester, path):
         """Assert that looking at the given path gives permission denied."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
         fault = self.branchfs.translatePath(requester, path)
-        self.assertFaultEqual(faults.PermissionDenied(), fault)
+        self.assertEqual(faults.PermissionDenied(), fault)
 
     def _makeProductWithDevFocus(self, private=False):
         """Make a stacking-enabled product with a development focus.
@@ -846,7 +755,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         path = escape(u'invalid')
         fault = self.branchfs.translatePath(requester.id, path)
-        self.assertFaultEqual(faults.InvalidPath(path), fault)
+        self.assertEqual(faults.InvalidPath(path), fault)
 
     def test_translatePath_branch(self):
         requester = self.factory.makePerson()
@@ -919,6 +828,13 @@ class BranchFileSystemTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         path = '/~%s/%s/no-such-branch' % (requester.name, product.name)
         self.assertNotFound(requester, path)
+
+    def test_translatePath_no_such_branch_non_ascii(self):
+        requester = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        path = u'/~%s/%s/non-asci\N{LATIN SMALL LETTER I WITH DIAERESIS}' % (
+            requester.name, product.name)
+        self.assertNotFound(requester, escape(path))
 
     def test_translatePath_private_branch(self):
         requester = self.factory.makePerson()
@@ -1154,7 +1070,6 @@ def test_suite():
     suite = unittest.TestSuite()
     puller_tests = unittest.TestSuite(
         [loader.loadTestsFromTestCase(BranchPullerTest),
-         loader.loadTestsFromTestCase(BranchPullQueueTest),
          loader.loadTestsFromTestCase(AcquireBranchToPullTestsViaEndpoint),
          loader.loadTestsFromTestCase(BranchFileSystemTest),
          ])

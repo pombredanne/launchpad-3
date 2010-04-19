@@ -4,7 +4,7 @@ For the subsequent tests we will use a specific 'pmount' build record
 from the sampledata which happens to be in FAILEDTOBUILD status.
 
     >>> from zope.component import getUtility
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -21,7 +21,7 @@ The menu presented in the build page depends on the targeted archive.
 For instance the 'PPA' action-menu link is not enabled for builds
 targeted to the PRIMARY archive.
 
-    >>> from canonical.launchpad.browser import BuildContextMenu
+    >>> from lp.soyuz.browser.build import BuildContextMenu
     >>> build_menu = BuildContextMenu(hoary_failed_build)
 
     >>> print build_menu.links
@@ -156,6 +156,38 @@ retry it.
     >>> ignored = buildd_admins.addMember(nopriv, nopriv)
 
     >>> login("no-priv@canonical.com")
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+    >>> failed_build_view.user_can_retry_build
+    True
+
+A person in a team that has rights to upload to a packageset can also retry it.
+
+So, create a user, a team, and the packageset:
+
+    >>> login('admin@canonical.com')
+    >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
+    >>> from canonical.launchpad.interfaces import IArchivePermissionSet
+    >>> joe = factory.makePerson(email='joe@example.com', password='test')
+    >>> desktop = factory.makeTeam(name='desktop', owner=joe)
+    >>> main_archive = test_publisher.distroseries.main_archive
+    >>> rebuild_ps = getUtility(IPackagesetSet).new(
+    ...     u'rebuild', u'Test package set', desktop, 
+    ...     distroseries=test_publisher.distroseries)
+    >>> rebuild_spn = (failed_build.sourcepackagerelease.sourcepackagename,)
+    >>> rebuild_ps.add(rebuild_spn)
+
+Joe will not have permission to retry the build until we grant it:
+
+    >>> login('joe@example.com')
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+    >>> failed_build_view.user_can_retry_build
+    False
+    >>> login('admin@canonical.com')
+    >>> perms = getUtility(IArchivePermissionSet).newPackagesetUploader(
+    ...     main_archive, desktop, rebuild_ps)
+    >>> login('joe@example.com')
     >>> failed_build_view = getMultiAdapter(
     ...     (failed_build, empty_request), name="+index")
     >>> failed_build_view.user_can_retry_build
@@ -372,3 +404,27 @@ of options for the template.
     i386
 
 
+== Dispatch time estimates ==
+
+A dispatch time estimate is available for pending binary builds that have not
+been suspended.
+
+    >>> from lp.services.job.interfaces.job import JobStatus
+    >>> pending_build = ubuntu.getBuildRecords(
+    ...      build_state=BuildStatus.NEEDSBUILD)[0]
+
+    >>> view = create_initialized_view(pending_build, name="+index")
+    >>> view.dispatch_time_estimate_available
+    True
+    >>> view.context.buildstate == BuildStatus.NEEDSBUILD
+    True
+    >>> view.context.buildqueue_record.job.status == JobStatus.WAITING
+    True
+
+If we suspend the binary build job, however, no estimate is available.
+
+    >>> view.context.buildqueue_record.job.suspend()
+    >>> view.context.buildqueue_record.job.status == JobStatus.SUSPENDED
+    True
+    >>> view.dispatch_time_estimate_available
+    False

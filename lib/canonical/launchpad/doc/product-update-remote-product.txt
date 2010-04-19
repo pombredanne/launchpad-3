@@ -17,12 +17,7 @@ automatically.
     ...     FakeLogger, QuietFakeLogger)
     >>> from canonical.launchpad.scripts.updateremoteproduct import (
     ...     RemoteProductUpdater)
-    >>> class FakeTransaction:
-    ...     def __init__(self, log_calls=False):
-    ...         self.log_calls = log_calls
-    ...     def commit(self):
-    ...         if self.log_calls:
-    ...             print "COMMIT"
+    >>> from lp.testing.faketransaction import FakeTransaction
     >>> updater = RemoteProductUpdater(FakeTransaction(), QuietFakeLogger())
 
 

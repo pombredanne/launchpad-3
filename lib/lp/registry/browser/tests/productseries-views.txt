@@ -1,7 +1,7 @@
 ProductSeries Views
 ===================
 
-Productseries menus
+ProductSeries menus
 -------------------
 
 The ProductSeriesOverviewMenu provides the links to the common ProductSeries
@@ -11,9 +11,35 @@ views.
     ...     ProductSeriesOverviewMenu)
     >>> from lp.testing.menu import check_menu_links
 
-    >>> series = factory.makeSeries()
+    >>> product = factory.makeProduct(name='app')
+    >>> series = factory.makeSeries(name='simple', product=product)
     >>> check_menu_links(ProductSeriesOverviewMenu(series))
     True
+
+
+ProductSeries Involvement links
+...............................
+
+The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
+rendering links:
+
+    >>> from operator import attrgetter
+    >>> from canonical.launchpad.webapp.tales import MenuAPI
+
+    >>> login_person(product.owner)
+    >>> product.official_answers = True
+    >>> product.official_blueprints = True
+    >>> product.official_malone = True
+    >>> product.official_rosetta = True
+    >>> view = create_view(series, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://code.launchpad.dev/app/+addbranch
+    http://blueprints.launchpad.dev/app/simple/+addspec
 
 
 ProductSeries view
@@ -26,9 +52,6 @@ update the milestones and releases table.
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> login('foo.bar@canonical.com')
-
-    >>> product = factory.makeProduct(name='app')
-    >>> series = factory.makeSeries(name='simple', product=product)
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
@@ -106,6 +129,11 @@ The view provides access to the latest release if it has one.
     >>> view = create_initialized_view(series_with_downloads, name='+index')
     >>> print view.latest_release_with_download_files.version
     0.9.2
+
+The view also provides a link to register a new code import.
+
+    >>> print view.request_import_link
+    http://launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries

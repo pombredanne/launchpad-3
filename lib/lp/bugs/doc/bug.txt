@@ -747,7 +747,7 @@ Changing bug security.
 
     >>> firefox_bug.security_related
     False
-    >>> firefox_bug.security_related = True
+    >>> changed = firefox_bug.setSecurityRelated(True)
 
     >>> bug_security_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["security_related"])
@@ -1637,3 +1637,91 @@ subscriptions always override indirect ones.
 
     >>> new_bug.personIsDirectSubscriber(person)
     True
+
+
+Most recently added patch
+-------------------------
+
+Bug.latest_patch provides the most recently added bug attachment of
+type BugAttachmentType.PATCH; the property Bug.latest_patch_uploaded
+is set to the time when the latest patch was uploaded.
+
+If a bug has no attachments, both properties are None.
+
+    >>> bug = factory.makeBug()
+    >>> print bug.latest_patch
+    None
+    >>> print bug.latest_patch_uploaded
+    None
+
+If we add an attachment that is not a patch, the value of
+latest_patch_uploaded is still None. (Since latest_patch_uploaded
+is updated via a database trigger, we'll commit() the current
+transaction in order to let the trigger run. Even if the new attachment
+does not change anything right now, let's be sure.)
+
+    >>> import transaction
+    >>> attachment_1 = factory.makeBugAttachment(bug)
+
+    >>> transaction.commit()
+    >>> print bug.latest_patch_uploaded
+    None
+
+If we declare the existing attachment to be a patch,
+latest_patch_uploaded is set to the date_created value of the Message
+record for this attachment, and we can access the attachment via
+Bug.latest_patch.
+
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+    >>> attachment_1.type = BugAttachmentType.PATCH
+    >>> transaction.commit()
+    >>> date_message_1_created = bug.attachments[0].message.datecreated
+    >>> print bug.latest_patch == attachment_1
+    True
+    >>> print bug.latest_patch_uploaded == date_message_1_created
+    True
+
+If we add another attachment, this time declared to be a patch
+at creation time, we can access this attachment via Bug.latest_patch,
+and the new value of bug.latest_patch_uploaded will change to the value
+of message.datecreated for this new attachment.
+
+    >>> attachment_2 = factory.makeBugAttachment(bug, is_patch=True)
+    >>> transaction.commit()
+    >>> date_message_2_created = bug.attachments[1].message.datecreated
+    >>> print bug.latest_patch == attachment_2
+    True
+    >>> print bug.latest_patch_uploaded == date_message_2_created
+    True
+
+If we say that attachment_1 is not a patch, the values of
+bug.latest_patch and bug.latest_patch_uploaded does not change.
+
+    >>> attachment_1.type = BugAttachmentType.UNSPECIFIED
+    >>> transaction.commit()
+    >>> print bug.latest_patch == attachment_2
+    True
+    >>> print bug.latest_patch_uploaded == date_message_2_created
+    True
+
+If we declare attachment_1 again to be a patch and if we delete
+attachment_2, bug.latest_patch references again attachment_1, and
+bug.bug.latest_patch_uploaded is its creation time.
+
+    >>> attachment_1.type = BugAttachmentType.PATCH
+    >>> attachment_2.removeFromBug(user=bug.owner)
+    >>> transaction.commit()
+    >>> print bug.latest_patch == attachment_1
+    True
+    >>> print bug.latest_patch_uploaded == date_message_1_created
+    True
+
+If we delete attachment_1 too, bug.latest_patch and
+bug.latest_patch_uploaded are again None.
+
+    >>> attachment_1.removeFromBug(user=bug.owner)
+    >>> transaction.commit()
+    >>> print bug.latest_patch
+    None
+    >>> print bug.latest_patch_uploaded
+    None

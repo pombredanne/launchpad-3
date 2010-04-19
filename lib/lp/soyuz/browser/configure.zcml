@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -263,7 +263,7 @@
         <browser:page
             name="+builds"
             facet="overview"
-            template="../templates/archive-builds.pt"/>
+            template="../templates/builds.pt"/>
         <browser:page
             name="+builds-list"
             template="../templates/builds-list.pt"/>
@@ -335,17 +335,17 @@
         attribute_to_parent="archive"
         urldata="lp.soyuz.browser.archivepermission.ArchivePermissionURL"/>
     <browser:defaultView
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         name="+index"/>
     <browser:url
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         urldata="lp.soyuz.browser.build.BuildUrl"/>
     <browser:navigation
         module="lp.soyuz.browser.build"
         classes="
             BuildNavigation"/>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildView"
         permission="launchpad.View">
         <browser:page
@@ -354,7 +354,7 @@
             template="../templates/build-index.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRetryView"
         permission="launchpad.Edit">
         <browser:page
@@ -363,7 +363,7 @@
             template="../templates/build-retry.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRescoringView"
         permission="launchpad.Admin">
         <browser:page
@@ -432,7 +432,7 @@
         class="lp.soyuz.browser.builder.BuilderHistoryView">
         <browser:page
             name="+history"
-            template="../templates/builder-history.pt"
+            template="../templates/builds.pt"
             facet="overview" />
         <browser:page
             template="../templates/builds-list.pt"
@@ -609,17 +609,19 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/distroarchseries-portlet-details.pt"/>
+        </browser:pages>
+        <browser:pages
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            permission="zope.Public"
+            class="lp.soyuz.browser.build.BuildRecordsView">
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/distroarchseries-builds.pt"/>
+                template="../templates/builds.pt"/>
+            <browser:page
+                name="+builds-list"
+                template="../templates/builds-list.pt"/>
         </browser:pages>
-        <browser:page
-            permission="zope.Public"
-            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesBuildsView"
-            name="+builds-list"
-            template="../templates/builds-list.pt"/>
         <browser:page
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             name="+macros"
@@ -664,7 +666,7 @@
             template="../templates/person-archive-subscriptions.pt"/>
         <browser:page
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesQueueView"
             permission="zope.Public"
             name="+queue"
             template="../templates/distroseries-queue.pt"/>
@@ -672,7 +674,7 @@
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
             facet="overview"
-            class="canonical.launchpad.browser.ArchiveActivateView"
+            class="lp.soyuz.browser.archive.ArchiveActivateView"
             permission="launchpad.Edit"
             template="../templates/archive-activate.pt"/>
         <browser:page
@@ -727,7 +729,7 @@
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/sourcepackage-builds.pt"/>
+                template="../templates/builds.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
@@ -742,12 +744,12 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.registry.browser.distribution.DistributionView"
+            class="lp.soyuz.browser.build.BuildRecordsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/distribution-builds.pt"/>
+                template="../templates/builds.pt"/>
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
@@ -759,7 +761,7 @@
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/distroseries-builds.pt"/>
+                template="../templates/builds.pt"/>
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
@@ -796,4 +798,39 @@
         path_expression="string:+dependency/${dependency/id}"
         attribute_to_parent="archive"
         />
+    <browser:url
+        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distroarchseries/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        attribute_to_parent="archive"
+        />
+
+    <!-- XXX JeroenVermeulen 2010-03-13 bug=539395: This is buildmaster, not soyuz -->
+    <browser:page
+        for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildqueue-current.pt"/>
+    <browser:page
+        for="lp.buildmaster.interfaces.buildqueue.IBuildFarmJob"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildfarmjob-current.pt"/>
+    <browser:page
+        for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildfarmbranchjob-current.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.buildfarmbuildjob.IBuildFarmBuildJob"
+        name="+current"
+        class="canonical.launchpad.webapp.publisher.LaunchpadView"
+        facet="overview"
+        permission="launchpad.View"
+        template="../templates/buildfarmbuildjob-current.pt"/>
 </configure>

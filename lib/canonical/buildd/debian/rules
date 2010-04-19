@@ -21,10 +21,11 @@ buildd = $(topdir)/lib/canonical/buildd
 targetshare = $(target)/usr/share/launchpad-buildd
 pytarget = $(targetshare)/canonical/buildd
 
-pyfiles = debian.py slave.py binarypackage.py utils.py __init__.py sourcepackagerecipe.py translationtemplates.py
+pyfiles = debian.py slave.py binarypackage.py utils.py __init__.py \
+    sourcepackagerecipe.py translationtemplates.py
 slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
 scan-for-processes umount-chroot remove-build apply-ogre-model \
-override-sources-list buildrecipe generate_translation_templates.py
+override-sources-list buildrecipe generate-translation-templates
 
 BUILDDUID=65500
 BUILDDGID=65500
@@ -46,11 +47,12 @@ install:
 	touch $(pytarget)/../launchpad/daemons/__init__.py
 	cp launchpad-files/tachandler.py $(pytarget)/../launchpad/daemons/
 	install -m644 launchpad-files/buildd-slave.tac $(targetshare)/buildd-slave.tac
+	cp -r pottery $(pytarget)
 	for pyfile in $(pyfiles); do \
-	 install -m644 ./$$pyfile $(pytarget)/$$pyfile; \
-        done
+	  install -m644 ./$$pyfile $(pytarget)/$$pyfile; \
+	  done
 	for slavebin in $(slavebins); do \
-	 install -m755 ./$$slavebin $(targetshare)/slavebin/$$slavebin; \
+	  install -m755 ./$$slavebin $(targetshare)/slavebin/$$slavebin; \
 	done
 	install -m755 ./sbuild $(target)/usr/bin/sbuild
 	touch $(targetshare)/canonical/__init__.py

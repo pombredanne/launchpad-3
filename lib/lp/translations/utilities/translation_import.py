@@ -12,6 +12,7 @@ __all__ = [
 import gettextpo
 import datetime
 import os
+import posixpath
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
@@ -314,9 +315,14 @@ class TranslationImporter:
                 return True
         return False
 
+    def isHidden(self, path):
+        """See `ITranslationImporter`."""
+        normalized_path = posixpath.normpath(path)
+        return normalized_path.startswith('.') or '/.' in normalized_path
+
     def isTranslationName(self, path):
         """See `ITranslationImporter`."""
-        base_name, suffix = os.path.splitext(path)
+        base_name, suffix = posixpath.splitext(path)
         if suffix not in self.supported_file_extensions:
             return False
         for importer_suffix in self.template_suffixes:
@@ -589,7 +595,7 @@ class POTFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation template."""
 
-        assert(translation_import_queue_entry.pofile is None,
+        assert translation_import_queue_entry.pofile is None, (
             "Pofile must be None when importing a template.")
 
         # Call base constructor
@@ -665,7 +671,7 @@ class POFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation file."""
 
-        assert(translation_import_queue_entry.pofile is not None,
+        assert translation_import_queue_entry.pofile is not None, (
             "Pofile must not be None when importing a translation.")
 
         # Call base constructor

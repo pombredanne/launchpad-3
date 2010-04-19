@@ -10,7 +10,6 @@ __all__ = [
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
-    'BugHeatView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
@@ -23,13 +22,11 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
-    'MAX_HEAT',
     ]
 
 from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
-from math import floor
 import re
 
 import pytz
@@ -77,10 +74,6 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 
-# Constant for the maximum bug heat we'll use for converting
-# IBug.heat to ratio. In the future this should come from the DB.
-# The value must be a float
-MAX_HEAT = 5000.0
 
 class BugNavigation(Navigation):
     """Navigation for the `IBug`."""
@@ -229,7 +222,8 @@ class BugContextMenu(ContextMenu):
         text = 'Subscribe someone else'
         return Link(
             '+addsubscriber', text, icon='add', summary=(
-                'Launchpad will email that person whenever this bugs changes'))
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
 
     def nominate(self):
         """Return the 'Target/Nominate for release' Link."""
@@ -679,7 +673,7 @@ class BugSecrecyEditView(BugEditViewBase):
     page_title = label
 
     def setUpFields(self):
-        """Make the read-only version of `private` writable."""
+        """Make the read-only version of the form fields writable."""
         private_field = Bool(
             __name__='private',
             title=_("This bug report should be private"),
@@ -687,10 +681,17 @@ class BugSecrecyEditView(BugEditViewBase):
             description=_("Private bug reports are visible only to "
                           "their subscribers."),
             default=False)
+        security_related_field = Bool(
+            __name__='security_related',
+            title=_("This bug is a security vulnerability"),
+            required=False, default=False)
+
         super(BugSecrecyEditView, self).setUpFields()
         self.form_fields = self.form_fields.omit('private')
+        self.form_fields = self.form_fields.omit('security_related')
         self.form_fields = (
-            formlib.form.Fields(private_field) + self.form_fields)
+            formlib.form.Fields(private_field) +
+            formlib.form.Fields(security_related_field))
 
     @property
     def initial_values(self):
@@ -711,16 +712,18 @@ class BugSecrecyEditView(BugEditViewBase):
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
         private = data.pop('private')
+        security_related = data.pop('security_related')
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
-        if private_changed:
-            # Although the call to updateBugFromData later on will
-            # send notification of changes, it will only do so if it
-            # makes the change. We have applied the 'private' change
-            # already, so updateBugFromData will only send an event if
-            # 'security_related' is changed, and we can't have that.
+        security_related_changed = bug.setSecurityRelated(security_related)
+        if private_changed or security_related_changed:
+            changed_fields = []
+            if private_changed:
+                changed_fields.append('private')
+            if security_related_changed:
+                changed_fields.append('security_related')
             notify(ObjectModifiedEvent(
-                    bug, bug_before_modification, ['private']))
+                    bug, bug_before_modification, changed_fields))
 
         # Apply other changes.
         self.updateBugFromData(data)
@@ -968,19 +971,3 @@ def bug_description_xhtml_representation(context, field, request):
         html    = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
-
-
-class BugHeatView(LaunchpadView):
-    """View for rendering the graphical (HTML) representation of bug heat."""
-
-    def __call__(self):
-        """Render the bug heat representation."""
-        heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
-        html = '<span>'
-        for flame in range(1, 5):
-            if flame <= heat_ratio:
-                html += '<img src="/@@/flame-icon" />'
-            else:
-                html += '<img src="/@@/flame-bw-icon" />'
-        html += '</span>'
-        return html

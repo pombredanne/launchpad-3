@@ -56,3 +56,48 @@ Size limits can be enforced, although this is turned off by default:
     BlobTooLarge: 7
     >>> config_data = config.pop('max_blob_size')
 
+
+Checking blob processing status
+-------------------------------
+
+A blob has an hasBeenProcessed() method which returns True if the
+ProcessApportBlobJob for the blob has been completed.
+
+The hasBeenProcessed() of a  newly created blob, with no
+associated ProcessApportBlobJob, will return False.
+
+    >>> blob_token = getUtility(ITemporaryStorageManager).new("Blob data")
+    >>> blob = getUtility(ITemporaryStorageManager).fetch(blob_token)
+    >>> print blob.hasBeenProcessed()
+    False
+
+We'll create a ProcessApportBlobJob for the blob.
+
+    >>> from lp.bugs.interfaces.apportjob import (
+    ...     IProcessApportBlobJobSource)
+    >>> processing_job = getUtility(IProcessApportBlobJobSource).create(
+    ...     blob)
+
+    >>> blob = getUtility(ITemporaryStorageManager).fetch(blob_token)
+    >>> processing_job.blob == blob
+    True
+
+Before the job is run, the blob's hasBeenProcessed() method will return
+False.
+
+    >>> print blob.hasBeenProcessed()
+    False
+
+Whilst the job is running, the blob's hasBeenProcessed() method will
+return False.
+
+    >>> processing_job.job.start()
+    >>> print blob.hasBeenProcessed()
+    False
+
+Once the job is complete, the blob's hasBeenProcessed() method will
+return True.
+
+    >>> processing_job.job.complete()
+    >>> print blob.hasBeenProcessed()
+    True

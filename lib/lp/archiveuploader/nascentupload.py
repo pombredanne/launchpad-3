@@ -582,7 +582,10 @@ class NascentUpload:
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
-        if self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+        # If the archive is a main archive or a copy archive, we want to
+        # look up the ancestry in all the main archives.
+        if (self.policy.archive.purpose not in MAIN_ARCHIVE_PURPOSES and
+            not self.policy.archive.is_copy):
             archive = self.policy.archive
         else:
             archive = None
@@ -699,8 +702,11 @@ class NascentUpload:
 
         All files are also marked as new unless it's a PPA file, which are
         never considered new as they are auto-accepted.
+
+        COPY archive build uploads are also auto-accepted, otherwise they
+        would sit in the NEW queue since it's likely there's no ancestry.
         """
-        if self.is_ppa:
+        if self.is_ppa or self.policy.archive.is_copy:
             return
 
         # All newly-uploaded, non-PPA files must be marked as new so that
@@ -774,7 +780,11 @@ class NascentUpload:
                     # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
-                    if ancestry is not None:
+                    if (ancestry is not None and 
+                        not self.policy.archive.is_copy):
+                        # Ignore version checks for copy archives
+                        # because the ancestry comes from the primary
+                        # which may have changed since the copy.
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
                     self.logger.debug(
@@ -801,10 +811,6 @@ class NascentUpload:
             self.do_reject(notify)
             return False
         try:
-            maintainerfrom = None
-            if self.changes.signer:
-                maintainerfrom = self.changes.changed_by['rfc2047']
-
             self.storeObjectsInDatabase()
 
             # Send the email.
@@ -905,7 +911,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            sourcepackagerelease = self.changes.dsc.storeInDatabase()
+            build = self.changes.dsc.findBuild()
+            sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
             ancestry = package_upload_source.getSourceAncestry()

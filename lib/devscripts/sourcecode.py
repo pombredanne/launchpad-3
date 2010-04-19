@@ -16,12 +16,12 @@ import shutil
 import sys
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import BzrError, NotBranchError
+from bzrlib.errors import BzrError, NotBranchError, IncompatibleRepositories
 from bzrlib.plugin import load_plugins
 from bzrlib.revisionspec import RevisionSpec
 from bzrlib.trace import enable_default_logging, report_exception
 from bzrlib import ui
+from bzrlib.upgrade import upgrade
 from bzrlib.workingtree import WorkingTree
 
 from devscripts import get_launchpad_root
@@ -146,6 +146,7 @@ def _format_revision_name(revision, tip=False):
     else:
         return 'tip'
 
+
 def get_branches(sourcecode_directory, new_branches,
                  possible_transports=None, tip=False, quiet=False):
     """Get the new branches into sourcecode."""
@@ -204,13 +205,26 @@ def update_branches(sourcecode_directory, update_branches,
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
         revision_id = get_revision_id(revision, remote_branch, tip)
-        if revision_id == local_tree.last_revision():
-            if not quiet:
-                print '  (No change)'
-        else:
+        try:
             result = local_tree.pull(
                 remote_branch, stop_revision=revision_id, overwrite=True,
                 possible_transports=possible_transports)
+        except IncompatibleRepositories:
+            # XXX JRV 20100407: Ideally remote_branch.bzrdir._format 
+            # should be passed into upgrade() to ensure the format is the same
+            # locally and remotely. Unfortunately smart server branches 
+            # have their _format set to RemoteFormat rather than an actual 
+            # format instance.
+            upgrade(destination)
+            # Upgraded, repoen working tree
+            local_tree = WorkingTree.open(destination)
+            result = local_tree.pull(
+                remote_branch, stop_revision=revision_id, overwrite=True,
+                possible_transports=possible_transports)
+        if result.old_revid == result.new_revid:
+            if not quiet:
+                print '  (No change)'
+        else:
             if result.old_revno < result.new_revno:
                 change = 'Updated'
             else:

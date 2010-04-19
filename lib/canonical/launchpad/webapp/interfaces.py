@@ -109,6 +109,10 @@ class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
 
 
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
+
+
 class UnsafeFormGetSubmissionError(Exception):
     """An attempt was made to submit an unsafe form action with GET."""
 
@@ -741,9 +745,7 @@ class IPrimaryContext(Interface):
 #
 
 MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
-
-ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
+ALL_STORES = frozenset([MAIN_STORE])
 
 DEFAULT_FLAVOR = 'default' # Default flavor for current state.
 MASTER_FLAVOR = 'master' # The master database.
@@ -756,6 +758,20 @@ class IDatabasePolicy(Interface):
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
+    def __enter__():
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will install itself using the IStoreSelector
+        utility.
+        """
+
+    def __exit__(exc_type, exc_value, traceback):
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will uninstall itself using the IStoreSelector
+        utility.
+        """
+
     def getStore(name, flavor):
         """Retrieve a Store.
 
