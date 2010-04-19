@@ -143,7 +143,6 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         # status_change_date describes the date of the entry's last
         # status change.
         series = self._makeProductSeries()
-        product = series.product
         entry = self._makeEntry(productseries=series)
         view = self._makeView(entry)
 
