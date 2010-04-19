@@ -21,7 +21,7 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from storm.expr import (
     And, Count, Desc, Max, Not, NamedFunc, Or, Select)
@@ -1063,7 +1063,7 @@ class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
     def __init__(self, affected_object, rationale):
-        self.affected_object = affected_object
+        self.affected_object = ProxyFactory(affected_object)
         self.rationale = rationale
     def __call__(self):
         """Perform the deletion operation."""
@@ -1096,7 +1096,7 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1110,7 +1110,7 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):

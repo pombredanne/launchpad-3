@@ -3,6 +3,9 @@
 
 """Tests for Branches."""
 
+
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from datetime import datetime, timedelta
@@ -66,7 +69,8 @@ from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
-    run_with_login, TestCase, TestCaseWithFactory, time_counter)
+    person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
+    time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -1182,7 +1186,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the prerequisite branch."""
         merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
-        ClearDependentBranch(merge_proposal)()
+        with person_logged_in(merge_proposal.prerequisite_branch.owner):
+            ClearDependentBranch(merge_proposal)()
         self.assertEqual(None, merge_proposal.prerequisite_branch)
 
     def test_ClearOfficialPackageBranch(self):
