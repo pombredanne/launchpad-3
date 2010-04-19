@@ -315,7 +315,7 @@ class DistributionMirror(SQLBase):
         if mirror is not None:
             mirror.destroySelf()
 
-    def getMirrorDistroArchSeries(self, distro_arch_series, pocket, component):
+    def _getMirrorDistroArchSeries(self, distro_arch_series, pocket, component):
         """See `IDistributionMirror`."""
         return MirrorDistroArchSeries.selectOneBy(
             distribution_mirror=self,
@@ -326,7 +326,7 @@ class DistributionMirror(SQLBase):
                                      component):
         """See `IDistributionMirror`."""
         assert IDistroArchSeries.providedBy(distro_arch_series)
-        mirror = self.getMirrorDistroArchSeries(
+        mirror = self._getMirrorDistroArchSeries(
                 distro_arch_series=distro_arch_series,
                 pocket=pocket, component=component)
         if mirror is None:
@@ -336,7 +336,7 @@ class DistributionMirror(SQLBase):
                 component=component)
         return mirror
 
-    def getMirrorDistroSeriesSource(self, distroseries, pocket, component):
+    def _getMirrorDistroSeriesSource(self, distroseries, pocket, component):
         """See `IDistributionMirror`."""
         return MirrorDistroSeriesSource.selectOneBy(
             distribution_mirror=self, distroseries=distroseries,
@@ -345,7 +345,7 @@ class DistributionMirror(SQLBase):
     def ensureMirrorDistroSeriesSource(self, distroseries, pocket, component):
         """See `IDistributionMirror`."""
         assert IDistroSeries.providedBy(distroseries)
-        mirror = self.getMirrorDistroSeriesSource(
+        mirror = self._getMirrorDistroSeriesSource(
             distroseries=distroseries, pocket=pocket, component=component)
         if mirror is None:
             mirror = MirrorDistroSeriesSource(
@@ -448,7 +448,7 @@ class DistributionMirror(SQLBase):
                         # mirror on its last probe.
                         if ((series.status == SeriesStatus.OBSOLETE or
                                 not arch_series.official) and
-                                not self.getMirrorDistroArchSeries(arch_series,
+                                not self._getMirrorDistroArchSeries(arch_series,
                                     pocket, component)):
                             continue
 
@@ -467,7 +467,7 @@ class DistributionMirror(SQLBase):
                     # Skip sources for series which are obsolete and ones
                     # which were not on the mirror on its last probe.
                     if (series.status == SeriesStatus.OBSOLETE and
-                        not self.getMirrorDistroSeriesSource(series, pocket,
+                        not self._getMirrorDistroSeriesSource(series, pocket,
                             component)):
                         continue
 
