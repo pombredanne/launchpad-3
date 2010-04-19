@@ -14,6 +14,8 @@ from contextlib import contextmanager
 import transaction
 
 from canonical.launchpad.webapp.adapter import get_request_statements
+from canonical.launchpad.webapp.interaction import (
+    endInteraction, queryInteraction)
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -43,6 +45,25 @@ class TestWorkingBase(TestCaseWithFactory):
         self.person = self.factory.makePerson()
         self.email = self.person.preferredemail.email
         self.logger = QuietFakeLogger()
+
+    def test_interaction(self):
+        base = WorkingBase(self.email, transaction.manager, self.logger)
+        endInteraction()
+        self.assertIs(None, queryInteraction())
+        with base.interaction:
+            self.assertIsNot(None, queryInteraction())
+        self.assertIs(None, queryInteraction())
+
+    def test_interaction_nested(self):
+        base = WorkingBase(self.email, transaction.manager, self.logger)
+        endInteraction()
+        self.assertIs(None, queryInteraction())
+        with base.interaction:
+            self.assertIsNot(None, queryInteraction())
+            with base.interaction:
+                self.assertIsNot(None, queryInteraction())
+            self.assertIsNot(None, queryInteraction())
+        self.assertIs(None, queryInteraction())
 
     def test_transaction(self):
         transaction_manager = StubTransactionManager()
