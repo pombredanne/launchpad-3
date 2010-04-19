@@ -10,13 +10,15 @@ __all__ = [
 
 from storm.locals import Int, Reference, Storm, Unicode
 
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.interfaces.packagebuild import (
+    IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob, BuildFarmJobDerived)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -28,6 +30,7 @@ class PackageBuild(Storm, BuildFarmJob):
     __storm_table__ = 'PackageBuild'
 
     implements(IPackageBuild)
+    classProvides(IPackageBuildSource)
 
     id = Int(primary=True)
 
@@ -44,15 +47,27 @@ class PackageBuild(Storm, BuildFarmJob):
     dependencies = Unicode(name='dependencies', allow_none=True)
 
     def __init__(self, build):
-        """Store the build for this package build farm job.
+        """Construct a PackageBuild.
 
         XXX 2010-04-12 michael.nelson bug=536700
         The build param will no longer be necessary once BuildFarmJob is
-        itself a concrete class. This class (PackageBuild)
-        will also be renamed PackageBuild and turned into a concrete class.
+        itself a concrete class.
         """
         super(PackageBuild, self).__init__()
         self.build = build
+
+    @classmethod
+    def new(cls, archive, pocket, dependencies=None):
+        """See `IPackageBuildSource`."""
+        store = IMasterStore(PackageBuild)
+        # Update the __init__ once all callsites use instances of this class
+        # as a concrete class.
+        package_build = cls(None)
+        package_build.archive = archive
+        package_build.pocket = pocket
+        package_build.dependencies = dependencies
+        store.add(package_build)
+        return package_build
 
     def getTitle(self):
         """See `IBuildFarmJob`."""

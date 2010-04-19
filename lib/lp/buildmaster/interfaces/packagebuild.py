@@ -3,7 +3,10 @@
 
 """Interface for package-specific builds."""
 __metaclass__ = type
-__all__ = ['IPackageBuild']
+__all__ = [
+    'IPackageBuild',
+    'IPackageBuildSource',
+    ]
 
 
 from zope.interface import Interface, Attribute
@@ -33,7 +36,7 @@ class IPackageBuild(Interface):
 
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the upload log for "
+        title=_("The LibraryFileAlias containing the upload log for a"
                 "build resulting in an upload that could not be processed "
                 "successfully. Otherwise it will be None."))
 
@@ -41,3 +44,14 @@ class IPackageBuild(Interface):
             title=_("Dependencies"), required=False,
             description=_("Debian-like dependency line that must be satisfied"
                           " before attempting to build this request."))
+
+class IPackageBuildSource(Interface):
+    """A utility of this interface used to create _things_."""
+
+    def new(archive, pocket, dependencies=None):
+        """Create a new `IPackageBuild`.
+
+        :param archive: An `IArchive`.
+        :param pocket: An item of `PackagePublishingPocket`.
+        :param dependencies: An optional debian-like dependency line.
+        """
