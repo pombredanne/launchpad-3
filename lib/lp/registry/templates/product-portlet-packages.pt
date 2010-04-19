@@ -57,11 +57,5 @@
     </div>
 
   </tal:has_no_packages>
-  <div
-    tal:define="link context/menu:overview/view_recipes"
-    tal:condition="link/enabled"
-    >
-    <a tal:replace="structure link/fmt:link" />
-  </div>
 </div>
 </tal:root>
