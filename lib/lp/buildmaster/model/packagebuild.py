@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'PackageBuildFarmJob',
-    'PackageBuildFarmJobDerived',
+    'PackageBuild',
+    'PackageBuildDerived',
     ]
 
 
@@ -15,7 +15,7 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob, BuildFarmJobDerived)
 
 
-class PackageBuildFarmJob(BuildFarmJob):
+class PackageBuild(BuildFarmJob):
     """An implementation of `IBuildFarmJob` for package builds."""
 
     def __init__(self, build):
@@ -23,10 +23,10 @@ class PackageBuildFarmJob(BuildFarmJob):
 
         XXX 2010-04-12 michael.nelson bug=536700
         The build param will no longer be necessary once BuildFarmJob is
-        itself a concrete class. This class (PackageBuildFarmJob)
+        itself a concrete class. This class (PackageBuild)
         will also be renamed PackageBuild and turned into a concrete class.
         """
-        super(PackageBuildFarmJob, self).__init__()
+        super(PackageBuild, self).__init__()
         self.build = build
 
     def getTitle(self):
@@ -49,11 +49,11 @@ class PackageBuildFarmJob(BuildFarmJob):
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
 
-class PackageBuildFarmJobDerived(BuildFarmJobDerived):
+class PackageBuildDerived(BuildFarmJobDerived):
     """Override the base delegate to use a build farm job specific to
     packages.
     """
     def _set_build_farm_job(self):
-        self._build_farm_job = PackageBuildFarmJob(self.build)
+        self._build_farm_job = PackageBuild(self.build)
 
 
