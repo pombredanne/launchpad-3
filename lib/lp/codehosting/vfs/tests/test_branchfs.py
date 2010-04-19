@@ -176,13 +176,13 @@ class MixinBaseLaunchpadServerTests:
 
     def setUp(self):
         frontend = InMemoryFrontend()
-        self.authserver = frontend.getCodehostingEndpoint()
+        self.codehosting_api = frontend.getCodehostingEndpoint()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.requester = self.factory.makePerson()
         self.server = self.getLaunchpadServer(
-            self.authserver, self.requester.id)
+            self.codehosting_api, self.requester.id)
 
-    def getLaunchpadServer(self, authserver, user_id):
+    def getLaunchpadServer(self, codehosting_api, user_id):
         raise NotImplementedError(
             "Override this with a Launchpad server factory.")
 
@@ -213,9 +213,9 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         BzrTestCase.setUp(self)
         MixinBaseLaunchpadServerTests.setUp(self)
 
-    def getLaunchpadServer(self, authserver, user_id):
+    def getLaunchpadServer(self, codehosting_api, user_id):
         return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, MemoryTransport())
+            XMLRPCWrapper(codehosting_api), user_id, MemoryTransport())
 
     def test_translateControlPath(self):
         branch = self.factory.makeProductBranch(owner=self.requester)
@@ -342,9 +342,9 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         self.disable_directory_isolation()
         MixinBaseLaunchpadServerTests.setUp(self)
 
-    def getLaunchpadServer(self, authserver, user_id):
+    def getLaunchpadServer(self, codehosting_api, user_id):
         return LaunchpadInternalServer(
-            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
+            'lp-test:///', XMLRPCWrapper(codehosting_api), MemoryTransport())
 
 
 class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
@@ -472,11 +472,11 @@ class LaunchpadTransportTests:
     def setUp(self):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        authserver = frontend.getCodehostingEndpoint()
+        codehosting_api = frontend.getCodehostingEndpoint()
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.server = self.getServer(
-            authserver, self.requester.id, self.backing_transport)
+            codehosting_api, self.requester.id, self.backing_transport)
         self.server.start_server()
         self.addCleanup(self.server.stop_server)
 
@@ -507,9 +507,9 @@ class LaunchpadTransportTests:
         """Call `function` and return an appropriate Deferred."""
         raise NotImplementedError
 
-    def getServer(self, authserver, user_id, backing_transport):
+    def getServer(self, codehosting_api, user_id, backing_transport):
         return LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, backing_transport)
+            XMLRPCWrapper(codehosting_api), user_id, backing_transport)
 
     def getTransport(self):
         """Return the transport to be tested."""
@@ -820,8 +820,8 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self._branch_changed_log = []
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.authserver = frontend.getCodehostingEndpoint()
-        self.authserver.branchChanged = self._replacement_branchChanged
+        self.codehosting_api = frontend.getCodehostingEndpoint()
+        self.codehosting_api.branchChanged = self._replacement_branchChanged
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.disable_directory_isolation()
@@ -835,7 +835,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
     def get_server(self):
         if self._server is None:
             self._server = LaunchpadServer(
-                XMLRPCWrapper(self.authserver), self.requester.id,
+                XMLRPCWrapper(self.codehosting_api), self.requester.id,
                 self.backing_transport)
             self._server.start_server()
             self.addCleanup(self._server.stop_server)
@@ -1003,7 +1003,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self._frontend = InMemoryFrontend()
         self.factory = self._frontend.getLaunchpadObjectFactory()
 
-        authserver = self._frontend.getCodehostingEndpoint()
+        codehosting_api = self._frontend.getCodehostingEndpoint()
         self.requester = self.factory.makePerson()
 
         self.writable_branch = self.factory.makeAnyBranch(
@@ -1013,7 +1013,7 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
             branch_type=BranchType.HOSTED).unique_name
 
         self.lp_server = self._setUpLaunchpadServer(
-            self.requester.id, authserver, backing_transport)
+            self.requester.id, codehosting_api, backing_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
         self.lp_transport.mkdir(os.path.dirname(self.writable_file))
         self.lp_transport.put_bytes(self.writable_file, 'Hello World!')
@@ -1024,9 +1024,9 @@ class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
         self.addCleanup(memory_server.stop_server)
         return memory_server
 
-    def _setUpLaunchpadServer(self, user_id, authserver, backing_transport):
+    def _setUpLaunchpadServer(self, user_id, codehosting_api, backing_transport):
         server = LaunchpadServer(
-            XMLRPCWrapper(authserver), user_id, backing_transport)
+            XMLRPCWrapper(codehosting_api), user_id, backing_transport)
         server.start_server()
         self.addCleanup(server.stop_server)
         return server

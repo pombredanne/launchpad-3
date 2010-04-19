@@ -366,39 +366,41 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
 
     For more information, see the module docstring.
 
-    :ivar _authserver: An object that has a method 'translatePath' that
+    :ivar _branchfs_client: An object that has a method 'translatePath' that
         returns a Deferred that fires information about how a path can be
         translated into a transport. See `IBranchFilesystem['translatePath']`.
 
     :ivar _transport_dispatch: An `ITransportDispatch` provider used to
-        convert the data from the authserver into an actual transport and
+        convert the data from the branchfs client into an actual transport and
         path on that transport.
     """
 
-    def __init__(self, scheme, authserver, user_id,
+    def __init__(self, scheme, codehosting_api, user_id,
                  seen_new_branch_hook=None):
         """Construct a LaunchpadServer.
 
         :param scheme: The URL scheme to use.
-        :param authserver: An XML-RPC client that implements callRemote.
+        :param codehosting_api: An XML-RPC client that implements callRemote.
         :param user_id: The database ID for the user who is accessing
             branches.
         :param seen_new_branch_hook: A callable that will be called once for
             each branch accessed via this server.
         """
         AsyncVirtualServer.__init__(self, scheme)
-        self._authserver = BranchFileSystemClient(
-            authserver, user_id, seen_new_branch_hook=seen_new_branch_hook)
+        self._branchfs_client = BranchFileSystemClient(
+            codehosting_api, user_id,
+            seen_new_branch_hook=seen_new_branch_hook)
         self._is_start_server = False
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.
 
-        Call 'translatePath' on the authserver with the fragment and then use
-        'makeTransport' on the _transport_dispatch to translate that result
-        into a transport and trailing path.
+        Call 'translatePath' on the branchfs client with the fragment and then
+        use 'makeTransport' on the _transport_dispatch to translate that
+        result into a transport and trailing path.
         """
-        deferred = self._authserver.translatePath('/' + virtual_url_fragment)
+        deferred = self._branchfs_client.translatePath(
+            '/' + virtual_url_fragment)
 
         def path_not_translated(failure):
             trap_fault(
@@ -425,19 +427,20 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     Intended for use with the branch puller and scanner.
     """
 
-    def __init__(self, scheme, authserver, branch_transport):
+    def __init__(self, scheme, codehosting_api, branch_transport):
         """Construct a `LaunchpadInternalServer`.
 
         :param scheme: The URL scheme to use.
 
-        :param authserver: An object that provides a 'translatePath' method.
+        :param codehosting_api: An object that provides a 'translatePath'
+            method.
 
         :param branch_transport: A Bazaar `Transport` that refers to an
             area where Launchpad branches are stored, generally either the
             hosted or mirrored areas.
         """
         super(LaunchpadInternalServer, self).__init__(
-            scheme, authserver, LAUNCHPAD_SERVICES)
+            scheme, codehosting_api, LAUNCHPAD_SERVICES)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)
 
     def start_server(self):
@@ -563,13 +566,13 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
     asyncTransportFactory = AsyncLaunchpadTransport
 
-    def __init__(self, authserver, user_id, branch_transport,
+    def __init__(self, codehosting_api, user_id, branch_transport,
                  seen_new_branch_hook=None):
         """Construct a `LaunchpadServer`.
 
         See `_BaseLaunchpadServer` for more information.
 
-        :param authserver: An object that has 'createBranch' and
+        :param codehosting_api: An object that has 'createBranch' and
             'branchChanged' methods in addition to a 'translatePath' method.
             These methods should return Deferreds.
             XXX: JonathanLange 2008-11-19: Specify this interface better.
@@ -582,7 +585,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         """
         scheme = 'lp-%d:///' % id(self)
         super(LaunchpadServer, self).__init__(
-            scheme, authserver, user_id, seen_new_branch_hook)
+            scheme, codehosting_api, user_id, seen_new_branch_hook)
         self._transport_dispatch = TransportDispatch(branch_transport)
 
     def createBranch(self, virtual_url_fragment):
@@ -603,7 +606,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             that its creation is forbidden by a policy.
         :raise Fault: If the XML-RPC server raises errors.
         """
-        deferred = self._authserver.createBranch(virtual_url_fragment)
+        deferred = self._branchfs_client.createBranch(virtual_url_fragment)
 
         def translate_fault(failure):
             # We turn faults.NotFound into a PermissionDenied, even
@@ -666,7 +669,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
         :param virtual_url_fragment: A url fragment that points to a path
             owned by a branch.
         """
-        deferred = self._authserver.translatePath('/' + virtual_url_fragment)
+        deferred = self._branchfs_client.translatePath(
+            '/' + virtual_url_fragment)
 
         def got_path_info((transport_type, data, trailing_path)):
             if transport_type != BRANCH_TRANSPORT:
@@ -692,7 +696,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
                     jail_info.transports.remove(transport)
             if stacked_on_url is None:
                 stacked_on_url = ''
-            return self._authserver.branchChanged(
+            return self._branchfs_client.branchChanged(
                 data['id'], stacked_on_url, last_revision,
                 (control_string, branch_string, repository_string))
 
