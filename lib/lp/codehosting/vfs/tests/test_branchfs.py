@@ -827,7 +827,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.disable_directory_isolation()
 
     def _replacement_branchChanged(self, branch_id, stacked_on_url,
-                                   last_revision, format_strings):
+                                   last_revision, *format_strings):
         self._branch_changed_log.append(dict(
             branch_id=branch_id, stacked_on_url=stacked_on_url,
             last_revision=last_revision, format_strings=format_strings))
@@ -965,22 +965,6 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(
             db_branch.unique_name, format=format_registry.get('2a')())
-        self.assertFormatStringsPassed(branch)
-
-    def test_format_knits(self):
-        # Creating a knits branch reports the format to branchChanged.
-        db_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(
-            db_branch.unique_name, format=format_registry.get('knit')())
-        self.assertFormatStringsPassed(branch)
-
-    def test_format_packs(self):
-        # Creating a packs branch reports the format to branchChanged.
-        db_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(
-            db_branch.unique_name, format=format_registry.get('pack-0.92')())
         self.assertFormatStringsPassed(branch)
 
 
