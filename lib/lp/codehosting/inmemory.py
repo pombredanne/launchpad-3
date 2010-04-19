@@ -21,6 +21,7 @@ from zope.component import adapter, getSiteManager
 from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.model.branchnamespace import BranchNamespaceSet
 from lp.code.model.branchtarget import (
@@ -620,7 +621,8 @@ class FakeBranchFilesystem:
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
 
-    def branchChanged(self, branch_id, stacked_on_location, last_revision_id):
+    def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
+                      (control_string, branch_string, repository_string)):
         branch = self._branch_set._find(id=branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
@@ -639,6 +641,22 @@ class FakeBranchFilesystem:
         branch.last_mirrored = datetime.datetime.now(pytz.UTC)
         if branch.last_mirrored_id != last_revision_id:
             branch.last_mirrored_id = last_revision_id
+
+        def match_title(enum, title, default):
+            for value in enum.items:
+                if value.title == title:
+                    return value
+            else:
+                return default
+
+        branch.control_format = match_title(
+            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+        branch.branch_format = match_title(
+            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+        branch.repository_format = match_title(
+            RepositoryFormat, repository_string,
+            RepositoryFormat.UNRECOGNIZED)
+
         return True
 
     def _canRead(self, person_id, branch):
