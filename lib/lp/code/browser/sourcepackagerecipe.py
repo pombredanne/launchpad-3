@@ -162,3 +162,12 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     def estimate(self):
         """If true, the date value is an estimate."""
         return (self.context.datebuilt is None and self.eta is not None)
+
+
+class SourcePackageRecipeAddView(LaunchpadFormView):
+    """View for creating Source Package Recipes."""
+
+    title = label = 'Create a new source package recipe'
+
+    class schema(Interface):
+        """Schema for requesting a build."""

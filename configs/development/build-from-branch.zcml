@@ -44,6 +44,15 @@
 
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="zope.Public"
+            facet="branches"
+            name="+new-recipe"
+            template="../../lib/lp/app/templates/generic-edit.pt"/>
+
+
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
             class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
             permission="zope.Public"
             facet="branches"
