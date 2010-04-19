@@ -443,12 +443,13 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     for arch_series in series.architectures:
-                        # Skip architectures for series which are obsolete
-                        # and ones which were not on the mirror on its last
-                        # probe.
-                        if (arch_series.status == SeriesStatus.OBSOLETE and
-                            not self.getMirrorDistroArchSeries(arch_series,
-                                pocket, component)):
+                        # Skip unsupported series and unofficial architectures
+                        # for official series and ones which were not on the
+                        # mirror on its last probe.
+                        if ((series.status == SeriesStatus.OBSOLETE or
+                                not arch_series.official) and
+                                not self.getMirrorDistroArchSeries(arch_series,
+                                    pocket, component)):
                             continue
 
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
