@@ -208,6 +208,12 @@ special = {
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
+    'bug-watch-activity.txt':
+        LayeredDocFileSuite(
+        '../doc/bug-watch-activity.txt',
+        setUp=checkwatchesSetUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
     'bugtracker.txt':
         LayeredDocFileSuite(
         '../doc/bugtracker.txt',

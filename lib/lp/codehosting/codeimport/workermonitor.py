@@ -21,12 +21,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
 from canonical.librarian.interfaces import IFileUploadClient
-from canonical.twistedsupport.loggingsupport import (
-    log_oops_from_failure)
-from canonical.twistedsupport.processmonitor import (
-    ProcessMonitorProtocolWithTimeout)
 from lp.code.enums import CodeImportResultStatus
 from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
+from lp.services.twistedsupport.loggingsupport import (
+    log_oops_from_failure)
+from lp.services.twistedsupport.processmonitor import (
+    ProcessMonitorProtocolWithTimeout)
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):

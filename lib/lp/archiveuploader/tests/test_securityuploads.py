@@ -13,7 +13,7 @@ from zope.component import getUtility
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackageUploadStatus)
@@ -71,7 +71,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
         self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
-        self.builds_before_upload = Build.select().count()
+        self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
         self.log.lines = []
@@ -79,7 +79,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
 
     def assertBuildsCreated(self, amount):
         """Assert that a given 'amount' of build records was created."""
-        builds_count = Build.select().count()
+        builds_count = BinaryPackageBuild.select().count()
         self.assertEqual(
             self.builds_before_upload + amount, builds_count)
 

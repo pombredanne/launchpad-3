@@ -34,11 +34,11 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 
 
 class BaseRunnableJob:

@@ -9,12 +9,12 @@
 
 __metaclass__ = type
 
+from email import message_from_string
 import os
 import shutil
 import unittest
 
-from email import message_from_string
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -486,6 +486,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         email = "contact@example.com"
         name = "Team"
         team = self.factory.makeTeam(email=email, displayname=name)
+        transaction.commit()
         name12 = getUtility(IPersonSet).getByName("name12")
         cprov.archive.newComponentUploader(name12, "main")
         cprov.archive.newComponentUploader(team, "main")

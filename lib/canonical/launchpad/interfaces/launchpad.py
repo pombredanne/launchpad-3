@@ -34,7 +34,6 @@ __all__ = [
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'ICrowd',
     'IFeedsApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
@@ -241,25 +240,6 @@ class IPersonRoles(Interface):
 
         :param obj: The object to check the relation to.
         :param attributes: A list of attribute names to check with inTeam.
-        """
-
-
-class ICrowd(Interface):
-
-    def __contains__(person_or_team_or_anything):
-        """Return True if person_or_team_or_anything is in the crowd.
-
-        Note that a particular crowd can choose to answer 'True' to this
-        question, if that is what it is supposed to do.  So, crowds that
-        contain other crowds will want to allow the other crowds the
-        opportunity to answer __contains__ before that crowd does.
-        """
-
-    def __add__(crowd):
-        """Return a new ICrowd that is this crowd added to the given crowd.
-
-        The returned crowd contains the person or teams in
-        both this crowd and the given crowd.
         """
 
 

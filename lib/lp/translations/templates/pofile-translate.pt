@@ -14,21 +14,39 @@
     }
     </style>
 
-    <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
       LPS.use('lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
-          Y.on('domready', Y.lp.pofile.updateNotificationBox);
-          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
+
           Y.on('domready', function(e) {
-            Y.lp.pofile.setFocus(autofocus_field);
+            try {
+              Y.lp.pofile.updateNotificationBox();
+            } catch (e) {
+              Y.log(e, "error");
+            }
+
+            try {
+              Y.lp.pofile.setupSuggestionDismissal();
+            } catch (e) {
+              Y.log(e, "error");
+            }
+
+            try {
+              Y.lp.pofile.initializeKeyBindings();
+            } catch (e) {
+              Y.log(e, "error");
+            }
+
+            try {
+              Y.lp.pofile.setFocus(autofocus_field);
+            } catch (e) {
+              Y.log(e, "error");
+            }
           });
+
       });
+
     </script>
     </div>
     <div metal:fill-slot="main">

@@ -28,7 +28,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from storm.expr import Desc, In, LeftJoin
+from storm.expr import Desc, In, LeftJoin, Sum
 from storm.store import Store
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -43,8 +43,10 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount)
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -52,7 +54,8 @@ from canonical.launchpad.database.librarian import (
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IBinaryPackageFilePublishing,
@@ -508,19 +511,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return the_url
 
     def _getAllowedArchitectures(self, available_archs):
-        """Filter out any restricted architectures not specifically allowed 
+        """Filter out any restricted architectures not specifically allowed
         for an archive.
 
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
         associated_proc_families = [
-            archivearch.processorfamily for archivearch 
+            archivearch.processorfamily for archivearch
             in getUtility(IArchiveArchSet).getByArchive(self.archive)]
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
-            if not distroarch.processorfamily.restricted or 
+            if not distroarch.processorfamily.restricted or
                distroarch.processorfamily in associated_proc_families]
 
     def createMissingBuilds(self, architectures_available=None,
@@ -551,8 +554,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def _createMissingBuildForArchitecture(self, arch, logger=None):
         """Create a build for a given architecture if it doesn't exist yet.
 
-        Return the just-created `IBuild` record already scored or None
-        if a suitable build is already present.
+        Return the just-created `IBinaryPackageBuild` record already
+        scored or None if a suitable build is already present.
         """
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
@@ -802,8 +805,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
-                              default=None)
+    supersededby = ForeignKey(
+        foreignKey='BinaryPackageBuild', dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
@@ -856,6 +859,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return "%s %s in %s %s" % (name, release.version,
                                    distroseries.name,
                                    self.distroarchseries.architecturetag)
+
+    def getDownloadCount(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        return self.archive.getPackageDownloadTotal(self.binarypackagerelease)
 
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
@@ -1006,6 +1013,50 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         self.component = component
 
+    def _getDownloadCountClauses(self, start_date=None, end_date=None):
+        clauses = [
+            BinaryPackageReleaseDownloadCount.archive == self.archive,
+            BinaryPackageReleaseDownloadCount.binary_package_release ==
+                self.binarypackagerelease,
+            ]
+
+        if start_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day >= start_date)
+        if end_date is not None:
+            clauses.append(
+                BinaryPackageReleaseDownloadCount.day <= end_date)
+
+        return clauses
+
+    def getDownloadCounts(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        return Store.of(self).using(
+            BinaryPackageReleaseDownloadCount,
+            LeftJoin(
+                Country,
+                BinaryPackageReleaseDownloadCount.country_id ==
+                    Country.id)).find(
+            BinaryPackageReleaseDownloadCount, *clauses).order_by(
+                Desc(BinaryPackageReleaseDownloadCount.day), Country.name)
+
+    def getDailyDownloadTotals(self, start_date=None, end_date=None):
+        """See `IBinaryPackagePublishingHistory`."""
+        clauses = self._getDownloadCountClauses(start_date, end_date)
+
+        results = Store.of(self).find(
+            (BinaryPackageReleaseDownloadCount.day,
+             Sum(BinaryPackageReleaseDownloadCount.count)),
+            *clauses).group_by(
+                BinaryPackageReleaseDownloadCount.day)
+
+        def date_to_string(result):
+            return (result[0].strftime('%Y-%m-%d'), result[1])
+
+        return dict(date_to_string(result) for result in results)
+
 
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
@@ -1117,7 +1168,7 @@ class PublishingSet:
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1132,41 +1183,43 @@ class PublishingSet:
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
             extra_exprs.append(
-                Build.buildstate.is_in(build_states))
+                BinaryPackageBuild.buildstate.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            Build.distroarchseriesID == DistroArchSeries.id,
+            BinaryPackageBuild.distroarchseriesID == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
+                BinaryPackageBuild.sourcepackagereleaseID,
             In(SourcePackagePublishingHistory.id, source_publication_ids)
             )
 
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
         builds_in_same_archive = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distroseries_expr,
-            SourcePackagePublishingHistory.archiveID == Build.archiveID,
+            (SourcePackagePublishingHistory.archiveID ==
+                BinaryPackageBuild.archiveID),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
         # same archive... even though the build was not built in
         # the same context archive.
         builds_copied_into_archive = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distroseries_expr,
-            SourcePackagePublishingHistory.archiveID != Build.archiveID,
+            (SourcePackagePublishingHistory.archiveID !=
+                BinaryPackageBuild.archiveID),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             *extra_exprs)
 
         builds_union = builds_copied_into_archive.union(
@@ -1178,7 +1231,10 @@ class PublishingSet:
         # can't sort on SourcePackagePublishingHistory.id after the
         # union. See bug 443353 for details.
         find_spec = (
-            SourcePackagePublishingHistory, Build, DistroArchSeries)
+            SourcePackagePublishingHistory,
+            BinaryPackageBuild,
+            DistroArchSeries,
+            )
 
         # Storm doesn't let us do builds_union.values('id') -
         # ('Union' object has no attribute 'columns'). So instead
@@ -1187,7 +1243,7 @@ class PublishingSet:
 
         result_set = store.find(
             find_spec, builds_for_distroseries_expr,
-            Build.id.is_in(build_ids))
+            BinaryPackageBuild.id.is_in(build_ids))
 
         return result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1235,14 +1291,14 @@ class PublishingSet:
         # to avoid circular imports, since Build uses
         # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
         join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            BinaryPackageRelease.build == Build.id,
+                BinaryPackageBuild.sourcepackagereleaseID,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackageRelease.binarypackagenameID ==
                 BinaryPackageName.id,
             SourcePackagePublishingHistory.distroseriesID ==
@@ -1276,7 +1332,7 @@ class PublishingSet:
         # to avoid circular imports, since Build uses
         # SourcePackagePublishingHistory and DistroArchSeries uses
         # BinaryPackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
@@ -1288,12 +1344,15 @@ class PublishingSet:
             one_or_more_source_publications)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        published_builds = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+        published_builds = store.find((
+            SourcePackagePublishingHistory,
+            BinaryPackageBuild,
+            DistroArchSeries
+            ),
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            Build.buildstate.is_in(build_states))
+            BinaryPackageBuild.buildstate.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,
@@ -1311,7 +1370,7 @@ class PublishingSet:
         """See `IPublishingSet`."""
         # Import Build locally to avoid circular imports, since that
         # Build already imports SourcePackagePublishingHistory.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
@@ -1324,9 +1383,9 @@ class PublishingSet:
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             BinaryPackageFile.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackageRelease.buildID == Build.id,
+            BinaryPackageRelease.buildID == BinaryPackageBuild.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
+                BinaryPackageBuild.sourcepackagereleaseID,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archiveID ==
@@ -1492,8 +1551,8 @@ class PublishingSet:
         used in the calculation.
         """
         builds = source_publication.getBuilds()
-        summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
-            builds)
+        summary = getUtility(
+            IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
 
         # We only augment the result if:
         #   1. we (the SPPH) are ourselves in an active publishing state, and

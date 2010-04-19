@@ -46,9 +46,6 @@ from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 # We should probably split out all the stuff in this directory that
 # doesn't rely on Zope and migrate it to canonical/scripts.
 
-# XXX SteveAlexander 2005-04-11:
-# This is a total mess.  I need to work out what this all means.
-
 class NullItem:
     def __init__(self, context, handler, info, *argdata):
         newcontext = GroupingContextDecorator(context)
@@ -105,12 +102,14 @@ def execute_zcml_for_scripts(use_web_security=False):
             Instead, your test should use the Zopeless layer.
             """
 
-    scriptzcmlfilename = os.path.normpath(
-        os.path.join(os.path.dirname(__file__),
-                     os.pardir, os.pardir, os.pardir, os.pardir,
-                     'script.zcml'))
+    if config.instance_name == 'testrunner':
+        scriptzcmlfilename = 'script-testing.zcml'
+    else:
+        scriptzcmlfilename = 'script.zcml'
 
-    scriptzcmlfilename = os.path.abspath(scriptzcmlfilename)
+    scriptzcmlfilename = os.path.abspath(
+        os.path.join(config.root, scriptzcmlfilename))
+
     from zope.configuration import xmlconfig
 
     # Hook up custom component architecture calls

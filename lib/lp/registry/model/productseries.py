@@ -26,7 +26,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtask import BugTask
@@ -78,12 +79,12 @@ def landmark_key(landmark):
     return date + landmark['name']
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
-                    HasSpecificationsMixin, HasTranslationImportsMixin,
-                    HasTranslationTemplatesMixin,
+class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
+                    HasMilestonesMixin, HasSpecificationsMixin,
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IProductSeries, IHasTranslationTemplates)
+    implements(IHasBugHeat, IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
@@ -378,6 +379,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
+        if distroseries.distribution.full_functionality:
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                raise AssertionError(
+                    "The source package is not published in %s." %
+                    distroseries.displayname)
         for pkg in self.packagings:
             if pkg.distroseries == distroseries:
                 # we have found a matching Packaging record
@@ -596,3 +603,15 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
+
+    def findByTranslationsImportBranch(
+            self, branch, force_translations_upload=False):
+        """See IProductSeriesSet."""
+        conditions = [ProductSeries.branch == branch]
+        if not force_translations_upload:
+            import_mode = ProductSeries.translations_autoimport_mode
+            conditions.append(
+                import_mode != TranslationsBranchImportMode.NO_IMPORT)
+
+        return Store.of(branch).find(ProductSeries, And(*conditions))
+

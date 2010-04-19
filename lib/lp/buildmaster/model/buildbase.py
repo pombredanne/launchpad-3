@@ -140,11 +140,11 @@ class BuildBase:
         uploader.
         """
         # XXX cprov 2007-07-11 bug=129487: untested code path.
-        buildid = slave_status['build_id']
         filemap = slave_status['filemap']
 
         logger.info("Processing successful build %s from builder %s" % (
-            buildid, self.buildqueue_record.builder.name))
+            self.buildqueue_record.specific_job.build.title,
+            self.buildqueue_record.builder.name))
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -157,7 +157,8 @@ class BuildBase:
         root = os.path.abspath(config.builddmaster.root)
 
         # create a single directory to store build result files
-        upload_leaf = self.getUploadLeaf(buildid)
+        upload_leaf = self.getUploadLeaf(
+            '%s-%s' % (self.id, self.buildqueue_record.id))
         upload_dir = self.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 
@@ -294,7 +295,7 @@ class BuildBase:
         ZERO.
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
-                       % (slave_status['build_id'],
+                       % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
         self.storeBuildInfo(librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not
