@@ -21,7 +21,7 @@ We start our story with an empty export queue.
 
 We have somebody making an export request.
 
-    >>> requester = factory.makePersonNoCommit(
+    >>> requester = factory.makePerson(
     ...     email='punter@example.com', name='punter')
 
     >>> template1 = factory.makePOTemplate()

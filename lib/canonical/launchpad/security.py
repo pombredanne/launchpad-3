@@ -73,7 +73,7 @@ from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount)
-from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
@@ -1436,12 +1436,12 @@ class EditBuilder(AdminByBuilddAdmin):
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
 
 class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
     def checkAuthenticated(self, user):
         """Check write access for user and different kinds of archives.
@@ -1476,8 +1476,9 @@ class EditBuildRecord(AdminByBuilddAdmin):
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
-    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
-    # otherwise users are likely to get 403 errors, or worse.
+    # This code MUST match the logic in
+    # IBinaryPackageBuildSet.getBuildsForBuilder() otherwise users are
+    # likely to get 403 errors, or worse.
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
@@ -1518,7 +1519,7 @@ class ViewBuildFarmJob(AuthorizationBase):
     """Permission to view an `IBuildFarmJob`.
 
     This permission is based entirely on permission to view the
-    associated `IBuild` and/or `IBranch`.
+    associated `IBinaryPackageBuild` and/or `IBranch`.
     """
     permission = 'launchpad.View'
     usedfor = IBuildFarmJob
@@ -1628,9 +1629,19 @@ def can_edit_team(team, user):
         return team in user.person.getAdministratedTeams()
 
 
+class ViewLanguageSet(AnonymousAuthorization):
+    """Anyone can view an ILangaugeSet."""
+    usedfor = ILanguageSet
+
+
 class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguageSet
+
+
+class ViewLanguage(AnonymousAuthorization):
+    """Anyone can view an ILangauge."""
+    usedfor = ILanguage
 
 
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
@@ -2176,7 +2187,8 @@ class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
     usedfor = IBinaryPackagePublishingHistory
 
 
-class ViewBinaryPackageReleaseDownloadCount(ViewSourcePackagePublishingHistory):
+class ViewBinaryPackageReleaseDownloadCount(
+    ViewSourcePackagePublishingHistory):
     """Restrict viewing of binary package download counts."""
     usedfor = IBinaryPackageReleaseDownloadCount
 

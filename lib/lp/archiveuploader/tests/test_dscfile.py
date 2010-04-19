@@ -42,9 +42,8 @@ class TestDscFile(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
-            errors[0].message,
+            errors[0].args[0],
             "Symbolic link for debian/copyright not allowed")
-        self.failUnless(isinstance(errors[0], UploadError))
 
     def testGoodDebianCopyright(self):
         """Test that a proper copyright file will be accepted"""
@@ -72,9 +71,8 @@ class TestDscFile(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
-            errors[0].message,
+            errors[0].args[0],
             "Symbolic link for debian/changelog not allowed")
-        self.failUnless(isinstance(errors[0], UploadError))
 
     def testGoodDebianChangelog(self):
         """Test that a proper changelog file will be accepted"""
@@ -113,7 +111,7 @@ class TestDscFile(TestCase):
 
         self.assertIsInstance(errors[0], UploadError)
         self.assertEqual(
-            errors[0].message,
+            errors[0].args[0],
             "debian/changelog file too large, 10MiB max")
 
 def test_suite():

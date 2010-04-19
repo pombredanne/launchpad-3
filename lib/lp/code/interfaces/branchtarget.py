@@ -88,6 +88,9 @@ class IBranchTarget(IPrimaryContext):
     supports_merge_proposals = Attribute(
         "Does this target support merge proposals at all?")
 
+    supports_short_identites = Attribute(
+        "Does this target support shortened bazaar identities?")
+
     supports_code_imports = Attribute(
         "Does this target support code imports at all?")
 
@@ -118,7 +121,7 @@ class IBranchTarget(IPrimaryContext):
         """Get the BugTask for a given bug related to the branch target."""
 
     def newCodeImport(registrant, branch_name, rcs_type, url=None,
-                      cvs_root=None, cvs_module=None):
+                      cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import for this target.
 
         :param registrant: the `IPerson` who should be recorded as creating
@@ -128,6 +131,8 @@ class IBranchTarget(IPrimaryContext):
         :param url: the url to import from if the import isn't CVS.
         :param cvs_root: if the import is from CVS the CVSROOT to import from.
         :param cvs_module: if the import is from CVS the module to import.
+        :param owner: the `IPerson` to own the resulting branch, or None to
+            use registrant.
         :returns: an `ICodeImport`.
         :raises AssertionError: if supports_code_imports is False.
         """

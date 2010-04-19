@@ -37,6 +37,8 @@ from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.management import (
+    endInteraction, queryInteraction)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
@@ -54,9 +56,8 @@ from canonical.launchpad.webapp.adapter import (
     clear_request_started, get_request_start_time, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
+from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction, queryInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs import externalbugtracker
@@ -66,7 +67,6 @@ from lp.bugs.externalbugtracker import (
     PrivateRemoteBug, UnknownBugTrackerTypeError, UnknownRemoteStatusError,
     UnparseableBugData, UnparseableBugTrackerVersion,
     UnsupportedBugTrackerVersion)
-from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
@@ -535,9 +535,14 @@ class BugWatchUpdater(object):
         # Try to hint at how many bug watches to check each time.
         suggest_batch_size(remotesystem_to_use, num_watches)
 
-        if (is_gnome_bugzilla and
-            isinstance(remotesystem_to_use, BugzillaAPI) and
-            len(self._syncable_gnome_products) > 0):
+        if (is_gnome_bugzilla and remotesystem_to_use.sync_comments):
+            # If there are no products to sync comments for, disable
+            # comment sync and return.
+            if len(self._syncable_gnome_products) == 0:
+                remotesystem_to_use.sync_comments = False
+                return [
+                    (remotesystem_to_use, bug_watches),
+                    ]
 
             syncable_watches = []
             other_watches = []
@@ -567,16 +572,14 @@ class BugWatchUpdater(object):
             remotesystem_for_others = copy(remotesystem_to_use)
             remotesystem_for_others.sync_comments = False
 
-            trackers_and_watches = [
+            return [
                 (remotesystem_for_syncables, syncable_watches),
                 (remotesystem_for_others, other_watches),
                 ]
         else:
-            trackers_and_watches = [
+            return [
                 (remotesystem_to_use, bug_watches),
                 ]
-
-        return trackers_and_watches
 
     def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""

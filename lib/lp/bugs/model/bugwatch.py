@@ -212,6 +212,8 @@ class BugWatch(SQLBase):
 
         if self.last_error_type in error_message_mapping:
             message = error_message_mapping[self.last_error_type]
+        elif self.last_error_type != BugWatchActivityStatus.UNKNOWN:
+            message = self.last_error_type.description
         else:
             message = ("Launchpad couldn't import bug #%(bug)s from "
                 "%(bugtracker)s.")

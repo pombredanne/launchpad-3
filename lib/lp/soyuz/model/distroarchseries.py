@@ -26,7 +26,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries, IDistroArchSeriesSet, IPocketChroot)
@@ -240,8 +240,9 @@ class DistroArchSeries(SQLBase):
         if arch_tag is not None and arch_tag != self.architecturetag:
             return EmptyResultSet()
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             [self.id], build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,

@@ -88,54 +88,13 @@ def ensure_live():
     helpers.sync(120) # Will exit on failure.
 
 
-def create_replication_sets(
-    authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences):
+def create_replication_sets(lpmain_tables, lpmain_sequences):
     """Create the replication sets."""
     log.info('Creating Slony-I replication sets.')
 
-    # Instead of creating both the authdb and lpmain replication sets,
-    # we just create the lpmain replication set containing everything.
-    # This way, we can then test the populate_auth_replication_set.py
-    # migration script that moves the relevant tables from the lpmain
-    # replication set to the authdb replication set.
-    # We will turn this behavior off once we are running two
-    # replication sets in production and remove the migration script.
-    lpmain_tables = lpmain_tables.union(authdb_tables)
-    lpmain_sequences = lpmain_sequences.union(authdb_sequences)
-
     script = ["try {"]
-    # script,append("""
-    #     echo 'Creating AuthDB replication set (@authdb_set)';
-    #     create set (
-    #         id=@authdb_set, origin=@master_node,
-    #         comment='AuthDB tables and sequences');
-    #     """)
 
-    # entry_id = 1
-    # for table in sorted(authdb_tables):
-    #     script.append("""
-    #         echo 'Adding %(table)s to replication set @authdb_set';
-    #         set add table (
-    #             set id=@authdb_set,
-    #             origin=@master_node,
-    #             id=%(entry_id)d,
-    #             fully qualified name='%(table)s');
-    #         """ % vars())
-    #     entry_id += 1
-    # entry_id = 1
-    # for sequence in sorted(authdb_sequences):
-    #     script.append("""
-    #         echo 'Adding %(sequence)s to replication set @authdb_set';
-    #         set add sequence (
-    #             set id=@authdb_set,
-    #             origin=@master_node,
-    #             id=%(entry_id)d,
-    #             fully qualified name='%(sequence)s');
-    #         """ % vars())
-    #     entry_id += 1
-    #
-    # assert entry_id < 200, 'authdb replcation set has > 200 objects???'
-    entry_id = 200
+    entry_id = 1
 
     script.append("""
         echo 'Creating LPMain replication set (@lpmain_set)';
@@ -157,7 +116,7 @@ def create_replication_sets(
             """ % vars())
         entry_id += 1
 
-    entry_id = 200
+    entry_id = 1
     script.append(
         "echo 'Adding %d sequences to replication set @lpmain_set';"
         % len(lpmain_sequences))
@@ -199,9 +158,6 @@ def main():
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()
-    log.debug("Calculating authdb replication set.")
-    authdb_tables, authdb_sequences = helpers.calculate_replication_set(
-        cur, helpers.AUTHDB_SEED)
     log.debug("Calculating lpmain replication set.")
     lpmain_tables, lpmain_sequences = helpers.calculate_replication_set(
         cur, helpers.LPMAIN_SEED)
@@ -212,8 +168,7 @@ def main():
     fails = 0
     for table in all_tables_in_schema(cur, 'public'):
         times_seen = 0
-        for table_set in [
-            authdb_tables, lpmain_tables, helpers.IGNORED_TABLES]:
+        for table_set in [lpmain_tables, helpers.IGNORED_TABLES]:
             if table in table_set:
                 times_seen += 1
         if times_seen == 0:
@@ -224,8 +179,7 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [
-            authdb_sequences, lpmain_sequences, helpers.IGNORED_SEQUENCES]:
+        for sequence_set in [lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:
@@ -242,8 +196,7 @@ def main():
 
     ensure_live()
 
-    create_replication_sets(
-        authdb_tables, authdb_sequences, lpmain_tables, lpmain_sequences)
+    create_replication_sets(lpmain_tables, lpmain_sequences)
 
     helpers.sync(0)
 

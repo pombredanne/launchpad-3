@@ -1,4 +1,5 @@
-= Bug Watch Edit Page =
+Bug Watch Edit Page
+===================
 
 It's possible to edit a bug watch on +edit, as well as deleting it.
 Deleting a bug watch is only possible when the bug watch isn't linked to
@@ -28,3 +29,139 @@ a bug task.
     >>> [action.label for action in unlinked_bugwatch_view.actions
     ...  if action.available()]
     ['Change', 'Delete Bug Watch']
+
+
+Recent activity
+---------------
+
+The Bug Watch +edit page displays a list of the recent activity for the
+watch. This is provided by the BugWatch activity portlet view and can be
+accessed via the recent_watch_activity property of BugWatchView.
+
+We'll create a new watch in order to demonstrate this.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> new_watch = factory.makeBugWatch()
+
+The view for the new watch will have an empty recent_watch_activity list
+since it hasn't been updated yet.
+
+    >>> new_watch_view = create_initialized_view(
+    ...     new_watch, '+portlet-activity')
+    >>> len(new_watch_view.recent_watch_activity)
+    0
+
+The BugWatch +edit view has a watch_has_activity property, which is used
+to determine whether the recent activity portlet should be displayed.
+
+    >>> new_watch_edit_view = create_initialized_view(
+    ...     new_watch, '+edit')
+    >>> print new_watch_edit_view.watch_has_activity
+    False
+
+Adding a successful activity entry for the watch will cause it to show
+up on the BugWatchView's recent_watch_activity property.
+
+    >>> new_watch.addActivity()
+    >>> len(new_watch_view.recent_watch_activity)
+    1
+
+The BugWatch +edit view's watch_has_activity property will also have
+changed.
+
+    >>> new_watch_edit_view = create_initialized_view(
+    ...     new_watch, '+edit')
+    >>> print new_watch_edit_view.watch_has_activity
+    True
+
+Each entry in the recent_watch_activity list is a dict containing data
+about the activity.
+
+    >>> from pprint import pprint
+    >>> for activity_dict in new_watch_view.recent_watch_activity:
+    ...     pprint(activity_dict)
+    {'completion_message': 'completed successfully',
+     'date': datetime.datetime(...tzinfo=<UTC>),
+     'icon': '/@@/yes',
+     'result_text': 'Synchronisation succeeded'}
+
+If an activity entry records a failure, the 'icon' entry in the dict
+will point to the 'no' icon and the completion_message will explain the
+failure.
+
+We'll commit the transaction to make sure that the two activities have
+different dates.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+    >>> new_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> for activity_dict in new_watch_view.recent_watch_activity:
+    ...     pprint(activity_dict)
+    {'completion_message': "failed with error 'Bug Not Found'",
+     'date': datetime.datetime(...tzinfo=<UTC>),
+     'icon': '/@@/no',
+     'result_text': 'Bug Not Found'}
+    {'completion_message': 'completed successfully',
+     'date': datetime.datetime(...tzinfo=<UTC>),
+     'icon': '/@@/yes',
+     'result_text': 'Synchronisation succeeded'}
+
+
+Rescheduling a watch
+--------------------
+
+The BugWatch activity portlet provides a method, userCanReschedule(),
+which indicates whether or not a user can reschedule a bug watch for
+checking.  For a new bug watch this will be False.
+
+    >>> from pytz import utc
+    >>> from datetime import datetime
+    >>> schedulable_watch = factory.makeBugWatch()
+    >>> schedulable_watch.next_check = None
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+
+    >>> scheduling_view.userCanReschedule()
+    False
+
+If there's been activity on the watch but it's always been successful,
+userCanReschedule() will return False.
+
+    >>> schedulable_watch.addActivity()
+    >>> scheduling_view.userCanReschedule()
+    False
+
+If the watch's updates have failed less than 60% of the time,
+userCanReschedule() will return True
+
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> scheduling_view.userCanReschedule()
+    True
+
+If the watch is rescheduled, the button will disappear, since the
+next_check time for the watch will be in the past (or in this case is
+now) and therefore it will be checked with the next checkwatches run.
+
+    >>> schedulable_watch.next_check = datetime.now(utc)
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+    >>> scheduling_view.userCanReschedule()
+    False
+
+However, if the watch has failed more than 60% of the time the button
+will disappear again, since it's assumed that the watch needs attention
+in order for it to be able to work again.
+
+    >>> schedulable_watch.next_check = None
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> scheduling_view = create_initialized_view(
+    ...     schedulable_watch, '+portlet-activity')
+    >>> scheduling_view.userCanReschedule()
+    False

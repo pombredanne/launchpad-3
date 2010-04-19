@@ -109,7 +109,7 @@ class EC2TestRunner:
     message = image = None
     _running = False
 
-    def __init__(self, branch, email=False, file=None, test_options='-vv',
+    def __init__(self, branch, email=False, file=None, test_options=None,
                  headless=False, branches=(),
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
@@ -483,7 +483,7 @@ class EC2TestRunner:
             cmd.append('--public-branch-revno=%d' % branch_revno)
 
         # Add any additional options for ec2test-remote.py
-        cmd.extend(self.get_remote_test_options())
+        cmd.extend(['--', self.test_options])
         self.log(
             'Running tests... (output is available on '
             'http://%s/)\n' % self._instance.hostname)
@@ -519,17 +519,3 @@ class EC2TestRunner:
                     'Writing abridged test results to %s.\n' % self.file)
                 user_connection.sftp.get('/var/www/summary.log', self.file)
         user_connection.close()
-
-    def get_remote_test_options(self):
-        """Return the test command that will be passed to ec2test-remote.py.
-
-        Returns a tuple of command-line options and switches.
-        """
-        if '--jscheck' in self.test_options:
-            # We want to run the JavaScript test suite.
-            return ('--jscheck',)
-        else:
-            # Run the normal testsuite with our Zope testrunner options.
-            # ec2test-remote.py wants the extra options to be after a double-
-            # dash.
-            return ('--', self.test_options)

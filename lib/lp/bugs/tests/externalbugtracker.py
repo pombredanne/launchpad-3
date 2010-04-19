@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
+# pylint: disable-msg=W0231,E0702,W0108
 
 """Helper classes for testing ExternalSystem."""
 
@@ -17,7 +17,7 @@ import xmlrpclib
 from StringIO import StringIO
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
-from urllib2 import BaseHandler, HTTPError, Request
+from urllib2 import BaseHandler, Request
 
 from zope.component import getUtility
 
@@ -42,7 +42,6 @@ from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.bugs.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -1592,6 +1591,20 @@ class Urlib2TransportTestInfo:
 class Urlib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
 
+    def __init__(self):
+        self.redirect_url = None
+        self.raise_error = None
+        self.accessed_urls = []
+
+    def setRedirect(self, new_url):
+        """The next call of default_open() will redirect to `url`."""
+        self.redirect_url = new_url
+
+    def setError(self, error, url):
+        """Raise `error` when `url` is accessed."""
+        self.raise_error = error
+        self.raise_url = url
+
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
 
@@ -1601,31 +1614,23 @@ class Urlib2TransportTestHandler(BaseHandler):
         assert isinstance(req, Request), (
             'Expected a urllib2.Request, got %s' % req)
 
-        if 'testError' in req.data:
-            raise HTTPError(
-                req.get_full_url(), 500, 'Internal Error', {}, None)
-
-        elif ('testRedirect' in req.data and
-              'redirected' not in req.get_full_url()):
-            # Big hack to make calls to testRedirect act as though a 302
-            # has been received. Note the slightly cheaty check for
-            # 'redirected' in the URL. This is to stop urllib2 from
-            # whinging about infinite loops.
-            redirect_url = urlappend(
-                req.get_full_url(), 'redirected')
-
+        self.accessed_urls.append(req.get_full_url())
+        if (self.raise_error is not None and
+              req.get_full_url() == self.raise_url):
+            error = self.raise_error
+            self.raise_error = None
+            raise error
+        elif self.redirect_url is not None:
             headers = HTTPMessage(StringIO())
-            headers['location'] = redirect_url
-
+            headers['location'] = self.redirect_url
             response = StringIO()
             response.info = lambda: headers
             response.geturl = lambda: req.get_full_url()
             response.code = 302
             response.msg = 'Moved'
+            self.redirect_url = None
             response = self.parent.error(
-                'http', req, response, 302, 'Moved',
-                headers)
-
+                'http', req, response, 302, 'Moved', headers)
         else:
             xmlrpc_response = xmlrpclib.dumps(
                 (req.get_full_url(),), methodresponse=True)
