@@ -9,6 +9,7 @@ import datetime
 import pytz
 import unittest
 
+from bzrlib import bzrdir
 from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
 
@@ -29,6 +30,7 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
 
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
@@ -653,11 +655,24 @@ class BranchFileSystemTest(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             branch, 'next_mirror_time', UTC_NOW)
 
+    def getFormatStringsForFormatName(self, format_name):
+        default_format = bzrdir.format_registry.get(format_name)()
+        control_string = default_format.get_format_string()
+        branch_string = default_format.get_branch_format().get_format_string()
+        repository_string = \
+            default_format.repository_format.get_format_string()
+        return (control_string, branch_string, repository_string)
+
+    @property
+    def arbitrary_format_strings(self):
+        return self.getFormatStringsForFormatName('default')
+
     def test_branchChanged_sets_last_mirrored_id(self):
         # branchChanged sets the last_mirrored_id attribute on the branch.
         revid = self.factory.getUniqueString()
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(branch.id, '', revid)
+        self.branchfs.branchChanged(
+            branch.id, '', revid, self.arbitrary_format_strings)
         self.assertEqual(revid, branch.last_mirrored_id)
 
     def test_branchChanged_sets_stacked_on(self):
@@ -665,7 +680,9 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # passed in.
         branch = self.factory.makeAnyBranch()
         stacked_on = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(branch.id, stacked_on.unique_name, '')
+        self.branchfs.branchChanged(
+            branch.id, stacked_on.unique_name, '',
+            self.arbitrary_format_strings)
         self.assertEqual(stacked_on, branch.stacked_on)
 
     def test_branchChanged_unsets_stacked_on(self):
@@ -673,14 +690,16 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # passed in as the stacked_on location.
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).stacked_on = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(branch.id, '', '')
+        self.branchfs.branchChanged(
+            branch.id, '', '', self.arbitrary_format_strings)
         self.assertIs(None, branch.stacked_on)
 
     def test_branchChanged_sets_last_mirrored(self):
         # branchChanged sets the last_mirrored attribute on the branch to the
         # current time.
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(branch.id, '', '')
+        self.branchfs.branchChanged(
+            branch.id, '', '', self.arbitrary_format_strings)
         # We can't test "now" precisely, but lets check that last_mirrored was
         # set to _something_.
         self.assertIsNot(None, branch.last_mirrored)
@@ -690,7 +709,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # mirror_status_message is set to indicate the problem and stacked_on
         # set to None.
         branch = self.factory.makeAnyBranch()
-        self.branchfs.branchChanged(branch.id, '~does/not/exist', '')
+        self.branchfs.branchChanged(
+            branch.id, '~does/not/exist', '', self.arbitrary_format_strings)
         self.assertIs(None, branch.stacked_on)
         self.assertTrue('~does/not/exist' in branch.mirror_status_message)
 
@@ -698,9 +718,12 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # If the id passed in doesn't match an existing branch, the fault
         # "NoBranchWithID" is returned.
         unused_id = -1
-        self.assertFaultEqual(
-            faults.NoBranchWithID(unused_id),
-            self.branchfs.branchChanged(unused_id, '', ''))
+        expected_fault = faults.NoBranchWithID(unused_id)
+        received_fault = self.branchfs.branchChanged(
+            unused_id, '', '', self.arbitrary_format_strings)
+        self.assertEqual(
+            (expected_fault.faultCode, expected_fault.faultString),
+            (received_fault.faultCode, received_fault.faultString))
 
     def test_branchChanged_creates_scan_job(self):
         # branchChanged() creates a scan job for the branch.
@@ -709,21 +732,54 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
-        self.branchfs.branchChanged(branch.id, '', 'rev1')
+        self.branchfs.branchChanged(
+            branch.id, '', 'rev1',  self.arbitrary_format_strings)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(1, len(jobs))
 
     def test_branchChanged_doesnt_create_scan_job_for_noop_change(self):
-        # XXX Is this even the right thing to do?
         if not isinstance(self.frontend, LaunchpadDatabaseFrontend):
             return
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).last_mirrored_id = 'rev1'
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
-        self.branchfs.branchChanged(branch.id, '', 'rev1')
+        self.branchfs.branchChanged(
+            branch.id, '', 'rev1', self.arbitrary_format_strings)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
+
+    def test_branchChanged_2a_format(self):
+        branch = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(
+            branch.id, '', 'rev1', self.getFormatStringsForFormatName('2a'))
+        self.assertEqual(
+            (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_7,
+             RepositoryFormat.BZR_CHK_2A),
+            (branch.control_format, branch.branch_format,
+             branch.repository_format))
+
+    def test_branchChanged_packs_format(self):
+        branch = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(
+            branch.id, '', 'rev1',
+            self.getFormatStringsForFormatName('pack-0.92'))
+        self.assertEqual(
+            (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_6,
+             RepositoryFormat.BZR_KNITPACK_1),
+            (branch.control_format, branch.branch_format,
+             branch.repository_format))
+
+    def test_branchChanged_knits_format(self):
+        branch = self.factory.makeAnyBranch()
+        self.branchfs.branchChanged(
+            branch.id, '', 'rev1',
+            self.getFormatStringsForFormatName('knit'))
+        self.assertEqual(
+            (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_5,
+             RepositoryFormat.BZR_KNIT_1),
+            (branch.control_format, branch.branch_format,
+             branch.repository_format))
 
     def assertCannotTranslate(self, requester, path):
         """Assert that we cannot translate 'path'."""

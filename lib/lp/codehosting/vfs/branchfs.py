@@ -681,13 +681,21 @@ class LaunchpadServer(_BaseLaunchpadServer):
                     ignore_fallbacks=True)
                 last_revision = branch.last_revision()
                 stacked_on_url = self._normalize_stacked_on_url(branch)
+                # XXX: Aaron Bentley 2008-06-13
+                # Bazaar does not provide a public API for learning about
+                # format markers.  Fix this in Bazaar, then here.
+                control_string = branch.bzrdir._format.get_format_string()
+                branch_string = branch._format.get_format_string()
+                repository_string = \
+                    branch.repository._format.get_format_string()
             finally:
                 if jail_info.transports:
                     jail_info.transports.remove(transport)
             if stacked_on_url is None:
                 stacked_on_url = ''
             return self._authserver.branchChanged(
-                data['id'], stacked_on_url, last_revision)
+                data['id'], stacked_on_url, last_revision,
+                (control_string, branch_string, repository_string))
 
         # It gets really confusing if we raise an exception from this method
         # (the branch remains locked, but this isn't obvious to the client) so

@@ -547,8 +547,7 @@ class TestScanStackedBranches(BzrSyncTestCase):
         # We can scan a stacked branch that's stacked on a branch that has an
         # lp-mirrored:// URL.
         db_stacked_on_branch = self.factory.makeAnyBranch()
-        stacked_on_tree = self.makeBzrBranchAndTree(
-            db_stacked_on_branch, format='1.6')
+        self.makeBzrBranchAndTree(db_stacked_on_branch, format='1.6')
         db_stacked_branch = self.factory.makeAnyBranch()
         stacked_tree = self.makeBzrBranchAndTree(
             db_stacked_branch, format='1.6')

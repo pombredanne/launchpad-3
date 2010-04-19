@@ -11,7 +11,7 @@ import os
 import unittest
 
 from bzrlib import errors
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.tests import (
     TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
 from bzrlib.transport import (
@@ -820,11 +820,16 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.authserver = frontend.getFilesystemEndpoint()
-        self.authserver.branchChanged = (
-            lambda *args: self._branch_changed_log.append(args))
+        self.authserver.branchChanged = self._replacement_branchChanged
         self.requester = self.factory.makePerson()
         self.backing_transport = MemoryTransport()
         self.disable_directory_isolation()
+
+    def _replacement_branchChanged(self, branch_id, stacked_on_url,
+                                   last_revision, format_strings):
+        self._branch_changed_log.append(dict(
+            branch_id=branch_id, stacked_on_url=stacked_on_url,
+            last_revision=last_revision, format_strings=format_strings))
 
     def get_server(self):
         if self._server is None:
@@ -843,8 +848,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         self.make_branch(db_branch.unique_name)
-        self.assertEqual(
-            [(db_branch.id, '', 'null:')], self._branch_changed_log)
+        self.assertEqual(1, len(self._branch_changed_log))
 
     def test_branch_unlock_calls_branchChanged(self):
         # Unlocking a branch calls branchChanged on the branch filesystem
@@ -855,8 +859,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         del self._branch_changed_log[:]
         branch.lock_write()
         branch.unlock()
-        self.assertEqual(
-            [(db_branch.id, '', 'null:')], self._branch_changed_log)
+        self.assertEqual(1, len(self._branch_changed_log))
 
     def test_branch_unlock_reports_stacked_on_url(self):
         # Unlocking a branch reports the stacked on URL to the branch
@@ -871,9 +874,10 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         branch.lock_write()
         branch.set_stacked_on_url('/' + db_branch1.unique_name)
         branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
         self.assertEqual(
-            [(db_branch2.id, '/' + db_branch1.unique_name, 'null:')],
-            self._branch_changed_log)
+            '/' + db_branch1.unique_name,
+            self._branch_changed_log[0]['stacked_on_url'])
 
     def test_branch_unlock_reports_last_revision(self):
         # Unlocking a branch reports the tip revision of the branch to the
@@ -885,8 +889,10 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         del self._branch_changed_log[:]
         branch.lock_write()
         branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
         self.assertEqual(
-            [(db_branch.id, '', revid)], self._branch_changed_log)
+            revid,
+            self._branch_changed_log[0]['last_revision'])
 
     def test_branch_unlock_relativizes_absolute_stacked_on_url(self):
         # When a branch that has been stacked on the absolute URL of another
@@ -903,9 +909,10 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             'http://bazaar.launchpad.dev/~user/product/branch')
         branch.unlock()
         self.assertEqual('/~user/product/branch', branch.get_stacked_on_url())
+        self.assertEqual(1, len(self._branch_changed_log))
         self.assertEqual(
-            [(db_branch.id, '/~user/product/branch', 'null:')],
-            self._branch_changed_log)
+            '/~user/product/branch',
+            self._branch_changed_log[0]['stacked_on_url'])
 
     def test_branch_unlock_ignores_non_launchpad_stacked_url(self):
         # When a branch that has been stacked on the absolute URL of a branch
@@ -919,8 +926,9 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         branch.get_config().set_user_option(
             'stacked_on_location', stacked_on_url)
         branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
         self.assertEqual(
-            [(db_branch.id, stacked_on_url, 'null:')], self._branch_changed_log)
+            stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
         self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
 
     def test_branch_unlock_ignores_odd_scheme_stacked_url(self):
@@ -936,10 +944,43 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         branch.get_config().set_user_option(
             'stacked_on_location', stacked_on_url)
         branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
         self.assertEqual(
-            [(db_branch.id, stacked_on_url, 'null:')],
-            self._branch_changed_log)
+            stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
         self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+
+    def assertFormatStringsPassed(self, branch):
+        self.assertEqual(1, len(self._branch_changed_log))
+        control_string = branch.bzrdir._format.get_format_string()
+        branch_string = branch._format.get_format_string()
+        repository_string = branch.repository._format.get_format_string()
+        self.assertEqual(
+            (control_string, branch_string, repository_string),
+            self._branch_changed_log[0]['format_strings'])
+
+    def test_format_2a(self):
+        # Creating a 2a branch reports the format to branchChanged.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('2a')())
+        self.assertFormatStringsPassed(branch)
+
+    def test_format_knits(self):
+        # Creating a knits branch reports the format to branchChanged.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('knit')())
+        self.assertFormatStringsPassed(branch)
+
+    def test_format_packs(self):
+        # Creating a packs branch reports the format to branchChanged.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('pack-0.92')())
+        self.assertFormatStringsPassed(branch)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
