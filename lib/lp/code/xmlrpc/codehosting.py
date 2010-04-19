@@ -23,6 +23,16 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import endInteraction
 
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interaction import setupInteractionForPerson
+from canonical.launchpad.webapp.interfaces import (
+    NameLookupFailed, NotFoundError)
+from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.xmlrpc.helpers import return_fault
+
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import BranchCreationException
@@ -38,14 +48,6 @@ from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import iter_split
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interaction import setupInteractionForPerson
-from canonical.launchpad.webapp.interfaces import (
-    NameLookupFailed, NotFoundError)
-from canonical.launchpad.xmlrpc import faults
-from canonical.launchpad.xmlrpc.helpers import return_fault
 
 
 UTC = pytz.timezone('UTC')
@@ -262,7 +264,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 branch.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_location)
         branch.stacked_on = stacked_on_branch
-        branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+        branch.last_mirrored = UTC_NOW
         if branch.last_mirrored_id != last_revision_id:
             branch.last_mirrored_id = last_revision_id
             getUtility(IBranchScanJobSource).create(branch)
