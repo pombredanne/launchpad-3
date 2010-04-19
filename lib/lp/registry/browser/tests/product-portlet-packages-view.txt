@@ -297,7 +297,7 @@ attribute so that suggestions are disabled.
 
     >>> form = {
     ...     'field.distributionsourcepackage': 'NOT_PACKAGED',
-    ...     'field.actions.link': 'Set Ubuntu package information',
+    ...     'field.actions.link': 'Set Ubuntu Package Information',
     ...     }
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", form=form)
@@ -315,7 +315,7 @@ The +portlet-packages view can create a Packaging link.
 
     >>> form = {
     ...     'field.distributionsourcepackage': 'bingo',
-    ...     'field.actions.link': 'Set Ubuntu package information',
+    ...     'field.actions.link': 'Set Ubuntu Package Information',
     ...     }
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", form=form)
@@ -343,7 +343,7 @@ option is the default value.
 
     >>> form = {
     ...     'field.distributionsourcepackage': 'OTHER_PACKAGE',
-    ...     'field.actions.link': 'Set Ubuntu package information',
+    ...     'field.actions.link': 'Set Ubuntu Package Information',
     ...     }
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", form=form)

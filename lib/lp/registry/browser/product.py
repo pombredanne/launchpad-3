@@ -1118,7 +1118,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Set Ubuntu package information'), name='link')
+    @action(_('Set Ubuntu Package Information'), name='link')
     def link(self, action, data):
         product = self.context
         dsp = data.get(self.package_field_name)
