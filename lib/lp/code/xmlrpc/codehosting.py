@@ -152,6 +152,16 @@ class Codehosting(LaunchpadXMLRPCView):
             date_completed=date_completed, hostname=hostname)
         return True
 
+    def startMirroring(self, branch_id):
+        """See `ICodehosting`."""
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        # The puller runs as no user and may pull private branches. We need to
+        # bypass Zope's security proxy to set the mirroring information.
+        removeSecurityProxy(branch).startMirroring()
+        return True
+
     def setStackedOn(self, branch_id, stacked_on_location):
         """See `ICodehosting`."""
         # We don't want the security proxy on the branch set because this

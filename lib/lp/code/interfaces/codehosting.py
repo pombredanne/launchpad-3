@@ -82,6 +82,17 @@ class ICodehosting(Interface):
             or (), the empty tuple, if there is no branch to pull.
         """
 
+    def startMirroring(branchID):
+        """Notify Launchpad that the given branch has started mirroring.
+
+        The last_mirror_attempt field of the given branch record will be
+        updated appropriately.
+
+        :param branchID: The database ID of the given branch.
+        :returns: True if the branch status was successfully updated.
+            `NoBranchWithID` fault if there's no branch with the given id.
+        """
+
     def mirrorComplete(branchID, lastRevisionID):
         """Notify Launchpad that the branch has been successfully mirrored.
 
