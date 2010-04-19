@@ -777,7 +777,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # mirror_status_message.
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).mirror_status_message = 'foo'
-        self.branchfs.branchChanged(branch.id, '', '')
+        self.branchfs.branchChanged(
+            branch.id, '', '', self.arbitrary_format_strings)
         self.assertIs(None, branch.mirror_status_message)
 
     def test_branchChanged_fault_on_unknown_id(self):
