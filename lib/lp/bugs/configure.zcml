@@ -871,7 +871,8 @@
                 permission="launchpad.AnyPerson"
                 attributes="
                     destroySelf
-                    addActivity"
+                    addActivity
+                    setNextCheck"
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"

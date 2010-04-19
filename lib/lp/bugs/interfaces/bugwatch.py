@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'BUG_WATCH_ACTIVITY_SUCCESS_STATUSES',
     'BugWatchActivityStatus',
+    'BugWatchCannotBeRescheduled',
     'IBugWatch',
     'IBugWatchActivity',
     'IBugWatchSet',
@@ -254,6 +255,13 @@ class IBugWatch(IHasBug):
     def addActivity(result=None, message=None, oops_id=None):
         """Add an `IBugWatchActivity` record for this BugWatch."""
 
+    def setNextCheck(next_check):
+        """Set the next_check time of the watch.
+
+        :raises: `BugWatchCannotBeRescheduled` if
+                 `IBugWatch.can_be_rescheduled` is False.
+        """
+
 
 # Defined here because of circular imports.
 IBugTracker['watches'].value_type.schema = IBugWatch
@@ -367,3 +375,6 @@ class IBugWatchActivity(Interface):
         title=_('OOPS ID'), readonly=True,
         description=_("The OOPS ID associated with this activity."))
 
+
+class BugWatchCannotBeRescheduled(Exception):
+    """The current `IBugWatch` can't be rescheduled."""

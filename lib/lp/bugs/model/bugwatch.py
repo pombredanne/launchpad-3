@@ -48,8 +48,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, BugWatchActivityStatus,
-    IBugWatch, IBugWatchActivity, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
+    BugWatchCannotBeRescheduled, IBugWatch, IBugWatchActivity,
+    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -352,6 +352,13 @@ class BugWatch(SQLBase):
             BugWatchActivity.bug_watch == self,
             Not(In(BugWatchActivity.result, success_status_ids))).order_by(
                 Desc('activity_date'))
+
+    def setNextCheck(self, next_check):
+        """See `IBugWatch`."""
+        if not self.can_be_rescheduled:
+            raise BugWatchCannotBeRescheduled()
+
+        self.next_check = next_check
 
 
 class BugWatchSet(BugSetBase):
