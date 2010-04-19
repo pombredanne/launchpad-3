@@ -51,7 +51,7 @@ class CodehostingAvatar(LaunchpadAvatar):
 
     def __init__(self, user_dict, codehosting_proxy):
         LaunchpadAvatar.__init__(self, user_dict)
-        self.branchfs_proxy = codehosting_proxy
+        self.codehosting_proxy = codehosting_proxy
 
 
 components.registerAdapter(launch_smart_server, CodehostingAvatar, ISession)
