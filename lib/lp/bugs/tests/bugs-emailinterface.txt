@@ -1374,6 +1374,11 @@ Bug supervisors can set some restricted statuses:
     >>> print upstream_task.status.title
     Won't Fix
 
+    >>> submit_commands(bug_four, 'status expired')
+    >>> sync(upstream_task)
+    >>> print upstream_task.status.title
+    Expired
+
 Everyone else gets an explanatory error message:
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
@@ -1400,6 +1405,19 @@ Everyone else gets an explanatory error message:
     registrant or a bug supervisor for Mozilla Firefox.
     ...
 
+    >>> submit_commands(bug_four, 'affects firefox', 'status expired')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status expired
+    ...
+    The status cannot be changed to expired because you are not the
+    registrant or a bug supervisor for Mozilla Firefox.
+    ...
+
 Let's take a look at all the other error messages that the sub
 commands can produce.
 
@@ -1417,7 +1435,7 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    new, incomplete, invalid, wontfix, confirmed, triaged, inprogress, fixcommitted, fixreleased
+    new, incomplete, invalid, wontfix, expired, confirmed, triaged, inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>
