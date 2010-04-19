@@ -123,8 +123,8 @@ class SSHService(service.Service):
         """
         authentication_proxy = Proxy(
             config.codehosting.authentication_endpoint)
-        branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-        return get_portal(authentication_proxy, branchfs_proxy)
+        codehosting_proxy = Proxy(config.codehosting.codehosting_endpoint)
+        return get_portal(authentication_proxy, codehosting_proxy)
 
     def makeService(self):
         """Return a service that provides an SFTP server. This is called in

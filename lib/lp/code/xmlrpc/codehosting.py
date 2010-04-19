@@ -33,8 +33,8 @@ from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, IBranchFileSystem, IBranchPuller,
-    LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
+    BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehosting, LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
@@ -50,102 +50,6 @@ from canonical.launchpad.webapp.interaction import Participation
 
 
 UTC = pytz.timezone('UTC')
-
-
-class BranchPuller(LaunchpadXMLRPCView):
-    """See `IBranchPuller`."""
-
-    implements(IBranchPuller)
-
-    def acquireBranchToPull(self, branch_type_names):
-        """See `IBranchPuller`."""
-        branch_types = []
-        for branch_type_name in branch_type_names:
-            try:
-                branch_types.append(BranchType.items[branch_type_name])
-            except KeyError:
-                raise UnknownBranchTypeError(
-                    'Unknown branch type: %r' % (branch_type_name,))
-        branch = getUtility(branchpuller.IBranchPuller).acquireBranchToPull(
-            *branch_types)
-        if branch is not None:
-            branch = removeSecurityProxy(branch)
-            default_branch = branch.target.default_stacked_on_branch
-            if default_branch is None:
-                default_branch_name = ''
-            elif (branch.branch_type == BranchType.MIRRORED
-                  and default_branch.private):
-                default_branch_name = ''
-            else:
-                default_branch_name = '/' + default_branch.unique_name
-            return (branch.id, branch.getPullURL(), branch.unique_name,
-                    default_branch_name, branch.branch_type.name)
-        else:
-            return ()
-
-    def mirrorComplete(self, branch_id, last_revision_id):
-        """See `IBranchPuller`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # See comment in startMirroring.
-        branch = removeSecurityProxy(branch)
-        branch.mirrorComplete(last_revision_id)
-        branches = branch.getStackedBranchesWithIncompleteMirrors()
-        for stacked_branch in branches:
-            stacked_branch.requestMirror()
-        return True
-
-    def mirrorFailed(self, branch_id, reason):
-        """See `IBranchPuller`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # See comment in startMirroring.
-        removeSecurityProxy(branch).mirrorFailed(reason)
-        return True
-
-    def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
-        """See `IBranchPuller`."""
-        date_started = datetime_from_tuple(started_tuple)
-        date_completed = datetime_from_tuple(completed_tuple)
-        getUtility(IScriptActivitySet).recordSuccess(
-            name=name, date_started=date_started,
-            date_completed=date_completed, hostname=hostname)
-        return True
-
-    def startMirroring(self, branch_id):
-        """See `IBranchPuller`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # The puller runs as no user and may pull private branches. We need to
-        # bypass Zope's security proxy to set the mirroring information.
-        removeSecurityProxy(branch).startMirroring()
-        return True
-
-    def setStackedOn(self, branch_id, stacked_on_location):
-        """See `IBranchPuller`."""
-        # We don't want the security proxy on the branch set because this
-        # method should be able to see all branches and set stacking
-        # information on any of them.
-        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-        if stacked_on_location == '':
-            stacked_on_branch = None
-        else:
-            if stacked_on_location.startswith('/'):
-                stacked_on_branch = branch_set.getByUniqueName(
-                    stacked_on_location.strip('/'))
-            else:
-                stacked_on_branch = branch_set.getByUrl(
-                    stacked_on_location.rstrip('/'))
-            if stacked_on_branch is None:
-                return faults.NoSuchBranch(stacked_on_location)
-        stacked_branch = branch_set.get(branch_id)
-        if stacked_branch is None:
-            return faults.NoBranchWithID(branch_id)
-        stacked_branch.stacked_on = stacked_on_branch
-        return True
 
 
 def datetime_from_tuple(time_tuple):
@@ -192,13 +96,94 @@ def run_with_login(login_id, function, *args, **kwargs):
         logout()
 
 
-class BranchFileSystem(LaunchpadXMLRPCView):
-    """See `IBranchFileSystem`."""
 
-    implements(IBranchFileSystem)
+class Codehosting(LaunchpadXMLRPCView):
+    """See `ICodehosting`."""
+
+    implements(ICodehosting)
+
+    def acquireBranchToPull(self, branch_type_names):
+        """See `ICodehosting`."""
+        branch_types = []
+        for branch_type_name in branch_type_names:
+            try:
+                branch_types.append(BranchType.items[branch_type_name])
+            except KeyError:
+                raise UnknownBranchTypeError(
+                    'Unknown branch type: %r' % (branch_type_name,))
+        branch = getUtility(branchpuller.ICodehosting).acquireBranchToPull(
+            *branch_types)
+        if branch is not None:
+            branch = removeSecurityProxy(branch)
+            default_branch = branch.target.default_stacked_on_branch
+            if default_branch is None:
+                default_branch_name = ''
+            elif (branch.branch_type == BranchType.MIRRORED
+                  and default_branch.private):
+                default_branch_name = ''
+            else:
+                default_branch_name = '/' + default_branch.unique_name
+            return (branch.id, branch.getPullURL(), branch.unique_name,
+                    default_branch_name, branch.branch_type.name)
+        else:
+            return ()
+
+    def mirrorComplete(self, branch_id, last_revision_id):
+        """See `ICodehosting`."""
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        # See comment in startMirroring.
+        branch = removeSecurityProxy(branch)
+        branch.mirrorComplete(last_revision_id)
+        branches = branch.getStackedBranchesWithIncompleteMirrors()
+        for stacked_branch in branches:
+            stacked_branch.requestMirror()
+        return True
+
+    def mirrorFailed(self, branch_id, reason):
+        """See `ICodehosting`."""
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        # See comment in startMirroring.
+        removeSecurityProxy(branch).mirrorFailed(reason)
+        return True
+
+    def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
+        """See `ICodehosting`."""
+        date_started = datetime_from_tuple(started_tuple)
+        date_completed = datetime_from_tuple(completed_tuple)
+        getUtility(IScriptActivitySet).recordSuccess(
+            name=name, date_started=date_started,
+            date_completed=date_completed, hostname=hostname)
+        return True
+
+    def setStackedOn(self, branch_id, stacked_on_location):
+        """See `ICodehosting`."""
+        # We don't want the security proxy on the branch set because this
+        # method should be able to see all branches and set stacking
+        # information on any of them.
+        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            if stacked_on_location.startswith('/'):
+                stacked_on_branch = branch_set.getByUniqueName(
+                    stacked_on_location.strip('/'))
+            else:
+                stacked_on_branch = branch_set.getByUrl(
+                    stacked_on_location.rstrip('/'))
+            if stacked_on_branch is None:
+                return faults.NoSuchBranch(stacked_on_location)
+        stacked_branch = branch_set.get(branch_id)
+        if stacked_branch is None:
+            return faults.NoBranchWithID(branch_id)
+        stacked_branch.stacked_on = stacked_on_branch
+        return True
 
     def createBranch(self, login_id, branch_path):
-        """See `IBranchFileSystem`."""
+        """See `ICodehosting`."""
         def create_branch(requester):
             if not branch_path.startswith('/'):
                 return faults.InvalidPath(branch_path)
@@ -243,7 +228,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
                 and check_permission('launchpad.Edit', branch))
 
     def requestMirror(self, login_id, branchID):
-        """See `IBranchFileSystem`."""
+        """See `ICodehosting`."""
         def request_mirror(requester):
             branch = getUtility(IBranchLookup).get(branchID)
             # We don't really care who requests a mirror of a branch.
@@ -253,7 +238,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
 
     def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
                       (control_string, branch_string, repository_string)):
-        """See `IBranchFileSystem`."""
+        """See `ICodehosting`."""
         branch_set = removeSecurityProxy(getUtility(IBranchLookup))
         branch = branch_set.get(branch_id)
         if branch is None:
@@ -327,7 +312,7 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             trailing_path)
 
     def translatePath(self, requester_id, path):
-        """See `IBranchFileSystem`."""
+        """See `ICodehosting`."""
         @return_fault
         def translate_path(requester):
             if not path.startswith('/'):

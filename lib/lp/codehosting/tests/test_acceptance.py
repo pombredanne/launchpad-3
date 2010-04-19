@@ -230,14 +230,15 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
         """
         authserver = xmlrpclib.ServerProxy(
             config.codehosting.authentication_endpoint)
-        branchfs = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+        codehosting_api = xmlrpclib.ServerProxy(
+            config.codehosting.codehosting_endpoint)
         if creator is None:
             creator_id = authserver.getUserAndSSHKeys(user)['id']
         else:
             creator_id = authserver.getUserAndSSHKeys(creator)['id']
         if branch_root is None:
             branch_root = self.server._mirror_root
-        branch_id = branchfs.createBranch(
+        branch_id = codehosting_api.createBranch(
             creator_id, '/~%s/%s/%s' % (user, product, branch))
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))

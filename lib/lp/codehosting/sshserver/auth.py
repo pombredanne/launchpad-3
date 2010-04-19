@@ -50,17 +50,17 @@ from canonical.launchpad.xmlrpc import faults
 class LaunchpadAvatar(avatar.ConchUser):
     """An account on the SSH server, corresponding to a Launchpad person.
 
-    :ivar branchfs_proxy: A Twisted XML-RPC client for the authserver. The
-        server must implement `IBranchFileSystem`.
+    :ivar codehosting_proxy: A Twisted XML-RPC client for the internal
+        server. The server must implement `ICodehosting`.
     :ivar channelLookup: See `avatar.ConchUser`.
     :ivar subsystemLookup: See `avatar.ConchUser`.
     :ivar user_id: The Launchpad database ID of the Person for this account.
     :ivar username: The Launchpad username for this account.
     """
 
-    def __init__(self, userDict, branchfs_proxy):
+    def __init__(self, userDict, codehosting_proxy):
         avatar.ConchUser.__init__(self)
-        self.branchfs_proxy = branchfs_proxy
+        self.codehosting_proxy = codehosting_proxy
         self.user_id = userDict['id']
         self.username = userDict['name']
 
@@ -87,9 +87,9 @@ class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
 class Realm:
     implements(IRealm)
 
-    def __init__(self, authentication_proxy, branchfs_proxy):
+    def __init__(self, authentication_proxy, codehosting_proxy):
         self.authentication_proxy = authentication_proxy
-        self.branchfs_proxy = branchfs_proxy
+        self.codehosting_proxy = codehosting_proxy
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
@@ -97,7 +97,7 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = LaunchpadAvatar(userDict, self.branchfs_proxy)
+            avatar = LaunchpadAvatar(userDict, self.codehosting_proxy)
             return interfaces[0], avatar, avatar.logout
         return deferred.addCallback(gotUserDict)
 
@@ -332,9 +332,9 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             "user %s" % credentials.username)
 
 
-def get_portal(authentication_proxy, branchfs_proxy):
+def get_portal(authentication_proxy, codehosting_proxy):
     """Get a portal for connecting to Launchpad codehosting."""
-    portal = Portal(Realm(authentication_proxy, branchfs_proxy))
+    portal = Portal(Realm(authentication_proxy, codehosting_proxy))
     portal.registerChecker(
         PublicKeyFromLaunchpadChecker(authentication_proxy))
     return portal

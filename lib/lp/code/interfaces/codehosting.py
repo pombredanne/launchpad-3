@@ -9,10 +9,8 @@ __metaclass__ = type
 __all__ = [
     'BRANCH_TRANSPORT',
     'CONTROL_TRANSPORT',
-    'IBranchPuller',
-    'IBranchPullerApplication',
-    'IBranchFileSystem',
-    'IBranchFileSystemApplication',
+    'ICodehosting',
+    'ICodehostingApplication',
     'LAUNCHPAD_ANONYMOUS',
     'LAUNCHPAD_SERVICES',
     'READ_ONLY',
@@ -48,14 +46,17 @@ BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
 CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
 
 
-class IBranchPullerApplication(ILaunchpadApplication):
+class ICodehostingApplication(ILaunchpadApplication):
     """Branch Puller application root."""
 
 
-class IBranchPuller(Interface):
-    """The puller's interface to the rest of Launchpad.
+class ICodehosting(Interface):
+    """The codehosting XML-RPC interface to Launchpad.
 
-    Published at 'branch_puller' on the private XML-RPC server.
+    Published at 'codehosting' on the private XML-RPC server.
+
+    The code hosting service and puller use this to register branches, to
+    retrieve information about a user's branches, and to update their status.
     """
 
     def acquireBranchToPull(branch_type_names):
@@ -79,17 +80,6 @@ class IBranchPuller(Interface):
               * branch_type is one of 'hosted', 'mirrored', or 'imported'.
 
             or (), the empty tuple, if there is no branch to pull.
-        """
-
-    def startMirroring(branchID):
-        """Notify Launchpad that the given branch has started mirroring.
-
-        The last_mirror_attempt field of the given branch record will be
-        updated appropriately.
-
-        :param branchID: The database ID of the given branch.
-        :returns: True if the branch status was successfully updated.
-            `NoBranchWithID` fault if there's no branch with the given id.
         """
 
     def mirrorComplete(branchID, lastRevisionID):
@@ -143,20 +133,6 @@ class IBranchPuller(Interface):
             `NoSuchBranch` fault if there's no branch matching
             'stacked_on_location'.
         """
-
-
-class IBranchFileSystemApplication(ILaunchpadApplication):
-    """Branch File System end point root."""
-
-
-class IBranchFileSystem(Interface):
-    """An interface for dealing with hosted branches in Launchpad.
-
-    Published at `branchfilesystem`.
-
-    The code hosting service uses this to register branches, to retrieve
-    information about a user's branches, and to update their status.
-    """
 
     def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.

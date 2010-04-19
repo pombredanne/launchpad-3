@@ -292,9 +292,7 @@ class IPrivateApplication(ILaunchpadApplication):
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
-    branch_puller = Attribute("""Branch puller end point.""")
-
-    branchfilesystem = Attribute("""The branch filesystem end point.""")
+    codehosting = Attribute("""Codehosting end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 

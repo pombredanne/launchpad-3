@@ -169,12 +169,12 @@ def is_lock_directory(absolute_path):
 
 def get_scanner_server():
     """Get a Launchpad internal server for scanning branches."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    branchfs_endpoint = BlockingProxy(proxy)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
+    codehosting_endpoint = BlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.codehosting.internal_branch_by_id_root))
     return LaunchpadInternalServer(
-        'lp-mirrored:///', branchfs_endpoint, branch_transport)
+        'lp-mirrored:///', codehosting_endpoint, branch_transport)
 
 
 def get_puller_server():
@@ -186,10 +186,10 @@ def get_puller_server():
     """
     hosted_transport = get_chrooted_transport(
         config.codehosting.mirrored_branches_root, mkdir=True)
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    branchfs_endpoint = BlockingProxy(proxy)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
+    codehosting_endpoint = BlockingProxy(proxy)
     return LaunchpadInternalServer(
-        'lp-internal:///', branchfs_endpoint, hosted_transport)
+        'lp-internal:///', codehosting_endpoint, hosted_transport)
 
 
 def get_multi_server(write_hosted=False, write_mirrored=False,
@@ -222,11 +222,11 @@ def get_multi_server(write_hosted=False, write_mirrored=False,
     if direct_database:
         make_server = DirectDatabaseLaunchpadServer
     else:
-        proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-        branchfs_endpoint = BlockingProxy(proxy)
+        proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
+        codehosting_endpoint = BlockingProxy(proxy)
         def make_server(scheme, transport):
             return LaunchpadInternalServer(
-                scheme, branchfs_endpoint, transport)
+                scheme, codehosting_endpoint, transport)
     hosted_server = make_server('lp-hosted:///', hosted_transport)
     mirrored_server = make_server('lp-mirrored:///', mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
@@ -703,30 +703,30 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addCallback(got_path_info).addErrback(log.err)
 
 
-def get_lp_server(user_id, branchfs_endpoint_url=None, branch_directory=None,
+def get_lp_server(user_id, codehosting_endpoint_url=None, branch_directory=None,
                   seen_new_branch_hook=None):
     """Create a Launchpad server.
 
     :param user_id: A unique database ID of the user whose branches are
         being served.
-    :param branchfs_endpoint_url: URL for the branch file system end-point.
+    :param codehosting_endpoint_url: URL for the branch file system end-point.
     :param hosted_directory: Where the branches are uploaded to.
     :param mirror_directory: Where all Launchpad branches are mirrored.
     :param seen_new_branch_hook:
     :return: A `LaunchpadServer`.
     """
     # Get the defaults from the config.
-    if branchfs_endpoint_url is None:
-        branchfs_endpoint_url = config.codehosting.branchfs_endpoint
+    if codehosting_endpoint_url is None:
+        codehosting_endpoint_url = config.codehosting.codehosting_endpoint
     if branch_directory is None:
         branch_directory = config.codehosting.mirrored_branches_root
 
     branch_url = urlutils.local_path_to_url(branch_directory)
-    branchfs_client = xmlrpclib.ServerProxy(branchfs_endpoint_url)
+    codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
     # XXX: JonathanLange 2007-05-29: The 'chroot' line lacks a unit test.
     branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(
-        BlockingProxy(branchfs_client), user_id, branch_transport,
+        BlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
 

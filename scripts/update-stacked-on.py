@@ -39,7 +39,7 @@ from lp.services.scripts.base import LaunchpadScript
 
 def get_server(read_only):
     """Get a server that can write to both hosted and mirrored areas."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+    proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
     authserver = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
         config.codehosting.hosted_branches_root)

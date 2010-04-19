@@ -34,20 +34,23 @@ class NotInCache(Exception):
 
 
 class BranchFileSystemClient:
-    """Wrapper for the branch filesystem endpoint for a particular user.
+    """Wrapper for some methods of the codehosting endpoint.
 
-    This wrapper caches the results of calls to translatePath in order to
+    Instances of this class wrap the methods of the codehosting endpoint
+    required by the VFS code, specialized for a particular user.
+
+    The wrapper also caches the results of calls to translatePath in order to
     avoid a large number of roundtrips. In the normal course of operation, our
     Bazaar transport translates virtual paths to real paths on disk using this
     client. It does this many, many times for a single Bazaar operation, so we
     cache the results here.
     """
 
-    def __init__(self, branchfs_endpoint, user_id, expiry_time=None,
+    def __init__(self, codehosting_endpoint, user_id, expiry_time=None,
                  seen_new_branch_hook=None, _now=time.time):
-        """Construct a caching branchfs_endpoint.
+        """Construct a caching codehosting_endpoint.
 
-        :param branchfs_endpoint: An XML-RPC proxy that implements callRemote.
+        :param codehosting_endpoint: An XML-RPC proxy that implements callRemote.
         :param user_id: The database ID of the user who will be making these
             requests. An integer.
         :param expiry_time: If supplied, only cache the results of
@@ -56,7 +59,7 @@ class BranchFileSystemClient:
         :param seen_new_branch_hook: A callable that will be called with the
             unique_name of each new branch that is accessed.
         """
-        self._branchfs_endpoint = branchfs_endpoint
+        self._codehosting_endpoint = codehosting_endpoint
         self._cache = {}
         self._user_id = user_id
         self.expiry_time = expiry_time
@@ -104,16 +107,16 @@ class BranchFileSystemClient:
     def createBranch(self, branch_path):
         """Create a Launchpad `IBranch` in the database.
 
-        This raises any Faults that might be raised by the branchfs_endpoint's
-        `createBranch` method, so for more information see
-        `IBranchFileSystem.createBranch`.
+        This raises any Faults that might be raised by the
+        codehosting_endpoint's `createBranch` method, so for more information
+        see `IBranchFileSystem.createBranch`.
 
         :param branch_path: The path to the branch to create.
         :return: A `Deferred` that fires the ID of the created branch.
         """
         return defer.maybeDeferred(
-            self._branchfs_endpoint.callRemote, 'createBranch', self._user_id,
-            branch_path)
+            self._codehosting_endpoint.callRemote, 'createBranch',
+            self._user_id, branch_path)
 
     def branchChanged(self, branch_id, stacked_on_url, last_revision_id,
                       format_strings):
@@ -122,7 +125,7 @@ class BranchFileSystemClient:
         :param branch_id: The database ID of the branch.
         """
         return defer.maybeDeferred(
-            self._branchfs_endpoint.callRemote,
+            self._codehosting_endpoint.callRemote,
             'branchChanged', branch_id, stacked_on_url, last_revision_id,
             format_strings)
 
@@ -132,7 +135,7 @@ class BranchFileSystemClient:
             return defer.succeed(self._getFromCache(path))
         except NotInCache:
             deferred = defer.maybeDeferred(
-                self._branchfs_endpoint.callRemote,
+                self._codehosting_endpoint.callRemote,
                 'translatePath', self._user_id, path)
             deferred.addCallback(self._addToCache, path)
             return deferred
