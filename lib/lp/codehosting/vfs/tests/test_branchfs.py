@@ -961,8 +961,22 @@ class TestBranchChangedNotification(TestCaseWithTransport):
     def test_format_2a(self):
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name,
-                                  format=format_registry.get('2a')())
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('2a')())
+        self.assertFormatStringsPassed(branch)
+
+    def test_format_knits(self):
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('knit')())
+        self.assertFormatStringsPassed(branch)
+
+    def test_format_packs(self):
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(
+            db_branch.unique_name, format=format_registry.get('pack-0.92')())
         self.assertFormatStringsPassed(branch)
 
 
