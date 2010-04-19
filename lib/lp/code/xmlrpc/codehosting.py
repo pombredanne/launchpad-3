@@ -24,6 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
 from lp.code.errors import UnknownBranchTypeError
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import BranchCreationException
 from lp.code.interfaces.branchjob import IBranchScanJobSource
@@ -250,7 +251,8 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
-    def branchChanged(self, branch_id, stacked_on_location, last_revision_id):
+    def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
+                      (control_string, branch_string, repository_string)):
         """See `IBranchFileSystem`."""
         branch_set = removeSecurityProxy(getUtility(IBranchLookup))
         branch = branch_set.get(branch_id)
@@ -269,6 +271,22 @@ class BranchFileSystem(LaunchpadXMLRPCView):
         if branch.last_mirrored_id != last_revision_id:
             branch.last_mirrored_id = last_revision_id
             getUtility(IBranchScanJobSource).create(branch)
+
+        def match_title(enum, title, default):
+            for value in enum.items:
+                if value.title == title:
+                    return value
+            else:
+                return default
+
+        branch.control_format = match_title(
+            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+        branch.branch_format = match_title(
+            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+        branch.repository_format = match_title(
+            RepositoryFormat, repository_string,
+            RepositoryFormat.UNRECOGNIZED)
+
         return True
 
     def _serializeBranch(self, requester, branch, trailing_path):

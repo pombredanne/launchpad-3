@@ -951,11 +951,11 @@ class TestBranchChangedNotification(TestCaseWithTransport):
 
     def assertFormatStringsPassed(self, branch):
         self.assertEqual(1, len(self._branch_changed_log))
-        control_format_string = branch.bzrdir._format.get_format_string()
-        branch_format_string = branch._format.get_format_string()
-        repository_format_string = branch.repository._format.get_format_string()
+        control_string = branch.bzrdir._format.get_format_string()
+        branch_string = branch._format.get_format_string()
+        repository_string = branch.repository._format.get_format_string()
         self.assertEqual(
-            (control_format_string, branch_format_string, repository_format_string),
+            (control_string, branch_string, repository_string),
             self._branch_changed_log[0]['format_strings'])
 
     def test_format_2a(self):

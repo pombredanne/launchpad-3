@@ -23,6 +23,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import ZopelessAppServerLayer
 from canonical.testing.profiled import profiled
 
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
@@ -321,18 +322,19 @@ class AcceptanceTests(SSHTestCase):
             url=url)
 
     def test_push_to_new_branch(self):
-        """
-        The bzr client should be able to read and write to the codehosting
-        server just like another other server.  This means that actions
-        like:
-            * `bzr push bzr+ssh://testinstance/somepath`
-            * `bzr log sftp://testinstance/somepath`
-        (and/or their bzrlib equivalents) and so on should work, so long as
-        the user has permission to read or write to those URLs.
-        """
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
+        LaunchpadZopelessTestSetup().txn.begin()
+        db_branch = getUtility(IBranchSet).getByUniqueName(
+            '~testuser/+junk/test-branch')
+        self.assertEqual(
+            RepositoryFormat.BZR_CHK_2A, db_branch.repository_format)
+        self.assertEqual(
+            BranchFormat.BZR_BRANCH_7, db_branch.branch_format)
+        self.assertEqual(
+            ControlFormat.BZR_METADIR_1, db_branch.control_format)
+        LaunchpadZopelessTestSetup().txn.commit()
 
     def test_push_to_existing_branch(self):
         """Pushing to an existing branch must work."""
