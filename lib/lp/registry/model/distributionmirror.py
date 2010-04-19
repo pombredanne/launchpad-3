@@ -317,11 +317,7 @@ class DistributionMirror(SQLBase):
             mirror.destroySelf()
 
     def _getMirrorDistroArchSeries(self, distro_arch_series, pocket, component):
-        """Check if we have a MirrorDistroArchSeries with the given arch
-        series and pocket.
-
-        Return that MirrorDistroArchSeries.
-        """
+        """Return MirrorDistroArchSeries given a arch series and pocket."""
 
         return IStore(MirrorDistroArchSeries).find(
             MirrorDistroArchSeries,
@@ -345,10 +341,7 @@ class DistributionMirror(SQLBase):
         return mirror
 
     def _getMirrorDistroSeriesSource(self, distroseries, pocket, component):
-        """Check if we have a MirrorDistroSeriesSource with the given arch
-        series and pocket.
-
-        Return that MirrorDistroSeriesSource."""
+        """Return MirrorDistroSeriesSource given a arch series and pocket."""
 
         return IStore(MirrorDistroSeriesSource).find(
             MirrorDistroSeriesSource,
