@@ -1,0 +1,143 @@
+====================
+Recipe Listing Pages
+====================
+
+Pages that want to display lists of recipes use the recipe-listing
+page template, and views derived from RecipeListingView.
+
+
+    >>> def print_recipe_listing_head(browser):
+    ...     table = find_tag_by_id(browser.contents, 'recipetable')
+    ...     for row in table.thead.fetch('tr'):
+    ...         print extract_text(row)
+
+    >>> def print_recipe_listing_contents(browser):
+    ...     table = find_tag_by_id(browser.contents, 'recipetable')
+    ...     for row in table.tbody.fetch('tr'):
+    ...         print extract_text(row)
+
+
+Branch Recipe Listings
+======================
+
+Create a sample branch.
+
+    >>> login('foo.bar@canonical.com')
+    >>> recipeless_branch = factory.makeBranch()
+    >>> recipeless_branch_url = canonical_url(recipeless_branch)
+    >>> logout()
+    >>> nopriv_browser = setupBrowser(
+    ...     auth='Basic nopriv@canonical.com:test')
+
+The link to the source package recipe listings should not be shown.
+
+    >>> nopriv_browser.open(recipeless_branch_url)
+    >>> nopriv_browser.getLink('View source package recipes')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Create a new sample branch, but this time create some source package branches
+to go along with them.
+
+    >>> login('foo.bar@canonical.com')
+    >>> branch = factory.makeBranch()
+    >>> recipe1 = factory.makeSourcePackageRecipe(
+    ...     None, None, None, None, None, None, branch)
+    >>> recipe2 = factory.makeSourcePackageRecipe(
+    ...     None, None, None, None, None, None, branch)
+    >>> recipe3 = factory.makeSourcePackageRecipe(
+    ...     None, None, None, None, None, None, branch)
+
+Keep these urls, including the product url.  We'll use these later.
+
+    >>> branch_url = canonical_url(branch)
+    >>> product_url = canonical_url(branch.product)
+
+    >>> logout()
+
+The link to source package recipes should now be shown.  Let's click through.
+
+    >>> nopriv_browser.open(branch_url)
+    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> print nopriv_browser.url
+    http://code.launchpad.dev/~person-name.../product-name.../branch.../+recipes
+
+The "Base branch" column should not be shown.
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Project
+    Owner
+    Registered
+
+The branch page should have a list of all the recipes the branch is a
+base_branch for.
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    generic-string... Product-name... Person-name...
+    generic-string... Product-name... Person-name...
+    generic-string... Product-name... Person-name...
+
+
+Product Recipe Listings
+=======================
+
+Let's use the product from the former branch test.
+
+    >>> nopriv_browser.open(product_url)
+    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> print nopriv_browser.url
+    http://launchpad.dev/product-name.../+recipes
+
+The "Project" column should be missing, since, well, all of these recipes are
+from the same product.
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Owner
+    Base Branch
+    Registered
+
+The listings should now show all recipes whose base branch is a branch from
+this product.
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    generic-string... Person-name... lp://dev/... ...
+    generic-string... Person-name... lp://dev/... ...
+    generic-string... Person-name... lp://dev/... ...
+
+
+Person Recipe Listings
+======================
+
+Create a person, make some recipes for that person.
+
+    >>> login('foo.bar@canonical.com')
+    >>> person = factory.makePerson()
+    >>> person_url = canonical_url(person)
+    >>> recipe1 = factory.makeSourcePackageRecipe(owner=person)
+    >>> recipe2 = factory.makeSourcePackageRecipe(owner=person)
+    >>> recipe3 = factory.makeSourcePackageRecipe(owner=person)
+    >>> logout()
+
+    >>> nopriv_browser.open(person_url)
+    >>> nopriv_browser.getLink('View source package recipes').click()
+    >>> print nopriv_browser.url
+    http://launchpad.dev/~person-name.../+recipes
+
+The "Owner" section should be missing.
+
+    >>> print_recipe_listing_head(nopriv_browser)
+    Name
+    Project
+    Base Branch
+    Registered
+
+The listings should now show all recipes whose base branch is a branch from
+this product.
+
+    >>> print_recipe_listing_contents(nopriv_browser)
+    generic-string... Product-name... lp://dev/... ...
+    generic-string... Product-name... lp://dev/... ...
+    generic-string... Product-name... lp://dev/... ...

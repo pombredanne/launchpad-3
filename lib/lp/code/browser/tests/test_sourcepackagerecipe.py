@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=F0401
 
-"""Tests for the product view classes and templates."""
+"""Tests for the source package recipe view classes and templates."""
 
 __metaclass__ = type
 

@@ -80,6 +80,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType,
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
@@ -225,7 +226,7 @@ class BranchEditMenu(NavigationMenu):
         return Link('+reviewer', text, icon='edit')
 
 
-class BranchContextMenu(ContextMenu):
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
@@ -233,7 +234,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
