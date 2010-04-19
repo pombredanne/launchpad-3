@@ -397,7 +397,27 @@ IDistributionMirror.
 
     >>> paths = mirror.getExpectedPackagesPaths()
     >>> [path for (series, pocket, component, path) in paths]
-    [u'dists/hoary/main/binary-i386/Packages.gz',
+    [u'dists/breezy-autotest/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/multiverse/binary-i386/Packages.gz',
+     u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
      u'dists/hoary-backports/main/binary-i386/Packages.gz',
      u'dists/hoary-backports/restricted/binary-i386/Packages.gz',
@@ -406,7 +426,17 @@ IDistributionMirror.
      u'dists/hoary-updates/main/binary-i386/Packages.gz',
      u'dists/hoary-updates/restricted/binary-i386/Packages.gz',
      u'dists/hoary-proposed/main/binary-i386/Packages.gz',
-     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
+     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz',
+     u'dists/warty/main/binary-i386/Packages.gz',
+     u'dists/warty/universe/binary-i386/Packages.gz',
+     u'dists/warty-backports/main/binary-i386/Packages.gz',
+     u'dists/warty-backports/universe/binary-i386/Packages.gz',
+     u'dists/warty-security/main/binary-i386/Packages.gz',
+     u'dists/warty-security/universe/binary-i386/Packages.gz',
+     u'dists/warty-updates/main/binary-i386/Packages.gz',
+     u'dists/warty-updates/universe/binary-i386/Packages.gz',
+     u'dists/warty-proposed/main/binary-i386/Packages.gz',
+     u'dists/warty-proposed/universe/binary-i386/Packages.gz']
 
     >>> paths = mirror.getExpectedSourcesPaths()
     >>> [path for (series, pocket, component, path) in paths]
