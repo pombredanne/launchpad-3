@@ -22,6 +22,34 @@ from lp.testing import TestCaseWithFactory
 from ..base import WorkingBase
 
 
+class TestWorkingBase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_statement_logging(self):
+        person = self.factory.makePerson()
+        email = person.preferredemail.email
+        logger = QuietFakeLogger()
+        base = WorkingBase(email, transaction.manager, logger)
+        self.factory.makeEmail('numpty1@example.com', person)
+        self.assertEqual(
+            0, len(get_request_statements()),
+            "The statement log should be empty because "
+            "logging is not enabled.")
+        with base.statement_logging:
+            self.assertEqual(
+                0, len(get_request_statements()),
+                "There should be no statements in the log yet.")
+            self.factory.makeEmail('numpty2@example.com', person)
+            self.assertTrue(
+                len(get_request_statements()) > 0,
+                "There should be at least one statement in the log.")
+        self.assertEqual(
+            0, len(get_request_statements()),
+            "SQL statement log not cleared on exit "
+            "from base.statement_logging.")
+
+
 class TestWorkingBaseErrorReporting(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
