@@ -242,7 +242,7 @@ class Codehosting(LaunchpadXMLRPCView):
         return run_with_login(login_id, request_mirror)
 
     def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
-                      (control_string, branch_string, repository_string)):
+                      control_string, branch_string, repository_string):
         """See `ICodehosting`."""
         branch_set = removeSecurityProxy(getUtility(IBranchLookup))
         branch = branch_set.get(branch_id)
