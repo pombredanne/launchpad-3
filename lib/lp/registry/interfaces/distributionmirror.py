@@ -524,11 +524,25 @@ class IDistributionMirror(Interface):
         pocket, in case it exists.
         """
 
+    def getMirrorDistroArchSeries(distro_arch_series, pocket, component):
+        """Check if we have a MirrorDistroArchSeries with the given arch
+        series and pocket.
+
+        Return that MirrorDistroArchSeries.
+        """
+
     def ensureMirrorDistroArchSeries(distro_arch_series, pocket, component):
         """Check if we have a MirrorDistroArchSeries with the given arch
         series and pocket, creating one if not.
 
         Return that MirrorDistroArchSeries.
+        """
+
+    def getMirrorDistroSeriesSource(distroseries, pocket, component):
+        """Check if we have a MirrorDistroSeriesSource with the given distro
+        series.
+
+        Return that MirrorDistroSeriesSource.
         """
 
     def ensureMirrorDistroSeriesSource(distroseries, pocket, component):

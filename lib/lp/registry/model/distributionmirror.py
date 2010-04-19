@@ -51,6 +51,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent, MirrorFreshness, MirrorHasNoHTTPURL, MirrorNotOfficial,
     MirrorNotProbed, MirrorSpeed, MirrorStatus, PROBE_INTERVAL)
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import simple_sendmail, format_address
 from lp.registry.interfaces.person import validate_public_person
@@ -314,14 +315,20 @@ class DistributionMirror(SQLBase):
         if mirror is not None:
             mirror.destroySelf()
 
-    def ensureMirrorDistroArchSeries(self, distro_arch_series, pocket,
-                                     component):
-        """See IDistributionMirror"""
-        assert IDistroArchSeries.providedBy(distro_arch_series)
-        mirror = MirrorDistroArchSeries.selectOneBy(
+    def getMirrorDistroArchSeries(self, distro_arch_series, pocket, component):
+        """See `IDistributionMirror`."""
+        return MirrorDistroArchSeries.selectOneBy(
             distribution_mirror=self,
             distro_arch_series=distro_arch_series, pocket=pocket,
             component=component)
+
+    def ensureMirrorDistroArchSeries(self, distro_arch_series, pocket,
+                                     component):
+        """See `IDistributionMirror`."""
+        assert IDistroArchSeries.providedBy(distro_arch_series)
+        mirror = self.getMirrorDistroArchSeries(
+                distro_arch_series=distro_arch_series,
+                pocket=pocket, component=component)
         if mirror is None:
             mirror = MirrorDistroArchSeries(
                 pocket=pocket, distribution_mirror=self,
@@ -329,12 +336,17 @@ class DistributionMirror(SQLBase):
                 component=component)
         return mirror
 
-    def ensureMirrorDistroSeriesSource(self, distroseries, pocket, component):
-        """See IDistributionMirror"""
-        assert IDistroSeries.providedBy(distroseries)
-        mirror = MirrorDistroSeriesSource.selectOneBy(
+    def getMirrorDistroSeriesSource(self, distroseries, pocket, component):
+        """See `IDistributionMirror`."""
+        return MirrorDistroSeriesSource.selectOneBy(
             distribution_mirror=self, distroseries=distroseries,
             pocket=pocket, component=component)
+
+    def ensureMirrorDistroSeriesSource(self, distroseries, pocket, component):
+        """See `IDistributionMirror`."""
+        assert IDistroSeries.providedBy(distroseries)
+        mirror = self.getMirrorDistroSeriesSource(
+            distroseries=distroseries, pocket=pocket, component=component)
         if mirror is None:
             mirror = MirrorDistroSeriesSource(
                 distribution_mirror=self, distroseries=distroseries,
@@ -431,10 +443,12 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     for arch_series in series.architectures:
-                        # XXX Guilherme Salgado 2006-08-01 bug=54791:
-                        # This hack is a cheap attempt to try and avoid
-                        # bug 54791 from biting us.
-                        if arch_series.architecturetag in ('hppa', 'ia64'):
+                        # Skip architectures for series which are obsolete
+                        # and ones which were not on the mirror on its last
+                        # probe.
+                        if (arch_series.status == SeriesStatus.OBSOLETE and
+                            not self.getMirrorDistroArchSeries(arch_series,
+                                pocket, component)):
                             continue
 
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
@@ -449,6 +463,12 @@ class DistributionMirror(SQLBase):
         for series in self.distribution.series:
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
+                    # Skip sources for series which are obsolete and ones
+                    # which were not on the mirror on its last probe.
+                    if (series.status == SeriesStatus.OBSOLETE and
+                        not self.getMirrorSourceSeries(series,
+                            pocket, component)):
+                        continue
                     path = ('dists/%s%s/%s/source/Sources.gz'
                             % (series.name, suffix, component.name))
                     paths.append((series, pocket, component, path))
