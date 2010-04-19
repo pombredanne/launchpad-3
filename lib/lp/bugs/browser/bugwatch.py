@@ -157,12 +157,13 @@ class BugWatchActivityPortletView(LaunchpadFormView):
 
     def userCanReschedule(self, action=None):
         """Return True if the current user can reschedule the bug watch."""
+        return self.context.can_be_rescheduled
 
     @action('Update Now', name='reschedule', condition=userCanReschedule)
     def reschedule_action(self, action, data):
         """Schedule the current bug watch for immediate checking."""
         bugwatch = self.context
-        bugwatch.next_check = UTC_NOW
+        bugwatch.setNextCheck(datetime.now(utc))
         self.request.response.addInfoNotification(
             structured(
                 'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '
