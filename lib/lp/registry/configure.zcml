@@ -1079,7 +1079,7 @@
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.View"
-            set_attributes="date_last_packaging_check"/>
+            set_attributes="next_suggest_packaging_date"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>

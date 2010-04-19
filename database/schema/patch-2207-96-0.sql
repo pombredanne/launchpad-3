@@ -3,10 +3,9 @@
 
 SET client_min_messages=ERROR;
 
--- Add a column to track when the project was confirmed to not be packaged
--- in Ubuntu. The default is NULL, meaning no one has ever confirmed the
--- current packaging.
+-- Add a column to track when Launchpad can resume suggesting Ubuntu packages
+-- that the project provides.
 ALTER TABLE Product
-    ADD COLUMN date_last_packaging_check timestamp without time zone;
+    ADD COLUMN next_suggest_packaging_date timestamp without time zone;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 96, 0);
