@@ -32,7 +32,6 @@ from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
-from lp.services.twistedsupport.processmonitor import run_process_with_timeout
 
 
 buildd_success_result_map = {
@@ -86,6 +85,11 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
         return self._clock.callLater(period, func)
 
     def spawnProcess(self, argv):
+        """Start a process.
+
+        :param argv: A list containing all the arg values for the process,
+                     where argv[0] is the full path to the executable.
+        """
         self.processTransport = reactor.spawnProcess(
             self, argv[0], tuple(argv))
 
