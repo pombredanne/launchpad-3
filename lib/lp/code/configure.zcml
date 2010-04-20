@@ -974,6 +974,7 @@
      component="lp.code.model.sourcepackagerecipe.SourcePackageRecipe"
      provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
     <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+
   </securedutility>
 
   <class
@@ -1017,7 +1018,13 @@
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe build_daily"/>
+       set_attributes="
+           build_daily
+           builder_recipe
+           description
+           distroseries
+           name
+           sourcepackagename"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

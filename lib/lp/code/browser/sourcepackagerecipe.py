@@ -189,13 +189,9 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         return (self.context.datebuilt is None and self.eta is not None)
 
 
-class SourcePackageRecipeAddView(LaunchpadFormView):
-    """View for creating Source Package Recipes."""
+class ISourcePackageAddEditSchema(Interface):
+        """Schema for adding or editing a recipe."""
 
-    title = label = 'Create a new source package recipe'
-
-    class schema(Interface):
-        """Schema for creating a recipe."""
         use_template(ISourcePackageRecipe, include=[
             'name',
             'description',
@@ -209,6 +205,13 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
         recipe_text = Text(
             title=u'Recipe text', required=True,
             description=u'The text of the recipe.')
+
+class SourcePackageRecipeAddView(LaunchpadFormView):
+    """View for creating Source Package Recipes."""
+
+    title = label = 'Create a new source package recipe'
+
+    schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
     @property
@@ -236,5 +239,34 @@ class SourcePackageRecipeEditView(LaunchpadFormView):
         return 'Edit %s source package recipe' % self.context.name
     label = title
 
-    class schema(Interface):
-        """Schema for editing a recipe."""
+    schema = ISourcePackageAddEditSchema
+    custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    @property
+    def initial_values(self):
+        return {
+            'name': self.context.name,
+            'description': self.context.description,
+            'sourcepackagename': self.context.sourcepackagename,
+            'distros': self.context.distroseries,
+            'recipe_text': str(self.context.builder_recipe),}
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action('Update recipe', name='update')
+    def request_action(self, action, data):
+        parser = RecipeParser(data['recipe_text'])
+        recipe = parser.parse()
+
+        self.context.name = data['name']
+        self.context.description = data['description']
+        self.context.sourcepackagename = data['sourcepackagename']
+        self.context.builder_recipe = recipe
+
+        self.context.distroseries.clear()
+        for distroseries_item in data['distros']:
+            self.context.distroseries.add(distroseries_item)
+
+        self.next_url = canonical_url(self.context)
