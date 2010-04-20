@@ -26,6 +26,7 @@ from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -232,7 +233,9 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
     usedfor = IDistroSeries
     facet = 'translations'
     links = [
-        'translations', 'templates', 'admin', 'language_packs', 'imports']
+        'translations', 'templates', 'admin', 'language_packs',
+        'latest_full_language_pack', 'latest_delta_language_pack',
+        'imports']
 
     def translations(self):
         return Link('', 'Overview')
@@ -250,6 +253,32 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     def language_packs(self):
         return Link('+language-packs', 'Language packs')
+
+    def latest_full_language_pack(self):
+        if self.context.last_full_language_pack_exported is None:
+            url = ''
+            text = 'none yet'
+            icon = None
+        else:
+            date_formater = DateTimeFormatterAPI(
+                self.context.last_full_language_pack_exported.date_exported)
+            url = '+latest-full-language-pack'
+            text = date_formater.datetime()
+            icon = 'download'
+        return Link(url, text, icon=icon)
+
+    def latest_delta_language_pack(self):
+        if self.context.last_delta_language_pack_exported is None:
+            url = ''
+            text = 'none yet'
+            icon = None
+        else:
+            date_formater = DateTimeFormatterAPI(
+                self.context.last_delta_language_pack_exported.date_exported)
+            url = '+latest-delta-language-pack'
+            text = date_formater.datetime()
+            icon = 'download'
+        return Link(url, text, icon=icon)
 
 
 def check_distroseries_translations_viewable(distroseries):
