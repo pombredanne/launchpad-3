@@ -14,10 +14,15 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-
-from canonical.launchpad import _
+from zope.schema import Choice, Datetime
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import Reference
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -55,6 +60,50 @@ class BuildFarmJobType(DBEnumeratedType):
 
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
+
+    id = Attribute('The build farm job ID.')
+
+    processor = Reference(
+        IProcessor, title=_("Processor"),
+        description=_(
+            "The Processor required by this build farm job. "
+            "For processor-independent job types please return None."))
+
+    virtualized = Attribute(
+        _(
+            "The virtualization setting required by this build farm job. "
+            "For job types that do not care about virtualization please "
+            "return None."))
+
+    date_created = Datetime(
+        title=_("Date created"), required=True, readonly=True,
+        description=_("The timestamp when the build farm job was created."))
+
+    date_started = Datetime(
+        title=_("Date started"), required=True, readonly=True,
+        description=_("The timestamp when the build farm job was started."))
+
+    date_finished = Datetime(
+        title=_("Date finished"), required=True, readonly=True,
+        description=_("The timestamp when the build farm job was finished."))
+
+    builder = Reference(
+        title=_("Builder"), schema=IBuilder, required=False, readonly=True,
+        description=_("The builder assigned to this job."))
+
+    status = Choice(
+        title=_('Status'), required=True, vocabulary=BuildStatus,
+        description=_("The current status of the job."))
+
+    log = Reference(
+        schema=ILibraryFileAlias, required=False,
+        title=_(
+            "The LibraryFileAlias containing the entire log for this job."))
+
+    job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
 
     def generateSlaveBuildCookie():
         """Produce a cookie for the slave as a token of the job it's doing.
@@ -122,18 +171,6 @@ class IBuildFarmJob(Interface):
         :return: True if the candidate job should be dispatched
             to a builder, False otherwise.
         """
-
-    processor = Reference(
-        IProcessor, title=_("Processor"),
-        description=_(
-            "The Processor required by this build farm job. "
-            "For processor-independent job types please return None."))
-
-    virtualized = Attribute(
-        _(
-            "The virtualization setting required by this build farm job. "
-            "For job types that do not care about virtualization please "
-            "return None."))
 
 
 class IBuildFarmJobDerived(Interface):
