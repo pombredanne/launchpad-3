@@ -13,8 +13,8 @@
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Bug Supervisors can transition bugs to the Won't Fix and Triaged
-statuses.
+Bug Supervisors can transition bugs to the Won't Fix, Expired and
+Triaged statuses.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
     >>> firefox_bugtask.transitionToStatus(
@@ -23,12 +23,17 @@ statuses.
     Won't Fix
 
     >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, nopriv_user)
+    >>> print firefox_bugtask.status.title
+    Expired
+
+    >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, nopriv_user)
     >>> print firefox_bugtask.status.title
     Triaged
 
-The product registrant can transition to the Won't Fix and Triaged
-statuses too.
+The product registrant can transition to the Won't Fix, Expired and
+Triaged statuses too.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, nopriv_user)
@@ -42,6 +47,11 @@ statuses too.
     ...     BugTaskStatus.WONTFIX, firefox.owner)
     >>> print firefox_bugtask.status.title
     Won't Fix
+
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, firefox.owner)
+    >>> print firefox_bugtask.status.title
+    Expired
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, firefox.owner)
@@ -63,6 +73,12 @@ to ensure that all call sites adhere to this.
     Traceback (most recent call last):
     ...
     UserCannotEditBugTaskStatus: Only Bug Supervisors may change status to Won't Fix.
+
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, nopriv_user)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskStatus: Only Bug Supervisors may change status to Expired.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, nopriv_user)
