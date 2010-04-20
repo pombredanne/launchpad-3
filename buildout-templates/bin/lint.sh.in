@@ -6,7 +6,9 @@
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 
-utilitiesdir=`dirname $0`/../utilities
+${shell-relative-path-setup}
+
+utilitiesdir=${buildout:directory/utilities|shell-path}
 [ -z "$utilitiesdir" ] && utilitiesdir=.
 
 # Fail if any of the required tools are not installed.
@@ -147,7 +149,7 @@ echo_sampledata_changes () {
     echo "        cp $4 $1"
     echo "    Run make schema again to update the test/dev database."
 }
-    
+
 if [ -n "$sql_diff" -o -n "$sql_dev_diff" -o -n "$karma_bombs" ]; then
     echo ""
     echo ""
@@ -155,7 +157,7 @@ if [ -n "$sql_diff" -o -n "$sql_dev_diff" -o -n "$karma_bombs" ]; then
     echo ""
 fi
 
-# 
+#
 if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo "$current_sql"
 fi
@@ -273,7 +275,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 extra_path="/usr/share/pyshared:/usr/share/pycentral/pylint/site-packages"
-export PYTHONPATH="${os-paths}:$extra_path:$PYTHONPATH"
+export PYTHONPATH=${scripts:parts-directory|shell-path}:"$extra_path":"$PYTHONPATH"
 pylint="${buildout:executable} -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
