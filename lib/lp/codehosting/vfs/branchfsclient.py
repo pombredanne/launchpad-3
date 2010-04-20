@@ -126,8 +126,9 @@ class BranchFileSystemClient:
         """
         return defer.maybeDeferred(
             self._codehosting_endpoint.callRemote,
-            'branchChanged', branch_id, stacked_on_url, last_revision_id,
-            control_string, branch_string, repository_string)
+            'branchChanged', self._user_id, branch_id, stacked_on_url,
+            last_revision_id, control_string, branch_string,
+            repository_string)
 
     def translatePath(self, path):
         """Translate 'path'."""
