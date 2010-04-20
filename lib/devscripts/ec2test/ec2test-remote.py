@@ -208,10 +208,16 @@ class BaseTestRunner:
                 # and take control itself, if it wants to.
                 self.logger.close_logs()
 
-    def _read_file(self, filename):
-        return open(filename, 'r').read()
-
     def send_email(self, result, summary_filename, out_filename, config):
+        """Send an email summarizing the test results.
+
+        :param result: True for pass, False for failure.
+        :param summary_filename: The path to the file where the summary
+            information lives. This will be the body of the email.
+        :param out_filename: The path to the file where the full output
+            lives. This will be zipped and attached.
+        :param config: A Bazaar configuration object with SMTP details.
+        """
         message = MIMEMultipart.MIMEMultipart()
         message['To'] = ', '.join(self.email)
         message['From'] = config.username()
@@ -219,8 +225,11 @@ class BaseTestRunner:
         message['Subject'] = subject
 
         # Make the body
-        body = MIMEText.MIMEText(
-            self._read_file(summary_filename), 'plain', 'utf8')
+        try:
+            summary = open(summary_filename, 'r').read()
+        finally:
+            summary.close()
+        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
         body['Content-Disposition'] = 'inline'
         message.attach(body)
 
