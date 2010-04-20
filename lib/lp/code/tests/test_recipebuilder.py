@@ -109,7 +109,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
            'archives': get_sources_list_for_building(job.build,
-                distroarchseries, job.build.sourcepackagename.name)
+                distroarchseries, job.build.sourcepackagename.name),
+           'distroseries': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave(self):
