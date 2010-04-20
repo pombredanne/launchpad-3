@@ -370,10 +370,6 @@
   <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
-  <securedutility
-      class="lp.code.model.branchscanner.BranchScanner"
-      provides="lp.code.interfaces.branchscanner.IBranchScanner">
-    <allow interface="lp.code.interfaces.branchscanner.IBranchScanner"/>
   </securedutility>
 
   <!-- BranchSubscription -->
