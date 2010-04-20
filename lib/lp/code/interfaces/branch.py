@@ -1088,23 +1088,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     def startMirroring():
         """Signal that this branch is being mirrored."""
 
-    def branchChanged(stacked_on_url, last_revision_id, control_format,
-                      branch_format, repository_format):
-        """Record that a branch has been changed.
-
-        This method records the stacked on branch and tip revision id of the
-        branch and creates a scan job if the tip revision id has changed.
-
-        :param branchID: The database id of the branch to operate on.
-        :param stacked_on_url: The unique name of the branch this branch is
-            stacked on, or '' if this branch is not stacked.
-        :param last_revision_id: The tip revision ID of the branch.
-        :param control_format: The entry from ControlFormat for the branch.
-        :param branch_format: The entry from BranchFormat for the branch.
-        :param repository_format: The entry from RepositoryFormat for the
-            branch.
-        """
-
     def mirrorComplete(last_revision_id):
         """Signal that a mirror attempt has completed successfully.
 

@@ -246,38 +246,44 @@ class BranchFileSystem(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
-    def branchChanged(self, login_id, branch_id, stacked_on_location,
-                      last_revision_id, control_string, branch_string,
-                      repository_string):
+    def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
+                      control_string, branch_string, repository_string):
         """See `IBranchFileSystem`."""
-        def branch_changed(request_mirror):
-            branch_set = getUtility(IBranchLookup)
-            branch = branch_set.get(branch_id)
-            if branch is None:
-                return faults.NoBranchWithID(branch_id)
+        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
+        branch = branch_set.get(branch_id)
+        if branch is None:
+            return faults.NoBranchWithID(branch_id)
+        branch.mirror_status_message = None
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            stacked_on_branch = branch_set.getByUniqueName(
+                stacked_on_location.strip('/'))
+            if stacked_on_branch is None:
+                branch.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
+        branch.stacked_on = stacked_on_branch
+        branch.last_mirrored = UTC_NOW
+        if branch.last_mirrored_id != last_revision_id:
+            branch.last_mirrored_id = last_revision_id
+            getUtility(IBranchScanJobSource).create(branch)
 
-            def match_title(enum, title, default):
-                for value in enum.items:
-                    if value.title == title:
-                        return value
-                else:
-                    return default
+        def match_title(enum, title, default):
+            for value in enum.items:
+                if value.title == title:
+                    return value
+            else:
+                return default
 
-            control_format = match_title(
-                ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-            branch_format = match_title(
-                BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-            repository_format = match_title(
-                RepositoryFormat, repository_string,
-                RepositoryFormat.UNRECOGNIZED)
+        branch.control_format = match_title(
+            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+        branch.branch_format = match_title(
+            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+        branch.repository_format = match_title(
+            RepositoryFormat, repository_string,
+            RepositoryFormat.UNRECOGNIZED)
 
-            branch.branchChanged(
-                stacked_on_location, last_revision_id, control_format,
-                branch_format, repository_format)
-
-            return True
-
-        return run_with_login(login_id, branch_changed)
+        return True
 
     def _serializeBranch(self, requester, branch, trailing_path):
         if requester == LAUNCHPAD_SERVICES:

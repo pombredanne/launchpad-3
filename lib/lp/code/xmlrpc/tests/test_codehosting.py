@@ -673,9 +673,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         revid = self.factory.getUniqueString()
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', revid,
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '', revid, *self.arbitrary_format_strings)
         self.assertEqual(revid, branch.last_mirrored_id)
 
     def test_branchChanged_sets_stacked_on(self):
@@ -684,9 +682,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         stacked_on = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, stacked_on.unique_name, '',
+            branch.id, stacked_on.unique_name, '',
             *self.arbitrary_format_strings)
-        login(ANONYMOUS)
         self.assertEqual(stacked_on, branch.stacked_on)
 
     def test_branchChanged_unsets_stacked_on(self):
@@ -695,9 +692,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).stacked_on = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '', '', *self.arbitrary_format_strings)
         self.assertIs(None, branch.stacked_on)
 
     def test_branchChanged_sets_last_mirrored(self):
@@ -705,9 +700,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # current time.
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '', '', *self.arbitrary_format_strings)
         if self.frontend == LaunchpadDatabaseFrontend:
             self.assertSqlAttributeEqualsDate(
                 branch, 'last_mirrored', UTC_NOW)
@@ -720,9 +713,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         # set to None.
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '~does/not/exist', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '~does/not/exist', '', *self.arbitrary_format_strings)
         self.assertIs(None, branch.stacked_on)
         self.assertTrue('~does/not/exist' in branch.mirror_status_message)
 
@@ -732,9 +723,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         removeSecurityProxy(branch).mirror_status_message = 'foo'
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '', '', *self.arbitrary_format_strings)
         self.assertIs(None, branch.mirror_status_message)
 
     def test_branchChanged_fault_on_unknown_id(self):
@@ -743,8 +732,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         unused_id = -1
         expected_fault = faults.NoBranchWithID(unused_id)
         received_fault = self.branchfs.branchChanged(
-            1, unused_id, '', '', *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            unused_id, '', '', *self.arbitrary_format_strings)
         self.assertEqual(
             (expected_fault.faultCode, expected_fault.faultString),
             (received_fault.faultCode, received_fault.faultString))
@@ -757,9 +745,7 @@ class BranchFileSystemTest(TestCaseWithFactory):
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '', 'rev1', *self.arbitrary_format_strings)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(1, len(jobs))
 
@@ -771,18 +757,14 @@ class BranchFileSystemTest(TestCaseWithFactory):
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
+            branch.id, '', 'rev1', *self.arbitrary_format_strings)
         jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(0, len(jobs))
 
     def test_branchChanged_2a_format(self):
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
-            *self.getFormatStringsForFormatName('2a'))
-        login(ANONYMOUS)
+            branch.id, '', 'rev1', *self.getFormatStringsForFormatName('2a'))
         self.assertEqual(
             (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_7,
              RepositoryFormat.BZR_CHK_2A),
@@ -792,9 +774,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_branchChanged_packs_format(self):
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
+            branch.id, '', 'rev1',
             *self.getFormatStringsForFormatName('pack-0.92'))
-        login(ANONYMOUS)
         self.assertEqual(
             (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_6,
              RepositoryFormat.BZR_KNITPACK_1),
@@ -804,9 +785,8 @@ class BranchFileSystemTest(TestCaseWithFactory):
     def test_branchChanged_knits_format(self):
         branch = self.factory.makeAnyBranch()
         self.branchfs.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
+            branch.id, '', 'rev1',
             *self.getFormatStringsForFormatName('knit'))
-        login(ANONYMOUS)
         self.assertEqual(
             (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_5,
              RepositoryFormat.BZR_KNIT_1),

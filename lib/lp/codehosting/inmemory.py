@@ -619,9 +619,8 @@ class FakeBranchFilesystem:
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()
 
-    def branchChanged(self, login_id, branch_id, stacked_on_location,
-                      last_revision_id, control_string, branch_string,
-                      repository_string):
+    def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
+                      control_string, branch_string, repository_string):
         branch = self._branch_set._find(id=branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
