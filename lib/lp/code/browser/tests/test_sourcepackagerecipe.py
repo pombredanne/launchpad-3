@@ -19,22 +19,65 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import extract_text, find_main_content
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
+from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.testing import (ANONYMOUS, login, TestCaseWithFactory)
 
 
-class TestSourcePackageRecipeView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class TestCaseForRecipe(TestCaseWithFactory):
+    """Create some sample data for recipe tests."""
 
     def setUp(self):
         """Provide useful defaults."""
-        super(TestSourcePackageRecipeView, self).setUp()
+        super(TestCaseForRecipe, self).setUp()
         self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef)
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret')
+
+
+class TestSourcePackageAddView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create_new_recipe(self):
+        # A new recipe can be created from the branch page.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename='ratatouille')
+
+        branch_path = branch.bzr_identity
+        browser = self.getUserBrowser(canonical_url(branch))
+        browser.getLink('Create source package recipe').click()
+
+        self.assertEqual(
+            browser.title,
+            'Create a new source package recipe : veggies : Branches : '
+            'Ratatouille')
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Secret Squirrel').click()
+
+        self.assertEqual(
+            browser.getControl('Recipe text').value.replace('\r\n', '\n'),
+            MINIMAL_RECIPE_TEXT % branch_path)
+
+        browser.getControl('Create recipe').click()
+
+        self.assertIn(
+            'Branches : Person-name',
+            browser.title)
+
+
+class TestSourcePackageRecipeView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
