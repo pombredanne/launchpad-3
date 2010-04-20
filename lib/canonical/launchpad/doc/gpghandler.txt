@@ -60,7 +60,7 @@ Let's recover some coherent data and verify if it works as expected:
     True
 
     >>> key.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
     >>> print key.secret
     False
@@ -120,7 +120,7 @@ Apparently GPGME is able to import an incomplete public key:
     >>> verifyObject(IPymeKey, key)
     True
     >>> key.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 But we get an error if the damage is big:
 (what probably happened in bug #2547)
@@ -230,10 +230,10 @@ set.
     Launchpad PPA for Celso áéíóú Providelo
 
     >>> uid.comment
-    ''
+    u''
 
     >>> uid.email
-    ''
+    u''
 
 The public key is also available.
 

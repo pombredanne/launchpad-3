@@ -469,7 +469,7 @@ The IGPGKey used to sign this ChangesFile:
 The IGPGKey fingerprint used to sign this ChangesFile:
 
     >>> ed_mixed_changes.fingerprint
-    '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
+    u'340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 
 == DSCFile ==
@@ -531,7 +531,7 @@ ISourcePackageRelease.dscsiginingkey:
 The IGPGKey fingerprint used to sign this DSC:
 
     >>> ed_mixed_dsc.fingerprint
-    '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
+    u'340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 A DSCFile provides a verification API similiar to what we have in
 ChangesFile itself:

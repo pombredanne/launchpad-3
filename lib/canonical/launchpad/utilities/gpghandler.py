@@ -620,7 +620,7 @@ class PymeKey:
         context = gpgme.Context()
         context.armor = True
         keydata = StringIO()
-        context.export(self.fingerprint, keydata)
+        context.export(self.fingerprint.encode('ascii'), keydata)
 
         return keydata.getvalue()
 

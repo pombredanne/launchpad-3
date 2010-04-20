@@ -224,7 +224,7 @@ So, load the GPG key:
   >>> key = gpg_handler.importPublicKey(key_data)
   >>> assert key is not None
   >>> key.fingerprint
-  '33C0A61893A5DC5EB325B29E415A12CAC2F30234'
+  u'33C0A61893A5DC5EB325B29E415A12CAC2F30234'
 
 
 Create the katie user and register it in a team that is allowed to

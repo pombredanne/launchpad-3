@@ -42,7 +42,7 @@ The text below was "clear signed" by 0xDFD20543 master key:
 
     >>> master_sig = gpghandler.verifySignature(content)
     >>> master_sig.fingerprint	
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
 
@@ -62,7 +62,7 @@ The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
 
     >>> subkey_sig = gpghandler.verifySignature(content)
     >>> subkey_sig.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 
    >>> master_sig.fingerprint == subkey_sig.fingerprint
@@ -86,7 +86,7 @@ The text below was "clear signed" by 0xDFD20543 master key but tampered with:
     >>> master_sig = gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 8, 'Bad signature')
+    GPGVerificationError: (7, 8, u'Bad signature')
 
 If no signed content is found, an exception is raised:
 
@@ -166,7 +166,7 @@ the GPGME error codes (they may be helpful).
     >>> gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 9, 'No public key')
+    GPGVerificationError: (7, 9, u'No public key')
 
 Due to unpredictable behaviour between the production system and
 the external keyserver, we have a resilient signature verifier,
@@ -179,4 +179,7 @@ information for the 3 failures.
     >>> gpghandler.getVerifiedSignatureResilient(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: Verification failed 3 times: ["(7, 9, 'No public key')", "(7, 9, 'No public key')", "(7, 9, 'No public key')"]
+    GPGVerificationError: Verification failed 3 times:
+    ["(7, 9, u'No public key')",
+     "(7, 9, u'No public key')",
+     "(7, 9, u'No public key')"]
