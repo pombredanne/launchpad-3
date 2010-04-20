@@ -274,14 +274,14 @@ From this page the branch subscription can be altered...
 Private team exclusion
 ======================
 
-If a team with private membership is excluded from the list of subscribers if
-the user is not an admin or a member of the team.
+If a private team is subscribed to the branch, it is excluded from the list of
+subscribers if the user is not an admin or a member of the team.
 
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('admin@canonical.com')
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> private_team = factory.makeTeam(
-    ...     name='shh', displayname='Shh...',
+    ...     name='shh', displayname='Shh',
     ...     visibility=PersonVisibility.PRIVATE)
     >>> member = factory.makePerson(
     ...     email='ssh@example.com', password='test')
@@ -297,5 +297,17 @@ the user is not an admin or a member of the team.
     >>> url = canonical_url(branch)
     >>> logout()
 
+No-priv is not a member of the private team, so the private team is not shown
+as a subscriber.
+
     >>> browser.open(url)
     >>> print_subscribers(browser.contents)
+    Branch-owner
+
+A team member looking at the branch will see the private team subscribed.
+
+    >>> private_browser = setupBrowser(auth='Basic ssh@example.com:test')
+    >>> private_browser.open(url)
+    >>> print_subscribers(private_browser.contents)
+    Branch-owner
+    Shh
