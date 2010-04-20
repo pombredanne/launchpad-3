@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmJobSource',
     'IBuildFarmJobDerived',
     'BuildFarmJobType',
     ]
@@ -21,7 +22,6 @@ from lazr.restful.fields import Reference
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -80,11 +80,11 @@ class IBuildFarmJob(Interface):
         description=_("The timestamp when the build farm job was created."))
 
     date_started = Datetime(
-        title=_("Date started"), required=True, readonly=True,
+        title=_("Date started"), required=False, readonly=True,
         description=_("The timestamp when the build farm job was started."))
 
     date_finished = Datetime(
-        title=_("Date finished"), required=True, readonly=True,
+        title=_("Date finished"), required=False, readonly=True,
         description=_("The timestamp when the build farm job was finished."))
 
     builder = Reference(
@@ -92,7 +92,10 @@ class IBuildFarmJob(Interface):
         description=_("The builder assigned to this job."))
 
     status = Choice(
-        title=_('Status'), required=True, vocabulary=BuildStatus,
+        title=_('Status'), required=True,
+        # Really PackagePublishingPocket, patched in
+        # _schema_circular_imports.py
+        vocabulary=DBEnumeratedType,
         description=_("The current status of the job."))
 
     log = Reference(
@@ -183,4 +186,18 @@ class IBuildFarmJobDerived(Interface):
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.
+        """
+
+class IBuildFarmJobSource(Interface):
+    """A utility of BuildFarmJob used to create _things_."""
+
+    def new(job_type, status=None, processor=None,
+            virtualized=None):
+        """Create a new `IBuildFarmJob`.
+
+        :param job_type: A `BuildFarmJobType` item.
+        :param status: A `BuildStatus` item, defaulting to PENDING.
+        :param processor: An optional processor for this job.
+        :param virtualized: An optional boolean indicating whether
+            this job should be run virtualized.
         """

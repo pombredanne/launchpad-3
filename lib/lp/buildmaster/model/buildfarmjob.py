@@ -11,22 +11,77 @@ __all__ = [
 from lazr.delegates import delegates
 
 import hashlib
+import pytz
+
+from storm.locals import Bool, DateTime, Int, Reference, Storm
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.enumcol import DBEnum
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobDerived)
+    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobDerived,
+    IBuildFarmJobSource)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
-class BuildFarmJob:
+class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
+
+    __storm_table__ = 'BuildFarmJob'
     implements(IBuildFarmJob)
+    classProvides(IBuildFarmJobSource)
+
+    id = Int(primary=True)
+
+    processor_id = Int(name='processor', allow_none=True)
+    processor = Reference(processor_id, 'Processor.id')
+
+    virtualived = Bool()
+
+    date_created = DateTime(
+        name='date_created', allow_none=False, tzinfo=pytz.UTC)
+
+    date_started = DateTime(
+        name='date_started', allow_none=True, tzinfo=pytz.UTC)
+
+    date_finished = DateTime(
+        name='date_finished', allow_none=False, tzinfo=pytz.UTC)
+
+    builder_id = Int(name='builder', allow_none=True)
+    builder = Reference(builder_id, 'Builder.id')
+
+    status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
+
+    log_id = Int(name='log', allow_none=True)
+    log = Reference(log_id, 'LibraryFileAlias.id')
+
+    job_type = DBEnum(
+        name='job_type', allow_none=False, enum=BuildFarmJobType)
+
+    @classmethod
+    def new(cls, job_type, status=None, processor=None,
+            virtualized=None):
+        """See `IBuildFarmJobSource`."""
+        build_farm_job = BuildFarmJob()
+        build_farm_job.job_type = job_type
+
+        if status is None:
+            status = BuildStatus.PENDING
+        build_farm_job.status = status
+
+        build_farm_job.processor = processor
+        build_farm_job.virtualized = virtualized
+
+        store = IMasterStore(BuildFarmJob)
+        store.add(build_farm_job)
+        return build_farm_job
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJob`."""
