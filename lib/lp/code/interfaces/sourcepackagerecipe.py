@@ -14,6 +14,7 @@ __all__ = [
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
+    'MINIMAL_RECIPE_TEXT',
     'TooNewRecipeFormat',
     ]
 
