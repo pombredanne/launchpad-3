@@ -370,7 +370,6 @@
   <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
-  </securedutility>
 
   <!-- BranchSubscription -->
 
