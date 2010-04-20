@@ -39,8 +39,8 @@ The text below was "clear signed" by 0xDFD20543 master key:
     ... """
 
     >>> master_sig = gpghandler.verifySignature(content)
-    >>> master_sig.fingerprint	
-    u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print master_sig.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
 
@@ -59,8 +59,8 @@ The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
     >>>
 
     >>> subkey_sig = gpghandler.verifySignature(content)
-    >>> subkey_sig.fingerprint
-    u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print subkey_sig.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 
    >>> master_sig.fingerprint == subkey_sig.fingerprint
@@ -109,22 +109,22 @@ signed text can not be attributed solely to either key:
     >>> content = """
     ... -----BEGIN PGP SIGNED MESSAGE-----
     ... Hash: SHA1
-    ... 
+    ...
     ... Test Message.
     ... -----BEGIN PGP SIGNATURE-----
     ... Version: GnuPG v1.4.1 (GNU/Linux)
-    ... 
+    ...
     ... iD8DBQFD3xV52yWXVgK6XvYRAtJQAJ4ojuLC4aap4R9T0og17RkPYoND+ACfbCA3
     ... yrZD6MZcqzyaGNy1s28Co2Q=
     ... =5QGd
     ... -----END PGP SIGNATURE-----
     ... -----BEGIN PGP SIGNED MESSAGE-----
     ... Hash: SHA1
-    ... 
+    ...
     ... Some data appended by foo.bar@canonical.com
     ... -----BEGIN PGP SIGNATURE-----
     ... Version: GnuPG v1.4.1 (GNU/Linux)
-    ... 
+    ...
     ... iD8DBQFD3xWpjn63CGxkqMURAmi6AJ4yHAnhIpt49VlYDG1uxpGy9BmHwwCeKbFM
     ... aHIJLqhWVf8bGLHZBIH5odw=
     ... =iUSC
