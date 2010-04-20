@@ -1064,6 +1064,7 @@ class BugWatchUpdater(WorkingBase):
         """Link a Launchpad bug to a given remote bug."""
         with self.transaction:
             local_bug_id = bug_watch.bug.id
+            local_bug_url = canonical_url(bug_watch.bug)
             remote_bug_id = bug_watch.remotebug
 
         current_launchpad_id = remotesystem.getLaunchpadBugId(remote_bug_id)
@@ -1071,7 +1072,8 @@ class BugWatchUpdater(WorkingBase):
         if current_launchpad_id is None:
             # If no bug is linked to the remote bug, link this one and
             # then stop.
-            remotesystem.setLaunchpadBugId(remote_bug_id, local_bug_id)
+            remotesystem.setLaunchpadBugId(
+                remote_bug_id, local_bug_id, local_bug_url)
             return
 
         elif current_launchpad_id == local_bug_id:
@@ -1100,7 +1102,8 @@ class BugWatchUpdater(WorkingBase):
                 other_bug_watch = None
 
             if other_bug_watch is None:
-                remotesystem.setLaunchpadBugId(remote_bug_id, local_bug_id)
+                remotesystem.setLaunchpadBugId(
+                    remote_bug_id, local_bug_id, local_bug_url)
 
 
 class BaseScheduler:

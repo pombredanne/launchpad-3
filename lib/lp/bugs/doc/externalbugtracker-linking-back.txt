@@ -22,7 +22,8 @@ about the bug.
     ...         print "Getting Launchpad id for bug %s" % remote_bug
     ...         return self.last_launchpad_bug_id
     ...
-    ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+    ...     def setLaunchpadBugId(
+    ...         self, remote_bug, launchpad_bug_id, launchpad_bug_url):
     ...         self.last_launchpad_bug_id = launchpad_bug_id
     ...         print "Setting Launchpad id for bug %s" % remote_bug
 

@@ -496,7 +496,8 @@ class TracLPPlugin(Trac):
 
     @ensure_no_transaction
     @needs_authentication
-    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+    def setLaunchpadBugId(
+        self, remote_bug, launchpad_bug_id, launchpad_bug_url):
         """Set the Launchpad bug ID for a given remote bug.
 
         :raises BugNotFound: When `remote_bug` doesn't exist.
