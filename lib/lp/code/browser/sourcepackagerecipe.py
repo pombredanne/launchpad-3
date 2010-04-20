@@ -6,8 +6,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageRecipeNavigationMenu',
+    'SourcePackageRecipeAddView',
+    'SourcePackageRecipeBuildView',
     'SourcePackageRecipeContextMenu',
+    'SourcePackageRecipeEditMenu',
+    'SourcePackageRecipeNavigationMenu',
+    'SourcePackageRecipeRequestBuildsView',
+    'SourcePackageRecipeView',
     ]
 
 
