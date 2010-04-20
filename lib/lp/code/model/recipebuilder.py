@@ -70,7 +70,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             self.build.sourcepackagename.name)
         args['archives'] = get_sources_list_for_building(self.build,
             distroarchseries, self.build.sourcepackagename.name)
-        args['distroseries'] = self.build.distroseries.name
+        args['distroseries_name'] = self.build.distroseries.name
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):

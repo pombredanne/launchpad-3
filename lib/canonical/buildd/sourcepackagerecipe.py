@@ -76,7 +76,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         self.author_name = extra_args['author_name']
         self.author_email = extra_args['author_email']
         self.archive_purpose = extra_args['archive_purpose']
-        self.distroseries = extra_args['distroseries']
+        self.distroseries_name = extra_args['distroseries_name']
 
         super(SourcePackageRecipeBuildManager, self).initiate(
             files, chroot, extra_args)
@@ -99,7 +99,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         args = [
             "buildrecipe.py", self._buildid, self.author_name,
             self.author_email, self.package_name, self.suite,
-            self.distroseries]
+            self.distroseries_name]
         self.runSubProcess(self.build_recipe_path, args)
 
     def iterate_BUILD_RECIPE(self, retcode):
