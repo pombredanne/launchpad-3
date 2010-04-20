@@ -538,6 +538,12 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
+    def validate(self, data):
+        priority = data.get('priority')
+        if (priority < 0 or priority > 10000):
+            self.addError('Priority value must be between 0 and 10000')
+            return
+
     @property
     def _return_attribute_name(self):
         """See 'ReturnToReferrerMixin'."""
@@ -578,6 +584,7 @@ class POTemplateAdminView(POTemplateEditView):
             return
 
     def validate(self, data):
+        super(POTemplateAdminView, self).validate(data)
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
         productseries = data.get('productseries')
