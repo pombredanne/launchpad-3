@@ -247,20 +247,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         branch = branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
-        branch.mirror_status_message = None
-        if stacked_on_location == '':
-            stacked_on_branch = None
-        else:
-            stacked_on_branch = branch_set.getByUniqueName(
-                stacked_on_location.strip('/'))
-            if stacked_on_branch is None:
-                branch.mirror_status_message = (
-                    'Invalid stacked on location: ' + stacked_on_location)
-        branch.stacked_on = stacked_on_branch
-        branch.last_mirrored = UTC_NOW
-        if branch.last_mirrored_id != last_revision_id:
-            branch.last_mirrored_id = last_revision_id
-            getUtility(IBranchScanJobSource).create(branch)
 
         def match_title(enum, title, default):
             for value in enum.items:
@@ -269,13 +255,17 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             else:
                 return default
 
-        branch.control_format = match_title(
+        control_format = match_title(
             ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-        branch.branch_format = match_title(
+        branch_format = match_title(
             BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-        branch.repository_format = match_title(
+        repository_format = match_title(
             RepositoryFormat, repository_string,
             RepositoryFormat.UNRECOGNIZED)
+
+        branch.branchChanged(
+            stacked_on_location, last_revision_id, control_format,
+            branch_format, repository_format)
 
         return True
 
