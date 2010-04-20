@@ -653,12 +653,12 @@ class BugWatchUpdater(WorkingBase):
             # If there's too much time skew we can't continue with this
             # run.
             with self.transaction:
-                errortype = get_bugwatcherrortype_for_error(error)
+                error_type = get_bugwatcherrortype_for_error(error)
                 for bug_watch_id in bug_watch_ids:
                     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.next_check = None
-                    bug_watch.last_error_type = errortype
+                    bug_watch.last_error_type = error_type
             raise
 
         remote_ids_to_check = remote_ids['remote_ids_to_check']
@@ -684,12 +684,12 @@ class BugWatchUpdater(WorkingBase):
             # bug watches' lastchecked dates so that checkwatches
             # doesn't keep trying to update them every time it runs.
             with self.transaction:
-                errortype = get_bugwatcherrortype_for_error(error)
+                error_type = get_bugwatcherrortype_for_error(error)
                 for bug_watch_id in bug_watch_ids:
                     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.next_check = None
-                    bug_watch.last_error_type = errortype
+                    bug_watch.last_error_type = error_type
             raise
 
         # Whether we can import and / or push comments is determined
@@ -845,14 +845,14 @@ class BugWatchUpdater(WorkingBase):
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
                 # re-check them every time checkwatches runs.
-                errortype = get_bugwatcherrortype_for_error(error)
+                error_type = get_bugwatcherrortype_for_error(error)
                 with self.transaction:
                     for bug_watch in bug_watches:
                         bug_watch.lastchecked = UTC_NOW
                         bug_watch.next_check = None
-                        bug_watch.last_error_type = errortype
+                        bug_watch.last_error_type = error_type
                         bug_watch.addActivity(
-                            result=errortype, oops_id=oops_id)
+                            result=error_type, oops_id=oops_id)
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):
