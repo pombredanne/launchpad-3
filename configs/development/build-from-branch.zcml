@@ -39,7 +39,9 @@
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
             permission="launchpad.View"/>
         <browser:menus
-            classes="SourcePackageRecipeContextMenu"
+            classes="
+                SourcePackageRecipeNavigationMenu
+                SourcePackageRecipeContextMenu"
             module="lp.code.browser.sourcepackagerecipe"/>
 
         <browser:page
@@ -49,6 +51,14 @@
             facet="branches"
             name="+new-recipe"
             template="../../lib/lp/app/templates/generic-edit.pt"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
+            permission="zope.Public"
+            facet="branches"
+            name="+edit"
+            template="../../lib/lp/app/templates/generic-edit.pt"/>
+
 
 
         <browser:page

@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-__all__ = []
+__all__ = [
+    'SourcePackageRecipeNavigationMenu',
+    'SourcePackageRecipeContextMenu',
+    ]
 
 
 from bzrlib.plugins.builder.recipe import RecipeParser
@@ -17,8 +20,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
-    LaunchpadView, Link)
+    action, canonical_url, ContextMenu, custom_widget, enabled_with_permission,
+    LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -29,6 +32,20 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+
+class SourcePackageRecipeNavigationMenu(NavigationMenu):
+    """Navigation menu for sourcepackage recipes."""
+
+    usedfor = ISourcePackageRecipe
+
+    facet = 'branches'
+
+    links = ('edit',)
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        return Link('+edit', 'Edit recipe', icon='edit')
 
 
 class SourcePackageRecipeContextMenu(ContextMenu):
@@ -173,7 +190,7 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
     title = label = 'Create a new source package recipe'
 
     class schema(Interface):
-        """Schema for requesting a build."""
+        """Schema for creating a recipe."""
         use_template(ISourcePackageRecipe, include=[
             'name',
             'description',
@@ -205,3 +222,14 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
             self.user, self.user, data['distros'], data['sourcepackagename'],
             data['name'], recipe, data['description'])
         self.next_url = canonical_url(source_package_recipe)
+
+
+class SourcePackageRecipeEditView(LaunchpadFormView):
+
+    @property
+    def title(self):
+        return 'Edit %s source package recipe' % self.context.name
+    label = title
+
+    class schema(Interface):
+        """Schema for editing a recipe."""
