@@ -92,13 +92,8 @@ primary_translatable is nonexistent:
 Now, to test the active flag. If we disabled a product:
 
     # A product cannot be deactivated if it is linked to source packages.
-    >>> from lp.registry.interfaces.packaging import IPackagingUtil
-    >>> packaging_util = getUtility(IPackagingUtil)
-    >>> for source_package in a52dec.sourcepackages:
-    ...     packaging_util.deletePackaging(
-    ...         source_package.productseries,
-    ...         source_package.sourcepackagename,
-    ...         source_package.distroseries)
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(a52dec)
     >>> a52dec.active = False
 
 It should no longer be retrievable via ProductSet's __getitem__:
@@ -202,11 +197,8 @@ example.
 Only active products are listed as translatables.
 
     # A product cannot be deactivated if it is linked to source packages.
-    >>> for source_package in evo.sourcepackages:
-    ...     packaging_util.deletePackaging(
-    ...         source_package.productseries,
-    ...         source_package.sourcepackagename,
-    ...         source_package.distroseries)
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(evo)
     >>> evo.active = False
     >>> for product in productset.getTranslatables():
     ...    print product.name

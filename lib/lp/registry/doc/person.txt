@@ -1347,6 +1347,10 @@ Inactive products are excluded from the listings.
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
+
+    # A product cannot be deactivated if it is linked to source packages.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> cprov.specifications(filter=['svg']).count()

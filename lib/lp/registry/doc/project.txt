@@ -108,6 +108,10 @@ ordered by their names.
     [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
 
     >>> netapplet = gnome.getProduct('netapplet')
+
+    # A product cannot be deactivated if it is linked to source packages.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> flush_database_updates()
     >>> [product.name for product in gnome.products]
@@ -161,6 +165,10 @@ Inactive products are excluded from the listings.
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
+
+    # A product cannot be deactivated if it is linked to source packages.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> filter = [SpecificationFilter.INCOMPLETE]

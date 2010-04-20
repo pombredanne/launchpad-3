@@ -351,6 +351,10 @@ If the Firefox project is deactivated, it is removed from the list of
 supported projects.
 
     >>> login('foo.bar@canonical.com')
+
+    # A product cannot be deactivated if it is linked to source packages.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> sorted(target.name
     ...        for target in no_priv.getDirectAnswerQuestionTargets())
