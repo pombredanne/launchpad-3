@@ -548,7 +548,7 @@ next_check time for the watch will be in the past (or in this case is
 now) and therefore it will be checked with the next checkwatches run.
 
     >>> from pytz import utc
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> schedulable_watch.next_check = datetime.now(utc)
     >>> schedulable_watch.can_be_rescheduled
     False

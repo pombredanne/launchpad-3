@@ -14,7 +14,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.widgets.textwidgets import URIWidget
 
