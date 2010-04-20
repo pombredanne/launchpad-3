@@ -1071,7 +1071,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
         next_suggest_packaging_date = self.context.next_suggest_packaging_date
         return (
             next_suggest_packaging_date is None
-            or next_suggest_packaging_date < datetime.now(tz=pytz.UTC))
+            or next_suggest_packaging_date <= datetime.now(tz=pytz.UTC))
 
     @property
     def initial_values(self):
