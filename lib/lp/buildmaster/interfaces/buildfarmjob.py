@@ -108,16 +108,6 @@ class IBuildFarmJob(Interface):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
-        """
-
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
@@ -181,12 +171,24 @@ class IBuildFarmJobDerived(Interface):
 
     An implementation of this class must setup the necessary delagation.
     """
+
     def getByJob(job):
         """Get the specific `IBuildFarmJob` for the given `Job`.
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.
         """
+
+    def generateSlaveBuildCookie():
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie need not be unique, but should be hard for a
+        compromised slave to guess.
+
+        :return: a hard-to-guess ASCII string that can be reproduced
+            accurately based on this job's properties.
+        """
+
 
 class IBuildFarmJobSource(Interface):
     """A utility of BuildFarmJob used to create _things_."""

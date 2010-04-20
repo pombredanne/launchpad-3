@@ -50,8 +50,9 @@ class PackageBuildFarmJob(BuildFarmJob):
 
 
 class PackageBuildFarmJobDerived(BuildFarmJobDerived):
-    """Override the base delegate to use a build farm job specific to
-    packages.
+    """Override the base delegate.
+
+    Ensure that we use a build farm job specific to packages.
     """
     def _set_build_farm_job(self):
         self._build_farm_job = PackageBuildFarmJob(self.build)

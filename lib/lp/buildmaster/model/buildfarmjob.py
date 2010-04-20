@@ -35,6 +35,7 @@ class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
 
     __storm_table__ = 'BuildFarmJob'
+
     implements(IBuildFarmJob)
     classProvides(IBuildFarmJobSource)
 
@@ -82,26 +83,6 @@ class BuildFarmJob(Storm):
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
-
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJob`."""
-        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
-
-        if buildqueue.processor is None:
-            processor = '*'
-        else:
-            processor = repr(buildqueue.processor.id)
-
-        contents = ';'.join([
-            repr(removeSecurityProxy(self.job).id),
-            self.job.date_created.isoformat(),
-            repr(buildqueue.id),
-            buildqueue.job_type.name,
-            processor,
-            self.getName(),
-            ])
-
-        return hashlib.sha1(contents).hexdigest()
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -171,6 +152,10 @@ class BuildFarmJobDerived:
         self._set_build_farm_job()
 
     def _set_build_farm_job(self):
+        """Set the build farm job to which we will delegate.
+
+        Sub-classes can override as required.
+        """
         self._build_farm_job = BuildFarmJob()
 
     @classmethod
@@ -179,3 +164,22 @@ class BuildFarmJobDerived:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
 
+    def generateSlaveBuildCookie(self):
+        """See `IBuildFarmJobDerived`."""
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+
+        if buildqueue.processor is None:
+            processor = '*'
+        else:
+            processor = repr(buildqueue.processor.id)
+
+        contents = ';'.join([
+            repr(removeSecurityProxy(self.job).id),
+            self.job.date_created.isoformat(),
+            repr(buildqueue.id),
+            buildqueue.job_type.name,
+            processor,
+            self.getName(),
+            ])
+
+        return hashlib.sha1(contents).hexdigest()
