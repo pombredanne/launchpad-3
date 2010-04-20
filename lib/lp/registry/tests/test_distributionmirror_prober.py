@@ -829,7 +829,8 @@ class TestLoggingMixin(unittest.TestCase):
         logger.logMessage("Ubuntu Warty Released")
         logger.log_file.seek(0)
         message = logger.log_file.read()
-        self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
+        self.failUnlessEqual(
+            'Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
             message)
 
     def test_logMessage_integration(self):
