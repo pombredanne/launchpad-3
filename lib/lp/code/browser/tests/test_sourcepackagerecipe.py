@@ -1,6 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401
+# pylint: disable-msg=F0401,E1002
 
 """Tests for the product view classes and templates."""
 
@@ -92,10 +92,12 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             lp://dev/~chef/chocolate/cake"""), self.getMainText(recipe))
 
     def assertContainsRe(self, regex, text):
+        """Assert that the text contains the specified regex."""
         pattern = re.compile(regex, re.S)
         self.assertTrue(pattern.search(text), text)
 
     def test_index_no_builds(self):
+        """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
         self.assertContainsRe(dedent("""\
             Build records
