@@ -55,7 +55,7 @@ __all__ = [
     'DirectDatabaseLaunchpadServer',
     'get_lp_server',
     'get_multi_server',
-    'get_puller_server',
+    'get_rw_server',
     'get_scanner_server',
     'make_branch_mirrorer',
     'LaunchpadInternalServer',
@@ -177,12 +177,11 @@ def get_scanner_server():
         'lp-mirrored:///', branchfs_endpoint, branch_transport)
 
 
-def get_puller_server():
-    """Get a server for the Launchpad branch puller.
+def get_rw_server():
+    """Get a server that can write to the Launchpad branch vfs.
 
-    The server wraps up two `LaunchpadInternalServer`s. One of them points to
-    the hosted branch area and is read-only, the other points to the mirrored
-    area and is read/write.
+    You can only call this usefully on the codehost -- the transport this
+    server provides are backed onto file:/// URLs.
     """
     hosted_transport = get_chrooted_transport(
         config.codehosting.mirrored_branches_root, mkdir=True)
@@ -211,6 +210,8 @@ def get_multi_server(write_hosted=False, write_mirrored=False,
         directly to the database.  If False, the default, use a server
         implementation that talks to the internal XML-RPC server.
     """
+    # XXX 2010-04-20, MichaelHudson: this function will disappear in a later
+    # pipe.
     hosted_transport = get_chrooted_transport(
         config.codehosting.mirrored_branches_root, mkdir=True)
     if not write_hosted:
