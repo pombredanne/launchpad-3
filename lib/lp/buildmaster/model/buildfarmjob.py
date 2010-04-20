@@ -28,26 +28,6 @@ class BuildFarmJob:
     """A base implementation for `IBuildFarmJob` classes."""
     implements(IBuildFarmJob)
 
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJob`."""
-        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
-
-        if buildqueue.processor is None:
-            processor = '*'
-        else:
-            processor = repr(buildqueue.processor.id)
-
-        contents = ';'.join([
-            repr(removeSecurityProxy(self.job).id),
-            self.job.date_created.isoformat(),
-            repr(buildqueue.id),
-            buildqueue.job_type.name,
-            processor,
-            self.getName(),
-            ])
-
-        return hashlib.sha1(contents).hexdigest()
-
     def score(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
@@ -123,4 +103,25 @@ class BuildFarmJobDerived:
         """See `IBuildFarmJobDerived`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
+
+    def generateSlaveBuildCookie(self):
+        """See `IBuildFarmJobDerived`."""
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+
+        if buildqueue.processor is None:
+            processor = '*'
+        else:
+            processor = repr(buildqueue.processor.id)
+
+        contents = ';'.join([
+            repr(removeSecurityProxy(self.job).id),
+            self.job.date_created.isoformat(),
+            repr(buildqueue.id),
+            buildqueue.job_type.name,
+            processor,
+            self.getName(),
+            ])
+
+        return hashlib.sha1(contents).hexdigest()
+
 
