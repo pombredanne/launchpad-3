@@ -61,6 +61,7 @@ from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
@@ -198,7 +199,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete', 'create_recipe')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -224,6 +225,11 @@ class BranchEditMenu(NavigationMenu):
     def reviewer(self):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
+
+    def create_recipe(self):
+        enabled = config.build_from_branch.enabled
+        text = 'Create source package recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
 class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
