@@ -18,7 +18,7 @@ and only teams that have branches are shown.
     >>> run_with_login(eric, setattr, vikings, 'icon', icon)
     >>> logout()
 
-Initially Eric's teams have any branches, so there is not be a portlet
+Initially Eric's teams have no branches, so there is not be a portlet
 there.
 
     >>> browser.open('http://code.launchpad.dev/~eric')
