@@ -2,28 +2,31 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['BuildFarmJob']
+__all__ = [
+    'BuildFarmJob',
+    'BuildFarmJobDerived',
+    ]
 
+
+from lazr.delegates import delegates
 
 import hashlib
 
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmCandidateJobSelection,
-    ISpecificBuildFarmJobClass)
+    IBuildFarmJob, IBuildFarmJobDerived)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
 class BuildFarmJob:
-    """Mix-in class for `IBuildFarmJob` implementations."""
+    """A base implementation for `IBuildFarmJob` classes."""
     implements(IBuildFarmJob)
-    classProvides(
-        IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJob`."""
@@ -85,20 +88,39 @@ class BuildFarmJob:
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         return ('')
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`.
-        This base implementation should work for most build farm job
-        types, but some need to override it.
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
 
     @staticmethod
     def postprocessCandidate(job, logger):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         return True
+
+
+class BuildFarmJobDerived:
+    """See `IBuildFarmJobDerived`."""
+    implements(IBuildFarmJobDerived)
+    delegates(IBuildFarmJob, context='_build_farm_job')
+
+    def __init__(self, *args, **kwargs):
+        """Ensure the instance to which we delegate is set on creation."""
+        self._set_build_farm_job()
+        super(BuildFarmJobDerived, self).__init__(*args, **kwargs)
+
+    def __storm_loaded__(self):
+        """Set the attribute for our IBuildFarmJob delegation.
+
+        This is needed here as __init__() is not called when a storm object
+        is loaded from the database.
+        """
+        self._set_build_farm_job()
+
+    def _set_build_farm_job(self):
+        self._build_farm_job = BuildFarmJob()
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `IBuildFarmJobDerived`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
 
