@@ -10,7 +10,8 @@ import unittest
 
 from twisted.internet import defer
 from twisted.internet.error import (
-    ConnectionClosed, ProcessTerminated, TimeoutError)
+    ConnectionClosed)
+from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -159,7 +160,12 @@ class TestRecordingSlaves(TrialTestCase):
             self.assertIsInstance(failure.value, tuple)
             out, err, code = failure.value
             self.assertEqual(code, signal.SIGKILL)
-        d = self.slave.resumeSlave()
+        clock = Clock()
+        d = self.slave.resumeSlave(clock=clock)
+        # Move the clock beyond the socket_timeout but earlier than the
+        # sleep 5.  This stops the test having to wait for the timeout.
+        # Fast tests FTW!
+        clock.advance(2)
         d.addBoth(check_resume_timeout)
         return d
 

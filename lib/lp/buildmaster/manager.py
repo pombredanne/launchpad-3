@@ -64,9 +64,9 @@ class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
 class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
     """Run a process and capture its output while applying a timeout."""
 
-    def __init__(self, deferred, timeout):#, clock):
+    def __init__(self, deferred, timeout, clock=None):
         self.deferred = deferred
-        #self._clock = clock
+        self._clock = clock
         self._timeout = timeout
         self.outBuf = StringIO.StringIO()
         self.errBuf = StringIO.StringIO()
@@ -74,13 +74,16 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
         self.errReceived = self.errBuf.write
         self.processTransport = None
 
-#    def callLater(self, period, func):
-#        """Override TimeoutMixin.callLater so we use self._clock.
-#
-#        This allows us to write unit tests that don't depend on actual wall
-#        clock time.
-#        """
-#        return self._clock.callLater(period, func)
+    def callLater(self, period, func):
+        """Override TimeoutMixin.callLater so we use self._clock.
+
+        This allows us to write unit tests that don't depend on actual wall
+        clock time.
+        """
+        if self._clock is None:
+            return TimeoutMixin.callLater(self, period, func)
+
+        return self._clock.callLater(period, func)
 
     def spawnProcess(self, argv):
         self.processTransport = reactor.spawnProcess(
@@ -107,8 +110,6 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
             self.deferred.errback((out, err, e.signal))
         else:
             self.deferred.callback((out, err, code))
-
-
 
 
 class RecordingSlave:
@@ -165,7 +166,7 @@ class RecordingSlave:
         self.resume_requested = True
         return ['', '', 0]
 
-    def resumeSlave(self):
+    def resumeSlave(self, clock=None):
         """Resume the builder in a asynchronous fashion.
 
         Used the configuration command-line in the same way
@@ -173,6 +174,9 @@ class RecordingSlave:
 
         Also use the builddmaster configuration 'socket_timeout' as
         the process timeout.
+
+        :param clock: An optional twisted.internet.task.Clock to override
+                      the default clock.  For use in tests.
 
         :return: a Deferred
         """
@@ -182,7 +186,8 @@ class RecordingSlave:
         resume_argv = [str(term) for term in resume_command.split()]
 
         d = defer.Deferred()
-        p = ProcessWithTimeout(d, config.builddmaster.socket_timeout)
+        p = ProcessWithTimeout(
+            d, config.builddmaster.socket_timeout, clock=clock)
         p.spawnProcess(resume_argv)
         return d
 
