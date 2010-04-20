@@ -33,7 +33,7 @@ from lp.blueprints.model.specificationbranch import (
     SpecificationBranch)
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.model.bugbranch import BugBranch
-from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
@@ -42,7 +42,8 @@ from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
-from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
+from lp.code.interfaces.branchjob import (
+    IBranchUpgradeJobSource, IBranchScanJobSource)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
@@ -86,6 +87,94 @@ class TestCodeImport(TestCase):
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
         self.assertEqual(None, branch.code_import)
+
+class TestBranchChanged(TestCaseWithFactory):
+    def test_branchChanged_sets_last_mirrored_id(self):
+        # branchChanged sets the last_mirrored_id attribute on the branch.
+        revid = self.factory.getUniqueString()
+        branch = self.factory.makeAnyBranch()
+        branch.branchChanged('', revid, *self.arbitrary_format_strings)
+        self.assertEqual(revid, branch.last_mirrored_id)
+
+    def test_branchChanged_sets_stacked_on(self):
+        # branchChanged sets the stacked_on attribute based on the unique_name
+        # passed in.
+        branch = self.factory.makeAnyBranch()
+        stacked_on = self.factory.makeAnyBranch()
+        branch.branchChanged(
+            stacked_on.unique_name, '', *self.arbitrary_format_strings)
+        self.assertEqual(stacked_on, branch.stacked_on)
+
+    def test_branchChanged_unsets_stacked_on(self):
+        # branchChanged clears the stacked_on attribute on the branch if '' is
+        # passed in as the stacked_on location.
+        branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(branch).stacked_on = self.factory.makeAnyBranch()
+        self.storage.branchChanged(
+            branch.owner.id, branch.id, '', '',
+            *self.arbitrary_format_strings)
+        self.assertIs(None, branch.stacked_on)
+
+    def test_branchChanged_sets_last_mirrored(self):
+        # branchChanged sets the last_mirrored attribute on the branch to the
+        # current time.
+        branch = self.factory.makeAnyBranch()
+        branch.branchChanged('', '', *self.arbitrary_format_strings)
+        self.assertSqlAttributeEqualsDate(
+            branch, 'last_mirrored', UTC_NOW)
+
+    def test_branchChanged_records_bogus_stacked_on_url(self):
+        # If a bogus location is passed in as the stacked_on parameter,
+        # mirror_status_message is set to indicate the problem and stacked_on
+        # set to None.
+        branch = self.factory.makeAnyBranch()
+        branch.branchChanged(
+            '~does/not/exist', '', *self.arbitrary_format_strings)
+        self.assertIs(None, branch.stacked_on)
+        self.assertTrue('~does/not/exist' in branch.mirror_status_message)
+
+    def test_branchChanged_clears_mirror_status_message_if_no_error(self):
+        # branchChanged() clears any error that's currently mentioned in
+        # mirror_status_message.
+        branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(branch).mirror_status_message = 'foo'
+        branch.branchChanged('', '', *self.arbitrary_format_strings)
+        self.assertIs(None, branch.mirror_status_message)
+
+    def test_branchChanged_creates_scan_job(self):
+        # branchChanged() creates a scan job for the branch.
+        branch = self.factory.makeAnyBranch()
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(jobs))
+        branch.branchChanged('', 'rev1', *self.arbitrary_format_strings)
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(1, len(jobs))
+
+    def test_branchChanged_doesnt_create_scan_job_for_noop_change(self):
+        # branchChanged() doesn't create a scan job if the tip revision id
+        # hasn't changed.
+        branch = self.factory.makeAnyBranch()
+        removeSecurityProxy(branch).last_mirrored_id = 'rev1'
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(jobs))
+        branch.branchChanged('', 'rev1', *self.arbitrary_format_strings)
+        jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(0, len(jobs))
+
+    def test_branchChanged_packs_format(self):
+        # branchChanged sets the branch_format etc attributes to the passed in
+        # values.
+        branch = self.factory.makeAnyBranch()
+        self.storage.branchChanged(
+            branch.owner.id, branch.id, '', 'rev1',
+            ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_6,
+            RepositoryFormat.BZR_KNITPACK_1)
+        login(ANONYMOUS)
+        self.assertEqual(
+            (ControlFormat.BZR_METADIR_1, BranchFormat.BZR_BRANCH_6,
+             RepositoryFormat.BZR_KNITPACK_1),
+            (branch.control_format, branch.branch_format,
+             branch.repository_format))
 
 
 class TestBranchGetRevision(TestCaseWithFactory):

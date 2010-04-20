@@ -573,7 +573,8 @@ class CodehostingTest(TestCaseWithFactory):
         return self.getFormatStringsForFormatName('default')
 
     def test_branchChanged_sets_last_mirrored_id(self):
-        # branchChanged sets the last_mirrored_id attribute on the branch.
+        # branchChanged does many things but lets just check the setting of
+        # last_mirrored_id here.  The other things are tested in unit tests.
         revid = self.factory.getUniqueString()
         branch = self.factory.makeAnyBranch()
         self.storage.branchChanged(
@@ -581,65 +582,6 @@ class CodehostingTest(TestCaseWithFactory):
             *self.arbitrary_format_strings)
         login(ANONYMOUS)
         self.assertEqual(revid, branch.last_mirrored_id)
-
-    def test_branchChanged_sets_stacked_on(self):
-        # branchChanged sets the stacked_on attribute based on the unique_name
-        # passed in.
-        branch = self.factory.makeAnyBranch()
-        stacked_on = self.factory.makeAnyBranch()
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, stacked_on.unique_name, '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        self.assertEqual(stacked_on, branch.stacked_on)
-
-    def test_branchChanged_unsets_stacked_on(self):
-        # branchChanged clears the stacked_on attribute on the branch if '' is
-        # passed in as the stacked_on location.
-        branch = self.factory.makeAnyBranch()
-        removeSecurityProxy(branch).stacked_on = self.factory.makeAnyBranch()
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, '', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        self.assertIs(None, branch.stacked_on)
-
-    def test_branchChanged_sets_last_mirrored(self):
-        # branchChanged sets the last_mirrored attribute on the branch to the
-        # current time.
-        branch = self.factory.makeAnyBranch()
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, '', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        if self.frontend == LaunchpadDatabaseFrontend:
-            self.assertSqlAttributeEqualsDate(
-                branch, 'last_mirrored', UTC_NOW)
-        else:
-            self.assertIs(UTC_NOW, branch.last_mirrored)
-
-    def test_branchChanged_records_bogus_stacked_on_url(self):
-        # If a bogus location is passed in as the stacked_on parameter,
-        # mirror_status_message is set to indicate the problem and stacked_on
-        # set to None.
-        branch = self.factory.makeAnyBranch()
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, '~does/not/exist', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        self.assertIs(None, branch.stacked_on)
-        self.assertTrue('~does/not/exist' in branch.mirror_status_message)
-
-    def test_branchChanged_clears_mirror_status_message_if_no_error(self):
-        # branchChanged() clears any error that's currently mentioned in
-        # mirror_status_message.
-        branch = self.factory.makeAnyBranch()
-        removeSecurityProxy(branch).mirror_status_message = 'foo'
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, '', '',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        self.assertIs(None, branch.mirror_status_message)
 
     def test_branchChanged_fault_on_unknown_id(self):
         # If the id passed in doesn't match an existing branch, the fault
@@ -652,34 +594,6 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(
             (expected_fault.faultCode, expected_fault.faultString),
             (received_fault.faultCode, received_fault.faultString))
-
-    def test_branchChanged_creates_scan_job(self):
-        # branchChanged() creates a scan job for the branch.
-        if self.frontend != LaunchpadDatabaseFrontend:
-            return
-        branch = self.factory.makeAnyBranch()
-        jobs = list(getUtility(IBranchScanJobSource).iterReady())
-        self.assertEqual(0, len(jobs))
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        jobs = list(getUtility(IBranchScanJobSource).iterReady())
-        self.assertEqual(1, len(jobs))
-
-    def test_branchChanged_doesnt_create_scan_job_for_noop_change(self):
-        if self.frontend != LaunchpadDatabaseFrontend:
-            return
-        branch = self.factory.makeAnyBranch()
-        removeSecurityProxy(branch).last_mirrored_id = 'rev1'
-        jobs = list(getUtility(IBranchScanJobSource).iterReady())
-        self.assertEqual(0, len(jobs))
-        self.storage.branchChanged(
-            branch.owner.id, branch.id, '', 'rev1',
-            *self.arbitrary_format_strings)
-        login(ANONYMOUS)
-        jobs = list(getUtility(IBranchScanJobSource).iterReady())
-        self.assertEqual(0, len(jobs))
 
     def test_branchChanged_2a_format(self):
         branch = self.factory.makeAnyBranch()
