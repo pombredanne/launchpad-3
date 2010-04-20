@@ -10,9 +10,9 @@
 
     <ul>
       <li tal:repeat="item view/teams_with_branches">
-        <img src="/@@/team" />
+        <tal:icon replace="structure item/team/fmt:icon" />
         <a tal:content="item/team/displayname"
-           tal:attributes="href item/url_provider/fmt:url">team name</a>
+           tal:attributes="href item/url_provider/fmt:url:code">team name</a>
       </li>
     </ul>
   </div>

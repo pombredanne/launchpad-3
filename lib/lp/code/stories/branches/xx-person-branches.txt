@@ -115,3 +115,28 @@ Now we'll create another branch, and unsubscribe the owner from it.
     2 owned branches, 2 registered branches, 1 subscribed branch
     0 active reviews or unmerged proposals
 
+
+Related branches
+================
+
+At the bottom of the person branch listing page there is a section that links
+to other teams that the person is a member of that also have branches.
+
+    >>> login(ANONYMOUS)
+    >>> vikings = factory.makeTeam(name="vikings", owner=eric)
+    >>> vb = factory.makeAnyBranch(owner=vikings)
+    >>> # Also give vikings a cool icon.
+    >>> icon = factory.makeLibraryFileAlias(
+    ...     filename='vikings.png', content_type='image/png')
+    >>> from lp.testing import run_with_login
+    >>> run_with_login(eric, setattr, vikings, 'icon', icon)
+    >>> logout()
+
+    >>> eric_browser.open('http://code.launchpad.dev/~eric')
+    >>> related = find_tag_by_id(
+    ...     eric_browser.contents, 'portlet-team-branches')
+    >>> print related.li
+    <li>
+      <img src="http://localhost:58000/.../vikings.png" width="14" height="14" />
+      <a href="/~vikings">Vikings</a>
+    </li>
