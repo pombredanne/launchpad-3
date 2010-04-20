@@ -197,7 +197,7 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    @action('Request builds', name='request')
+    @action('Create recipe', name='create')
     def request_action(self, action, data):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
