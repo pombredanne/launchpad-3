@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Testing infrastructure for the Launchpad application.
 
 This module should not have any actual tests.
@@ -25,8 +27,6 @@ import os.path
 from textwrap import dedent
 
 import pytz
-from storm.store import Store
-import transaction
 
 from twisted.python.util import mergeFunctionMetadata
 
@@ -39,9 +39,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -645,7 +644,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        official_rosetta=None):
+        official_rosetta=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -676,6 +675,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             product.official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
+        if bug_supervisor is not None:
+            naked_product = removeSecurityProxy(product)
+            naked_product.bug_supervisor = bug_supervisor
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1720,7 +1722,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, description=None, *branches):
+                                name=None, description=None, branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1738,9 +1740,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
-        return getUtility(ISourcePackageRecipeSource).new(
+        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, [distroseries], sourcepackagename, name,
             recipe, description)
+        IStore(source_package_recipe).flush()
+        return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
