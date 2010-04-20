@@ -226,8 +226,9 @@ class TestProberProtocolAndFactory(TrialTestCase):
 
         protocol.factory = FakeFactory('http://foo.bar/')
         protocol.makeConnection(FakeTransport())
-        self.assertEquals('Launchpad Mirror Prober ( https://launchpad.net/ )',
-                headers['User-Agent'])
+        self.assertEquals(
+            'Launchpad Mirror Prober ( https://launchpad.net/ )',
+            headers['User-Agent'])
 
 
 class FakeTimeOutCall:
