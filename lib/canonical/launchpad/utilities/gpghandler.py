@@ -374,7 +374,7 @@ class GPGHandler:
 
         # Sign the text.
         try:
-            result = context.sign(plaintext, signature, mode)
+            context.sign(plaintext, signature, mode)
         except gpgme.GpgmeError:
             return None
 
