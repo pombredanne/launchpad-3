@@ -8,19 +8,22 @@ __metaclass__ = type
 __all__ = []
 
 
+from bzrlib.plugins.builder.recipe import RecipeParser
+from lazr.restful.interface import use_template
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Choice, List
+from zope.schema import Choice, List, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
@@ -171,3 +174,34 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
 
     class schema(Interface):
         """Schema for requesting a build."""
+        use_template(ISourcePackageRecipe, include=[
+            'name',
+            'description',
+            ])
+        sourcepackagename = Choice(
+            title=u"Source Package Name", required=True,
+            vocabulary='SourcePackageName')
+        distros = List(
+            Choice(vocabulary='BuildableDistroSeries'),
+            title=u'Default Distribution series')
+        recipe_text = Text(
+            title=u'Recipe text', required=True,
+            description=u'The text of the recipe.')
+    custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    @property
+    def initial_values(self):
+        return {'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity}
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action('Request builds', name='request')
+    def request_action(self, action, data):
+        parser = RecipeParser(data['recipe_text'])
+        recipe = parser.parse()
+        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
+            self.user, self.user, data['distros'], data['sourcepackagename'],
+            data['name'], recipe, data['description'])
+        self.next_url = canonical_url(source_package_recipe)
