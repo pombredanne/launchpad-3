@@ -251,7 +251,7 @@ A team with a mailing list cannot be deleted.
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
 
-The registry experts can delete a team with an new email address (from
+The registry experts can delete a team with a new email address (from
 an import), which will be invisible, since only preferred email addresses are
 shown for teams.
 
