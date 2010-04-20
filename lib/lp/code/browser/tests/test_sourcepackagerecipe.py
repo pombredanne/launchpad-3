@@ -70,6 +70,13 @@ class TestSourcePackageAddView(TestCaseForRecipe):
 
         browser.getControl('Create recipe').click()
 
+        self.assertEqual(
+            self.getTextByID(browser.contents, 'distros'),
+            'Distribution series:\nSecret Squirrel')
+        self.assertEqual(
+            self.getTextByID(browser.contents, 'base-branch'),
+            'Base branch:\n' + branch_path)
+
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
