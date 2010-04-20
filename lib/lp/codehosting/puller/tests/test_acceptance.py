@@ -191,7 +191,8 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         self.assertMirrored(db_branch, source_branch=tree.branch)
 
     def test_format_change(self):
-        # Run the puller with XXX
+        # When the format of a mirrored branch changes, the puller remirrors
+        # the branch into the new format.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED)
         tree = self.setUpMirroredBranch(db_branch, format='pack-0.92')

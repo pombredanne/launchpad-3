@@ -22,7 +22,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import endInteraction
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -36,7 +35,6 @@ from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import BranchCreationException
-from lp.code.interfaces.branchjob import IBranchScanJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -243,6 +241,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
     def branchChanged(self, login_id, branch_id, stacked_on_location,
                       last_revision_id, control_string, branch_string,
                       repository_string):
+        """See `ICodehostingAPI`."""
         def branch_changed(request_mirror):
             branch_set = getUtility(IBranchLookup)
             branch = branch_set.get(branch_id)

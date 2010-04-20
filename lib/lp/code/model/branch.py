@@ -21,9 +21,10 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
+from storm.expr import (
+    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -596,7 +597,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        # XXX MichaelHudson 2010-01-13: Handle sourcepackagerecipes here.
+        deletion_operations.extend(
+            DeletionCallable.forSourcePackageRecipe(recipe)
+            for recipe in self.getRecipes())
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1068,22 +1071,16 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getRecipes(self):
         """See `IHasRecipes`."""
-        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)
-        store = Store.of(self)
-        return store.find(
-            SourcePackageRecipe,
-            SourcePackageRecipe.id ==
-                SourcePackageRecipeData.sourcepackage_recipe_id,
-            SourcePackageRecipeData.base_branch == self)
+        return SourcePackageRecipeData.findRecipes(self)
 
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
     def __init__(self, affected_object, rationale):
-        self.affected_object = affected_object
+        self.affected_object = ProxyFactory(affected_object)
         self.rationale = rationale
     def __call__(self):
         """Perform the deletion operation."""
@@ -1100,6 +1097,11 @@ class DeletionCallable(DeletionOperation):
     def __call__(self):
         self.func()
 
+    @classmethod
+    def forSourcePackageRecipe(cls, recipe):
+        return cls(
+            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
+
 
 class ClearDependentBranch(DeletionOperation):
     """Delete operation that clears a merge proposal's prerequisite branch."""
@@ -1111,7 +1113,7 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1125,7 +1127,7 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):

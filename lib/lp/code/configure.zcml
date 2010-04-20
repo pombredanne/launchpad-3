@@ -244,7 +244,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id review_diff"
+                        root_message_id review_diff prerequisite_branch"
         attributes="
                     deleteProposal
                     setStatus
