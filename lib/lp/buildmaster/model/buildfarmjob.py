@@ -96,6 +96,10 @@ class BuildFarmJobDerived:
         self._set_build_farm_job()
 
     def _set_build_farm_job(self):
+        """Set the build farm job to which we will delegate.
+
+        Sub-classes can override as required.
+        """
         self._build_farm_job = BuildFarmJob()
 
     @classmethod
