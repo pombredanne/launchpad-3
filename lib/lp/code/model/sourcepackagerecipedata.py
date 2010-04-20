@@ -1,6 +1,8 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401,E1002
+
 """Implementation of the recipe storage.
 
 This is purely an implementation detail of SourcePackageRecipe.recipe_data and
@@ -16,7 +18,9 @@ from bzrlib.plugins.builder.recipe import (
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
+from storm.expr import Union
+from storm.locals import (
+    And, Int, Reference, ReferenceSet, Select, Store, Storm, Unicode)
 
 from zope.component import getUtility
 
@@ -24,6 +28,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
+from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, TooNewRecipeFormat)
@@ -131,6 +136,27 @@ class SourcePackageRecipeData(Storm):
     sourcepackage_recipe_build = Reference(
         sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
+    @staticmethod
+    def findRecipes(branch):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(branch)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id.is_in(Union(
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    SourcePackageRecipeData.base_branch == branch),
+                Select(
+                    SourcePackageRecipeData.sourcepackage_recipe_id,
+                    And (
+                        _SourcePackageRecipeDataInstruction.recipe_data_id ==
+                        SourcePackageRecipeData.id,
+                        _SourcePackageRecipeDataInstruction.branch == branch)
+                    )
+            ))
+        )
+
+
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
         base_branch = BaseRecipeBranch(
@@ -205,6 +231,8 @@ class SourcePackageRecipeData(Storm):
             self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
+        if base_branch is None:
+            raise NoSuchBranch(builder_recipe.url)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
         self._recordInstructions(
