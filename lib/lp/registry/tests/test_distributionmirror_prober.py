@@ -216,18 +216,18 @@ class TestProberProtocolAndFactory(TrialTestCase):
         protocol = RedirectAwareProberProtocol()
 
         orig_sendHeader = protocol.sendHeader
-        headers = []
+        headers = {}
 
         def mySendHeader(header, value):
             orig_sendHeader(header, value)
-            headers.append(value)
+            headers[header] = value
 
         protocol.sendHeader = mySendHeader
 
         protocol.factory = FakeFactory('http://foo.bar/')
         protocol.makeConnection(FakeTransport())
-        return self.assertEquals('Launchpad Mirror Prober',
-                headers[1])
+        self.assertEquals('Launchpad Mirror Prober',
+                headers['User-Agent'])
 
 
 class FakeTimeOutCall:
