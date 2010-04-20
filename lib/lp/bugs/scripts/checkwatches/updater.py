@@ -655,10 +655,10 @@ class BugWatchUpdater(WorkingBase):
             with self.transaction:
                 errortype = get_bugwatcherrortype_for_error(error)
                 for bug_watch_id in bug_watch_ids:
-                    bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
-                    bugwatch.lastchecked = UTC_NOW
-                    bugwatch.next_check = None
-                    bugwatch.last_error_type = errortype
+                    bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
+                    bug_watch.lastchecked = UTC_NOW
+                    bug_watch.next_check = None
+                    bug_watch.last_error_type = errortype
             raise
 
         remote_ids_to_check = remote_ids['remote_ids_to_check']
@@ -686,10 +686,10 @@ class BugWatchUpdater(WorkingBase):
             with self.transaction:
                 errortype = get_bugwatcherrortype_for_error(error)
                 for bug_watch_id in bug_watch_ids:
-                    bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
-                    bugwatch.lastchecked = UTC_NOW
-                    bugwatch.next_check = None
-                    bugwatch.last_error_type = errortype
+                    bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
+                    bug_watch.lastchecked = UTC_NOW
+                    bug_watch.next_check = None
+                    bug_watch.last_error_type = errortype
             raise
 
         # Whether we can import and / or push comments is determined
@@ -847,10 +847,10 @@ class BugWatchUpdater(WorkingBase):
                 # re-check them every time checkwatches runs.
                 errortype = get_bugwatcherrortype_for_error(error)
                 with self.transaction:
-                    for bugwatch in bug_watches:
-                        bugwatch.lastchecked = UTC_NOW
+                    for bug_watch in bug_watches:
+                        bug_watch.lastchecked = UTC_NOW
                         bug_watch.next_check = None
-                        bugwatch.last_error_type = errortype
+                        bug_watch.last_error_type = errortype
                         bug_watch.addActivity(
                             result=errortype, oops_id=oops_id)
 
