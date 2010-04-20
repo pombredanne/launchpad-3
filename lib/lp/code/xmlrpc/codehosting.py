@@ -22,7 +22,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import endInteraction
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -36,7 +35,6 @@ from lp.code.errors import UnknownBranchTypeError
 from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import BranchCreationException
-from lp.code.interfaces.branchjob import IBranchScanJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import (
     InvalidNamespace, lookup_branch_namespace, split_unique_name)
@@ -240,44 +238,38 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
-    def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
-                      control_string, branch_string, repository_string):
+    def branchChanged(self, login_id, branch_id, stacked_on_location,
+                      last_revision_id, control_string, branch_string,
+                      repository_string):
         """See `ICodehostingAPI`."""
-        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-        branch = branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        branch.mirror_status_message = None
-        if stacked_on_location == '':
-            stacked_on_branch = None
-        else:
-            stacked_on_branch = branch_set.getByUniqueName(
-                stacked_on_location.strip('/'))
-            if stacked_on_branch is None:
-                branch.mirror_status_message = (
-                    'Invalid stacked on location: ' + stacked_on_location)
-        branch.stacked_on = stacked_on_branch
-        branch.last_mirrored = UTC_NOW
-        if branch.last_mirrored_id != last_revision_id:
-            branch.last_mirrored_id = last_revision_id
-            getUtility(IBranchScanJobSource).create(branch)
+        def branch_changed(request_mirror):
+            branch_set = getUtility(IBranchLookup)
+            branch = branch_set.get(branch_id)
+            if branch is None:
+                return faults.NoBranchWithID(branch_id)
 
-        def match_title(enum, title, default):
-            for value in enum.items:
-                if value.title == title:
-                    return value
-            else:
-                return default
+            def match_title(enum, title, default):
+                for value in enum.items:
+                    if value.title == title:
+                        return value
+                else:
+                    return default
 
-        branch.control_format = match_title(
-            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-        branch.branch_format = match_title(
-            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-        branch.repository_format = match_title(
-            RepositoryFormat, repository_string,
-            RepositoryFormat.UNRECOGNIZED)
+            control_format = match_title(
+                ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+            branch_format = match_title(
+                BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+            repository_format = match_title(
+                RepositoryFormat, repository_string,
+                RepositoryFormat.UNRECOGNIZED)
 
-        return True
+            branch.branchChanged(
+                stacked_on_location, last_revision_id, control_format,
+                branch_format, repository_format)
+
+            return True
+
+        return run_with_login(login_id, branch_changed)
 
     def _serializeBranch(self, requester, branch, trailing_path):
         if requester == LAUNCHPAD_SERVICES:

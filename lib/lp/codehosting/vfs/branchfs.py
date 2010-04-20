@@ -780,7 +780,10 @@ class BranchPolicy:
 
     def getStackedOnURLForDestinationBranch(self, source_branch,
                                             destination_url):
-        """XXX.
+        """Get the stacked on URL for `source_branch`.
+
+        In particular, the URL it should be stacked on when it is mirrored to
+        `destination_url`.
         """
         return None
 
