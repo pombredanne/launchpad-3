@@ -519,7 +519,7 @@ Checking if a watch can be rescheduled
 --------------------------------------
 
 IBugWatch provides an attribute, can_be_rescheduled, which indicates
-whether or not the wathc can be rescheduled. For a new bug watch this
+whether or not the watch can be rescheduled. For a new bug watch this
 will be False.
 
     >>> schedulable_watch = factory.makeBugWatch()
