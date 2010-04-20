@@ -807,6 +807,9 @@ class TestResultSequence(list):
     Returns a list with a `count` method.
     """
 
+    def config(self, limit):
+        return self.__class__(self[:limit])
+
     def count(self):
         """See `SelectResults`."""
         return len(self)

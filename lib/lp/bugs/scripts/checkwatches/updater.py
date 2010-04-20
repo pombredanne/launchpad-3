@@ -423,8 +423,12 @@ class BugWatchUpdater(WorkingBase):
     def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
         with self.transaction:
+            # Never work with more than 1000 bug watches at a
+            # time. Especially after a release or an outage, a large
+            # bug tracker could have have >10000 bug watches eligible
+            # for update.
             bug_watches_to_update = (
-                bug_tracker.watches_needing_update)
+                bug_tracker.watches_needing_update.config(limit=1000))
             bug_watches_need_updating = (
                 bug_watches_to_update.count() > 0)
 
