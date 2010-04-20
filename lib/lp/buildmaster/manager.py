@@ -100,9 +100,8 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
     def timeoutConnection(self):
         """When a timeout occurs, kill the process and record a TimeoutError.
         """
-        #self.unexpectedError(Failure(error.TimeoutError()))
         self.processTransport.signalProcess("KILL")
-        # Process ended will get called now?
+        # processEnded will get called.
 
     def processEnded(self, reason):
         self.setTimeout(None)
