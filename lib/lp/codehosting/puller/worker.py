@@ -372,9 +372,9 @@ class PullerWorker:
             *before* the mirroring process ran.
         """
         # Avoid circular import
-        from lp.codehosting.vfs import get_puller_server
+        from lp.codehosting.vfs import get_rw_server
 
-        server = get_puller_server()
+        server = get_rw_server()
         server.start_server()
         try:
             source_branch = self.branch_mirrorer.open(self.source)
