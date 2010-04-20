@@ -896,6 +896,35 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
+    def branchChanged(self, stacked_on_location, last_revision_id,
+                      control_format, branch_format, repository_format):
+        """See `IBranch`."""
+        self.mirror_status_message = None
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
+                stacked_on_location.strip('/'))
+            if stacked_on_branch is None:
+                self.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
+        self.stacked_on = stacked_on_branch
+        self.last_mirrored = UTC_NOW
+        self.mirror_failures = 0
+        if (self.next_mirror_time is None
+            and self.branch_type == BranchType.MIRRORED):
+            # No mirror was requested since we started mirroring.
+            increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
+            self.next_mirror_time = (
+                datetime.datetime.now(pytz.timezone('UTC')) + increment)
+        if self.last_mirrored_id != last_revision_id:
+            self.last_mirrored_id = last_revision_id
+            from lp.code.model.branchjob import BranchScanJob
+            BranchScanJob.create(self)
+        self.control_format = control_format
+        self.branch_format = branch_format
+        self.repository_format = repository_format
+
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
