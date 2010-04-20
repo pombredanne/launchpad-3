@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401,W1001
+
 """Implementation of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
@@ -101,10 +103,6 @@ class SourcePackageRecipe(Storm):
     def base_branch(self):
         return self._recipe_data.base_branch
 
-    def getReferencedBranches(self):
-        """See `ISourcePackageRecipe.getReferencedBranches`."""
-        return self._recipe_data.getReferencedBranches()
-
     @staticmethod
     def new(registrant, owner, distroseries, sourcepackagename, name,
             builder_recipe, description):
@@ -121,6 +119,19 @@ class SourcePackageRecipe(Storm):
         sprecipe.description = description
         store.add(sprecipe)
         return sprecipe
+
+    def destroySelf(self):
+        store = Store.of(self)
+        self.distroseries.clear()
+        self._recipe_data.instructions.find().remove()
+        def destroyBuilds(pending):
+            builds = self.getBuilds(pending=pending)
+            for build in builds:
+                build.destroySelf()
+        destroyBuilds(pending=True)
+        destroyBuilds(pending=False)
+        store.remove(self._recipe_data)
+        store.remove(self)
 
     def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""

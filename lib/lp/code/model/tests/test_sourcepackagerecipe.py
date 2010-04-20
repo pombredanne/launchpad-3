@@ -1,15 +1,24 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Tests for SourcePackageRecipes."""
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-from lp.testing import (
-    login_person, run_with_login, TestCase, TestCaseWithFactory, time_counter)
+from pytz import UTC
+from storm.locals import Store
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.authorization import check_permission
+from lp.testing import (login_person, person_logged_in, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -43,6 +52,55 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         login_person(recipe.owner)
         recipe.build_daily = True
         self.assertTrue(recipe.build_daily)
+
+    def test_view_public(self):
+        """Anyone can view a recipe with public branches."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner)
+        with person_logged_in(owner):
+            recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        self.assertTrue(check_permission('launchpad.View', recipe))
+
+    def test_view_private(self):
+        """Recipes with private branches are restricted."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        with person_logged_in(owner):
+            recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.View', recipe))
+        self.assertFalse(check_permission('launchpad.View', recipe))
+
+    def test_edit(self):
+        """Only the owner can edit a sourcepackagerecipe."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertFalse(check_permission('launchpad.Edit', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.Edit', recipe))
+        with person_logged_in(recipe.owner):
+            self.assertTrue(check_permission('launchpad.Edit', recipe))
+
+    def test_destroySelf(self):
+        """Should destroy associated builds, distroseries, etc."""
+        # Recipe should have at least one datainstruction.
+        branches = [self.factory.makeBranch() for count in range(2)]
+        recipe = self.factory.makeSourcePackageRecipe(branches=branches)
+        pending_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=pending_build)
+        past_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=past_build)
+        removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
+        recipe.destroySelf()
+        # Show no database constraints were violated
+        Store.of(recipe).flush()
 
 
 def test_suite():
