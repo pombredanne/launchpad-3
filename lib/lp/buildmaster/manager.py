@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import logging
+import os
 import StringIO
 import transaction
 
@@ -63,9 +64,9 @@ class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
 class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
     """Run a process and capture its output while applying a timeout."""
 
-    def __init__(self, deferred, timeout, clock):
+    def __init__(self, deferred, timeout):#, clock):
         self.deferred = deferred
-        self._clock = clock
+        #self._clock = clock
         self._timeout = timeout
         self.outBuf = StringIO.StringIO()
         self.errBuf = StringIO.StringIO()
@@ -74,13 +75,13 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
         # Set later after process is spawned.
         self.processTransport = None
 
-    def callLater(self, period, func):
-        """Override TimeoutMixin.callLater so we use self._clock.
-
-        This allows us to write unit tests that don't depend on actual wall
-        clock time.
-        """
-        return self._clock.callLater(period, func)
+#    def callLater(self, period, func):
+#        """Override TimeoutMixin.callLater so we use self._clock.
+#
+#        This allows us to write unit tests that don't depend on actual wall
+#        clock time.
+#        """
+#        return self._clock.callLater(period, func)
 
     def connectionMade(self):
         """Start the timeout counter when connection is made."""
@@ -179,12 +180,9 @@ class RecordingSlave:
 
         d = defer.Deferred()
         p = ProcessWithTimeout(d, config.builddmaster.socket_timeout)
-        reactor.spawnProcess(p, tuple(resume_argv))
+        p.processTransport = reactor.spawnProcess(
+            p, resume_argv[0], tuple(resume_argv))
         return d
-
-        #d = run_process_with_timeout(
-        #    tuple(resume_argv), timeout=config.builddmaster.socket_timeout)
-        #return d
 
 
 class BaseDispatchResult:
@@ -238,7 +236,7 @@ class ResetDispatchResult(BaseDispatchResult):
     """
 
     def __repr__(self):
-        return  '%r reset' % self.slave
+        return  '%r reset failure' % self.slave
 
     @write_transaction
     def __call__(self):
@@ -420,14 +418,19 @@ class BuilddManager(service.Service):
         dispatch result.
         """
         # 'response' is the tuple that's constructed in
-        # ProcessWithTimeout.processEnded().
-        out, err, code = response
-        if code == 0:
+        # ProcessWithTimeout.processEnded(), or is a Failure that
+        # contains the tuple.
+        if isinstance(response, Failure):
+            out, err, code = response.value
+        else:
+            out, err, code = response
+
+        if code == os.EX_OK:
             # Process exited normally.
             return None
 
         error_text = '%s\n%s' % (out, err)
-        self.logger.error( '%s resume failure: %s' % error_text)
+        self.logger.error( '%s resume failure: %s' % (slave, error_text))
         self.slaveDone(slave)
         return self.reset_result(slave, error_text)
 

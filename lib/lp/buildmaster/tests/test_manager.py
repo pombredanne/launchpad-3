@@ -4,6 +4,7 @@
 """Tests for the renovated slave scanner aka BuilddManager."""
 
 import os
+import signal
 import transaction
 import unittest
 
@@ -109,9 +110,11 @@ class TestRecordingSlaves(TrialTestCase):
 
         # On success the response is None.
         def check_resume_success(response):
-            self.assertEquals(None, response)
+            out, err, code = response
+            self.assertEqual(os.EX_OK, code)
+            self.assertEqual("%s\n" % self.slave.vm_host, out)
         d = self.slave.resumeSlave()
-        d.addCallback(check_resume_success)
+        d.addBoth(check_resume_success)
         return d
 
     def test_resumeHost_failure(self):
@@ -124,15 +127,16 @@ class TestRecordingSlaves(TrialTestCase):
         vm_resume_command: test "%(vm_host)s = 'no-sir'"
         """
         config.push('failed_resume_command', failed_config)
+        self.addCleanup(config.pop, 'failed_resume_command')
 
         # On failures, the response is a twisted `Failure` object containing
         # a `ProcessTerminated` error.
         def check_resume_failure(failure):
-            self.assertIsInstance(failure, Failure)
-            self.assertIsInstance(failure.value, ProcessTerminated)
-            config.pop('failed_resume_command')
+            out, err, code = failure
+            # The process will exit with a return code of "1".
+            self.assertEqual(code, 1)
         d = self.slave.resumeSlave()
-        d.addErrback(check_resume_failure)
+        d.addBoth(check_resume_failure)
         return d
 
     def test_resumeHost_timeout(self):
@@ -146,15 +150,17 @@ class TestRecordingSlaves(TrialTestCase):
         socket_timeout: 1
         """
         config.push('timeout_resume_command', timeout_config)
+        self.addCleanup(config.pop, 'timeout_resume_command')
 
         # On timeouts, the response is a twisted `Failure` object containing
         # a `TimeoutError` error.
         def check_resume_timeout(failure):
             self.assertIsInstance(failure, Failure)
-            self.assertIsInstance(failure.value, TimeoutError)
-            config.pop('timeout_resume_command')
+            self.assertIsInstance(failure.value, tuple)
+            out, err, code = failure.value
+            self.assertEqual(code, signal.SIGKILL)
         d = self.slave.resumeSlave()
-        d.addErrback(check_resume_timeout)
+        d.addBoth(check_resume_timeout)
         return d
 
 
@@ -274,7 +280,7 @@ class TestBuilddManager(TrialTestCase):
             # They corresponds to the ones created above and were already
             # processed.
             self.assertEqual(
-                '<foo:http://foo> reset', repr(reset))
+                '<foo:http://foo> reset failure', repr(reset))
             self.assertTrue(reset.processed)
             self.assertEqual(
                 '<bar:http://bar> failure (boingo)', repr(fail))
@@ -310,11 +316,13 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
-        failed_response = Failure(ProcessTerminated())
+        failed_response = ['stdout', 'stderr', 1]
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset', repr(result))
+            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
+        self.assertEqual(
+            result.info, "stdout\nstderr")
 
     def testCheckDispatch(self):
         """`BuilddManager.checkDispatch` is chained after dispatch requests.
@@ -366,7 +374,7 @@ class TestBuilddManager(TrialTestCase):
             twisted_failure, 'ensurepresent', slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset', repr(result))
+            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
 
         # Unexpected response, results in a `FailDispatchResult`.
         unexpected_response = [1, 2, 3]
@@ -746,6 +754,7 @@ class TestDispatchResult(unittest.TestCase):
         Although it keeps the builder active in pool.
         """
         builder, job_id = self._getBuilder('bob')
+        builder.builderok = True
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
@@ -755,7 +764,7 @@ class TestDispatchResult(unittest.TestCase):
 
         self.assertJobIsClean(job_id)
 
-        self.assertTrue(builder.builderok)
+        self.assertFalse(builder.builderok)
         self.assertEqual(None, builder.currentjob)
 
     def testFailDispatchResult(self):
