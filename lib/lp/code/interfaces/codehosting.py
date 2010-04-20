@@ -170,8 +170,7 @@ class ICodehostingAPI(Interface):
                       control_string, branch_string, repository_string):
         """Record that a branch has been changed.
 
-        This method records the stacked on branch and tip revision id of the
-        branch and creates a scan job if the tip revision id has changed.
+        See `IBranch.branchChanged`.
 
         :param login_id: the person ID of the user changing the branch.
         :param branch_id: The database id of the branch to operate on.

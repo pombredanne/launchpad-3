@@ -1092,10 +1092,10 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
                       branch_format, repository_format):
         """Record that a branch has been changed.
 
-        This method records the stacked on branch and tip revision id of the
-        branch and creates a scan job if the tip revision id has changed.
+        This method records the stacked on branch tip revision id and format
+        or the branch and creates a scan job if the tip revision id has
+        changed.
 
-        :param branchID: The database id of the branch to operate on.
         :param stacked_on_url: The unique name of the branch this branch is
             stacked on, or '' if this branch is not stacked.
         :param last_revision_id: The tip revision ID of the branch.
