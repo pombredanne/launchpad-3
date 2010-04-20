@@ -72,7 +72,6 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
         self.errBuf = StringIO.StringIO()
         self.outReceived = self.outBuf.write
         self.errReceived = self.errBuf.write
-        # Set later after process is spawned.
         self.processTransport = None
 
 #    def callLater(self, period, func):
@@ -82,6 +81,10 @@ class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
 #        clock time.
 #        """
 #        return self._clock.callLater(period, func)
+
+    def spawnProcess(self, argv):
+        self.processTransport = reactor.spawnProcess(
+            self, argv[0], tuple(argv))
 
     def connectionMade(self):
         """Start the timeout counter when connection is made."""
@@ -180,8 +183,7 @@ class RecordingSlave:
 
         d = defer.Deferred()
         p = ProcessWithTimeout(d, config.builddmaster.socket_timeout)
-        p.processTransport = reactor.spawnProcess(
-            p, resume_argv[0], tuple(resume_argv))
+        p.spawnProcess(resume_argv)
         return d
 
 
