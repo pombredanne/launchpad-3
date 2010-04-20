@@ -20,10 +20,10 @@ from canonical.launchpad.testing.pages import extract_text, find_main_content
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
-from lp.testing import (ANONYMOUS, login, TestCaseWithFactory)
+from lp.testing import ANONYMOUS, BrowserTestCase, login
 
 
-class TestCaseForRecipe(TestCaseWithFactory):
+class TestCaseForRecipe(BrowserTestCase):
     """Create some sample data for recipe tests."""
 
     def setUp(self):
@@ -69,10 +69,6 @@ class TestSourcePackageAddView(TestCaseForRecipe):
             MINIMAL_RECIPE_TEXT % branch_path)
 
         browser.getControl('Create recipe').click()
-
-        self.assertIn(
-            'Branches : Person-name',
-            browser.title)
 
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):

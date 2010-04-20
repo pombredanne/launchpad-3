@@ -566,6 +566,14 @@ class TestCaseWithFactory(TestCase):
             self.addCleanup(hosted_server.stop_server)
 
 
+class BrowserTestCase(TestCaseWithFactory):
+    """A TestCase class for browser tests.
+
+    This testcase provides an API similar to page tests, and can be used for
+    cases when one wants a unit test and not a frakking pagetest.
+    """
+
+
 class WindmillTestCase(TestCaseWithFactory):
     """A TestCase class for Windmill tests.
 
