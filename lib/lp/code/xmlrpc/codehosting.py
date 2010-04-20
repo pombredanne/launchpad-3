@@ -240,34 +240,37 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             return True
         return run_with_login(login_id, request_mirror)
 
-    def branchChanged(self, branch_id, stacked_on_location, last_revision_id,
-                      control_string, branch_string, repository_string):
-        """See `ICodehostingAPI`."""
-        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-        branch = branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
+    def branchChanged(self, login_id, branch_id, stacked_on_location,
+                      last_revision_id, control_string, branch_string,
+                      repository_string):
+        def branch_changed(request_mirror):
+            branch_set = getUtility(IBranchLookup)
+            branch = branch_set.get(branch_id)
+            if branch is None:
+                return faults.NoBranchWithID(branch_id)
 
-        def match_title(enum, title, default):
-            for value in enum.items:
-                if value.title == title:
-                    return value
-            else:
-                return default
+            def match_title(enum, title, default):
+                for value in enum.items:
+                    if value.title == title:
+                        return value
+                else:
+                    return default
 
-        control_format = match_title(
-            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
-        branch_format = match_title(
-            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
-        repository_format = match_title(
-            RepositoryFormat, repository_string,
-            RepositoryFormat.UNRECOGNIZED)
+            control_format = match_title(
+                ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+            branch_format = match_title(
+                BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
+            repository_format = match_title(
+                RepositoryFormat, repository_string,
+                RepositoryFormat.UNRECOGNIZED)
 
-        branch.branchChanged(
-            stacked_on_location, last_revision_id, control_format,
-            branch_format, repository_format)
+            branch.branchChanged(
+                stacked_on_location, last_revision_id, control_format,
+                branch_format, repository_format)
 
-        return True
+            return True
+
+        return run_with_login(login_id, branch_changed)
 
     def _serializeBranch(self, requester, branch, trailing_path):
         if requester == LAUNCHPAD_SERVICES:
