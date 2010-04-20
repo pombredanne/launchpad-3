@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,F0401
 
 """Interface of the `SourcePackageRecipe` content type."""
 
@@ -63,6 +63,10 @@ class ISourcePackageRecipeData(Interface):
         description = _(
             'The template that will be used to generate a deb version.'),)
 
+    def getReferencedBranches():
+        """An iterator of the branches referenced by this recipe."""
+
+
 
 class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
@@ -109,9 +113,6 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         IBranch, title=_("The base branch used by this recipe."),
         required=True, readonly=True)
 
-    def getReferencedBranches():
-        """An iterator of the branches referenced by this recipe."""
-
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
 
@@ -127,6 +128,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
 
         :param pending: If True, select all builds that are pending.  If
             False, select all builds that are not pending.
+        """
+
+    def destroySelf():
+        """Remove this SourcePackageRecipe from the database.
+
+        This requires deleting any rows with non-nullable foreign key
+        references to this object.
         """
 
 

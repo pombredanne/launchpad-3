@@ -3,13 +3,17 @@
 
 """Tests for the SourcePackageRecipe content type."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
+from datetime import datetime
 import textwrap
 import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
+from pytz import UTC
 from storm.locals import Store
 
 from zope.component import getUtility
@@ -18,6 +22,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.archiveuploader.permission import (
     ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -36,8 +41,7 @@ from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
-    login_person, TestCaseWithFactory)
-
+    login_person, person_logged_in, TestCaseWithFactory)
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
@@ -262,6 +266,55 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         login_person(recipe.owner)
         recipe.build_daily = True
         self.assertTrue(recipe.build_daily)
+
+    def test_view_public(self):
+        """Anyone can view a recipe with public branches."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner)
+        with person_logged_in(owner):
+            recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        self.assertTrue(check_permission('launchpad.View', recipe))
+
+    def test_view_private(self):
+        """Recipes with private branches are restricted."""
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        with person_logged_in(owner):
+            recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+            self.assertTrue(check_permission('launchpad.View', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.View', recipe))
+        self.assertFalse(check_permission('launchpad.View', recipe))
+
+    def test_edit(self):
+        """Only the owner can edit a sourcepackagerecipe."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertFalse(check_permission('launchpad.Edit', recipe))
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(check_permission('launchpad.Edit', recipe))
+        with person_logged_in(recipe.owner):
+            self.assertTrue(check_permission('launchpad.Edit', recipe))
+
+    def test_destroySelf(self):
+        """Should destroy associated builds, distroseries, etc."""
+        # Recipe should have at least one datainstruction.
+        branches = [self.factory.makeBranch() for count in range(2)]
+        recipe = self.factory.makeSourcePackageRecipe(branches=branches)
+        pending_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=pending_build)
+        past_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=past_build)
+        removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
+        recipe.destroySelf()
+        # Show no database constraints were violated
+        Store.of(recipe).flush()
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
