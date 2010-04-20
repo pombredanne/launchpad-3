@@ -21,7 +21,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
-from lp.testing import person_logged_in, TestCaseWithFactory
+from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 
 
 class TestSourcePackageRecipeBuild(TestCaseWithFactory):
@@ -99,19 +99,19 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             self.assertTrue(check_permission('launchpad.View', build))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+        login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
 
     def test_view_private_archive(self):
         """Recipebuilds with private branches are restricted."""
-        recipe = self.factory.makeSourcePackageRecipe()
         owner = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=owner, private=True)
-        build = self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, archive=archive)
+        build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
         with person_logged_in(owner):
             self.assertTrue(check_permission('launchpad.View', build))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
+        login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
 
     def test_estimateDuration(self):
