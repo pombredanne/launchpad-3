@@ -8,7 +8,7 @@ __all__ = [
     'RecipeBuildBehavior',
     ]
 
-from zope.component import adapts, getUtility
+from zope.component import adapts
 from zope.interface import implements
 
 from lp.archiveuploader.permission import check_upload_to_pocket
@@ -18,8 +18,7 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildSource)
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+    ISourcePackageRecipeBuildJob)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
