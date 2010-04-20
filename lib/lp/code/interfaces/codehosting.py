@@ -166,23 +166,16 @@ class ICodehostingAPI(Interface):
         :param branchID: a branch ID.
         """
 
-    def branchChanged(login_id, branch_id, stacked_on_url, last_revision_id,
-                      control_string, branch_string, repository_string):
+    def branchChanged(branch_id, stacked_on_url, last_revision_id):
         """Record that a branch has been changed.
 
         This method records the stacked on branch and tip revision id of the
         branch and creates a scan job if the tip revision id has changed.
 
-        :param login_id: the person ID of the user changing the branch.
-        :param branch_id: The database id of the branch to operate on.
+        :param branchID: The database id of the branch to operate on.
         :param stacked_on_url: The unique name of the branch this branch is
             stacked on, or '' if this branch is not stacked.
         :param last_revision_id: The tip revision ID of the branch.
-        :param control_string: The format string of the control directory of
-            the branch.
-        :param branch_string: The format string of the branch.
-        :param repository_string: The format string of the branch's
-            repository.
         """
 
     def translatePath(requester_id, path):
