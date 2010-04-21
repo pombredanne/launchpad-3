@@ -57,10 +57,9 @@ from lp.bugs.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
-from lp.services.scripts.base import LaunchpadCronScript
-
-from .base import (
+from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 # The login of the user to run as.

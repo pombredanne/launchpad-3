@@ -21,6 +21,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
+    'make_archive_vocabulary',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
@@ -1142,6 +1143,15 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+def make_archive_vocabulary(archives):
+    terms = []
+    for archive in archives:
+        token = '%s/%s' % (archive.owner.name, archive.name)
+        label = '%s (%s)' % (archive.displayname, token)
+        terms.append(SimpleTerm(archive, token, label))
+    return SimpleVocabulary(terms)
+
+
 class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     """Archive package copying view class.
 
@@ -1201,27 +1211,15 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
-        terms = []
-        required = True
-
-        for ppa in self.ppas_for_user:
-            # Do not include the context PPA in the dropdown widget
-            # and make this field not required. This way we can safely
-            # default to the context PPA when copying.
-            if self.can_copy_to_context_ppa and self.context == ppa:
-                required = False
-                continue
-            token = '%s/%s' % (ppa.owner.name, ppa.name)
-            terms.append(
-                SimpleTerm(ppa, token, '%s (%s)' % (ppa.displayname, token)))
-
+        # Do not include the context PPA in the dropdown widget.
+        ppas = [ppa for ppa in self.ppas_for_user if self.context != ppa]
         return form.Fields(
             Choice(__name__='destination_archive',
                    title=_('Destination PPA'),
-                   vocabulary=SimpleVocabulary(terms),
+                   vocabulary=make_archive_vocabulary(ppas),
                    description=_("Select the destination PPA."),
                    missing_value=self.context,
-                   required=required))
+                   required=not self.can_copy_to_context_ppa))
 
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""

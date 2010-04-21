@@ -483,6 +483,12 @@
         for="lp.registry.interfaces.pillar.IPillarNameSet"
         path_expression="string:pillars"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        for="lp.registry.browser.pillar.IInvolved"
+        factory="lp.registry.browser.pillar.InvolvedMenu"
+        name="overview"
+        permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.pillar.IPillar"
         name="+listing-simple"
@@ -492,20 +498,6 @@
         name="+get-involved"
         for="*"
         class="lp.registry.browser.pillar.PillarView"
-        facet="overview"
-        permission="zope.Public"
-        template="../templates/pillar-involvement-portlet.pt"/>
-    <browser:page
-        name="+get-involved"
-        for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.pillar.ProductInvolvementView"
-        facet="overview"
-        permission="zope.Public"
-        template="../templates/pillar-involvement-portlet.pt"/>
-    <browser:page
-        name="+get-involved"
-        for="lp.registry.interfaces.product.IProductSeries"
-        class="lp.registry.browser.pillar.ProductSeriesInvolvementView"
         facet="overview"
         permission="zope.Public"
         template="../templates/pillar-involvement-portlet.pt"/>
@@ -797,12 +789,6 @@
             class="lp.registry.browser.person.BeginTeamClaimView"
             permission="launchpad.AnyPerson"
             template="../templates/person-claim-team.pt"/>
-        <browser:page
-            name="+claim"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonClaimView"
-            permission="zope.Public"
-            template="../templates/person-claim.pt"/>
         <browser:page
             name="+editlanguages"
             for="lp.registry.interfaces.person.IPerson"
@@ -1384,6 +1370,13 @@
         path_expression="name"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
     <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.registry.browser.product.ProductInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
+    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+download"
         class="lp.registry.browser.product.ProductDownloadFilesView"
@@ -1600,6 +1593,12 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         path_expression="name"
         attribute_to_parent="product"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
+        for="lp.registry.browser.productseries.IProductSeriesInvolved"
+        factory="lp.registry.browser.productseries.ProductSeriesInvolvedMenu"
+        name="overview"
+        permission="zope.Public"/>
     <browser:defaultView
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+index"/>
@@ -1611,6 +1610,13 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs-index"/>
+    <browser:page
+        name="+get-involved"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.registry.browser.productseries.ProductSeriesInvolvementView"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/pillar-involvement-portlet.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         facet="overview"

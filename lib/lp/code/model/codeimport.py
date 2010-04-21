@@ -37,6 +37,9 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, RevisionControlSystems)
+from lp.code.errors import (
+    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState)
 from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
@@ -196,6 +199,27 @@ class CodeImport(SQLBase):
             {'review_status': CodeImportReviewStatus.REVIEWED}, user)
         getUtility(ICodeImportJobWorkflow).requestJob(self.import_job, user)
 
+    def requestImport(self, requester, error_if_already_requested=False):
+        """See `ICodeImport`."""
+        if self.import_job is None: # not in automatic mode
+           raise CodeImportNotInReviewedState("This code import is %s, and "
+                   "must be Reviewed for you to call requestImport."
+                   % self.review_status.name)
+        if (self.import_job.state != CodeImportJobState.PENDING):
+            assert (self.import_job.state == CodeImportJobState.RUNNING)
+            # Already running
+            raise CodeImportAlreadyRunning("This code import is already "
+                    "running.")
+        elif self.import_job.requesting_user is not None:
+            if error_if_already_requested:
+                raise CodeImportAlreadyRequested("This code import has "
+                    "already been requested to run.",
+                    self.import_job.requesting_user)
+        else:
+            getUtility(ICodeImportJobWorkflow).requestJob(
+                self.import_job, requester)
+        return None
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
@@ -203,7 +227,8 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, target, branch_name, rcs_type,
-            url=None, cvs_root=None, cvs_module=None, review_status=None):
+            url=None, cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
@@ -227,14 +252,16 @@ class CodeImportSet:
                 review_status = CodeImportReviewStatus.NEW
         if not target.supports_code_imports:
             raise AssertionError("%r doesn't support code imports" % target)
+        if owner is None:
+            owner = registrant
         # Create the branch for the CodeImport.
-        namespace = target.getNamespace(registrant)
+        namespace = target.getNamespace(owner)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
             registrant=registrant)
 
         code_import = CodeImport(
-            registrant=registrant, owner=registrant, branch=import_branch,
+            registrant=registrant, owner=owner, branch=import_branch,
             rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
             review_status=review_status)

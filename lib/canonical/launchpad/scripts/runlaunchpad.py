@@ -198,9 +198,6 @@ def prepare_for_librarian():
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
                          'librarian_server', prepare_for_librarian),
-    'buildsequencer': TacFile('buildsequencer',
-                              'daemons/buildd-sequencer.tac',
-                              'buildsequencer'),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', 'codehosting'),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),

@@ -9,6 +9,7 @@ to create a new mirror you should use the Distribution.newMirror method.
     ...     ICountrySet, IDistributionSet, IDistributionMirrorSet,
     ...     IDistroArchSeriesSet, IDistroSeriesSet, ILibraryFileAliasSet,
     ...     IPersonSet, MirrorContent, MirrorSpeed, MirrorStatus)
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
@@ -396,9 +397,28 @@ getExpectedPackagesPaths() and getExpectedSourcesPaths() methods of
 IDistributionMirror.
 
     >>> paths = mirror.getExpectedPackagesPaths()
-    >>> [path for (series, pocket, component, path) in paths
-    ...  if 'hoary' in path]
-    [u'dists/hoary/main/binary-i386/Packages.gz',
+    >>> [path for (series, pocket, component, path) in paths]
+    [u'dists/breezy-autotest/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-backports/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-security/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-updates/multiverse/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/main/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/restricted/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/universe/binary-i386/Packages.gz',
+     u'dists/breezy-autotest-proposed/multiverse/binary-i386/Packages.gz',
+     u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
      u'dists/hoary-backports/main/binary-i386/Packages.gz',
      u'dists/hoary-backports/restricted/binary-i386/Packages.gz',
@@ -407,12 +427,43 @@ IDistributionMirror.
      u'dists/hoary-updates/main/binary-i386/Packages.gz',
      u'dists/hoary-updates/restricted/binary-i386/Packages.gz',
      u'dists/hoary-proposed/main/binary-i386/Packages.gz',
-     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
+     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz',
+     u'dists/warty/main/binary-i386/Packages.gz',
+     u'dists/warty/universe/binary-i386/Packages.gz',
+     u'dists/warty-backports/main/binary-i386/Packages.gz',
+     u'dists/warty-backports/universe/binary-i386/Packages.gz',
+     u'dists/warty-security/main/binary-i386/Packages.gz',
+     u'dists/warty-security/universe/binary-i386/Packages.gz',
+     u'dists/warty-updates/main/binary-i386/Packages.gz',
+     u'dists/warty-updates/universe/binary-i386/Packages.gz',
+     u'dists/warty-proposed/main/binary-i386/Packages.gz',
+     u'dists/warty-proposed/universe/binary-i386/Packages.gz']
+
+    >>> warty.status = SeriesStatus.OBSOLETE
 
     >>> paths = mirror.getExpectedSourcesPaths()
-    >>> [path for (series, pocket, component, path) in paths
-    ...  if 'hoary' in path]
-    [u'dists/hoary/main/source/Sources.gz',
+    >>> [path for (series, pocket, component, path) in paths]
+    [u'dists/breezy-autotest/main/source/Sources.gz',
+     u'dists/breezy-autotest/restricted/source/Sources.gz',
+     u'dists/breezy-autotest/universe/source/Sources.gz',
+     u'dists/breezy-autotest/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-backports/main/source/Sources.gz',
+     u'dists/breezy-autotest-backports/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-backports/universe/source/Sources.gz',
+     u'dists/breezy-autotest-backports/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-security/main/source/Sources.gz',
+     u'dists/breezy-autotest-security/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-security/universe/source/Sources.gz',
+     u'dists/breezy-autotest-security/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-updates/main/source/Sources.gz',
+     u'dists/breezy-autotest-updates/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-updates/universe/source/Sources.gz',
+     u'dists/breezy-autotest-updates/multiverse/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/main/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/restricted/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/universe/source/Sources.gz',
+     u'dists/breezy-autotest-proposed/multiverse/source/Sources.gz',
+     u'dists/hoary/main/source/Sources.gz',
      u'dists/hoary/restricted/source/Sources.gz',
      u'dists/hoary-backports/main/source/Sources.gz',
      u'dists/hoary-backports/restricted/source/Sources.gz',
@@ -421,7 +472,11 @@ IDistributionMirror.
      u'dists/hoary-updates/main/source/Sources.gz',
      u'dists/hoary-updates/restricted/source/Sources.gz',
      u'dists/hoary-proposed/main/source/Sources.gz',
-     u'dists/hoary-proposed/restricted/source/Sources.gz']
+     u'dists/hoary-proposed/restricted/source/Sources.gz',
+     u'dists/warty-security/main/source/Sources.gz',
+     u'dists/warty-updates/main/source/Sources.gz']
+
+    >>> warty.status = SeriesStatus.SUPPORTED
 
 For cdimage mirrors, these files are listed in a file stored in
 http://releases.ubuntu.com/. This file is parsed by
