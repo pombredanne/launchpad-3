@@ -741,8 +741,8 @@ class BugzillaAPI(Bugzilla):
 
     @ensure_no_transaction
     @needs_authentication
-    def setLaunchpadBugId(
-        self, remote_bug, launchpad_bug_id, launchpad_bug_url):
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id,
+                          launchpad_bug_url):
         """Set the Launchpad bug for a given remote bug.
 
         See `ISupportsBackLinking`.
@@ -949,8 +949,8 @@ class BugzillaLPPlugin(BugzillaAPI):
 
     @ensure_no_transaction
     @needs_authentication
-    def setLaunchpadBugId(
-        self, remote_bug, launchpad_bug_id, launchpad_bug_url):
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id,
+                          launchpad_bug_url):
         """Set the Launchpad bug for a given remote bug.
 
         See `ISupportsBackLinking`.
