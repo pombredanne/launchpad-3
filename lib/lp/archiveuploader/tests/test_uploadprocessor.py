@@ -17,6 +17,7 @@ from StringIO import StringIO
 import tempfile
 import traceback
 import unittest
+import urllib
 
 from email import message_from_string
 
@@ -295,37 +296,25 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 content in body,
                 "Expect: '%s'\nGot:\n%s" % (content, body))
 
-    def PGPSignatureNotPreserved(self, dir=None, uploadprocessor=None):
+    def PGPSignatureNotPreserved(self, archive=None):
         """PGP signatures should be removed from .changes files.
 
         Email notifications and the librarian file for .changes file should
         both have the PGP signature removed.
         """
-        upload_dir = None
-        if dir is None:
-            upload_dir = self.queueUpload("bar_1.0-2")
-        else:
-            upload_dir = self.queueUpload("bar_1.0-1", dir)
-        self.processUpload(uploadprocessor, upload_dir)
-
-        # Check the email.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-
-        # This is now a MIMEMultipart message, so we walk every attachment.
-        for part in msg.walk():
-            body = part.get_payload(decode=True)
-            if body is None:
-                continue
-            self.assertTrue(
-                "-----BEGIN PGP SIGNED MESSAGE-----" not in body,
-                "Unexpected PGP header found")
-            self.assertTrue(
-                "-----BEGIN PGP SIGNATURE-----" not in body,
-                "Unexpected start of PGP signature found")
-            self.assertTrue(
-                "-----END PGP SIGNATURE-----" not in body,
-                "Unexpected end of PGP signature found")
+        bar = archive.getPublishedSources(
+            name='bar', version="1.0-1", exact_match=True)
+        changes_file = urllib.urlopen(bar[0].changesFileUrl())
+        self.assertTrue(
+            "-----BEGIN PGP SIGNED MESSAGE-----" not in changes_file,
+            "Unexpected PGP header found")
+        self.assertTrue(
+            "-----BEGIN PGP SIGNATURE-----" not in changes_file,
+            "Unexpected start of PGP signature found")
+        self.assertTrue(
+            "-----END PGP SIGNATURE-----" not in changes_file,
+            "Unexpected end of PGP signature found")
+        changes_file.close()
 
 
 class TestUploadProcessor(TestUploadProcessorBase):
@@ -1748,7 +1737,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         pubrec = queue_item.sources[0].publish(self.log)
         pubrec.status = PackagePublishingStatus.PUBLISHED
         pubrec.datepublished = UTC_NOW
-        self.PGPSignatureNotPreserved(uploadprocessor=uploadprocessor)
+        queue_item.setDone()
+        self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
 
 
 def test_suite():

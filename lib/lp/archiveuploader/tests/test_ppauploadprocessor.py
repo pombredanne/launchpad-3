@@ -687,8 +687,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         Email notifications and the librarian file for .changes file should
         both have the PGP signature removed.
         """
-	self.PGPSignatureNotPreserved(
-            dir="~name16/ubuntu", uploadprocessor=self.uploadprocessor)
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        self.PGPSignatureNotPreserved(archive=self.name16.archive)
 
     def doCustomUploadToPPA(self):
         """Helper method to do a custom upload to a PPA.
