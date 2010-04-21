@@ -25,8 +25,9 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget, enabled_with_permission,
-    LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadFormView, LaunchpadView, Link,
+    NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -190,22 +191,22 @@ class SourcePackageRecipeBuildView(LaunchpadView):
 
 
 class ISourcePackageAddEditSchema(Interface):
-        """Schema for adding or editing a recipe."""
+    """Schema for adding or editing a recipe."""
 
-        use_template(ISourcePackageRecipe, include=[
-            'name',
-            'description',
-            'owner',
-            ])
-        sourcepackagename = Choice(
-            title=u"Source Package Name", required=True,
-            vocabulary='SourcePackageName')
-        distros = List(
-            Choice(vocabulary='BuildableDistroSeries'),
-            title=u'Default Distribution series')
-        recipe_text = Text(
-            title=u'Recipe text', required=True,
-            description=u'The text of the recipe.')
+    use_template(ISourcePackageRecipe, include=[
+        'name',
+        'description',
+        'owner',
+        ])
+    sourcepackagename = Choice(
+        title=u"Source Package Name", required=True,
+        vocabulary='SourcePackageName')
+    distros = List(
+        Choice(vocabulary='BuildableDistroSeries'),
+        title=u'Default Distribution series')
+    recipe_text = Text(
+        title=u'Recipe text', required=True,
+        description=u'The text of the recipe.')
 
 class SourcePackageRecipeAddView(LaunchpadFormView):
     """View for creating Source Package Recipes."""
