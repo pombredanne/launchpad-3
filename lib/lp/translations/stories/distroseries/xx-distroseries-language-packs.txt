@@ -57,7 +57,7 @@ Also, that change is shown in the public language pack listing web page:
     Base pack: 2007-09-10 19:16:01 UTC
     A complete set of translations for the OS.
     Delta pack:
-    none yet
+    no update
     Translation updates, applied on top of the base pack.
     Language pack being tested
     No pack is being tested right now.

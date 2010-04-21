@@ -98,40 +98,30 @@
                 structure
                 context/distribution/@@+language-pack-admin-info" />
 
-            <table id="languagepack-download-table">
-            <tbody>
-              <tr>
-               <th>Current base pack:</th>
-               <td>
-                  <a class="sprite download"
-                     tal:condition="context/language_pack_base"
-                     tal:attributes="
-                        href context/language_pack_base/file/http_url">
-                  <tal:export-date
-                    replace="context/language_pack_base/date_exported/fmt:datetime" />
-                  </a>
-                  <tal:not-export-date condition="not: context/language_pack_base">
-                    none yet
-                  </tal:not-export-date>
-                </td>
-              </tr>
-              <tr>
-                <th>Current update pack:</th>
-                <td>
-                  <a class="sprite download"
-                     tal:condition="context/language_pack_delta"
-                     tal:attributes="href context/language_pack_delta/file/http_url">
-                    <tal:export-date
-                       replace="context/language_pack_delta/date_exported/fmt:datetime" />
-                  </a>
-                  <tal:not-export-date condition="not: context/language_pack_delta">
-                    no update
-                  </tal:not-export-date>
-                </td>
-              </tr>
-            </tbody>
-            </table>
-
+            <div>
+              <strong>Base pack:</strong>
+              <a class="sprite download"
+                 tal:condition="context/language_pack_base"
+                 tal:attributes="href context/language_pack_base/file/http_url">
+                <tal:export-date
+                   replace="context/language_pack_base/date_exported/fmt:datetime" />
+              </a>
+              <tal:not-export-date condition="not: context/language_pack_base">
+                none yet
+              </tal:not-export-date>
+            </div>
+            <div>
+              <strong>Update pack:</strong>
+              <a class="sprite download"
+                 tal:condition="context/language_pack_delta"
+                 tal:attributes="href context/language_pack_delta/file/http_url">
+                <tal:export-date
+                   replace="context/language_pack_delta/date_exported/fmt:datetime" />
+              </a>
+              <tal:not-export-date condition="not: context/language_pack_delta">
+                no update
+              </tal:not-export-date>
+            </div>
             <p>
               <a tal:attributes="
                    href context/menu:navigation/language_packs/url">

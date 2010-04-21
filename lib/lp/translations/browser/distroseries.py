@@ -157,9 +157,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
                     "Your request has been noted. Next language pack "
                     "export will be made relative to the current base "
                     "language pack.")
-        else:
-            self.request.response.addInfoNotification(
-                "You didn't change anything.")
 
     @action("Change Settings", condition=is_translations_admin)
     def change_action(self, action, data):

@@ -786,22 +786,6 @@ div.translation-help-links div {
   clear: both;
 }
 
-/* Language pack download links
- * https://translations.launchpad.dev/ubuntu/hoary
- *
- */
-#languagepack-download-table th {
-  color: #717171;
-  font-weight: bold;
-}
-#languagepack-download-table td {
-    padding-left: 0.5em;
-}
-#languagepack-download-table td, #languagepack-download-table th {
-  padding-bottom: 2px;
-}
-
-
 .gridflow {
     margin: 0.0em;
     padding: 0.0em;
