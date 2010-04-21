@@ -27,7 +27,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
-from lp.bugs.scripts.checkwatches import BugWatchUpdater
+from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
@@ -807,6 +807,9 @@ class TestResultSequence(list):
     Returns a list with a `count` method.
     """
 
+    def config(self, limit):
+        return self.__class__(self[:limit])
+
     def count(self):
         """See `SelectResults`."""
         return len(self)
@@ -886,16 +889,16 @@ class TestExternalBugTracker(ExternalBugTracker):
 
 
 
-class TestBugWatchUpdater(BugWatchUpdater):
-    """A mock `BugWatchUpdater` object."""
+class TestCheckwatchesMaster(CheckwatchesMaster):
+    """A mock `CheckwatchesMaster` object."""
 
     def _updateBugTracker(self, bug_tracker):
         # Save the current bug tracker, so _getBugWatch can reference it.
         self.bugtracker = bug_tracker
-        super(TestBugWatchUpdater, self)._updateBugTracker(bug_tracker)
+        super(TestCheckwatchesMaster, self)._updateBugTracker(bug_tracker)
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
-        """See `BugWatchUpdater`."""
+        """See `CheckwatchesMaster`."""
         return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
     def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
@@ -936,7 +939,7 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         # try and update two bug watches - the first will
         # trigger a DB error, the second updates successfully.
         bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
-        bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
+        bug_watch_updater = TestCheckwatchesMaster(self.layer.txn)
         self.layer.txn.commit()
         bug_watch_updater._updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
