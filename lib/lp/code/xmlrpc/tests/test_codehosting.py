@@ -216,60 +216,6 @@ class CodehostingTest(TestCaseWithFactory):
         fault = self.codehosting_api.mirrorFailed(branch_id, failure_message)
         self.assertEqual(faults.NoBranchWithID(branch_id), fault)
 
-    def test_mirrorComplete(self):
-        # mirrorComplete marks the branch as having been successfully
-        # mirrored, with no failures and no status message.
-        branch = self.factory.makeAnyBranch()
-        self.assertUnmirrored(branch)
-
-        self.codehosting_api.startMirroring(branch.id)
-        revision_id = self.factory.getUniqueString()
-        success = self.codehosting_api.mirrorComplete(branch.id, revision_id)
-        self.assertEqual(True, success)
-        self.assertMirrorSucceeded(branch, revision_id)
-
-    def test_mirrorCompleteWithNoBranchID(self):
-        # mirrorComplete returns a Fault if there's no branch with the given
-        # ID.
-        branch_id = self.getUnusedBranchID()
-        fault = self.codehosting_api.mirrorComplete(
-            branch_id, self.factory.getUniqueString())
-        self.assertEqual(faults.NoBranchWithID(branch_id), fault)
-
-    def test_mirrorComplete_resets_failure_count(self):
-        # mirrorComplete marks the branch as successfully mirrored and removes
-        # all memory of failure.
-
-        # First, mark the branch as failed.
-        branch = self.factory.makeAnyBranch()
-        self.codehosting_api.startMirroring(branch.id)
-        failure_message = self.factory.getUniqueString()
-        self.codehosting_api.mirrorFailed(branch.id, failure_message)
-        self.assertMirrorFailed(branch, failure_message)
-
-        # Start and successfully finish a mirror.
-        self.codehosting_api.startMirroring(branch.id)
-        revision_id = self.factory.getUniqueString()
-        self.codehosting_api.mirrorComplete(branch.id, revision_id)
-
-        # Confirm that it succeeded.
-        self.assertMirrorSucceeded(branch, revision_id)
-
-    def test_mirrorComplete_resets_mirror_request(self):
-        # After successfully mirroring a hosted branch, next_mirror_time
-        # should be set to NULL.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-
-        # Request that branch be mirrored. This sets next_mirror_time.
-        branch.requestMirror()
-
-        # Simulate successfully mirroring the branch.
-        self.codehosting_api.startMirroring(branch.id)
-        self.codehosting_api.mirrorComplete(
-            branch.id, self.factory.getUniqueString())
-
-        self.assertIs(None, branch.next_mirror_time)
-
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into ScriptActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)

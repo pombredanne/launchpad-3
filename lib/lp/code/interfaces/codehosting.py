@@ -93,19 +93,6 @@ class ICodehostingAPI(Interface):
             `NoBranchWithID` fault if there's no branch with the given id.
         """
 
-    def mirrorComplete(branchID, lastRevisionID):
-        """Notify Launchpad that the branch has been successfully mirrored.
-
-        In the Launchpad database, the last_mirrored field will be updated to
-        match the last_mirror_attempt value, the mirror_failures counter will
-        be reset to zero and the next_mirror_time will be set to NULL.
-
-        :param branchID: The database ID of the given branch.
-        :param lastRevisionID: The last revision ID mirrored.
-        :returns: True if the branch status was successfully updated.
-            `NoBranchWithID` fault if there's no branch with the given id.
-        """
-
     def mirrorFailed(branchID, reason):
         """Notify Launchpad that the branch could not be mirrored.
 

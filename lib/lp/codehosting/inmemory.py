@@ -502,18 +502,6 @@ class FakeCodehosting:
         branch.next_mirror_time = None
         return True
 
-    def mirrorComplete(self, branch_id, last_revision_id):
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        branch.last_mirrored_id = last_revision_id
-        branch.last_mirrored = UTC_NOW
-        branch.mirror_failures = 0
-        for stacked_branch in self._branch_set:
-            if stacked_branch.stacked_on is branch:
-                stacked_branch.requestMirror()
-        return True
-
     def mirrorFailed(self, branch_id, reason):
         branch = self._branch_set.get(branch_id)
         if branch is None:

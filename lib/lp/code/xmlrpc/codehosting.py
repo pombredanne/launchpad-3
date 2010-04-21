@@ -123,16 +123,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         else:
             return ()
 
-    def mirrorComplete(self, branch_id, last_revision_id):
-        """See `ICodehostingAPI`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # See comment in startMirroring.
-        branch = removeSecurityProxy(branch)
-        branch.mirrorComplete(last_revision_id)
-        return True
-
     def mirrorFailed(self, branch_id, reason):
         """See `ICodehostingAPI`."""
         branch = getUtility(IBranchLookup).get(branch_id)
