@@ -1,6 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401
+# pylint: disable-msg=F0401,E1002
 
 """Tests for the product view classes and templates."""
 
@@ -63,7 +63,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
-        pattern = re.compile(dedent("""\
+        self.assertContainsRe(dedent("""\
             Master Chef
             Branches
             Description
@@ -89,15 +89,29 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Request build\(s\)
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/chocolate/cake"""), re.S)
-        main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), repr(main_text))
+            lp://dev/~chef/chocolate/cake"""), self.getMainText(recipe))
+
+    def assertContainsRe(self, regex, text):
+        """Assert that the text contains the specified regex."""
+        pattern = re.compile(regex, re.S)
+        self.assertTrue(pattern.search(text), text)
+
+    def test_index_no_builds(self):
+        """A message should be shown when there are no builds."""
+        recipe = self.makeRecipe()
+        self.assertContainsRe(dedent("""\
+            Build records
+            Status
+            Time
+            Distribution series
+            Archive
+            This recipe has not been built yet."""), self.getMainText(recipe))
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
         removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        pattern = re.compile(dedent("""\
+        self.assertContainsRe(dedent("""\
             Build records
             Status
             Time
@@ -106,9 +120,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             No suitable builders
             Secret Squirrel
             Secret PPA
-            Request build\(s\)"""), re.S)
-        main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+            Request build\(s\)"""), self.getMainText(recipe))
 
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""
@@ -122,7 +134,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         recipe = self.makeRecipe()
         self.makeBuildJob(recipe)
         self.factory.makeBuilder()
-        pattern = re.compile(dedent("""\
+        self.assertContainsRe(dedent("""\
             Build records
             Status
             Time
@@ -134,9 +146,7 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Secret Squirrel
             Secret PPA
             Request build\(s\)
-            Recipe contents"""), re.S)
-        main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+            Recipe contents"""), self.getMainText(recipe))
 
     def test_builds(self):
         """Ensure SourcePackageRecipeView.builds is as described."""

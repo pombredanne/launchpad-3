@@ -122,6 +122,8 @@ class ProberProtocol(HTTPClient):
         """
         self.sendCommand('HEAD', self.factory.connect_path)
         self.sendHeader('HOST', self.factory.connect_host)
+        self.sendHeader('User-Agent',
+            'Launchpad Mirror Prober ( https://launchpad.net/ )')
         self.endHeaders()
 
     def handleStatus(self, version, status, message):
