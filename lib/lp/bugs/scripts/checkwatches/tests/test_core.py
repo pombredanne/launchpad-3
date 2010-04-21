@@ -24,7 +24,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches.updater import (
+from lp.bugs.scripts.checkwatches.core import (
     CheckwatchesMaster, TwistedThreadScheduler)
 from lp.bugs.scripts.checkwatches.base import CheckWatchesErrorUtility
 from lp.bugs.tests.externalbugtracker import (
@@ -74,8 +74,8 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # We monkey-patch externalbugtracker.get_external_bugtracker()
         # so that it always returns what we want.
         self.original_get_external_bug_tracker = (
-            checkwatches.updater.externalbugtracker.get_external_bugtracker)
-        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
+            checkwatches.core.externalbugtracker.get_external_bugtracker)
+        checkwatches.core.externalbugtracker.get_external_bugtracker = (
             always_BugzillaAPI_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
@@ -130,8 +130,8 @@ class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
         # We monkey-patch externalbugtracker.get_external_bugtracker()
         # so that it always returns what we want.
         self.original_get_external_bug_tracker = (
-            checkwatches.updater.externalbugtracker.get_external_bugtracker)
-        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
+            checkwatches.core.externalbugtracker.get_external_bugtracker)
+        checkwatches.core.externalbugtracker.get_external_bugtracker = (
             always_BugzillaAPIWithoutProducts_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
@@ -219,13 +219,13 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         # When the batch_size is None, suggest_batch_size() will set
         # it accordingly.
         remote_system.batch_size = None
-        checkwatches.updater.suggest_batch_size(remote_system, 1)
+        checkwatches.core.suggest_batch_size(remote_system, 1)
         self.failUnlessEqual(100, remote_system.batch_size)
         remote_system.batch_size = None
-        checkwatches.updater.suggest_batch_size(remote_system, 12350)
+        checkwatches.core.suggest_batch_size(remote_system, 12350)
         self.failUnlessEqual(247, remote_system.batch_size)
         # If the batch_size is already set, it will not be changed.
-        checkwatches.updater.suggest_batch_size(remote_system, 99999)
+        checkwatches.core.suggest_batch_size(remote_system, 99999)
         self.failUnlessEqual(247, remote_system.batch_size)
 
 

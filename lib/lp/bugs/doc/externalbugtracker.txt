@@ -199,7 +199,7 @@ constructor.
 
     >>> from lp.bugs.scripts import checkwatches
     >>> (bug_watch_updater._syncable_gnome_products ==
-    ...     checkwatches.updater.SYNCABLE_GNOME_PRODUCTS)
+    ...     checkwatches.core.SYNCABLE_GNOME_PRODUCTS)
     True
 
     >>> syncable_products = ['HeartOfGold']
