@@ -16,11 +16,10 @@ __all__ = [
 
 import logging
 import os
-import StringIO
 import transaction
 
 from twisted.application import service
-from twisted.internet import defer, reactor, protocol
+from twisted.internet import defer, reactor
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
 from twisted.python.failure import Failure
@@ -32,6 +31,7 @@ from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.db import write_transaction
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
+from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 
 
 buildd_success_result_map = {
@@ -58,61 +58,6 @@ class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
     noisy = False
     # Use the protocol with timeout support.
     protocol = QueryWithTimeoutProtocol
-
-
-class ProcessWithTimeout(protocol.ProcessProtocol, TimeoutMixin):
-    """Run a process and capture its output while applying a timeout."""
-
-    def __init__(self, deferred, timeout, clock=None):
-        self.deferred = deferred
-        self._clock = clock
-        self._timeout = timeout
-        self.outBuf = StringIO.StringIO()
-        self.errBuf = StringIO.StringIO()
-        self.outReceived = self.outBuf.write
-        self.errReceived = self.errBuf.write
-        self.processTransport = None
-
-    def callLater(self, period, func):
-        """Override TimeoutMixin.callLater so we use self._clock.
-
-        This allows us to write unit tests that don't depend on actual wall
-        clock time.
-        """
-        if self._clock is None:
-            return TimeoutMixin.callLater(self, period, func)
-
-        return self._clock.callLater(period, func)
-
-    def spawnProcess(self, argv):
-        """Start a process.
-
-        :param argv: A list containing all the arg values for the process,
-                     where argv[0] is the full path to the executable.
-        """
-        self.processTransport = reactor.spawnProcess(
-            self, argv[0], tuple(argv))
-
-    def connectionMade(self):
-        """Start the timeout counter when connection is made."""
-        self.setTimeout(self._timeout)
-
-    def timeoutConnection(self):
-        """When a timeout occurs, kill the process and record a TimeoutError.
-        """
-        self.processTransport.signalProcess("KILL")
-        # processEnded will get called.
-
-    def processEnded(self, reason):
-        self.setTimeout(None)
-        out = self.outBuf.getvalue()
-        err = self.errBuf.getvalue()
-        e = reason.value
-        code = e.exitCode
-        if e.signal:
-            self.deferred.errback((out, err, e.signal))
-        else:
-            self.deferred.callback((out, err, code))
 
 
 class RecordingSlave:
@@ -191,7 +136,7 @@ class RecordingSlave:
         d = defer.Deferred()
         p = ProcessWithTimeout(
             d, config.builddmaster.socket_timeout, clock=clock)
-        p.spawnProcess(resume_argv)
+        p.spawnProcess(resume_argv[0], tuple(resume_argv))
         return d
 
 
@@ -421,11 +366,10 @@ class BuilddManager(service.Service):
 
         return recording_slaves
 
-    def checkResume(self, response, slave):
-        """Verify the results of a slave resume procedure.
+    def resumeFailed(self, response, slave):
+        """Deal with a slave resume failure.
 
-        If it failed, it returns a corresponding `ResetDispatchResult`
-        dispatch result.
+        Return a corresponding `ResetDispatchResult` dispatch result.
         """
         # 'response' is the tuple that's constructed in
         # ProcessWithTimeout.processEnded(), or is a Failure that
@@ -435,12 +379,8 @@ class BuilddManager(service.Service):
         else:
             out, err, code = response
 
-        if code == os.EX_OK:
-            # Process exited normally.
-            return None
-
         error_text = '%s\n%s' % (out, err)
-        self.logger.error( '%s resume failure: %s' % (slave, error_text))
+        self.logger.error('%s resume failure: %s' % (slave, error_text))
         self.slaveDone(slave)
         return self.reset_result(slave, error_text)
 
@@ -496,7 +436,7 @@ class BuilddManager(service.Service):
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlave()
-                d.addBoth(self.checkResume, slave)
+                d.addErrBack(self.resumeFailed, slave)
             else:
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.

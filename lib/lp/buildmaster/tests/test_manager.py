@@ -9,8 +9,7 @@ import transaction
 import unittest
 
 from twisted.internet import defer
-from twisted.internet.error import (
-    ConnectionClosed)
+from twisted.internet.error import ConnectionClosed
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -131,9 +130,9 @@ class TestRecordingSlaves(TrialTestCase):
         self.addCleanup(config.pop, 'failed_resume_command')
 
         # On failures, the response is a twisted `Failure` object containing
-        # a `ProcessTerminated` error.
+        # a tuple.
         def check_resume_failure(failure):
-            out, err, code = failure
+            out, err, code = failure.value
             # The process will exit with a return code of "1".
             self.assertEqual(code, 1)
         d = self.slave.resumeSlave()
@@ -157,7 +156,6 @@ class TestRecordingSlaves(TrialTestCase):
         # a `TimeoutError` error.
         def check_resume_timeout(failure):
             self.assertIsInstance(failure, Failure)
-            self.assertIsInstance(failure.value, tuple)
             out, err, code = failure.value
             self.assertEqual(code, signal.SIGKILL)
         clock = Clock()
@@ -305,8 +303,8 @@ class TestBuilddManager(TrialTestCase):
             isinstance(result, TestingFailDispatchResult),
             'Dispatch failure did not result in a FailBuildResult object')
 
-    def testCheckResume(self):
-        """`BuilddManager.checkResume` is chained after resume requests.
+    def test_resumeFailed(self):
+        """`BuilddManager.resumeFailed` is chained after resume requests.
 
         If the resume request succeed it returns None, otherwise it returns
         a `ResetBuildResult` (the one in the test context) that will be
@@ -317,13 +315,8 @@ class TestBuilddManager(TrialTestCase):
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
 
-        successful_response = ['', '', os.EX_OK]
-        result = self.manager.checkResume(successful_response, slave)
-        self.assertEqual(
-            None, result, 'Successful resume checks should return None')
-
         failed_response = ['stdout', 'stderr', 1]
-        result = self.manager.checkResume(failed_response, slave)
+        result = self.manager.resumeFailed(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> reset failure', repr(result))
