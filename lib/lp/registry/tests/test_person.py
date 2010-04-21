@@ -37,8 +37,8 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.testing.layers import DatabaseFunctionalLayer
+
 
 class TestPerson(TestCaseWithFactory):
 
@@ -142,8 +142,7 @@ class TestPerson(TestCaseWithFactory):
             title = 'title foo',
             summary = 'summary foo',
             url = 'http://foo.com',
-            publication_date = self.now
-            )
+            publication_date = self.now)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:
@@ -435,7 +434,7 @@ class TestPerson(TestCaseWithFactory):
 
 class TestPersonSet(unittest.TestCase):
     """Test `IPersonSet`."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -463,7 +462,7 @@ class TestPersonSet(unittest.TestCase):
 
 class TestCreatePersonAndEmail(unittest.TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -499,7 +498,7 @@ class TestCreatePersonAndEmail(unittest.TestCase):
 
 class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestPersonRelatedBugTaskSearch, self).setUp()
@@ -521,7 +520,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         # With no specified options, get_related_bugtasks_search_params()
         # returns 4 BugTaskSearchParams objects, each with a different
         # user field set.
-        search_params = get_related_bugtasks_search_params(self.user, self.context)
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context)
         self.assertEqual(len(search_params), 4)
         self.checkUserFields(
             search_params[0], assignee=self.context)
