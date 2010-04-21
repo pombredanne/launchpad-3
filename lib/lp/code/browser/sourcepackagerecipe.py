@@ -9,7 +9,7 @@ __all__ = [
     'SourcePackageRecipeAddView',
     'SourcePackageRecipeBuildView',
     'SourcePackageRecipeContextMenu',
-    'SourcePackageRecipeEditMenu',
+    'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
     'SourcePackageRecipeRequestBuildsView',
     'SourcePackageRecipeView',

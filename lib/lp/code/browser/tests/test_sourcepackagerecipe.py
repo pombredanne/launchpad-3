@@ -67,9 +67,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='ratatouille')
-        branch_path = branch.bzr_identity
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -110,7 +108,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     layer = DatabaseFunctionalLayer
 
     def test_edit_recipe(self):
-        mumbly = self.factory.makeDistroSeries(
+        self.factory.makeDistroSeries(
             displayname='Mumbly Midget', name='mumbly')
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')

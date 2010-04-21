@@ -61,7 +61,6 @@ from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
-from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
@@ -94,7 +93,6 @@ from lp.code.interfaces.branch import (
     user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
