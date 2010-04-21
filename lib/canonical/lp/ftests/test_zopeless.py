@@ -31,9 +31,16 @@ class TestInitZopeless(unittest.TestCase):
 
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
-        # warning.
-        warn_explicit = warnings.warn_explicit
-        warnings.warn_explicit = self.expectedWarning
+        # warning.  The warnings module has two key functions, warn and
+        # warn_explicit, the first calling the second. You might, therefore,
+        # think that we should hook the second, to catch all warnings in one
+        # place.  However, from Python 2.6, both of these are replaced with
+        # entries into a C extension if available, and the C implementation of
+        # the first will not call a monkeypatched Python implementation of the
+        # second.  Therefore, we hook warn, as is the one actually called by
+        # the particular code we are interested in testing.
+        original_warn = warnings.warn
+        warnings.warn = self.warn_hooked
         self.warned = False
         try:
             # Calling initZopeless with the same arguments twice should return
@@ -49,10 +56,9 @@ class TestInitZopeless(unittest.TestCase):
                 tm1.uninstall()
         finally:
             # Put the warnings module back the way we found it.
-            warnings.warn_explicit = warn_explicit
+            warnings.warn = original_warn
 
-    def expectedWarning(self, message, category, filename, lineno,
-                        module=None, registry=None, module_globals=None):
+    def warn_hooked(self, message, category=None, stacklevel=1):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
 
