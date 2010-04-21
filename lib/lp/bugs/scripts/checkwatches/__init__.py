@@ -3,8 +3,8 @@
 """Top-level __init__ for the checkwatches package."""
 
 # We do this to maintain backwards compatibility with tests.
-from .base import (
+from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
-from .updater import (
+from lp.bugs.scripts.checkwatches.core import (
     BaseScheduler, CheckwatchesMaster, CheckWatchesCronScript, SerialScheduler,
     TooMuchTimeSkew, TwistedThreadScheduler, externalbugtracker)
