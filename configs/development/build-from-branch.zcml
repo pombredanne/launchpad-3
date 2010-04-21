@@ -58,6 +58,14 @@
             facet="branches"
             name="+edit"
             template="../../lib/lp/app/templates/generic-edit.pt"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeDeleteView"
+            permission="zope.Public"
+            facet="branches"
+            name="+delete"
+            template="../../lib/lp/app/templates/generic-edit.pt"/>
+
 
 
 

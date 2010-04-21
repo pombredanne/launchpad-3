@@ -47,11 +47,15 @@ class SourcePackageRecipeNavigationMenu(NavigationMenu):
 
     facet = 'branches'
 
-    links = ('edit',)
+    links = ('edit', 'delete')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         return Link('+edit', 'Edit recipe', icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        return Link('+delete', 'Delete recipe', icon='trash-icon')
 
 
 class SourcePackageRecipeContextMenu(ContextMenu):
@@ -276,3 +280,26 @@ class SourcePackageRecipeEditView(LaunchpadFormView):
             self.context.distroseries.add(distroseries_item)
 
         self.next_url = canonical_url(self.context)
+
+
+class SourcePackageRecipeDeleteView(LaunchpadFormView):
+
+    @property
+    def title(self):
+        return 'Delete %s source package recipe' % self.context.name
+    label = title
+
+    class schema(Interface):
+        """Schema for deleting a branch."""
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.owner)
+
+    @action('Delete recipe', name='delete')
+    def request_action(self, action, data):
+        self.context.destroySelf()
