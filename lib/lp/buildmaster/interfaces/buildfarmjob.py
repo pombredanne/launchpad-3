@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime
+from zope.schema import Bool, Choice, Datetime
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import Reference
 
@@ -69,8 +69,9 @@ class IBuildFarmJob(Interface):
             "The Processor required by this build farm job. "
             "For processor-independent job types please return None."))
 
-    virtualized = Attribute(
-        _(
+    virtualized = Bool(
+        title=_('Virtualized'), required=False, readonly=True,
+        description=_(
             "The virtualization setting required by this build farm job. "
             "For job types that do not care about virtualization please "
             "return None."))
@@ -112,6 +113,14 @@ class IBuildFarmJob(Interface):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    # XXX 2010-04-21 michael.nelson bug=567922. This property
+    # can be removed once all *Build classes use the concrete
+    # BuildFarmJob.
+    has_concrete_build_farm_job = Bool(
+        title=_('Has concrete build farm job'), required=False,
+        readonly=True, description=_(
+            'Whether this instance is or has a concrete build farm job.'))
+
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
@@ -132,18 +141,6 @@ class IBuildFarmJob(Interface):
 
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
-
-    processor = Reference(
-        IProcessor, title=_("Processor"),
-        description=_(
-            "The Processor required by this build farm job. "
-            "For processor-independent job types please return None."))
-
-    virtualized = Attribute(
-        _(
-            "The virtualization setting required by this build farm job. "
-            "For job types that do not care about virtualization please "
-            "return None."))
 
 
 class IBuildFarmJobDerived(Interface):
