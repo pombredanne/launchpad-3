@@ -173,7 +173,7 @@ class BaseTestRunner:
 
             self._gather_test_output(popen.stdout, summary_file, out_file)
 
-            # Grab the testrunner exit status
+            # Grab the testrunner exit status.
             result = popen.wait()
 
             if self.pqm_message is not None:
@@ -224,7 +224,7 @@ class BaseTestRunner:
         subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
         message['Subject'] = subject
 
-        # Make the body
+        # Make the body.
         try:
             summary = open(summary_filename, 'r').read()
         finally:
@@ -233,7 +233,7 @@ class BaseTestRunner:
         body['Content-Disposition'] = 'inline'
         message.attach(body)
 
-        # gzip up the full log
+        # gzip up the full log.
         fd, path = tempfile.mkstemp()
         os.close(fd)
         gz = gzip.open(path, 'wb')
@@ -241,7 +241,7 @@ class BaseTestRunner:
         gz.writelines(full_log)
         gz.close()
 
-        # Attach the gzipped log
+        # Attach the gzipped log.
         zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
