@@ -1809,7 +1809,6 @@ class TestPendingWrites(TestCaseWithFactory):
         # Cheat! The actual API for marking a branch as scanned is
         # updateScannedDetails. That requires a revision in the database
         # though.
-        # XXX this is probably wrong
         removeSecurityProxy(branch).last_scanned_id = rev_id
         self.assertEqual(False, branch.pending_writes)
 
@@ -1831,7 +1830,6 @@ class TestPendingWrites(TestCaseWithFactory):
         # Cheat! The actual API for marking a branch as scanned is
         # updateScannedDetails. That requires a revision in the database
         # though.
-        # XXX this is probably wrong
         removeSecurityProxy(branch).last_scanned_id = rev_id
         # Cheat again! We can only tell if mirroring has started if the last
         # mirrored attempt is different from the last mirrored time. To ensure

@@ -868,7 +868,9 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
 
     def startMirroring(self, branch):
         """See `AcquireBranchToPullTests`."""
-        # XXX bit random, but works
+        # This is a bit random, but it works.  acquireBranchToPull marks the
+        # branch it returns as started mirroring, but we should check that the
+        # one we want is returned...
         self.assertBranchIsAquired(branch, branch.branch_type)
 
     def test_branch_type_returned_mirrored(self):

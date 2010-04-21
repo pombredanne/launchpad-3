@@ -832,6 +832,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         new_data_pushed = (
              self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
              and self.next_mirror_time is not None)
+        # XXX 2010-04-22, MichaelHudson: This should really look for a branch
+        # scan job.
         pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
         pull_in_progress = (
             self.last_mirror_attempt is not None
