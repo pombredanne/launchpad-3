@@ -12,12 +12,15 @@ from zope.interface import providedBy
 
 from lazr.lifecycle.snapshot import Snapshot
 
+from canonical.config import config
 from canonical.launchpad.database import BugNotification
 from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.ftests import login
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import BugTaskStatus, IUpstreamBugTask
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing.mail_helpers import pop_notifications
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
@@ -78,6 +81,43 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
             recipient.person.name
             for recipient in latest_notification.recipients)
         self.assertEqual(notified_people, self.direct_subscribers)
+
+
+class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
+    """Ensure that sub and question subscribers are notified about bug
+    expiration."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestNotificationsSentForBugExpiration, self).setUp()
+        login('test@canonical.com')
+        product_owner = self.factory.makePerson(
+            name='product-owner', email='product-owner@example.com')
+        self.product = self.factory.makeProduct(owner=product_owner)
+        self.bug = self.factory.makeBug(product=self.product)
+        question = self.factory.makeQuestion(target=self.product)
+        subscriber = self.factory.makePerson(
+            name='question-subscriber', email='subscriber@example.com')
+        question.subscribe(subscriber)
+        question.linkBug(self.bug)
+        pop_notifications()
+        self.layer.switchDbUser(config.malone.expiration_dbuser)
+
+    def test_notifications_for_question_subscribers(self):
+        # Ensure that notifications are sent to subscribers of a
+        # question linked to the expired bug.
+        bugtask = self.bug.default_bugtask
+        bugtask_before_modification = Snapshot(
+            bugtask, providing=IUpstreamBugTask)
+        bugtask.transitionToStatus(BugTaskStatus.EXPIRED, self.product.owner)
+        bug_modified = ObjectModifiedEvent(
+            bugtask, bugtask_before_modification,
+            ["status"])
+        notify(bug_modified)
+        self.assertEqual(
+            ['product-owner@example.com', 'subscriber@example.com'],
+            [mail['To'] for mail in pop_notifications()])
 
 
 def test_suite():
