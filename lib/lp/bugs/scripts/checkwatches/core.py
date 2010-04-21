@@ -797,7 +797,9 @@ class CheckwatchesMaster(WorkingBase):
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
-                    bug_watch_updater = BugWatchUpdater(bug_watch, remotesystem)
+                    bug_watch_updater = BugWatchUpdater(
+                        self.transaction, self.logger, bug_watch,
+                        remotesystem)
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance,

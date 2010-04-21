@@ -18,6 +18,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lazr.lifecycle.event import ObjectCreatedEvent
@@ -25,16 +26,18 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.message import IMessageSet
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 
 
 class BugWatchUpdater:
     """Handles the updating of a single BugWatch for checkwatches."""
 
-    def __init__(self, bug_watch, external_bugtracker):
+    def __init__(self, transaction, logger, bug_watch,
+                 external_bugtracker):
+        self.transaction = transaction
+        self.logger = logger
         self.bug_watch = bug_watch
-        self.self.external_bugtracker = self.external_bugtracker
+        self.external_bugtracker = external_bugtracker
 
     def updateBugWatch(self, new_remote_status, new_malone_status,
                        new_remote_importance, new_malone_importance,
