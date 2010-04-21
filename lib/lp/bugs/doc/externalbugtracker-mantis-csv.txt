@@ -79,8 +79,8 @@ And have our special Mantis instance process them:
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(transaction)
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
