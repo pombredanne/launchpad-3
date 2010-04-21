@@ -78,6 +78,7 @@ A new run doesn't pick it up.
   INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Could not build because of missing dependencies'
+  DEBUG   Skipping superseded i386 build of libstdc++ b8p in ubuntu hoary RELEASE (12)
   INFO    Processing builds in 'Could not build because of chroot problem'
   INFO    Success.
   INFO    Dry-run.

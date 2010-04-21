@@ -124,6 +124,8 @@ def main():
             # Skip builds for superseded sources; they won't ever
             # actually build.
             if not build.current_source_publication:
+                log.debug(
+                    'Skipping superseded %s (%s)' % (build.title, build.id))
                 continue
 
             if not build.can_be_retried:
