@@ -527,25 +527,6 @@ class FakeCodehosting:
             FakeScriptActivity(name, hostname, date_started, date_completed))
         return True
 
-    def setStackedOn(self, branch_id, stacked_on_location):
-        branch = self._branch_set.get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        if stacked_on_location == '':
-            branch.stacked_on = None
-            return True
-        stacked_on_location = stacked_on_location.rstrip('/')
-        for stacked_on_branch in self._branch_set:
-            if stacked_on_location == stacked_on_branch.url:
-                branch.stacked_on = stacked_on_branch
-                break
-            if stacked_on_location == '/' + stacked_on_branch.unique_name:
-                branch.stacked_on = stacked_on_branch
-                break
-        else:
-            return faults.NoSuchBranch(stacked_on_location)
-        return True
-
     def createBranch(self, requester_id, branch_path):
         if not branch_path.startswith('/'):
             return faults.InvalidPath(branch_path)

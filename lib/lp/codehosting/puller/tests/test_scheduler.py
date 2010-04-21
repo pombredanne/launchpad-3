@@ -14,7 +14,7 @@ import unittest
 import pytz
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.urlutils import join as urljoin
 
 from twisted.internet import defer, error, reactor
@@ -26,7 +26,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc import faults
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
 from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
@@ -59,14 +58,6 @@ class FakeCodehostingEndpointProxy:
 
     def _remote_acquireBranchToPull(self, *args):
         return defer.succeed(0)
-
-    def _remote_setStackedOn(self, branch_id, stacked_on_location):
-        if stacked_on_location == 'raise-branch-not-found':
-            try:
-                raise faults.NoSuchBranch(stacked_on_location)
-            except faults.NoSuchBranch:
-                return defer.fail()
-        return defer.succeed(None)
 
 
 class TestJobScheduler(TrialTestCase):
@@ -226,14 +217,14 @@ class TestPullerMonitorProtocol(
         def __init__(self):
             self.calls = []
 
-        def setStackedOn(self, stacked_on_location):
-            self.calls.append(('setStackedOn', stacked_on_location))
-
         def startMirroring(self):
             self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, revid_before, revid_after):
-            self.calls.append(('mirrorSucceeded', revid_before, revid_after))
+        def branchChanged(self, stacked_on_url, revid_before, revid_after,
+                          control_string, branch_string, repository_string):
+            self.calls.append(
+                ('branchChanged', stacked_on_url, revid_before, revid_after,
+                 control_string, branch_string, repository_string))
 
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
@@ -259,20 +250,14 @@ class TestPullerMonitorProtocol(
         self.assertEqual(['startMirroring'], self.listener.calls)
         self.assertProtocolSuccess()
 
-    def test_setStackedOn(self):
-        # Receiving a setStackedOn message notifies the listener.
-        self.protocol.do_setStackedOn('/~foo/bar/baz')
-        self.assertEqual(
-            [('setStackedOn', '/~foo/bar/baz')], self.listener.calls)
-        self.assertProtocolSuccess()
-
-    def test_mirrorSucceeded(self):
-        """Receiving a mirrorSucceeded message notifies the listener."""
+    def test_branchChanged(self):
+        """Receiving a branchChanged message notifies the listener."""
         self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
+        self.protocol.do_branchChanged('', 'rev1', 'rev2', '', '', '')
         self.assertEqual(
-            [('mirrorSucceeded', 'rev1', 'rev2')], self.listener.calls)
+            [('branchChanged', '', 'rev1', 'rev2', '', '', '')],
+            self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorFailed(self):
@@ -309,8 +294,8 @@ class TestPullerMonitorProtocol(
         """Receiving 'startMirroring' resets the timeout."""
         self.assertMessageResetsTimeout(self.protocol.do_startMirroring)
 
-    def test_mirrorSucceededDoesNotResetTimeout(self):
-        """Receiving 'mirrorSucceeded' doesn't reset the timeout.
+    def test_branchChangedDoesNotResetTimeout(self):
+        """Receiving 'branchChanged' doesn't reset the timeout.
 
         It's possible that in pathological cases, the worker process might
         hang around even after it has said that it's finished. When that
@@ -319,7 +304,7 @@ class TestPullerMonitorProtocol(
         """
         self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
+        self.protocol.do_branchChanged('', '', '', '', '', '')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -428,6 +413,7 @@ class TestPullerMaster(TrialTestCase):
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, None, logging.getLogger(), self.status_client,
             set(['oops-prefix']))
+        self.factory = ObjectFactory()
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
@@ -453,31 +439,24 @@ class TestPullerMaster(TrialTestCase):
 
         return deferred.addCallback(checkMirrorStarted)
 
-    def test_setStackedOn(self):
-        stacked_on_location = '/~foo/bar/baz'
-        deferred = self.eventHandler.setStackedOn(stacked_on_location)
-
-        def checkSetStackedOn(ignored):
-            self.assertEqual(
-                [('setStackedOn', self.arbitrary_branch_id,
-                  stacked_on_location)],
-                self.status_client.calls)
-
-        return deferred.addCallback(checkSetStackedOn)
-
-    def test_mirrorComplete(self):
-        arbitrary_revision_ids = ('rev1', 'rev2')
+    def test_branchChanged(self):
+        (stacked_on_url, revid_before, revid_after, control_string,
+         branch_string, repository_string
+         ) = list(self.factory.getUniqueString() for i in range(6))
         deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
-        def mirrorSucceeded(*ignored):
+        def branchChanged(*ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(*arbitrary_revision_ids)
-        deferred.addCallback(mirrorSucceeded)
+            return self.eventHandler.branchChanged(
+                stacked_on_url, revid_before, revid_after, control_string,
+                branch_string, repository_string)
+        deferred.addCallback(branchChanged)
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
-                [('mirrorComplete', self.arbitrary_branch_id,
-                  arbitrary_revision_ids[1])],
+                [('branchChanged', self.arbitrary_branch_id, stacked_on_url,
+                  revid_after, (control_string, branch_string,
+                  repository_string))],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
@@ -694,9 +673,15 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         deferred = puller_master.mirror()
 
         def check_authserver_called(ignored):
+            default_format = format_registry.get('default')()
+            control_string = default_format.get_format_string()
+            branch_string = \
+                default_format.get_branch_format().get_format_string()
+            repository_string = \
+                default_format.repository_format.get_format_string()
             self.assertEqual(
-                [('setStackedOn', self.db_branch.id, ''),
-                 ('mirrorComplete', self.db_branch.id, revision_id)],
+                [('branchChanged', self.db_branch.id, '', revision_id,
+                  (control_string, branch_string, repository_string))],
                 self.client.calls)
             return ignored
         deferred.addCallback(check_authserver_called)
@@ -775,7 +760,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('a', 'b')
+        protocol.mirrorFailed('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()

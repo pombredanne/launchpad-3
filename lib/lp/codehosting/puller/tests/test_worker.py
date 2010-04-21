@@ -31,7 +31,7 @@ from lp.codehosting.vfs.branchfs import (
     ImportedBranchPolicy, MirroredBranchPolicy)
 from lp.code.enums import BranchType
 from lp.testing import TestCase
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory, ObjectFactory
 
 
 def get_netstrings(line):
@@ -202,6 +202,11 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             source_branch.repository._format,
             mirrored_branch.repository._format)
 
+    def getStackedOnUrlFromNetStringOutput(self, netstring_output):
+        netstrings = get_netstrings(netstring_output)
+        branchChanged_index = netstrings.index('branchChanged')
+        return netstrings[branchChanged_index + 2]
+
     def testSendsStackedInfo(self):
         # When the puller worker stacks a branch, it reports the stacked on
         # URL to the master.
@@ -212,37 +217,36 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             stacked_branch.base, self.get_url('destdir'),
             protocol=PullerWorkerProtocol(protocol_output),
             policy=PrearrangedStackedBranchPolicy(base_branch.base))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), base_branch.base],
-            get_netstrings(protocol_output.getvalue()))
+        to_mirror.mirror()
+        stacked_on_url = self.getStackedOnUrlFromNetStringOutput(
+            protocol_output.getvalue())
+        self.assertEqual(base_branch.base, stacked_on_url)
 
     def testDoesntSendStackedInfoUnstackableFormat(self):
         # Mirroring an unstackable branch sends '' as the stacked-on location
         # to the master.
-        source_branch = self.make_branch('source-branch')
+        source_branch = self.make_branch('source-branch', format='pack-0.92')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             source_branch.base, self.get_url('destdir'),
             protocol=PullerWorkerProtocol(protocol_output))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), ''],
-            get_netstrings(protocol_output.getvalue()))
+        to_mirror.mirror()
+        stacked_on_url = self.getStackedOnUrlFromNetStringOutput(
+            protocol_output.getvalue())
+        self.assertEqual('', stacked_on_url)
 
     def testDoesntSendStackedInfoNotStacked(self):
         # Mirroring a non-stacked branch sends '' as the stacked-on location
         # to the master.
-        source_branch = self.make_branch(
-            'source-branch', format='1.9')
+        source_branch = self.make_branch('source-branch', format='1.9')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             source_branch.base, self.get_url('destdir'),
             protocol=PullerWorkerProtocol(protocol_output))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), ''],
-            get_netstrings(protocol_output.getvalue()))
+        to_mirror.mirror()
+        stacked_on_url = self.getStackedOnUrlFromNetStringOutput(
+            protocol_output.getvalue())
+        self.assertEqual('', stacked_on_url)
 
 
 class TestBranchMirrorerCheckAndFollowBranchReference(TestCase):
@@ -591,6 +595,7 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         TestCaseInTempDir.setUp(self)
         self.output = StringIO()
         self.protocol = PullerWorkerProtocol(self.output)
+        self.factory = ObjectFactory()
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""
@@ -612,12 +617,13 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.protocol.startMirroring()
         self.assertSentNetstrings(['startMirroring', '0'])
 
-    def test_mirrorSucceeded(self):
-        # Calling 'mirrorSucceeded' sends the revids and 'mirrorSucceeded'.
+    def test_branchChanged(self):
+        # Calling 'branchChanged' sends the arguments.
+        arbitrary_args = [self.factory.getUniqueString() for x in range(6)]
         self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded('rev1', 'rev2')
-        self.assertSentNetstrings(['mirrorSucceeded', '2', 'rev1', 'rev2'])
+        self.protocol.branchChanged(*arbitrary_args)
+        self.assertSentNetstrings(['branchChanged', '6'] + arbitrary_args)
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
@@ -632,12 +638,6 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         # progress.
         self.protocol.progressMade('test')
         self.assertSentNetstrings(['progressMade', '0'])
-
-    def test_setStackedOn(self):
-        # Calling 'setStackedOn' sends the location of the stacked-on branch,
-        # if any.
-        self.protocol.setStackedOn('/~foo/bar/baz')
-        self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
 
     def test_log(self):
         # Calling 'log' sends 'log' as a netstring and its arguments, after

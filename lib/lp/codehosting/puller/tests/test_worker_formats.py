@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
@@ -16,7 +16,6 @@ from bzrlib.tests.per_repository import TestCaseWithRepository
 
 from lp.codehosting.puller.tests import PullerWorkerMixin
 from lp.codehosting.tests.helpers import LoomTestMixin
-from lazr.uri import URI
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,

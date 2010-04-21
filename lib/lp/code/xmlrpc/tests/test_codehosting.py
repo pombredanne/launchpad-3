@@ -286,65 +286,6 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(started, activity.date_started)
         self.assertEqual(completed, activity.date_completed)
 
-    def test_setStackedOnDefaultURLFragment(self):
-        # setStackedOn records that one branch is stacked on another. One way
-        # to find the stacked-on branch is by the URL fragment that's
-        # generated as part of Launchpad's default stacking.
-        stacked_branch = self.factory.makeAnyBranch()
-        stacked_on_branch = self.factory.makeAnyBranch()
-        self.codehosting_api.setStackedOn(
-            stacked_branch.id, '/%s' % stacked_on_branch.unique_name)
-        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
-
-    def test_setStackedOnExternalURL(self):
-        # If setStackedOn is passed an external URL, rather than a URL
-        # fragment, it will mark the branch as being stacked on the branch in
-        # Launchpad registered with that external URL.
-        stacked_branch = self.factory.makeAnyBranch()
-        stacked_on_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED)
-        self.codehosting_api.setStackedOn(
-            stacked_branch.id, stacked_on_branch.url)
-        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
-
-    def test_setStackedOnExternalURLWithTrailingSlash(self):
-        # If setStackedOn is passed an external URL with a trailing slash, it
-        # won't make a big deal out of it, it will treat it like any other
-        # URL.
-        stacked_branch = self.factory.makeAnyBranch()
-        stacked_on_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED)
-        url = stacked_on_branch.url + '/'
-        self.codehosting_api.setStackedOn(stacked_branch.id, url)
-        self.assertEqual(stacked_branch.stacked_on, stacked_on_branch)
-
-    def test_setStackedOnNothing(self):
-        # If setStackedOn is passed an empty string as a stacked-on location,
-        # the branch is marked as not being stacked on any branch.
-        stacked_on_branch = self.factory.makeAnyBranch()
-        stacked_branch = self.factory.makeAnyBranch(
-            stacked_on=stacked_on_branch)
-        self.codehosting_api.setStackedOn(stacked_branch.id, '')
-        self.assertIs(stacked_branch.stacked_on, None)
-
-    def test_setStackedOnBranchNotFound(self):
-        # If setStackedOn can't find a branch for the given location, it will
-        # return a Fault.
-        stacked_branch = self.factory.makeAnyBranch()
-        url = self.factory.getUniqueURL()
-        fault = self.codehosting_api.setStackedOn(stacked_branch.id, url)
-        self.assertEqual(faults.NoSuchBranch(url), fault)
-
-    def test_setStackedOnNoBranchWithID(self):
-        # If setStackedOn is called for a branch that doesn't exist, it will
-        # return a Fault.
-        stacked_on_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.MIRRORED)
-        branch_id = self.getUnusedBranchID()
-        fault = self.codehosting_api.setStackedOn(
-            branch_id, stacked_on_branch.url)
-        self.assertEqual(faults.NoBranchWithID(branch_id), fault)
-
     def test_createBranch(self):
         # createBranch creates a branch with the supplied details and the
         # caller as registrant.

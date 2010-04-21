@@ -22,14 +22,12 @@ from twisted.python import failure, log
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
-import canonical
 from canonical.cachedproperty import cachedproperty
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc import faults
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocolWithTimeout)
 from lp.services.twistedsupport.task import (
@@ -226,20 +224,19 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
     def errReceived(self, data):
         self._stderr.write(data)
 
-    def do_setStackedOn(self, stacked_on_location):
-        self.runNotification(self.listener.setStackedOn, stacked_on_location)
-
     def do_startMirroring(self):
         self.resetTimeout()
         self.runNotification(self.listener.startMirroring)
 
-    def do_mirrorSucceeded(self, revid_before, revid_after):
-        def mirrorSucceeded():
+    def do_branchChanged(self, stacked_on_url, revid_before, revid_after,
+                         control_string, branch_string, repository_string):
+        def branchChanged():
             d = defer.maybeDeferred(
-                self.listener.mirrorSucceeded, revid_before, revid_after)
+                self.listener.branchChanged, stacked_on_url, revid_before,
+                revid_after, control_string, branch_string, repository_string)
             d.addCallback(self.reportMirrorFinished)
             return d
-        self.runNotification(mirrorSucceeded)
+        self.runNotification(branchChanged)
 
     def do_mirrorFailed(self, reason, oops):
         def mirrorFailed():
@@ -347,16 +344,6 @@ class PullerMaster:
         deferred.addBoth(self.releaseOopsPrefix)
         return deferred
 
-    def setStackedOn(self, stacked_on_location):
-        deferred = self.codehosting_endpoint.callRemote(
-            'setStackedOn', self.branch_id, stacked_on_location)
-        def no_such_branch(failure):
-            # If there's no branch for stacked_on_location, then we just
-            # swallow the error. It's ok for branches to be stacked on
-            # branches that Launchpad doesn't know about.
-            failure.trap(faults.NoSuchBranch)
-        return deferred.addErrback(no_such_branch)
-
     def startMirroring(self):
         self.logger.info(
             'Worker started on branch %d: %s to %s', self.branch_id,
@@ -368,7 +355,8 @@ class PullerMaster:
         return self.codehosting_endpoint.callRemote(
             'mirrorFailed', self.branch_id, reason)
 
-    def mirrorSucceeded(self, revid_before, revid_after):
+    def branchChanged(self, stacked_on_url, revid_before, revid_after,
+                      control_string, branch_string, repository_string):
         if revid_before == revid_after:
             was_noop = 'noop'
         else:
@@ -378,7 +366,8 @@ class PullerMaster:
             ' (%s)', self.branch_type_name, self.branch_id, self.source_url,
             self.destination_url, revid_before, revid_after, was_noop)
         return self.codehosting_endpoint.callRemote(
-            'mirrorComplete', self.branch_id, revid_after)
+            'branchChanged', self.branch_id, stacked_on_url, revid_after,
+            control_string, branch_string, repository_string)
 
     def log(self, message):
         self.logger.info('From worker: %s', message)
