@@ -33,9 +33,15 @@ from lp.bugs.tests.externalbugtracker import (
 from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
 
 
-def always_BugzillaAPI_get_external_bugtracker(bugtracker):
-    """A version of get_external_bugtracker that returns BugzillaAPI."""
-    return BugzillaAPI(bugtracker.baseurl)
+class BugzillaAPIWithoutProducts(BugzillaAPI):
+    """None of the remote bugs have products."""
+    def getProductsForRemoteBugs(self, remote_bug_ids):
+        return {}
+
+
+def always_BugzillaAPIWithoutProducts_get_external_bugtracker(bugtracker):
+    """get_external_bugtracker that returns BugzillaAPIWithoutProducts."""
+    return BugzillaAPIWithoutProducts(bugtracker.baseurl)
 
 
 class NonConnectingBugzillaAPI(BugzillaAPI):
@@ -77,7 +83,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         self.original_get_external_bug_tracker = (
             checkwatches.updater.externalbugtracker.get_external_bugtracker)
         checkwatches.updater.externalbugtracker.get_external_bugtracker = (
-            always_BugzillaAPI_get_external_bugtracker)
+            always_BugzillaAPIWithoutProducts_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
         # products.
@@ -107,43 +113,6 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
-
-
-class BugzillaAPIWithoutProducts(BugzillaAPI):
-    """None of the remote bugs have products."""
-    def getProductsForRemoteBugs(self, remote_bug_ids):
-        return {}
-
-
-def always_BugzillaAPIWithoutProducts_get_external_bugtracker(bugtracker):
-    """get_external_bugtracker that returns BugzillaAPIWithoutProducts."""
-    return BugzillaAPIWithoutProducts(bugtracker.baseurl)
-
-
-class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestCheckwatchesWithoutSyncableGnomeProducts, self).setUp()
-        transaction.commit()
-
-        # We monkey-patch externalbugtracker.get_external_bugtracker()
-        # so that it always returns what we want.
-        self.original_get_external_bug_tracker = (
-            checkwatches.updater.externalbugtracker.get_external_bugtracker)
-        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
-            always_BugzillaAPIWithoutProducts_get_external_bugtracker)
-
-        # Create an updater with a limited set of syncable gnome
-        # products.
-        self.updater = checkwatches.BugWatchUpdater(
-            transaction.manager, QuietFakeLogger(), ['test-product'])
-
-    def tearDown(self):
-        checkwatches.externalbugtracker.get_external_bugtracker = (
-            self.original_get_external_bug_tracker)
-        super(TestCheckwatchesWithoutSyncableGnomeProducts, self).tearDown()
 
     def test__getExternalBugTrackersAndWatches(self):
         # When there are no syncable products defined, only one remote
