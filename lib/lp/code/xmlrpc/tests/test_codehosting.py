@@ -32,7 +32,6 @@ from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
-from lp.code.interfaces.branchjob import IBranchScanJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
@@ -525,6 +524,17 @@ class CodehostingTest(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.codehosting_api.branchChanged(
             branch.owner.id, branch.id, '', revid,
+            *self.arbitrary_format_strings)
+        login(ANONYMOUS)
+        self.assertEqual(revid, branch.last_mirrored_id)
+
+    def test_branchChanged_with_LAUNCHPAD_SERVICES(self):
+        # If you pass LAUNCHPAD_SERVICES as the user id to branchChanged, it
+        # edits any branch.
+        revid = self.factory.getUniqueString()
+        branch = self.factory.makeAnyBranch()
+        self.codehosting_api.branchChanged(
+            LAUNCHPAD_SERVICES, branch.id, '', revid,
             *self.arbitrary_format_strings)
         login(ANONYMOUS)
         self.assertEqual(revid, branch.last_mirrored_id)

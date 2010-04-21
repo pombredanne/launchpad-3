@@ -455,8 +455,8 @@ class TestPullerMaster(TrialTestCase):
         def checkMirrorCompleted(ignored):
             self.assertEqual(
                 [('branchChanged', self.arbitrary_branch_id, stacked_on_url,
-                  revid_after, (control_string, branch_string,
-                  repository_string))],
+                  revid_after, control_string, branch_string,
+                  repository_string)],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
@@ -681,7 +681,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
                 default_format.repository_format.get_format_string()
             self.assertEqual(
                 [('branchChanged', self.db_branch.id, '', revision_id,
-                  (control_string, branch_string, repository_string))],
+                  control_string, branch_string, repository_string)],
                 self.client.calls)
             return ignored
         deferred.addCallback(check_authserver_called)

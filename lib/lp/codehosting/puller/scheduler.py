@@ -23,6 +23,7 @@ from twisted.python import failure, log
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.cachedproperty import cachedproperty
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
 from lp.codehosting.puller import get_lock_id_for_branch_id
@@ -366,8 +367,9 @@ class PullerMaster:
             ' (%s)', self.branch_type_name, self.branch_id, self.source_url,
             self.destination_url, revid_before, revid_after, was_noop)
         return self.codehosting_endpoint.callRemote(
-            'branchChanged', self.branch_id, stacked_on_url, revid_after,
-            control_string, branch_string, repository_string)
+            'branchChanged', LAUNCHPAD_SERVICES, self.branch_id,
+            stacked_on_url, revid_after, control_string, branch_string,
+            repository_string)
 
     def log(self, message):
         self.logger.info('From worker: %s', message)

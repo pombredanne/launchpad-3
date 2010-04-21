@@ -219,7 +219,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                       last_revision_id, control_string, branch_string,
                       repository_string):
         """See `ICodehostingAPI`."""
-        def branch_changed(request_mirror):
+        def branch_changed(requester):
             branch_set = getUtility(IBranchLookup)
             branch = branch_set.get(branch_id)
             if branch is None:
@@ -239,6 +239,9 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             repository_format = match_title(
                 RepositoryFormat, repository_string,
                 RepositoryFormat.UNRECOGNIZED)
+
+            if requester == LAUNCHPAD_SERVICES:
+                branch = removeSecurityProxy(branch)
 
             branch.branchChanged(
                 stacked_on_location, last_revision_id, control_format,

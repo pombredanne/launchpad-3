@@ -912,14 +912,17 @@ class Branch(SQLBase, BzrIdentityMixin):
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_location)
         self.stacked_on = stacked_on_branch
-        self.last_mirrored = UTC_NOW
+        if self.branch_type == BranchType.HOSTED:
+            self.last_mirrored = UTC_NOW
+        else:
+            self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         if (self.next_mirror_time is None
             and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
             increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
-                datetime.datetime.now(pytz.timezone('UTC')) + increment)
+                datetime.now(pytz.timezone('UTC')) + increment)
         if self.last_mirrored_id != last_revision_id:
             self.last_mirrored_id = last_revision_id
             from lp.code.model.branchjob import BranchScanJob
