@@ -21,10 +21,9 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.isolation import (
     TransactionInProgress, is_transaction_in_progress)
+from lp.bugs.scripts.checkwatches.base import WorkingBase
 
 from lp.testing import TestCaseWithFactory
-
-from ..base import WorkingBase
 
 
 class StubTransactionManager:
