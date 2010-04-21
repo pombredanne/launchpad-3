@@ -130,7 +130,7 @@ class WorkingBase:
     @property
     @contextmanager
     def interaction(self):
-        """Context manager for interaction as the Bug Watch Updater.
+        """Context manager for interaction as the given user.
 
         If an interaction is already in progress this is a no-op,
         otherwise it sets up an interaction on entry and ends it on
