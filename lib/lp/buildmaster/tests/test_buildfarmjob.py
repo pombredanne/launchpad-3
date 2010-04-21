@@ -10,6 +10,7 @@ import unittest
 from storm.store import Store
 from zope.component import getUtility
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.buildmaster.interfaces.buildfarmjob import (
@@ -36,9 +37,10 @@ class TestBuildFarmJob(TestCaseWithFactory):
         # A build farm job can be stored in the database.
         build_farm_job = self.makeBuildFarmJob()
         store = Store.of(build_farm_job)
+        flush_database_updates()
         retrieved_job = store.find(
             BuildFarmJob,
-            BuildFarmJob.id == build_farm_job.id)
+            BuildFarmJob.id == build_farm_job.id).one()
         self.assertEqual(build_farm_job, retrieved_job)
 
 def test_suite():

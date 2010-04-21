@@ -87,6 +87,10 @@ class IBuildFarmJob(Interface):
         title=_("Date finished"), required=False, readonly=True,
         description=_("The timestamp when the build farm job was finished."))
 
+    date_first_dispatched = Datetime(
+        title=_("Date finished"), required=False, readonly=True,
+        description=_("The timestamp when the build farm job was finished."))
+
     builder = Reference(
         title=_("Builder"), schema=IBuilder, required=False, readonly=True,
         description=_("The builder assigned to this job."))

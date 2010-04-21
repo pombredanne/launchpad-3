@@ -44,7 +44,7 @@ class BuildFarmJob(Storm):
     processor_id = Int(name='processor', allow_none=True)
     processor = Reference(processor_id, 'Processor.id')
 
-    virtualived = Bool()
+    virtualized = Bool()
 
     date_created = DateTime(
         name='date_created', allow_none=False, tzinfo=pytz.UTC)
@@ -53,7 +53,10 @@ class BuildFarmJob(Storm):
         name='date_started', allow_none=True, tzinfo=pytz.UTC)
 
     date_finished = DateTime(
-        name='date_finished', allow_none=False, tzinfo=pytz.UTC)
+        name='date_finished', allow_none=True, tzinfo=pytz.UTC)
+
+    date_first_dispatched = DateTime(
+        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
 
     builder_id = Int(name='builder', allow_none=True)
     builder = Reference(builder_id, 'Builder.id')
