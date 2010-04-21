@@ -18,14 +18,14 @@ from contextlib import contextmanager
 from functools import wraps
 
 from zope.component import getUtility
+from zope.security.management import endInteraction, queryInteraction
 
 from canonical.launchpad.webapp.adapter import (
     clear_request_started, get_request_start_time, set_request_started)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction, queryInteraction)
+from canonical.launchpad.webapp.interaction import setupInteraction
 
 from lp.bugs.externalbugtracker import BugWatchUpdateWarning
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
