@@ -79,7 +79,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                         <p>
                           Launchpad helps you bring bugs and fixes together. You can easily see any patches attached to a bug report and you can jump straight to a list of all the bug reports, associated with your project, that have patches.
                         <br /><br />
-                          For fixes that require more than a simple patch, you can link directly to the Bazaar branch (including imports from git, Subversion and CVS) you're working in, allowing everyone interested in the bug to watch your solution evolve or even download your branch, make their own changes and then upload them back to Launchpad for everyone to see.<br /><br />
+                          For fixes that require more than a simple patch, you can link directly to the Bazaar branch (including imports from Git, Subversion and CVS) you're working in, allowing everyone interested in the bug to watch your solution evolve or even download your branch, make their own changes and then upload them back to Launchpad for everyone to see.<br /><br />
                           A single URL points to the latest version of the fix and a single command merges it into the project's trunk branch.
                         </p>
                     </div>
