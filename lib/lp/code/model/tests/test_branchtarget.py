@@ -108,7 +108,7 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
         default_branch.startMirroring()
-        default_branch.branchChanged(
+        removeSecurityProxy(default_branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
@@ -348,7 +348,8 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch = self.factory.makeProductBranch(product=self.original)
         self._setDevelopmentFocus(self.original, branch)
         branch.startMirroring()
-        branch.branchChanged('', 'rev1', None, None, None)
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
 
@@ -451,7 +452,7 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # life.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
-        branch.branchChanged(
+        removeSecurityProxy(branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         removeSecurityProxy(branch).branch_type = BranchType.REMOTE
         self.assertIs(None, check_default_stacked_on(branch))
