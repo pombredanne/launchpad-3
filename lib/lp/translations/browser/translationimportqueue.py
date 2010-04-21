@@ -28,13 +28,14 @@ from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
     ITranslationImportQueue, RosettaImportStatus,
     SpecialTranslationImportTargetFilter, TranslationFileType)
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.utilities.template import make_domain, make_name
 
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView)
@@ -81,12 +82,16 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 field_values['languagepack'] = (
                     self.context.potemplate.languagepack)
         if (file_type in (TranslationFileType.POT,
-                          TranslationFileType.UNSPEC) and
-                          self.context.potemplate is not None):
-            field_values['name'] = (
-                self.context.potemplate.name)
-            field_values['translation_domain'] = (
-                self.context.potemplate.translation_domain)
+                          TranslationFileType.UNSPEC)):
+            potemplate = self.context.potemplate
+            if potemplate is None:
+                domain = make_domain(self.context.path)
+                field_values['name'] = make_name(domain)
+                field_values['translation_domain'] = domain
+            else:
+                field_values['name'] = potemplate.name
+                field_values['translation_domain'] = (
+                    potemplate.translation_domain)
         if file_type in (TranslationFileType.PO, TranslationFileType.UNSPEC):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
