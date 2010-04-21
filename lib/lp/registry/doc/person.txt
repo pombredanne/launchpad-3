@@ -188,9 +188,6 @@ Unlike people, teams don't need a contact address, so we can pass None
 to setContactAddress() to leave a team without a contact address.
 
     >>> shipit_admins.setContactAddress(None)
-    >>> email.status
-    <DBItem EmailAddressStatus.VALIDATED...
-
     >>> print shipit_admins.preferredemail
     None
 

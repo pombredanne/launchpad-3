@@ -53,7 +53,9 @@ class PackageBuild(Storm, BuildFarmJob):
         The build param will no longer be necessary once BuildFarmJob is
         itself a concrete class.
         """
-        super(PackageBuild, self).__init__()
+        # Classes that initialise with a build are not yet using
+        # the concrete class, so we don't call the superclass'
+        # initialisation.
         self.build = build
 
     @classmethod
