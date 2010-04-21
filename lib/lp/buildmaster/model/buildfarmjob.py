@@ -66,19 +66,23 @@ class BuildFarmJob(Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
+    def __init__(self, job_type, status=None, processor=None,
+                 virtualized=None):
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
+        self.job_type, self.status, self.process, self.virtualized = (
+            job_type,
+            status,
+            processor,
+            virtualized,
+            )
+
     @classmethod
     def new(cls, job_type, status=None, processor=None,
             virtualized=None):
         """See `IBuildFarmJobSource`."""
-        build_farm_job = BuildFarmJob()
-        build_farm_job.job_type = job_type
-
-        if status is None:
-            status = BuildStatus.PENDING
-        build_farm_job.status = status
-
-        build_farm_job.processor = processor
-        build_farm_job.virtualized = virtualized
+        build_farm_job = BuildFarmJob(
+            job_type, status, processor, virtualized)
 
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
@@ -111,16 +115,6 @@ class BuildFarmJob(Storm):
     def jobAborted(self):
         """See `IBuildFarmJob`."""
         pass
-
-    @property
-    def processor(self):
-        """See `IBuildFarmJob`."""
-        return None
-
-    @property
-    def virtualized(self):
-        """See `IBuildFarmJob`."""
-        return None
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
@@ -156,7 +150,8 @@ class BuildFarmJobDerived:
 
         Sub-classes can override as required.
         """
-        self._build_farm_job = BuildFarmJob()
+        self._build_farm_job = BuildFarmJob(
+            job_type=BuildFarmJobType.PACKAGEBUILD)
 
     @classmethod
     def getByJob(cls, job):

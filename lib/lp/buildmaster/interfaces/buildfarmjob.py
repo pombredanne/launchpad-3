@@ -64,7 +64,7 @@ class IBuildFarmJob(Interface):
     id = Attribute('The build farm job ID.')
 
     processor = Reference(
-        IProcessor, title=_("Processor"),
+        IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
             "The Processor required by this build farm job. "
             "For processor-independent job types please return None."))
