@@ -25,30 +25,96 @@ class TestBuildFarmJob(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        """Create a build farm job with which to test."""
+        super(TestBuildFarmJob, self).setUp()
+        self.build_farm_job = self.makeBuildFarmJob()
+
     def makeBuildFarmJob(self):
         return getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD)
 
+    def test_has_concrete_build_farm_job(self):
+        # This temporary property returns true if the instance
+        # corresponds to a concrete database record, even if
+        # db updates have not yet been flushed, and false
+        # otherwise.
+        concrete_build_farm_job = self.makeBuildFarmJob()
+        self.failUnless(concrete_build_farm_job.has_concrete_build_farm_job)
+
+        mem_build_farm_job = BuildFarmJob(
+            job_type=BuildFarmJobType.PACKAGEBUILD)
+        self.failIf(mem_build_farm_job.has_concrete_build_farm_job)
+
     def test_providesInterface(self):
         # BuildFarmJob provides IBuildFarmJob
-        build_farm_job = self.makeBuildFarmJob()
-        self.assertProvides(build_farm_job, IBuildFarmJob)
+        self.assertProvides(self.build_farm_job, IBuildFarmJob)
 
     def test_saves_record(self):
         # A build farm job can be stored in the database.
-        build_farm_job = self.makeBuildFarmJob()
-        store = Store.of(build_farm_job)
         flush_database_updates()
+        store = Store.of(self.build_farm_job)
         retrieved_job = store.find(
             BuildFarmJob,
-            BuildFarmJob.id == build_farm_job.id).one()
-        self.assertEqual(build_farm_job, retrieved_job)
+            BuildFarmJob.id == self.build_farm_job.id).one()
+        self.assertEqual(self.build_farm_job, retrieved_job)
 
-    def test_default_status(self):
+    def test_default_values(self):
         # A build farm job defaults to the NEEDSBUILD status.
-        build_farm_job = self.makeBuildFarmJob()
+        # We flush the database updates to ensure sql defaults
+        # are set for various attributes.
+        flush_database_updates()
         self.assertEqual(
-            BuildStatus.NEEDSBUILD, build_farm_job.status)
+            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        # The date_created is set automatically.
+        self.assertTrue(self.build_farm_job.date_created is not None)
+        # The job type is required to create a build farm job.
+        self.assertEqual(
+            BuildFarmJobType.PACKAGEBUILD, self.build_farm_job.job_type)
+        # Other attributes are unset by default.
+        self.assertEqual(None, self.build_farm_job.processor)
+        self.assertEqual(None, self.build_farm_job.virtualized)
+        self.assertEqual(None, self.build_farm_job.date_started)
+        self.assertEqual(None, self.build_farm_job.date_finished)
+        self.assertEqual(None, self.build_farm_job.date_first_dispatched)
+        self.assertEqual(None, self.build_farm_job.builder)
+        self.assertEqual(None, self.build_farm_job.log)
+
+    def test_unimplemented_methods(self):
+        # A build farm job leaves the implementation of various
+        # methods for derived classes.
+        self.assertRaises(NotImplementedError, self.build_farm_job.score)
+        self.assertRaises(NotImplementedError, self.build_farm_job.getName)
+        self.assertRaises(NotImplementedError, self.build_farm_job.getTitle)
+
+    def test_jobStarted(self):
+        # Starting a job sets the date_started and status, as well as
+        # the date first dispatched, if it is the first dispatch of
+        # this job.
+        self.build_farm_job.jobStarted()
+        self.assertTrue(self.build_farm_job.date_first_dispatched is not None)
+        self.assertTrue(self.build_farm_job.date_started is not None)
+        self.assertEqual(
+            BuildStatus.BUILDING, self.build_farm_job.status)
+
+    def test_jobReset(self):
+        # Resetting a job sets its status back to NEEDSBUILD and unsets
+        # the date_started.
+        self.build_farm_job.jobStarted()
+        self.build_farm_job.jobReset()
+        self.failUnlessEqual(
+            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.failUnless(self.build_farm_job.date_started is None)
+
+    def test_jobAborted(self):
+        # Aborting a job sets its status back to NEEDSBUILD and unsets
+        # the date_started.
+        self.build_farm_job.jobStarted()
+        self.build_farm_job.jobAborted()
+        self.failUnlessEqual(
+            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.failUnless(self.build_farm_job.date_started is None)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

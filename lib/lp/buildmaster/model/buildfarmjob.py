@@ -13,12 +13,14 @@ from lazr.delegates import delegates
 import hashlib
 import pytz
 
+from storm.info import get_obj_info
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
@@ -91,6 +93,12 @@ class BuildFarmJob(Storm):
         store.add(build_farm_job)
         return build_farm_job
 
+    @property
+    def has_concrete_build_farm_job(self):
+        """See `IBuildFarmJob`."""
+        # Check if the object has been added to the store.
+        return get_obj_info(self).get('store') is not None
+
     def score(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
@@ -109,15 +117,24 @@ class BuildFarmJob(Storm):
 
     def jobStarted(self):
         """See `IBuildFarmJob`."""
-        pass
+        if not self.has_concrete_build_farm_job:
+            return
+        self.status = BuildStatus.BUILDING
+        # The build started, set the start time if not set already.
+        self.date_started = UTC_NOW
+        if self.date_first_dispatched is None:
+            self.date_first_dispatched = UTC_NOW
 
     def jobReset(self):
         """See `IBuildFarmJob`."""
-        pass
+        if not self.has_concrete_build_farm_job:
+            return
+        self.status = BuildStatus.NEEDSBUILD
+        self.date_started = None
 
-    def jobAborted(self):
-        """See `IBuildFarmJob`."""
-        pass
+    # The implementation of aborting a job is the same as resetting
+    # a job.
+    jobAborted = jobReset
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
