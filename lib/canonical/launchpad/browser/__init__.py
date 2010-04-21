@@ -12,15 +12,11 @@ files in this directory.
 
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
-from lp.soyuz.browser.archive import *
-from lp.code.browser.bazaar import *
 from lp.soyuz.browser.binarypackagerelease import *
 from lp.code.browser.branchmergeproposal import *
 from lp.code.browser.branchref import *
 from lp.code.browser.branchsubscription import *
 from lp.code.browser.branchvisibilitypolicy import *
-from lp.soyuz.browser.build import *
-from lp.soyuz.browser.builder import *
 from lp.code.browser.codeimport import *
 from lp.code.browser.codeimportmachine import *
 from lp.registry.browser.codeofconduct import *

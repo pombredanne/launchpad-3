@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
-"""Database classes that implement SourcePacakge items."""
+"""Database classes that implement SourcePackage items."""
 
 __metaclass__ = type
 
@@ -23,7 +23,8 @@ from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.model.branch import Branch
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
@@ -160,7 +161,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     HasBranchesMixin, HasMergeProposalsMixin,
-                    HasBugHeatMixin):
+                    HasBugHeatMixin, HasCodeImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -681,7 +682,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
 
         packagename = self.sourcepackagename.name
-        displayname = self.displayname
         distro = self.distroseries.distribution
 
         histories = distro.main_archive.getPublishedSources(

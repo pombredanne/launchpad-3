@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugHeatCalculator',
+    'BugHeatConstants',
     ]
 
 from datetime import datetime

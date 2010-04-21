@@ -86,7 +86,7 @@ Note that the generated notification contain the 'extra_info' content:
    * Architecture: i386
    * Archive: ubuntu primary archive
    * Component: main
-   * State: Could not be uploaded correctly
+   * State: Failed to upload
    * Duration: a minute
    * Build Log: http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/22/+fil=
   es/netapplet-1.0.0.tar.gz

@@ -41,7 +41,7 @@ class BuildBase:
     package.
 
     Note: this class does not implement IBuildBase as we currently duplicate
-    the properties defined on IBuildBase on the inheriting class tables. 
+    the properties defined on IBuildBase on the inheriting class tables.
     BuildBase cannot therefore implement IBuildBase itself, as storm requires
     that the corresponding __storm_table__ be defined for the class. Instead,
     the classes using the BuildBase mixin must ensure that they implement IBuildBase.
@@ -139,7 +139,6 @@ class BuildBase:
         directory, store build information and push them through the
         uploader.
         """
-        # XXX cprov 2007-07-11 bug=129487: untested code path.
         filemap = slave_status['filemap']
 
         logger.info("Processing successful build %s from builder %s" % (
@@ -171,17 +170,30 @@ class BuildBase:
         os.makedirs(upload_path)
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
+        successful_copy_from_slave = True
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
-            slave_file = slave.getFile(filemap[filename])
             out_file_name = os.path.join(upload_path, filename)
+            # If the evaluated output file name is not within our
+            # upload path, then we don't try to copy this or any
+            # subsequent files.
+            if not os.path.realpath(out_file_name).startswith(upload_path):
+                successful_copy_from_slave = False
+                logger.warning(
+                    "A slave tried to upload the file '%s' "
+                    "for the build %d." % (filename, self.id))
+                break
             out_file = open(out_file_name, "wb")
+            slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
-        logger.info("Invoking uploader on %s for %s" % (root, upload_leaf))
-        upload_logger = BufferLogger()
-        upload_log = self.processUpload(upload_leaf, root, upload_logger)
-        uploader_log_content = upload_logger.buffer.getvalue()
+        # We only attempt the upload if we successfully copied all the
+        # files from the slave.
+        if successful_copy_from_slave:
+            logger.info("Invoking uploader on %s for %s" % (root, upload_leaf))
+            upload_logger = BufferLogger()
+            upload_log = self.processUpload(upload_leaf, root, upload_logger)
+            uploader_log_content = upload_logger.buffer.getvalue()
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
@@ -209,6 +221,7 @@ class BuildBase:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         if (self.buildstate != BuildStatus.FULLYBUILT or
+            not successful_copy_from_slave or
             not self.verifySuccessfulUpload()):
             logger.warning("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
