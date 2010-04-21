@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'BaseTokenView',
     'BugTrackerHandshakeView',
-    'ClaimProfileView',
     'ClaimTeamView',
     'LoginTokenSetNavigation',
     'LoginTokenView',
@@ -36,7 +35,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler)
 from canonical.launchpad.interfaces.logintoken import (
     IGPGKeyValidationForm, ILoginTokenSet)
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPrincipal
@@ -45,10 +43,10 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+from canonical.widgets import LaunchpadRadioWidget
 
 from lp.registry.browser.team import HasRenewalPolicyMixin
-from lp.registry.interfaces.person import IPerson, IPersonSet, ITeam
+from lp.registry.interfaces.person import IPersonSet, ITeam
 
 
 UTC = pytz.UTC
@@ -77,7 +75,6 @@ class LoginTokenView(LaunchpadView):
         LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
         LoginTokenType.VALIDATEGPG: '+validategpg',
         LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
-        LoginTokenType.PROFILECLAIM: '+claimprofile',
         LoginTokenType.TEAMCLAIM: '+claimteam',
         LoginTokenType.BUGTRACKER: '+bugtracker-handshake',
         }
@@ -182,56 +179,6 @@ class BaseTokenView:
         self.request.response.addWarningNotification(message)
         self.context.consume()
         return True
-
-
-class ClaimProfileView(BaseTokenView, LaunchpadFormView):
-    schema = IPerson
-    field_names = ['displayname', 'hide_email_addresses', 'password']
-    custom_widget('password', PasswordChangeWidget)
-    label = 'Claim Launchpad profile'
-
-    expected_token_types = (LoginTokenType.PROFILECLAIM,)
-
-    def initialize(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-                self.context.email).person
-        super(ClaimProfileView, self).initialize()
-
-    @property
-    def initial_values(self):
-        return {'displayname': self.claimed_profile.displayname}
-
-    @property
-    def default_next_url(self):
-        return canonical_url(self.claimed_profile)
-
-    @action(_('Continue'), name='confirm')
-    def confirm_action(self, action, data):
-        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
-        person = IMasterObject(email.person)
-
-        # The user is not yet logged in, but we need to set some
-        # things on his new account, so we need to remove the security
-        # proxy from it.
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # We should be able to login with this person and set the
-        # password, to avoid removing the security proxy, but it didn't
-        # work, so I'm leaving this hack for now.
-        naked_person = removeSecurityProxy(person)
-        naked_person.displayname = data['displayname']
-        naked_person.hide_email_addresses = data['hide_email_addresses']
-
-        naked_email = removeSecurityProxy(email)
-
-        removeSecurityProxy(IMasterObject(email.account)).activate(
-            comment="Activated by claim profile.",
-            password=data['password'],
-            preferred_email=naked_email)
-        self.context.consume()
-        self.logInPrincipalByEmail(naked_email.email)
-        self.request.response.addInfoNotification(_(
-            "Profile claimed successfully"))
 
 
 class ClaimTeamView(
@@ -356,7 +303,8 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
         # We compare the word-splitted content to avoid failures due
         # to whitepace differences.
-        if signature.plain_data.split() != self.context.validation_phrase.split():
+        if (signature.plain_data.split()
+            != self.context.validation_phrase.split()):
             self.addError(_(
                 'The signed content does not match the message found '
                 'in the email.'))

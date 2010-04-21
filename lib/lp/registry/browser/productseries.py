@@ -476,15 +476,13 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         field = form.Fields(choice, render_context=self.render_context)
         self.form_fields = self.form_fields.omit(choice.__name__) + field
 
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`.
-
-        Set the current `ISourcePackageName` as the default value.
-        """
-        super(ProductSeriesUbuntuPackagingView, self).setUpWidgets()
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
         if self.default_sourcepackagename is not None:
-            widget = self.widgets.get('sourcepackagename')
-            widget.setRenderedValue(self.default_sourcepackagename)
+            return {'sourcepackagename': self.default_sourcepackagename}
+        else:
+            return {}
 
     @property
     def default_distroseries(self):
@@ -496,10 +494,14 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         return self.context.getPackagingInDistribution(
             self.default_distroseries.distribution)
 
+    def _getSubmittedSeries(self, data):
+        """Return the submitted or default series."""
+        return data.get('distroseries', self.default_distroseries)
+
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
-        distroseries = data.get('distroseries', self.default_distroseries)
+        distroseries = self._getSubmittedSeries(data)
 
         if sourcepackagename == self.default_sourcepackagename:
             # The data has not changed, so nothing else needs to be done.
@@ -549,12 +551,14 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
     def continue_action(self, action, data):
         # set the packaging record for this productseries in the current
         # ubuntu series. if none exists, one will be created
+        distroseries = self._getSubmittedSeries(data)
         sourcepackagename = data['sourcepackagename']
-        if self.default_sourcepackagename == sourcepackagename:
+        if getUtility(IPackagingUtil).packagingEntryExists(
+            sourcepackagename, distroseries, productseries=self.context):
             # There is no change.
             return
         self.context.setPackaging(
-            self.default_distroseries, sourcepackagename, self.user)
+            distroseries, sourcepackagename, self.user)
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -800,12 +804,15 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
     custom_widget('branch_type', LaunchpadRadioWidget)
-    initial_values = {
-        'rcs_type': RevisionControlSystemsExtended.BZR,
-        'branch_type': LINK_LP_BZR,
-        }
 
     errors_in_action = False
+
+    @property
+    def initial_values(self):
+        return dict(
+            rcs_type=RevisionControlSystemsExtended.BZR,
+            branch_type=LINK_LP_BZR,
+            branch_location=self.context.branch)
 
     @property
     def next_url(self):

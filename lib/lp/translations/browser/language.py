@@ -33,7 +33,8 @@ from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
-from lp.translations.utilities.pluralforms import make_friendly_plural_forms
+from lp.translations.utilities.pluralforms import (
+    BadPluralExpression, make_friendly_plural_forms)
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -304,13 +305,26 @@ class LanguageAdminView(LaunchpadEditFormView):
     def admin_action(self, action, data):
         self.updateContextFromData(data)
 
-    def validate(self, data):
-        new_code = data.get('code')
-        if new_code == self.context.code:
-            # The code didn't change.
-            return
-
+    def _validateCode(self, new_code):
+        """Validate a change in language code."""
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
+
+    def _validatePluralData(self, pluralforms, pluralexpression):
+        """Validate plural expression and number of plural forms."""
+        try:
+            make_friendly_plural_forms(pluralexpression, pluralforms)
+        except BadPluralExpression, e:
+            self.setFieldError('pluralexpression', str(e))
+
+    def validate(self, data):
+        new_code = data.get('code')
+        if new_code != self.context.code:
+            self._validateCode(new_code)
+
+        pluralexpression = data.get('pluralexpression')
+        pluralforms = data.get('pluralforms')
+        if pluralexpression is not None:
+            self._validatePluralData(pluralforms, pluralexpression)

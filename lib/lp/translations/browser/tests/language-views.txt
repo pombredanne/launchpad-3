@@ -33,6 +33,20 @@ to its index.
     http://translations.launchpad.dev/+languages/pt_BR
 
 
+Validation
+----------
+
+Plural information entered on the admin page is checked for validity.
+
+    >>> language_admin_view.validate({
+    ...     'code': 'pt_BR',
+    ...     'pluralforms': 2,
+    ...     'pluralexpression': '1/n',
+    ...     })
+    >>> print language_admin_view.getFieldError('pluralexpression')
+    Division by zero in plural expression for n = 0.
+
+
 Add Language
 ------------
 
