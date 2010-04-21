@@ -21,10 +21,9 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.isolation import (
     TransactionInProgress, is_transaction_in_progress)
+from lp.bugs.scripts.checkwatches.base import WorkingBase
 
 from lp.testing import TestCaseWithFactory
-
-from ..base import WorkingBase
 
 
 class StubTransactionManager:
@@ -47,6 +46,8 @@ class TestWorkingBase(TestCaseWithFactory):
         self.logger = QuietFakeLogger()
 
     def test_interaction(self):
+        # The WorkingBase.interaction context manager will begin an
+        # interaction on entry and end it on exit.
         base = WorkingBase(self.email, transaction.manager, self.logger)
         endInteraction()
         self.assertIs(None, queryInteraction())
@@ -55,6 +56,9 @@ class TestWorkingBase(TestCaseWithFactory):
         self.assertIs(None, queryInteraction())
 
     def test_interaction_nested(self):
+        # If an interaction is already in progress, the interaction
+        # context manager will not begin a new interaction on entry,
+        # nor will it end the interaction on exit.
         base = WorkingBase(self.email, transaction.manager, self.logger)
         endInteraction()
         self.assertIs(None, queryInteraction())
@@ -66,6 +70,9 @@ class TestWorkingBase(TestCaseWithFactory):
         self.assertIs(None, queryInteraction())
 
     def test_transaction(self):
+        # The WonkingBase.transaction context manager ensures that no
+        # transaction is in progress on entry, commits on a successful
+        # exit, or aborts the transaction on failure.
         transaction_manager = StubTransactionManager()
         base = WorkingBase(self.email, transaction_manager, self.logger)
         transaction.commit()
@@ -102,6 +109,8 @@ class TestWorkingBase(TestCaseWithFactory):
             self.fail("Exception not re-raised from context manager.")
 
     def test_statement_logging(self):
+        # The WorkingBase.statement_logging context manager starts
+        # statement logging on entry and stops it on exit.
         base = WorkingBase(self.email, transaction.manager, self.logger)
         self.factory.makeEmail('numpty1@example.com', self.person)
         self.assertEqual(
