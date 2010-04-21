@@ -656,7 +656,7 @@ class BugzillaAPI(Bugzilla):
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a list of
+        # CheckwatchesMaster.importBugComments() will pass us a list of
         # strings (see bug 248938).
         comment_ids = [int(comment_id) for comment_id in comment_ids]
 
@@ -682,7 +682,7 @@ class BugzillaAPI(Bugzilla):
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # CheckwatchesMaster.importBugComments() will pass us a string (see
         # bug 248938).
         comment_id = int(comment_id)
 
@@ -701,7 +701,7 @@ class BugzillaAPI(Bugzilla):
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a string (see
+        # CheckwatchesMaster.importBugComments() will pass us a string (see
         # bug 248938).
         comment_id = int(comment_id)
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
@@ -725,7 +725,7 @@ class BugzillaAPI(Bugzilla):
         return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
 
         # We cast the return value to string, since that's what
-        # BugWatchUpdater will expect (see bug 248938).
+        # CheckwatchesMaster will expect (see bug 248938).
         return str(return_dict['id'])
 
     def getLaunchpadBugId(self, remote_bug):
@@ -874,7 +874,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         bug_comments = bug_comments_dict['bugs'][str(actual_bug_id)]
 
         # We also need to convert each comment ID to a string, since
-        # that's what BugWatchUpdater.importBugComments() expects (see
+        # that's what CheckwatchesMaster.importBugComments() expects (see
         # bug 248938).
         return [str(comment['id']) for comment in bug_comments]
 
@@ -884,7 +884,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
-        # BugWatchUpdater.importBugComments() will pass us a list of
+        # CheckwatchesMaster.importBugComments() will pass us a list of
         # strings (see bug 248938).
         comment_ids = [int(comment_id) for comment_id in comment_ids]
 
@@ -922,7 +922,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         return_dict = self.xmlrpc_proxy.Launchpad.add_comment(request_params)
 
         # We cast the return value to string, since that's what
-        # BugWatchUpdater will expect (see bug 248938).
+        # CheckwatchesMaster will expect (see bug 248938).
         return str(return_dict['comment_id'])
 
     def getLaunchpadBugId(self, remote_bug):

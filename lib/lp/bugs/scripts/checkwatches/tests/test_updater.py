@@ -25,7 +25,7 @@ from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.updater import (
-    BugWatchUpdater, TwistedThreadScheduler)
+    CheckwatchesMaster, TwistedThreadScheduler)
 from lp.bugs.scripts.checkwatches.base import CheckWatchesErrorUtility
 from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
@@ -51,8 +51,8 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
         return self
 
 
-class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
-    """A subclass of BugWatchUpdater with methods overridden for testing."""
+class NoBugWatchesByRemoteBugUpdater(checkwatches.CheckwatchesMaster):
+    """A subclass of CheckwatchesMaster with methods overridden for testing."""
 
     def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
         """Return an empty list.
@@ -80,7 +80,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
 
         # Create an updater with a limited set of syncable gnome
         # products.
-        self.updater = checkwatches.BugWatchUpdater(
+        self.updater = checkwatches.CheckwatchesMaster(
             transaction.manager, QuietFakeLogger(), ['test-product'])
 
     def tearDown(self):
@@ -136,7 +136,7 @@ class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
 
         # Create an updater with a limited set of syncable gnome
         # products.
-        self.updater = checkwatches.BugWatchUpdater(
+        self.updater = checkwatches.CheckwatchesMaster(
             transaction.manager, QuietFakeLogger(), ['test-product'])
 
     def tearDown(self):
@@ -175,17 +175,17 @@ class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
         self.failIf(remote_system.sync_comments)
 
 
-class TestBugWatchUpdater(TestCaseWithFactory):
+class TestCheckwatchesMaster(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestBugWatchUpdater, self).setUp()
+        super(TestCheckwatchesMaster, self).setUp()
         transaction.abort()
 
     def test_bug_497141(self):
         # Regression test for bug 497141. KeyErrors raised in
-        # BugWatchUpdater.updateBugWatches() shouldn't cause
+        # CheckwatchesMaster.updateBugWatches() shouldn't cause
         # checkwatches to abort.
         updater = NoBugWatchesByRemoteBugUpdater(
             transaction.manager, QuietFakeLogger())
@@ -394,7 +394,7 @@ class ExternalBugTrackerForThreads(TestExternalBugTracker):
         return None
 
 
-class BugWatchUpdaterForThreads(BugWatchUpdater):
+class CheckwatchesMasterForThreads(CheckwatchesMaster):
     """Fake updater.
 
     Plumbs an `ExternalBugTrackerForThreads` into a given output file,
@@ -404,7 +404,7 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
 
     def __init__(self, output_file):
         logger = QuietFakeLogger()
-        super(BugWatchUpdaterForThreads, self).__init__(
+        super(CheckwatchesMasterForThreads, self).__init__(
             transaction.manager, logger)
         self.output_file = output_file
 
@@ -443,7 +443,7 @@ class TestTwistedThreadSchedulerInPlace(
         transaction.commit()
         # Prepare the updater with the Twisted scheduler.
         output_file = OutputFileForThreads()
-        threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
+        threaded_bug_watch_updater = CheckwatchesMasterForThreads(output_file)
         threaded_bug_watch_scheduler = TwistedThreadScheduler(
             num_threads=10, install_signal_handlers=False)
         # Run the updater.

@@ -6,5 +6,5 @@
 from .base import (
     WorkingBase, commit_before, with_interaction)
 from .updater import (
-    BaseScheduler, BugWatchUpdater, CheckWatchesCronScript, SerialScheduler,
+    BaseScheduler, CheckwatchesMaster, CheckWatchesCronScript, SerialScheduler,
     TooMuchTimeSkew, TwistedThreadScheduler, externalbugtracker)

@@ -8,7 +8,7 @@ from __future__ import with_statement
 __metaclass__ = type
 __all__ = [
     'BaseScheduler',
-    'BugWatchUpdater',
+    'CheckwatchesMaster',
     'CheckWatchesCronScript',
     'SerialScheduler',
     'TooMuchTimeSkew',
@@ -149,12 +149,12 @@ def get_remote_system_oops_properties(remote_system):
         ]
 
 
-class BugWatchUpdater(WorkingBase):
+class CheckwatchesMaster(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
 
     def __init__(self, transaction_manager, logger=default_log,
                  syncable_gnome_products=None):
-        """Initialize a BugWatchUpdater.
+        """Initialize a CheckwatchesMaster.
 
         :param transaction_manager: A transaction manager on which
             `begin()`, `abort()` and `commit()` can be
@@ -166,7 +166,7 @@ class BugWatchUpdater(WorkingBase):
             provides a similar interface.
 
         """
-        super(BugWatchUpdater, self).__init__(
+        super(CheckwatchesMaster, self).__init__(
             LOGIN, transaction_manager, logger)
 
         # Override SYNCABLE_GNOME_PRODUCTS if necessary.
@@ -1194,7 +1194,7 @@ class CheckWatchesCronScript(LaunchpadCronScript):
     def main(self):
         start_time = time.time()
 
-        updater = BugWatchUpdater(self.txn, self.logger)
+        updater = CheckwatchesMaster(self.txn, self.logger)
 
         if self.options.update_all and len(self.options.bug_trackers) > 0:
             # The user has requested that we update *all* the watches
@@ -1203,7 +1203,7 @@ class CheckWatchesCronScript(LaunchpadCronScript):
                 updater.forceUpdateAll(bug_tracker, self.options.batch_size)
         else:
             # Otherwise we just update those watches that need updating,
-            # and we let the BugWatchUpdater decide which those are.
+            # and we let the CheckwatchesMaster decide which those are.
             if self.options.jobs <= 1:
                 # Use the default scheduler.
                 scheduler = None

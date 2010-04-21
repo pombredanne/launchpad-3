@@ -1,6 +1,6 @@
 = Updating selected bug trackers =
 
-The BugWatchUpdater class can be instructed to update only a subset of
+The CheckwatchesMaster class can be instructed to update only a subset of
 bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
 
@@ -9,7 +9,7 @@ the updateBugTrackers() method.
     ...     cursor, sqlvalues, ZopelessTransactionManager)
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.scripts import FakeLogger
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
 We'll update all bugtrackers so that the test doesn't try to make any
 external connections.
@@ -20,7 +20,7 @@ external connections.
     >>> transaction.commit()
 
     >>> transactionmgr = ZopelessTransactionManager._installed
-    >>> updater = BugWatchUpdater(transactionmgr, logger=FakeLogger())
+    >>> updater = CheckwatchesMaster(transactionmgr, logger=FakeLogger())
 
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
     DEBUG...No watches to update on http://bugs.debian.org
