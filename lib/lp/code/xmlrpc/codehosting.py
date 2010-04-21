@@ -161,29 +161,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         removeSecurityProxy(branch).startMirroring()
         return True
 
-    def setStackedOn(self, branch_id, stacked_on_location):
-        """See `ICodehostingAPI`."""
-        # We don't want the security proxy on the branch set because this
-        # method should be able to see all branches and set stacking
-        # information on any of them.
-        branch_set = removeSecurityProxy(getUtility(IBranchLookup))
-        if stacked_on_location == '':
-            stacked_on_branch = None
-        else:
-            if stacked_on_location.startswith('/'):
-                stacked_on_branch = branch_set.getByUniqueName(
-                    stacked_on_location.strip('/'))
-            else:
-                stacked_on_branch = branch_set.getByUrl(
-                    stacked_on_location.rstrip('/'))
-            if stacked_on_branch is None:
-                return faults.NoSuchBranch(stacked_on_location)
-        stacked_branch = branch_set.get(branch_id)
-        if stacked_branch is None:
-            return faults.NoBranchWithID(branch_id)
-        stacked_branch.stacked_on = stacked_on_branch
-        return True
-
     def createBranch(self, login_id, branch_path):
         """See `ICodehostingAPI`."""
         def create_branch(requester):

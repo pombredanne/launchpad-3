@@ -132,19 +132,6 @@ class ICodehostingAPI(Interface):
         :returns: True if the ScriptActivity record was successfully inserted.
         """
 
-    def setStackedOn(branch_id, stacked_on_location):
-        """Mark a branch as being stacked on another branch.
-
-        :param branch_id: The database ID of the stacked branch.
-        :param stacked_on_location: The location of the stacked-on branch.
-            For hosted branches, this is normally '/~foo/bar/baz' where
-            '~foo/bar/baz' is the unique name of another branch.
-        :return: True if the stacked branch information was set successfully.
-            `NoBranchWithID` fault if there's no branch with the given id.
-            `NoSuchBranch` fault if there's no branch matching
-            'stacked_on_location'.
-        """
-
     def createBranch(login_id, branch_path):
         """Register a new hosted branch in Launchpad.
 
