@@ -156,7 +156,7 @@ Inactive products are excluded from the listings.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("foo.bar@canonical.com")
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False

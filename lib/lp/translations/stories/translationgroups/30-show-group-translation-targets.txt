@@ -26,7 +26,7 @@ If we disable some of these projects...
     >>> admin_browser.url
     'http://launchpad.dev/projectgroups'
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from zope.component import getUtility

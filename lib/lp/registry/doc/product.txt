@@ -91,7 +91,7 @@ primary_translatable is nonexistent:
 
 Now, to test the active flag. If we disabled a product:
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(a52dec)
     >>> a52dec.active = False
@@ -196,7 +196,7 @@ example.
 
 Only active products are listed as translatables.
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(evo)
     >>> evo.active = False

@@ -1043,7 +1043,7 @@ imports.
 An administrator deactivates Firefox, thinking that the project is being
 run in violation of Launchpad policies.
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False

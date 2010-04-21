@@ -151,7 +151,7 @@ Inactive products are not included in that list, though.
     >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> login('admin@canonical.com')
     >>> unlink_source_packages(firefox)

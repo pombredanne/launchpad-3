@@ -113,7 +113,7 @@ And our set of pillars will contain the aliases as well.
 
 But only if the pillar which they point to is active.
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False

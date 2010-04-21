@@ -31,7 +31,7 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
 == Looking up existing projects ==
 
 To fetch a project we use IProjectGroupSet.getByName() or
-IProjectGroupSet.__getitem__. The former will, by default, reeturn active and
+IProjectGroupSet.__getitem__. The former will, by default, return active and
 inactive projects, while the latter returns only active ones. Both can be
 used to look up projects by their aliases, though.
 
@@ -109,7 +109,7 @@ ordered by their names.
 
     >>> netapplet = gnome.getProduct('netapplet')
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
@@ -166,7 +166,7 @@ Inactive products are excluded from the listings.
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False

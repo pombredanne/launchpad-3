@@ -208,7 +208,7 @@ Specs from inactive products are filtered out.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('mark@example.com')
 
-    # A product cannot be deactivated if it is linked to source packages.
+    # Unlink the source packages so the project can be deactivated.
     >>> from lp.testing import unlink_source_packages
     >>> unlink_source_packages(upstream_firefox)
     >>> upstream_firefox.active = False
