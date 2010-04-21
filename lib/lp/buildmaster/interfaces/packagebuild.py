@@ -15,35 +15,41 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
 
 
-class IPackageBuild(Interface):
+class IPackageBuild(IBuildFarmJob):
     """Attributes and operations specific to package build jobs."""
 
-    id = Attribute("The package build ID.")
+    id = Attribute('The package build ID.')
 
     archive = Reference(
-            title=_("Archive"), schema=IArchive,
+            title=_('Archive'), schema=IArchive,
             required=True, readonly=True,
-            description=_("The Archive context for this build."))
+            description=_('The Archive context for this build.'))
 
     pocket = Choice(
             title=_('Pocket'), required=True,
             vocabulary=PackagePublishingPocket,
-            description=_("The build targeted pocket."))
+            description=_('The build targeted pocket.'))
 
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the upload log for a"
-                "build resulting in an upload that could not be processed "
-                "successfully. Otherwise it will be None."))
+        title=_('The LibraryFileAlias containing the upload log for a'
+                'build resulting in an upload that could not be processed '
+                'successfully. Otherwise it will be None.'))
 
     dependencies = TextLine(
-            title=_("Dependencies"), required=False,
-            description=_("Debian-like dependency line that must be satisfied"
-                          " before attempting to build this request."))
+            title=_('Dependencies'), required=False,
+            description=_('Debian-like dependency line that must be satisfied'
+                          ' before attempting to build this request.'))
+
+    build_farm_job = Reference(
+        title=_('Build farm job'), schema=IBuildFarmJob, required=True,
+        readonly=True, description=_('The base build farm job.'))
+
 
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
