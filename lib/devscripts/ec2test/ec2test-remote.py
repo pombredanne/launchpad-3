@@ -32,6 +32,8 @@ import bzrlib.workingtree
 
 import subunit
 
+from __future__ import with_statement
+
 
 class SummaryResult(unittest.TestResult):
     """Test result object used to generate the summary."""
@@ -225,10 +227,8 @@ class BaseTestRunner:
         message['Subject'] = subject
 
         # Make the body.
-        try:
-            summary = open(summary_filename, 'r').read()
-        finally:
-            summary.close()
+        with open(summary_filename, 'r') as summary_fd:
+            summary = summary_fd.read()
         body = MIMEText.MIMEText(summary, 'plain', 'utf8')
         body['Content-Disposition'] = 'inline'
         message.attach(body)
