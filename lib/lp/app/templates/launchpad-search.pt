@@ -97,8 +97,13 @@
                       Project summary
                   </div>
                   <div>
-                    Registered by <a
-                      tal:replace="structure view/pillar/owner/fmt:link">Foo Bar</a>
+                    Registered
+                    <tal:registrant
+                      define="registrant view/pillar/registrant|nothing"
+                      condition="registrant">
+                      by
+                      <a tal:replace="structure registrant/fmt:link">Foo Bar</a>
+                    </tal:registrant>
                     <tal:XXX condition="nothing">
                       # XXX sinzui 2008-05-27:
                       # Product and Project still use the wrong name for
