@@ -179,34 +179,17 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertIs(self.branch_lookup.get(branch_id), None)
         return branch_id
 
-    def test_startMirroring(self):
-        # startMirroring updates last_mirror_attempt to 'now', leaves
-        # last_mirrored alone and returns True when passed the id of an
-        # existing branch.
-        branch = self.factory.makeAnyBranch()
-        self.assertUnmirrored(branch)
-
-        success = self.codehosting_api.startMirroring(branch.id)
-        self.assertEqual(success, True)
-
-        self.assertSqlAttributeEqualsDate(
-            branch, 'last_mirror_attempt', UTC_NOW)
-        self.assertIs(None, branch.last_mirrored)
-
-    def test_startMirroringInvalidBranch(self):
-        # startMirroring returns False when given a branch id which does not
-        # exist.
-        invalid_id = self.getUnusedBranchID()
-        fault = self.codehosting_api.startMirroring(invalid_id)
-        self.assertEqual(faults.NoBranchWithID(invalid_id), fault)
-
     def test_mirrorFailed(self):
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         self.assertUnmirrored(branch)
 
-        self.codehosting_api.startMirroring(branch.id)
+        branch.requestMirror()
+        self.assertEquals(
+            branch.id, self.codehosting_api.acquireBranchToPull([])[0])
+
         failure_message = self.factory.getUniqueString()
-        success = self.codehosting_api.mirrorFailed(branch.id, failure_message)
+        success = self.codehosting_api.mirrorFailed(
+            branch.id, failure_message)
         self.assertEqual(True, success)
         self.assertMirrorFailed(branch, failure_message)
 
@@ -885,7 +868,8 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
 
     def startMirroring(self, branch):
         """See `AcquireBranchToPullTests`."""
-        self.codehosting_api.startMirroring(branch.id)
+        # XXX bit random, but works
+        self.assertBranchIsAquired(branch, branch.branch_type)
 
     def test_branch_type_returned_mirrored(self):
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)

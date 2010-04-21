@@ -480,7 +480,7 @@ class FakeCodehosting:
             key=operator.attrgetter('next_mirror_time'))
         if branches:
             branch = branches[-1]
-            self.startMirroring(branch.id)
+            self._startMirroring(branch.id)
             default_branch = branch.target.default_stacked_on_branch
             if default_branch is None:
                 default_branch_name = ''
@@ -494,7 +494,7 @@ class FakeCodehosting:
         else:
             return ()
 
-    def startMirroring(self, branch_id):
+    def _startMirroring(self, branch_id):
         branch = self._branch_set.get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)

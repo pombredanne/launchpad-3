@@ -128,7 +128,8 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         branch = getUtility(IBranchLookup).get(branch_id)
         if branch is None:
             return faults.NoBranchWithID(branch_id)
-        # See comment in startMirroring.
+        # The puller runs as no user and may pull private branches. We need to
+        # bypass Zope's security proxy to set the mirroring information.
         removeSecurityProxy(branch).mirrorFailed(reason)
         return True
 
@@ -139,16 +140,6 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         getUtility(IScriptActivitySet).recordSuccess(
             name=name, date_started=date_started,
             date_completed=date_completed, hostname=hostname)
-        return True
-
-    def startMirroring(self, branch_id):
-        """See `ICodehostingAPI`."""
-        branch = getUtility(IBranchLookup).get(branch_id)
-        if branch is None:
-            return faults.NoBranchWithID(branch_id)
-        # The puller runs as no user and may pull private branches. We need to
-        # bypass Zope's security proxy to set the mirroring information.
-        removeSecurityProxy(branch).startMirroring()
         return True
 
     def createBranch(self, login_id, branch_path):
