@@ -42,6 +42,21 @@
         permission="zope.Public"/>
 
 
+    <!-- BuildFarmJob -->
+    <class
+        class="lp.buildmaster.model.buildfarmjob.BuildFarmJob">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob" />
+    </class>
+    <securedutility
+        component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource">
+
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource" />
+    </securedutility>
+
+
     <!-- BuildQueue -->
     <class
         class="lp.buildmaster.model.buildqueue.BuildQueue">

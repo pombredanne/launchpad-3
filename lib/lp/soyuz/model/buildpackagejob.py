@@ -42,9 +42,7 @@ class BuildPackageJob(PackageBuildDerived, Storm):
     build = Reference(build_id, 'BinaryPackageBuild.id')
 
     def __init__(self, build, job):
-        """Set the attribute for the IBuildFarmJob delegation when
-        new items are created and added to the store.
-        """
+        """ Setup the IBuildFarmJob delegation when new items are created."""
         self.build, self.job = build, job
         super(BuildPackageJob, self).__init__()
 
