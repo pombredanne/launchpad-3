@@ -26,7 +26,9 @@ class PackageBuildFarmJob(BuildFarmJob):
         itself a concrete class. This class (PackageBuildFarmJob)
         will also be renamed PackageBuild and turned into a concrete class.
         """
-        super(PackageBuildFarmJob, self).__init__()
+        # Classes that initialise with a build are not yet using
+        # the concrete class, so we don't call the superclass'
+        # initialisation.
         self.build = build
 
     def getTitle(self):
