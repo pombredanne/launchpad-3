@@ -84,23 +84,22 @@ class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
 
 
 class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
-    """Ensure that sub and question subscribers are notified about bug
-    expiration."""
+    """Ensure that question subscribers are notified about bug expiration."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestNotificationsSentForBugExpiration, self).setUp()
-        login('test@canonical.com')
-        product_owner = self.factory.makePerson(
-            name='product-owner', email='product-owner@example.com')
-        self.product = self.factory.makeProduct(owner=product_owner)
+        super(TestNotificationsSentForBugExpiration, self).setUp(
+            user='test@canonical.com')
+        # We need a product, a bug for this product, a question linked
+        # to the bug and a subscriber.
+        self.product = self.factory.makeProduct()
         self.bug = self.factory.makeBug(product=self.product)
         question = self.factory.makeQuestion(target=self.product)
-        subscriber = self.factory.makePerson(
-            name='question-subscriber', email='subscriber@example.com')
-        question.subscribe(subscriber)
+        self.subscriber = self.factory.makePerson()
+        question.subscribe(self.subscriber)
         question.linkBug(self.bug)
+        # Flush pending notifications for question creation.
         pop_notifications()
         self.layer.switchDbUser(config.malone.expiration_dbuser)
 
@@ -112,11 +111,11 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
             bugtask, providing=IUpstreamBugTask)
         bugtask.transitionToStatus(BugTaskStatus.EXPIRED, self.product.owner)
         bug_modified = ObjectModifiedEvent(
-            bugtask, bugtask_before_modification,
-            ["status"])
+            bugtask, bugtask_before_modification, ["status"])
         notify(bug_modified)
-        self.assertEqual(
-            ['product-owner@example.com', 'subscriber@example.com'],
+        self.assertContentEqual(
+            [self.product.owner.preferredemail.email,
+             self.subscriber.preferredemail.email],
             [mail['To'] for mail in pop_notifications()])
 
 
