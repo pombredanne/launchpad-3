@@ -66,16 +66,6 @@ class BuildFarmJob:
         """See `IBuildFarmJob`."""
         return None
 
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJob`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJob`."""
-        return True
-
 
 class BuildFarmJobDerived:
     """See `IBuildFarmJobDerived`."""
@@ -107,6 +97,16 @@ class BuildFarmJobDerived:
         """See `IBuildFarmJobDerived`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `IBuildFarmJobDerived`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `IBuildFarmJobDerived`."""
+        return True
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobDerived`."""
