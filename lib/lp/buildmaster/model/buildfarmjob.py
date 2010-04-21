@@ -162,6 +162,16 @@ class BuildFarmJobDerived:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
 
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `IBuildFarmJobDerived`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `IBuildFarmJobDerived`."""
+        return True
+
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobDerived`."""
         buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
