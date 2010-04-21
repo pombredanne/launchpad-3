@@ -191,8 +191,6 @@ class BuildBase:
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        original_slave = self.buildqueue_record.builder.slave
-
         # Store build information, build record was already updated during
         # the binary upload.
         self.storeBuildInfo(librarian, slave_status)
