@@ -15,7 +15,7 @@ instance here:
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
 
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
@@ -29,7 +29,7 @@ instance here:
     42: FUBAR
     42: FUBAR
     >>> transaction.commit()
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> bug_watch_updater.updateBugWatches(
     ...     issuezilla, mozilla_bugzilla.watches)
     INFO:...:Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
