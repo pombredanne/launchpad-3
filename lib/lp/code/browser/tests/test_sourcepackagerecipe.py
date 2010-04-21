@@ -312,3 +312,21 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+
+
+class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_delete_recipe(self):
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+
+        browser = self.getUserBrowser(
+            canonical_url(recipe), user=self.chef)
+
+        browser.getLink('Delete recipe').click()
+        browser.getControl('Delete recipe').click()
+
+        self.assertEqual(
+            'http://code.launchpad.dev/~chef',
+            browser.url)
