@@ -59,6 +59,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
+from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -796,6 +797,13 @@ class CheckwatchesMaster(WorkingBase):
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
+                    bug_watch_updater = BugWatchUpdater(bug_watch, remotesystem)
+                    bug_watch_updater.updateBugWatch(
+                        new_remote_status, new_malone_status,
+                        new_remote_importance, new_malone_importance,
+                        can_import_comments, can_push_comments,
+                        can_back_link, error, oops_id)
+
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
