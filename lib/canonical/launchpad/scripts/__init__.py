@@ -20,6 +20,7 @@ __all__ = [
 
 import atexit
 import os
+import sys
 from textwrap import dedent
 import threading
 
@@ -32,6 +33,8 @@ from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS, setupInteractionByEmail)
 
 from canonical import lp
 from canonical.config import config
@@ -91,15 +94,18 @@ def execute_zcml_for_scripts(use_web_security=False):
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.
     """
-    # Prevent some cases of erroneous layer useage.
-    from canonical.testing import (
-            FunctionalLayer, BaseLayer, ZopelessLayer
-            )
-    assert not FunctionalLayer.isSetUp, \
-            'Setting up Zopeless CA when Zopefull CA is already running'
-    assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
-            execute_zcml_for_scripts should not be called from tests.
-            Instead, your test should use the Zopeless layer.
+
+    # When in testing mode, prevent some cases of erroneous layer usage.
+    # But we don't want to import that module in production usage, thus
+    # the conditional block.
+    if 'canonical.testing.layers' in sys.modules:
+        from canonical.testing.layers import (
+                FunctionalLayer, BaseLayer, ZopelessLayer)
+        assert not FunctionalLayer.isSetUp, \
+                'Setting up Zopeless CA when Zopefull CA is already running'
+        assert not BaseLayer.isSetUp or ZopelessLayer.isSetUp, """
+                execute_zcml_for_scripts should not be called from tests.
+                Instead, your test should use the Zopeless layer.
             """
 
     if config.instance_name == 'testrunner':
@@ -147,15 +153,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
     # PermissiveSecurityPolicy set up in script.zcml.
-    # XXX gary 20-Oct-2008 bug 285808
-    # The wisdom of using a test fixture for production should be
-    # reconsidered.
-    from canonical.launchpad.ftests import login
-    # The Participation is used to specify that we do not want a
-    # LaunchpadTestRequest, which ftests normally use. shipit scripts, in
-    # particular, need to be careful, because of code in canonical_url.
-    from canonical.launchpad.webapp.interaction import Participation
-    login('launchpad.anonymous', Participation())
+    setupInteractionByEmail(ANONYMOUS)
 
 
 def db_options(parser):

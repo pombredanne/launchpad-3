@@ -141,7 +141,7 @@ The COPY archive has no packages.
     >>> print_repository_usage(copy_repository_usage)
     binaries_size:   0
     binary_label:    0 binary packages
-    quota:           1073741824
+    quota:           2147483648
     source_label:    0 source packages
     sources_size:    0
     used:            0
