@@ -45,8 +45,8 @@ ACCESS_LOG_NAME = 'codehosting.access'
 class CodehostingAvatar(LaunchpadAvatar):
     """An SSH avatar specific to codehosting.
 
-    :ivar codehosting_proxy: A Twisted XML-RPC client for the authserver. The
-        server must implement `ICodehostingAPI`.
+    :ivar codehosting_proxy: A Twisted XML-RPC client for the private XML-RPC
+        server. The server must implement `ICodehostingAPI`.
     """
 
     def __init__(self, user_dict, codehosting_proxy):
