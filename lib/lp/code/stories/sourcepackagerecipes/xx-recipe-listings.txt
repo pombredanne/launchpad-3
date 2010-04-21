@@ -42,12 +42,9 @@ to go along with them.
 
     >>> login('foo.bar@canonical.com')
     >>> branch = factory.makeBranch()
-    >>> recipe1 = factory.makeSourcePackageRecipe(
-    ...     None, None, None, None, None, None, branch)
-    >>> recipe2 = factory.makeSourcePackageRecipe(
-    ...     None, None, None, None, None, None, branch)
-    >>> recipe3 = factory.makeSourcePackageRecipe(
-    ...     None, None, None, None, None, None, branch)
+    >>> recipe1 = factory.makeSourcePackageRecipe(branches=[branch])
+    >>> recipe2 = factory.makeSourcePackageRecipe(branches=[branch])
+    >>> recipe3 = factory.makeSourcePackageRecipe(branches=[branch])
 
 Keep these urls, including the product url.  We'll use these later.
 
