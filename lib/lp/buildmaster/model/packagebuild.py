@@ -86,7 +86,15 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         return package_build
 
     def getTitle(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJob`.
+
+        XXX 2010-04-21 michael.nelson bug=567922. This method
+        can be removed once all *Build classes use the concrete
+        BuildFarmJob.
+        """
+        if self._is_concrete_object:
+            return self._build_farm_job.getTitle()
+
         return self.build.title
 
     def jobStarted(self):

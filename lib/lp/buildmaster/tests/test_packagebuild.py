@@ -48,5 +48,10 @@ class TestPackageBuild(TestCaseWithFactory):
             PackageBuild.id == package_build.id).one()
         self.assertEqual(package_build, retrieved_build)
 
+    def test_getTitle_not_implemented(self):
+        # Classes deriving from PackageBuild must provide getTitle.
+        package_build = self.makePackageBuild()
+        self.assertRaises(NotImplementedError, package_build.getTitle)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
