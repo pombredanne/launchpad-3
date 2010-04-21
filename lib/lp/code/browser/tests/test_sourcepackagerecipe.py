@@ -36,52 +36,6 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret')
 
-
-class TestSourcePackageAddView(TestCaseForRecipe):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_create_new_recipe(self):
-        # A new recipe can be created from the branch page.
-        product = self.factory.makeProduct(
-            name='ratatouille', displayname='Ratatouille')
-        branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='veggies')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='ratatouille')
-
-        branch_path = branch.bzr_identity
-        browser = self.getUserBrowser(canonical_url(branch))
-        browser.getLink('Create source package recipe').click()
-
-        self.assertEqual(
-            browser.title,
-            'Create a new source package recipe : veggies : Branches : '
-            'Ratatouille')
-
-        browser.getControl(name='field.name').value = 'daily'
-        browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
-        browser.getControl('Secret Squirrel').click()
-
-        self.assertEqual(
-            browser.getControl('Recipe text').value.replace('\r\n', '\n'),
-            MINIMAL_RECIPE_TEXT % branch_path)
-
-        browser.getControl('Create recipe').click()
-
-        self.assertEqual(
-            self.getTextByID(browser.contents, 'distros'),
-            'Distribution series:\nSecret Squirrel')
-        self.assertEqual(
-            self.getTextByID(browser.contents, 'base-branch'),
-            'Base branch:\n' + branch_path)
-
-
-class TestSourcePackageRecipeView(TestCaseForRecipe):
-
-    layer = DatabaseFunctionalLayer
-
     def makeRecipe(self):
         """Create and return a specific recipe."""
         chocolate = self.factory.makeProduct(name='chocolate')
@@ -102,6 +56,123 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         """Return the main text of a recipe page, as seen by Chef."""
         browser = self.getRecipeBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
+
+
+class TestSourcePackageRecipeAddView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create_new_recipe(self):
+        # A new recipe can be created from the branch page.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename='ratatouille')
+
+        branch_path = branch.bzr_identity
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create source package recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Secret Squirrel').click()
+
+        self.assertEqual(
+            browser.getControl('Recipe text').value.replace('\r\n', '\n'),
+            MINIMAL_RECIPE_TEXT % branch_path)
+
+        browser.getControl('Create recipe').click()
+
+        pattern = re.compile(dedent("""\
+            daily
+            Master Chef
+            Branches
+            Description
+            Make some food!
+            Recipe information
+            Owner:
+            Master Chef
+            Base branch:
+            lp://dev/~chef/ratatouille/veggies
+            Debian version:
+            1.0
+            Distribution series:
+            Secret Squirrel
+            .*
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/veggies"""), re.S)
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTrue(pattern.search(main_text), repr(main_text))
+
+
+class TestSourcePackageRecipeEditView(TestCaseForRecipe):
+    """Test the editing behaviour of a source package recipe."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create_new_recipe(self):
+        # A new recipe can be created from the branch page.
+        mumbly = self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly')
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename='ratatouille')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename='sloppyjoe')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            sourcepackagename=source_package.sourcepackagename,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl(name='field.name').value = 'fings'
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update recipe').click()
+
+        pattern = re.compile(dedent("""\
+            fings
+            Master Chef
+            Branches
+            Description
+            This is stuff
+            Recipe information
+            Owner:
+            Master Chef
+            Base branch:
+            lp://dev/~chef/ratatouille/meat
+            Debian version:
+            1.0
+            Distribution series:
+            Mumbly Midget
+            .*
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/meat"""), re.S)
+        main_text = self.getMainText(recipe)
+        self.assertTrue(pattern.search(main_text), repr(main_text))
+
+
+class TestSourcePackageRecipeView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
 
     def test_index(self):
         recipe = self.makeRecipe()

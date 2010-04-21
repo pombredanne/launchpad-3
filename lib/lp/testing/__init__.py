@@ -573,12 +573,6 @@ class BrowserTestCase(TestCaseWithFactory):
     cases when one wants a unit test and not a frakking pagetest.
     """
 
-    def getTextByID(self, content, id):
-        """Return the text from the element with the given id."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_tag_by_id)
-        return extract_text(find_tag_by_id(content, id))
-
 
 class WindmillTestCase(TestCaseWithFactory):
     """A TestCase class for Windmill tests.
