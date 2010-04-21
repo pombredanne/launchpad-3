@@ -519,6 +519,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
+    PRIORITY_MIN_VALUE = 0
+    PRIORITY_MAX_VALUE = 100000
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -540,8 +542,14 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
     def validate(self, data):
         priority = data.get('priority')
-        if (priority < 0 or priority > 10000):
-            self.addError('Priority value must be between 0 and 10000')
+        if priority is None:
+            return
+
+        if (priority < self.PRIORITY_MIN_VALUE or
+            priority > self.PRIORITY_MAX_VALUE):
+            self.addError(
+                "Priority value must be between %s and %s" % (
+                self.PRIORITY_MIN_VALUE, self.PRIORITY_MAX_VALUE))
             return
 
     @property
