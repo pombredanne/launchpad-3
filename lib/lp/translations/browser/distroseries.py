@@ -26,7 +26,6 @@ from canonical.launchpad.webapp.menu import (
     Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -122,6 +121,28 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
             unused_language_packs.remove(self.context.language_pack_proposed)
 
         return unused_language_packs
+
+    @property
+    def have_latest_full_pack(self):
+        current = self.context.language_pack_base
+        latest = self.context.last_full_language_pack_exported
+        if (current is None or
+            latest is None or
+            current.file.http_url == latest.file.http_url):
+            return False
+        else:
+            return True
+
+    @property
+    def have_latest_delta_pack(self):
+        current = self.context.language_pack_delta
+        latest = self.context.last_delta_language_pack_exported
+        if (current is None or
+            latest is None or
+            current.file.http_url == latest.file.http_url):
+            return False
+        else:
+            return True
 
     def _request_full_export(self):
         if (self.old_request_value !=
@@ -234,8 +255,7 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
     facet = 'translations'
     links = [
         'translations', 'templates', 'admin', 'language_packs',
-        'latest_full_language_pack', 'latest_delta_language_pack',
-        'imports']
+        'latest_full_language_pack', 'latest_delta_language_pack', 'imports']
 
     def translations(self):
         return Link('', 'Overview')
@@ -255,30 +275,14 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
         return Link('+language-packs', 'Language packs')
 
     def latest_full_language_pack(self):
-        if self.context.last_full_language_pack_exported is None:
-            url = ''
-            text = 'none yet'
-            icon = None
-        else:
-            date_formater = DateTimeFormatterAPI(
-                self.context.last_full_language_pack_exported.date_exported)
-            url = '+latest-full-language-pack'
-            text = date_formater.datetime()
-            icon = 'download'
-        return Link(url, text, icon=icon)
+        return Link(
+            '+latest-full-language-pack',
+            'Latest full language pack')
 
     def latest_delta_language_pack(self):
-        if self.context.last_delta_language_pack_exported is None:
-            url = ''
-            text = 'none yet'
-            icon = None
-        else:
-            date_formater = DateTimeFormatterAPI(
-                self.context.last_delta_language_pack_exported.date_exported)
-            url = '+latest-delta-language-pack'
-            text = date_formater.datetime()
-            icon = 'download'
-        return Link(url, text, icon=icon)
+        return Link(
+            '+latest-delta-language-pack',
+            'Latest delta language pack')
 
 
 def check_distroseries_translations_viewable(distroseries):

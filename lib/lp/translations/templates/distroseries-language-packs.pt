@@ -43,13 +43,12 @@
            <h2>Active language packs</h2>
            <dl>
              <dt>
-               Base pack:
-               <a tal:condition="context/language_pack_base"
+               Current Base pack:
+               <a class="sprite download"
+                  tal:condition="context/language_pack_base"
                   tal:attributes="href context/language_pack_base/file/http_url">
                  <tal:export-date
                     replace="context/language_pack_base/date_exported/fmt:datetime" />
-                 <img tal:condition="context/language_pack_base"
-                      alt="download icon" src="/@@/download" />
                </a>
                <tal:not-export-date condition="not: context/language_pack_base">
                  none yet
@@ -57,21 +56,52 @@
              </dt>
              <dd>A complete set of translations for the OS.</dd>
              <dt>
-               Delta pack:
-               <a tal:condition="context/language_pack_delta"
+               Current delta pack:
+               <a class="sprite download"
+                  tal:condition="context/language_pack_delta"
                   tal:attributes="href context/language_pack_delta/file/http_url">
                  <tal:export-date
                     replace="context/language_pack_delta/date_exported/fmt:datetime" />
-                 <img tal:condition="context/language_pack_delta"
-                      alt="download icon" src="/@@/download" />
                </a>
                <tal:not-export-date condition="not: context/language_pack_delta">
-                 none yet
+                 no update
                </tal:not-export-date>
              </dt>
              <dd>Translation updates, applied on top of the base pack.</dd>
+
+             <dt>
+               Latest base pack:
+               <a class="sprite download"
+                  tal:condition="view/have_latest_full_pack"
+                  tal:attributes="href context/menu:navigation/latest_full_language_pack/url">
+                 <tal:export-date
+                    replace="context/last_full_language_pack_exported/date_exported/fmt:datetime" />
+               </a>
+               <tal:not-export-date
+                    condition="not: view/have_latest_full_pack">
+                 no update
+               </tal:not-export-date>
+             </dt>
+             <dd>The latest complete set of translations for the OS.</dd>
+             <dt>
+               Latest delta pack:
+               <a class="sprite download"
+                  tal:condition="view/have_latest_delta_pack"
+                  tal:attributes="href context/menu:navigation/latest_delta_language_pack/url">
+                 <tal:export-date
+                    replace="context/last_delta_language_pack_exported/date_exported/fmt:datetime" />
+               </a>
+               <tal:not-export-date
+                    condition="not: view/have_latest_delta_pack">
+                 no update
+               </tal:not-export-date>
+             </dt>
+             <dd>Latest translation updates, applied on top of the latest base pack.</dd>
+
+
            </dl>
          </div>
+
          <div class="yui-u">
            <div class="portlet">
              <h2>Language pack being tested</h2>
