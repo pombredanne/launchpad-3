@@ -195,6 +195,7 @@ class ISourcePackageAddEditSchema(Interface):
         use_template(ISourcePackageRecipe, include=[
             'name',
             'description',
+            'owner',
             ])
         sourcepackagename = Choice(
             title=u"Source Package Name", required=True,
@@ -216,7 +217,9 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        return {'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity}
+        return {
+            'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
+            'owner': self.user}
 
     @property
     def cancel_url(self):
@@ -247,6 +250,7 @@ class SourcePackageRecipeEditView(LaunchpadFormView):
         return {
             'name': self.context.name,
             'description': self.context.description,
+            'owner': self.context.owner,
             'sourcepackagename': self.context.sourcepackagename,
             'distros': self.context.distroseries,
             'recipe_text': str(self.context.builder_recipe),}
@@ -261,6 +265,7 @@ class SourcePackageRecipeEditView(LaunchpadFormView):
         recipe = parser.parse()
 
         self.context.name = data['name']
+        self.context.owner = data['owner']
         self.context.description = data['description']
         self.context.sourcepackagename = data['sourcepackagename']
         self.context.builder_recipe = recipe

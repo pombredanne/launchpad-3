@@ -26,6 +26,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Bool, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
@@ -85,9 +86,10 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
 
     registrant = Reference(
         IPerson, title=_("The person who created this recipe"), readonly=True)
-    owner = Reference(
-        IPerson, title=_("The person or team who can edit this recipe"),
-        readonly=False)
+    owner = ParticipatingPersonChoice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='UserTeamsParticipationPlusSelf',
+        description=_("The person or team who can edit this recipe."))
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),

@@ -63,15 +63,15 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     layer = DatabaseFunctionalLayer
 
     def test_create_new_recipe(self):
-        # A new recipe can be created from the branch page.
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
         source_package = self.factory.makeSourcePackage(
             sourcepackagename='ratatouille')
-
         branch_path = branch.bzr_identity
+
+        # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
         browser.getLink('Create source package recipe').click()
 
@@ -79,11 +79,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
-
-        self.assertEqual(
-            browser.getControl('Recipe text').value.replace('\r\n', '\n'),
-            MINIMAL_RECIPE_TEXT % branch_path)
-
         browser.getControl('Create recipe').click()
 
         pattern = re.compile(dedent("""\
@@ -114,8 +109,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
 
-    def test_create_new_recipe(self):
-        # A new recipe can be created from the branch page.
+    def test_edit_recipe(self):
         mumbly = self.factory.makeDistroSeries(
             displayname='Mumbly Midget', name='mumbly')
         product = self.factory.makeProduct(

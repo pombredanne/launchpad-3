@@ -1024,6 +1024,7 @@
            description
            distroseries
            name
+           owner
            sourcepackagename"/>
   </class>
   <class
