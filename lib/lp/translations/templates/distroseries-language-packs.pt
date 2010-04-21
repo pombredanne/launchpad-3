@@ -46,7 +46,10 @@
                  none yet
                </tal:not-export-date>
              </dt>
-             <dd>A complete set of translations for the OS.</dd>
+             <dd>
+                Archive containing a complete set of translations for this
+                operating system.
+             </dd>
              <dt>
                Update pack:
                <a class="sprite download"
@@ -59,7 +62,10 @@
                  no update
                </tal:not-export-date>
              </dt>
-             <dd>Translation updates, applied on top of the base pack.</dd>
+             <dd>
+                Archive containing translation updates, applied on top of the
+                base pack.
+             </dd>
            </dl>
          </div>
 
@@ -81,7 +87,10 @@
                  none yet
                </tal:not-export-date>
              </dt>
-             <dd>The latest complete set of translations for the OS.</dd>
+             <dd>
+                Latest archive containing a complete set of translations for
+                this operating system.
+             </dd>
              <dt>
                Update pack:
                <a class="sprite download"
@@ -95,7 +104,10 @@
                  no update
                </tal:not-export-date>
              </dt>
-             <dd>Latest translation updates, applied on top of the latest base pack.</dd>
+             <dd>
+                Latest archive containing translation updates, applied on top
+                 of the base pack.
+             </dd>            
             </dl>
             </div>
             <div id="testing-language-packs">
