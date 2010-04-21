@@ -470,7 +470,6 @@
                     getPullURL
                     requestMirror
                     startMirroring
-                    mirrorComplete
                     mirrorFailed
                     branch_format
                     repository_format

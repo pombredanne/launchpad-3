@@ -1794,20 +1794,8 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
-        branch.mirrorComplete(rev_id)
+        branch.branchChanged('', rev_id, None, None, None)
         self.assertEqual(True, branch.pending_writes)
-
-    def test_mirrorComplete_creates_scan_job(self):
-        # After a branch has been pulled, it should have created a
-        # BranchScanJob to complete the process.
-        branch = self.factory.makeAnyBranch()
-        branch.startMirroring()
-        rev_id = self.factory.getUniqueString('rev-id')
-        branch.mirrorComplete(rev_id)
-
-        store = Store.of(branch)
-        scan_jobs = store.find(BranchJob, job_type=BranchJobType.SCAN_BRANCH)
-        self.assertEqual(scan_jobs.count(), 1)
 
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
@@ -1815,7 +1803,7 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
-        branch.mirrorComplete(rev_id)
+        branch.branchChanged('', rev_id, None, None, None)
         # Cheat! The actual API for marking a branch as scanned is
         # updateScannedDetails. That requires a revision in the database
         # though.
@@ -1835,7 +1823,7 @@ class TestPendingWrites(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
-        branch.mirrorComplete(rev_id)
+        branch.branchChanged('', rev_id, None, None, None)
         # Cheat! The actual API for marking a branch as scanned is
         # updateScannedDetails. That requires a revision in the database
         # though.

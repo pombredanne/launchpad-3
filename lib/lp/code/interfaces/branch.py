@@ -1105,13 +1105,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             branch.
         """
 
-    def mirrorComplete(last_revision_id):
-        """Signal that a mirror attempt has completed successfully.
-
-        :param last_revision_id: The revision ID of the tip of the mirrored
-            branch.
-        """
-
     def mirrorFailed(reason):
         """Signal that a mirror attempt failed.
 

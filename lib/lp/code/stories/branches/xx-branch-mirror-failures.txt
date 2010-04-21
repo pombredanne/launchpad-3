@@ -163,7 +163,7 @@ display any failure-related information.
     >>> login(ANONYMOUS)
     >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.startMirroring()
-    >>> mirror_branch.mirrorComplete('some-revision-id')
+    >>> mirror_branch.branchChanged('', 'some-revision-id', None, None, None)
     >>> logout()
 
     >>> browser.open(branch_location)

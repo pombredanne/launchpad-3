@@ -108,7 +108,8 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
         default_branch.startMirroring()
-        default_branch.mirrorComplete(self.factory.getUniqueString())
+        default_branch.branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,
@@ -347,7 +348,7 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch = self.factory.makeProductBranch(product=self.original)
         self._setDevelopmentFocus(self.original, branch)
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        branch.branchChanged('', 'rev1', None, None, None)
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
 
@@ -450,7 +451,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # life.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
-        branch.mirrorComplete(self.factory.getUniqueString())
+        branch.branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         removeSecurityProxy(branch).branch_type = BranchType.REMOTE
         self.assertIs(None, check_default_stacked_on(branch))
 
@@ -466,7 +468,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(private=True)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.startMirroring()
-        naked_branch.mirrorComplete(self.factory.getUniqueString())
+        naked_branch.branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_been_mirrored(self):
@@ -475,7 +478,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # futile.
         branch = self.factory.makeAnyBranch()
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        removeSecurityProxy(branch).branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         self.assertEqual(branch, check_default_stacked_on(branch))
 
 

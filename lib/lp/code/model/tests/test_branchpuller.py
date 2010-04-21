@@ -84,7 +84,7 @@ class TestMirroringForImportedBranches(TestCaseWithFactory):
         branch.requestMirror()
         transaction.commit()
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        branch.branchChanged('', 'rev1', None, None, None)
         self.assertEqual(None, branch.next_mirror_time)
 
     def test_mirrorFailureResetsMirrorRequest(self):
@@ -152,7 +152,7 @@ class TestMirroringForMirroredBranches(TestMirroringForImportedBranches):
         branch.requestMirror()
         transaction.commit()
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        branch.branchChanged('', 'rev1', None, None, None)
         self.assertInFuture(branch.next_mirror_time, self.increment)
         self.assertEqual(0, branch.mirror_failures)
 

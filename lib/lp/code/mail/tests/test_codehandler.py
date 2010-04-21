@@ -876,7 +876,8 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
         db_target_branch.startMirroring()
-        db_target_branch.mirrorComplete('rev1')
+        removeSecurityProxy(db_target_branch).branchChanged(
+            '', 'rev1', None, None, None)
         source_tree = target_tree.bzrdir.sprout('source').open_workingtree()
         source_tree.commit('rev2')
         message = self.factory.makeBundleMergeDirectiveEmail(
@@ -1004,7 +1005,8 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
         target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
         db_target_branch.startMirroring()
-        db_target_branch.mirrorComplete('rev1')
+        removeSecurityProxy(db_target_branch).branchChanged(
+            '', 'rev1', None, None, None)
 
         db_source_branch, source_tree = self.create_branch_and_tree(
             'lpsource', db_target_branch.product, hosted=True,

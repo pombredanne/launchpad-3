@@ -862,13 +862,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the branch of the
-        # development focus series.
+        # We just remove the security proxies to be able to change the objects
+        # here.
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.branch = branch
         return branch
@@ -880,11 +877,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
+        # We just remove the security proxies to be able to change the branch
+        # here.
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,

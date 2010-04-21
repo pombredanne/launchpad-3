@@ -931,25 +931,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.branch_format = branch_format
         self.repository_format = repository_format
 
-    def mirrorComplete(self, last_revision_id):
-        """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError(self.unique_name)
-        assert self.last_mirror_attempt != None, (
-            "startMirroring must be called before mirrorComplete.")
-        self.last_mirrored = self.last_mirror_attempt
-        self.mirror_failures = 0
-        self.mirror_status_message = None
-        if (self.next_mirror_time is None
-            and self.branch_type == BranchType.MIRRORED):
-            # No mirror was requested since we started mirroring.
-            increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
-            self.next_mirror_time = (
-                datetime.now(pytz.timezone('UTC')) + increment)
-        self.last_mirrored_id = last_revision_id
-        from lp.code.model.branchjob import BranchScanJob
-        BranchScanJob.create(self)
-
     def mirrorFailed(self, reason):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
