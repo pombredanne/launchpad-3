@@ -7,11 +7,15 @@
 __metatype__ = type
 
 import datetime
+from email import MIMEMultipart, MIMEText
+from email.mime.application import MIMEApplication
+import gzip
 import optparse
 import os
 import pickle
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import traceback
@@ -169,7 +173,7 @@ class BaseTestRunner:
 
             self._gather_test_output(popen.stdout, summary_file, out_file)
 
-            # Grab the testrunner exit status
+            # Grab the testrunner exit status.
             result = popen.wait()
 
             if self.pqm_message is not None:
@@ -193,25 +197,58 @@ class BaseTestRunner:
             # It probably isn't safe to close the log files ourselves,
             # since someone else might try to write to them later.
             try:
-                summary_file.close()
                 if self.email is not None:
-                    subject = 'Test results: %s' % (
-                        result and 'FAILURE' or 'SUCCESS')
-                    summary_file = open(self.logger.summary_filename, 'r')
-                    out_file = open(self.logger.out_filename, 'r')
-                    bzrlib.email_message.EmailMessage.send(
-                        config, config.username(), self.email,
-                        subject, summary_file.read(),
-                        attachment=out_file.read(),
-                        attachment_filename='%s.log' % self.get_nick(),
-                        attachment_mime_subtype='subunit')
-                    summary_file.close()
+                    self.send_email(
+                        result, self.logger.summary_filename,
+                        self.logger.out_filename, config)
             finally:
+                summary_file.close()
                 # we do this at the end because this is a trigger to
                 # ec2test.py back at home that it is OK to kill the process
                 # and take control itself, if it wants to.
-                out_file.close()
                 self.logger.close_logs()
+
+    def send_email(self, result, summary_filename, out_filename, config):
+        """Send an email summarizing the test results.
+
+        :param result: True for pass, False for failure.
+        :param summary_filename: The path to the file where the summary
+            information lives. This will be the body of the email.
+        :param out_filename: The path to the file where the full output
+            lives. This will be zipped and attached.
+        :param config: A Bazaar configuration object with SMTP details.
+        """
+        message = MIMEMultipart.MIMEMultipart()
+        message['To'] = ', '.join(self.email)
+        message['From'] = config.username()
+        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
+        message['Subject'] = subject
+
+        # Make the body.
+        try:
+            summary = open(summary_filename, 'r').read()
+        finally:
+            summary.close()
+        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
+        body['Content-Disposition'] = 'inline'
+        message.attach(body)
+
+        # gzip up the full log.
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        gz = gzip.open(path, 'wb')
+        full_log = open(out_filename, 'rb')
+        gz.writelines(full_log)
+        gz.close()
+
+        # Attach the gzipped log.
+        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
+        zipped_log.add_header(
+            'Content-Disposition', 'attachment',
+            filename='%s.log.gz' % self.get_nick())
+        message.attach(zipped_log)
+
+        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
 
     def get_nick(self):
         """Return the nick name of the branch that we are testing."""
