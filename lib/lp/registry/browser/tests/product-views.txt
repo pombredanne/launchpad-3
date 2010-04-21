@@ -506,7 +506,8 @@ the user to make the connection.
     translations efficiently.
     There are no unlinked source packages that are a good match.
     Can you suggest one?
-    Link to Ubuntu package
+    Ubuntu Hoary packages:
+    Choose another Ubuntu package
 
     >>> spn = factory.makeSourcePackageName(name="bingo")
     >>> from canonical.launchpad.interfaces.launchpad import (

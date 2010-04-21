@@ -14,7 +14,7 @@ from twisted.internet.protocol import ProcessProtocol
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
-from lp.codehosting.sshserver.auth import LaunchpadAvatar
+from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
     ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
 from lp.codehosting.tests.helpers import AvatarTestCase
@@ -83,7 +83,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         # The logging system will try to get the id of avatar.transport, so
         # let's give it something to take the id of.
         self.avatar.transport = object()
@@ -239,7 +239,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = RestrictedExecOnlySession(
             self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
@@ -305,7 +305,7 @@ class TestSessionIntegration(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
         # When Conch tries to adapt the SSH server avatar to ISession, it

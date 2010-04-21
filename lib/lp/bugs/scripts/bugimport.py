@@ -328,7 +328,7 @@ class BugImporter:
 
         # set up bug
         bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
-        bug.security_related = (
+        bug.setSecurityRelated(
             get_value(bugnode, 'security_related') == 'True')
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')

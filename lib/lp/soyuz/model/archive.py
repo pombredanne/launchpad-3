@@ -167,7 +167,7 @@ class Archive(SQLBase):
         dbName='require_virtualized', notNull=True, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=1024)
+        dbName='authorized_size', notNull=False, default=2048)
 
     sources_cached = IntCol(
         dbName='sources_cached', notNull=False, default=0)
