@@ -7,24 +7,17 @@ SET client_min_messages=ERROR;
 -- https://dev.launchpad.net/LEP/GeneralBuildHistories and the linked
 -- blueprint/bug for more information.
 
--- Still to do:
---   Inventory check of all table columns to ensure nothing is lost (Done)
---   Replicate current indexes (some span now multiple tables? see below)
---   Update all sample data.
-
 -- Step 1
 -- Create the new BuildFarmJob, PackageBuild and BinaryPackageBuild tables,
 -- with indexes based on the current Build table.
 CREATE TABLE BuildFarmJob (
     id serial PRIMARY KEY,
-    processor integer NOT NULL CONSTRAINT buildfarmjob__processor__fk REFERENCES processor,
-    virtualised boolean NOT NULL,
-    -- Currently we do not know if a build was virtual or not? (it's only
-    -- on the archive and the builder, both of which can change).
-    -- IBuild.is_virtualized just queries the archive.
+    processor integer CONSTRAINT buildfarmjob__processor__fk REFERENCES processor,
+    virtualized boolean,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     date_started timestamp without time zone,
     date_finished timestamp without time zone,
+    date_first_dispatched timestamp without time zone,
     builder integer CONSTRAINT buildfarmjob__builder__fk REFERENCES builder,
     status integer NOT NULL,
     log integer CONSTRAINT buildfarmjob__log__fk REFERENCES libraryfilealias,
@@ -39,7 +32,8 @@ CREATE INDEX buildfarmjob__log__idx ON buildfarmjob(log) WHERE log IS NOT NULL;
 CREATE TABLE PackageBuild (
     id serial PRIMARY KEY,
     build_farm_job integer NOT NULL CONSTRAINT packagebuild__build_farm_job__fk REFERENCES buildfarmjob,
-    archive integer NOT NULL CONSTRAINT packagebuild__archive__fk REFERENCES archive, pocket integer NOT NULL DEFAULT 0,
+    archive integer NOT NULL CONSTRAINT packagebuild__archive__fk REFERENCES archive,
+    pocket integer NOT NULL DEFAULT 0,
     upload_log integer CONSTRAINT packagebuild__log__fk REFERENCES libraryfilealias,
     dependencies text
 );
@@ -54,8 +48,7 @@ CREATE TABLE BinaryPackageBuild (
 );
 
 CREATE UNIQUE INDEX binarypackagebuild__package_build__idx ON binarypackagebuild(package_build);
--- Is there a way to create an index spanning across tables? Do I need a
--- trigger instead?
+-- Indexes that we can no longer create:
 -- CREATE UNIQUE INDEX binarypackagebuild__distro_arch_series_uniq__idx ON binarypackagebuild(distro_arch_series, source_package_release, archive)
 -- CREATE INDEX binarypackagebuild__distro_arch_series__status__idx ON binarypackagebuild(distro_arch_series, status?)
 -- CREATE INDEX binarypackagebuild__distro_arch_series__date_finished ON binarypackagebuild(distro_arch_series, date_finished)
@@ -77,13 +70,14 @@ BEGIN
     FOR build_info IN
         SELECT
             build.processor,
-            archive.require_virtualized AS virtualised,
+            archive.require_virtualized AS virtualized,
             -- Currently we do not know if a build was virtual or not? (it's
             -- only on the archive and the builder, both of which can
             -- change).  IBuild.is_virtualized just queries the archive.
             build.datecreated AS date_created,
             (build.datebuilt - build.buildduration) AS date_started,
             build.datebuilt AS date_finished,
+            build.date_first_dispatched,
             build.builder,
             build.buildstate AS status,
             build.buildlog AS log,
@@ -98,10 +92,10 @@ BEGIN
             build JOIN archive ON build.archive = archive.id
     LOOP
         INSERT INTO buildfarmjob(
-            processor, virtualised, date_created, date_started,
+            processor, virtualized, date_created, date_started,
             date_finished, builder, status, log, job_type)
         VALUES (
-            build_info.processor, build_info.virtualised,
+            build_info.processor, build_info.virtualized,
             build_info.date_created, build_info.date_started,
             build_info.date_finished, build_info.builder,
             build_info.status, build_info.log,
