@@ -260,12 +260,6 @@ class TestBranch(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_pullURLHosted(self):
-        # Hosted branches are pulled from internal Launchpad URLs.
-        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        self.assertEqual(
-            'lp-hosted:///%s' % branch.unique_name, branch.getPullURL())
-
     def test_pullURLMirrored(self):
         # Mirrored branches are pulled from their actual URLs -- that's the
         # point.
