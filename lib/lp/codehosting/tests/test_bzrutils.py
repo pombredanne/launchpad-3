@@ -214,7 +214,10 @@ class TestSafeOpen(TestCaseWithTransport):
         _install_hook()
 
     def get_chrooted_scheme(self, relpath):
-        """
+        """Create a server that is chrooted to `relpath`.
+
+        :return: ``(scheme, get_url)`` where ``scheme`` is the scheme of the
+            chroot server and ``get_url`` returns URLs on said server.
         """
         transport = self.get_transport(relpath)
         chroot_server = chroot.ChrootServer(transport)
