@@ -22,6 +22,8 @@ def valid_absolute_url(name):
     >>> valid_absolute_url('http://www.example.com')
     True
     >>> valid_absolute_url('whatever://example.com/blah')
+    True
+    >>> valid_absolute_url('whatever:/uxample.com/blah')
     False
     """
     # Have to import urlparse locally since imports from helpers.py
