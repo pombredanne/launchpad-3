@@ -76,8 +76,13 @@ class CodeReviewComment(SQLBase):
 
     @property
     def author(self):
-        """See `ICodeReviewComment'."""
+        """Defer to the related message."""
         return self.message.owner
+
+    @property
+    def date_created(self):
+        """Defer to the related message."""
+        return self.message.datecreated
 
     @property
     def target(self):

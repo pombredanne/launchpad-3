@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Object, Int, TextLine
+from zope.schema import Choice, Datetime, Int, Object, TextLine
 
 from canonical.launchpad import _
 from lp.code.enums import CodeReviewVote
@@ -43,7 +43,10 @@ class ICodeReviewComment(Interface):
 
     author = exported(
         Reference(title=_('Comment Author'), schema=IPerson,
-                  required=False, readonly=True))
+                  required=True, readonly=True))
+
+    date_created = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True))
 
     vote = exported(
         Choice(
