@@ -433,18 +433,22 @@ class TestWebservice(TestCaseWithFactory):
 
     def makeRecipe(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
+        db_distroseries = self.factory.makeDistroSeries()
         branch = self.factory.makeBranch()
         recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
         launchpad = launchpadlib_for('test', person,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
-        distroseries = self.wsObject(launchpad, distroseries)
+        distroseries = self.wsObject(launchpad, db_distroseries)
         user = self.wsObject(launchpad, person)
         recipe = user.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
             description='a recipe', distroseries=[distroseries.self_link],
             recipe_text=recipe_text)
+        # at the moment, distroseries is not exposed in the API.
+        transaction.commit()
+        db_recipe = person.getRecipe(u'toaster-1')
+        self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
         return recipe, user, recipe_text
 
     def test_createRecipe(self):
