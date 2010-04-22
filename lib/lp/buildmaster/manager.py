@@ -436,7 +436,7 @@ class BuilddManager(service.Service):
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlave()
-                d.addErrBack(self.resumeFailed, slave)
+                d.addErrback(self.resumeFailed, slave)
             else:
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
