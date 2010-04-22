@@ -202,8 +202,7 @@ class DistroBrancher:
 
         This function checks that every official package branch in the old
         distroseries has a matching branch in the new distroseries and that
-        stacking is set up as we expect in both the hosted and mirrored areas
-        on disk.
+        stacking is set up as we expect on disk.
 
         Every branch will be checked, even if some fail.
 
@@ -229,8 +228,7 @@ class DistroBrancher:
         """Check a branch in the old distroseries has been copied to the new.
 
         This function checks that `old_db_branch` has a matching branch in the
-        new distroseries and that stacking is set up as we expect in both the
-        hosted and mirrored areas on disk.
+        new distroseries and that stacking is set up as we expect on disk.
 
         This function simply returns True or False -- any problems will be
         logged to ``self.logger``.
