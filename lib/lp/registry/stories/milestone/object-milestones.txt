@@ -98,11 +98,11 @@ to the project groups's milestone's page.
     Mozilla Firefox 1.0.0 ...
 
 
-=== Projects ===
+=== Project groups ===
 
-The project "All milestones" page lists all milestones for all products and
-series, including the inactive ones. They do not include the bug and blueprint
-counts (because they are costly to retrieve).
+The project group "All milestones" page lists all milestones for all products
+and series, including the inactive ones. They do not include the bug and
+blueprint counts (because they are costly to retrieve).
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from lp.registry.tests.test_project_milestone import (
