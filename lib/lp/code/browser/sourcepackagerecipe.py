@@ -274,13 +274,21 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
 
     @action('Update Recipe', name='update')
     def request_action(self, action, data):
-        parser = RecipeParser(data['recipe_text'])
-        recipe = parser.parse()
+        self.context.name = data['name']
+        self.context.description = data['description']
+        self.context.sourcepackagename = data['sourcepackagename']
+        self.context.owner = data['owner']
 
-        self.context.builder_recipe = recipe
+        parser = RecipeParser(data['recipe_text'])
+        self.context.builder_recipe = parser.parse()
 
         self.context.distroseries.clear()
         for distroseries_item in data['distros']:
             self.context.distroseries.add(distroseries_item)
 
         self.next_url = canonical_url(self.context)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadEditFormView`"""
+        return {ISourcePackageAddEditSchema: self.context}

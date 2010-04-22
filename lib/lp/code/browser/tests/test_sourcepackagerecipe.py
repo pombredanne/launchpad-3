@@ -159,7 +159,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
-        browser.getControl('Update recipe').click()
+        browser.getControl('Update Recipe').click()
 
         pattern = """\
             fings .*
