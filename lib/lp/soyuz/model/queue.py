@@ -398,9 +398,12 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We explicitly allow unsigned uploads here since the .changes file
+        # is pulled from the librarian which are stripped of their
+        # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
