@@ -944,13 +944,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        mirrored_path = os.path.join(
+        branch_path = os.path.join(
             config.codehosting.mirrored_branches_root,
             branch_id_to_path(self.branch_id))
-        hosted_path = os.path.join(
-            config.codehosting.hosted_branches_root,
-            branch_id_to_path(self.branch_id))
-        if os.path.exists(mirrored_path):
-            shutil.rmtree(mirrored_path)
-        if os.path.exists(hosted_path):
-            shutil.rmtree(hosted_path)
+        if os.path.exists(branch_path):
+            shutil.rmtree(branch_path)
