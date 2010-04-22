@@ -1003,7 +1003,7 @@
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
         permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeRemoveView"
-        template="../../app/templates/generic-edit.pt"
+        template="../templates/customlanguagecode-remove.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
 <!-- IHasCustomLanguageCodes -->

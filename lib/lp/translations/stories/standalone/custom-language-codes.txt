@@ -36,11 +36,11 @@ package.
     >>> owner_browser = setupBrowser("Basic o@example.com:test")
     >>> rosetta_admin_browser = setupRosettaExpertBrowser()
 
-An Launchpad administrator or Rosetta expert sees the link to the custom
+A Launchpad administrator or Rosetta expert sees the link to the custom
 language codes on a project's main translations page.
 
     >>> admin_browser.open(product_page)
-    >>> tag = find_custom_language_codes_link(rosetta_admin_browser)
+    >>> tag = find_custom_language_codes_link(admin_browser)
     >>> print extract_text(tag.renderContents())
     If necessary, you may
     define custom language codes

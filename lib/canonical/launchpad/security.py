@@ -1657,8 +1657,8 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
 class AdminCustomLanguageCodes(OnlyRosettaExpertsAndAdmins):
     """Controls administration of custom language codes.
 
-    Rosetta expters and Launchpad administrators can admister custom language
-    codes.
+    Rosetta experts and Launchpad administrators can administer custom
+    language codes.
     """
 
     permission = 'launchpad.TranslationsAdmin'
@@ -1668,7 +1668,7 @@ class AdminCustomLanguageCodes(OnlyRosettaExpertsAndAdmins):
 class AdminCustomLanguageCode(OnlyRosettaExpertsAndAdmins):
     """Controls administration for a custom language code.
 
-    Rosetta expters and Launchpad administrators can admister a custom
+    Rosetta experts and Launchpad administrators can administer a custom
     language code.
     """
 
