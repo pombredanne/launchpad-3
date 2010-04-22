@@ -81,7 +81,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         pattern = """\
-            daily .*
+            Master Chef's daily recipe
+            .*
 
             Description
             Make some food!
@@ -162,7 +163,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('Update Recipe').click()
 
         pattern = """\
-            fings .*
+            Master Chef's fings recipe
+            .*
 
             Description
             This is stuff
