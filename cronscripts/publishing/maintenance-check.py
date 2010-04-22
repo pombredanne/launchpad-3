@@ -306,10 +306,12 @@ if __name__ == "__main__":
 
     # now go over the bits in main that we have not seen (because
     # they are not in any seed and got added manually into "main"
-    for arch in SUPPORTED_ARCHES:
+    for arch in PRIMARY_ARCHES:
         rootdir="./aptroot.%s" % distro
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
+        cache.update(apt.progress.FetchProgress())
+        cache.open()
         for pkg in cache:
             if not pkg.name in pkg_support_time:
                 pkg_support_time[pkg.name] = support_timeframe[-1][0]
