@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from lp.archiveuploader.permission import (
     ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
@@ -35,7 +35,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS, launchpadlib_for, login, login_person, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -423,6 +424,36 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(None, location)
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
+
+
+class TestWebservice(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def test_webservice(self):
+        person = self.factory.makePerson()
+        name = person.name
+        distroseries = self.factory.makeDistroSeries()
+        branch = self.factory.makeBranch()
+        recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        branch2 = self.factory.makeBranch()
+        recipe_text2 = self.factory.MINIMAL_RECIPE_TEXT % branch2.bzr_identity
+        launchpad = launchpadlib_for('test', person,
+                service_root="http://api.launchpad.dev:8085")
+        login(ANONYMOUS)
+        distroseries = self.wsObject(launchpad, distroseries)
+        user = launchpad.people[name]
+        recipe = user.createRecipe(
+            name='toaster-1', sourcepackagename='toaster',
+            description='a recipe', distroseries=distroseries,
+            recipe_text=recipe_text)
+        self.assertEqual(user.name, recipe.owner.name)
+        self.assertEqual(user.name, recipe.registrant.name)
+        self.assertEqual('toaster-1', recipe.name)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+        recipe.setRecipeText(recipe_text=recipe_text2)
+        self.assertEqual(recipe_text2, recipe.recipe_text)
+        self.assertEqual('toaster', recipe.sourcepackagename)
 
 
 def test_suite():

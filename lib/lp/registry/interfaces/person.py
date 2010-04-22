@@ -858,6 +858,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.
+        :param description: A description of the recipe.
+        :param recipe_text: The text of the recipe.
+        :param distroseries: The distroseries to use.
+        :param sourcepackagename: The name of the sourcepackage for the recipe.
+        :return: a SourcePackageRecipe.
         """
 
     def getRecipe(name):

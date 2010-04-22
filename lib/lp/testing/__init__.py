@@ -77,7 +77,8 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -564,6 +565,19 @@ class TestCaseWithFactory(TestCase):
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
             hosted_server.start_server()
             self.addCleanup(hosted_server.stop_server)
+
+    def wsObject(self, launchpad, obj):
+        """Convert an object into its webservice version.
+
+        :param launchpad: The Launchpad instance to convert from.
+        :param obj: The object to convert.
+        :return: A launchpadlib Entry object.
+        """
+        api_request = WebServiceTestRequest()
+        obj_url = canonical_url(obj, request=api_request)
+        return launchpad.load(
+            obj_url.replace('http://api.launchpad.dev/',
+            str(launchpad._root_uri)))
 
 
 class WindmillTestCase(TestCaseWithFactory):

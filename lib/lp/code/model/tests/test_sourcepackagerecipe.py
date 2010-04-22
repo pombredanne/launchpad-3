@@ -16,14 +16,9 @@ from pytz import UTC
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
-from canonical.testing import DatabaseFunctionalLayer, AppServerLayer
+from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp import canonical_url
-from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
-    TestCaseWithFactory
-)
+from lp.testing import (login_person, person_logged_in, TestCaseWithFactory)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -106,44 +101,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
-
-
-class TestWebservice(TestCaseWithFactory):
-
-    layer = AppServerLayer
-
-    def api_obj(self, launchpad, distroseries):
-        api_request = WebServiceTestRequest()
-        distroseries_url = canonical_url(distroseries,
-            request=api_request)
-        return launchpad.load(
-            distroseries_url.replace('http://api.launchpad.dev/',
-            str(launchpad._root_uri)))
-
-    def test_webservices(self):
-        person = self.factory.makePerson()
-        name = person.name
-        distroseries = self.factory.makeDistroSeries()
-        branch = self.factory.makeBranch()
-        recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
-        branch2 = self.factory.makeBranch()
-        recipe_text2 = self.factory.MINIMAL_RECIPE_TEXT % branch2.bzr_identity
-        launchpad = launchpadlib_for('test', person,
-                service_root="http://api.launchpad.dev:8085")
-        login(ANONYMOUS)
-        distroseries = self.api_obj(launchpad, distroseries)
-        user = launchpad.people[name]
-        recipe = user.createRecipe(
-            name='toaster-1', sourcepackagename='toaster',
-            description='a recipe', distroseries=distroseries,
-            recipe_text=recipe_text)
-        self.assertEqual(user.name, recipe.owner.name)
-        self.assertEqual(user.name, recipe.registrant.name)
-        self.assertEqual('toaster-1', recipe.name)
-        self.assertEqual(recipe_text, recipe.recipe_text)
-        recipe.setRecipeText(recipe_text=recipe_text2)
-        self.assertEqual(recipe_text2, recipe.recipe_text)
-        self.assertEqual('toaster', recipe.sourcepackagename)
 
 
 def test_suite():
