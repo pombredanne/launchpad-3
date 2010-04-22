@@ -443,7 +443,7 @@ class TestWebservice(TestCaseWithFactory):
         user = self.wsObject(launchpad, person)
         recipe = user.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
-            description='a recipe', distroseries=distroseries,
+            description='a recipe', distroseries=[distroseries.self_link],
             recipe_text=recipe_text)
         return recipe, user, recipe_text
 
