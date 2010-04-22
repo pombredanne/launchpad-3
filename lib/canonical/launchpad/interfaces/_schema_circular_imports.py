@@ -392,3 +392,4 @@ patch_reference_property(IProductSeries, 'product', IProduct)
 patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
 patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries', Reference(schema=IDistroSeries))
 
+patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)

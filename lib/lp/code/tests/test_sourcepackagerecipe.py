@@ -464,6 +464,11 @@ class TestWebservice(TestCaseWithFactory):
         recipe.setRecipeText(recipe_text=recipe_text2)
         self.assertEqual(recipe_text2, recipe.recipe_text)
 
+    def test_getRecipe(self):
+        """Person.getRecipe returns the named recipe."""
+        recipe, user = self.makeRecipe()[:-1]
+        self.assertEqual(recipe, user.getRecipe(name=recipe.name))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
