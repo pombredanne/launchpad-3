@@ -1030,6 +1030,7 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <allow interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
   </class>
 
   <securedutility
