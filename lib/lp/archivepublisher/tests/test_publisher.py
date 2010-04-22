@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import bz2
 import gzip
-import hashlib
 import os
 import shutil
 import stat
@@ -37,7 +36,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from lp.testing import get_lsb_information
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -110,8 +108,16 @@ class TestPublisher(TestPublisherBase):
             publisher._config.archiveroot, 'test_file'), 'w').close()
 
         publisher.deleteArchive()
-        self.assertFalse(os.path.exists(publisher._config.archiveroot))
+        root_dir = os.path.join(
+            publisher._config.distroroot, test_archive.owner.name,
+            test_archive.name)
+        self.assertFalse(os.path.exists(root_dir))
         self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
+        self.assertEqual(test_archive.publish, False)
+
+        # Trying to delete it again won't fail, in the corner case where
+        # some admin manually deleted the repo.
+        publisher.deleteArchive()
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
