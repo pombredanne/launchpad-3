@@ -128,6 +128,9 @@ def create_and_update_deb_src_source_list(distroseries):
         sources_list.write(
             "deb-src %s %s main restricted\n" % (
                 ARCHIVE_ROOT, pocket))
+        sources_list.write(
+            "deb %s %s main restricted\n" % (
+                ARCHIVE_ROOT, pocket))
     sources_list.close()
     # create required dirs/files for apt.Cache(rootdir) to work on older
     # versions of python-apt. once lucid is used it can be removed
@@ -300,6 +303,18 @@ if __name__ == "__main__":
         else:
             support_timeframe = SUPPORT_TIMEFRAME
         get_packages_support_time(structure, name, pkg_support_time, support_timeframe)
+
+    # now go over the bits in main that we have not seen (because
+    # they are not in any seed and got added manually into "main"
+    for arch in SUPPORTED_ARCHES:
+        rootdir="./aptroot.%s" % distro
+        apt_pkg.Config.Set("APT::Architecture", arch)
+        cache = apt.Cache(rootdir=rootdir)
+        for pkg in cache:
+            if not pkg.name in pkg_support_time:
+                pkg_support_time[pkg.name] = support_timeframe[-1][0]
+                logging.warn("add package in main but not in seeds %s with %s" % 
+                             (pkg.name, pkg_support_time[pkg.name]))
 
     # now check the hints file that is used to overwrite 
     # the default seeds
