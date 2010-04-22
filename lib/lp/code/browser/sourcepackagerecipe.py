@@ -285,8 +285,9 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
 
         recipe_text = data.pop('recipe_text')
         parser = RecipeParser(recipe_text)
-        if self.context.builder_recipe != parser.parse():
-            self.context.builder_recipe = parser.parse()
+        recipe = parser.parse()
+        if self.context.builder_recipe != recipe:
+            self.context.builder_recipe = recipe
             changed = True
 
         distros = data.pop('distros')
