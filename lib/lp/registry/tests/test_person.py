@@ -7,10 +7,13 @@ import unittest
 from datetime import datetime
 import pytz
 
+import transaction
+
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
@@ -19,6 +22,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
 from lazr.lifecycle.snapshot import Snapshot
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -28,6 +32,7 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
+from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.person import Person
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
@@ -37,7 +42,8 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
 class TestPerson(TestCaseWithFactory):
@@ -595,6 +601,104 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             AssertionError,
             get_related_bugtasks_search_params, self.user, "Username",
             assignee=self.user)
+
+
+class TestPersonKarma(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonKarma, self).setUp()
+        self.person = self.factory.makePerson()
+        a_product = self.factory.makeProduct(name='aa')
+        b_product = self.factory.makeProduct(name='bb')
+        self.c_product = self.factory.makeProduct(name='cc')
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        self._makeKarmaCache(
+            self.person, a_product, [('bugs', 10)])
+        self._makeKarmaCache(
+            self.person, b_product, [('answers', 50)])
+        self._makeKarmaCache(
+            self.person, self.c_product, [('code', 100), (('bugs', 50))])
+
+    def _makeKarmaCache(self, person, product, category_name_values):
+        """Create a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma'. This requires a commit and invalidates the product
+        instance.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        total = 0
+        # Insert category total for person and project.
+        for category_name_value in category_name_values:
+            category_name, value = category_name_value
+            category = KarmaCategory.byName(category_name)
+            self.cache_manager.new(
+                value, person.id, category.id, product_id=product.id)
+            total +=value
+        # Insert total cache for person and project.
+        self.cache_manager.new(
+            total, person.id, None, product_id=product.id)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+    def test__getProjectsWithTheMostKarma_ordering(self):
+        # Verify that pillars are ordered by karma.
+        results = removeSecurityProxy(
+            self.person)._getProjectsWithTheMostKarma()
+        self.assertEqual(
+            [('cc', 150), ('bb', 50), ('aa', 10)], results)
+
+    def test__getContributedCategories(self):
+        # Verify that a iterable of karma categories is returned.
+        categories = removeSecurityProxy(
+            self.person)._getContributedCategories(self.c_product)
+        names = sorted(category.name for category in categories)
+        self.assertEqual(['bugs', 'code'], names)
+
+    def test_getProjectsAndCategoriesContributedTo(self):
+        # Verify that a list of projects and contributed karma categories
+        # is returned.
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa'], names)
+        project_categories = results[0]
+        names = [
+            category.name for category in project_categories['categories']]
+        self.assertEqual(
+            ['code', 'bugs'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_active_only(self):
+        # Verify that deactivated pillars are not included.
+        login('admin@canonical.com')
+        a_product = getUtility(IProductSet).getByName('cc')
+        a_product.active = False
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['bb', 'aa'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_limit(self):
+        # Verify the limit of 5 is honored.
+        d_product = self.factory.makeProduct(name='dd')
+        self._makeKarmaCache(
+            self.person, d_product, [('bugs', 5)])
+        e_product = self.factory.makeProduct(name='ee')
+        self._makeKarmaCache(
+            self.person, e_product, [('bugs', 4)])
+        f_product = self.factory.makeProduct(name='ff')
+        self._makeKarmaCache(
+            self.person, f_product, [('bugs', 3)])
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'dd', 'ee'], names)
 
 
 def test_suite():
