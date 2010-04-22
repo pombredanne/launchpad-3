@@ -12,6 +12,7 @@ from bzrlib.plugins.builder.recipe import RecipeParser
 
 from storm.locals import Store
 
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -430,30 +431,38 @@ class TestWebservice(TestCaseWithFactory):
 
     layer = AppServerLayer
 
-    def test_webservice(self):
+    def makeRecipe(self):
         person = self.factory.makePerson()
-        name = person.name
         distroseries = self.factory.makeDistroSeries()
         branch = self.factory.makeBranch()
         recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
-        branch2 = self.factory.makeBranch()
-        recipe_text2 = self.factory.MINIMAL_RECIPE_TEXT % branch2.bzr_identity
         launchpad = launchpadlib_for('test', person,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
         distroseries = self.wsObject(launchpad, distroseries)
-        user = launchpad.people[name]
+        user = self.wsObject(launchpad, person)
         recipe = user.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
             description='a recipe', distroseries=distroseries,
             recipe_text=recipe_text)
+        return recipe, user, recipe_text
+
+    def test_createRecipe(self):
+        """Ensure recipe creation works."""
+        recipe, user, recipe_text = self.makeRecipe()
         self.assertEqual(user.name, recipe.owner.name)
         self.assertEqual(user.name, recipe.registrant.name)
         self.assertEqual('toaster-1', recipe.name)
         self.assertEqual(recipe_text, recipe.recipe_text)
+        self.assertEqual('toaster', recipe.sourcepackagename)
+
+    def test_recipe_text(self):
+        recipe = self.makeRecipe()[0]
+        branch2 = self.factory.makeBranch()
+        recipe_text2 = self.factory.MINIMAL_RECIPE_TEXT % branch2.bzr_identity
+        transaction.commit()
         recipe.setRecipeText(recipe_text=recipe_text2)
         self.assertEqual(recipe_text2, recipe.recipe_text)
-        self.assertEqual('toaster', recipe.sourcepackagename)
 
 
 def test_suite():

@@ -48,6 +48,7 @@ def patch_collection_return_type(exported_class, method_name, return_type):
         LAZR_WEBSERVICE_EXPORTED)
     collection['return_type'].value_type.schema = return_type
 
+
 def patch_list_parameter_type(exported_class, method_name, param_name,
         param_type):
     """Update a list parameter type for a webservice method.
@@ -60,6 +61,7 @@ def patch_list_parameter_type(exported_class, method_name, param_name,
     method = exported_class[method_name]
     params = method.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['params']
     params[param_name].value_type = param_type
+
 
 def patch_plain_parameter_type(exported_class, method_name, param_name,
                                param_type):
