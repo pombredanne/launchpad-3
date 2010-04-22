@@ -13,6 +13,8 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 from unittest import TestLoader
 
+from bzrlib.bzrdir import BzrDir
+
 from pytz import UTC
 
 from storm.locals import Store
@@ -67,6 +69,7 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.tests.helpers import add_revision_to_branch
+from lp.codehosting.bzrutils import UnsafeUrlSeen
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
@@ -2361,6 +2364,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
 
 
 class TestGetBzrBranch(TestCaseWithFactory):
+    """Tests for `IBranch.safe_open`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -2369,10 +2373,31 @@ class TestGetBzrBranch(TestCaseWithFactory):
         self.useBzrBranches(real_server=True, direct_database=True)
 
     def test_simple(self):
+        # safe_open returns the underlying bzr branch of a database branch in
+        # the simple, unstacked, case.
         db_branch, tree = self.create_branch_and_tree()
         revid = tree.commit('')
         bzr_branch = db_branch.getBzrBranch()
         self.assertEqual(revid, bzr_branch.last_revision())
+
+    def test_acceptable_stacking(self):
+        # If the underlying bzr branch of a database branch is stacked on
+        # another launchpad branch safe_open returns it.
+        db_stacked_on, stacked_on_tree = self.create_branch_and_tree()
+        db_stacked, stacked_tree = self.create_branch_and_tree()
+        stacked_tree.branch.set_stacked_on_url(
+            '/' + db_stacked_on.unique_name)
+        bzr_branch = db_stacked.getBzrBranch()
+        self.assertEqual(
+            '/' + db_stacked_on.unique_name, bzr_branch.get_stacked_on_url())
+
+    def test_unacceptable_stacking(self):
+        # If the underlying bzr branch of a database branch is stacked on
+        # a non-Launchpad url, it cannot be opened.
+        branch = BzrDir.create_branch_convenience('local')
+        db_stacked, stacked_tree = self.create_branch_and_tree()
+        stacked_tree.branch.set_stacked_on_url(branch.base)
+        self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
 
 
 def test_suite():

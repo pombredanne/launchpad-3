@@ -10,6 +10,7 @@ integrates between Bazaar's infrastructure and Launchpad's infrastructure.
 __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
+    'BranchLoopDetected',
     'DenyingServer',
     'get_branch_stacked_on_url',
     'get_vfs_format_classes',
@@ -18,6 +19,9 @@ __all__ = [
     'install_oops_handler',
     'is_branch_stackable',
     'remove_exception_logging_hook',
+    'safe_open',
+    'SafeOpenFailed',
+    'UnsafeUrlSeen',
     ]
 
 import os

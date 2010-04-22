@@ -13,7 +13,6 @@ __all__ = [
 from datetime import datetime
 import os.path
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
 import pytz
@@ -76,6 +75,7 @@ from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
+from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.services.job.interfaces.job import JobStatus
@@ -467,8 +467,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getBzrBranch(self):
         """See `IBranch`."""
-        # XXX this needs to be super paranoid about what to open!
-        return BzrBranch.open('lp-internal:///' + self.unique_name)
+        return safe_open('lp-internal', 'lp-internal:///' + self.unique_name)
 
     @property
     def displayname(self):
