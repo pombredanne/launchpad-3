@@ -2360,5 +2360,20 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         self.assertEqual([new, old], branch_revisions)
 
 
+class TestGetBzrBranch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.useBzrBranches(real_server=True, direct_database=True)
+
+    def test_simple(self):
+        db_branch, tree = self.create_branch_and_tree()
+        revid = tree.commit('')
+        bzr_branch = db_branch.getBzrBranch()
+        self.assertEqual(revid, bzr_branch.last_revision())
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

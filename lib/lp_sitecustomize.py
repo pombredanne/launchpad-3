@@ -6,6 +6,8 @@
 
 import os
 from lp.services.mime import customizeMimetypes
+from zope.security import checker
+from bzrlib.branch import BzrBranch7
 
 def main():
     # Note that we configure the LPCONFIG environmental variable in the
@@ -18,5 +20,6 @@ def main():
     # initialization as possible here, in a more visible place.
     os.environ['STORM_CEXTENSIONS'] = '1'
     customizeMimetypes()
+    checker.BasicTypes.update({BzrBranch7: checker.NoProxy})
 
 main()

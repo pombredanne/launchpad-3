@@ -468,6 +468,7 @@
                     getNotificationRecipients
                     getScannerData
                     getPullURL
+                    getBzrBranch
                     requestMirror
                     startMirroring
                     mirrorFailed
