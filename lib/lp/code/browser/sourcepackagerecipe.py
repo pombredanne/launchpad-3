@@ -82,7 +82,9 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def title(self):
-        return self.context.name
+        return "%(name)s\'s %(recipe_name)s recipe" % {
+            'name': self.context.owner.displayname,
+            'recipe_name': self.context.name}
 
     label = title
 
