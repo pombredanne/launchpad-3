@@ -314,6 +314,7 @@ class _SafeOpener:
     def checkURL(self, url):
         if url in self.seen_urls:
             raise BranchLoopDetected()
+        self.seen_urls.add(url)
         if URI(url).scheme != self.allowed_scheme:
             raise UnsafeUrlSeen(
                 "Attempt to open %r which is not a %s URL" % (

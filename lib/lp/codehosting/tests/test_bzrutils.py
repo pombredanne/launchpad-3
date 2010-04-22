@@ -222,10 +222,6 @@ class TestSafeOpen(TestCaseWithTransport):
             return chroot_server.get_url() + relpath
         return URI(chroot_server.get_url()).scheme, get_url
 
-    def test_simple(self):
-        # XXX
-        pass
-
     def test_stacked_within_scheme(self):
         # XXX
         self.get_transport().mkdir('inside')
@@ -273,11 +269,28 @@ class TestSafeOpen(TestCaseWithTransport):
 
     def test_recursive_stacking(self):
         # XXX
-        pass
+        self.get_transport().mkdir('inside')
+        self.make_branch('inside/self-stacked')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        inside_url = get_chrooted_url('self-stacked')
+        Branch.open(inside_url).get_config().set_user_option(
+            'stacked_on_location', inside_url)
+        self.assertRaises(
+            BranchLoopDetected, safe_open, scheme, inside_url)
 
     def test_recursive_reference(self):
         # XXX
-        pass
+        self.get_transport().mkdir('inside')
+        self.get_transport().mkdir('outside')
+        outside_branch = self.make_branch('outside/referenced')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        inside_url = get_chrooted_url('reference')
+        bzrdir = BzrDir.create(inside_url)
+        BranchReferenceFormat().initialize(
+            bzrdir, target_branch=outside_branch)
+        bzrdir.root_transport.put_bytes('.bzr/branch/location', inside_url)
+        self.assertRaises(
+            BranchLoopDetected, safe_open, scheme, inside_url)
 
 
 def load_tests(basic_tests, module, loader):
