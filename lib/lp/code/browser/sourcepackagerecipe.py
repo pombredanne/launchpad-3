@@ -17,12 +17,17 @@ __all__ = [
 
 
 from bzrlib.plugins.builder.recipe import RecipeParser, RecipeParseError
+from zope.interface import providedBy
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import Interface
 from zope.schema import Choice, List, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
@@ -278,17 +283,34 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
 
     @action('Update Recipe', name='update')
     def request_action(self, action, data):
-        self.context.name = data['name']
-        self.context.description = data['description']
-        self.context.sourcepackagename = data['sourcepackagename']
-        self.context.owner = data['owner']
+        changed = False
+        recipe_before_modification = Snapshot(
+            self.context, providing=providedBy(self.context))
 
-        parser = RecipeParser(data['recipe_text'])
-        self.context.builder_recipe = parser.parse()
+        recipe_text = data.pop('recipe_text')
+        parser = RecipeParser(recipe_text)
+        if self.context.builder_recipe != parser.parse():
+            self.context.builder_recipe = parser.parse()
+            changed = True
 
-        self.context.distroseries.clear()
-        for distroseries_item in data['distros']:
-            self.context.distroseries.add(distroseries_item)
+        distros = data.pop('distros')
+        if distros != self.context.distroseries:
+            self.context.distroseries.clear()
+            for distroseries_item in distros:
+                self.context.distroseries.add(distroseries_item)
+            changed = True
+
+        if self.updateContextFromData(data, notify_modified=False):
+            changed = True
+
+        if changed:
+            field_names = [
+                form_field.__name__ for form_field in self.form_fields]
+            notify(ObjectModifiedEvent(
+                self.context, recipe_before_modification, field_names))
+            # Only specify that the context was modified if there
+            # was in fact a change.
+            self.context.date_last_modified = UTC_NOW
 
         self.next_url = canonical_url(self.context)
 
