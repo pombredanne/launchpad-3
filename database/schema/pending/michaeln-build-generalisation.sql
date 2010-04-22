@@ -42,6 +42,7 @@ CREATE INDEX packagebuild__archive__idx ON packagebuild(archive);
 CREATE INDEX packagebuild__upload_log__idx ON packagebuild(upload_log) WHERE upload_log IS NOT NULL;
 
 CREATE TABLE BinaryPackageBuild (
+    id serial PRIMARY KEY,
     package_build integer NOT NULL CONSTRAINT binarypackagebuild__package_build__fk REFERENCES packagebuild,
     distro_arch_series integer NOT NULL CONSTRAINT binarypackagebuild__distro_arch_series__fk REFERENCES distroarchseries,
     source_package_release integer NOT NULL CONSTRAINT binarypackagebuild__source_package_release__fk REFERENCES sourcepackagerelease
@@ -69,6 +70,7 @@ BEGIN
     rows_migrated := 0;
     FOR build_info IN
         SELECT
+            build.id,
             build.processor,
             archive.require_virtualized AS virtualized,
             -- Currently we do not know if a build was virtual or not? (it's
@@ -91,28 +93,32 @@ BEGIN
         FROM
             build JOIN archive ON build.archive = archive.id
     LOOP
+        -- For url consistency, we'll give the new records the same id as the
+        -- old builds.
         INSERT INTO buildfarmjob(
-            processor, virtualized, date_created, date_started,
+            id, processor, virtualized, date_created, date_started,
             date_finished, builder, status, log, job_type)
         VALUES (
-            build_info.processor, build_info.virtualized,
+            build_info.id, build_info.processor, build_info.virtualized,
             build_info.date_created, build_info.date_started,
             build_info.date_finished, build_info.builder,
             build_info.status, build_info.log,
             1); -- BuildFarmJobType.PackageBuild (should be renamed BinaryPackageBuild)
-        -- Get the key of the BuildFarmJob row just inserted.
-        SELECT currval('buildfarmjob_id_seq') INTO buildfarmjob_id;
+        -- We have explicitly set the id for the inserted buildfarmjob record
+        -- above, so we use it as the build_farm_job foreign key below: (do we
+        -- need to manually update the buildfarmjob_id_seq since we're not
+        -- using it here?)
         INSERT INTO packagebuild (
             build_farm_job, archive, upload_log, dependencies)
         VALUES (
-            buildfarmjob_id, build_info.archive, build_info.upload_log,
+            build_info.id, build_info.archive, build_info.upload_log,
             build_info.dependencies);
         -- Get the key of the PackageBuild row just inserted.
         SELECT currval('packagebuild_id_seq') INTO packagebuild_id;
         INSERT INTO binarypackagebuild(
-            package_build, distro_arch_series, source_package_release)
+            id, package_build, distro_arch_series, source_package_release)
         VALUES (
-            packagebuild_id, build_info.distro_arch_series,
+            build_info.id, packagebuild_id, build_info.distro_arch_series,
             build_info.source_package_release);
         rows_migrated := rows_migrated + 1;
     END LOOP;
@@ -126,6 +132,24 @@ SELECT * FROM migrate_build_rows();
 DROP FUNCTION migrate_build_rows();
 
 -- Step 3
+-- Need to update all the references to the current build table to point to
+-- the new table, shown by:
+-- launchpad_dev=# select t.constraint_name, t.table_name, t.constraint_type,
+-- launchpad_dev-#     c.table_name, c.column_name
+-- launchpad_dev-# from information_schema.table_constraints t,
+-- launchpad_dev-#     information_schema.constraint_column_usage c
+-- launchpad_dev-# where t.constraint_name = c.constraint_name
+-- launchpad_dev-#     and t.constraint_type = 'FOREIGN KEY'
+-- launchpad_dev-#     and c.table_name = 'build'
+-- launchpad_dev-# ;
+--                    constraint_name                    |           table_name           | constraint_type | table_name | column_name
+--                 ------------------------------------------------------+--------------------------------+-----------------+------------+-------------
+--                  binarypackagerelease__build__fk                      | binarypackagerelease           | FOREIGN KEY     | build      | id
+--                  buildpackagejob__build__fk                           | buildpackagejob                | FOREIGN KEY     | build      | id
+--                  packageuploadbuild_build_fk                          | packageuploadbuild             | FOREIGN KEY     | build      | id
+--                  securebinarypackagepublishinghistory_supersededby_fk | binarypackagepublishinghistory | FOREIGN KEY     | build      | id
+
+-- Step 4
 -- Note, to enable parallel development getting the codebase updated, we will
 -- uncomment the following deletion of the build table once the code has been
 -- updated.
