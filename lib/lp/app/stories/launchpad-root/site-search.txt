@@ -152,8 +152,8 @@ as the most relevant match.
     Registered by Sample Person
     on 2004-09-24
 
-Projects can appear too. For example, when the user searches for
-'gnome', the GNOME project is the best match.
+Project groups can appear too. For example, when the user searches for
+'gnome', the GNOME project group is the best match.
 
     >>> search_for('gnome')
     >>> print_search_results()

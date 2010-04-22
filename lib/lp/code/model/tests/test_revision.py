@@ -472,9 +472,10 @@ class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
         self.assertEqual([rev1], self._getRevisions())
 
 
-class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
-                                       RevisionTestMixin):
-    """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
+class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
+                                            RevisionTestMixin):
+    """Test the `getPublicRevisionsForProjectGroup` method of `RevisionSet`.
+    """
 
     def setUp(self):
         GetPublicRevisionsTestCase.setUp(self)
@@ -483,7 +484,7 @@ class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
 
     def _getRevisions(self, day_limit=30):
         # Returns the revisions for the person.
-        return list(RevisionSet.getPublicRevisionsForProject(
+        return list(RevisionSet.getPublicRevisionsForProjectGroup(
                 self.project, day_limit))
 
     def testRevisionsMustBeInABranchOfProduct(self):

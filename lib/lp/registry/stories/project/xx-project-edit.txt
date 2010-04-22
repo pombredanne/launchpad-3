@@ -1,5 +1,5 @@
-Editing a Project
-=================
+Editing a ProjectGroup
+======================
 
 The maintainer of a project can edit its details.
 
