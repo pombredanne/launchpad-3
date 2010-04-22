@@ -616,16 +616,13 @@ class Publisher(object):
             "Attempting to delete archive '%s/%s' at '%s'." % (
                 self.archive.owner.name, self.archive.name, root_dir))
 
-        # Attempt to rmdir if the path to the root of the archive exists.
         try:
             shutil.rmtree(root_dir)
-        except:
+        except (shutil.Error, OSError), e:
             self.log.warning(
-                "Failed to delete directory '%s' for archive '%s/%s'." % (
+                "Failed to delete directory '%s' for archive '%s/%s'\n%s" % (
                     root_dir, self.archive.owner.name, 
-                    self.archive.name))
+                    self.archive.name, e))
 
-        # Set archive's status to DELETED.
         self.archive.status = ArchiveStatus.DELETED
-        # Disable publishing for this archive.
         self.archive.publish = False
