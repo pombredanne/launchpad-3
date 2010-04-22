@@ -13,7 +13,6 @@ from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
@@ -42,7 +41,6 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
 
 
@@ -143,7 +141,7 @@ class TestPerson(TestCaseWithFactory):
                 setattr, specification, attr_name, self.myteam)
 
     def test_visibility_validator_announcement(self):
-        announcement = self.bzr.announce(
+        self.bzr.announce(
             user = self.otherteam,
             title = 'title foo',
             summary = 'summary foo',
@@ -171,7 +169,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(fake_warning, warning)
 
     def test_visibility_validator_answer_contact(self):
-        answer_contact = AnswerContact(
+        AnswerContact(
             person=self.otherteam,
             product=self.bzr,
             distribution=None,
@@ -185,7 +183,7 @@ class TestPerson(TestCaseWithFactory):
                 'it is referenced by an answercontact.')
 
     def test_visibility_validator_archive(self):
-        archive = getUtility(IArchiveSet).new(
+        getUtility(IArchiveSet).new(
             owner=self.otherteam,
             description='desc foo',
             purpose=ArchivePurpose.PPA)
@@ -198,7 +196,7 @@ class TestPerson(TestCaseWithFactory):
                 'it is referenced by an archive.')
 
     def test_visibility_validator_branch(self):
-        branch = self.factory.makeProductBranch(
+        self.factory.makeProductBranch(
             registrant=self.otherteam,
             owner=self.otherteam,
             product=self.bzr)
@@ -267,7 +265,7 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_public(self):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
         except ImmutableVisibilityError, exc:
@@ -277,7 +275,7 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_public_view(self):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         # The view should add an error notification.
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
@@ -304,7 +302,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(self.otherteam.visibility, PersonVisibility.PUBLIC)
 
     def test_visibility_validator_team_mailinglist_private(self):
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:
@@ -315,7 +313,7 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_private_view(self):
         # The view should add a field error.
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
@@ -334,14 +332,14 @@ class TestPerson(TestCaseWithFactory):
         # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a
         # PRIVATE.
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_mailinglist_pmt_to_private_view(self):
         # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a
         # PRIVATE.
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
@@ -382,7 +380,7 @@ class TestPerson(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        sub = StructuralSubscription(
+        StructuralSubscription(
             product=self.bzr, subscriber=self.otherteam,
             subscribed_by=foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
@@ -539,8 +537,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[3], bug_commenter=self.context)
 
     def test_get_related_bugtasks_search_params_with_assignee(self):
-        # With assignee specified, get_related_bugtasks_search_params() returns
-        # 3 BugTaskSearchParams objects.
+        # With assignee specified, get_related_bugtasks_search_params()
+        # returns 3 BugTaskSearchParams objects.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, assignee=self.user)
         self.assertEqual(len(search_params), 3)
@@ -637,7 +635,7 @@ class TestPersonKarma(TestCaseWithFactory):
             category = KarmaCategory.byName(category_name)
             self.cache_manager.new(
                 value, person.id, category.id, product_id=product.id)
-            total +=value
+            total += value
         # Insert total cache for person and project.
         self.cache_manager.new(
             total, person.id, None, product_id=product.id)
