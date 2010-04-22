@@ -25,20 +25,24 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.scripts.checkwatches.base import (
+    WorkingBase, commit_before, with_interaction)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 
 
-class BugWatchUpdater:
+class BugWatchUpdater(WorkingBase):
     """Handles the updating of a single BugWatch for checkwatches."""
 
-    def __init__(self, transaction, logger, bug_watch,
+    def __init__(self, login, transaction_manager, logger, bug_watch,
                  external_bugtracker):
-        self.transaction = transaction
+        super(BugWatchUpdater, self).__init__(
+            login, transaction_manager, logger)
         self.logger = logger
         self.bug_watch = bug_watch
         self.external_bugtracker = external_bugtracker
 
+    @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
                        new_remote_importance, new_malone_importance,
                        can_import_comments, can_push_comments, can_back_link,
@@ -78,7 +82,6 @@ class BugWatchUpdater:
         with self.transaction:
             self.bug_watch.addActivity(
                 result=error, oops_id=oops_id)
-
 
     def importBug(self, bugtracker, bug_target, remote_bug):
         """Import a remote bug into Launchpad.
@@ -129,6 +132,7 @@ class BugWatchUpdater:
 
         return bug
 
+    @commit_before
     def importBugComments(self):
         """Import all the comments from a remote bug.
 
@@ -242,6 +246,7 @@ class BugWatchUpdater:
             'comment_body': message.text_contents,
             }
 
+    @commit_before
     def pushBugComments(self):
         """Push Launchpad comments to the remote bug.
 
@@ -291,6 +296,7 @@ class BugWatchUpdater:
                  'bugtracker_url': self.external_bugtracker.baseurl,
                  'bug_id': local_bug_id})
 
+    @commit_before
     def linkLaunchpadBug(self):
         """Link a Launchpad bug to a given remote bug."""
         with self.transaction:
