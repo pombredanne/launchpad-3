@@ -258,30 +258,30 @@ class DistroBrancher:
         ok = self.checkConsistentOfficialPackageBranch(new_db_branch)
         if not ok:
             return ok
-        # for both mirrored and hosted areas:
-        for scheme in 'lp-mirrored', 'lp-hosted':
-            # the branch in the new distroseries is unstacked
-            new_location = str(URI(
-                scheme=scheme, host='', path='/' + new_db_branch.unique_name))
+        # the branch in the new distroseries is unstacked
+        new_location = str(URI(
+            scheme='lp-internal', host='',
+            path='/' + new_db_branch.unique_name))
+        try:
+            new_bzr_branch = Branch.open(new_location)
+        except NotBranchError:
+            self.logger.warning(
+                "No bzr branch at new location %s", new_location)
+            ok = False
+        else:
             try:
-                new_bzr_branch = Branch.open(new_location)
-            except NotBranchError:
-                self.logger.warning(
-                    "No bzr branch at new location %s", new_location)
+                new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
                 ok = False
-            else:
-                try:
-                    new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
-                    ok = False
-                    self.logger.warning(
-                        "New branch at %s is stacked on %s, should be "
-                        "unstacked.", new_location, new_stacked_on_url)
-                except NotStacked:
-                    pass
+                self.logger.warning(
+                    "New branch at %s is stacked on %s, should be "
+                    "unstacked.", new_location, new_stacked_on_url)
+            except NotStacked:
+                pass
             # The branch in the old distroseries is stacked on that in the
             # new.
             old_location = str(URI(
-                scheme=scheme, host='', path='/' + old_db_branch.unique_name))
+                scheme='lp-internal', host='',
+                path='/' + old_db_branch.unique_name))
             try:
                 old_bzr_branch = Branch.open(old_location)
             except NotBranchError:
@@ -357,9 +357,6 @@ class DistroBrancher:
         # again.  So commit before doing that.
         transaction.commit()
         switch_branches(
-            config.codehosting.hosted_branches_root,
-            'lp-hosted', old_db_branch, new_db_branch)
-        switch_branches(
             config.codehosting.mirrored_branches_root,
-            'lp-mirrored', old_db_branch, new_db_branch)
+            'lp-internal', old_db_branch, new_db_branch)
         return new_db_branch

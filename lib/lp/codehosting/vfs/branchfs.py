@@ -177,18 +177,25 @@ def get_scanner_server():
         'lp-mirrored:///', codehosting_endpoint, branch_transport)
 
 
-def get_rw_server():
+def get_rw_server(direct_database=False):
     """Get a server that can write to the Launchpad branch vfs.
 
     You can only call this usefully on the codehost -- the transport this
     server provides are backed onto file:/// URLs.
+
+    :param direct_database: if True, use a server implementation that talks
+        directly to the database.  If False, the default, use a server
+        implementation that talks to the internal XML-RPC server.
     """
-    hosted_transport = get_chrooted_transport(
+    transport = get_chrooted_transport(
         config.codehosting.mirrored_branches_root, mkdir=True)
-    proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-    codehosting_endpoint = BlockingProxy(proxy)
-    return LaunchpadInternalServer(
-        'lp-internal:///', codehosting_endpoint, hosted_transport)
+    if direct_database:
+        return DirectDatabaseLaunchpadServer('lp-internal:///', transport)
+    else:
+        proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
+        codehosting_endpoint = BlockingProxy(proxy)
+        return LaunchpadInternalServer(
+            'lp-internal:///', codehosting_endpoint, transport)
 
 
 def get_multi_server(write_hosted=False, write_mirrored=False,

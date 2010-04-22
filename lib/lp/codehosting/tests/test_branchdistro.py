@@ -118,12 +118,8 @@ class TestDistroBrancher(TestCaseWithFactory):
         transaction.commit()
 
         _, tree = self.create_branch_and_tree(
-            tree_location=self.factory.getUniqueString(), db_branch=db_branch,
-            hosted=True)
+            tree_location=self.factory.getUniqueString(), db_branch=db_branch)
         tree.commit('')
-        mirrored_branch = BzrDir.create_branch_convenience(
-            db_branch.warehouse_url)
-        mirrored_branch.pull(tree.branch)
 
         return db_branch
 
@@ -396,38 +392,24 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .*/.*/.* is the official branch for .*/.*/.* but not '
              'its sourcepackage$'])
 
-    def checkOneBranch_new_branch_missing(self, branch_type):
+    def test_checkOneBranch_new_branch_missing(self):
         # checkOneBranch returns False when there is no bzr branch for the
         # database branch in the new distroseries.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = new_db_branch.getPullURL()
-        else:
-            url = new_db_branch.warehouse_url
+        url = 'lp-internal:///' + new_db_branch.unique_name
         get_transport(url).delete_tree('.bzr')
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         # Deleting the new branch will break the old branch, as that's stacked
         # on the new one.
         self.assertLogMessages([
-            '^WARNING No bzr branch at new location lp-%s:///.*/.*/.*/.*$'
-            % branch_type,
-            '^WARNING No bzr branch at old location lp-%s:///.*/.*/.*/.*$'
-            % branch_type,
+            '^WARNING No bzr branch at new location '
+            'lp-internal:///.*/.*/.*/.*$',
+            '^WARNING No bzr branch at old location '
+            'lp-internal:///.*/.*/.*/.*$',
             ])
-
-    def test_checkOneBranch_new_hosted_branch_missing(self):
-        # checkOneBranch returns False when there is no bzr branch in the
-        # hosted area for the database branch in the new distroseries.
-        self.checkOneBranch_new_branch_missing('hosted')
-
-    def test_checkOneBranch_new_mirrored_branch_missing(self):
-        # checkOneBranch returns False when there is no bzr branch in the
-        # mirrored area for the database branch in the new distroseries.
-        self.checkOneBranch_new_branch_missing('mirrored')
 
     def checkOneBranch_old_branch_missing(self, branch_type):
         # checkOneBranch returns False when there is no bzr branchfor the

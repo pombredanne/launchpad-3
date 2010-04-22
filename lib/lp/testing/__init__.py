@@ -82,7 +82,7 @@ from canonical.config import config
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.codehosting.vfs import branch_id_to_path, get_rw_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -449,14 +449,12 @@ class TestCaseWithFactory(TestCase):
             branch_url, format=format)
 
     def create_branch_and_tree(self, tree_location=None, product=None,
-                               hosted=False, db_branch=None, format=None,
+                               db_branch=None, format=None,
                                **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
         :param product: The product to associate with the branch.
-        :param hosted: If True, create in the hosted area.  Otherwise, create
-            in the mirrored area.
         :param db_branch: If supplied, the database branch to use.
         :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
@@ -466,10 +464,7 @@ class TestCaseWithFactory(TestCase):
                 db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
                 db_branch = self.factory.makeProductBranch(product, **kwargs)
-        if hosted:
-            branch_url = db_branch.getPullURL()
-        else:
-            branch_url = db_branch.warehouse_url
+        branch_url = 'lp-internal:///' + db_branch.unique_name
         if self.real_bzr_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)
@@ -549,8 +544,7 @@ class TestCaseWithFactory(TestCase):
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:
-            server = get_multi_server(
-                write_hosted=True, write_mirrored=True,
+            server = get_rw_server(
                 direct_database=direct_database)
             server.start_server()
             self.addCleanup(server.destroy)

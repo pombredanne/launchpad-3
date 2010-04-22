@@ -873,10 +873,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             # another RCS system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
-        elif self.branch_type == BranchType.HOSTED:
-            # This is a push branch, hosted on Launchpad (pushed there by
-            # users via sftp or bzr+ssh).
-            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
