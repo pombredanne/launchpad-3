@@ -112,6 +112,8 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import (
     ISprintSpecification)
 from lp.registry.interfaces.teammembership import ITeamMembership
+from lp.translations.interfaces.customlanguagecode import (
+    ICustomLanguageCode, IHasCustomLanguageCodes)
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
@@ -1650,6 +1652,28 @@ class ViewLanguage(AnonymousAuthorization):
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
+
+
+class AdminCustomLanguageCodes(OnlyRosettaExpertsAndAdmins):
+    """Controls administration of custom language codes.
+
+    Rosetta expters and Launchpad administrators can admister custom language
+    codes.
+    """
+
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IHasCustomLanguageCodes
+
+
+class AdminCustomLanguageCode(OnlyRosettaExpertsAndAdmins):
+    """Controls administration for a custom language code.
+
+    Rosetta expters and Launchpad administrators can admister a custom
+    language code.
+    """
+
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = ICustomLanguageCode
 
 
 class AccessBranch(AuthorizationBase):

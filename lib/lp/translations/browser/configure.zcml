@@ -1001,7 +1001,7 @@
     <browser:page
         name="+remove"
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
-        permission="launchpad.Admin"
+        permission="launchpad.TranslationsAdmin"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeRemoveView"
         template="../../app/templates/generic-edit.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
@@ -1021,7 +1021,7 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
         template="../templates/customlanguagecode-add.pt"
-        permission="launchpad.Admin"/>
+        permission="launchpad.TranslationsAdmin"/>
 
     </facet>
 </configure>
