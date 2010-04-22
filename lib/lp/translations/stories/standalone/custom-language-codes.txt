@@ -11,7 +11,6 @@ language or not.
 Custom language codes are attached to either a product or a source
 package.
 
-    >>> import re
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -37,8 +36,15 @@ package.
     >>> owner_browser = setupBrowser("Basic o@example.com:test")
     >>> rosetta_admin_browser = setupRosettaExpertBrowser()
 
-An administrator sees the link to the custom language codes on a
-project's main translations page.
+An Launchpad administrator or Rosetta expert sees the link to the custom
+language codes on a project's main translations page.
+
+    >>> admin_browser.open(product_page)
+    >>> tag = find_custom_language_codes_link(rosetta_admin_browser)
+    >>> print extract_text(tag.renderContents())
+    If necessary, you may
+    define custom language codes
+    for this project.
 
     >>> rosetta_admin_browser.open(product_page)
     >>> tag = find_custom_language_codes_link(rosetta_admin_browser)
@@ -104,7 +110,8 @@ to see there.
 The overview page leads back to the custom language codes overview.
 
     >>> code_page = rosetta_admin_browser.url
-    >>> rosetta_admin_browser.getLink("custom language codes overview").click()
+    >>> rosetta_admin_browser.getLink(
+    ...     "custom language codes overview").click()
     >>> rosetta_admin_browser.url == custom_language_codes_page
     True
 
