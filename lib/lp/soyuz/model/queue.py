@@ -434,9 +434,11 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         self.setRejected()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We allow unsigned uploads since they come from the librarian,
+        # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
     @property
