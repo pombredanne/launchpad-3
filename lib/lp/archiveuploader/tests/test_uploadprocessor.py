@@ -17,7 +17,6 @@ from StringIO import StringIO
 import tempfile
 import traceback
 import unittest
-import urllib
 
 from email import message_from_string
 
