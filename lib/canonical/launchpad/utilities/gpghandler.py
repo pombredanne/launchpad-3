@@ -160,7 +160,7 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, plain, None)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.message)
+                raise GPGVerificationError(e.strerror)
         else:
             # store clearsigned signature
             sig = StringIO(content)
@@ -170,7 +170,7 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, None, plain)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.message)
+                raise GPGVerificationError(e.strerror)
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
