@@ -207,13 +207,15 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
 
 
 class TestSafeOpen(TestCaseWithTransport):
-    """XXX."""
+    """Tests for `safe_open`."""
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         _install_hook()
 
     def get_chrooted_scheme(self, relpath):
+        """
+        """
         transport = self.get_transport(relpath)
         chroot_server = chroot.ChrootServer(transport)
         chroot_server.start_server()
@@ -223,7 +225,8 @@ class TestSafeOpen(TestCaseWithTransport):
         return URI(chroot_server.get_url()).scheme, get_url
 
     def test_stacked_within_scheme(self):
-        # XXX
+        # A branch that is stacked on a URL of the same scheme is safe to
+        # open.
         self.get_transport().mkdir('inside')
         self.make_branch('inside/stacked')
         self.make_branch('inside/stacked-on')
@@ -233,7 +236,7 @@ class TestSafeOpen(TestCaseWithTransport):
         safe_open(scheme, get_chrooted_url('stacked'))
 
     def test_reference_within_scheme(self):
-        # XXX
+        # A branch reference to a URL of the same scheme is safe to open.
         self.get_transport().mkdir('inside')
         self.make_branch('inside/referenced')
         scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
@@ -244,7 +247,8 @@ class TestSafeOpen(TestCaseWithTransport):
         safe_open(scheme, get_chrooted_url('reference'))
 
     def test_stacked_outside_scheme(self):
-        # XXX
+        # A branch that is stacked on a URL that is not of the same scheme is
+        # not safe to open.
         self.get_transport().mkdir('inside')
         self.get_transport().mkdir('outside')
         self.make_branch('inside/stacked')
@@ -256,7 +260,8 @@ class TestSafeOpen(TestCaseWithTransport):
             UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('stacked'))
 
     def test_reference_outside_scheme(self):
-        # XXX
+        # A branch reference to a URL that is not of the same scheme is not
+        # safe to open.
         self.get_transport().mkdir('inside')
         self.get_transport().mkdir('outside')
         outside_branch = self.make_branch('outside/referenced')
@@ -268,7 +273,7 @@ class TestSafeOpen(TestCaseWithTransport):
             UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('reference'))
 
     def test_recursive_stacking(self):
-        # XXX
+        # A branch stacked on itself is not safe to open.
         self.get_transport().mkdir('inside')
         self.make_branch('inside/self-stacked')
         scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
@@ -279,7 +284,8 @@ class TestSafeOpen(TestCaseWithTransport):
             BranchLoopDetected, safe_open, scheme, inside_url)
 
     def test_recursive_reference(self):
-        # XXX
+        # A branch reference that refers to its own location is not not safe
+        # to open.
         self.get_transport().mkdir('inside')
         self.get_transport().mkdir('outside')
         outside_branch = self.make_branch('outside/referenced')

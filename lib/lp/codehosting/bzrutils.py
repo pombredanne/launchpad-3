@@ -275,13 +275,19 @@ safe_open_data = threading.local()
 
 
 def _install_hook():
-    """XXX."""
+    """Install `_safe_open_pre_open_hook` as a pre_open hook.
+
+    This is called at module import time, but _safe_open_pre_open_hook doesn't
+    do anything unless the `safe_open_data` threading.Local object has a
+    'safe_opener' attribute in this thread.
+    """
     BzrDir.hooks.install_named_hook(
-        'pre_open', _pre_open_hook, 'safe open')
+        'pre_open', _safe_open_pre_open_hook, 'safe open')
 
 
-def _pre_open_hook(transport):
-    """XXX."""
+def _safe_open_pre_open_hook(transport):
+    """If a safe_opener is present in this thread, check `transport` is safe.
+    """
     safe_opener = getattr(safe_open_data, 'safe_opener', None)
     if safe_opener is None:
         return
@@ -293,25 +299,31 @@ _install_hook()
 
 
 class SafeOpenFailed(Exception):
-    """XXX."""
+    """`safe_open` found a URL it refused to open."""
 
 
 class UnsafeUrlSeen(SafeOpenFailed):
-    """XXX."""
+    """`safe_open` found a URL that was not on the configured scheme."""
 
 
 class BranchLoopDetected(SafeOpenFailed):
-    """XXX."""
+    """`safe_open` detected a recursive branch loop.
+
+    `Branch.open` traverses branch references and stacked-on locations.
+    `safe_open` raises this exception if either traversal finds a URL that has
+    been seen earlier in the opening process.
+    """
 
 
 class _SafeOpener:
-    """XXX."""
+    """A `_SafeOpener` knows which URLs are safe to open."""
 
     def __init__(self, allowed_scheme):
         self.seen_urls = set()
         self.allowed_scheme = allowed_scheme
 
     def checkURL(self, url):
+        """Check that `url` is safe to open."""
         if url in self.seen_urls:
             raise BranchLoopDetected()
         self.seen_urls.add(url)
@@ -322,7 +334,14 @@ class _SafeOpener:
 
 
 def safe_open(allowed_scheme, url):
-    """XXX."""
+    """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
+
+    :raises BranchLoopDetected: If a stacked-on location or the target of a
+        branch reference turns out to be a URL we've already seen in this open
+        attempt.
+    :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
+        `allowed_scheme`.
+    """
     if hasattr(safe_open_data, 'safe_opener'):
         raise AssertionError("safe_open called recursively")
     safe_open_data.safe_opener = _SafeOpener(allowed_scheme)
