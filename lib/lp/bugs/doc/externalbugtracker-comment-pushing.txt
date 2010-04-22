@@ -95,12 +95,14 @@ calling the addRemoteComment() method of ISupportsCommentPushing for
 each Launchpad comment that needs to be pushed to the remote bug
 tracker.
 
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> bugwatch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
+    >>> from canonical.launchpad.scripts.logger import log
+    >>> from lp.bugs.scripts.checkwatches.bugwatchupdater import (
+    ...     BugWatchUpdater)
+    >>> bugwatch_updater = BugWatchUpdater(
+    ...     'bugwatch@bugs.launchpad.net', LaunchpadZopelessLayer.txn,
+    ...     log, bug_watch, external_bugtracker)
 
-    >>> transaction.commit()
-
-    >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
+    >>> bugwatch_updater.pushBugComments()
     Comment added as remote comment 1
     INFO:...:Pushed 1 comments to remote bug 1234 on ...
 
@@ -122,7 +124,7 @@ already have a remote id for it (ergo it has been pushed already).
 
     >>> transaction.commit()
 
-    >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
+    >>> bugwatch_updater.pushBugComments()
     >>> transaction.commit()
 
 If we now check the bug watch's unpushed_comments property, we will
@@ -148,7 +150,7 @@ tracker the next time the bugwatch updater accesses it.
     >>> bugmessage_three = bug.linkMessage(message_three, bug_watch)
     >>> transaction.commit()
 
-    >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
+    >>> bugwatch_updater.pushBugComments()
     Comment added as remote comment 2
     Comment added as remote comment 3
     INFO:...:Pushed 2 comments to remote bug 1234 on ...
@@ -171,7 +173,7 @@ won't be pushed.
     >>> bugmessage_four = bug.linkMessage(message_four)
     >>> transaction.commit()
 
-    >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
+    >>> bugwatch_updater.pushBugComments()
 
     >>> print_bug_messages(bug, bug_watch)
     1: Pushing, for the purpose of.
@@ -222,7 +224,8 @@ the remote comments being imported into Launchpad.
 
     >>> transaction.commit()
 
-    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    >>> bugwatch_updater.external_bugtracker = external_bugtracker
+    >>> bugwatch_updater.importBugComments()
     INFO:...:Imported 3 comments for remote bug 1234 on ...
 
 Each of the imported comments has its remote_comment_id field set.
@@ -239,9 +242,7 @@ Each of the imported comments has its remote_comment_id field set.
 Running pushBugComments() on the external bugtracker won't result in the
 comments being pushed because they have already been imported.
 
-    >>> transaction.commit()
-
-    >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
+    >>> bugwatch_updater.pushBugComments()
 
 If the external bugtracker's addRemoteComment() method returns an
 invalid remote comment ID, an error will be raised:
@@ -264,8 +265,9 @@ invalid remote comment ID, an error will be raised:
     >>> broken_external_bugtracker = ErroringExternalBugTracker(
     ...     'http://example.com')
 
-    >>> bugwatch_updater.pushBugComments(
-    ...     broken_external_bugtracker, bug_watch)
+    >>> bugwatch_updater.bug_watch = bug_watch
+    >>> bugwatch_updater.external_bugtracker = broken_external_bugtracker
+    >>> bugwatch_updater.pushBugComments()
     Traceback (most recent call last):
       ...
     AssertionError: A remote_comment_id must be specified.
@@ -310,8 +312,7 @@ will take a Launchpad comment and format it ready for uploading to the
 remote server. This allows us to include salient information, such as
 the comment author, with the pushed comment.
 
-    >>> formatted_message = bugwatch_updater._formatRemoteComment(
-    ...     external_bugtracker, bug_watch, message)
+    >>> formatted_message = bugwatch_updater._formatRemoteComment(message)
     >>> print formatted_message
     Sample Person added the following comment to Launchpad bug #...:
     <BLANKLINE>
@@ -331,8 +332,8 @@ external bugtracker's comment_template attribute.
     ...     dirname(__file__), '../tests/testfiles/test_comment_template.txt')
     >>> external_bugtracker.comment_template = comment_template
 
-    >>> formatted_message = bugwatch_updater._formatRemoteComment(
-    ...     external_bugtracker, bug_watch, message)
+    >>> bugwatch_updater.external_bugtracker = external_bugtracker
+    >>> formatted_message = bugwatch_updater._formatRemoteComment(message)
     >>> print formatted_message
     Egg and bacon
     Egg, sausage and bacon

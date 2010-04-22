@@ -6,7 +6,9 @@
 from __future__ import with_statement
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'BugWatchUpdater',
+    ]
 
 import sys
 
@@ -85,13 +87,7 @@ class BugWatchUpdater(WorkingBase):
 
     @commit_before
     def importBugComments(self):
-        """Import all the comments from a remote bug.
-
-        :param self.external_bugtracker: An external bugtracker which
-            implements `ISupportsCommentImport`.
-        :param self.bug_watch: The bug watch for which the comments should be
-            imported.
-        """
+        """Import all the comments from the remote bug."""
         # Avoid circularity.
         from lp.bugs.scripts.checkwatches.core import (
             get_remote_system_oops_properties)
@@ -150,7 +146,7 @@ class BugWatchUpdater(WorkingBase):
 
             if len(imported_comments) > 0:
                 self.bug_watch_updater = (
-                    getUtility(ILaunchpadCelebrities).self.bug_watch_updater)
+                    getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 if is_initial_import:
                     notification_text = get_email_template(
                         'bugwatch-initial-comment-import.txt') % dict(
@@ -223,8 +219,7 @@ class BugWatchUpdater(WorkingBase):
                 message_rfc822msgid = message.rfc822msgid
                 # Format the comment so that it includes information
                 # about the Launchpad bug.
-                formatted_comment = self._formatRemoteComment(
-                    self.external_bugtracker, self.bug_watch, message)
+                formatted_comment = self._formatRemoteComment(message)
 
             remote_comment_id = (
                 self.external_bugtracker.addRemoteComment(
