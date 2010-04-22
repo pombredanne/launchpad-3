@@ -22,8 +22,11 @@ __all__ = [
 
 import os
 import sys
+import threading
 
 from bzrlib import config, trace
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
     NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
@@ -266,3 +269,63 @@ def identical_formats(branch_one, branch_two):
     """
     return (get_vfs_format_classes(branch_one) ==
             get_vfs_format_classes(branch_two))
+
+
+safe_open_data = threading.local()
+
+
+def _install_hook():
+    """XXX."""
+    BzrDir.hooks.install_named_hook(
+        'pre_open', _pre_open_hook, 'safe open')
+
+
+def _pre_open_hook(transport):
+    """XXX."""
+    safe_opener = getattr(safe_open_data, 'safe_opener', None)
+    if safe_opener is None:
+        return
+    abspath = transport.base
+    safe_opener.checkURL(abspath)
+
+
+_install_hook()
+
+
+class SafeOpenFailed(Exception):
+    """XXX."""
+
+
+class UnsafeUrlSeen(SafeOpenFailed):
+    """XXX."""
+
+
+class BranchLoopDetected(SafeOpenFailed):
+    """XXX."""
+
+
+class _SafeOpener:
+    """XXX."""
+
+    def __init__(self, allowed_scheme):
+        self.seen_urls = set()
+        self.allowed_scheme = allowed_scheme
+
+    def checkURL(self, url):
+        if url in self.seen_urls:
+            raise BranchLoopDetected()
+        if URI(url).scheme != self.allowed_scheme:
+            raise UnsafeUrlSeen(
+                "Attempt to open %r which is not a %s URL" % (
+                    url, self.allowed_scheme))
+
+
+def safe_open(allowed_scheme, url):
+    """XXX."""
+    if hasattr(safe_open_data, 'safe_opener'):
+        raise AssertionError("safe_open called recursively")
+    safe_open_data.safe_opener = _SafeOpener(allowed_scheme)
+    try:
+        return Branch.open(url)
+    finally:
+        del safe_open_data.safe_opener

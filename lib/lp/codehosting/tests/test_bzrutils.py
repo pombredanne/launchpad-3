@@ -8,20 +8,24 @@ __metaclass__ = type
 import gc
 import sys
 
+from lazr.uri import URI
+
 from bzrlib import errors, trace
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import format_registry
+from bzrlib.branch import Branch, BranchReferenceFormat
+from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.remote import RemoteBranch
 from bzrlib.smart import server
 from bzrlib.tests import (
     multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
     TestNotApplicable)
 from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
+from bzrlib.transport import chroot
 
 from lp.codehosting.bzrutils import (
-    add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
+    BranchLoopDetected, DenyingServer, UnsafeUrlSeen, _install_hook,
+    add_exception_logging_hook, get_branch_stacked_on_url,
     get_vfs_format_classes, is_branch_stackable,
-    remove_exception_logging_hook)
+    remove_exception_logging_hook, safe_open)
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -202,6 +206,80 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
             get_vfs_format_classes(remote_branch))
 
 
+class TestSafeOpen(TestCaseWithTransport):
+    """XXX."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        _install_hook()
+
+    def get_chrooted_scheme(self, relpath):
+        transport = self.get_transport(relpath)
+        chroot_server = chroot.ChrootServer(transport)
+        chroot_server.start_server()
+        self.addCleanup(chroot_server.stop_server)
+        def get_url(relpath):
+            return chroot_server.get_url() + relpath
+        return URI(chroot_server.get_url()).scheme, get_url
+
+    def test_simple(self):
+        # XXX
+        pass
+
+    def test_stacked_within_scheme(self):
+        # XXX
+        self.get_transport().mkdir('inside')
+        self.make_branch('inside/stacked')
+        self.make_branch('inside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            get_chrooted_url('stacked-on'))
+        safe_open(scheme, get_chrooted_url('stacked'))
+
+    def test_reference_within_scheme(self):
+        # XXX
+        self.get_transport().mkdir('inside')
+        self.make_branch('inside/referenced')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        bzrdir = BzrDir.create(get_chrooted_url('reference'))
+        inside_branch = Branch.open(get_chrooted_url('referenced'))
+        BranchReferenceFormat().initialize(
+            bzrdir, target_branch=inside_branch)
+        safe_open(scheme, get_chrooted_url('reference'))
+
+    def test_stacked_outside_scheme(self):
+        # XXX
+        self.get_transport().mkdir('inside')
+        self.get_transport().mkdir('outside')
+        self.make_branch('inside/stacked')
+        self.make_branch('outside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            self.get_url('outside/stacked-on'))
+        self.assertRaises(
+            UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('stacked'))
+
+    def test_reference_outside_scheme(self):
+        # XXX
+        self.get_transport().mkdir('inside')
+        self.get_transport().mkdir('outside')
+        outside_branch = self.make_branch('outside/referenced')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        bzrdir = BzrDir.create(get_chrooted_url('reference'))
+        BranchReferenceFormat().initialize(
+            bzrdir, target_branch=outside_branch)
+        self.assertRaises(
+            UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('reference'))
+
+    def test_recursive_stacking(self):
+        # XXX
+        pass
+
+    def test_recursive_reference(self):
+        # XXX
+        pass
+
+
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
@@ -216,6 +294,7 @@ def load_tests(basic_tests, module, loader):
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
     result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
+    result.addTests(loader.loadTestsFromTestCase(TestSafeOpen))
     return result
 
 
