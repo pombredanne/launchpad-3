@@ -466,11 +466,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         return 'lp-mirrored:///%s' % self.unique_name
 
     def getBzrBranch(self):
-        """Return the BzrBranch for this database Branch.
-
-        This provides the mirrored copy of the branch.
-        """
-        return BzrBranch.open(self.warehouse_url)
+        """See `IBranch`."""
+        # XXX this needs to be super paranoid about what to open!
+        return BzrBranch.open('lp-internal:///' + self.unique_name)
 
     @property
     def displayname(self):

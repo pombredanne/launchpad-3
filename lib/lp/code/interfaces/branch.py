@@ -1076,6 +1076,13 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getBzrBranch(self):
+        """Return the BzrBranch for this database Branch.
+
+        You can only call this if a server returned by `get_ro_server` or
+        `get_rw_server` is running.
+        """
+
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
