@@ -145,8 +145,8 @@ edit page.
 Priority range
 --------------
 
-Priority value must be between 0 and 100000. When entering a priority that is
-not in this range the form validation will inform users about what values
+The priority value must be between 0 and 100000. When entering a priority that
+is not in this range the form validation will inform users about what values
 are accepted for the priority field.
 
   >>> admin_browser.open(
@@ -157,9 +157,9 @@ are accepted for the priority field.
   >>> print browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
 
-  >>> print_errors(admin_browser.contents)
+  >>> print_feedback_messages(admin_browser.contents)
   There is 1 error.
-  Priority value must be between ...
+  The priority value must be between ...
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
@@ -169,9 +169,9 @@ are accepted for the priority field.
   >>> print browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
 
-  >>> print_errors(admin_browser.contents)
+  >>> print_feedback_messages(admin_browser.contents)
   There is 1 error.
-  Priority value must be between ...
+  The priority value must be between ...
 
 Change and cancel actions
 -------------------------

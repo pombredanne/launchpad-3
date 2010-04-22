@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=F0401
 
 """Browser code for PO templates."""
 
@@ -547,8 +548,9 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
         if (priority < self.PRIORITY_MIN_VALUE or
             priority > self.PRIORITY_MAX_VALUE):
-            self.addError(
-                "Priority value must be between %s and %s" % (
+            self.setFieldError(
+                'priority',
+                'The priority value must be between %s and %s.' % (
                 self.PRIORITY_MIN_VALUE, self.PRIORITY_MAX_VALUE))
             return
 
