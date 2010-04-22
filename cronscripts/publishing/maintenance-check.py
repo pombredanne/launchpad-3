@@ -62,7 +62,6 @@ SUPPORT_TIMEFRAME_LTS = [
 # distro names and if they get LTS support (order is important)
 DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
                                  ("kubuntu",  True),
-                                 ("edubuntu", False),
                                  ("netbook",  False),
                                ]
 
