@@ -2266,7 +2266,7 @@ class Person(
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
         spnset = getUtility(ISourcePackageNameSet)
-        sourcepackagename = spnset.getOrCreateByName(name)
+        sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
         return SourcePackageRecipe.new(
             self, self, distroseries, sourcepackagename, name, builder_recipe,
             description)

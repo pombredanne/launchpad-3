@@ -18,7 +18,9 @@ __all__ = [
     ]
 
 
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.restful.declarations import (
+        export_as_webservice_entry, export_write_operation, exported,
+        operation_parameters)
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
@@ -79,11 +81,12 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
 
-    registrant = Reference(
-        IPerson, title=_("The person who created this recipe"), readonly=True)
-    owner = Reference(
+    registrant = exported(Reference(
+        IPerson, title=_("The person who created this recipe"),
+        readonly=True))
+    owner = exported(Reference(
         IPerson, title=_("The person or team who can edit this recipe"),
-        readonly=False)
+        readonly=False))
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
@@ -95,10 +98,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
                                     "recipe will build a source package"),
         readonly=True)
 
-    name = TextLine(
+    _sourcepackagename_text = exported(
+        TextLine(), exported_as='sourcepackagename')
+
+    name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
-            description=_("The name of this recipe."))
+            description=_("The name of this recipe.")))
 
     description = Text(
         title=_('Description'), required=True,
@@ -110,6 +116,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     base_branch = Reference(
         IBranch, title=_("The base branch used by this recipe."),
         required=True, readonly=True)
+
+    @operation_parameters(recipe_text=Text())
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
+
+    recipe_text = exported(Text())
 
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.

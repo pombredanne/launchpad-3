@@ -125,16 +125,25 @@ class TestWebservice(TestCaseWithFactory):
         name = person.name
         distroseries = self.factory.makeDistroSeries()
         branch = self.factory.makeBranch()
+        recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        branch2 = self.factory.makeBranch()
+        recipe_text2 = self.factory.MINIMAL_RECIPE_TEXT % branch2.bzr_identity
         launchpad = launchpadlib_for('test', person,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
         distroseries = self.api_obj(launchpad, distroseries)
         user = launchpad.people[name]
-        recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
-        user.createRecipe(name='toaster-1', sourcepackagename='toaster',
-                          description='a recipe',
-                          distroseries=distroseries,
-                          recipe_text=recipe_text)
+        recipe = user.createRecipe(
+            name='toaster-1', sourcepackagename='toaster',
+            description='a recipe', distroseries=distroseries,
+            recipe_text=recipe_text)
+        self.assertEqual(user.name, recipe.owner.name)
+        self.assertEqual(user.name, recipe.registrant.name)
+        self.assertEqual('toaster-1', recipe.name)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+        recipe.setRecipeText(recipe_text=recipe_text2)
+        self.assertEqual(recipe_text2, recipe.recipe_text)
+        self.assertEqual('toaster', recipe.sourcepackagename)
 
 
 def test_suite():
