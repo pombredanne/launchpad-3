@@ -833,6 +833,56 @@ class CheckwatchesMaster(WorkingBase):
                         bug_watch.addActivity(
                             result=error_type, oops_id=oops_id)
 
+    def importBug(self, external_bugtracker, bugtracker, bug_target,
+                  remote_bug):
+        """Import a remote bug into Launchpad.
+
+        :param external_bugtracker: An ISupportsBugImport, which talks
+            to the external bug tracker.
+        :param bugtracker: An IBugTracker, to which the created bug
+            watch will be linked.
+        :param bug_target: An IBugTarget, to which the created bug will
+            be linked.
+        :param remote_bug: The remote bug id as a string.
+
+        :return: The created Launchpad bug.
+        """
+        assert IDistribution.providedBy(bug_target), (
+            'Only imports of bugs for a distribution is implemented.')
+        reporter_name, reporter_email = (
+            external_bugtracker.getBugReporter(remote_bug))
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing bug #%s from %s' % (
+                remote_bug, external_bugtracker.baseurl))
+        package_name = external_bugtracker.getBugTargetName(remote_bug)
+        package = bug_target.getSourcePackage(package_name)
+        if package is not None:
+            bug_target = package
+        else:
+            self.warning(
+                'Unknown %s package (#%s at %s): %s' % (
+                    bug_target.name, remote_bug,
+                    external_bugtracker.baseurl, package_name))
+        summary, description = (
+            external_bugtracker.getBugSummaryAndDescription(remote_bug))
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, summary, description, subscribe_owner=False,
+                filed_by=getUtility(ILaunchpadCelebrities).bug_watch_updater))
+        [added_task] = bug.bugtasks
+        self.bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=bugtracker, remotebug=remote_bug)
+
+        added_task.bugwatch = self.bug_watch
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+
+        return bug
+
 
 class BaseScheduler:
     """Run jobs according to a policy."""
