@@ -148,6 +148,9 @@ a.help {
   border-bottom: 1px dotted #03a;
   cursor: help;
 }
+a.help img {
+  border-bottom: 0px;
+}
 a.help:hover, a.help:hover {
   text-decoration: none;
 }
