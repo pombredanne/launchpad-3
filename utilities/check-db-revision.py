@@ -1,4 +1,4 @@
-#!/usr/bin/python2.6 -S
+#!/usr/bin/python2.5 -S
 # Copyright 2010 Canonical Ltd.  All rights reserved.
 
 """
