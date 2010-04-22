@@ -1,4 +1,5 @@
-= Bug Watches =
+Bug Watches
+===========
 
 Malone is a bug tracker that understands the structure of the Open
 Source world. It's there for people who want to use it, and take
@@ -13,7 +14,8 @@ of the status of a bug that lives outside Malone for the benefit of
 users and maintainers that are using Malone.
 
 
-== Retrieving Bug Watches ==
+Retrieving Bug Watches
+----------------------
 
 Bug watches are accessed via a utility that provides IBugWatchSet.
 
@@ -118,7 +120,8 @@ If no matching bug watch can be found, None is returned.
     True
 
 
-== Creating Bug Watches ==
+Creating Bug Watches
+--------------------
 
 To create a bugwatch, use IBugWatchSet.createBugWatch:
 
@@ -135,7 +138,8 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     True
 
 
-== Creating SF.net Bug Watches ==
+Creating SF.net Bug Watches
+---------------------------
 
 SourceForge.net bug watch URLs are generated using the
 "/support/tracker.php" script, which will redirect to the URL with the
@@ -150,7 +154,8 @@ group_id and aid arguments filled in:
     >>> bugwatch.url
     u'http://sourceforge.net/support/tracker.php?aid=1337833'
 
-== Extracting Bug Watches From Text ==
+Extracting Bug Watches From Text
+--------------------------------
 
 When you have a text, for example a bug comment, it can be useful to
 extract all the possible bug watches from that text. To make this
@@ -199,7 +204,7 @@ doesn't handle the case where the same bug tracker is available through
 different URLs, for example where the host name is different (e.g.,
 bugs.gnome.org vs. bugzilla.gnome.org).
 
-    >>> old_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> old_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).queryByBaseURL(
     ...     'http://bugzilla.gnome.org/bugs')
     >>> gnome_bugzilla.name
@@ -209,7 +214,7 @@ bugs.gnome.org vs. bugzilla.gnome.org).
     ...     text, bug_one, sample_person)
     >>> gnome_bugwatch.bugtracker.name
     u'gnome-bugzilla'
-    >>> new_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> new_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> old_bugtracker_count == new_bugtracker_count
     True
 
@@ -226,7 +231,8 @@ the text passed to fromText().
     []
 
 
-== Syncing the Status with Linked Bugtasks ==
+Syncing the Status with Linked Bugtasks
+---------------------------------------
 
 If the bug watch is linked to a bugtask, the bug watch can sync its
 status with it. Before we do this we need to login as the Bug Watch
@@ -328,7 +334,8 @@ Finally, let's make sure that bug notifications were added:
            Status: Confirmed => New
 
 
-== Syncing Importance With Linked BugTasks ==
+Syncing Importance With Linked BugTasks
+---------------------------------------
 
 Similarly, the bug watch updater can modify the bug watch's importance.
 Passing it a new Malone importance will fire off an event, which our
@@ -398,7 +405,8 @@ The Bug Watch Updater can transition a bug to any status or importance:
     ...     debian_bugwatch.updateImportance(u'nothing', importance)
 
 
-== BugWatches against BugTasks with conjoined masters ==
+BugWatches against BugTasks with conjoined masters
+--------------------------------------------------
 
 A conjoined bugtask involves a master and slave in in a conjoined
 relationship. The slave is a generic product or distribution task; the
@@ -454,9 +462,9 @@ slaves must be updated through their conjoined master.
     >>> import transaction
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestRoundup)
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.launchpad.scripts.logger import FakeLogger
-    >>> bug_watch_updater = BugWatchUpdater(transaction, FakeLogger())
+    >>> bug_watch_updater = CheckwatchesMaster(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://some.where
@@ -465,7 +473,8 @@ slaves must be updated through their conjoined master.
     'New'
 
 
-== Getting linked bug watches for a product ==
+Getting linked bug watches for a product
+----------------------------------------
 
 Product has a method, getLinkedBugWatches, for getting all the bug
 watches that are linked to a bug task targeted to the Product.

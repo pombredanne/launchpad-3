@@ -33,8 +33,8 @@ from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
-from lp.translations.utilities.pluralforms import make_friendly_plural_forms
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.translations.utilities.pluralforms import (
+    BadPluralExpression, make_friendly_plural_forms)
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -214,8 +214,32 @@ class LanguageView(TranslationsMixin, LaunchpadView):
                 })
         return translation_teams
 
-    def getTopContributors(self):
-        return self.context.translators[:20]
+    @property
+    def top_contributors(self):
+        """
+        Get the top 20 contributors for a language.
+
+        If an account has been merged, the account into which it was
+        merged will be returned.
+        """
+        translators = []
+        for translator in reversed(list(self.context.translators)):
+            # Get only the top 20 contributors
+            if (len(translators) >= 20):
+                break
+
+            # For merged account add the target account
+            if translator.merged != None:
+                translator_target = translator.merged
+            else:
+                translator_target = translator
+
+            # Add translator only if it was not previouly added as a
+            # merged account
+            if translator_target not in translators:
+                translators.append(translator_target)
+
+        return translators
 
     @property
     def friendly_plural_forms(self):
@@ -244,6 +268,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
             rosetta,
             view_name='+addquestion',
             rootsite='answers')
+
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
@@ -278,14 +303,26 @@ class LanguageAdminView(LaunchpadEditFormView):
     def admin_action(self, action, data):
         self.updateContextFromData(data)
 
-    def validate(self, data):
-        new_code = data.get('code')
-        if new_code == self.context.code:
-            # The code didn't change.
-            return
-
+    def _validateCode(self, new_code):
+        """Validate a change in language code."""
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
 
+    def _validatePluralData(self, pluralforms, pluralexpression):
+        """Validate plural expression and number of plural forms."""
+        try:
+            make_friendly_plural_forms(pluralexpression, pluralforms)
+        except BadPluralExpression, e:
+            self.setFieldError('pluralexpression', str(e))
+
+    def validate(self, data):
+        new_code = data.get('code')
+        if new_code != self.context.code:
+            self._validateCode(new_code)
+
+        pluralexpression = data.get('pluralexpression')
+        pluralforms = data.get('pluralforms')
+        if pluralexpression is not None:
+            self._validatePluralData(pluralforms, pluralexpression)

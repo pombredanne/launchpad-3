@@ -8,6 +8,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+  <include package="grokcore.component" file="meta.zcml" />
+
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include file="links.zcml" />
@@ -20,6 +22,7 @@
 
   <include package="lp.app" />
   <include package="lp.bugs" />
+  <include package="lp.buildmaster" />
   <include package="lp.registry" />
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />

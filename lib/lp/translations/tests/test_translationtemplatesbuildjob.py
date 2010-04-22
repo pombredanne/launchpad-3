@@ -6,6 +6,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -18,14 +19,16 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, ISpecificBuildFarmJobClass)
+    IBuildFarmJob, IBuildFarmJobDerived)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
+from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.codehosting.scanner import events
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationtemplatesbuildjob import (
@@ -51,13 +54,11 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.specific_job = self.jobset.create(self.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
-        # TranslationTemplateBuildJob implements IBuildFarmJob and
-        # IBranchJob.
+        # TranslationTemplateBuildJob implements IBuildFarmJob,
+        # IBuildFarmJobDerived, and IBranchJob.
         verifyObject(IBranchJob, self.specific_job)
+        verifyObject(IBuildFarmJobDerived, self.specific_job)
         verifyObject(IBuildFarmJob, self.specific_job)
-
-        # The class also implements ISpecificBuildFarmJobClass.
-        verifyObject(ISpecificBuildFarmJobClass, TranslationTemplatesBuildJob)
 
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)
@@ -88,7 +89,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.assertNotEqual(self.specific_job.getName(), other_job.getName())
 
     def test_getTitle(self):
-        other_job = self.jobset.create(self.branch)
+        self.jobset.create(self.branch)
         self.assertEqual(
             '%s translation templates build' % self.branch.bzr_identity,
             self.specific_job.getTitle())
@@ -188,7 +189,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # branch, generatesTemplates returns False.
         branch = self._makeTranslationBranch()
         self.assertFalse(self.jobsource.generatesTemplates(branch))
-    
+
     def test_branch_not_used(self):
         # We don't generate templates branches not attached to series.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
@@ -213,6 +214,18 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
         removeSecurityProxy(branch).private = True
         self.assertFalse(self.jobsource.generatesTemplates(branch))
+
+    def test_scheduleTranslationTemplatesBuild_subscribed(self):
+        # If the feature is enabled, a TipChanged event for a branch that
+        # generates templates will schedule a templates build.
+        branch = self._makeTranslationBranch()
+        commit = DirectBranchCommit(branch, to_mirror=True)
+        commit.writeFile('POTFILES.in', 'foo')
+        commit.commit('message')
+        notify(events.TipChanged(branch, None, False))
+        branchjobs = list(TranslationTemplatesBuildJob.iterReady())
+        self.assertEqual(1, len(branchjobs))
+        self.assertEqual(branch, branchjobs[0].branch)
 
     def test_scheduleTranslationTemplatesBuild(self):
         # If the feature is enabled, scheduleTranslationTemplatesBuild

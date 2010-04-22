@@ -281,11 +281,18 @@ context PPA in their systems.
     Adding this PPA to your system
     You can update your system with unsupported packages from this
     untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
-    Not using Ubuntu 9.10 (Karmic)?
+    (Read about installing)
     Technical details about this PPA
     ...
     For questions and bugs with software in this PPA please contact
     Celso Providelo.
+
+There is a link within this section pointing users to the 'help'
+wiki, which contains more documentation about the PPA installation
+procedure.
+
+    >>> print anon_browser.getLink('Read about installing').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 The PPA owner reference is a link to its profile page.
 
@@ -304,7 +311,7 @@ and copy-and-paste the repository URL to their systems.
     >>> print extract_text(tech_details)
     This PPA can be added to your system manually by copying
     the lines below and adding them to your system's software
-    sources. (Read about installing)
+    sources.
     Display sources.list entries for:
       Choose your Ubuntu version
       Breezy Badger Autotest (6.6.6)
@@ -313,13 +320,6 @@ and copy-and-paste the repository URL to their systems.
       YOUR_UBUNTU_VERSION_HERE main
     deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu
       YOUR_UBUNTU_VERSION_HERE main
-
-There is a link within this section pointing users to the 'help'
-wiki, which contains more documentation about the PPA installation
-procedure.
-
-    >>> print anon_browser.getLink('Read about installing').url
-    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
 
 When present PPA 'Build dependencies' and 'Signing key' will also be
 presented within this section. See below.
@@ -410,11 +410,14 @@ A statistics portlet is included on the index page.
 If the ppa has some current activity (building or waiting builds) then this
 is also included in the statistics portlet.
 
-    >>> login('foo.bar@canonical.com')
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> login('foo.bar@canonical.com')
     >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-    >>> builds = getUtility(IBuildSet).getBuildsForArchive(cprov_ppa)
+    >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+    ...     cprov_ppa)
     >>> builds[0].buildstate = BuildStatus.BUILDING
     >>> logout()
 

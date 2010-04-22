@@ -141,7 +141,7 @@ The COPY archive has no packages.
     >>> print_repository_usage(copy_repository_usage)
     binaries_size:   0
     binary_label:    0 binary packages
-    quota:           1073741824
+    quota:           2147483648
     source_label:    0 source packages
     sources_size:    0
     used:            0
@@ -312,7 +312,7 @@ is from most recent.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
-    >>> view.filtered_sources[1].secure_record.datepublished = UTC_NOW
+    >>> view.filtered_sources[1].datepublished = UTC_NOW
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
@@ -333,9 +333,9 @@ others will not.
     >>> import pytz
     >>> thirtyone_days_ago = datetime.now(tz=pytz.UTC) - timedelta(31)
     >>> login('foo.bar@canonical.com')
-    >>> view.filtered_sources[0].secure_record.datecreated = UTC_NOW
-    >>> view.filtered_sources[1].secure_record.datecreated = UTC_NOW
-    >>> view.filtered_sources[2].secure_record.datecreated = thirtyone_days_ago
+    >>> view.filtered_sources[0].datecreated = UTC_NOW
+    >>> view.filtered_sources[1].datecreated = UTC_NOW
+    >>> view.filtered_sources[2].datecreated = thirtyone_days_ago
     >>> login(ANONYMOUS)
 
     >>> view.num_updates_over_last_days()
@@ -355,13 +355,16 @@ are building as well as the number of packages waiting to build.
 
 Let's set some builds appropriately to see the results.
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
     >>> ignore = source.sourcepackagerelease.createBuild(
     ...     distroarchseries=warty_hppa, archive=view.context,
     ...     pocket=source.pocket)
-    >>> builds = getUtility(IBuildSet).getBuildsForArchive(view.context)
+    >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+    ...     view.context)
     >>> for build in builds:
     ...     print build.title
     hppa build of cdrkit 1.0 in ubuntu warty RELEASE
@@ -945,9 +948,7 @@ with a private PPA attached to it.
     >>> login('foo.bar@canonical.com')
     >>> a_team = factory.makeTeam(mark, name="pirulito-team")
     >>> team_ppa = factory.makeArchive(
-    ...     distribution=ubuntu, name='ppa', owner=a_team)
-    >>> team_ppa.buildd_secret = 'boing'
-    >>> team_ppa.private = True
+    ...     distribution=ubuntu, name='ppa', owner=a_team, private=True)
     >>> transaction.commit()
     >>> login('celso.providelo@canonical.com')
 
@@ -987,38 +988,34 @@ buildd_secret would leak through the public buildlogs.
     ...     print error
     Public PPAs cannot depend on private ones.
 
-Finally, we make Celso's PPA private. That's enough for allowing Celso
-to set PPA for Pirulito Team as dependency of his PPA.
+Finally, we try with a private PPA of Celso's. That's enough for
+allowing Celso to set PPA for Pirulito Team as dependency of his PPA.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True, name='p3a')
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+edit-dependencies",
+    ...     cprov_private_ppa, name="+edit-dependencies",
     ...     form=add_private_form)
 
     >>> len(view.errors)
     0
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+edit-dependencies")
+    ...     cprov_private_ppa, name="+edit-dependencies")
 
     >>> dependencies = view.widgets.get('selected_dependencies').vocabulary
     >>> for dependency in dependencies:
     ...     print dependency.value.displayname
     PPA for Pirulito Team
 
-Remove Celso's membership on the new team and made his PPA public
-again to not affect subsequent tests.
+Remove Celso's membership on the new team and disable his PPA so we don't
+affect the following tests.
 
     >>> cprov.leave(a_team)
-
-    >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.private = False
-    >>> cprov.archive.buildd_secret = ''
-    >>> login('celso.providelo@canonical.com')
+    >>> cprov_private_ppa.disable()
 
 
 == ArchivePackageCopyingView ==
@@ -1304,12 +1301,10 @@ Users are allowed to copy private sources into private PPAs, however
 it happens via 'delayed-copies' not the usual direct copying method.
 See more information in scripts/packagecopier.py
 
-First we will make Celso's PPA private.
+First we will enable Celso's private PPA.
 
     >>> login('foo.bar@canonical.com')
-
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa.enable()
 
 Then we will create a testing publication, that will be restricted.
 
@@ -1320,7 +1315,7 @@ Then we will create a testing publication, that will be restricted.
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> private_source = test_publisher.createSource(
-    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
+    ...     cprov_private_ppa, 'foocomm', '1.0-1', new_version='2.0-1')
     >>> transaction.commit()
 
 Now, as Celso we will try to copy the just created 'private' source to
@@ -1334,7 +1329,7 @@ the public Ubuntu-team PPA, which is empty.
 
     >>> login('celso.providelo@canonical.com')
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+copy-packages",
+    ...     cprov_private_ppa, name="+copy-packages",
     ...     form={
     ...         'field.selected_sources': [str(private_source.id)],
     ...         'field.destination_archive': 'ubuntu-team/ppa',

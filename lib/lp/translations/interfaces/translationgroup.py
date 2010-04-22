@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -148,9 +148,6 @@ class ITranslationGroup(IHasOwner):
     def query_translator(language):
         """Retrieve a translator, or None, based on a Language"""
 
-    def __getitem__(languagecode):
-        """Retrieve the translator for the given language in this group."""
-
     # adding and removing translators
     def remove_translator(language):
         """Remove the translator for this language from the group."""
@@ -164,6 +161,19 @@ class ITranslationGroup(IHasOwner):
 
     number_of_remaining_projects = Attribute(
         "Count of remaining projects not listed in the `top_projects`.")
+
+    def __getitem__(language_code):
+        """Retrieve the translator for the given language in this group.
+
+        This is used for navigation through the group.
+        """
+
+    def fetchTranslatorData():
+        """Fetch translators and related data.
+
+        :return: A tuple (`Translator`, `Language`, `Person`), ordered
+            by language name in English.
+        """
 
 
 class ITranslationGroupSet(Interface):

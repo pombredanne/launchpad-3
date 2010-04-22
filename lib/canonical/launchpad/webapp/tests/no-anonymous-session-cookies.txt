@@ -25,7 +25,7 @@ Now let's log in and show that the session cookie is set.
     <html>...<body onload="document.forms[0].submit();"...
     >>> browser.getControl('Continue').click()
 
-    >>> from canonical.launchpad.webapp.tests.test_new_login import (
+    >>> from canonical.launchpad.webapp.tests.test_login import (
     ...     fill_login_form_and_submit)
     >>> fill_login_form_and_submit(browser, 'foo.bar@canonical.com', 'test')
     >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))

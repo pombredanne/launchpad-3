@@ -21,9 +21,10 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
+from storm.expr import (
+    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -62,8 +63,8 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, CannotDeleteBranch,
+    BranchCannotBePrivate, BranchCannotBePublic,
+    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -73,7 +74,6 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
@@ -83,7 +83,7 @@ from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 
-class Branch(SQLBase):
+class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch, IBranchNavigationMenu)
@@ -315,7 +315,7 @@ class Branch(SQLBase):
     def addLandingTarget(self, registrant, target_branch,
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
-                         initial_comment=None, review_requests=None,
+                         description=None, review_requests=None,
                          review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
@@ -369,11 +369,8 @@ class Branch(SQLBase):
             date_created=date_created,
             date_review_requested=date_review_requested,
             queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message)
-
-        if initial_comment is not None:
-            bmp.createComment(
-                registrant, None, initial_comment, _notify_listeners=False)
+            commit_message=commit_message,
+            description=description)
 
         for reviewer, review_type in review_requests:
             bmp.nominateReviewer(
@@ -397,14 +394,15 @@ class Branch(SQLBase):
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
             registrant, target_branch, prerequisite_branch,
-            needs_review=needs_review, initial_comment=initial_comment,
+            needs_review=needs_review, description=initial_comment,
             commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets]
+                for target in self.active_landing_targets
+                if target.target_branch.last_scanned_id is not None]
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
@@ -465,21 +463,6 @@ class Branch(SQLBase):
     @property
     def browse_source_url(self):
         return self.codebrowse_url('files')
-
-    @property
-    def bzr_identity(self):
-        """See `IBranch`."""
-        # Should probably put this into the branch target.
-        if self.product is not None:
-            series_branch = self.product.development_focus.branch
-            is_dev_focus = (series_branch == self)
-        elif self.distroseries is not None:
-            distro_package = self.sourcepackage.distribution_sourcepackage
-            linked_branch = ICanHasLinkedBranch(distro_package)
-            is_dev_focus = (linked_branch.branch == self)
-        else:
-            is_dev_focus = False
-        return bazaar_identity(self, is_dev_focus)
 
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
@@ -609,7 +592,7 @@ class Branch(SQLBase):
 
         for bugbranch in self.bug_branches:
             deletion_operations.append(
-                DeletionCallable(bugbranch,
+                DeletionCallable(bugbranch.bug.default_bugtask,
                 _('This bug is linked to this branch.'),
                 bugbranch.destroySelf))
         for spec_link in self.spec_links:
@@ -626,7 +609,9 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        # XXX MichaelHudson 2010-01-13: Handle sourcepackagerecipes here.
+        deletion_operations.extend(
+            DeletionCallable.forSourcePackageRecipe(recipe)
+            for recipe in self.getRecipes())
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1067,12 +1052,18 @@ class Branch(SQLBase):
                     user, checked_branches)
         return can_access
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData)
+        return SourcePackageRecipeData.findRecipes(self)
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
     def __init__(self, affected_object, rationale):
-        self.affected_object = affected_object
+        self.affected_object = ProxyFactory(affected_object)
         self.rationale = rationale
     def __call__(self):
         """Perform the deletion operation."""
@@ -1089,6 +1080,11 @@ class DeletionCallable(DeletionOperation):
     def __call__(self):
         self.func()
 
+    @classmethod
+    def forSourcePackageRecipe(cls, recipe):
+        return cls(
+            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
+
 
 class ClearDependentBranch(DeletionOperation):
     """Delete operation that clears a merge proposal's prerequisite branch."""
@@ -1100,7 +1096,7 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1114,7 +1110,7 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):

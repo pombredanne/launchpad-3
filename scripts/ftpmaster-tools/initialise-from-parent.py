@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -25,11 +25,11 @@ from contrib.glock import GlobalLock
 from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
-from canonical.lp import initZopeless
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from canonical.launchpad.interfaces import IDistributionSet, NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
+from canonical.lp import initZopeless
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
 def main():
@@ -107,8 +107,8 @@ def check_builds(distroseries):
     via initialiseFromParent method.
     """
     # Avoid circular import.
+    from lp.buildmaster.interfaces.buildbase import BuildStatus
     from lp.registry.interfaces.pocket import PackagePublishingPocket
-    from lp.soyuz.interfaces.build import BuildStatus
 
     parentseries = distroseries.parent_series
 
@@ -117,7 +117,7 @@ def check_builds(distroseries):
     pending_builds = parentseries.getBuildRecords(
         BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
-    assert (pending_builds.count() == 0,
+    assert pending_builds.count() == 0, (
             'Parent must not have PENDING builds')
 
 def check_queue(distroseries):
@@ -143,11 +143,11 @@ def check_queue(distroseries):
         PackageUploadStatus.UNAPPROVED,
         pocket=PackagePublishingPocket.RELEASE)
 
-    assert (new_items.count() == 0,
+    assert new_items.count() == 0, (
             'Parent NEW queue must be empty')
-    assert (accepted_items.count() == 0,
+    assert accepted_items.count() == 0, (
             'Parent ACCEPTED queue must be empty')
-    assert (unapproved_items.count() == 0,
+    assert unapproved_items.count() == 0, (
             'Parent UNAPPROVED queue must be empty')
 
 def copy_architectures(distroseries):

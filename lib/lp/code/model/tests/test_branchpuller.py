@@ -169,12 +169,22 @@ class AcquireBranchToPullTests:
     and `startMirroring` as appropriate.
     """
 
-    def assertNoBranchIsAquired(self):
-        """Assert that there is no branch to pull."""
+    def assertNoBranchIsAquired(self, *branch_types):
+        """Assert that there is no branch to pull.
+
+        :param branch_types: A list of branch types to pass to
+            acquireBranchToPull.  Passing none means consider all types of
+            branch.
+        """
         raise NotImplementedError(self.assertNoBranchIsAquired)
 
-    def assertBranchIsAquired(self, branch):
-        """Assert that ``branch`` is the next branch to be pulled."""
+    def assertBranchIsAquired(self, branch, *branch_types):
+        """Assert that ``branch`` is the next branch to be pulled.
+
+        :param branch_types: A list of branch types to pass to
+            acquireBranchToPull.  Passing none means consider all types of
+            branch.
+        """
         raise NotImplementedError(self.assertBranchIsAquired)
 
     def startMirroring(self, branch):
@@ -201,7 +211,6 @@ class AcquireBranchToPullTests:
         branch.requestMirror()
         removeSecurityProxy(branch).branch_type = BranchType.REMOTE
         self.assertNoBranchIsAquired()
-
 
     def test_private(self):
         # If there is a private branch that needs mirroring,
@@ -232,6 +241,33 @@ class AcquireBranchToPullTests:
         naked_second_branch.next_mirror_time -= timedelta(seconds=50)
         self.assertBranchIsAquired(naked_first_branch)
 
+    def test_type_filter_hosted_returns_hosted(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        self.assertBranchIsAquired(branch, BranchType.HOSTED)
+
+    def test_type_filter_hosted_does_not_return_mirrored(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
+        branch.requestMirror()
+        self.assertNoBranchIsAquired(BranchType.HOSTED)
+
+    def test_type_filter_mirrored_does_not_return_hosted(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        self.assertNoBranchIsAquired(BranchType.MIRRORED)
+
+    def test_type_filter_hosted_imported_returns_hosted(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
+        branch.requestMirror()
+        self.assertBranchIsAquired(
+            branch, BranchType.HOSTED, BranchType.IMPORTED)
+
+    def test_type_filter_hosted_imported_returns_imported(self):
+        branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
+        branch.requestMirror()
+        self.assertBranchIsAquired(
+            branch, BranchType.HOSTED, BranchType.IMPORTED)
+
 
 class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
                                       AcquireBranchToPullTests):
@@ -239,14 +275,16 @@ class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
 
     layer = DatabaseFunctionalLayer
 
-    def assertNoBranchIsAquired(self):
+    def assertNoBranchIsAquired(self, *branch_types):
         """See `AcquireBranchToPullTests`."""
-        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull(
+            *branch_types)
         self.assertEqual(None, acquired_branch)
 
-    def assertBranchIsAquired(self, branch):
+    def assertBranchIsAquired(self, branch, *branch_types):
         """See `AcquireBranchToPullTests`."""
-        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull()
+        acquired_branch = getUtility(IBranchPuller).acquireBranchToPull(
+            *branch_types)
         login_person(removeSecurityProxy(branch).owner)
         self.assertEqual(branch, acquired_branch)
         self.assertIsNot(None, acquired_branch.last_mirror_attempt)

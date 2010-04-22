@@ -9,13 +9,12 @@ __all__ = [
     'queue_tip_changed_email_jobs',
     ]
 
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 
 from canonical.config import config
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource, IRevisionMailJobSource)
-from lp.codehosting.scanner import events
 
 
 def subscribers_want_notification(db_branch):
@@ -26,7 +25,6 @@ def subscribers_want_notification(db_branch):
     return subscriptions.count() > 0
 
 
-@adapter(events.RevisionsRemoved)
 def send_removed_revision_emails(revisions_removed):
     """Notify subscribers of removed revisions.
 
@@ -52,7 +50,6 @@ def send_removed_revision_emails(revisions_removed):
         body=contents, perform_diff=False, subject=subject)
 
 
-@adapter(events.TipChanged)
 def queue_tip_changed_email_jobs(tip_changed):
     if not subscribers_want_notification(tip_changed.db_branch):
         return

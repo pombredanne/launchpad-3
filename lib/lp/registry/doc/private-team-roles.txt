@@ -230,6 +230,7 @@ Private teams can be subscribed to private PPAs.
     >>> subscription = private_archive.newSubscription(
     ...     subscriber=another_priv_team,
     ...     registrant=team_owner)
+    >>> transaction.commit()
 
 Private Membership Teams cannot subscribe to private PPAs.
 
@@ -240,7 +241,6 @@ Private Membership Teams cannot subscribe to private PPAs.
     PrivatePersonLinkageError: Cannot link person
     (name=private-membership-team, visibility=PRIVATE_MEMBERSHIP) to
     <...ArchiveSubscriber object at...
-    >>> import transaction
     >>> transaction.abort()
 
 
@@ -280,7 +280,7 @@ Private teams can have structural subscriptions to distros.
     >>> sub = ubuntu.addSubscription(
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
-    <Distribution at ...>
+    <Distribution 'Ubuntu' (ubuntu)>
     >>> sub.bug_notification_level
     <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 

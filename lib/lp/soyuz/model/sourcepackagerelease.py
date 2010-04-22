@@ -16,9 +16,10 @@ import pytz
 from StringIO import StringIO
 import re
 
-from storm.store import Store
-from storm.expr import Join
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+from storm.expr import Join
+from storm.locals import Int, Reference
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -33,27 +34,26 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import (
+    SourcePackageType, SourcePackageUrgency)
+from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
 from lp.soyuz.scripts.queue import QueueActionError
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.sourcepackage import (
-    SourcePackageType, SourcePackageUrgency)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -100,6 +100,7 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
+    changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
@@ -112,6 +113,10 @@ class SourcePackageRelease(SQLBase):
         dbName='upload_distroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
+
+    source_package_recipe_build_id = Int(name='sourcepackage_recipe_build')
+    source_package_recipe_build = Reference(
+        source_package_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
@@ -139,7 +144,7 @@ class SourcePackageRelease(SQLBase):
         # when copy-package works for copying packages across archives,
         # a build may well have a different archive to the corresponding
         # sourcepackagerelease.
-        return Build.select("""
+        return BinaryPackageBuild.select("""
             sourcepackagerelease = %s AND
             archive.id = build.archive AND
             archive.purpose IN %s
@@ -322,7 +327,7 @@ class SourcePackageRelease(SQLBase):
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
-        return Build(distroarchseries=distroarchseries,
+        return BinaryPackageBuild(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
                      processor=processor,
                      buildstate=status,
@@ -351,7 +356,7 @@ class SourcePackageRelease(SQLBase):
         """ % sqlvalues(self, distroarchseries.architecturetag,
                         distroarchseries, archive)
 
-        select_results = Build.select(
+        select_results = BinaryPackageBuild.select(
             query, clauseTables=clauseTables, distinct=True,
             orderBy='-Build.id')
 
@@ -435,7 +440,7 @@ class SourcePackageRelease(SQLBase):
         # across all possible locations.
         query = " AND ".join(queries)
 
-        return Build.selectFirst(query, orderBy=['-datecreated'])
+        return BinaryPackageBuild.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""

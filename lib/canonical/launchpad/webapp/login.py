@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from __future__ import with_statement
 
 """Stuff to do with logging in and logging out."""
 
@@ -12,6 +13,7 @@ from datetime import datetime, timedelta
 from BeautifulSoup import UnicodeDammit
 
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.extensions import sreg
 from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
 
 import transaction
@@ -31,13 +33,15 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.registry.interfaces.person import IPerson, PersonCreationRationale
 from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadApplication, ILaunchpadPrincipal,
-    IPlacelessAuthUtility, IPlacelessLoginSource, LoggedOutEvent)
+    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
@@ -53,8 +57,6 @@ class UnauthorizedView(SystemErrorView):
 
     read_only_page = ViewPageTemplateFile(
         '../templates/launchpad-readonlyfailure.pt')
-
-    notification_message = _('To continue, you must log in to Launchpad.')
 
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
@@ -103,8 +105,6 @@ class UnauthorizedView(SystemErrorView):
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(
-                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
@@ -181,8 +181,9 @@ class OpenIDLogin(LaunchpadView):
         openid_vhost = config.launchpad.openid_provider_vhost
         self.openid_request = consumer.begin(
             allvhosts.configs[openid_vhost].rooturl)
+        self.openid_request.addExtension(
+            sreg.SRegRequest(optional=['email', 'fullname']))
 
-        trust_root = self.request.getApplicationURL()
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")
         # Once the user authenticates with the OpenID provider they will be
@@ -191,9 +192,10 @@ class OpenIDLogin(LaunchpadView):
         # they started the login process (i.e. the current URL without the
         # '+login' bit). To do that we encode that URL as a query arg in the
         # return_to URL passed to the OpenID Provider
-        starting_url = urllib.urlencode([('starting_url', self.starting_url)])
-        return_to = urlappend(
-            self.request.getApplicationURL(), '+openid-callback')
+        starting_url = urllib.urlencode(
+            [('starting_url', self.starting_url.encode('utf-8'))])
+        trust_root = allvhosts.configs['mainsite'].rooturl
+        return_to = urlappend(trust_root, '+openid-callback')
         return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
@@ -256,25 +258,105 @@ class OpenIDCallbackView(OpenIDLogin):
         logInPrincipal(
             self.request, loginsource.getPrincipalByLogin(email), email)
 
+    @cachedproperty
+    def sreg_response(self):
+        return sreg.SRegResponse.fromSuccessResponse(self.openid_response)
+
+    def _createAccount(self, openid_identifier):
+        # Here we assume the OP sent us the user's email address and
+        # full name in the response. Note we can only do that because
+        # we used a fixed OP (login.launchpad.net) that includes the
+        # user's email address and full name in the response when
+        # asked to.  Once we start using other OPs we won't be able to
+        # make this assumption here as they might not include what we
+        # want in the response.
+        assert self.sreg_response is not None, (
+            "OP didn't include an sreg extension in the response.")
+        email_address = self.sreg_response.get('email')
+        full_name = self.sreg_response.get('fullname')
+        assert email_address is not None and full_name is not None, (
+            "No email address or full name found in sreg response; "
+            "can't create a new account for this identity URL.")
+        email = getUtility(IEmailAddressSet).getByEmail(email_address)
+        if email is not None:
+            account = email.account
+            assert account is not None, (
+                "This email address should have an associated account.")
+            removeSecurityProxy(account).openid_identifier = openid_identifier
+            if account.status == AccountStatus.DEACTIVATED:
+                comment = 'Reactivated by the user'
+                password = None # Needed just to please reactivate() below.
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+        else:
+            account, email = getUtility(IAccountSet).createAccountAndEmail(
+                email_address,
+                PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                full_name,
+                password=None,
+                openid_identifier=openid_identifier)
+        return account
+
     def render(self):
         if self.openid_response.status == SUCCESS:
-            account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                self.openid_response.identity_url.split('/')[-1])
-            if account.status == AccountStatus.SUSPENDED:
-                return self.suspended_account_template()
-            if IPerson(account, None) is None:
-                removeSecurityProxy(account).createPerson(
-                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-            self.login(account)
-            target = self.request.form.get('starting_url')
-            if target is None:
-                target = self.getApplicationURL()
-            self.request.response.redirect(target, temporary_if_possible=True)
+            identifier = self.openid_response.identity_url.split('/')[-1]
+            should_update_last_write = False
+            # Force the use of the master database to make sure a lagged slave
+            # doesn't fool us into creating a Person/Account when one already
+            # exists.
+            with MasterDatabasePolicy():
+                try:
+                    account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                        identifier)
+                except LookupError:
+                    account = self._createAccount(identifier)
+                    should_update_last_write = True
+
+                if account.status == AccountStatus.SUSPENDED:
+                    return self.suspended_account_template()
+                elif account.status == AccountStatus.DEACTIVATED:
+                    comment = 'Reactivated by the user'
+                    password = '' # Needed just to please reactivate() below.
+                    sreg_email = self.sreg_response.get('email')
+                    email_address = getUtility(IEmailAddressSet).getByEmail(
+                        sreg_email)
+                    if email_address is None:
+                        email_address = getUtility(IEmailAddressSet).new(
+                            sreg_email, account=account)
+                    removeSecurityProxy(account).reactivate(
+                        comment, password, removeSecurityProxy(email_address))
+                else:
+                    # Account is active, so nothing to do.
+                    pass
+                if IPerson(account, None) is None:
+                    removeSecurityProxy(account).createPerson(
+                        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+                    should_update_last_write = True
+                self.login(account)
+
+            if should_update_last_write:
+                # This is a GET request but we changed the database, so update
+                # session_data['last_write'] to make sure further requests use
+                # the master DB and thus see the changes we've just made.
+                session_data = ISession(self.request)['lp.dbpolicy']
+                session_data['last_write'] = datetime.utcnow()
+            self._redirect()
             # No need to return anything as we redirect above.
             retval = None
         else:
-            retval = OpenIDLoginErrorView(
-                self.context, self.request, self.openid_response)()
+            if self.account is not None:
+                # The authentication failed (or was canceled), but the user is
+                # already logged in, so we just add a notification message and
+                # redirect.
+                self.request.response.addNoticeNotification(
+                    _(u'Your authentication failed but you were already '
+                       'logged into Launchpad.'))
+                self._redirect()
+                # No need to return anything as we redirect above.
+                retval = None
+            else:
+                retval = OpenIDLoginErrorView(
+                    self.context, self.request, self.openid_response)()
 
         # The consumer.complete() call above will create entries in
         # OpenIDConsumerNonce to prevent replay attacks, but since this will
@@ -283,6 +365,12 @@ class OpenIDCallbackView(OpenIDLogin):
         transaction.commit()
 
         return retval
+
+    def _redirect(self):
+        target = self.request.form.get('starting_url')
+        if target is None:
+            target = self.getApplicationURL()
+        self.request.response.redirect(target, temporary_if_possible=True)
 
 
 class OpenIDLoginErrorView(LaunchpadView):
@@ -318,24 +406,6 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-
-
-def logInPrincipalAndMaybeCreatePerson(request, principal, email):
-    """Log the principal in, creating a Person if necessary.
-
-    If the given principal has no associated person, we create a new
-    person, fetch a new principal and set it in the request.
-
-    Password validation must be done in callsites.
-    """
-    logInPrincipal(request, principal, email)
-    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
-        person = principal.account.createPerson(
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            principal.id)
-        assert ILaunchpadPrincipal.providedBy(new_principal)
-        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,

@@ -12,7 +12,6 @@ from datetime import datetime
 import httplib
 import logging
 import os
-import re
 from StringIO import StringIO
 import unittest
 
@@ -211,6 +210,25 @@ class TestProberProtocolAndFactory(TrialTestCase):
     def test_timeout(self):
         d = self._createProberAndProbe(self.urls['timeout'])
         return self.assertFailure(d, ProberTimeout)
+
+
+    def test_prober_user_agent(self):
+        protocol = RedirectAwareProberProtocol()
+
+        orig_sendHeader = protocol.sendHeader
+        headers = {}
+
+        def mySendHeader(header, value):
+            orig_sendHeader(header, value)
+            headers[header] = value
+
+        protocol.sendHeader = mySendHeader
+
+        protocol.factory = FakeFactory('http://foo.bar/')
+        protocol.makeConnection(FakeTransport())
+        self.assertEquals(
+            'Launchpad Mirror Prober ( https://launchpad.net/ )',
+            headers['User-Agent'])
 
 
 class FakeTimeOutCall:
@@ -811,7 +829,8 @@ class TestLoggingMixin(unittest.TestCase):
         logger.logMessage("Ubuntu Warty Released")
         logger.log_file.seek(0)
         message = logger.log_file.read()
-        self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
+        self.failUnlessEqual(
+            'Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
             message)
 
     def test_logMessage_integration(self):

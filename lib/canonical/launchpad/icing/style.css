@@ -84,7 +84,17 @@ kbd {
   outline: 1px #666;
 }
 label {white-space: nowrap;}
-legend {font-weight: bold;}
+.long td {
+    padding-right: 1em;
+    }
+.long fieldset {
+    margin-top: 1em;
+    }
+.long legend {
+    color: #666;
+    font-weight: bold;
+    font-size: 123.1%;
+    }
 .listbox { /* a scrolling list of checkboxes or radio buttons */
   border: 1px solid #8cacbb;
   display: inline-block;
@@ -260,175 +270,8 @@ table.contributions th {font-weight: normal;}
 table.contributions td {vertical-align: middle; width: 16px; text-align: left;}
 
 /* ==== Listing tables ==== */
-
-table.listing {margin: 0; width: 100%; font-size: 90%;}
-table.listing, table.listing tbody, table.listing td.end-of-section {
-  border-bottom: 1px solid #d2d2d2;}
-table.listing thead, table.listing thead th, table.listing tfoot tr,
-table.listing tr.thead th {
-  border: 1px solid #d2d2d2;
-  background-color: #fff;
-}
-table.listing tr.category {border-bottom: 1px solid #d2d2d2;}
-table.listing tr.category th, table.listing tr.category td {padding-top: 1em;}
-table.listing tfoot td {border: 1px solid #d2d2d2;}
-table.listing thead td {border: none;}
-tr.white {background-color: #fff;}
-tr.shaded {background-color: #f6f6f6;}
-table.listing tr.note {font-size: smaller;}
-.amount {text-align: right;}
-table.listing th, table.listing td {padding: 0.25em;}
-/* We don't want extra padding on nested tables, such as batch navigation. */
-table.listing table th, table.listing table td {padding: 0;}
-table.listing thead th, table.listing tr.thead th {
-  font-size: 1.125em; white-space: nowrap;}
-table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
-table.listing tr.note td {border-style: none;}
-table.listing img {vertical-align: middle;}
-table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
-table.listing table tbody, table.listing table thead,
-table.listing table thead th, table.listing tfoot tr,
-table.listing table tfoot td, table.listing table td {
-  border: none;
-}
 table.duplicate.listing * {color: #999;}
 
-table.listing table.simple {margin-left: 2em;}
-table.listing table.simple td {padding: 0.25em;}
-
-table.listing .section-heading {
-  font-size: 1.2em;
-  border: none;
-  padding-top: 1.5em;
-}
-
-table.compressed { width: auto }
-table.compressed td { padding: 0.25em 0.5em }
-
-/* ==== Summary tables ==== */
-
-/* Tables presenting summary information have subdued headers and a little
-row spacing: */
-table.summary th, table.summary td,
-table.listing table.summary th, table.listing table.summary td {
-  padding: 0 0.5em 0.5em 0;
-}
-table.summary th {color: #555; font-weight: normal;}
-table.summary caption {font-style: italic; margin-left: 1em;}
-table.summary ul, table.summary ul li {
-  list-style-position: inside;
-  margin: 0;
-  padding: 0;
-}
-
-
-/* --- Sortable tables --- */
-
-table.sortable a.sortheader {
-  color:#666666;
-  font-weight: bold;
-  text-decoration: none;
-  display: block;
-}
-table.sortable img.sortarrow {
-  padding-left: 2px;
-}
-th.ascending {
-  background-image: url(/@@/arrowDown);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-th.descending {
-  background-image: url(/@@/arrowUp);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-/* Used to indicate a value to be used to sort cells in a row */
-.sortkey, .revsortkey {display: none;}
-
-
-
-/* --- Action links and buttons --- */
-
-/*
-  Action links are those that begin the process of doing something.
-  For example, "Register a branch", "Edit profile", "Link to CVE".
-  When presented inline, they are rendered by launchpad-inline-link.pt.
-
-  Action buttons are those that submit a multi-row form.
-  Often an action button will have an "or _Cancel_" link next to it.
-
-  We want 0.5em horizontal gap between links and buttons in these sections.
-  Using margin-left would cause a bad gap to the left of a leftmost item.
-  Using margin-right would cause a bad gap to the right of a rightmost item.
-  We could fix these problems with :first-child/:last-child, but not in IE.
-  So we do something a little tricky.
-  We go ahead and give each child of the actions container a right margin:
-*/
-.actions * {margin-right: 0.5em;}
-.actions * * {margin-right: 0;} /* because ">" doesn't work in IE6 */
-/*
-  Then in addition to the top/bottom margins of the actions container, we
-  give it a *negative* right margin, cancelling out that of the last child.
-*/
-.actions {margin: 1em -0.5em 1em 0;}
-/*
-  Examples:
-  http://bugs.launchpad.dev/firefox/+bug/1 (after 'Affects' table)
-  http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
-*/
-
-/* --- Batch navigation links --- */
-
-/* Next links have icons: */
-.batch-navigation-links .next {
-  background: center right no-repeat;
-  padding-right: 14px;
-}
-.batch-navigation-links .next {background-image: url(/@@/arrowRight);}
-.batch-navigation-links .next.inactive {
-  background-image: url(/@@/arrowRight-inactive);
-}
-.batch-navigation-links .inactive {color: #999ea7;}
-/* And all the links have spacing between them: */
-.batch-navigation-links .previous, .batch-navigation-links .next,
-.batch-navigation-links .last {
-  margin-left: 0.25em;
-}
-.batch-navigation-links .first, .batch-navigation-links .previous,
-.batch-navigation-links .next {
-  margin-right: 0.25em;
-}
-
-/* --- Other --- */
-
-/* No border on images that are links. */
-a img {
-  border: none;
-}
-/* No border on images that have link maps.
- * There's nothing special for this, as the image and map
- * may be separate.  So, just set no border for all images.
- */
-img {
-  border: none;
-}
-
-/* === Collapsible sections === */
-/* Some page sections are hidden by default, expanded by clicking a link. */
-/* see launchpad.js:activateCollapsibles() */
-fieldset.collapsible {
-  border: none;
-  margin: 0;
-  padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
-}
-.collapsible legend a, .collapsible legend a:hover {text-decoration: none;}
-img.collapseIcon {text-decoration: none; vertical-align: middle;}
-.collapsible legend a span {text-decoration: underline;}
-.collapsed {border: none; margin-bottom: 0;}
-fieldset .collapsed {display: none;}
-fieldset .expanded {display: block;}
-fieldset.collapsible legend {font-weight: normal;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -469,104 +312,6 @@ strong em {
 hr {
   display: none;
 }
-
-/* === Universal page layout === */
-
-/* === Login control === */
-/* At the top right of the page is a link to log in or a button to log out: */
-#logincontrol {
-    float: right;
-}
-#logincontrol a:hover {
-    text-decoration: none;
-}
-
-/* push image a little bit down to make it line up better with the text */
-#logincontrol img {
-    margin-bottom: -2px;
-}
-/* The 'Log Out' button lacks the right margin that buttons usually have: */
-#logincontrol input[type='submit'] {
-  font-size: smaller;
-  margin-right: 0;
-}
-
-/* === Location hierarchy === */
-/* Breadcrumb styling - this should be moved into style-3.0.css. It is
- * only here while we have existing non-3-0 templates, so that the
- * breadcrumbs on non-3-0 pages don't appear as a simple ordered list.
- */
-ol.breadcrumbs {
-    margin-left: 0;
-    list-style-type: none;
-    clear: both;
-    margin-bottom: 2em;
-    font-size: 80%;
-}
-ol.breadcrumbs li {
-    display:inline;
-    padding: 0;
-}
-ol.breadcrumbs li a {
-    color: #494949;
-}
-ol.breadcrumbs li:after { content: "\00BB \0020" }
-/* The following leaves a small margin in chrome/webkit, but using none
- * doesn't hide the » in webkit either (both work for FF3.5).
- */
-ol.breadcrumbs li:last-child:after { content: ''; }
-ol.breadcrumbs li:last-child {
-    font-weight: bold;
-}
-
-
-/* === Help pane === */
-/*
-Inline help is contained in a <div> and dynamically positioned by JavaScript.
-
-This should appear above all other content.  Needs to be
-above the Google Maps element on the profile pages, which
-has a z-index of 9999.  See bug #380349.
-*/
-#help-pane {
-  position: absolute;
-  border: 1px solid black;
-  padding: 1px 1px 5px 10px;
-  z-index: 11000; /* Needs to be at least 9999.  See bug #380349. */
-  background-color: #fff;
-  width: 600px; /* based on the help wiki, should change later */
-}
-/* We want the hidden pane to have dimensions so that we can position the
-frame with them.  This works because the element an absolute position, taking
-it out of the page flow. */
-#help-pane.invisible {
-    position: absolute;
-    visibility: hidden;
-    display: block;
-    left: 0px;
-    top: 0px;
-}
-
-#help-body {
-    background: url(/@@/spinner) no-repeat center center;
-}
-#help-pane iframe {width: 100%; height: 300px; border: 0;}
-#help-pane iframe.invisible {
-    visibility: hidden;
-    display: block;
-}
-#help-footer {
-  padding: 3px;
-  border-top: 1px solid #ddd;
-  text-align: right;
-}
-#help-footer button {
-  margin-bottom: 10px;
-  margin-top: 3px;
-}
-
-span.help {font-weight: normal;}
-
 
 /* === Official Bug Tag Management === */
 
@@ -664,47 +409,12 @@ a.unofficial-tag {
 
 .tags-hide { display: none; }
 
-/* === Public/private status === */
-/* The first portlet on many pages discloses whether the object is private: */
-#privacy.private {
-  background: url(/@@/private-bg) top left repeat-x; /* 8px high */
-  padding-top: 12px; /* = 8px + the usual 4px top padding */
-}
-
 .check,
 .radio {
   background: transparent;
   width: auto !important;
   border: 0 !important;
 }
-
-/* Some pages end with links to related items. */
-/* Examples: branch page, bug page. */
-.related {
-  margin-top: 4em;
-  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
-  padding-top: 1em;
-}
-.related ul {
-  list-style: none;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  text-indent: 0.5em;
-}
-
-.related ul.sourcepackage-links li.sourcepackage-not-dev-focus:before {
-    content: "";
-    display: inline-block;
-    width: 1.5em;
-}
-.related ul.sourcepackage-links li.sourcepackage-dev-focus:before {
-    content: "⇒ ";
-    display: inline-block;
-    width: 1.5em;
-}
-
-.related ul li:before {content: "\00BB \0020";}
-
 
 /* --- Various custom list formats --- */
 
@@ -943,13 +653,6 @@ a.update-retry {
 }
 
 /* PPA installation instructions slider.*/
-#pre-karmic-systems-slide-trigger {
-    cursor: pointer;
-    color: #093; /* for the underline on hover */
-}
-#pre-karmic-systems-slide-trigger:hover {
-    text-decoration: underline
-}
 #ppa-install-slide-trigger {
     cursor: pointer;
     color: #093; /* for the underline on hover */
@@ -1238,6 +941,10 @@ div.watermark-apps-portlet span img {
     margin: 0;
 }
 
+.patches-view-cell {
+  padding-right: 1em;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
@@ -1464,7 +1171,7 @@ ul.cross-reference {font-size: 1.25em;}
 
 div.popupTitle {
   background: #ffffdc;
-  padding: 0 1em;
+  padding: 0.5em 1em;
   border: 1px black solid;
   position: absolute;
   display: none;

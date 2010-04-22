@@ -84,7 +84,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.model.hasbranches import (
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, IBugTaskSet, IllegalRelatedBugTasksParams)
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet)
@@ -123,12 +123,12 @@ from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtask import (
+    BugTask, get_related_bugtasks_search_params)
 from canonical.launchpad.database.emailaddress import (
     EmailAddress, HasOwnerMixin)
 from lp.registry.model.karma import KarmaCache, KarmaTotalCache
@@ -262,22 +262,7 @@ class Person(
         return '<Person at 0x%x %s (%s)>' % (
             id(self), self.name, self.displayname)
 
-    def _sync_displayname(self, attr, value):
-        """Update any related Account.displayname.
-
-        We can't do this in a DB trigger as soon the Account table will
-        in a separate database to the Person table.
-        """
-        if self.accountID is not None:
-            auth_store = getUtility(IStoreSelector).get(
-                AUTH_STORE, MASTER_FLAVOR)
-            account = auth_store.get(Account, self.accountID)
-            if account.displayname != value:
-                account.displayname = value
-        return value
-
-    displayname = StringCol(dbName='displayname', notNull=True,
-                            storm_validator=_sync_displayname)
+    displayname = StringCol(dbName='displayname', notNull=True)
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -838,6 +823,21 @@ class Person(
 
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        if search_params is None and len(args) == 0:
+            # this method is called via webapi directly
+            # calling this method on a Person object directly via the
+            # webservice API means searching for user related tasks
+            user = kwargs.pop('user')
+            try:
+                search_params = get_related_bugtasks_search_params(
+                    user, self, **kwargs)
+            except IllegalRelatedBugTasksParams, e:
+                # dirty hack, marking an exception with a HTTP error
+                # only works if the exception is raised in the exported
+                # method, see docstring of
+                # `lazr.restful.declarations.webservice_error()`
+                raise e
+            return getUtility(IBugTaskSet).search(*search_params)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.
@@ -1161,11 +1161,8 @@ class Person(
                 "You need to specify a reviewer when a team joins another.")
             requester = self
 
-        expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
@@ -1260,7 +1257,7 @@ class Person(
                 comment=comment)
             # Accessing the id attribute ensures that the team
             # creation has been flushed to the database.
-            tm_id = tm.id
+            tm.id
             notify(event(person, self))
         else:
             # We can't use tm.setExpirationDate() here because the reviewer
@@ -2057,6 +2054,19 @@ class Person(
             self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+        # A team can have up to two addresses, the preferred one and one used
+        # by the team mailing list.
+        if self.mailing_list is not None:
+            mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
+                self.mailing_list.address)
+            mailing_list_email = IMasterObject(mailing_list_email)
+        else:
+            mailing_list_email = None
+        all_addresses = IMasterStore(self).find(
+            EmailAddress, EmailAddress.personID == self.id)
+        for address in all_addresses :
+            if address not in (email, mailing_list_email):
+                address.destroySelf()
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
@@ -2111,6 +2121,7 @@ class Person(
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
+        IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email
@@ -2161,20 +2172,20 @@ class Person(
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def pendinggpgkeys(self):
+    def pending_gpg_keys(self):
         """See `IPerson`."""
         logintokenset = getUtility(ILoginTokenSet)
         return sorted(set(token.fingerprint for token in
                       logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
-    def inactivegpgkeys(self):
+    def inactive_gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
 
     @property
-    def gpgkeys(self):
+    def gpg_keys(self):
         """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
@@ -2239,7 +2250,7 @@ class Person(
                                     upload_archive)
                     sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
-                    securesourcepackagepublishinghistory sspph
+                    sourcepackagepublishinghistory sspph
                 WHERE
                     sspph.sourcepackagerelease = sourcepackagerelease.id AND
                     sspph.archive = archive.id AND
@@ -2256,6 +2267,12 @@ class Person(
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
         return rset
+
+    def getRecipe(self, name):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        return Store.of(self).find(
+            SourcePackageRecipe, SourcePackageRecipe.owner == self,
+            SourcePackageRecipe.name == name).one()
 
     def isUploader(self, distribution):
         """See `IPerson`."""
@@ -2358,6 +2375,14 @@ class Person(
         """See `IPerson`."""
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
+
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == self)
 
 
 class PersonSet:

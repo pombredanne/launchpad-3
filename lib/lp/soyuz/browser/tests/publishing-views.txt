@@ -39,14 +39,10 @@ the view property returns 'None provided.'
     >>> view.removal_comment
     u'None provided.'
 
-Otherwise the removal comment will be returned (Note, setting the removal
-comment requires going through the secure record and flushing before
-it will be reflected in the normal record)
+Otherwise the removal comment will be returned
 
     >>> login('foo.bar@canonical.com')
-    >>> foo_pub.secure_record.removal_comment = "It had to go."
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+    >>> foo_pub.removal_comment = "It had to go."
 
     >>> print view.context.removal_comment
     It had to go.

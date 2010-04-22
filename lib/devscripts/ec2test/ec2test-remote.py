@@ -7,15 +7,19 @@
 __metatype__ = type
 
 import datetime
+from email import MIMEMultipart, MIMEText
+from email.mime.application import MIMEApplication
+import gzip
 import optparse
 import os
 import pickle
-import re
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 import traceback
+import unittest
 
 from xml.sax.saxutils import escape
 
@@ -26,6 +30,68 @@ import bzrlib.errors
 import bzrlib.smtp_connection
 import bzrlib.workingtree
 
+import subunit
+
+from __future__ import with_statement
+
+
+class SummaryResult(unittest.TestResult):
+    """Test result object used to generate the summary."""
+
+    double_line = '=' * 70 + '\n'
+    single_line = '-' * 70 + '\n'
+
+    def __init__(self, output_stream):
+        super(SummaryResult, self).__init__()
+        self.stream = output_stream
+
+    def printError(self, flavor, test, error):
+        """Print an error to the output stream."""
+        self.stream.write(self.double_line)
+        self.stream.write('%s: %s\n' % (flavor, test))
+        self.stream.write(self.single_line)
+        self.stream.write('%s\n' % (error,))
+        self.stream.flush()
+
+    def addError(self, test, error):
+        super(SummaryResult, self).addError(test, error)
+        self.printError('ERROR', test, self._exc_info_to_string(error, test))
+
+    def addFailure(self, test, error):
+        super(SummaryResult, self).addFailure(test, error)
+        self.printError(
+            'FAILURE', test, self._exc_info_to_string(error, test))
+
+
+class FlagFallStream:
+    """Wrapper around a stream that only starts forwarding after a flagfall.
+    """
+
+    def __init__(self, stream, flag):
+        """Construct a `FlagFallStream` that wraps 'stream'.
+
+        :param stream: A stream, a file-like object.
+        :param flag: A string that needs to be written to this stream before
+            we start forwarding the output.
+        """
+        self._stream = stream
+        self._flag = flag
+        self._flag_fallen = False
+
+    def write(self, bytes):
+        if self._flag_fallen:
+            self._stream.write(bytes)
+        else:
+            index = bytes.find(self._flag)
+            if index == -1:
+                return
+            else:
+                self._stream.write(bytes[index:])
+                self._flag_fallen = True
+
+    def flush(self):
+        self._stream.flush()
+
 
 class BaseTestRunner:
 
@@ -35,10 +101,6 @@ class BaseTestRunner:
         self.pqm_message = pqm_message
         self.public_branch = public_branch
         self.public_branch_revno = public_branch_revno
-
-        # Set up the testrunner options.
-        if test_options is None:
-            test_options = '-vv'
         self.test_options = test_options
 
         # Configure paths.
@@ -106,80 +168,106 @@ class BaseTestRunner:
         call = self.build_test_command()
 
         try:
-            try:
-                try:
-                    popen = subprocess.Popen(
-                        call, bufsize=-1,
-                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                        cwd=self.test_dir)
+            popen = subprocess.Popen(
+                call, bufsize=-1,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                cwd=self.test_dir)
 
-                    self._gather_test_output(popen, summary_file, out_file)
+            self._gather_test_output(popen.stdout, summary_file, out_file)
 
-                    # Grab the testrunner exit status
-                    result = popen.wait()
+            # Grab the testrunner exit status.
+            result = popen.wait()
 
-                    if self.pqm_message is not None:
-                        subject = self.pqm_message.get('Subject')
-                        if result:
-                            # failure
-                            summary_file.write(
-                                '\n\n**NOT** submitted to PQM:\n%s\n' %
-                                (subject,))
-                        else:
-                            # success
-                            conn = bzrlib.smtp_connection.SMTPConnection(
-                                config)
-                            conn.send_email(self.pqm_message)
-                            summary_file.write('\n\nSUBMITTED TO PQM:\n%s\n' %
-                                               (subject,))
-                except:
-                    summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
-                    traceback.print_exc(file=summary_file)
-                    result = 1
-                    raise
-            finally:
-                # It probably isn't safe to close the log files ourselves,
-                # since someone else might try to write to them later.
-                summary_file.close()
-                if self.email is not None:
-                    subject = 'Test results: %s' % (
-                        result and 'FAILURE' or 'SUCCESS')
-                    summary_file = open(self.logger.summary_filename, 'r')
-                    bzrlib.email_message.EmailMessage.send(
-                        config, self.email[0], self.email,
-                        subject, summary_file.read())
-                    summary_file.close()
+            if self.pqm_message is not None:
+                subject = self.pqm_message.get('Subject')
+                if result:
+                    # failure
+                    summary_file.write(
+                        '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
+                else:
+                    # success
+                    conn = bzrlib.smtp_connection.SMTPConnection(config)
+                    conn.send_email(self.pqm_message)
+                    summary_file.write(
+                        '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+        except:
+            summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
+            traceback.print_exc(file=summary_file)
+            result = 1
+            raise
         finally:
-            # we do this at the end because this is a trigger to ec2test.py
-            # back at home that it is OK to kill the process and take control
-            # itself, if it wants to.
-            out_file.close()
-            self.logger.close_logs()
+            # It probably isn't safe to close the log files ourselves,
+            # since someone else might try to write to them later.
+            try:
+                if self.email is not None:
+                    self.send_email(
+                        result, self.logger.summary_filename,
+                        self.logger.out_filename, config)
+            finally:
+                summary_file.close()
+                # we do this at the end because this is a trigger to
+                # ec2test.py back at home that it is OK to kill the process
+                # and take control itself, if it wants to.
+                self.logger.close_logs()
 
-    def _gather_test_output(self, test_process, summary_file, out_file):
+    def send_email(self, result, summary_filename, out_filename, config):
+        """Send an email summarizing the test results.
+
+        :param result: True for pass, False for failure.
+        :param summary_filename: The path to the file where the summary
+            information lives. This will be the body of the email.
+        :param out_filename: The path to the file where the full output
+            lives. This will be zipped and attached.
+        :param config: A Bazaar configuration object with SMTP details.
+        """
+        message = MIMEMultipart.MIMEMultipart()
+        message['To'] = ', '.join(self.email)
+        message['From'] = config.username()
+        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
+        message['Subject'] = subject
+
+        # Make the body.
+        with open(summary_filename, 'r') as summary_fd:
+            summary = summary_fd.read()
+        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
+        body['Content-Disposition'] = 'inline'
+        message.attach(body)
+
+        # gzip up the full log.
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        gz = gzip.open(path, 'wb')
+        full_log = open(out_filename, 'rb')
+        gz.writelines(full_log)
+        gz.close()
+
+        # Attach the gzipped log.
+        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
+        zipped_log.add_header(
+            'Content-Disposition', 'attachment',
+            filename='%s.log.gz' % self.get_nick())
+        message.attach(zipped_log)
+
+        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
+
+    def get_nick(self):
+        """Return the nick name of the branch that we are testing."""
+        return self.public_branch.strip('/').split('/')[-1]
+
+    def _gather_test_output(self, input_stream, summary_file, out_file):
         """Write the testrunner output to the logs."""
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
-
-        last_line = ''
-        while 1:
-            data = test_process.stdout.read(256)
-            if data:
-                out_file.write(data)
-                out_file.flush()
-                if echo_to_stdout:
-                    sys.stdout.write(data)
-                    sys.stdout.flush()
-                lines = data.split('\n')
-                lines[0] = last_line + lines[0]
-                last_line = lines.pop()
-                for line in lines:
-                    if not self.ignore_line(line):
-                        summary_file.write(line + '\n')
-                summary_file.flush()
-            else:
-                summary_file.write(last_line)
-                break
+        result = SummaryResult(summary_file)
+        subunit_server = subunit.TestProtocolServer(
+            result, FlagFallStream(summary_file, 'Running tests.'))
+        for line in input_stream:
+            subunit_server.lineReceived(line)
+            out_file.write(line)
+            out_file.flush()
+            if echo_to_stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
 
 
 class TestOnMergeRunner(BaseTestRunner):
@@ -189,31 +277,6 @@ class TestOnMergeRunner(BaseTestRunner):
         """See BaseTestRunner.build_test_command()."""
         command = ['make', 'check', 'VERBOSITY=' + self.test_options]
         return command
-
-    # Used to filter lines in the summary log. See
-    # `BaseTestRunner.ignore_line()`.
-    ignore_line = re.compile(
-        r'( [\w\.\/\-]+( ?\([\w\.\/\-]+\))?|'
-        r'\s*Running.*|'
-        r'\d{4}\-\d{2}\-\d{2} \d{2}\:\d{2}\:\d{2} INFO.+|'
-        r'\s*Set up .+|'
-        r'\s*Tear down .*|'
-        r'  Ran \d+ tests with .+)$').match
-
-
-class JSCheckTestRunner(BaseTestRunner):
-    """Executes the Launchpad JavaScript integration test suite."""
-
-    def build_test_command(self):
-        """See BaseTestRunner.build_test_command()."""
-        # We use the xvfb server's convenience script, xvfb-run, to
-        # automagically set the display, start the command, shut down the
-        # display, and return the exit code.  (See the xvfb-run man page for
-        # details.)
-        return [
-            'xvfb-run',
-            '-s', '-screen 0 1024x768x24',
-            'make', 'jscheck']
 
 
 class WebTestLogger:
@@ -404,8 +467,7 @@ if __name__ == '__main__':
         '-e', '--email', action='append', dest='email', default=None,
         help=('Email address to which results should be mailed.  Defaults to '
               'the email address from `bzr whoami`. May be supplied multiple '
-              'times. The first supplied email address will be used as the '
-              'From: address.'))
+              'times. `bzr whoami` will be used as the From: address.'))
     parser.add_option(
         '-s', '--submit-pqm-message', dest='pqm_message', default=None,
         help=('A base64-encoded pickle (string) of a pqm message '
@@ -429,9 +491,6 @@ if __name__ == '__main__':
         '--public-branch-revno', dest='public_branch_revno',
         type="int", default=None,
         help=('The revision number of the public branch being tested.'))
-    parser.add_option(
-        '--jscheck', dest='jscheck', default=False, action='store_true',
-        help=('Run the JavaScript integration test suite.'))
 
     options, args = parser.parse_args()
 
@@ -443,19 +502,12 @@ if __name__ == '__main__':
     else:
         pqm_message = None
 
-    if options.jscheck:
-        runner_type = JSCheckTestRunner
-    else:
-        # Use the default testrunner.
-        runner_type = TestOnMergeRunner
-
-    runner = runner_type(
+    runner = TestOnMergeRunner(
        options.email,
        pqm_message,
        options.public_branch,
        options.public_branch_revno,
-       ' '.join(args)
-    )
+       ' '.join(args))
 
     try:
         try:
@@ -465,10 +517,11 @@ if __name__ == '__main__':
 
             runner.test()
         except:
+            config = bzrlib.config.GlobalConfig()
             # Handle exceptions thrown by the test() or daemonize() methods.
             if options.email:
                 bzrlib.email_message.EmailMessage.send(
-                    bzrlib.config.GlobalConfig(), options.email[0],
+                    config, config.username(),
                     options.email,
                     'Test Runner FAILED', traceback.format_exc())
             raise

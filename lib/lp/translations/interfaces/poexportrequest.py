@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int, Object
+from zope.schema import Datetime, Int, Object
 
 from lp.registry.interfaces.person import IPerson
 from lp.translations.interfaces.pofile import IPOFile
@@ -37,12 +37,25 @@ class IPOExportRequestSet(Interface):
         :param pofiles: A list of PO files to export.
         """
 
-    def popRequest():
-        """Take the next request out of the queue.
+    def getRequest():
+        """Get the next request from the queue.
 
-        Returns a 3-tuple containing the person who made the request, the PO
-        template the request was for, and a list of `POTemplate` and `POFile`
-        objects to export.
+        Returns a tuple containing:
+         * The person who made the request.
+         * A list of POFiles and/or POTemplates that are to be exported.
+         * The requested `TranslationFileFormat`.
+         * The list of request record ids making up this request.
+
+        The objects are all read-only objects from the slave store.  The
+        request ids list should be passed to `removeRequest` when
+        processing of the request completes.
+        """
+
+    def removeRequest(self, request_ids):
+        """Remove a request off the queue.
+
+        :param request_ids: A list of request record ids as returned by
+            `getRequest`.
         """
 
 
@@ -50,6 +63,9 @@ class IPOExportRequest(Interface):
     person = Object(
         title=u'The person who made the request.',
         required=True, readonly=True, schema=IPerson)
+
+    date_created = Datetime(
+        title=u"Request's creation timestamp.", required=True, readonly=True)
 
     potemplate = Object(
         title=u'The translation template to which the requested file belong.',

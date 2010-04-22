@@ -54,7 +54,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.job.runner import JobRunner
 from lp.testing import (
-    capture_events, login_person, TestCaseWithFactory, time_counter)
+    capture_events, login_person, TestCaseWithFactory)
 from lp.testing.factory import GPGSigningContext, LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
 
@@ -529,36 +529,6 @@ class TestBranchMergeProposalQueueing(TestCase):
             new_queue_order, queue_order,
             "There should be only two queued items now. "
             "Expected %s, got %s" % (new_queue_order, queue_order))
-
-
-class TestRootComment(TestCase):
-    """Test the behavior of the root_comment attribute"""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
-
-    def test_orderedByDateNotInsertion(self):
-        """Root is determined by create date, not insert order"""
-        counter = time_counter()
-        oldest_date, middle_date, newest_date = [counter.next() for index in
-            (1, 2, 3)]
-        comment1 = self.merge_proposal.createComment(
-            self.merge_proposal.registrant, "Subject",
-            _date_created=middle_date)
-        self.assertEqual(comment1, self.merge_proposal.root_comment)
-        comment2 = self.merge_proposal.createComment(
-            self.merge_proposal.registrant, "Subject",
-            _date_created=newest_date)
-        self.assertEqual(comment1, self.merge_proposal.root_comment)
-        comment3 = self.merge_proposal.createComment(
-            self.merge_proposal.registrant, "Subject",
-            _date_created=oldest_date)
-        self.assertEqual(comment3, self.merge_proposal.root_comment)
 
 
 class TestCreateCommentNotifications(TestCaseWithFactory):
@@ -1176,6 +1146,11 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
     def test_related_bugs_includes_source_bugs(self):
         """related_bugs includes bugs linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
@@ -1755,7 +1730,7 @@ class TestCreateMergeProposalJob(TestCaseWithFactory):
                 signing_context=signing_context))
         job = CreateMergeProposalJob.create(file_alias)
         transaction.commit()
-        proposal, comment = job.run()
+        proposal = job.run()
         self.assertEqual(proposal.source_branch, source)
         self.assertEqual(proposal.target_branch, target)
 
@@ -1868,6 +1843,14 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         JobRunner.fromReady(UpdatePreviewDiffJob).runAll()
         transaction.commit()
         self.checkExampleMerge(bmp.preview_diff.text)
+
+    def test_10_minute_lease(self):
+        self.useBzrBranches()
+        bmp = self.createExampleMerge()[0]
+        job = UpdatePreviewDiffJob.create(bmp)
+        job.acquireLease()
+        expiry_delta = job.lease_expires - datetime.now(UTC)
+        self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):

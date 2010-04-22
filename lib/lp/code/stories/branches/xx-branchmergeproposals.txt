@@ -80,13 +80,16 @@ The summary reflects the selected target and prerequisite.
     ...     print extract_text(find_tag_by_id(
     ...         browser.contents, 'proposal-summary'))
     >>> print_summary(nopriv_browser)
-    Status:...
+    Status:
+    ...
     Proposed branch:
     lp://dev/~name12/gnome-terminal/klingon
     Merge into:
     lp://dev/~name12/gnome-terminal/main
     Prerequisite:
     lp://dev/~name12/gnome-terminal/pushed
+    To merge this branch:
+    bzr merge lp://dev/~name12/gnome-terminal/klingon
 
 
 Editing a commit message
@@ -100,7 +103,7 @@ commit message can be set.
     ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
-    >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit-message')
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit_message')
     Commit Message
     Add more &lt;b&gt;mojo&lt;/b&gt;
 
@@ -541,7 +544,7 @@ The section is shown if there are links.
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
     Linked bug reports and blueprints
-    Bug #...: Bug for linking (Undecided &ndash; New)
+    Bug #...: Bug for linking Undecided New
 
 
 Target branch edge cases

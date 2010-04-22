@@ -17,8 +17,6 @@ from lp.soyuz.scripts.ftpmaster import (
     ObsoleteDistroseries, SoyuzScriptError)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory,
     SourcePackagePublishingHistory)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -104,19 +102,19 @@ class TestObsoleteDistroseries(unittest.TestCase):
         """Return a tuple of sources, binaries published in distroseries."""
         if distroseries is None:
             distroseries = self.warty
-        published_sources = SecureSourcePackagePublishingHistory.select("""
+        published_sources = SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             status = %s AND
             archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids))
-        published_binaries = SecureBinaryPackagePublishingHistory.select("""
-            SecureBinaryPackagePublishingHistory.distroarchseries =
+        published_binaries = BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.DistroSeries = DistroSeries.id AND
             DistroSeries.id = %s AND
-            SecureBinaryPackagePublishingHistory.status = %s AND
-            SecureBinaryPackagePublishingHistory.archive IN %s
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids),
             clauseTables=["DistroArchSeries", "DistroSeries"])

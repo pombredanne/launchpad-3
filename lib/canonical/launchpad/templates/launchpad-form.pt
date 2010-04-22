@@ -16,6 +16,22 @@
           accept-charset="UTF-8">
 
       <div metal:define-macro="formbody">
+        <tal:comment condition="nothing">
+          The _return_url, _return_attribute_name and _return_attribute_value
+          fields are used by the ReturnToReferrerMixin.
+        </tal:comment>
+        <input type="hidden"
+               name="_return_url"
+               tal:condition="view/_return_url | nothing"
+               tal:attributes="value view/_return_url" />
+        <input type="hidden"
+               name="_return_attribute_name"
+               tal:condition="view/_return_attribute_name | nothing"
+               tal:attributes="value view/_return_attribute_name" />
+        <input type="hidden"
+               name="_return_attribute_value"
+               tal:condition="view/_return_attribute_value | nothing"
+               tal:attributes="value view/_return_attribute_value" />
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.

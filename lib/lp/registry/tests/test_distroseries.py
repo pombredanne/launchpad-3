@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for Distribution."""
+"""Tests for distroseries."""
 
 __metaclass__ = type
 
@@ -12,7 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distroseries import (
@@ -210,9 +209,9 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.main_component = component_set['main']
         self.universe_component = component_set['universe']
         self.makeSeriesPackage('normal')
-        self.makeSeriesPackage('translatable', messages=120)
-        self.makeSeriesPackage('hot', hotness=100)
-        self.makeSeriesPackage('hot-translatable', hotness=80, messages=60)
+        self.makeSeriesPackage('translatable', messages=800)
+        self.makeSeriesPackage('hot', heat=500)
+        self.makeSeriesPackage('hot-translatable', heat=250, messages=1000)
         self.makeSeriesPackage('main', is_main=True)
         self.makeSeriesPackage('linked')
         self.linkPackage('linked')
@@ -220,7 +219,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         login(ANONYMOUS)
 
     def makeSeriesPackage(self, name,
-                          is_main=False, hotness=None, messages=None):
+                          is_main=False, heat=None, messages=None):
         # Make a published source package.
         if is_main:
             component = self.main_component
@@ -232,14 +231,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             component=component)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=self.series)
-        if hotness is not None:
+        if heat is not None:
             bugtask = self.factory.makeBugTask(
                 target=source_package, owner=self.user)
-            # hotness is not exposed in the model yet.
-            # bugtask.bug.hotness = hotness
-            cur = cursor()
-            cur.execute("UPDATE Bug SET heat = %d WHERE id = %d" % (
-                (hotness, bugtask.bug.id)))
+            bugtask.bug.setHeat(heat)
         if messages is not None:
             template = self.factory.makePOTemplate(
                 distroseries=self.series, sourcepackagename=sourcepackagename,

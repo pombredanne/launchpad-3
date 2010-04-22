@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
@@ -80,10 +81,12 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, CodeImportJobState,
+    BranchLifecycleStatus, BranchType,
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
     UICreatableBranchType)
-from lp.code.errors import InvalidBranchMergeProposal
+from lp.code.errors import (
+    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState, InvalidBranchMergeProposal)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
@@ -180,6 +183,11 @@ class BranchNavigation(Navigation):
         for proposal in self.context.landing_targets:
             if proposal.id == id:
                 return proposal
+
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to the `ICodeImport` for the branch."""
+        return self.context.code_import
 
 
 class BranchEditMenu(NavigationMenu):
@@ -607,7 +615,7 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def _setBranchExists(self, existing_branch):
+    def _setBranchExists(self, existing_branch, field_name='name'):
         owner = existing_branch.owner
         if owner == self.user:
             prefix = "You already have"
@@ -617,7 +625,7 @@ class BranchNameValidationMixin:
             "%s a branch for <em>%s</em> called <em>%s</em>."
             % (prefix, existing_branch.target.displayname,
                existing_branch.name))
-        self.setFieldError('name', structured(message))
+        self.setFieldError(field_name, structured(message))
 
 
 class BranchEditSchema(Interface):
@@ -1189,8 +1197,10 @@ class RegisterProposalSchema(Interface):
             ' will not be shown in the diff.)'))
 
     comment = Text(
-        title=_('Initial Comment'), required=False,
-        description=_('Describe your change.'))
+        title=_('Description of the Change'), required=False,
+        description=_('Describe what changes your branch introduces, '
+                      'what bugs it fixes, or what features it implements. '
+                      'Ideally include rationale and how to test.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -1260,7 +1270,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 registrant=registrant, target_branch=target_branch,
                 prerequisite_branch=prerequisite_branch,
                 needs_review=data['needs_review'],
-                initial_comment=data.get('comment'),
+                description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
@@ -1309,26 +1319,23 @@ class BranchRequestImportView(LaunchpadFormView):
 
     @action('Import Now', name='request')
     def request_import_action(self, action, data):
-        if self.context.code_import.import_job is None:
+        try:
+            self.context.code_import.requestImport(
+                self.user, error_if_already_requested=True)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
+        except CodeImportNotInReviewedState:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif (self.context.code_import.import_job.state !=
-              CodeImportJobState.PENDING):
-            assert (self.context.code_import.import_job.state ==
-                    CodeImportJobState.RUNNING)
+        except CodeImportAlreadyRunning:
             self.request.response.addNotification(
                 "The import is already running.")
-        elif self.context.code_import.import_job.requesting_user is not None:
-            user = self.context.code_import.import_job.requesting_user
+        except CodeImportAlreadyRequested, e:
+            user = e.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(
                 structured("The import has already been requested by %s." %
                            adapter.link(None)))
-        else:
-            getUtility(ICodeImportJobWorkflow).requestJob(
-                self.context.code_import.import_job, self.user)
-            self.request.response.addNotification(
-                "Import will run as soon as possible.")
 
     @property
     def prefix(self):

@@ -145,10 +145,10 @@ class TestPublishDistro(TestNativePublishingBase):
         self.getPubSource(filecontent="flangetrousers", archive=archive)
         self.layer.txn.commit()
         pubconf = getPubConfig(archive)
-        tmp_path = "/tmp/tmpdistroot"
+        tmp_path = os.path.join(pubconf.archiveroot, "tmpdistroot")
         if os.path.exists(tmp_path):
             shutil.rmtree(tmp_path)
-        os.mkdir(tmp_path)
+        os.makedirs(tmp_path)
         myargs = ['-R', tmp_path]
         if archive.purpose == ArchivePurpose.PARTNER:
             myargs.append('--partner')
@@ -239,17 +239,15 @@ class TestPublishDistro(TestNativePublishingBase):
 
         It should only publish private PPAs.
         """
-        # First, we'll make cprov's archive private.
+        # First, we'll make a private PPA and populate it with a
+        # publishing record.
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_ppa = removeSecurityProxy(cprov.archive)
-        cprov_ppa.private = True
-        cprov_ppa.buildd_secret = "secret"
-        cprov_ppa.distribution = self.ubuntutest
+        private_ppa = self.factory.makeArchive(
+            private=True, distribution=ubuntutest)
 
-        # Publish something to cprov's PPA:
+        # Publish something to the private PPA:
         pub_source =  self.getPubSource(
-            sourcename='baz', filecontent='baz', archive=cprov.archive)
+            sourcename='baz', filecontent='baz', archive=private_ppa)
         self.layer.txn.commit()
 
         # Try a plain PPA run, to ensure the private one is NOT published.
@@ -291,7 +289,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.prepareBreezyAutotest()
         pub_binaries = self.getPubBinaries(format=BinaryPackageFormat.DDEB)
         for binary in pub_binaries:
-            binary.secure_record.archive = debug_archive
+            binary.archive = debug_archive
 
         # Commit setup changes, so the script can operate on them.
         self.layer.txn.commit()
@@ -320,7 +318,8 @@ class TestPublishDistro(TestNativePublishingBase):
         # The COPY repository path is not created yet.
         repo_path = os.path.join(
             config.archivepublisher.root,
-            ubuntutest.name + '-' + copy_archive_name)
+            ubuntutest.name + '-' + copy_archive_name,
+            ubuntutest.name)
         self.assertNotExists(repo_path)
 
         copy_archive = getUtility(IArchiveSet).new(

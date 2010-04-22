@@ -3,6 +3,7 @@
 
 """Helper functions for bug-related doctests and pagetests."""
 
+import re
 import textwrap
 
 from datetime import datetime, timedelta
@@ -16,7 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
-    extract_text, find_tag_by_id, find_main_content, find_tags_by_class)
+    extract_text, find_tag_by_id, find_main_content, find_tags_by_class,
+    print_table)
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -124,15 +126,12 @@ def extract_bugtasks(text, show_heat=None):
         if tr.td is not None:
             row_text = extract_text(tr)
             if show_heat:
-                heat_text = ''
                 for img in tr.findAll('img'):
-                    if img['src'] == '/@@/flame-icon':
-                        heat_text += '*'
-                    elif img['src'] == '/@@/flame-bw-icon':
-                        heat_text += '-'
-                    else:
-                        pass
-                row_text += '\n' + heat_text
+                    mo = re.search('^/@@/bug-heat-([0-4]).png$', img['src'])
+                    if mo:
+                        flames = int(mo.group(1))
+                        heat_text = flames * '*' + (4 - flames) * '-'
+                        row_text += '\n' + heat_text
             rows.append(row_text)
     return rows
 
@@ -209,7 +208,7 @@ def create_old_bug(
         bugtask.transitionToAssignee(assignee)
     bugtask.milestone = milestone
     if external_bugtracker is not None:
-        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person, 
+        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person,
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
@@ -279,3 +278,46 @@ def print_upstream_linking_form(browser):
         if text_field is not None:
             text_control = browser.getControl(name=text_field.get('name'))
             print '    [%s]' % text_control.value.ljust(10)
+
+
+def print_bugfilters_portlet_unfilled(browser, target):
+    """Print the raw, unfilled contents of the bugfilters portlet.
+
+    This is the contents before any actual data has been fetched.
+    (The portlet is normally populated with data by a separate
+    javascript call, to avoid delaying the overall page load.  Use
+    print_bugfilters_portlet_filled() to test the populated portlet.)
+
+    :param browser  browser from which to extract the content.
+    :param target   entity from whose bugs page to fetch the portlet
+                    (e.g., http://bugs.launchpad.dev/TARGET/...)
+    """
+    browser.open(
+        'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
+    table = BeautifulSoup(browser.contents).find('table', 'bug-links')
+    tbody_info, tbody_links = table('tbody')
+    print_table(tbody_info)
+    for link in tbody_links('a'):
+        text = extract_text(link)
+        if len(text) > 0:
+            print "%s\n  --> %s" % (text, link['href'])
+
+
+def print_bugfilters_portlet_filled(browser, target):
+    """Print the filled-in contents of the bugfilters portlet.
+
+    This is the contents after the actual data has been fetched.
+    (The portlet is normally populated with data by a separate
+    javascript call, to avoid delaying the overall page load.  Use
+    print_bugfilters_portlet_unfilled() to test the unpopulated
+    portlet.)
+
+    :param browser  browser from which to extract the content.
+    :param target   entity from whose bugs page to fetch the portlet
+                    (e.g., http://bugs.launchpad.dev/TARGET/...)
+    """
+    browser.open(
+        'http://bugs.launchpad.dev'
+        '/%s/+bugtarget-portlet-bugfilters-stats' % target)
+    table = BeautifulSoup('<table>%s</table>' % browser.contents)
+    print_table(table)

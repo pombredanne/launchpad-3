@@ -102,10 +102,15 @@ sources.list entry for the builder to access a private archive.  It is
 essentially the password to the archive for the builder.
 
 It can only be set by users with launchpad.Commercial permission in the
-archive, i.e. an admin or a commercial admin.
+archive, i.e. an admin or a commercial admin. We create a new PPA for
+cprov here as changing privacy of a PPA is not allowed when sources have
+already been published.
 
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, name='myprivateppa',
+    ...     distribution=cprov_archive.distribution)
     >>> login(ANONYMOUS)
-    >>> cprov_archive.buildd_secret = 'boing'
+    >>> cprov_private_ppa.buildd_secret = 'boing'
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'buildd_secret', 'launchpad.Commercial')
@@ -113,7 +118,7 @@ archive, i.e. an admin or a commercial admin.
 Commercial Member, a commercial admin but not an admin, can set 'buildd_secret'.
 
     >>> login("commercial-member@canonical.com")
-    >>> cprov_archive.buildd_secret = 'not so secret at all'
+    >>> cprov_private_ppa.buildd_secret = 'not so secret at all'
 
 Foo Bar, an admin, can set 'buildd_secret'.
 
@@ -133,11 +138,11 @@ Once made private, 'buildd_secret' content can only be read by users with
 'launchpad.View' in the archive.
 
     >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = 'really secret'
-    >>> cprov_archive.private = True
+    >>> cprov_private_ppa.buildd_secret = 'really secret'
+    >>> cprov_private_ppa.private = True
 
     >>> login(ANONYMOUS)
-    >>> print cprov_archive.buildd_secret
+    >>> print cprov_private_ppa.buildd_secret
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'buildd_secret', 'launchpad.View')
@@ -145,16 +150,8 @@ Once made private, 'buildd_secret' content can only be read by users with
 Celso can read 'buildd_secret' contents for his PPA.
 
     >>> login('celso.providelo@canonical.com')
-    >>> print cprov_archive.buildd_secret
+    >>> print cprov_private_ppa.buildd_secret
     really secret
-
-In order to continue the tests of public archive attributes we will
-make Celso's PPA public again.
-
-    >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = ''
-    >>> cprov_archive.private = False
-    >>> login(ANONYMOUS)
 
 Useful properties:
 
@@ -174,6 +171,28 @@ archives are published on disk.
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
+
+'status' tracks the status of an Archive.  Its current values are only
+ACTIVE and DELETING.  ACTIVE is the normal value; DELETING is set when
+the user has requested the PPA to be deleted.  The actual deletion is done
+some time later in a zopeless script.
+
+It is only editable by someone with launchpad.Edit permissions:
+
+    >>> print cprov_archive.status.name
+    ACTIVE
+
+    >>> from lp.soyuz.interfaces.archive import ArchiveStatus
+    >>> cprov_archive.status = ArchiveStatus.DELETING
+    >>> print cprov_archive.status.name
+    DELETING
+
+    >>> login(ANONYMOUS)
+    >>> cprov_archive.status = ArchiveStatus.ACTIVE
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
 
 'name' is only editable by an LP administrator and only exposed via
 the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
@@ -745,58 +764,64 @@ Both the getBuildCounters() and getBuildSummariesForSourceIds() methods are
 not publically available, but available only to users who have permission to
 view the archive:
 
-First, we turn cprov's archive into a private one:
+    # First we create some source/binary packages in cprov's private
+    # PPA so that we'll have some results to view.
+    >>> login('admin@canonical.com')
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> ignore = test_publisher.setUpDefaultDistroSeries(warty)
+    >>> test_publisher.addFakeChroots(warty)
+    >>> ignore = test_publisher.getPubBinaries(archive=cprov_private_ppa)
 
-    >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = 'really secret'
-    >>> cprov_archive.private = True
-
-And grab some source IDs from the archive:
-
-    >>> sources = cprov_archive.getPublishedSources()
-    >>> source_ids = [sources[0].id, sources[1].id]
+    # Grab some source IDs from the archive that we can use for calls to
+    # getBuildSummariesForSourceIds():
+    >>> sources = cprov_private_ppa.getPublishedSources()
+    >>> source_ids = [sources[0].id]
 
 Then verify that an admin can see the counters and build summaries:
 
-    >>> print_build_counters(cprov_archive.getBuildCounters())
-    failed     1
+    >>> print_build_counters(cprov_private_ppa.getBuildCounters())
+    failed     0
     ...
-    total      4
-    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    succeeded  1
+    ...
+    total      1
+    >>> print_build_summaries(cprov_private_ppa.getBuildSummariesForSourceIds(
     ...     source_ids))
-    Source ID: 27
-    ...
+    Source ID:...
+    FULLYBUILT_PENDING
+    All builds were built successfully but have not yet been published.
+    Relevant builds:
+      - i386 build of foo 666 in ubuntu warty RELEASE
 
 Next veryify that cprov can still access the build counters:
 
     >>> login('celso.providelo@canonical.com')
-    >>> print_build_counters(cprov_archive.getBuildCounters())
-    failed     1
+    >>> print_build_counters(cprov_private_ppa.getBuildCounters())
+    failed     0
     ...
-    total      4
-    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    succeeded  1
+    ...
+    total      1
+    >>> print_build_summaries(cprov_private_ppa.getBuildSummariesForSourceIds(
     ...     source_ids))
-    Source ID: 27
+    Source ID:...
     ...
+      - i386 build of foo 666 in ubuntu warty RELEASE
 
 But the public cannot:
 
     >>> login('no-priv@canonical.com')
-    >>> print_build_counters(cprov_archive.getBuildCounters())
+    >>> print_build_counters(cprov_private_ppa.getBuildCounters())
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'getBuildCounters', 'launchpad.View')
-    >>> print_build_summaries(cprov_archive.getBuildSummariesForSourceIds(
+    >>> print_build_summaries(cprov_private_ppa.getBuildSummariesForSourceIds(
     ...     source_ids))
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'getBuildSummariesForSourceIds', 'launchpad.View')
-
-Make the archive public again before continuing:
-
-    >>> login("foo.bar@canonical.com")
-    >>> cprov_archive.buildd_secret = ''
-    >>> cprov_archive.private = False
 
 
 == Package Counters ==
@@ -916,7 +941,7 @@ source-package releases for the archive. By default, all releases will
 be returned, but you can also ask for releases with builds in a certain
 state.
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
     >>> releases = cprov_archive.getSourcePackageReleases(
     ...     build_status=BuildStatus.FULLYBUILT)
     >>> for release in releases:
@@ -957,7 +982,7 @@ it continues to be considered 'available for deletion'.
 
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(removal_candidate.secure_record)
+    >>> syncUpdate(removal_candidate)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -997,7 +1022,7 @@ binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
     ...     bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(bin.secure_record)
+    ...     syncUpdate(bin)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
@@ -1034,7 +1059,6 @@ This method can return build records for sources matching the given
 
 Or return build records in a specific status:
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> cprov_archive.getBuildRecords(
     ...     build_state=BuildStatus.FULLYBUILT).count()
     3
@@ -1261,26 +1285,6 @@ Attempts to remove a non-existent dependency results in a AssertionError.
     ...
     AssertionError: This dependency does not exist.
 
-Since the 'dependency' property only returns explicitly recorded
-archive dependencies and we usually need the expanded list when
-inspecting the build domain we have also implemented the
-'expanded_archive_dependencies' property. It returns implicit
-dependencies, including the archive itself and the PRIMARY archive
-dependency for PPAs.
-
-    >>> def print_expanded_archive_dependencies(archive):
-    ...     for dep in archive.expanded_archive_dependencies:
-    ...         print dep.displayname
-
-    >>> print_expanded_archive_dependencies(ubuntu.main_archive)
-    Primary Archive for Ubuntu Linux
-
-    >>> print_expanded_archive_dependencies(cprov.archive)
-    Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
-    PPA for Mark Shuttleworth
-
-
 == Find binary package dependency candidates ==
 
 Archive allows a lookup on a single binary package dependency
@@ -1313,6 +1317,14 @@ This method is aware of the archive dependency tree. So, even when a
 package is not published on the context PPA but is available somewhere
 in the archive dependency domain it will be found.
 
+We also add another archive dependency here to exercise findDepCandidateByName
+a little more.
+
+    >>> joe = factory.makePerson(email='joe@example.com')
+    >>> second_ppa = factory.makeArchive(name="secondppa", owner=joe)
+    >>> second_archive_dep = cprov.archive.addArchiveDependency(
+    ...     second_ppa, release_pocket, main_component)
+
 'at' binary package is not present in Celso's PPA.
 
     >>> cprov_archive.getAllPublishedBinaries(name='at').count()
@@ -1335,6 +1347,9 @@ Then a lookup on Celso's PPA will find it.
     >>> primary_candidate == ppa_candidate
     True
 
+And clean-up after ourselves:
+
+    >>> ignore = cprov.archive.removeArchiveDependency(second_ppa)
 
 == Creating a package copy request from an IArchive ==
 
@@ -1343,7 +1358,7 @@ package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, name='my-copy-archive')
+    ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
     >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
@@ -1392,10 +1407,10 @@ PPAs are created with the name attribute set to 'ppa' by default.
     ppa
 
 We can take the opportunity to check if the default 'authorized_size'
-corresponds to what we state in our policy, 1024 MiB:
+corresponds to what we state in our policy, 2048 MiB:
 
     >>> name16.archive.authorized_size
-    1024
+    2048
 
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
@@ -1471,21 +1486,16 @@ COPY archives use a URL format of <distro-name>-<archive-name>:
     >>> print copy_target.archive.is_copy
     True
     >>> print copy_target.archive.archive_url
-    http://rebuild-test.internal/ubuntu-my-copy-archive
+    http://rebuild-test.internal/ubuntu-my-copy-archive/ubuntu
 
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
-    >>> print naked_cprov_archive.archive_url
+    >>> print cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
-    >>> naked_cprov_archive.private = True
-    >>> naked_cprov_archive.syncUpdate()
-
-    >>> print naked_cprov_archive.archive_url
-    http://private-ppa.launchpad.dev/cprov/ppa/ubuntu
+    >>> print cprov_private_ppa.archive_url
+    http://private-ppa.launchpad.dev/cprov/myprivateppa/ubuntu
 
 IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
 to publish to the RELEASE pocket no matter what state the distroseries is in.
@@ -1519,7 +1529,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    17
+    20
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1537,32 +1547,34 @@ PPA, so they will change when the caches get updated.
 
 Those counters explicity exclude packages in private PPAs.
 
-The current counters says we only have 1 source and 1 binary published
+The current counters says we only have 4 source and 4 binary published
 in public PPAs.
 
     >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
-    1
+    4
     >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
-    1
+    4
 
 As mentioned caches for private PPAs are not considered.
 
-    >>> print cprov.archive.private
+    >>> print cprov_private_ppa.private
     True
 
-    >>> cprov.archive.sources_cached
-    3
-    >>> cprov.archive.binaries_cached
-    3
+    >>> cprov_private_ppa.sources_cached
+    0
+    >>> cprov_private_ppa.binaries_cached
+    0
 
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_cprov_archive = removeSecurityProxy(cprov_private_ppa)
     >>> naked_cprov_archive.sources_cached = 1000
     >>> naked_cprov_archive.binaries_cached = 2000
     >>> naked_cprov_archive.syncUpdate()
 
     >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
-    1
+    4
     >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
-    1
+    4
 
 On the other hand, changes in the a public PPA are immediately
 considered.
@@ -1580,9 +1592,9 @@ considered.
     >>> naked_no_priv_archive.syncUpdate()
 
     >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
-    11
+    14
     >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
-    3
+    6
 
 Since we currently only create archives for ubuntu distribution, the
 counters for other distributions are always 'zero'.
@@ -1599,11 +1611,12 @@ counters for other distributions are always 'zero'.
 uses `TeamParticipation` relationships to calculate all the PPAs the
 user is allowed to upload or copy packages to.
 
-In the sampledata, 'cprov' only participates in his own PPA.
+Celso only participates in his own PPAs.
 
     >>> for ppa in archive_set.getPPAsForUser(cprov):
     ...     print ppa.displayname
     PPA for Celso Providelo
+    PPA named myprivateppa for Celso Providelo
 
 However 'cprov' is also a member of 'launchpad-buildd-admins' team,
 which doesn't have a PPA yet.
@@ -1628,6 +1641,7 @@ immediately recognises 'cprov' rights on it.
     ...     print ppa.displayname
     PPA for Celso Providelo
     PPA for Launchpad Buildd Admins
+    PPA named myprivateppa for Celso Providelo
 
 The same happens for specific upload rights granted on 3rd-party
 PPAs. When 'No Privileges' gets upload rights to Celso's PPA,
@@ -1699,14 +1713,7 @@ private.
     >>> p3as = archive_set.getPrivatePPAs()
     >>> for p3a in p3as:
     ...     print p3a.displayname
-    PPA for Celso Providelo
-
-For the next test we will make Celso's PPA public again, so it can
-appear in public lists. We do that because that PPA contains relevant
-contents for testing.
-
-    >>> naked_cprov_archive.private = False
-    >>> naked_cprov_archive.syncUpdate()
+    PPA named myprivateppa for Celso Providelo
 
 'getLatestPPASourcePublicationsForDistribution' returns up to 5
 lastest source publications available for a given distribution ordered
@@ -1762,18 +1769,20 @@ last publication (Celso's deleted iceweasel) will be excluded.
     pmount 0.1-1 in warty PUBLISHED cprov
 
 Private source publications are excluded from this list, the fact that
-they exist should never leak. If we make Celso's PPA private, its
-contents will not be listed anymore. The same happens for uploaded
-sources, since they are essentially another source publication in this
-context.
+they exist should never leak. If we copy the package to Celso's private
+PPA the list is not updated.  The same happens for uploaded sources, since
+they are essentially another source publication in this context.
 
-    >>> naked_cprov_archive.private = True
-    >>> naked_cprov_archive.syncUpdate()
+    >>> copy = cprov_cdrkit.copyTo(
+    ...     ubuntu['hoary'], PackagePublishingPocket.RELEASE,
+    ...     cprov_private_ppa)
 
     >>> print_latest_uploads()
     cdrkit 1.0 in hoary PENDING mark
     iceweasel 1.0 in hoary PENDING mark
+    cdrkit 1.0 in breezy-autotest SUPERSEDED cprov
     iceweasel 1.0 in breezy-autotest PUBLISHED mark
+    pmount 0.1-1 in warty PUBLISHED cprov
 
 'getMostActivePPAsForDistribution' returns a list of dictionaries
 containing up to 5 PPAs with the highest number of publications in the
@@ -1815,14 +1824,16 @@ We will create a new PPA and some activity.
     ...         a_pub.copyTo(
     ...             ubuntu['hoary'], PackagePublishingPocket.RELEASE, where)
 
-    >>> create_activity(cprov_archive, 20)
+    >>> create_activity(cprov_private_ppa, 20)
     >>> create_activity(sandbox_archive, 10)
     >>> create_activity(name12.archive, 4)
     >>> create_activity(no_priv.archive, 4)
     >>> create_activity(lp_buildd_team.archive, 8)
+    >>> import transaction
+    >>> transaction.commit()
 
-Celso's PPA is still private, so despite having the highest number of
-uploads it's not listed.
+Celso's private PPA is not listed despite having the highest number of
+uploads.
 
     >>> print_most_active_ppas()
     PPA for Foo Bar 10
@@ -1831,13 +1842,12 @@ uploads it's not listed.
     PPA for Sample Person 4
     PPA for Mark Shuttleworth 2
 
-When we make Celso's PPA public the result gets limited to 5 items.
-The previous last item (Mark's PPA) will now be excluded in place of
-Celso's PPA.
+If we give lots of activity to Celso's public PPA the previous
+last item (Mark's PPA) will now be excluded as the results are
+limited to 5 items.
 
-    >>> naked_cprov_archive.private = False
-    >>> naked_cprov_archive.syncUpdate()
-
+    >>> create_activity(cprov_archive, 20)
+    >>> transaction.commit()
     >>> print_most_active_ppas()
     PPA for Celso Providelo 20
     PPA for Foo Bar 10
@@ -1920,7 +1930,7 @@ given purpose:
     ...     ubuntu, purposes=ArchivePurpose.COPY)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
 
 The method `getArchivesForDistribution` can also be used with multiple
 purposes. First we'll check how many partner archives are in the DB:
@@ -1938,7 +1948,7 @@ archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
     >>> print_archive_names(copy_n_partner_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
     partner          ubuntu-team   False    True
 
 First we create four copy archives for ubuntu:
@@ -1970,7 +1980,7 @@ Now the `getArchivesForDistribution` finds the relevant COPY archives:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
     team-archive     t1            False    True
     ultimate-copy    copy-owner1   False    True
 
@@ -2021,7 +2031,7 @@ The owner of the archive will also see their private archive in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  True     True
+    my-copy-archive  me-copy       True     True
     ultimate-copy    copy-owner1   False    True
 
 An admin will see all the private and disabled archives in the results:
@@ -2032,7 +2042,7 @@ An admin will see all the private and disabled archives in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  True     True
+    my-copy-archive  me-copy       True     True
     team-archive     t1            True     True
     there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False
@@ -2128,14 +2138,15 @@ anyone in the PPA owning team to upload.
     False
 
 We can also create an ArchivePermission entry for carlos to be able to upload
-to cprov's PPA, even though he is not the owner.
+to someone else's PPA, even though he is not the owner.
 
-    >>> discard = cprov_archive.newComponentUploader(
+    >>> joes_ppa = factory.makeArchive()
+    >>> discard = joes_ppa.newComponentUploader(
     ...     carlos, "main")
 
-Carlos can now upload to cprov's PPA:
+Carlos can now upload to Joe's PPA:
 
-    >>> cprov_archive.canUpload(carlos)
+    >>> joes_ppa.canUpload(carlos)
     True
 
 Note that when creating a new permission, trying to specify a component other
@@ -2146,7 +2157,7 @@ that's the component that PPA packages are published in.  In the future,
 packagesets will replace components entirely as the ACL mechanism, so this
 anacronism can be removed.
 
-    >>> cprov_archive.newComponentUploader(
+    >>> joes_ppa.newComponentUploader(
     ...     carlos, "universe")
     Traceback (most recent call last):
     ...
@@ -2155,60 +2166,61 @@ anacronism can be removed.
 You'll get the same error if you use a component object that's not main.
 
     >>> universe = getUtility(IComponentSet)['universe']
-    >>> cprov_archive.newComponentUploader(
+    >>> joes_ppa.newComponentUploader(
     ...     carlos, universe)
     Traceback (most recent call last):
     ...
     InvalidComponent: Component for PPAs should be 'main'
 
-As important as the right to upload packages to Celso's PPA, Carlos
+As important as the right to upload packages to Joe's PPA, Carlos
 also got the corresponding permissions on it.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login("carlos@canonical.com")
 
-    >>> check_permission('launchpad.View', cprov_archive)
+    >>> check_permission('launchpad.View', joes_ppa)
     True
 
-    >>> check_permission('launchpad.Append', cprov_archive)
+    >>> check_permission('launchpad.Append', joes_ppa)
     True
 
-So even if Celso's PPA suddenly becomes private, Carlos rights will be
+So even if Joe's PPA suddenly becomes private, Carlos rights will be
 preserved.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.buildd_secret = 'x'
-    >>> cprov_archive.private = True
+    >>> joes_ppa.buildd_secret = 'x'
+    >>> joes_ppa.private = True
 
     >>> login("carlos@canonical.com")
 
-    >>> check_permission('launchpad.View', cprov_archive)
+    >>> check_permission('launchpad.View', joes_ppa)
     True
 
-    >>> check_permission('launchpad.Append', cprov_archive)
+    >>> check_permission('launchpad.Append', joes_ppa)
     True
 
-On the other hand, if Celso's PPA is disabled, only the view
+On the other hand, if Joe's PPA is disabled, only the view
 permissions are kept. No one has permission to upload or copy sources
 to it.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.disable()
+    >>> joes_ppa.disable()
 
     >>> login("carlos@canonical.com")
-    >>> check_permission('launchpad.Append', cprov_archive)
+    >>> check_permission('launchpad.Append', joes_ppa)
     False
 
-    >>> login("celso.providelo@canonical.com")
-    >>> check_permission('launchpad.Append', cprov_archive)
+    >>> login_person(joes_ppa.owner)
+    >>> check_permission('launchpad.Append', joes_ppa)
     False
 
 Similarly to private PPAs, disabled public PPAs can only be viewed by
 owners or uploaders.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_archive.buildd_secret = ''
-    >>> cprov_archive.private = False
+    >>> discard = cprov_archive.newComponentUploader(
+    ...     carlos, "main")
+    >>> cprov_archive.disable()
 
     >>> login(ANONYMOUS)
     >>> check_permission('launchpad.View', cprov_archive)
@@ -2348,17 +2360,12 @@ provide a list of sources that can be copied to the context archive.
 First we use the SoyuzTestPublisher to make some test publications in
 hoary:
 
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> hoary = ubuntu.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> discard = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.0", archive=cprov.archive,
-    ...     status=PackagePublishingStatus.PUBLISHED) 
-    >>> discard = test_publisher.getPubSource( 
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> discard = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.1", archive=cprov.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> discard = test_publisher.getPubSource(
@@ -2758,7 +2765,7 @@ for more information.
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
     1024D/12345678
 
@@ -2777,3 +2784,47 @@ already created accordingly.
 
     >>> ppa_with_key.signing_key == cprov.archive.signing_key
     True
+
+
+== Download counts ==
+
+Counts of downloads per binary package release, day and country are kept
+up to date by a log-processing script. Archives have a method to get the
+total number of downloads for a particular binary package release.
+
+    >>> login('mark@example.com')
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     architecturespecific=True)
+    >>> archive = binaries[0].archive
+    >>> binary0, binary1 = (b.binarypackagerelease for b in binaries)
+
+The new packages have no downloads yet.
+
+    >>> print archive.getPackageDownloadTotal(binary0)
+    0
+    >>> print archive.getPackageDownloadTotal(binary1)
+    0
+
+We will fake some package downloads.
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+    >>> uk = getUtility(ICountrySet)['GB']
+
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 21), None, 10)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 22), uk, 5)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary0, date(2010, 2, 22), australia, 4)
+
+    >>> archive.updatePackageDownloadCount(
+    ...     binary1, date(2010, 2, 21), australia, 2)
+    >>> archive.updatePackageDownloadCount(
+    ...     binary1, date(2010, 2, 21), uk, 1)
+
+    >>> print archive.getPackageDownloadTotal(binary0)
+    19
+    >>> print archive.getPackageDownloadTotal(binary1)
+    3
