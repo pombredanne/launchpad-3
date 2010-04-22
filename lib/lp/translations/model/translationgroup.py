@@ -23,7 +23,7 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroup, ITranslationGroupSet)
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
-from lp.registry.model.project import Project
+from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.translator import Translator
@@ -100,7 +100,7 @@ class TranslationGroup(SQLBase):
 
     @property
     def projects(self):
-        return Project.selectBy(translationgroup=self.id, active=True)
+        return ProjectGroup.selectBy(translationgroup=self.id, active=True)
 
     # A limit of projects to get for the `top_projects`.
     TOP_PROJECTS_LIMIT = 6

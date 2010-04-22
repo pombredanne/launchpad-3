@@ -1,11 +1,11 @@
-= Project Branches Overview =
+= ProjectGroup Branches Overview =
 
     >>> from lp.code.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
 
-Projects link their branch listing page.
+ProjectGroups link their branch listing page.
 
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.getLink('Branches').click()
