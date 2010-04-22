@@ -160,7 +160,13 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, plain, None)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.strerror)
+                # XXX: This hack is needed for python2.5 compatibility. We
+                # should remove it when we no longer need to run on python2.5.
+                if hasattr(e, 'message'):
+                    msg = e.message
+                else:
+                    msg = e.strerror
+                raise GPGVerificationError(msg)
         else:
             # store clearsigned signature
             sig = StringIO(content)
@@ -170,7 +176,13 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, None, plain)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.strerror)
+                # XXX: This hack is needed for python2.5 compatibility. We
+                # should remove it when we no longer need to run on python2.5.
+                if hasattr(e, 'message'):
+                    msg = e.message
+                else:
+                    msg = e.strerror
+                raise GPGVerificationError(msg)
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.

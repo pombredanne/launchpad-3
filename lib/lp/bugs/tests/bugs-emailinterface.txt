@@ -2776,7 +2776,6 @@ Base64 encoded attachments are decoded before being stored.
     this is not a real JPG file
 
 Some mail clients append a filename to the content type of attachments.
-This is used if it hasn't already been set in Content-Disposition.
 The content type of the PGP signature is properly detected and thus no bug
 attachment is created.
 
@@ -2823,7 +2822,7 @@ attachment is created.
     >>>
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
-    LibraryFileAlias image.jpg image/jpeg; name="image.jpg" UNSPECIFIED
+    LibraryFileAlias ... image/jpeg; name="image.jpg" UNSPECIFIED
     this is not a real JPG file
     LibraryFileAlias sourcefile.diff text/x-diff; name="sourcefile1.diff" PATCH
     this should be diff output.

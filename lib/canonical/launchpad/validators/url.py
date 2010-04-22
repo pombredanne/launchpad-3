@@ -21,10 +21,14 @@ def valid_absolute_url(name):
     True
     >>> valid_absolute_url('http://www.example.com')
     True
-    >>> valid_absolute_url('whatever://example.com/blah')
-    True
     >>> valid_absolute_url('whatever:/uxample.com/blah')
     False
+
+    # XXX: This test only works against python2.6 but we still need to run on
+    # python2.5, so we should uncomment it only when we no longer need to run
+    # on 2.5.
+    >>> #valid_absolute_url('whatever://example.com/blah')
+    True
     """
     # Have to import urlparse locally since imports from helpers.py
     # causes this module to be imported, and we can't import stuff from

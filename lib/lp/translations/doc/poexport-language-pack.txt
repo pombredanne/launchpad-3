@@ -55,8 +55,9 @@ This is handy for examining the tar files that are generated.
     ...             size = 'bin'
     ...         else:
     ...             size = len(tarfile.extractfile(member).readlines())
-    ...         print "| %5s | %s" % (size, member.name +
-    ...                               ("/" if member.isdir() else ""))
+    ...         # XXX: The .rstrip('/') is to make this pass on python2.5 and
+    ...         # 2.6.
+    ...         print "| %5s | %s" % (size, member.name.rstrip('/'))
 
 
 == Base language pack export using Librarian ==
@@ -94,11 +95,12 @@ Check that the log looks ok.
 The tarball has the right members.
 
     >>> for member in tarfile.getmembers():
-    ...     print member.name + ("/" if member.isdir() else "")
-    rosetta-hoary/
+    ...     # XXX: The .rstrip('/') is to make this pass on python2.5 and 2.6.
+    ...     print member.name.rstrip('/')
+    rosetta-hoary
     ...
-    rosetta-hoary/es/
-    rosetta-hoary/es/LC_MESSAGES/
+    rosetta-hoary/es
+    rosetta-hoary/es/LC_MESSAGES
     rosetta-hoary/es/LC_MESSAGES/pmount.po
     ...
     rosetta-hoary/timestamp.txt
@@ -106,7 +108,12 @@ The tarball has the right members.
 
 Directory permissions allow correct use of those directories:
 
-    >>> directory = tarfile.getmember('rosetta-hoary')
+    # XXX: This try/except is needed to make the test pass on python2.5 and
+    # 2.6.
+    >>> try:
+    ...     directory = tarfile.getmember('rosetta-hoary/')
+    ... except KeyError:
+    ...     directory = tarfile.getmember('rosetta-hoary')
     >>> oct(directory.mode)
     '0755'
 
@@ -224,11 +231,11 @@ the translations in .po file format.
 
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)
-    |     - | rosetta-grumpy/
+    |     - | rosetta-grumpy
     |     1 | rosetta-grumpy/mapping.txt
     |     1 | rosetta-grumpy/timestamp.txt
-    |     - | rosetta-grumpy/xpi/
-    |     - | rosetta-grumpy/xpi/firefox/
+    |     - | rosetta-grumpy/xpi
+    |     - | rosetta-grumpy/xpi/firefox
     |   bin | rosetta-grumpy/xpi/firefox/en-US.xpi
     |    94 | rosetta-grumpy/xpi/firefox/en.po
     |   102 | rosetta-grumpy/xpi/firefox/es.po
@@ -346,17 +353,17 @@ Check that the log looks ok.
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)
-    |     - | rosetta-grumpy/
-    |     - | rosetta-grumpy/cy/
-    |     - | rosetta-grumpy/cy/LC_MESSAGES/
+    |     - | rosetta-grumpy
+    |     - | rosetta-grumpy/cy
+    |     - | rosetta-grumpy/cy/LC_MESSAGES
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-    |     - | rosetta-grumpy/es/
-    |     - | rosetta-grumpy/es/LC_MESSAGES/
+    |     - | rosetta-grumpy/es
+    |     - | rosetta-grumpy/es/LC_MESSAGES
     |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
     |     2 | rosetta-grumpy/mapping.txt
     |     1 | rosetta-grumpy/timestamp.txt
-    |     - | rosetta-grumpy/xpi/
-    |     - | rosetta-grumpy/xpi/firefox/
+    |     - | rosetta-grumpy/xpi
+    |     - | rosetta-grumpy/xpi/firefox
     |   bin | rosetta-grumpy/xpi/firefox/en-US.xpi
     |    94 | rosetta-grumpy/xpi/firefox/en.po
     |   102 | rosetta-grumpy/xpi/firefox/es.po
@@ -445,14 +452,14 @@ the modification date after the last generated language pack. We ignore the
 xpi entries because those are outside the scope of this test.
 
     >>> examine_tarfile(tarfile)
-    |     - | rosetta-grumpy/
-    |     - | rosetta-grumpy/cy/
-    |     - | rosetta-grumpy/cy/LC_MESSAGES/
+    |     - | rosetta-grumpy
+    |     - | rosetta-grumpy/cy
+    |     - | rosetta-grumpy/cy/LC_MESSAGES
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
     |     2 | rosetta-grumpy/mapping.txt
     |     1 | rosetta-grumpy/timestamp.txt
-    |     - | rosetta-grumpy/xpi/
-    |     - | rosetta-grumpy/xpi/firefox/
+    |     - | rosetta-grumpy/xpi
+    |     - | rosetta-grumpy/xpi/firefox
     |   bin | rosetta-grumpy/xpi/firefox/en-US.xpi
     |    94 | rosetta-grumpy/xpi/firefox/en.po
     |   102 | rosetta-grumpy/xpi/firefox/es.po
@@ -490,17 +497,17 @@ template has.  That's why we get both translations:
 
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)
-    |     - | rosetta-grumpy/
-    |     - | rosetta-grumpy/cy/
-    |     - | rosetta-grumpy/cy/LC_MESSAGES/
+    |     - | rosetta-grumpy
+    |     - | rosetta-grumpy/cy
+    |     - | rosetta-grumpy/cy/LC_MESSAGES
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-    |     - | rosetta-grumpy/es/
-    |     - | rosetta-grumpy/es/LC_MESSAGES/
+    |     - | rosetta-grumpy/es
+    |     - | rosetta-grumpy/es/LC_MESSAGES
     |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
     |     2 | rosetta-grumpy/mapping.txt
     |     1 | rosetta-grumpy/timestamp.txt
-    |     - | rosetta-grumpy/xpi/
-    |     - | rosetta-grumpy/xpi/firefox/
+    |     - | rosetta-grumpy/xpi
+    |     - | rosetta-grumpy/xpi/firefox
     |   bin | rosetta-grumpy/xpi/firefox/en-US.xpi
     |    94 | rosetta-grumpy/xpi/firefox/en.po
     |   102 | rosetta-grumpy/xpi/firefox/es.po

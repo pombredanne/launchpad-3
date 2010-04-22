@@ -20,6 +20,8 @@ output we will get.
     ...     for name in names:
     ...         file = tarfile.extractfile(name)
     ...
+    ...         # XXX: This is to make the test pass on python2.5 and 2.6.
+    ...         name = name.rstrip('/')
     ...         if file is not None:
     ...             print format % (name, file.read())
     ...         else:
