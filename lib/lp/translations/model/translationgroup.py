@@ -180,8 +180,7 @@ class TranslationGroupSet:
             owner=owner)
 
     def getByPerson(self, person):
-        """See ITranslationGroupSet."""
-
+        """See `ITranslationGroupSet`."""
         store = Store.of(person)
         origin = [
             TranslationGroup,
@@ -193,7 +192,7 @@ class TranslationGroupSet:
         result = store.using(*origin).find(
             TranslationGroup, TeamParticipation.person == person)
 
-        return result.order_by(TranslationGroup.title)
+        return result.config(distinct=True).order_by(TranslationGroup.title)
 
     def getGroupsCount(self):
         """See ITranslationGroupSet."""
