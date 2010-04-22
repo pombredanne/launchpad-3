@@ -12,11 +12,12 @@ from textwrap import dedent
 import re
 
 from pytz import utc
-from canonical.testing import DatabaseFunctionalLayer
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing.pages import extract_text, find_main_content
+from canonical.launchpad.testing.pages import (
+    extract_text, find_main_content, find_tags_by_class)
+from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
@@ -77,29 +78,50 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Create recipe').click()
+        browser.getControl('Create Recipe').click()
 
-        pattern = re.compile(dedent("""\
-            daily
-            Master Chef
-            Branches
+        pattern = """\
+            daily .*
+
             Description
             Make some food!
+
             Recipe information
-            Owner:
-            Master Chef
-            Base branch:
-            lp://dev/~chef/ratatouille/veggies
-            Debian version:
-            1.0
-            Distribution series:
-            Secret Squirrel
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/veggies
+            Debian version: 1.0
+            Distribution series: Secret Squirrel
             .*
+
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/ratatouille/veggies"""), re.S)
+            lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
-        self.assertTrue(pattern.search(main_text), repr(main_text))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
+    def test_create_recipe_bad_text(self):
+        # If a user tries to create source package recipe with bad text, they
+        # should get an error.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create source package recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Recipe text').value = 'Foo bar baz'
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'The recipe text is not a valid bzr-builder recipe.')
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
@@ -137,29 +159,28 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
-        browser.getControl('Update recipe').click()
+        browser.getControl('Update Recipe').click()
 
-        pattern = re.compile(dedent("""\
-            fings
-            Master Chef
-            Branches
+        pattern = """\
+            fings .*
+
             Description
             This is stuff
+
             Recipe information
-            Owner:
-            Master Chef
-            Base branch:
-            lp://dev/~chef/ratatouille/meat
-            Debian version:
-            1.0
-            Distribution series:
-            Mumbly Midget
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: 1.0
+            Distribution series: Mumbly Midget
             .*
+
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/ratatouille/meat"""), re.S)
-        main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), repr(main_text))
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
 
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):

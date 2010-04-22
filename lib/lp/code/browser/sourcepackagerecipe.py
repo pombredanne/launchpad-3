@@ -16,7 +16,7 @@ __all__ = [
     ]
 
 
-from bzrlib.plugins.builder.recipe import RecipeParser
+from bzrlib.plugins.builder.recipe import RecipeParser, RecipeParseError
 from lazr.restful.interface import use_template
 from zope.component import getUtility
 from zope.interface import Interface
@@ -26,8 +26,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadFormView, LaunchpadView, Link,
-    NavigationMenu)
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -212,7 +212,21 @@ class ISourcePackageAddEditSchema(Interface):
         title=u'Recipe text', required=True,
         description=u'The text of the recipe.')
 
-class SourcePackageRecipeAddView(LaunchpadFormView):
+
+class RecipeTextValidatorMixin:
+    """Class to validate that the Source Package Recipe text is valid."""
+
+    def validate(self, data):
+        try:
+            parser = RecipeParser(data['recipe_text'])
+            recipe_text = parser.parse()
+        except RecipeParseError:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe text is not a valid bzr-builder recipe.')
+
+
+class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
 
     title = label = 'Create a new source package recipe'
@@ -230,7 +244,7 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    @action('Create recipe', name='create')
+    @action('Create Recipe', name='create')
     def request_action(self, action, data):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
@@ -240,7 +254,9 @@ class SourcePackageRecipeAddView(LaunchpadFormView):
         self.next_url = canonical_url(source_package_recipe)
 
 
-class SourcePackageRecipeEditView(LaunchpadFormView):
+class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
+                                  LaunchpadEditFormView):
+    """View for editing Source Package Recipes."""
 
     @property
     def title(self):
@@ -253,10 +269,6 @@ class SourcePackageRecipeEditView(LaunchpadFormView):
     @property
     def initial_values(self):
         return {
-            'name': self.context.name,
-            'description': self.context.description,
-            'owner': self.context.owner,
-            'sourcepackagename': self.context.sourcepackagename,
             'distros': self.context.distroseries,
             'recipe_text': str(self.context.builder_recipe),}
 
@@ -264,22 +276,26 @@ class SourcePackageRecipeEditView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    @action('Update recipe', name='update')
+    @action('Update Recipe', name='update')
     def request_action(self, action, data):
-        parser = RecipeParser(data['recipe_text'])
-        recipe = parser.parse()
-
         self.context.name = data['name']
-        self.context.owner = data['owner']
         self.context.description = data['description']
         self.context.sourcepackagename = data['sourcepackagename']
-        self.context.builder_recipe = recipe
+        self.context.owner = data['owner']
+
+        parser = RecipeParser(data['recipe_text'])
+        self.context.builder_recipe = parser.parse()
 
         self.context.distroseries.clear()
         for distroseries_item in data['distros']:
             self.context.distroseries.add(distroseries_item)
 
         self.next_url = canonical_url(self.context)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadEditFormView`"""
+        return {ISourcePackageAddEditSchema: self.context}
 
 
 class SourcePackageRecipeDeleteView(LaunchpadFormView):
