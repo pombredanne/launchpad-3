@@ -27,7 +27,8 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.buildmaster.model.packagebuildfarmjob import (
+    PackageBuildFarmJobDerived)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -198,7 +199,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return
 
 
-class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
+class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -217,15 +218,15 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
     virtualized = True
 
     def __init__(self, build, job):
-        super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
+        super(SourcePackageRecipeBuildJob, self).__init__()
 
     @classmethod
     def new(cls, build, job):
         """See `ISourcePackageRecipeBuildJobSource`."""
         specific_job = cls(build, job)
-        store = IMasterStore(SourcePackageRecipeBuildJob)
+        store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
 
