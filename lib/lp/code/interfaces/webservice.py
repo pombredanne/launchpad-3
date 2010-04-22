@@ -17,3 +17,4 @@ from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IDiff, IPreviewDiff, IStaticDiff
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe

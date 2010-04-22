@@ -18,6 +18,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import export_as_webservice_entry
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
@@ -73,6 +74,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     More precisely, it describes how to combine a number of branches into a
     debianized source tree.
     """
+    export_as_webservice_entry()
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)

@@ -41,7 +41,8 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -842,6 +843,21 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
+        """
+
+    @operation_parameters(
+        description=Text(),
+        distroseries=List(value_type=Reference(schema=Interface)),
+        name=TextLine(),
+        recipe_text=Text(),
+        sourcepackagename=TextLine(),
+        )
+    @export_factory_operation(Interface, [])
+    def createRecipe(name, description, recipe_text, distroseries,
+                     sourcepackagename):
+        """Create a SourcePackageRecipe owned by this person.
+
+        :param name: the name to use for referring to the recipe.
         """
 
     def getRecipe(name):

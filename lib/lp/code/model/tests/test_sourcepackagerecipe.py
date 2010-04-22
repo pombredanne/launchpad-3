@@ -16,9 +16,14 @@ from pytz import UTC
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
+from canonical.testing import DatabaseFunctionalLayer, AppServerLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.testing import (login_person, person_logged_in, TestCaseWithFactory)
+from canonical.launchpad.webapp import canonical_url
+from lp.testing import (
+    ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
+    TestCaseWithFactory
+)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -101,6 +106,35 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+
+class TestWebservice(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def api_obj(self, launchpad, distroseries):
+        api_request = WebServiceTestRequest()
+        distroseries_url = canonical_url(distroseries,
+            request=api_request)
+        return launchpad.load(
+            distroseries_url.replace('http://api.launchpad.dev/',
+            str(launchpad._root_uri)))
+
+    def test_webservices(self):
+        person = self.factory.makePerson()
+        name = person.name
+        distroseries = self.factory.makeDistroSeries()
+        branch = self.factory.makeBranch()
+        launchpad = launchpadlib_for('test', person,
+                service_root="http://api.launchpad.dev:8085")
+        login(ANONYMOUS)
+        distroseries = self.api_obj(launchpad, distroseries)
+        user = launchpad.people[name]
+        recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        user.createRecipe(name='toaster-1', sourcepackagename='toaster',
+                          description='a recipe',
+                          distroseries=distroseries,
+                          recipe_text=recipe_text)
 
 
 def test_suite():

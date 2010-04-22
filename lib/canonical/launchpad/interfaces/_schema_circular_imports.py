@@ -16,11 +16,13 @@ __all__ = []
 
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
     patch_entry_return_type, patch_collection_property,
-    patch_collection_return_type, patch_plain_parameter_type,
-    patch_choice_parameter_type, patch_reference_property)
+    patch_collection_return_type, patch_list_parameter_type,
+    patch_plain_parameter_type, patch_choice_parameter_type,
+    patch_reference_property)
 
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
@@ -46,6 +48,8 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
@@ -383,3 +387,8 @@ patch_reference_property(IBugTracker, 'owner', IPerson)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# IPerson
+patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
+patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries', Reference(schema=IDistroSeries))
+
