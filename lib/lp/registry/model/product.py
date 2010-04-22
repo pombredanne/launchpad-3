@@ -185,7 +185,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     _table = 'Product'
 
     project = ForeignKey(
-        foreignKey="Project", dbName="project", notNull=False, default=None)
+        foreignKey="ProjectGroup", dbName="project", notNull=False,
+        default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,

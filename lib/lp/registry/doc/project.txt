@@ -1,7 +1,7 @@
-= Projects =
+= ProjectGroups =
 
-A Project is basically a group of Products, making it possible to for
-example see all bugs in the Project's Product, or make them share a
+A ProjectGroup is a group of Products, making it possible to for
+example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
@@ -200,14 +200,14 @@ and all valid specifications via the valid_specifications property:
     e4x
 
 
-== Specification Listings for a Project Series ==
+== Specification Listings for a ProjectGroupSeries ==
 
 An IProjectGroupSeries object can be retrieved by IProjectGroup.getSeries.
 
     >>> from canonical.launchpad.interfaces import IProjectGroupSeries
     >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
     >>> mozilla_series_1_0
-    <lp.registry.model.project.ProjectSeries object at...
+    <lp.registry.model.projectgroup.ProjectGroupSeries object at...
 
     >>> IProjectGroupSeries.providedBy(mozilla_series_1_0)
     True
@@ -381,7 +381,7 @@ Even if it has resources to translate.
 A project can have virtual milestones. If any of its products has milestones,
 these milestones are also associated with the project.
 
-Project.milestones is a list of all active milestones associated with
+ProjectGroup.milestones is a list of all active milestones associated with
 a project.
 
     >>> from lp.registry.tests.test_project_milestone import (
@@ -398,7 +398,7 @@ a project.
     1.1. active: True
     1.1 active: True
 
-Project.all_milestones is a list of all milestones associated with a project.
+ProjectGroup.all_milestones is a list of all milestones associated with a project.
 
     >>> milestones = gnome.all_milestones
     >>> for milestone in milestones:
@@ -410,7 +410,7 @@ Project.all_milestones is a list of all milestones associated with a project.
     1.1. active: True
     1.1 active: True
 
-Project.getMilestone(name) returns the project milestone with the name `name'
+ProjectGroup.getMilestone(name) returns the project milestone with the name `name'
 or None, if no milestone with this name exists.
 
     >>> milestone = gnome.getMilestone('1.1')

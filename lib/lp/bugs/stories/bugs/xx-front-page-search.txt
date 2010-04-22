@@ -118,7 +118,7 @@ support javascript, so a 'Find' link pointing to /people is displayed.
     'http://bugs.launchpad.dev/people/'
 
 'Project' in this context means either a product, distribution or a
-project.
+project group.
 
 === Searching a product ===
 

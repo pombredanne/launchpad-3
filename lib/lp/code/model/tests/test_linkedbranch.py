@@ -195,7 +195,7 @@ class TestProjectLinkedBranch(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_cannot_have_linked_branch(self):
-        # Projects cannot have linked branches.
+        # ProjectGroups cannot have linked branches.
         project = self.factory.makeProject()
         self.assertRaises(
             CannotHaveLinkedBranch, get_linked_branch, project)

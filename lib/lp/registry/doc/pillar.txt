@@ -3,7 +3,7 @@
 A few of the PillarsOfLaunchpad (tm) share a namespace to allow their name
 to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
-share their name namespace are Product, Project and Distribution.
+share their name namespace are Product, ProjectGroup and Distribution.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPillarNameSet, IProduct, IProjectGroup, IDistribution
@@ -178,14 +178,15 @@ And the same is true for Colin Watson on the Guadalinex distribution.
 == Searching for Pillars ==
 
 We can also use PillarNameSet to do a search across some of our pillars.
-Right now this search is done across Products, Projects and Distributions.
-Products are decorated with ProductWithLicenses to cache the licenses
-that were retrieved in PillarSet.search() to reduce the number of queries.
+Right now this search is done across Products, ProjectGroups and
+Distributions. Products are decorated with ProductWithLicenses to cache the
+licenses that were retrieved in PillarSet.search() to reduce the number of
+queries.
 
     >>> for row in pillar_set.search('mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Project: The Mozilla Project (mozilla)
+    ProjectGroup: The Mozilla Project (mozilla)
     ProductWithLicenses: Mozilla Firefox (firefox)
     ProductWithLicenses: Mozilla Thunderbird (thunderbird)
 
@@ -211,7 +212,7 @@ Note that inactive products and projects won't be included in the results.
     >>> for row in pillar_set.search('mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Project: The Mozilla Project (mozilla)
+    ProjectGroup: The Mozilla Project (mozilla)
     ProductWithLicenses: Mozilla Thunderbird (thunderbird)
 
     >>> pillar_set['applets'].active = False
