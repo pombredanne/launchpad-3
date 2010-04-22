@@ -206,6 +206,28 @@ def what_seeds(pkgname, seeds):
             in_seeds.add(s)
     return in_seeds
 
+def compare_support_level(x, y):
+    """
+    compare two support level strings of the form 18m, 3y etc
+    :parm x: the first support level
+    :parm y: the second support level
+    :return: negative if x < y, zero if x==y, positive if x > y
+    """
+    def support_to_int(support_time):
+        """
+        helper that takes a support time string and converts it to 
+        a integer for cmp()
+        """
+        # allow strings like "5y (kubuntu-common)
+        x = support_time.split()[0]
+        if x.endswith("y"):
+            return 12 * int(x[0:-1])
+        elif x.endswith("m"):
+            return int(x[0:-1])
+        else:
+            raise ValueError("support time '%s' has to end with y or m" % x)
+    return cmp(support_to_int(x), support_to_int(y))
+
 def get_packages_support_time(structure, name, pkg_support_time, support_timeframe_list):
     """
     input a structure file and a list of pair<timeframe, seedlist>
@@ -221,8 +243,15 @@ def get_packages_support_time(structure, name, pkg_support_time, support_timefra
             for pkg in pkgs_in_seeds[seed]:
                 if not pkg in pkg_support_time:
                     pkg_support_time[pkg] = timeframe
-                    if options.with_seeds:
-                        pkg_support_time[pkg] += " (%s)" % ", ".join(what_seeds(pkg, pkgs_in_seeds))
+                else:
+                    old_timeframe = pkg_support_time[pkg]
+                    if compare_support_level(old_timeframe, timeframe) < 0:
+                        logging.debug("overwriting %s from %s to %s" % (
+                                pkg, old_timeframe, timeframe))
+                        pkg_support_time[pkg] = timeframe
+                if options.with_seeds:
+                    pkg_support_time[pkg] += " (%s)" % ", ".join(what_seeds(pkg, pkgs_in_seeds))
+
 
     return pkg_support_time
 
