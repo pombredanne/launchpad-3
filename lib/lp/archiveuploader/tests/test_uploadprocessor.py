@@ -46,7 +46,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -304,7 +305,11 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         """
         bar = archive.getPublishedSources(
             name='bar', version="1.0-1", exact_match=True)
-        changes_file = urllib.urlopen(bar[0].changesFileUrl())
+        changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
+            bar[0].sourcepackagerelease)
+        changes_file = changes_lfa.read()
+        self.assertTrue(
+            "Format: " in changes_file, "Does not look like a changes file")
         self.assertTrue(
             "-----BEGIN PGP SIGNED MESSAGE-----" not in changes_file,
             "Unexpected PGP header found")
@@ -314,7 +319,6 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.assertTrue(
             "-----END PGP SIGNATURE-----" not in changes_file,
             "Unexpected end of PGP signature found")
-        changes_file.close()
 
 
 class TestUploadProcessor(TestUploadProcessorBase):
