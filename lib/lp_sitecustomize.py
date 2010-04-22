@@ -7,7 +7,12 @@
 import os
 from lp.services.mime import customizeMimetypes
 from zope.security import checker
-from bzrlib.branch import BzrBranch7
+from bzrlib.branch import Branch
+
+def dont_wrap_class_and_subclasses(cls):
+    checker.BasicTypes.update({cls: checker.NoProxy})
+    for subcls in cls.__subclasses__():
+        dont_wrap_class_and_subclasses(subcls)
 
 def main():
     # Note that we configure the LPCONFIG environmental variable in the
@@ -20,6 +25,6 @@ def main():
     # initialization as possible here, in a more visible place.
     os.environ['STORM_CEXTENSIONS'] = '1'
     customizeMimetypes()
-    checker.BasicTypes.update({BzrBranch7: checker.NoProxy})
+    dont_wrap_class_and_subclasses(Branch)
 
 main()
