@@ -337,23 +337,6 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.sourcepackagename = None
 
 
-class ProductSeriesBranchTarget(ProductBranchTarget):
-
-    def __init__(self, productseries):
-        ProductBranchTarget.__init__(self, productseries.product)
-        self.productseries = productseries
-
-    @property
-    def context(self):
-        """See `IBranchTarget`."""
-        return self.productseries
-
-    @property
-    def supports_code_imports(self):
-        """See `IBranchTarget`."""
-        return False
-
-
 def get_canonical_url_data_for_target(branch_target):
     """Return the `ICanonicalUrlData` for an `IBranchTarget`."""
     return ICanonicalUrlData(branch_target.context)
