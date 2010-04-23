@@ -13,9 +13,6 @@ import transaction
 import unittest
 
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.transport import (
-    get_transport, register_transport, unregister_transport)
-from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
 import pytz
@@ -34,7 +31,7 @@ from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, InvalidStackedBranchURL)
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -55,44 +52,7 @@ def run_as_db_user(username):
     return _run_with_different_user
 
 
-class FakeTransportServer:
-    """Set up a fake transport at a given URL prefix.
-
-    For testing purposes.
-    """
-
-    def __init__(self, transport, url_prefix='lp-mirrored:///'):
-        """Constructor.
-
-        :param transport: The backing transport to store the data with.
-        :param url_prefix: The URL prefix to access this transport.
-        """
-        self._transport = transport
-        self._url_prefix = url_prefix
-        self._chroot_server = None
-
-    def start_server(self):
-        """Activate the transport URL."""
-        # The scanner tests assume that branches live on a Launchpad virtual
-        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
-        # entire virtual filesystem here, we fake it by having a chrooted
-        # transport do the work.
-        register_transport(self._url_prefix, self._transportFactory)
-        self._chroot_server = ChrootServer(self._transport)
-        self._chroot_server.start_server()
-
-    def stop_server(self):
-        """Deactivate the transport URL."""
-        self._chroot_server.stop_server()
-        unregister_transport(self._url_prefix, self._transportFactory)
-
-    def _transportFactory(self, url):
-        assert url.startswith(self._url_prefix)
-        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
-        return get_transport(url)
-
-
-class BzrSyncTestCase(TestCaseWithTransport):
+class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
     """Common base for BzrSync test cases."""
 
     layer = LaunchpadZopelessLayer
@@ -101,21 +61,18 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self.factory = LaunchpadObjectFactory()
-        self.makeFixtures()
+        TestCaseWithFactory.setUp(self)
+        self.disable_directory_isolation()
+        self.useBzrBranches(direct_database=True)
         self.lp_db_user = config.launchpad.dbuser
+        self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        # The lp-mirrored transport is set up by the branch_scanner module.
-        # Here we set up a fake so that we can test without worrying about
-        # authservers and the like.
-        server = FakeTransportServer(self.get_transport())
-        server.start_server()
-        self.addCleanup(server.stop_server)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
         self.db_branch = self.makeDatabaseBranch()
-        self.bzr_tree = self.makeBzrBranchAndTree(self.db_branch)
+        self.db_branch, self.bzr_tree = self.create_branch_and_tree(
+            db_branch=self.makeDatabaseBranch())
         self.bzr_branch = self.bzr_tree.branch
 
     def syncBazaarBranchToDatabase(self, bzr_branch, db_branch):
@@ -125,8 +82,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        self.get_transport(db_branch.unique_name).create_prefix()
-        return self.make_branch_and_tree(db_branch.unique_name, format=format)
+        # XXX remove this function
+        db_branch, bzr_tree = self.create_branch_and_tree(db_branch=db_branch)
+        return bzr_tree
 
     def makeDatabaseBranch(self, *args, **kwargs):
         """Make an arbitrary branch in the database."""
@@ -594,9 +552,6 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 class TestBzrTranslationsUploadJob(BzrSyncTestCase):
     """Tests BzrSync support for generating TranslationsUploadJobs."""
 
-    def setUp(self):
-        BzrSyncTestCase.setUp(self)
-
     def _makeProductSeries(self, mode = None):
         """Switch to the Launchpad db user to create and configure a
         product series that is linked to the the branch.
@@ -646,10 +601,6 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 
 class TestUpdatePreviewDiffJob(BzrSyncTestCase):
     """Test the scheduling of jobs to update preview diffs."""
-
-    def setUp(self):
-        """Set up `schedule_diff_updates` to handle tip changes."""
-        BzrSyncTestCase.setUp(self)
 
     @run_as_db_user(config.launchpad.dbuser)
     def test_create_on_new_revision(self):
