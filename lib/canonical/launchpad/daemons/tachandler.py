@@ -164,8 +164,8 @@ class TacTestSetup:
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
 
-        Times out after 20 seconds.  If that happens, the log file will
-        not be cleaned up so the user can post-mortem it.
+        Times out after 20 seconds.  If that happens, the log file content
+        will be included in the exception message for debugging purpose.
 
         :raises TacException: Timeout.
         """
@@ -178,8 +178,8 @@ class TacTestSetup:
             now = time.time()
 
         if now >= deadline:
-            raise TacException('Unable to start %s. Check %s.' % (
-                self.tacfile, self.logfile))
+            raise TacException('Unable to start %s. Content of %s:\n%s' % (
+                self.tacfile, self.logfile, open(self.logfile).read()))
 
     def tearDown(self):
         self.killTac()
