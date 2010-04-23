@@ -854,12 +854,15 @@ class Person(
         # requested because deactivated pillars will be filtered out.
         extra_limit = limit + 5
         results = self._getProjectsWithTheMostKarma(limit=extra_limit)
-        for pillar_name, karma in results[:limit]:
-            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            if pillar.active:
+        for pillar_name, karma in results:
+            pillar = getUtility(IPillarNameSet).getByName(
+                pillar_name, ignore_inactive=True)
+            if pillar is not None:
                 contributions.append(
                     {'project': pillar,
                      'categories': self._getContributedCategories(pillar)})
+            if len(contributions) == limit:
+                break
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):

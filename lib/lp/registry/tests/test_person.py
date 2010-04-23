@@ -630,8 +630,7 @@ class TestPersonKarma(TestCaseWithFactory):
         reconnect_stores('karmacacheupdater')
         total = 0
         # Insert category total for person and project.
-        for category_name_value in category_name_values:
-            category_name, value = category_name_value
+        for category_name, value in category_name_values:
             category = KarmaCategory.byName(category_name)
             self.cache_manager.new(
                 value, person.id, category.id, product_id=product.id)
