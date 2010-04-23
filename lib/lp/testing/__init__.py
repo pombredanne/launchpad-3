@@ -1,7 +1,11 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401,C0301
+# pylint: disable-msg=W0401,C0301,F0401
+
+
+from __future__ import with_statement
+
 
 __metaclass__ = type
 __all__ = [
@@ -11,11 +15,14 @@ __all__ = [
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
+    'launchpadlib_for',
+    'launchpadlib_credentials_for',
     'login',
     'login_person',
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
+    'oauth_access_token_for',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -34,10 +41,12 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 from pprint import pformat
+import re
 import shutil
 import subprocess
 import subunit
@@ -71,13 +80,14 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.launchpad.webapp import errorlog
 from canonical.config import config
+from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    ANONYMOUS, is_logged_in, login, login_person, logout)
+    is_logged_in, login, login_person, logout)
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
@@ -401,18 +411,23 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
 
-    def getUserBrowser(self, url=None):
+    def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
+
+        :param user: The user to open a browser for.
+        :param password: The password to use.  (This cannot be determined
+            because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
         from canonical.launchpad.testing.pages import setupBrowser
         login(ANONYMOUS)
-        user = self.factory.makePerson(password='test')
+        if user is None:
+            user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
         logout()
         browser = setupBrowser(
-            auth="Basic %s:test" % str(email))
+            auth="Basic %s:%s" % (str(email), password))
         if url is not None:
             browser.open(url)
         return browser
@@ -550,6 +565,24 @@ class TestCaseWithFactory(TestCase):
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
             hosted_server.start_server()
             self.addCleanup(hosted_server.stop_server)
+
+
+class BrowserTestCase(TestCaseWithFactory):
+    """A TestCase class for browser tests.
+
+    This testcase provides an API similar to page tests, and can be used for
+    cases when one wants a unit test and not a frakking pagetest.
+    """
+
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -756,16 +789,22 @@ def with_anonymous_login(function):
     return mergeFunctionMetadata(function, wrapped)
 
 
-def run_with_login(person, function, *args, **kwargs):
-    """Run 'function' with 'person' logged in."""
+@contextmanager
+def person_logged_in(person):
     current_person = getUtility(ILaunchBag).user
     logout()
     login_person(person)
     try:
-        return function(*args, **kwargs)
+        yield
     finally:
         logout()
         login_person(current_person)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    with person_logged_in(person):
+        return function(*args, **kwargs)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):

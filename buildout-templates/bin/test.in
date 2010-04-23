@@ -1,4 +1,4 @@
-#! /usr/bin/env ${buildout:directory}/bin/py
+#!${buildout:executable} -S
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -20,7 +20,14 @@
 
 import logging, os, re, sys, time, warnings
 
-BUILD_DIR = '${buildout:directory}'
+# Initialize our paths.
+${python-relative-path-setup}
+import sys
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
+
+BUILD_DIR = ${buildout:directory|path-repr}
+CUSTOM_SITE_DIR = ${scripts:parts-directory|path-repr}
 
 if os.getsid(0) == os.getsid(os.getppid()):
     # We need to become the process group leader so test_on_merge.py
@@ -43,7 +50,7 @@ time.tzset()
 assert os.environ['STORM_CEXTENSIONS'] == '1'
 
 # Make sure our site.py is the one that subprocesses use.
-os.environ['PYTHONPATH'] = "${scripts:parts-directory}"
+os.environ['PYTHONPATH'] = CUSTOM_SITE_DIR
 
 # Set a flag if this is the main testrunner process
 if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
@@ -143,7 +150,7 @@ from zope.testing.testrunner import options
 defaults = {
     # Find tests in the tests and ftests directories
     'tests_pattern': '^f?tests$',
-    'test_path': ['${buildout:directory}/lib'],
+    'test_path': [${buildout:directory/lib|path-repr}],
     'package': ['canonical', 'lp', 'devscripts'],
     'layer': ['!(MailmanLayer)'],
     }
@@ -219,7 +226,7 @@ if __name__ == '__main__':
     # e.g. run the test that you are currently editing.
     try:
         there = os.getcwd()
-        os.chdir('${buildout:directory}')
+        os.chdir(BUILD_DIR)
         result = testrunner.run([])
     finally:
         os.chdir(there)

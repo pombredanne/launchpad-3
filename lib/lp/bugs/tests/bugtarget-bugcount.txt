@@ -13,6 +13,7 @@ anonymous user, i.e. no private bugs will be included in the counts.
     INCOMPLETE
     INVALID
     WONTFIX
+    EXPIRED
     CONFIRMED
     TRIAGED
     INPROGRESS
@@ -55,6 +56,7 @@ If we file a few bugs in each status, the counts will increase.
     INCOMPLETE: 5 bug(s) more
     INVALID: 5 bug(s) more
     WONTFIX: 5 bug(s) more
+    EXPIRED: 5 bug(s) more
     CONFIRMED: 5 bug(s) more
     TRIAGED: 5 bug(s) more
     INPROGRESS: 5 bug(s) more

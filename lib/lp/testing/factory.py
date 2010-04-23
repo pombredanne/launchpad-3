@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Testing infrastructure for the Launchpad application.
 
 This module should not have any actual tests.
@@ -22,11 +24,8 @@ from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
-from textwrap import dedent
 
 import pytz
-from storm.store import Store
-import transaction
 
 from twisted.python.util import mergeFunctionMetadata
 
@@ -39,9 +38,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -85,7 +83,8 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -290,12 +289,6 @@ class LaunchpadObjectFactory(ObjectFactory):
     When this is done, the returned object should have unique references
     for any other required objects.
     """
-
-    # Used for makeBuilderRecipe.
-    MINIMAL_RECIPE_TEXT = dedent(u'''\
-        # bzr-builder format 0.2 deb-version 1.0
-        %s
-        ''')
 
     def doAsUser(self, user, factory_method, **factory_args):
         """Perform a factory method while temporarily logged in as a user.
@@ -645,7 +638,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        official_rosetta=None):
+        official_rosetta=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -676,6 +669,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             product.official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
+        if bug_supervisor is not None:
+            naked_product = removeSecurityProxy(product)
+            naked_product.bug_supervisor = bug_supervisor
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -698,7 +694,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
                     description=None):
-        """Create and return a new, arbitrary Project."""
+        """Create and return a new, arbitrary ProjectGroup."""
         if owner is None:
             owner = self.makePerson()
         if name is None:
@@ -1630,7 +1626,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
-                    virtualized=True, description=None):
+                    virtualized=True, description=None, displayname=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1663,8 +1659,9 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled,
-            require_virtualized=virtualized, description=description)
+            distribution=distribution, name=name, displayname=displayname,
+            enabled=enabled, require_virtualized=virtualized,
+            description=description)
 
         if private:
             archive.private = True
@@ -1711,7 +1708,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
         other_branches = branches[1:]
-        text = self.MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
         parser = RecipeParser(text)
@@ -1719,7 +1716,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, description=None, *branches):
+                                name=None, description=None, branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1737,18 +1734,24 @@ class LaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
-        return getUtility(ISourcePackageRecipeSource).new(
+        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, [distroseries], sourcepackagename, name,
             recipe, description)
+        IStore(source_package_recipe).flush()
+        return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
-                                     sourcename=None):
+                                     sourcename=None, distroseries=None):
         """Make a new SourcePackageRecipeBuild."""
-        if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage(sourcename)
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe()
+            recipe = self.makeSourcePackageRecipe(
+                sourcepackagename=self.makeSourcePackageName(sourcename))
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if sourcepackage is None:
+            sourcepackage = distroseries.getSourcePackage(
+                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
         if archive is None:

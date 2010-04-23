@@ -69,6 +69,7 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -425,7 +426,8 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
-class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
+                          HasRecipesMenuMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -451,6 +453,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'branchvisibility',
         'rdf',
         'branding',
+        'view_recipes',
         ]
 
     def top_contributors(self):
@@ -1041,10 +1044,12 @@ class ProductPackagesPortletView(LaunchpadFormView):
     """View class for product packaging portlet."""
 
     schema = Interface
+    package_field_name = 'distributionsourcepackage'
     custom_widget(
-        'distributionsourcepackage', LaunchpadRadioWidget,
-        orientation='vertical')
+        package_field_name, LaunchpadRadioWidget, orientation='vertical')
     suggestions = None
+    max_suggestions = 8
+    other_package = object()
 
     @cachedproperty
     def sourcepackages(self):
@@ -1058,7 +1063,17 @@ class ProductPackagesPortletView(LaunchpadFormView):
     @cachedproperty
     def can_show_portlet(self):
         """Are there packages, or can packages be suggested."""
-        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+        if len(self.sourcepackages) > 0:
+            return True
+        if self.user is None or config.launchpad.is_lpnet:
+            return False
+        else:
+            return True
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        return {self.package_field_name: self.other_package}
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -1071,7 +1086,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
         # term descriptions that include a link to the source package.
         self.suggestions = []
         vocab_terms = []
-        for package in distro_source_packages[:20]:
+        for package in distro_source_packages[:self.max_suggestions]:
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)
@@ -1079,20 +1094,31 @@ class ProductPackagesPortletView(LaunchpadFormView):
                     item_url, escape(package.name))
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
+        # Add an option to represent the user's decision to choose a
+        # different package. Note that source packages cannot have uppercase
+        # names with underscores, so the name is safe to use.
+        description = 'Choose another Ubuntu package'
+        vocab_terms.append(
+            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
         self.form_fields = form.Fields(
-            Choice(__name__='distributionsourcepackage',
-                   title=_('Ubuntu packages'),
+            Choice(__name__=self.package_field_name,
+                   title=_('Ubuntu %s packages' %
+                           ubuntu.currentseries.displayname),
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Link to this Ubuntu Package'), name='link')
+    @action(_('Set Ubuntu package information'), name='link')
     def link(self, action, data):
         product = self.context
-        dsp = data.get('distributionsourcepackage')
-        assert dsp is not None, "distributionsourcepackage was not specified"
+        dsp = data.get(self.package_field_name)
         product_series = product.development_focus
+        if dsp is self.other_package:
+            # The user wants to link an alternate package to this project.
+            self.next_url = canonical_url(
+                product_series, view_name="+ubuntupkg")
+            return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         product_series.setPackaging(ubuntu.currentseries,
                                     dsp.sourcepackagename,

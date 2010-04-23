@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401,E1002
+
 """Implementation code for source package builds."""
 
 __metaclass__ = type
@@ -25,7 +27,8 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.buildmaster.model.packagebuildfarmjob import (
+    PackageBuildFarmJobDerived)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -157,6 +160,16 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store.add(spbuild)
         return spbuild
 
+    def destroySelf(self):
+        store = Store.of(self)
+        job = self.buildqueue_record.job
+        store.remove(self.buildqueue_record)
+        store.find(
+            SourcePackageRecipeBuildJob,
+            SourcePackageRecipeBuildJob.build == self.id).remove()
+        store.remove(job)
+        store.remove(self)
+
     @classmethod
     def getById(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
@@ -186,7 +199,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return
 
 
-class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
+class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -205,15 +218,15 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
     virtualized = True
 
     def __init__(self, build, job):
-        super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
+        super(SourcePackageRecipeBuildJob, self).__init__()
 
     @classmethod
     def new(cls, build, job):
         """See `ISourcePackageRecipeBuildJobSource`."""
         specific_job = cls(build, job)
-        store = IMasterStore(SourcePackageRecipeBuildJob)
+        store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
 

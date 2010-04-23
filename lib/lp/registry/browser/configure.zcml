@@ -315,7 +315,7 @@
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt"/>
 
-        <!-- Projects portlets -->
+        <!-- ProjectGroups portlets -->
 
         <browser:page
             name="+details"
@@ -789,12 +789,6 @@
             class="lp.registry.browser.person.BeginTeamClaimView"
             permission="launchpad.AnyPerson"
             template="../templates/person-claim-team.pt"/>
-        <browser:page
-            name="+claim"
-            for="lp.registry.interfaces.person.IPerson"
-            class="lp.registry.browser.person.PersonClaimView"
-            permission="zope.Public"
-            template="../templates/person-claim.pt"/>
         <browser:page
             name="+editlanguages"
             for="lp.registry.interfaces.person.IPerson"

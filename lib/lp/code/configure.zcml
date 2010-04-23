@@ -31,7 +31,7 @@
 
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
-    <require 
+    <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferenceEdit"/>
   </class>
@@ -244,7 +244,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id review_diff"
+                        root_message_id review_diff prerequisite_branch"
         attributes="
                     deleteProposal
                     setStatus
@@ -370,11 +370,6 @@
   <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
-  <securedutility
-      class="lp.code.model.branchscanner.BranchScanner"
-      provides="lp.code.interfaces.branchscanner.IBranchScanner">
-    <allow interface="lp.code.interfaces.branchscanner.IBranchScanner"/>
-  </securedutility>
 
   <!-- BranchSubscription -->
 
@@ -789,7 +784,8 @@
                        getImportDetailsForDisplay"/>
     <require
        permission="launchpad.AnyPerson"
-       attributes="tryFailingImportAgain"/>
+       attributes="tryFailingImportAgain
+                   requestImport"/>
     <require
        permission="launchpad.Edit"
        attributes="updateFromData"/>
@@ -973,6 +969,7 @@
      component="lp.code.model.sourcepackagerecipe.SourcePackageRecipe"
      provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
     <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+
   </securedutility>
 
   <class
@@ -992,6 +989,7 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <allow interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
   </class>
 
   <securedutility
@@ -1016,7 +1014,15 @@
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe build_daily"/>
+       set_attributes="
+           build_daily
+           builder_recipe
+           date_last_modified
+           description
+           distroseries
+           name
+           owner
+           sourcepackagename"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

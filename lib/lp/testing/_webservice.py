@@ -15,11 +15,12 @@ from zope.component import getUtility
 from launchpadlib.credentials import AccessToken, Credentials
 from launchpadlib.launchpad import Launchpad
 
+from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IPersonSet)
 
-from lp.testing._login import ANONYMOUS, login, logout
+from lp.testing._login import login, logout
 
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
