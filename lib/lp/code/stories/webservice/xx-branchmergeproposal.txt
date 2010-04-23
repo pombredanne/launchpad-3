@@ -180,7 +180,9 @@ The comments on a branch merge proposal are exposed through the API.
     2
     >>> pprint_entry(all_comments['entries'][0])
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
@@ -193,7 +195,9 @@ The comments on a branch merge proposal are exposed through the API.
     ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is mediocre work.'
     resource_type_link: u'http://.../#code_review_comment'
@@ -264,7 +268,9 @@ Now the code review should be made.
     >>> comment = reviewer_webservice.get(comment_link).jsonBody()
     >>> pprint_entry(comment)
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
