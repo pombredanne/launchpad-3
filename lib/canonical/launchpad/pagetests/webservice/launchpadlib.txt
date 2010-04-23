@@ -54,7 +54,8 @@ scheme which does not work in the test environment.
     >>> lp_anon = Launchpad.login_anonymously('launchpadlib test',
     ...                                       'http://api.launchpad.dev/')
 
-The Launchpad for the anonymous user can be used to access public information.
+The Launchpad object for the anonymous user can be used to access
+public information.
 
     >>> apache_results = lp_anon.project_groups.search(text="Apache")
     >>> print apache_results[0].name
