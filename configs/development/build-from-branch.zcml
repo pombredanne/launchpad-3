@@ -103,8 +103,8 @@
             permission="zope.Public"/>
         <adapter
             provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-            for="lp.code.browser.sourcepackagerecipe.ISourcePackageRecipeSet"
-            factory="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeSetBreadcrumb"
+            for="lp.code.browser.sourcepackagerecipe.IRecipesForPerson"
+            factory="lp.code.browser.sourcepackagerecipe.RecipesForPersonBreadcrumb"
             permission="zope.Public"/>
     </facet>
   <securedutility

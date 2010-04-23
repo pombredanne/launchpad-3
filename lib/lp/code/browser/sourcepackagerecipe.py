@@ -47,29 +47,24 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
-class ISourcePackageRecipeSet(Interface):
+class IRecipesForPerson(Interface):
     """A marker interface for source package recipe sets."""
 
 
-class SourcePackageRecipeSet:
-    """A simple class from SourcePackageRecipeSet.
-
-    This class is only used for making breadcrumbs.
+class RecipesForPersonBreadcrumb(Breadcrumb):
+    """A Breadcrumb that will handle the "Recipes" link for recipe breadcrumbs.
     """
 
-    implements(ISourcePackageRecipeSet)
-
-    def __init__(self, recipe):
-        self.recipe = recipe
-
-
-class SourcePackageRecipeSetBreadcrumb(Breadcrumb):
     rootsite = 'code'
     text = 'Recipes'
 
+    implements(IRecipesForPerson)
+
     @property
     def url(self):
-        return canonical_url(self.context.recipe.owner) + '/+recipes'
+        # Yes, this looks odd, but basically, the breadcrumb code wraps this
+        # class in an instance of itself (because it's doing double duty).
+        return canonical_url(self.context.context) + '/+recipes'
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
@@ -91,7 +86,7 @@ class SourcePackageRecipeHierarchy(Hierarchy):
             recipe = traversed.pop(0)
 
         # Pop in the "Recipes" link to recipe listings.
-        yield SourcePackageRecipeSet(recipe)
+        yield RecipesForPersonBreadcrumb(recipe.owner)
         yield recipe
 
         for item in traversed:
