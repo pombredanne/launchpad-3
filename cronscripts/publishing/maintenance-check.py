@@ -311,7 +311,7 @@ if __name__ == "__main__":
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
         cache.update(apt.progress.FetchProgress())
-        cache.open()
+        cache.open(apt.progress.OpProgress())
         for pkg in cache:
             if not pkg.name in pkg_support_time:
                 pkg_support_time[pkg.name] = support_timeframe[-1][0]
