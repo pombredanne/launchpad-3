@@ -1,3 +1,8 @@
+# XXX bug=569189, bac 2010-04-23
+# This test is disabled due to a bug which prevents authenticated
+# users from writing data or reading any data with a permission
+# attached.
+
 ==============
 Project Groups
 ==============

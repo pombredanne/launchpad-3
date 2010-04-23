@@ -41,7 +41,7 @@ def build_doctest_suite(base_dir, tests_path, special_tests={},
         os.path.normpath(os.path.join(base_dir, tests_path)))
 
     if os.path.exists(testsdir):
-        # Add doctests using default setup/teardown
+        # Add doctests using default setup/teardown.
         filenames = [filename
                      for filename in os.listdir(testsdir)
                      if (filename.endswith('.txt')
