@@ -46,6 +46,7 @@ from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 from pprint import pformat
+import re
 import shutil
 import subprocess
 import subunit
@@ -558,6 +559,24 @@ class TestCaseWithFactory(TestCase):
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
             hosted_server.start_server()
             self.addCleanup(hosted_server.stop_server)
+
+
+class BrowserTestCase(TestCaseWithFactory):
+    """A TestCase class for browser tests.
+
+    This testcase provides an API similar to page tests, and can be used for
+    cases when one wants a unit test and not a frakking pagetest.
+    """
+
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
 
 
 class WindmillTestCase(TestCaseWithFactory):
