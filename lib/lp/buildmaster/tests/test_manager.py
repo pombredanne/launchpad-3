@@ -246,6 +246,7 @@ class TestBuilddManager(TrialTestCase):
         # Stop automatic collection of dispatching results.
         def testSlaveDone(slave):
             pass
+        self._realSlaveDone = self.manager.slaveDone
         self.manager.slaveDone = testSlaveDone
 
     def testFinishCycle(self):
@@ -327,6 +328,69 @@ class TestBuilddManager(TrialTestCase):
             '<foo:http://foo.buildd:8221/> reset failure', repr(result))
         self.assertEqual(
             result.info, "stdout\nstderr")
+
+    def test_fail_to_resume_slave_resets_slave(self):
+        # If an attempt to resume and dispatch a slave fails, we reset the
+        # slave by calling self.reset_result(slave)().
+
+        reset_result_calls = []
+        class LoggingResetResult(BaseDispatchResult):
+            """A DispatchResult that logs calls to itself.
+
+            This *must* subclass BaseDispatchResult, otherwise finishCycle()
+            won't treat it like a dispatch result.
+            """
+            def __init__(self, slave, info=None):
+                self.slave = slave
+            def __call__(self):
+                reset_result_calls.append(self.slave)
+
+        # Make a failing slave that is requesting a resume.
+        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave.resume_requested = True
+        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
+
+        # Make the manager log the reset result calls.
+        self.manager.reset_result = LoggingResetResult
+        # Restore the slaveDone method. It's very relevant to this test.
+        self.manager.slaveDone = self._realSlaveDone
+        # We only care about this one slave. Reset the list of manager
+        # deferreds in case setUp did something unexpected.
+        self.manager._deferreds = []
+
+        self.manager.resumeAndDispatch([slave])
+        # Note: finishCycle isn't generally called by external users, normally
+        # resumeAndDispatch or slaveDone calls it. However, these calls
+        # swallow the Deferred that finishCycle returns, and we need that
+        # Deferred to make sure this test completes properly.
+        d = self.manager.finishCycle()
+        return d.addCallback(
+            lambda ignored: self.assertEqual([slave], reset_result_calls))
+
+    def test_failed_to_resume_slave_ready_for_reset(self):
+        # When a slave fails to resume, the manager has a Deferred in its
+        # Deferred list that is ready to fire with a ResetDispatchResult.
+
+        # Make a failing slave that is requesting a resume.
+        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave.resume_requested = True
+        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
+
+        # We only care about this one slave. Reset the list of manager
+        # deferreds in case setUp did something unexpected.
+        self.manager._deferreds = []
+        # Restore the slaveDone method. It's very relevant to this test.
+        self.manager.slaveDone = self._realSlaveDone
+        self.manager.resumeAndDispatch([slave])
+        [d] = self.manager._deferreds
+
+        # The Deferred for our failing slave should be ready to fire
+        # successfully with a ResetDispatchResult.
+        def check_result(result):
+            self.assertIsInstance(result, ResetDispatchResult)
+            self.assertEqual(slave, result.slave)
+            self.assertFalse(result.processed)
+        return d.addCallback(check_result)
 
     def testCheckDispatch(self):
         """`BuilddManager.checkDispatch` is chained after dispatch requests.
