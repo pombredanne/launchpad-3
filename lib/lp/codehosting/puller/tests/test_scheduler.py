@@ -28,6 +28,7 @@ from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.testing import (
     reset_logging, TwistedLayer, TwistedAppServerLayer)
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import (
@@ -454,9 +455,9 @@ class TestPullerMaster(TrialTestCase):
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
-                [('branchChanged', self.arbitrary_branch_id, stacked_on_url,
-                  revid_after, control_string, branch_string,
-                  repository_string)],
+                [('branchChanged', LAUNCHPAD_SERVICES,
+                  self.arbitrary_branch_id, stacked_on_url, revid_after,
+                  control_string, branch_string, repository_string)],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
@@ -680,8 +681,9 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
             repository_string = \
                 default_format.repository_format.get_format_string()
             self.assertEqual(
-                [('branchChanged', self.db_branch.id, '', revision_id,
-                  control_string, branch_string, repository_string)],
+                [('branchChanged', LAUNCHPAD_SERVICES, self.db_branch.id, '',
+                  revision_id, control_string, branch_string,
+                  repository_string)],
                 self.client.calls)
             return ignored
         deferred.addCallback(check_authserver_called)

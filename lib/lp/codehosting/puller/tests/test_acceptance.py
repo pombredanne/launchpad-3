@@ -223,7 +223,7 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         product = self.factory.makeProduct()
         default_branch = self.factory.makeProductBranch(
             product=product, private=private)
-        default_branch.last_mirrored = datetime.datetime.now(pytz.UTC)
+        default_branch.last_mirrored_id = 'null:'
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.branch = default_branch
