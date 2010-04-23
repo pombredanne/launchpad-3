@@ -51,9 +51,9 @@ class DirectBranchCommit:
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
-        allows write access to lp-hosted:/// URLs:
+        allows write access to lp-internal:/// URLs:
 
-        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver = get_rw_server()
         bzrserver.start_server()
         try:
             branchcommit = DirectBranchCommit(branch)

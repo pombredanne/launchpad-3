@@ -54,7 +54,6 @@ __all__ = [
     'BranchPolicy',
     'DirectDatabaseLaunchpadServer',
     'get_lp_server',
-    'get_multi_server',
     'get_ro_server',
     'get_rw_server',
     'get_scanner_server',
@@ -88,8 +87,8 @@ from zope.interface import implements, Interface
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient)
 from lp.codehosting.vfs.transport import (
-    AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
-    get_chrooted_transport, get_readonly_transport, TranslationError)
+    AsyncVirtualServer, AsyncVirtualTransport, TranslationError,
+    get_chrooted_transport, get_readonly_transport)
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
@@ -198,48 +197,6 @@ def get_rw_server(direct_database=False):
         codehosting_endpoint = BlockingProxy(proxy)
         return LaunchpadInternalServer(
             'lp-internal:///', codehosting_endpoint, transport)
-
-
-def get_multi_server(write_hosted=False, write_mirrored=False,
-                     direct_database=False):
-    """Get a server with access to both mirrored and hosted areas.
-
-    The server wraps up two `LaunchpadInternalServer`s or
-    `DirectDatabaseLaunchpadServer`s. One server points to the hosted branch
-    area and the other points to the mirrored area.
-
-    Write permision defaults to False, but can be overridden.
-
-    :param write_hosted: if True, lp-hosted URLs are writeable.  Otherwise,
-        they are read-only.
-    :param write_mirrored: if True, lp-mirrored URLs are writeable.
-        Otherwise, they are read-only.
-
-    :param direct_database: if True, use a server implementation that talks
-        directly to the database.  If False, the default, use a server
-        implementation that talks to the internal XML-RPC server.
-    """
-    # XXX 2010-04-20, MichaelHudson: this function will disappear in a later
-    # pipe.
-    hosted_transport = get_chrooted_transport(
-        config.codehosting.mirrored_branches_root, mkdir=True)
-    if not write_hosted:
-        hosted_transport = get_readonly_transport(hosted_transport)
-    mirrored_transport = get_chrooted_transport(
-        config.codehosting.mirrored_branches_root, mkdir=True)
-    if not write_mirrored:
-        mirrored_transport = get_readonly_transport(mirrored_transport)
-    if direct_database:
-        make_server = DirectDatabaseLaunchpadServer
-    else:
-        proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-        codehosting_endpoint = BlockingProxy(proxy)
-        def make_server(scheme, transport):
-            return LaunchpadInternalServer(
-                scheme, codehosting_endpoint, transport)
-    hosted_server = make_server('lp-hosted:///', hosted_transport)
-    mirrored_server = make_server('lp-mirrored:///', mirrored_transport)
-    return _MultiServer(hosted_server, mirrored_server)
 
 
 class ITransportDispatch(Interface):

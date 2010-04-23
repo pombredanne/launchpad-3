@@ -22,38 +22,14 @@ __metaclass__ = type
 
 import _pythonpath
 import sys
-import xmlrpclib
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
 from bzrlib import errors
 
-from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
-from lp.codehosting.vfs import BlockingProxy
-from lp.codehosting.vfs.transport import (
-    get_chrooted_transport, get_readonly_transport, _MultiServer)
+from lp.codehosting.vfs import get_rw_server, get_ro_server
 from lp.codehosting.bzrutils import get_branch_stacked_on_url
-from canonical.config import config
 from lp.services.scripts.base import LaunchpadScript
-
-
-def get_server(read_only):
-    """Get a server that can write to both hosted and mirrored areas."""
-    proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-    authserver = BlockingProxy(proxy)
-    hosted_transport = get_chrooted_transport(
-        config.codehosting.hosted_branches_root)
-    if read_only:
-        hosted_transport = get_readonly_transport(hosted_transport)
-    mirrored_transport = get_chrooted_transport(
-        config.codehosting.mirrored_branches_root)
-    if read_only:
-        mirrored_transport = get_readonly_transport(mirrored_transport)
-    hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', authserver, hosted_transport)
-    mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', authserver, mirrored_transport)
-    return _MultiServer(hosted_server, mirrored_server)
 
 
 def get_hosted_url(unique_name):
@@ -93,7 +69,10 @@ class UpdateStackedBranches(LaunchpadScript):
                   "motions."))
 
     def main(self):
-        server = get_server(self.options.dry_run)
+        if self.options.dry_run:
+            server = get_ro_server()
+        else:
+            server = get_rw_server()
         server.start_server()
         if self.options.dry_run:
             self.logger.debug('Running read-only')
