@@ -348,9 +348,9 @@ class TestBuilddManager(TrialTestCase):
 
         self.manager.resumeAndDispatch([slave])
         # Note: finishCycle isn't generally called by external users, normally
-        # resumeAndDispatch calls it. However, resumeAndDispatch swallows the
-        # Deferred that finishCycle returns, and we need that Deferred to make
-        # sure this test completes properly.
+        # resumeAndDispatch or slaveDone calls it. However, these calls
+        # swallow the Deferred that finishCycle returns, and we need that
+        # Deferred to make sure this test completes properly.
         d = self.manager.finishCycle()
         return d.addCallback(
             lambda ignored: self.assertEqual([slave], reset_result_calls))
