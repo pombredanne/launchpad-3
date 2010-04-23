@@ -23,7 +23,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import Interface
+from zope.interface import implements, Interface
 from zope.schema import Choice, List, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -35,6 +35,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -44,6 +45,31 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+
+class ISourcePackageRecipeSet(Interface):
+    """A marker interface for source package recipe sets."""
+
+
+class SourcePackageRecipeSet:
+    """A simple class from SourcePackageRecipeSet.
+
+    This class is only used for making breadcrumbs.
+    """
+
+    implements(ISourcePackageRecipeSet)
+
+    def __init__(self, recipe):
+        self.recipe = recipe
+
+
+class SourcePackageRecipeSetBreadcrumb(Breadcrumb):
+    rootsite = 'code'
+    text = 'Recipes'
+
+    @property
+    def url(self):
+        return canonical_url(self.context.recipe.owner) + '/+recipes'
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
@@ -63,7 +89,9 @@ class SourcePackageRecipeHierarchy(Hierarchy):
         while not ISourcePackageRecipe.providedBy(recipe):
             yield recipe
             recipe = traversed.pop(0)
-        #TODO: Add the new item here.
+
+        # Pop in the "Recipes" link to recipe listings.
+        yield SourcePackageRecipeSet(recipe)
         yield recipe
 
         for item in traversed:

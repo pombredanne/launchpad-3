@@ -101,6 +101,11 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.code.browser.sourcepackagerecipe.ISourcePackageRecipeSet"
+            factory="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeSetBreadcrumb"
+            permission="zope.Public"/>
     </facet>
   <securedutility
     name="BuildableDistroSeries"
