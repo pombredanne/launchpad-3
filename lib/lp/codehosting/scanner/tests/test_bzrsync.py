@@ -29,8 +29,7 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
-from lp.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL)
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -79,12 +78,6 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         """Sync `bzr_branch` into the database as `db_branch`."""
         syncer = self.makeBzrSync(db_branch)
         syncer.syncBranchAndClose(bzr_branch)
-
-    def makeBzrBranchAndTree(self, db_branch, format=None):
-        """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        # XXX remove this function
-        db_branch, bzr_tree = self.create_branch_and_tree(db_branch=db_branch)
-        return bzr_tree
 
     def makeDatabaseBranch(self, *args, **kwargs):
         """Make an arbitrary branch in the database."""
@@ -206,12 +199,14 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
 
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
-        trunk_tree = self.makeBzrBranchAndTree(db_branch)
+        db_branch, trunk_tree = self.create_branch_and_tree(
+            db_branch=db_branch)
         trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
         # Branch from the base revision.
         new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
-        branch_tree = self.makeBzrBranchAndTree(new_db_branch)
+        new_db_branch, branch_tree = self.create_branch_and_tree(
+            db_branch=new_db_branch)
         branch_tree.pull(trunk_tree.branch)
 
         # Commit to both branches.
@@ -475,7 +470,7 @@ class TestBzrSync(BzrSyncTestCase):
             (branch_revision.revision.revision_id, branch_revision.id)
             for branch_revision in sampledata)
 
-        self.makeBzrBranchAndTree(branch)
+        self.create_branch_and_tree(db_branch=branch)
 
         bzrsync = self.makeBzrSync(branch)
         db_ancestry, db_history, db_branch_revision_map = (
@@ -574,7 +569,7 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
     @run_as_db_user(config.launchpad.dbuser)
     def test_create_on_new_revision(self):
         """When branch tip changes, a job is created."""
-        revision_id = self.commitRevision()
+        self.commitRevision()
         bmp = self.factory.makeBranchMergeProposal(
             source_branch=self.db_branch)
         removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
