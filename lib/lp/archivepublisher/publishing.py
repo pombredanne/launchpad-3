@@ -12,6 +12,7 @@ __metaclass__ = type
 import hashlib
 import logging
 import os
+import shutil
 
 from datetime import datetime
 
@@ -29,13 +30,15 @@ from lp.archivepublisher.utils import (
 from canonical.database.sqlbase import sqlvalues
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, ArchiveStatus
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.librarian.client import LibrarianClient
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -596,3 +599,39 @@ class Publisher(object):
             in_file.close()
 
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
+
+    def deleteArchive(self):
+        """Delete the archive.
+        
+        Physically remove the entire archive from disk and set the archive's 
+        status to DELETED.
+
+        Any errors encountered while removing the archive from disk will 
+        be caught and an OOPS report generated.
+        """
+
+        self.log.info(
+            "Attempting to delete archive '%s/%s' at '%s'." % (
+                self.archive.owner.name, self.archive.name, 
+                self._config.archiveroot))
+
+        # Attempt to rmdir if the path to the root of the archive exists.
+        if os.path.exists(self._config.archiveroot):
+            try:
+                shutil.rmtree(self._config.archiveroot)
+            except:
+                message = 'Exception while deleting archive root %s' % (
+                    self._config.archiveroot)
+                request = ScriptRequest([('error-explanation', message)])
+                ErrorReportingUtility().raising(sys.exc_info(), request)
+                self.log.error('%s (%s)' % (message, request.oopsid))
+        else:
+            self.log.warning(
+                "Root directory '%s' for archive '%s/%s' does not exist." % (
+                    self._config.archiveroot, self.archive.owner.name, 
+                    self.archive.name))
+
+        # Set archive's status to DELETED.
+        self.archive.status = ArchiveStatus.DELETED
+        # Disable publishing for this archive.
+        self.archive.publish = False
