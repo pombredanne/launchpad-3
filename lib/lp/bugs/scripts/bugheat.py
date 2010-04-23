@@ -79,12 +79,12 @@ class BugHeatCalculator:
             self._getHeatFromSubscribers(),
             ])
 
-        # Bugs decay over time. Every month the bug isn't touched its heat
-        # decreases by 10%.
-        months = (
+        # Bugs decay over time. Every day the bug isn't touched its heat
+        # decreases by 1%.
+        days = (
             datetime.utcnow() -
-            self.bug.date_last_updated.replace(tzinfo=None)).days / 30
-        total_heat = int(total_heat * (0.9 ** months))
+            self.bug.date_last_updated.replace(tzinfo=None)).days
+        total_heat = int(total_heat * (0.99 ** days))
 
         return total_heat
 
