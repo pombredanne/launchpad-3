@@ -48,3 +48,11 @@ This can be used to create your own Launchpad object.
     >>> launchpad = Launchpad(credentials, 'http://api.launchpad.dev/')
     >>> print launchpad.me.name
     no-priv
+
+For the test enviroment the service root shown above must be used.
+DEV_SERVICE_ROOT from launchpadlib.uris cannot be used as it uses the
+https protocol.
+
+You can get a Launchpad object with an anonymous user.
+
+    >>> lp = Launchpad.login_anonymously('launchpadlib test', 'http://api.launchpad.dev/')

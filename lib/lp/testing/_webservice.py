@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'launchpadlib_credentials_for',
     'launchpadlib_for',
-    'oauth_access_token_for'
+    'oauth_access_token_for',
     ]
 
 from zope.component import getUtility
@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IPersonSet)
 
 from lp.testing._login import ANONYMOUS, login, logout
+
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
     """Find or create an OAuth access token for the given person.
