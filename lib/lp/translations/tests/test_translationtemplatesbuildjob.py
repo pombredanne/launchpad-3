@@ -219,7 +219,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # If the feature is enabled, a TipChanged event for a branch that
         # generates templates will schedule a templates build.
         branch = self._makeTranslationBranch()
-        commit = DirectBranchCommit(branch, to_mirror=True)
+        commit = DirectBranchCommit(branch)
         commit.writeFile('POTFILES.in', 'foo')
         commit.commit('message')
         notify(events.TipChanged(branch, None, False))

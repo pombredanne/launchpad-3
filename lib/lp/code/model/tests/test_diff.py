@@ -44,7 +44,7 @@ class DiffTestCase(TestCaseWithFactory):
 
         This will create or modify the file, as needed.
         """
-        committer = DirectBranchCommit(branch, to_mirror=True)
+        committer = DirectBranchCommit(branch)
         committer.writeFile(path, contents)
         try:
             return committer.commit('committing')

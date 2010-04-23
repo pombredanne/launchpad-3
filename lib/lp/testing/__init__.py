@@ -408,7 +408,7 @@ class TestCaseWithFactory(TestCase):
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
-        self.real_bzr_server = False
+        self.direct_database_server = False
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -440,11 +440,6 @@ class TestCaseWithFactory(TestCase):
         """
         if format is not None and isinstance(format, basestring):
             format = format_registry.get(format)()
-        transport = get_transport(branch_url)
-        if not self.real_bzr_server:
-            # for real bzr servers, the prefix always exists.
-            transport.create_prefix()
-        self.addCleanup(transport.delete_tree, '.')
         return BzrDir.create_branch_convenience(
             branch_url, format=format)
 
@@ -465,7 +460,7 @@ class TestCaseWithFactory(TestCase):
             else:
                 db_branch = self.factory.makeProductBranch(product, **kwargs)
         branch_url = 'lp-internal:///' + db_branch.unique_name
-        if self.real_bzr_server:
+        if not self.direct_database_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)
         if tree_location is None:
@@ -533,31 +528,17 @@ class TestCaseWithFactory(TestCase):
     def useBzrBranches(self, real_server=False, direct_database=False):
         """Prepare for using bzr branches.
 
-        This sets up support for lp-hosted and lp-mirrored URLs,
-        changes to a temp directory, and overrides the bzr home directory.
+        This sets up support for lp-internal URLs, changes to a temp
+        directory, and overrides the bzr home directory.
 
-        :param real_server: If true, use the "real" code hosting server,
-            using an xmlrpc server, etc.
+        :param direct_database: If true, translate branch locations by
+            directly querying the database, not the internal XML-RPC server.
         """
-        from lp.codehosting.scanner.tests.test_bzrsync import (
-            FakeTransportServer)
         self.useTempBzrHome()
-        self.real_bzr_server = real_server
-        if real_server:
-            server = get_rw_server(
-                direct_database=direct_database)
-            server.start_server()
-            self.addCleanup(server.destroy)
-        else:
-            os.mkdir('lp-mirrored')
-            mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
-            mirror_server.start_server()
-            self.addCleanup(mirror_server.stop_server)
-            os.mkdir('lp-hosted')
-            hosted_server = FakeTransportServer(
-                get_transport('lp-hosted'), url_prefix='lp-hosted:///')
-            hosted_server.start_server()
-            self.addCleanup(hosted_server.stop_server)
+        self.direct_database_server = direct_database
+        server = get_rw_server(direct_database=direct_database)
+        server.start_server()
+        self.addCleanup(server.destroy)
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -834,7 +815,7 @@ def normalize_whitespace(string):
 
 # XXX: This doesn't seem to be a generically useful testing function. Perhaps
 # it should go into a sub-module? -- jml
-def map_branch_contents(branch_url):
+def map_branch_contents(branch):
     """Return all files in branch at `branch_url`.
 
     :param branch_url: the URL for an accessible branch.
@@ -842,7 +823,6 @@ def map_branch_contents(branch_url):
         files are included.
     """
     contents = {}
-    branch = BzrBranch.open(branch_url)
     tree = branch.basis_tree()
     tree.lock_read()
     try:
