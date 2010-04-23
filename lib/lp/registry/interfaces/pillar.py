@@ -5,7 +5,7 @@
 
 """Launchpad Pillars share a namespace.
 
-Pillars are currently Product, Project and Distribution.
+Pillars are currently Product, ProjectGroup and Distribution.
 """
 
 __metaclass__ = type

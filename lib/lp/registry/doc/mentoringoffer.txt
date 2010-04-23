@@ -103,8 +103,8 @@ show up there.
     >>> print firefox.mentoring_offers.count()
     0
 
-We also can get lists of offers of mentoring associated with groups of
-products (Project classes :-)). Tomcat is part of the Apache project, so:
+We also can get lists of offers of mentoring associated with ProjectGroups.
+Tomcat is part of the Apache project group, so:
 
     >>> from canonical.launchpad.interfaces import IProjectGroupSet
     >>> projectset = getUtility(IProjectGroupSet)

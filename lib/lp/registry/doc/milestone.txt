@@ -116,7 +116,7 @@ zope.exceptions.NotFoundError:
     NotFoundError: 'Milestone with ID -1 does not exist'
 
 
-== Project Milestones ==
+== ProjectGroup Milestones ==
 
 The database associates milestones only with products and distroseries.
 The interface IProjectGroupMilestone provides a virtual view of milestones
