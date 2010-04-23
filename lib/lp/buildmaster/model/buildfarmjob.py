@@ -155,10 +155,26 @@ class BuildFarmJob(Storm):
 
     @property
     def log_url(self):
-        """See `IBuildBase`."""
+        """See `IBuildFarmJob`."""
         if self.log is None:
             return None
         return self._getProxiedFileURL(self.log)
+
+    @property
+    def buildqueue_record(self):
+        """See `IBuildFarmJob`."""
+        # Need to update the db schema for buildpackagejob before
+        # this can be implemented here.
+        return None
+
+    @property
+    def is_private(self):
+        """See `IBuildFarmJob`.
+
+        This base implementation assumes build farm jobs are public, but
+        derived implementations can override as required.
+        """
+        return False
 
 
 class BuildFarmJobDerived:

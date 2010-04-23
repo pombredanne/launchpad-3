@@ -23,6 +23,9 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.archivedependencies import (
+    default_component_dependency_name,)
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 class PackageBuild(BuildFarmJobDerived, Storm):
@@ -50,6 +53,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
+    policy_name = 'buildd'
+
     def __init__(self, build):
         """Construct a PackageBuild.
 
@@ -66,7 +71,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     @classmethod
     def new(cls, job_type, virtualized, archive, pocket,
-            processor=None, status=None, dependencies=None):
+            processor=None, status=BuildStatus.BUILDING, dependencies=None):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
 
@@ -135,6 +140,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
             return self.build_farm_job.jobAborted()
 
         self.build.buildstate = BuildStatus.NEEDSBUILD
+
+    @property
+    def current_component(self):
+        """See `IPackageBuild`."""
+        return getUtility(IComponentSet)[default_component_dependency_name]
 
 
 class PackageBuildDerived(BuildFarmJobDerived):

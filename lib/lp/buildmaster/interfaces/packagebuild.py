@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Object, TextLine
+from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
@@ -25,10 +26,11 @@ class IPackageBuild(IBuildFarmJob):
 
     id = Attribute('The package build ID.')
 
-    archive = Reference(
+    archive = exported(
+        Reference(
             title=_('Archive'), schema=IArchive,
             required=True, readonly=True,
-            description=_('The Archive context for this build.'))
+            description=_('The Archive context for this build.')))
 
     pocket = Choice(
             title=_('Pocket'), required=True,
@@ -49,6 +51,14 @@ class IPackageBuild(IBuildFarmJob):
     build_farm_job = Reference(
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
         readonly=True, description=_('The base build farm job.'))
+
+    policy_name = TextLine(
+        title=_("Policy name"), required=True,
+        description=_("The upload policy to use for handling these builds."))
+
+    current_component = Attribute(
+        "Component where the source related to this build was last "
+        "published.")
 
 
 class IPackageBuildSource(Interface):

@@ -53,6 +53,11 @@ class TestPackageBuild(TestCaseWithFactory):
         package_build = self.makePackageBuild()
         self.assertRaises(NotImplementedError, package_build.getTitle)
 
+    def test_default_values(self):
+        package_build = self.makePackageBuild()
+        self.failUnlessEqual('buildd', package_build.policy_name)
+        self.failUnlessEqual(
+            'multiverse', package_build.current_component.name)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

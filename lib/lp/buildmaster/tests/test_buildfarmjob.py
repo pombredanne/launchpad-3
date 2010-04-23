@@ -116,10 +116,12 @@ class TestBuildFarmJob(TestCaseWithFactory):
         self.failUnless(self.build_farm_job.date_started is None)
 
     def test_log_url(self):
-        self.failUnless(False)
+        self.failUnless(
+            False, "Add test.")
 
     def test_buildqueue_record(self):
-        self.failUnless(False)
+        self.failUnless(
+            False, "Update schema and move buildqueue_record implementation")
 
 
 def test_suite():
