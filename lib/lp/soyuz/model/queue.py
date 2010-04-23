@@ -398,9 +398,12 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We explicitly allow unsigned uploads here since the .changes file
+        # is pulled from the librarian which are stripped of their
+        # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -431,9 +434,11 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         self.setRejected()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We allow unsigned uploads since they come from the librarian,
+        # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
     @property
@@ -700,11 +705,10 @@ class PackageUpload(SQLBase):
             unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
-        if self.isPPA():
-            # Leaving the PGP signature on a package uploaded to a PPA
-            # leaves the possibility of someone hijacking the notification
-            # and uploading to the Ubuntu archive as the signer.
-            changes_lines = self._stripPgpSignature(changes_lines)
+        # Leaving the PGP signature on a package uploaded
+        # leaves the possibility of someone hijacking the notification
+        # and uploading to any archive as the signer.
+        changes_lines = self._stripPgpSignature(changes_lines)
 
         return changes, changes_lines
 

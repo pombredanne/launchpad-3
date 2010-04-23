@@ -333,7 +333,7 @@ Products, projects and product series have drivers, who are people that
 have permission to approve bugs and features for specific releases. The
 rules are that:
 
- 1. a "driver" can be set on either Project, Product or ProductSeries
+ 1. a "driver" can be set on either ProjectGroup, Product or ProductSeries
 
  2. drivers are only actually relevant on a ProductSeries, because thats
     the granularity at which we track spec/bug targeting

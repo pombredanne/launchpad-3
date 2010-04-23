@@ -37,7 +37,7 @@ class BranchVisibilityTeamPolicy(SQLBase):
     implements(IBranchVisibilityTeamPolicy)
     _table = 'BranchVisibilityPolicy'
 
-    project = ForeignKey(dbName='project', foreignKey='Project')
+    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(
         dbName='team', foreignKey='Person',
