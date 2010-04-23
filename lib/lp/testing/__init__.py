@@ -409,6 +409,7 @@ class TestCaseWithFactory(TestCase):
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
         self.direct_database_server = False
+        self._use_bzr_branch_called = False
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -478,6 +479,7 @@ class TestCaseWithFactory(TestCase):
         bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
+            removeSecurityProxy(db_branch).last_scanned_id = bzr_branch.last_revision()
         return bzr_branch
 
     @staticmethod
@@ -534,11 +536,14 @@ class TestCaseWithFactory(TestCase):
         :param direct_database: If true, translate branch locations by
             directly querying the database, not the internal XML-RPC server.
         """
+        if self._use_bzr_branch_called:
+            if direct_database != self.direct_database_server:
+                raise AssertionError("XXX")
+            return
+        self._use_bzr_branch_called = True
         self.useTempBzrHome()
         self.direct_database_server = direct_database
-        print direct_database
         server = get_rw_server(direct_database=direct_database)
-        print server
         server.start_server()
         self.addCleanup(server.destroy)
 
