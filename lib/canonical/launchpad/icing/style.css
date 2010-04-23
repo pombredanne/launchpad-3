@@ -143,20 +143,6 @@ a.js-action:active {color: #093;}
 .widget-hd.js-action {color: #093; cursor:pointer}
 .widget-hd.js-action:hover {text-decoration: underline;}
 
-/* Help links */
-a.help {
-  border-bottom: 1px dotted #03a;
-  cursor: help;
-}
-
-a.help.noborder {
-  border: none;
-}
-
-a.help:hover, a.help:hover {
-  text-decoration: none;
-}
-
 h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
