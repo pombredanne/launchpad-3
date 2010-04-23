@@ -32,16 +32,6 @@ from lp.codehosting.bzrutils import get_branch_stacked_on_url
 from lp.services.scripts.base import LaunchpadScript
 
 
-def get_hosted_url(unique_name):
-    """Return the hosted URL for the branch with 'unique_name'."""
-    return 'lp-hosted:///%s' % unique_name
-
-
-def get_mirrored_url(unique_name):
-    """Return the mirrored URL for the branch with 'unique_name'."""
-    return 'lp-mirrored:///%s' % unique_name
-
-
 def set_branch_stacked_on_url(bzrdir, stacked_on_url):
     """Set the stacked_on_location for the branch at 'bzrdir'.
 
@@ -88,8 +78,7 @@ class UpdateStackedBranches(LaunchpadScript):
 
         :param branch_id: The database ID of the branch. This is only used for
             logging.
-        :param bzr_branch_url: The URL of the Bazaar branch. Normally this is
-            of the form lp-mirrored:/// or lp-hosted:///.
+        :param bzr_branch_url: The lp-internal:/// URL of the Bazaar branch.
         :param stacked_on_location: The location to store in the branch's
             stacked_on_location configuration variable.
         """
@@ -144,12 +133,9 @@ class UpdateStackedBranches(LaunchpadScript):
             (branch_id, branch_type, unique_name,
              stacked_on_name) = branch_info
             stacked_on_location = '/' + stacked_on_name
-            if branch_type == 'HOSTED':
-                self.updateStackedOn(
-                    branch_id, get_hosted_url(unique_name),
-                    stacked_on_location)
             self.updateStackedOn(
-                branch_id, get_mirrored_url(unique_name), stacked_on_location)
+                branch_id, 'lp-internal:///' + unique_name,
+                stacked_on_location)
 
 
 if __name__ == '__main__':
