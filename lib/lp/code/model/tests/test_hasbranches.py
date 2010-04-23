@@ -28,7 +28,7 @@ class TestIHasBranches(TestCaseWithFactory):
         self.assertProvides(person, IHasBranches)
 
     def test_project_implements_hasbranches(self):
-        # Projects should implement IHasBranches.
+        # ProjectGroups should implement IHasBranches.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasBranches)
 
