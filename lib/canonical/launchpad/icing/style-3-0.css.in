@@ -86,7 +86,6 @@
 .footer .sitemessage {
     text-align: right;
     }
-
 .footer .colophon {
     margin: 3em 3em 1em 3em;
     text-align: center;
@@ -274,7 +273,8 @@ dt {
     font-weight: bold;
     }
 dt dfn {
-    font-weight: bold;}
+    font-weight: bold;
+    }
 dd {
     margin-bottom: .8em;
     }
@@ -288,7 +288,7 @@ dl.faq dd {
     padding-left: 1em;
     }
 ol {
-       margin-left: 1.8em;
+   margin-left: 1.8em;
     }
 ol li {
    list-style: decimal outside;
@@ -484,7 +484,8 @@ thead th, tr.thead th {
 th.icon, td.icon {
     vertical-align: top;
     white-space: nowrap;
-    width: 1px;}
+    width: 1px;
+    }
 th.icon.left, td.icon.left {
     padding-right: 0;
     }
@@ -1344,7 +1345,9 @@ ul.super-add-action li a {
     margin-bottom: 10px;
     margin-top: 3px;
     }
-span.help {font-weight: normal;}
+span.help {
+    font-weight: normal;
+    }
 
 
 /* =========================
