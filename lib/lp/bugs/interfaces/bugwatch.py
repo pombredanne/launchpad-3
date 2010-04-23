@@ -8,7 +8,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUG_WATCH_ACTIVITY_SUCCESS_STATUSES',
     'BugWatchActivityStatus',
+    'BugWatchCannotBeRescheduled',
     'IBugWatch',
     'IBugWatchActivity',
     'IBugWatchSet',
@@ -93,6 +95,42 @@ class BugWatchActivityStatus(DBEnumeratedType):
         Launchpad cannot import the status of private remote bugs.
         """)
 
+    SYNC_SUCCEEDED = DBItem(9, """
+        Synchronisation succeeded
+
+        The remote bug's status was successfully synchronized to Launchpad.
+        """)
+
+    COMMENT_IMPORT_FAILED = DBItem(10, """
+        Unable to import comments
+
+        The remote bug's status was synchronized successfully but
+        comments could not be imported from the remote bug.
+        """)
+
+    COMMENT_PUSH_FAILED = DBItem(11, """
+        Unable to push comments
+
+        The remote bug's status was synchronized successfully and
+        its comments were successfully imported but Launchpad was unable
+        to push comments back to the remote bug.
+        """)
+
+    BACKLINK_FAILED = DBItem(12, """
+        Unable to set link remote bug to Launchpad
+
+        The remote bug's status and comments were synchronized
+        sucessfully with Launchpad but Launchpad was unable to set the
+        remote bug's link back to the relevant Launchpad bug.
+        """)
+
+
+# The set of BugWatchActivityStatuses that are considered to indicate
+# success.
+BUG_WATCH_ACTIVITY_SUCCESS_STATUSES = [
+    BugWatchActivityStatus.SYNC_SUCCEEDED,
+    ]
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
@@ -173,6 +211,10 @@ class IBugWatch(IHasBug):
         Text(title=_('The URL at which to view the remote bug.'),
              readonly=True))
 
+    can_be_rescheduled = Attribute(
+        "A True or False indicator of whether or not this watch can be "
+        "rescheduled.")
+
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.
 
@@ -212,6 +254,13 @@ class IBugWatch(IHasBug):
 
     def addActivity(result=None, message=None, oops_id=None):
         """Add an `IBugWatchActivity` record for this BugWatch."""
+
+    def setNextCheck(next_check):
+        """Set the next_check time of the watch.
+
+        :raises: `BugWatchCannotBeRescheduled` if
+                 `IBugWatch.can_be_rescheduled` is False.
+        """
 
 
 # Defined here because of circular imports.
@@ -326,3 +375,6 @@ class IBugWatchActivity(Interface):
         title=_('OOPS ID'), readonly=True,
         description=_("The OOPS ID associated with this activity."))
 
+
+class BugWatchCannotBeRescheduled(Exception):
+    """The current `IBugWatch` can't be rescheduled."""

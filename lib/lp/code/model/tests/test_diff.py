@@ -55,6 +55,10 @@ class DiffTestCase(TestCaseWithFactory):
         """Create a merge proposal with conflicts and updates."""
         self.useBzrBranches()
         bmp = self.factory.makeBranchMergeProposal()
+        # Make the branches of the merge proposal look good as far as the
+        # model is concerned.
+        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        self.factory.makeRevisionsForBranch(bmp.target_branch)
         bzr_target = self.createBzrBranch(bmp.target_branch)
         self.commitFile(bmp.target_branch, 'foo', 'a\n')
         self.createBzrBranch(bmp.source_branch, bzr_target)
