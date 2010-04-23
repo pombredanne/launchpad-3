@@ -826,11 +826,12 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.backing_transport = MemoryTransport()
         self.disable_directory_isolation()
 
-    def _replacement_branchChanged(self, branch_id, stacked_on_url,
+    def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
                                    last_revision, *format_strings):
         self._branch_changed_log.append(dict(
-            branch_id=branch_id, stacked_on_url=stacked_on_url,
-            last_revision=last_revision, format_strings=format_strings))
+            user_id=user_id, branch_id=branch_id,
+            stacked_on_url=stacked_on_url, last_revision=last_revision,
+            format_strings=format_strings))
 
     def get_server(self):
         if self._server is None:
@@ -861,6 +862,19 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         branch.lock_write()
         branch.unlock()
         self.assertEqual(1, len(self._branch_changed_log))
+
+    def test_branch_unlock_reports_users_id(self):
+        # Unlocking a branch calls branchChanged on the branch filesystem
+        # endpoint.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch.unlock()
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(
+            self.requester.id, self._branch_changed_log[0]['user_id'])
 
     def test_branch_unlock_reports_stacked_on_url(self):
         # Unlocking a branch reports the stacked on URL to the branch
