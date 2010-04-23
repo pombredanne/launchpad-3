@@ -53,5 +53,6 @@ class TestPackageBuild(TestCaseWithFactory):
         package_build = self.makePackageBuild()
         self.assertRaises(NotImplementedError, package_build.getTitle)
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

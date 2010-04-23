@@ -98,18 +98,42 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         return self.build.title
 
     def jobStarted(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJob`.
+
+        XXX 2010-04-21 michael.nelson bug=567922. This method
+        can be removed once all *Build classes use the concrete
+        BuildFarmJob.
+        """
+        if self.has_concrete_build_farm_job:
+            return self.build_farm_job.jobStarted()
+
         self.build.buildstate = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
         if self.build.date_first_dispatched is None:
             self.build.date_first_dispatched = UTC_NOW
 
     def jobReset(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJob`.
+
+        XXX 2010-04-21 michael.nelson bug=567922. This method
+        can be removed once all *Build classes use the concrete
+        BuildFarmJob.
+        """
+        if self.has_concrete_build_farm_job:
+            return self.build_farm_job.jobReset()
+
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
     def jobAborted(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJob`.
+
+        XXX 2010-04-21 michael.nelson bug=567922. This method
+        can be removed once all *Build classes use the concrete
+        BuildFarmJob.
+        """
+        if self.has_concrete_build_farm_job:
+            return self.build_farm_job.jobAborted()
+
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
 
