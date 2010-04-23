@@ -89,6 +89,18 @@
             name="+recipes"
             template="../../lib/lp/code/templates/sourcepackagerecipe-listing.pt"/>
 
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            name="+hierarchy"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeHierarchy"
+            template="../../lib/lp/app/templates/launchpad-hierarchy.pt"
+            permission="zope.Public"/>
+
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+            permission="zope.Public"/>
     </facet>
   <securedutility
     name="BuildableDistroSeries"

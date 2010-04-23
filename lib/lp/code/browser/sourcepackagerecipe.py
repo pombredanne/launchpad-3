@@ -28,6 +28,7 @@ from zope.schema import Choice, List, Text
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
@@ -43,6 +44,30 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+
+class SourcePackageRecipeHierarchy(Hierarchy):
+    """"Hierarchy for Source Package Recipe."""
+
+    vhost_breadcrumb = False
+
+    @property
+    def objects(self):
+        """See `Hierarchy`."""
+        traversed = list(self.request.traversed_objects)
+
+        # Pop the root object
+        yield traversed.pop(0)
+
+        recipe = traversed.pop(0)
+        while not ISourcePackageRecipe.providedBy(recipe):
+            yield recipe
+            recipe = traversed.pop(0)
+        #TODO: Add the new item here.
+        yield recipe
+
+        for item in traversed:
+            yield item
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
@@ -81,12 +106,12 @@ class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
     @property
-    def title(self):
+    def page_title(self):
         return "%(name)s\'s %(recipe_name)s recipe" % {
             'name': self.context.owner.displayname,
             'recipe_name': self.context.name}
 
-    label = title
+    label = page_title
 
     @property
     def builds(self):
