@@ -90,7 +90,7 @@ class KarmaContextTopContributorsView(LaunchpadView):
             self.context_name = 'Project Group'
         else:
             raise AssertionError(
-                "Context is not a Product, Project or Distribution: %r"
+                "Context is not a Product, Project group or Distribution: %r"
                 % context)
 
     def _getTopContributorsWithLimit(self, limit=None):

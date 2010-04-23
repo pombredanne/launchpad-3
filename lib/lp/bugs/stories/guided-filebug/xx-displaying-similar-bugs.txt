@@ -88,7 +88,7 @@ the list of potentially similar bugs.
     >>> print extract_text(query)
     Is "reflow" one of these bugs?
 
-== Projects ==
+== ProjectGroups ==
 
 Like with products, the user will be shown a list of similar bugs when
 filing a bug against a project:
