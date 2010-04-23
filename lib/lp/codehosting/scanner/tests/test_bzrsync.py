@@ -569,17 +569,18 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
     @run_as_db_user(config.launchpad.dbuser)
     def test_create_on_new_revision(self):
         """When branch tip changes, a job is created."""
-        self.commitRevision()
         bmp = self.factory.makeBranchMergeProposal(
             source_branch=self.db_branch)
         removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
+        # The creation of a merge proposal has created an update preview diff
+        # job, so we'll mark that one as done.
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.complete()
+        self.assertIs(None, bmp.next_preview_diff_job)
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        jobs = list(getUtility(IUpdatePreviewDiffJobSource).iterReady())
-        self.assertEqual(1, len(jobs))
-        self.assertEqual(
-            bmp, removeSecurityProxy(jobs[0]).branch_merge_proposal)
+        self.assertIsNot(None, bmp.next_preview_diff_job)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

@@ -30,7 +30,7 @@ class TestScanBranches(TestCaseWithFactory):
         target_tree.commit('First commit', rev_id='rev1')
         target_tree.commit('Second commit', rev_id='rev2')
         target_tree.commit('Third commit', rev_id='rev3')
-        job = BranchScanJob.create(db_branch)
+        BranchScanJob.create(db_branch)
         transaction.commit()
 
     def run_script_and_assert_success(self):
@@ -40,7 +40,7 @@ class TestScanBranches(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IBranchScanJobSource jobs.\n', stderr)
+            'INFO    Ran 1 BranchScanJob jobs.\n', stderr)
 
     def test_scan_branch(self):
         """Test that scan branches adds revisions to the database."""
