@@ -606,11 +606,12 @@ setLaunchpadBugId() requires the user to be logged in.
     ...     bugzilla.xmlrpc_transport.auth_cookie)
 
     >>> bug_id = bug_watch.bug.id
+    >>> bug_url = 'http://bugs.launchpad.dev/bugs/xxx'
     >>> remote_bug = bug_watch.remotebug
     >>> transaction.commit()
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
-    >>> bugzilla.setLaunchpadBugId(remote_bug, bug_id)
+    >>> bugzilla.setLaunchpadBugId(remote_bug, bug_id, bug_url)
     CALLED Bug.update_see_also({'add':
         ['http://bugs.launchpad.dev/bugs...'], 'ids': [1]})
 

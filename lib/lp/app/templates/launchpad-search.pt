@@ -106,7 +106,7 @@
                     </tal:registrant>
                     <tal:XXX condition="nothing">
                       # XXX sinzui 2008-05-27:
-                      # Product and Project still use the wrong name for
+                      # Product and ProjectGroup still use the wrong name for
                       # date_created.
                     </tal:XXX>
                     <span

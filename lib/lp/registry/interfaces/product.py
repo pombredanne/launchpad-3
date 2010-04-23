@@ -353,11 +353,10 @@ class IProductPublic(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
-            vocabulary='Project',
+            vocabulary='ProjectGroup',
             schema=IProjectGroup,
             description=_(
-                'Super-project. In Launchpad, we can setup a special '
-                '"project group" that is an overarching initiative that '
+                'Project group. This is an overarching initiative that '
                 'includes several related projects. For example, the Mozilla '
                 'Project produces Firefox, Thunderbird and Gecko. This '
                 'information is used to group those projects in a coherent '
@@ -716,8 +715,8 @@ class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
                IStructuralSubscriptionTarget):
     """A Product.
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
+    The Launchpad Registry describes the open source world as ProjectGroups
+    and Products. Each ProjectGroup may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """

@@ -2,13 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
-"""Launchpad Project-related Database Table Objects."""
+"""Launchpad ProjectGroup-related Database Table Objects."""
 
 __metaclass__ = type
 __all__ = [
-    'Project',
-    'ProjectSeries',
-    'ProjectSet',
+    'ProjectGroup',
+    'ProjectGroupSeries',
+    'ProjectGroupSet',
     ]
 
 from zope.component import getUtility
@@ -69,12 +69,12 @@ from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.person import validate_public_person
 
 
-class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
-              StructuralSubscriptionTargetMixin,
-              HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
-    """A Project"""
+class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                   MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
+                   KarmaContextMixin, BranchVisibilityPolicyMixin,
+                   StructuralSubscriptionTargetMixin,
+                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
+    """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
                IHasMugshot, ISearchableByQuestionOwner)
@@ -206,7 +206,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # were passed as a filter
         if not filter:
             # filter could be None or [] then we decide the default
-            # which for a project is to show incomplete specs
+            # which for a project group is to show incomplete specs
             filter = [SpecificationFilter.INCOMPLETE]
 
         # sort by priority descending, by default
@@ -217,7 +217,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
-        # projects, we need to be able to filter on the basis of:
+        # project groups, we need to be able to filter on the basis of:
         #
         #  - completeness. by default, only incomplete specs shown
         #  - informational.
@@ -351,19 +351,19 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Returns True if a project has products associated with it, False
         otherwise.
 
-        If the project has < 1 product, selected links will be disabled.
+        If the project group has < 1 product, selected links will be disabled.
         This is to avoid situations where users try to file bugs against
         empty project groups (Malone bug #106523).
         """
         return self.products.count() != 0
 
     def _getMilestones(self, only_active):
-        """Return a list of milestones for this project.
+        """Return a list of milestones for this project group.
 
         If only_active is True, only active milestones are returned,
         else all milestones.
 
-        A project has a milestone named 'A', if at least one of its
+        A project group has a milestone named 'A', if at least one of its
         products has a milestone named 'A'.
         """
         store = Store.of(self)
@@ -412,25 +412,25 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if has_series is None:
             return None
 
-        return ProjectSeries(self, series_name)
+        return ProjectGroupSeries(self, series_name)
 
 
-class ProjectSet:
+class ProjectGroupSet:
     implements(IProjectGroupSet)
 
     def __init__(self):
-        self.title = 'Projects registered in Launchpad'
+        self.title = 'Project groups registered in Launchpad'
 
     def __iter__(self):
-        return iter(Project.selectBy(active=True))
+        return iter(ProjectGroup.selectBy(active=True))
 
     def __getitem__(self, name):
-        project = self.getByName(name=name, ignore_inactive=True)
-        if project is None:
+        projectgroup = self.getByName(name=name, ignore_inactive=True)
+        if projectgroup is None:
             raise NotFoundError(name)
-        return project
+        return projectgroup
 
-    def get(self, projectid):
+    def get(self, projectgroupid):
         """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`.
 
         >>> getUtility(IProjectGroupSet).get(1).name
@@ -441,9 +441,9 @@ class ProjectSet:
         NotFoundError: -1
         """
         try:
-            project = Project.get(projectid)
+            project = ProjectGroup.get(projectgroupid)
         except SQLObjectNotFound:
-            raise NotFoundError(projectid)
+            raise NotFoundError(projectgroupid)
         return project
 
     def getByName(self, name, ignore_inactive=False):
@@ -459,7 +459,7 @@ class ProjectSet:
         """See `lp.registry.interfaces.projectgroup.IProjectGroupSet`."""
         if registrant is None:
             registrant = owner
-        return Project(
+        return ProjectGroup(
             name=name,
             displayname=displayname,
             title=title,
@@ -474,19 +474,19 @@ class ProjectSet:
             icon=icon)
 
     def count_all(self):
-        return Project.select().count()
+        return ProjectGroup.select().count()
 
     def forReview(self):
-        return Project.select("reviewed IS FALSE")
+        return ProjectGroup.select("reviewed IS FALSE")
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None,
                search_products=False,
                show_inactive=False):
-        """Search through the Registry database for projects that match the
-        query terms. text is a piece of text in the title / summary /
-        description fields of project (and possibly product). soyuz,
+        """Search through the Registry database for project groups that match
+        the query terms. text is a piece of text in the title / summary /
+        description fields of project group (and possibly product). soyuz,
         bazaar, malone etc are hints as to whether the search
         should be limited to projects that are active in those Launchpad
         applications.
@@ -528,11 +528,12 @@ class ProjectSet:
                 queries.append('Product.active IS TRUE')
 
         query = " AND ".join(queries)
-        return Project.select(query, distinct=True, clauseTables=clauseTables)
+        return ProjectGroup.select(
+            query, distinct=True, clauseTables=clauseTables)
 
 
-class ProjectSeries(HasSpecificationsMixin):
-    """See `IprojectSeries`."""
+class ProjectGroupSeries(HasSpecificationsMixin):
+    """See `IProjectGroupSeries`."""
 
     implements(IProjectGroupSeries)
 
