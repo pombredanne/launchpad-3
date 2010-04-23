@@ -384,7 +384,6 @@ class BuilddManager(service.Service):
 
         error_text = '%s\n%s' % (out, err)
         self.logger.error('%s resume failure: %s' % (slave, error_text))
-        self.slaveDone(slave)
         return self.reset_result(slave, error_text)
 
     def checkDispatch(self, response, method, slave):
