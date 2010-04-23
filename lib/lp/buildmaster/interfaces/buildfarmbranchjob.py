@@ -8,11 +8,10 @@ __all__ = [
     'IBuildFarmBranchJob'
     ]
 
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.interfaces.branchjob import IBranchJob
 
 
-class IBuildFarmBranchJob(IBuildFarmJob, IBranchJob):
+class IBuildFarmBranchJob(IBranchJob):
     """An `IBuildFarmJob` that's also an `IBranchJob`.
 
     Use this interface for `IBuildFarmJob` implementations that do not

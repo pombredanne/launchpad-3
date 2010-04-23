@@ -79,14 +79,14 @@ ExternalBugTracker class which implements these three methods.
     >>> external_bugtracker = CommentImportingExternalBugTracker(
     ...     'http://example.com/')
 
-The BugWatchUpdater method importBugComments() is responsible for
+The CheckwatchesMaster method importBugComments() is responsible for
 calling the three methods of ISupportsCommentImport in turn to import
 comments. Calling importBugComments() and passing it our new
 comment-importing ExternalBugTracker instance will result in the three
 comments in the comment_dict being imported into Launchpad.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bugwatch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
     >>> transaction.commit()
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 3 comments for remote bug 123456 on ...

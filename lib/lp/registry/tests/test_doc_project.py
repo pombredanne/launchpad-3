@@ -13,6 +13,6 @@ def setUp(test):
     login(ANONYMOUS)
 
 def test_suite():
-    suite = DocTestSuite('lp.registry.model.project', setUp=setUp)
+    suite = DocTestSuite('lp.registry.model.projectgroup', setUp=setUp)
     suite.layer = LaunchpadFunctionalLayer
     return suite
