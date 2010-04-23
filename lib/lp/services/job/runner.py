@@ -10,12 +10,15 @@ __metaclass__ = type
 
 __all__ = [
     'BaseRunnableJob',
+    'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
+    'TwistedJobRunner',
     ]
 
 
 from calendar import timegm
+from collections import defaultdict
 import contextlib
 import logging
 import os
@@ -178,6 +181,7 @@ class BaseJobRunner(object):
         with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
             try:
+                self.logger.debug('Running %r', job)
                 self.runJob(job)
             except job.user_error_types, e:
                 job.notifyUserError(e)
@@ -329,15 +333,20 @@ class TwistedJobRunner(BaseJobRunner):
         except LeaseHeld:
             self.incomplete_jobs.append(job)
             return
+        # Commit transaction to clear the row lock.
+        transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
+        self.logger.debug('Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
+                self.logger.debug('Finished %r', job)
             else:
                 self.incomplete_jobs.append(job)
+                self.logger.debug('Incomplete %r', job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
         def job_raised(failure):
@@ -352,9 +361,11 @@ class TwistedJobRunner(BaseJobRunner):
         """Return a task source for all jobs in job_source."""
         def producer():
             while True:
-                for job in self.job_source.iterReady():
+                jobs = list(self.job_source.iterReady())
+                if len(jobs) == 0:
+                    yield None
+                for job in jobs:
                     yield lambda: self.runJobInSubprocess(job)
-                yield None
         return PollingTaskSource(5, producer().next)
 
     def doConsumer(self):
@@ -401,23 +412,31 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self, runner_class=JobRunner, test_args=None):
+    def __init__(self, runner_class=JobRunner, test_args=None,
+                 script_name=None):
         self.dbuser = getattr(config, self.config_name).dbuser
+        if script_name is None:
+            script_name = self.config_name
         super(JobCronScript, self).__init__(
-            self.config_name, self.dbuser, test_args)
+            script_name, self.dbuser, test_args)
         self.runner_class = runner_class
+
+    def job_counts(self, jobs):
+        """Return a list of tuples containing the job name and counts."""
+        counts = defaultdict(lambda: 0)
+        for job in jobs:
+            counts[job.__class__.__name__] += 1
+        return sorted(counts.items())
 
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         runner = self.runner_class.runFromSource(
             job_source, self.dbuser, self.logger)
-        self.logger.info(
-            'Ran %d %s jobs.',
-            len(runner.completed_jobs), self.source_interface.__name__)
-        self.logger.info(
-            '%d %s jobs did not complete.',
-            len(runner.incomplete_jobs), self.source_interface.__name__)
+        for name, count in self.job_counts(runner.completed_jobs):
+            self.logger.info('Ran %d %s jobs.', count, name)
+        for name, count in self.job_counts(runner.incomplete_jobs):
+            self.logger.info('%d %s jobs did not complete.', count, name)
 
 
 class TimeoutError(Exception):

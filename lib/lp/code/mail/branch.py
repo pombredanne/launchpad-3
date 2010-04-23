@@ -69,23 +69,22 @@ class RecipientReason:
             review_level=subscription.review_level)
 
     @classmethod
-    def forReviewer(cls, vote_reference, recipient,
+    def forReviewer(cls, branch_merge_proposal, pending_review, reviewer,
                     branch_identity_cache=None):
         """Construct RecipientReason for a reviewer.
 
         The reviewer will be the sole recipient.
         """
-        merge_proposal = vote_reference.branch_merge_proposal
-        branch = merge_proposal.source_branch
-        if vote_reference.comment is None:
+        branch = branch_merge_proposal.source_branch
+        if pending_review:
             reason_template = (
                 '%(entity_is)s requested to review %(merge_proposal)s.')
         else:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
-        return cls(vote_reference.reviewer, recipient, branch,
-                     'Reviewer', reason_template, merge_proposal,
-                     branch_identity_cache=branch_identity_cache)
+        return cls(reviewer, reviewer, branch, 'Reviewer',
+                   reason_template, branch_merge_proposal,
+                   branch_identity_cache=branch_identity_cache)
 
     @classmethod
     def forRegistrant(cls, merge_proposal, branch_identity_cache=None):
@@ -93,7 +92,6 @@ class RecipientReason:
 
         The registrant will be the sole recipient.
         """
-        branch = merge_proposal.source_branch
         reason_template = 'You proposed %(branch_name)s for merging.'
         return cls(merge_proposal.registrant, merge_proposal.registrant,
                      merge_proposal.source_branch,

@@ -43,7 +43,7 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
             'cronscripts/reclaimbranchspace.py', [])
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
             'INFO    Reclaimed space for 0 branches.\n', stderr)
         self.assertEqual(0, retcode)
         self.assertTrue(
@@ -61,7 +61,7 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
             'cronscripts/reclaimbranchspace.py', [])
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
             'INFO    Reclaimed space for 1 branches.\n', stderr)
         self.assertEqual(0, retcode)
         self.assertFalse(
@@ -91,8 +91,7 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         # The script will now remove the branch from disk.
         retcode, stdout, stderr = run_script(
             'cronscripts/reclaimbranchspace.py', [])
-        self.assertEqual('', stdout)
-        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Creating lockfile: ', stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Reclaimed space for 0 branches.\n', stderr)
 
