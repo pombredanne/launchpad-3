@@ -17,6 +17,7 @@ from lazr.restful.fields import Reference
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -32,10 +33,11 @@ class IPackageBuild(IBuildFarmJob):
             required=True, readonly=True,
             description=_('The Archive context for this build.')))
 
-    pocket = Choice(
+    pocket = exported(
+        Choice(
             title=_('Pocket'), required=True,
             vocabulary=PackagePublishingPocket,
-            description=_('The build targeted pocket.'))
+            description=_('The build targeted pocket.')))
 
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
@@ -43,10 +45,24 @@ class IPackageBuild(IBuildFarmJob):
                 'build resulting in an upload that could not be processed '
                 'successfully. Otherwise it will be None.'))
 
-    dependencies = TextLine(
+    upload_log_url = exported(
+        TextLine(
+            title=_("Upload Log URL"), required=False,
+            description=_("A URL for failed upload logs."
+                          "Will be None if there was no failure.")))
+
+    log_url = exported(
+        TextLine(
+            title=_("Build Log URL"), required=False,
+            description=_("A URL for the build log. None if there is no "
+                          "log available.")),
+        ("1.0", dict(exported=True, exported_as="build_log_url")))
+
+    dependencies = exported(
+        TextLine(
             title=_('Dependencies'), required=False,
             description=_('Debian-like dependency line that must be satisfied'
-                          ' before attempting to build this request.'))
+                          ' before attempting to build this request.')))
 
     build_farm_job = Reference(
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
@@ -57,8 +73,14 @@ class IPackageBuild(IBuildFarmJob):
         description=_("The upload policy to use for handling these builds."))
 
     current_component = Attribute(
-        "Component where the source related to this build was last "
-        "published.")
+        'Component where the source related to this build was last '
+        'published.')
+
+    distribution = exported(
+        Reference(
+            schema=IDistribution,
+            title=_("Distribution"), required=True,
+            description=_("Shortcut for its distribution.")))
 
 
 class IPackageBuildSource(Interface):

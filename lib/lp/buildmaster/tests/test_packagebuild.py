@@ -11,7 +11,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
@@ -24,7 +24,7 @@ from lp.testing import TestCaseWithFactory
 class TestPackageBuild(TestCaseWithFactory):
     """Tests for the package build object."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def makePackageBuild(self):
         return getUtility(IPackageBuildSource).new(
@@ -58,6 +58,17 @@ class TestPackageBuild(TestCaseWithFactory):
         self.failUnlessEqual('buildd', package_build.policy_name)
         self.failUnlessEqual(
             'multiverse', package_build.current_component.name)
+        self.failUnlessEqual(None, package_build.distribution)
+
+    def test_log_url(self):
+        lfa = self.factory.makeLibraryFileAlias('myfile.txt')
+        import pdb;pdb.set_trace()
+        self.failUnless(
+            False, "Add test.")
+
+    def test_upload_log_url(self):
+        self.failUnless(False, "Add a test")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

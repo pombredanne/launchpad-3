@@ -115,9 +115,11 @@ class TestBuildFarmJob(TestCaseWithFactory):
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.failUnless(self.build_farm_job.date_started is None)
 
-    def test_log_url(self):
-        self.failUnless(
-            False, "Add test.")
+    def test_title(self):
+        # The default title simply uses the job type's title.
+        self.assertEqual(
+            self.build_farm_job.job_type.title,
+            self.build_farm_job.title)
 
     def test_buildqueue_record(self):
         self.failUnless(

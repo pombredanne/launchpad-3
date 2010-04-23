@@ -97,6 +97,11 @@ class BuildFarmJob(Storm):
         # Check if the object has been added to the store.
         return get_obj_info(self).get('store') is not None
 
+    @property
+    def title(self):
+        """See `IBuildFarmJob`."""
+        return self.job_type.title
+
     def score(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
@@ -143,22 +148,6 @@ class BuildFarmJob(Storm):
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJob`."""
         return True
-
-    def _getProxiedFileURL(self, library_file):
-        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
-        # Avoiding circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(library_file, self)
-        return proxied_file.http_url
-
-    @property
-    def log_url(self):
-        """See `IBuildFarmJob`."""
-        if self.log is None:
-            return None
-        return self._getProxiedFileURL(self.log)
 
     @property
     def buildqueue_record(self):

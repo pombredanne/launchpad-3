@@ -54,6 +54,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
     policy_name = 'buildd'
+    distribution = None
 
     def __init__(self, build):
         """Construct a PackageBuild.
@@ -145,6 +146,34 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     def current_component(self):
         """See `IPackageBuild`."""
         return getUtility(IComponentSet)[default_component_dependency_name]
+
+    @property
+    def upload_log_url(self):
+        """See `IBuildBase`."""
+        if self.upload_log is None:
+            return None
+        return self._getProxiedFileURL(self.upload_log)
+
+    def _getProxiedFileURL(self, library_file):
+        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
+        # TODO: How can we avoid duplicate implementations of this
+        # (here and in buildbase) while temporarily transitioning
+        # the code? perhaps define this as a function instead.
+        # Actually, this particulary would be better suited in the
+        # librarian code?
+        # Avoiding circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(library_file, self)
+        return proxied_file.http_url
+
+    @property
+    def log_url(self):
+        """See `IBuildFarmJob`."""
+        if self.log is None:
+            return None
+        return self._getProxiedFileURL(self.log)
 
 
 class PackageBuildDerived(BuildFarmJobDerived):

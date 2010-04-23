@@ -35,25 +35,25 @@ class BuildFarmJobType(DBEnumeratedType):
     """
 
     PACKAGEBUILD = DBItem(1, """
-        PackageBuildJob
+        Binary package build
 
         Build a source package.
         """)
 
     BRANCHBUILD = DBItem(2, """
-        BranchBuildJob
+        Branch build
 
         Build a package from a bazaar branch.
         """)
 
     RECIPEBRANCHBUILD = DBItem(3, """
-        RecipeBranchBuildJob
+        Recipe branch build
 
         Build a package from a bazaar branch and a recipe.
         """)
 
     TRANSLATIONTEMPLATESBUILD = DBItem(4, """
-        TranslationTemplatesBuildJob
+        Translation template build
 
         Generate translation templates from a bazaar branch.
         """)
@@ -125,13 +125,6 @@ class IBuildFarmJob(Interface):
         title=_(
             "The LibraryFileAlias containing the entire log for this job."))
 
-    log_url = exported(
-        TextLine(
-            title=_("Build Log URL"), required=False,
-            description=_("A URL for the build log. None if there is no "
-                          "log available.")),
-        ("1.0", dict(exported=True, exported_as="build_log_url")))
-
     is_private = Bool(
         title=_("is private"), required=False, readonly=True,
         description=_("Whether the build should be treated as private."))
@@ -148,6 +141,8 @@ class IBuildFarmJob(Interface):
         title=_('Has concrete build farm job'), required=False,
         readonly=True, description=_(
             'Whether this instance is or has a concrete build farm job.'))
+
+    title = exported(TextLine(title=_("Title"), required=False))
 
     def score():
         """Calculate a job score appropriate for the job type in question."""
