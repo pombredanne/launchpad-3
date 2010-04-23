@@ -495,7 +495,7 @@ def delete_unreferenced_content(con):
     loop_tuner = DBLoopTuner(UnreferencedContentPruner(con), 5, log=log)
     loop_tuner.run()
 
-# XXX bug XXX gary 2010-04-22
+# XXX gary 2010-04-22 bug=569217
 # We should remove this and use Python 2.6's os.walk once we switch to
 # Python 2.6.
 def _walk(top, topdown=True, onerror=None, followlinks=False):
@@ -622,7 +622,7 @@ def delete_unwanted_files(con):
     hex_content_id_re = re.compile('^[0-9a-f]{8}$')
     ONE_DAY = 24 * 60 * 60
 
-    # XXX bug XXX gary 2010-04-22
+    # XXX gary 2010-04-22 bug=569217
     # We should switch back to os.walk once we switch to Python 2.6.
     for dirpath, dirnames, filenames in _walk(
         get_storage_root(), followlinks=True):
