@@ -20,7 +20,6 @@ __all__ = [
     'is_branch_stackable',
     'remove_exception_logging_hook',
     'safe_open',
-    'SafeOpenFailed',
     'UnsafeUrlSeen',
     ]
 
@@ -327,6 +326,7 @@ class UnsafeUrlSeen(Exception):
 
 
 def makeURLChecker(allowed_scheme):
+    """Make a callable that rejects URLs not on the given scheme."""
     def checkURL(url):
         """Check that `url` is safe to open."""
         if URI(url).scheme != allowed_scheme:
