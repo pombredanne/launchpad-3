@@ -19,21 +19,23 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-        export_as_webservice_entry, export_write_operation, exported,
-        operation_parameters)
+        call_with, export_as_webservice_entry, export_factory_operation,
+        export_write_operation, exported, operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class ForbiddenInstruction(Exception):
@@ -124,6 +126,16 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
 
     recipe_text = exported(Text())
 
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=IArchive),
+        distroseries=Reference(schema=IDistroSeries),
+        pocket=Choice(
+            title=_('Pocket'), required=True,
+            vocabulary=PackagePublishingPocket,
+            description=_("The build targeted pocket.")),
+        )
+    @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
 

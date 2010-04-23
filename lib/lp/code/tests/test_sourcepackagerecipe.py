@@ -431,11 +431,16 @@ class TestWebservice(TestCaseWithFactory):
 
     layer = AppServerLayer
 
-    def makeRecipe(self):
-        person = self.factory.makePerson()
-        db_distroseries = self.factory.makeDistroSeries()
+    def makeRecipeText(self):
         branch = self.factory.makeBranch()
-        recipe_text = self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        return self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
+
+    def makeRecipe(self, person=None, recipe_text=None):
+        if person is None:
+            person = self.factory.makePerson()
+        db_distroseries = self.factory.makeDistroSeries()
+        if recipe_text is None:
+            recipe_text = self.makeRecipeText()
         launchpad = launchpadlib_for('test', person,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
@@ -449,11 +454,12 @@ class TestWebservice(TestCaseWithFactory):
         transaction.commit()
         db_recipe = person.getRecipe(u'toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
-        return recipe, user, recipe_text
+        return recipe, user, launchpad
 
     def test_createRecipe(self):
         """Ensure recipe creation works."""
-        recipe, user, recipe_text = self.makeRecipe()
+        recipe_text = self.makeRecipeText()
+        recipe, user = self.makeRecipe(recipe_text=recipe_text)[:2]
         self.assertEqual(user.name, recipe.owner.name)
         self.assertEqual(user.name, recipe.registrant.name)
         self.assertEqual('toaster-1', recipe.name)
@@ -461,10 +467,8 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual('toaster', recipe.sourcepackagename)
 
     def test_recipe_text(self):
+        recipe_text2 = self.makeRecipeText()
         recipe = self.makeRecipe()[0]
-        branch2 = self.factory.makeBranch()
-        recipe_text2 = self.factory.MINIMAL_RECIPE_TEXT % branch2.bzr_identity
-        transaction.commit()
         recipe.setRecipeText(recipe_text=recipe_text2)
         self.assertEqual(recipe_text2, recipe.recipe_text)
 
@@ -472,6 +476,18 @@ class TestWebservice(TestCaseWithFactory):
         """Person.getRecipe returns the named recipe."""
         recipe, user = self.makeRecipe()[:-1]
         self.assertEqual(recipe, user.getRecipe(name=recipe.name))
+
+    def test_requestBuild(self):
+        """Build requests can be performed."""
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=person)
+        distroseries = self.factory.makeDistroSeries()
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = self.wsObject(launchpad, distroseries)
+        archive = self.wsObject(launchpad, archive)
+        build = recipe.requestBuild(
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
 
 
 def test_suite():

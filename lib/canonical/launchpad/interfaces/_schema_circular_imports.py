@@ -189,6 +189,13 @@ ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
+# IPerson
+patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
+patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
+                          Reference(schema=IDistroSeries))
+
+patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
@@ -388,8 +395,5 @@ patch_reference_property(IBugTracker, 'owner', IPerson)
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
 
-# IPerson
-patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
-patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries', Reference(schema=IDistroSeries))
 
-patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+
