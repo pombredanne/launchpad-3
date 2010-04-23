@@ -37,8 +37,6 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -610,28 +608,21 @@ class Publisher(object):
         be caught and an OOPS report generated.
         """
 
+        root_dir = os.path.join(
+            self._config.distroroot, self.archive.owner.name,
+            self.archive.name)
+
         self.log.info(
             "Attempting to delete archive '%s/%s' at '%s'." % (
-                self.archive.owner.name, self.archive.name, 
-                self._config.archiveroot))
+                self.archive.owner.name, self.archive.name, root_dir))
 
-        # Attempt to rmdir if the path to the root of the archive exists.
-        if os.path.exists(self._config.archiveroot):
-            try:
-                shutil.rmtree(self._config.archiveroot)
-            except:
-                message = 'Exception while deleting archive root %s' % (
-                    self._config.archiveroot)
-                request = ScriptRequest([('error-explanation', message)])
-                ErrorReportingUtility().raising(sys.exc_info(), request)
-                self.log.error('%s (%s)' % (message, request.oopsid))
-        else:
+        try:
+            shutil.rmtree(root_dir)
+        except (shutil.Error, OSError), e:
             self.log.warning(
-                "Root directory '%s' for archive '%s/%s' does not exist." % (
-                    self._config.archiveroot, self.archive.owner.name, 
-                    self.archive.name))
+                "Failed to delete directory '%s' for archive '%s/%s'\n%s" % (
+                    root_dir, self.archive.owner.name, 
+                    self.archive.name, e))
 
-        # Set archive's status to DELETED.
         self.archive.status = ArchiveStatus.DELETED
-        # Disable publishing for this archive.
         self.archive.publish = False
