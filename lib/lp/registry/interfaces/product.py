@@ -273,6 +273,11 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(releasefileglob="release_url_pattern")
+    @export_factory_operation(
+        IProductSeries, ['name', 'summary', 'branch', 'releasefileglob'])
+    @export_operation_as('new_series')
     def newSeries(owner, name, summary, branch=None, releasefileglob=None):
         """Creates a new `IProductSeries` for this `IProduct`.
 
