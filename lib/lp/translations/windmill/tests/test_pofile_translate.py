@@ -95,8 +95,8 @@ class POFileTranslationActions(WindmillTestCase):
         """Test the unchecking of force suggestion on dismissal.
 
         Checking the dismiss all suggestions checkbox will uncheck a
-        previously checkbox that force submitting the current translation as a
-        suggestion.
+        previously ticked checkbox that forces submitting the current
+        translation as a suggestion.
         """
 
         self.test_user = lpuser.TRANSLATIONS_ADMIN
@@ -115,7 +115,7 @@ class POFileTranslationActions(WindmillTestCase):
         self.client.waits.forElement(
             id=force_suggestion_id, timeout=constants.FOR_ELEMENT)
 
-        # Check that initialy the checkboxes are not selected.
+        # Check that initially the checkboxes are not selected.
         self.client.asserts.assertNotChecked(id=dismiss_id)
         self.client.asserts.assertNotChecked(id=force_suggestion_id)
 
@@ -131,7 +131,7 @@ class POFileTranslationActions(WindmillTestCase):
         """Test the mutual exclusion of diverge and force suggestion.
 
         Diverge current translation and force suggestion checkbox can not
-        be enabled in the same time. Checking one option will disable the
+        be enabled at the same time. Checking one option will disable the
         other.
 
         If suggestions are dismissed, unchecking the diverge checkbox will
@@ -213,8 +213,8 @@ class POFileTranslationActions(WindmillTestCase):
         self.client.asserts.assertElemJS(
             id=diverge_id, js=u'!element.disabled')
 
-        # Test uncheking the diverge translations when dismiss all suggestions
-        # is enabled.
+        # Test unchecking the diverge translations when dismiss all
+        # suggestions is enabled.
         self.client.click(id=dismiss_id)
         self.client.asserts.assertElemJS(
             id=force_suggestion_id, js=u'element.disabled')
