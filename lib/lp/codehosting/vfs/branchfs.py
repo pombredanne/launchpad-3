@@ -56,7 +56,6 @@ __all__ = [
     'get_lp_server',
     'get_ro_server',
     'get_rw_server',
-    'get_scanner_server',
     'make_branch_mirrorer',
     'LaunchpadInternalServer',
     'LaunchpadServer',
@@ -176,7 +175,6 @@ def get_ro_server():
     return LaunchpadInternalServer(
         'lp-internal:///', codehosting_endpoint, branch_transport)
 
-get_scanner_server = get_ro_server
 
 def get_rw_server(direct_database=False):
     """Get a server that can write to the Launchpad branch vfs.

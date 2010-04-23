@@ -17,7 +17,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.codehosting.vfs import get_scanner_server
+from lp.codehosting.vfs import get_ro_server
 from lp.services.job.runner import JobRunner
 from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalCreatedJobSource,)
@@ -32,7 +32,7 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
         globalErrorUtility.configure('mpcreationjobs')
         job_source = getUtility(IMergeProposalCreatedJobSource)
         runner = JobRunner.fromReady(job_source, self.logger)
-        server = get_scanner_server()
+        server = get_ro_server()
         server.start_server()
         try:
             runner.runAll()
