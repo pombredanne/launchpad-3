@@ -458,10 +458,10 @@ class BuilddManager(service.Service):
         If the slave resuming succeed, it starts the XMLRPC dialog. See
         `_mayDispatch` for more information.
         """
-        self.logger.info('Dispatching: %s' % slave)
         if resume_result is not None:
             self.slaveDone(slave)
             return resume_result
+        self.logger.info('Dispatching: %s' % slave)
         self._mayDispatch(slave)
 
     def _getProxyForSlave(self, slave):
