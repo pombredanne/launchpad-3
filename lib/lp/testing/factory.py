@@ -1371,7 +1371,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makePackageCodeImport(self, sourcepackage=None, **kwargs):
         """Make a code import targetting a sourcepackage."""
         if sourcepackage is None:
-           sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage()
         target = IBranchTarget(sourcepackage)
         return self.makeCodeImport(target=target, **kwargs)
 
