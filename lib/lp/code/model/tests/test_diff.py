@@ -46,14 +46,10 @@ class DiffTestCase(TestCaseWithFactory):
 
         This will create or modify the file, as needed.
         """
-        if not branch.last_scanned_id:
-            removeSecurityProxy(branch).last_scanned_id = 'null:'
-        committer = DirectBranchCommit(branch)
+        committer = DirectBranchCommit(branch, no_race_check=True)
         committer.writeFile(path, contents)
         try:
-            revid = committer.commit('committing')
-            removeSecurityProxy(branch).last_scanned_id = revid
-            return revid
+            return committer.commit('committing')
         finally:
             committer.unlock()
 

@@ -47,7 +47,7 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None):
+    def __init__(self, db_branch, committer=None, no_race_check=False):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
@@ -66,6 +66,8 @@ class DirectBranchCommit:
 
         :param db_branch: a Launchpad `Branch` object.
         :param committer: the `Person` writing to the branch.
+        :param no_race_check: don't check for other commits before committing
+            our changes, for use in tests.
         """
         self.db_branch = db_branch
 
@@ -74,6 +76,8 @@ class DirectBranchCommit:
         if committer is None:
             committer = db_branch.owner
         self.committer = committer
+
+        self.no_race_check = no_race_check
 
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
@@ -155,6 +159,8 @@ class DirectBranchCommit:
         If it does, raise `ConcurrentUpdateError`.
         """
         assert self.is_locked, "Getting revision on un-locked branch."
+        if self.no_race_check:
+            return
         last_revision = self.bzrbranch.last_revision()
         if last_revision != self.last_scanned_id:
             raise ConcurrentUpdateError(
