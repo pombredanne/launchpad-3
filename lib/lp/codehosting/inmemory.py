@@ -433,7 +433,7 @@ class FakeObjectFactory(ObjectFactory):
         if branch is None:
             branch = self.makeBranch(product=product)
         product.development_focus.branch = branch
-        branch.last_mirrored = 'rev1'
+        branch.last_mirrored_id = 'rev1'
         return branch
 
     def enableDefaultStackingForPackage(self, package, branch):
@@ -445,7 +445,7 @@ class FakeObjectFactory(ObjectFactory):
         """
         package.development_version.setBranch(
             PackagePublishingPocket.RELEASE, branch, branch.owner)
-        branch.last_mirrored = 'rev1'
+        branch.last_mirrored_id = 'rev1'
         return branch
 
 
