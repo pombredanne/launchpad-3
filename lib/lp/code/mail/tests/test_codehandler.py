@@ -27,7 +27,6 @@ from canonical.launchpad.database import MessageSet
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.handlers import mail_handlers
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.interaction import (
     get_current_principal, setupInteraction)
@@ -40,6 +39,7 @@ from lp.code.enums import (
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob)
 from lp.code.mail.codehandler import (
     AddReviewerEmailCommand, CodeEmailCommands, CodeHandler,
@@ -157,7 +157,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Succeeded, but didn't return True")
         # if the message has not been created, this raises SQLObjectNotFound
-        message = MessageSet().get('<my-id>')
+        MessageSet().get('<my-id>')
 
     def test_process_packagebranch(self):
         """Processing an email related to a package branch works.."""
@@ -307,8 +307,8 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(sender, vote.reviewer)
         self.assertEqual(comment, vote.comment)
 
-    def test_processSendsMail(self):
-        """Processing mail causes mail to be sent."""
+    def test_processmail_generates_job(self):
+        """Processing mail causes an email job to be created."""
         mail = self.factory.makeSignedMessage(
             body=' vote Abstain EBAILIWICK', subject='subject')
         bmp = self.factory.makeBranchMergeProposal()
@@ -321,17 +321,14 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = [
-            msg for msg in pop_notifications() if
-            msg['X-Launchpad-message-rationale'] == 'Owner'][0]
-        self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Review: Abstain ebailiwick\n'
-                         ' vote Abstain EBAILIWICK\n'
-                         '-- \n'
-                         '%s\n'
-                         'You are the owner of %s.' %
-                         (canonical_url(bmp), bmp.source_branch.bzr_identity))
-        self.assertEqual(expected_body, notification.get_payload(decode=True))
+        job = Store.of(bmp).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == bmp,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL).one()
+        self.assertIsNot(None, job)
+        # Ensure the DB operations violate no constraints.
+        Store.of(bmp).flush()
 
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
@@ -409,7 +406,7 @@ class TestCodeHandler(TestCaseWithFactory):
         md = self.factory.makeMergeDirective(
             source_branch_url=source_branch_url, target_branch=target_branch)
         submitter = self.factory.makePerson()
-        duplicate_branch = self.factory.makeProductBranch(
+        self.factory.makeProductBranch(
             product=target_branch.product, name='suffix', owner=submitter)
         self.switchDbUser(config.create_merge_proposals.dbuser)
         mp_source, mp_target = self.code_handler._acquireBranchesForProposal(
@@ -490,7 +487,6 @@ class TestCodeHandler(TestCaseWithFactory):
 
         MissingMergeDirective is raised when no merge directive is present.
         """
-        md = self.factory.makeMergeDirective()
         message = self.factory.makeSignedMessage(body='Hi!\n')
         self.switchDbUser(config.processmail.dbuser)
         code_handler = CodeHandler()
@@ -685,10 +681,10 @@ class TestCodeHandler(TestCaseWithFactory):
             self.factory.makeMergeDirectiveEmail())
         self.switchDbUser(config.create_merge_proposals.dbuser)
         code_handler = CodeHandler()
-        bmp = code_handler.processMergeProposal(message)
-        _unused = pop_notifications()
+        code_handler.processMergeProposal(message)
+        pop_notifications()
         transaction.commit()
-        _unused = code_handler.processMergeProposal(message)
+        code_handler.processMergeProposal(message)
         [notification] = pop_notifications()
         self.assertEqual(
             notification['Subject'], 'Error Creating Merge Proposal')
@@ -759,8 +755,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """If an LP URL is provided, we attempt to reproduce it exactly."""
         submitter = self.factory.makePerson(name='merge-submitter')
         target = self.makeTargetBranch()
-        url_product = self.factory.makeProduct('uproduct')
-        url_person = self.factory.makePerson(name='uuser')
+        self.factory.makeProduct('uproduct')
+        self.factory.makePerson(name='uuser')
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar',
@@ -772,8 +768,8 @@ class TestCodeHandler(TestCaseWithFactory):
         """Trailing slashes are permitted in LP URLs."""
         submitter = self.factory.makePerson(name='merge-submitter')
         target = self.makeTargetBranch()
-        url_product = self.factory.makeProduct('uproduct')
-        url_person = self.factory.makePerson(name='uuser')
+        self.factory.makeProduct('uproduct')
+        self.factory.makePerson(name='uuser')
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar/',
@@ -814,7 +810,7 @@ class TestCodeHandler(TestCaseWithFactory):
             body=' review abstain',
             subject='')
         bmp = self.factory.makeBranchMergeProposal()
-        _unused = pop_notifications()
+        pop_notifications()
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
@@ -957,7 +953,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             format="1.9")
         bmp = self._processMergeDirective(message)
         # The hosted location should be populated (open succeeds).
-        source_bzr_branch = self._openBazaarBranchAsClient(bmp.source_branch)
+        self._openBazaarBranchAsClient(bmp.source_branch)
         # Not the mirror (open raises).
         self.assertRaises(
             bzr_errors.NotBranchError, Branch.open,
