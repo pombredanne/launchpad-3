@@ -130,10 +130,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     @operation_parameters(
         archive=Reference(schema=IArchive),
         distroseries=Reference(schema=IDistroSeries),
-        pocket=Choice(
-            title=_('Pocket'), required=True,
-            vocabulary=PackagePublishingPocket,
-            description=_("The build targeted pocket.")),
+	pocket=Choice(vocabulary=PackagePublishingPocket,)
         )
     @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):

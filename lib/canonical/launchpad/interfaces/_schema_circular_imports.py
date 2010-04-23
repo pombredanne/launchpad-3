@@ -394,6 +394,3 @@ patch_reference_property(IBugTracker, 'owner', IPerson)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
-
-
-

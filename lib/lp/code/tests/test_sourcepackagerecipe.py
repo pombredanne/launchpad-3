@@ -37,7 +37,8 @@ from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, TestCaseWithFactory)
+    ANONYMOUS, launchpadlib_for, login, login_person, TestCaseWithFactory,
+    ws_object)
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -446,8 +447,8 @@ class TestWebservice(TestCaseWithFactory):
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
-        distroseries = self.wsObject(launchpad, db_distroseries)
-        ws_owner = self.wsObject(launchpad, owner)
+        distroseries = ws_object(launchpad, db_distroseries)
+        ws_owner = ws_object(launchpad, owner)
         recipe = ws_owner.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
             description='a recipe', distroseries=[distroseries.self_link],
@@ -487,8 +488,8 @@ class TestWebservice(TestCaseWithFactory):
         archive = self.factory.makeArchive(owner=person)
         distroseries = self.factory.makeDistroSeries()
         recipe, user, launchpad = self.makeRecipe(person)
-        distroseries = self.wsObject(launchpad, distroseries)
-        archive = self.wsObject(launchpad, archive)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archive)
         build = recipe.requestBuild(
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)

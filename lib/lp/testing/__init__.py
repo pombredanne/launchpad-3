@@ -37,6 +37,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'ws_object'
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
@@ -566,19 +567,6 @@ class TestCaseWithFactory(TestCase):
             hosted_server.start_server()
             self.addCleanup(hosted_server.stop_server)
 
-    def wsObject(self, launchpad, obj):
-        """Convert an object into its webservice version.
-
-        :param launchpad: The Launchpad instance to convert from.
-        :param obj: The object to convert.
-        :return: A launchpadlib Entry object.
-        """
-        api_request = WebServiceTestRequest()
-        obj_url = canonical_url(obj, request=api_request)
-        return launchpad.load(
-            obj_url.replace('http://api.launchpad.dev/',
-            str(launchpad._root_uri)))
-
 
 class WindmillTestCase(TestCaseWithFactory):
     """A TestCase class for Windmill tests.
@@ -944,3 +932,17 @@ def validate_mock_class(mock_class):
                             name, mock_args, real_args))
                     else:
                         break
+
+
+def ws_object(launchpad, obj):
+    """Convert an object into its webservice version.
+
+    :param launchpad: The Launchpad instance to convert from.
+    :param obj: The object to convert.
+    :return: A launchpadlib Entry object.
+    """
+    api_request = WebServiceTestRequest()
+    obj_url = canonical_url(obj, request=api_request)
+    return launchpad.load(
+        obj_url.replace('http://api.launchpad.dev/',
+        str(launchpad._root_uri)))
