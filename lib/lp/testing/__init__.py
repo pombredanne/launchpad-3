@@ -475,7 +475,7 @@ class TestCaseWithFactory(TestCase):
         :param db_branch: The database branch to create the branch for.
         :param parent: If supplied, the bzr branch to use as a parent.
         """
-        bzr_branch = self.createBranchAtURL(db_branch.warehouse_url)
+        bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
         return bzr_branch
@@ -536,7 +536,9 @@ class TestCaseWithFactory(TestCase):
         """
         self.useTempBzrHome()
         self.direct_database_server = direct_database
+        print direct_database
         server = get_rw_server(direct_database=direct_database)
+        print server
         server.start_server()
         self.addCleanup(server.destroy)
 

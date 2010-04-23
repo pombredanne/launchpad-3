@@ -1248,7 +1248,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_run_makes_diff(self):
         """MergeProposalCreationJob.run creates a diff."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         target, target_tree = self.create_branch_and_tree('target')
         target_tree.bzrdir.root_transport.put_bytes('foo', 'foo\n')
         target_tree.add('foo')
@@ -1288,7 +1288,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_run_sends_email(self):
         """MergeProposalCreationJob.run sends an email."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         bmp = self.createProposalWithEmptyBranches()
         job = MergeProposalCreatedJob.create(bmp)
         self.assertEqual([], pop_notifications())
@@ -1374,7 +1374,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     def test_MergeProposalCreateJob_with_sourcepackage_branch(self):
         """Jobs for merge proposals with sourcepackage branches work."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         bmp = self.factory.makeBranchMergeProposal(
             target_branch=self.factory.makePackageBranch())
         tree = self.create_branch_and_tree(db_branch=bmp.target_branch)[1]
@@ -1833,7 +1833,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
 
     def test_run(self):
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         bmp = self.createExampleMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
@@ -1845,7 +1845,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.checkExampleMerge(bmp.preview_diff.text)
 
     def test_10_minute_lease(self):
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         bmp = self.createExampleMerge()[0]
         job = UpdatePreviewDiffJob.create(bmp)
         job.acquireLease()
