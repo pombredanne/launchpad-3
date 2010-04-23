@@ -303,8 +303,8 @@ class TestBuilddManager(TrialTestCase):
             isinstance(result, TestingFailDispatchResult),
             'Dispatch failure did not result in a FailBuildResult object')
 
-    def test_resumeFailed(self):
-        """`BuilddManager.resumeFailed` is chained after resume requests.
+    def test_checkResume(self):
+        """`BuilddManager.checkResume` is chained after resume requests.
 
         If the resume request succeed it returns None, otherwise it returns
         a `ResetBuildResult` (the one in the test context) that will be
@@ -315,8 +315,13 @@ class TestBuilddManager(TrialTestCase):
         """
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
 
+        successful_response = ['', '', os.EX_OK]
+        result = self.manager.checkResume(successful_response, slave)
+        self.assertEqual(
+            None, result, 'Successful resume checks should return None')
+
         failed_response = ['stdout', 'stderr', 1]
-        result = self.manager.resumeFailed(failed_response, slave)
+        result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
             '<foo:http://foo.buildd:8221/> reset failure', repr(result))

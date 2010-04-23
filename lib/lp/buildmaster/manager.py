@@ -366,10 +366,11 @@ class BuilddManager(service.Service):
 
         return recording_slaves
 
-    def resumeFailed(self, response, slave):
+    def checkResume(self, response, slave):
         """Deal with a slave resume failure.
 
-        Return a corresponding `ResetDispatchResult` dispatch result.
+        Return a corresponding `ResetDispatchResult` dispatch result,
+        which is chained to the next callback, dispatchBuild.
         """
         # 'response' is the tuple that's constructed in
         # ProcessWithTimeout.processEnded(), or is a Failure that
@@ -378,6 +379,8 @@ class BuilddManager(service.Service):
             out, err, code = response.value
         else:
             out, err, code = response
+            if code == os.EX_OK:
+                return None
 
         error_text = '%s\n%s' % (out, err)
         self.logger.error('%s resume failure: %s' % (slave, error_text))
@@ -436,7 +439,7 @@ class BuilddManager(service.Service):
                 # The buildd slave needs to be reset before we can dispatch
                 # builds to it.
                 d = slave.resumeSlave()
-                d.addErrback(self.resumeFailed, slave)
+                d.addBoth(self.checkResume, slave)
             else:
                 # Buildd slave is clean, we can dispatch a build to it
                 # straightaway.
