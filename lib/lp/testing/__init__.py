@@ -510,6 +510,7 @@ class TestCaseWithFactory(TestCase):
 
         :return: a `Branch` and a workingtree.
         """
+        # XXX kill this!!
         db_branch = self.factory.makeAnyBranch()
         bzr_branch = self.createBranchAtURL(self.getBranchPath(
                 db_branch, config.codehosting.internal_branch_by_id_root))
