@@ -260,7 +260,7 @@ standing untouched.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-update-personal-standing.lock
     INFO    Updating personal standings
     INFO    Done.
     <BLANKLINE>
@@ -294,7 +294,7 @@ update-standing script bumps his standing to Good too.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-update-personal-standing.lock
     INFO    Updating personal standings
     INFO    Done.
     <BLANKLINE>

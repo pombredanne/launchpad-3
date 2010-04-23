@@ -17,6 +17,7 @@ messaging settings -- stub 2004-10-21
 __all__ = [
     'append_footer',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
@@ -44,10 +45,10 @@ from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.lp import isZopeless
-from canonical.launchpad.helpers import is_ascii_only
-from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
+from canonical.launchpad.helpers import is_ascii_only
+from canonical.lp import isZopeless
+from lp.services.mail.stub import TestMailer
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -145,6 +146,11 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    return format_address(person.displayname, person.preferredemail.email)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -403,30 +409,27 @@ def sendmail(message, to_addrs=None, bulk=True):
     message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
-    if isZopeless():
-        # Zopeless email sending is not unit tested, and won't be.
-        # The zopeless specific stuff is pretty simple though so this
-        # should be fine.
 
-        if config.instance_name == 'testrunner':
-            # when running in the testing environment, store emails
-            TestMailer().send(
-                config.canonical.bounce_address, to_addrs, raw_message)
-        else:
-            if config.zopeless.send_email:
-                # Note that we simply throw away dud recipients. This is fine,
-                # as it emulates the Z3 API which doesn't report this either
-                # (because actual delivery is done later).
-                smtp = SMTP(
-                    config.zopeless.smtp_host, config.zopeless.smtp_port)
-
-                # The "MAIL FROM" is set to the bounce address, to behave in a
-                # way similar to mailing list software.
-                smtp.sendmail(
-                    config.canonical.bounce_address, to_addrs, raw_message)
-                smtp.quit()
+    if isZopeless() and config.instance_name == 'testrunner':
+        # when running in the testing environment, store emails
+        TestMailer().send(
+            config.canonical.bounce_address, to_addrs, raw_message)
         # Strip the angle brackets to the return a Message-Id consistent with
         # raw_sendmail (which doesn't include them).
+        return message['message-id'][1:-1]
+    elif isZopeless() and config.instance_name == 'testrunner-appserver':
+        if config.zopeless.send_email:
+            # Note that we simply throw away dud recipients. This is fine,
+            # as it emulates the Z3 API which doesn't report this either
+            # (because actual delivery is done later).
+            smtp = SMTP(
+                config.zopeless.smtp_host, config.zopeless.smtp_port)
+
+            # The "MAIL FROM" is set to the bounce address, to behave in a
+            # way similar to mailing list software.
+            smtp.sendmail(
+                config.canonical.bounce_address, to_addrs, raw_message)
+            smtp.quit()
         return message['message-id'][1:-1]
     else:
         # The "MAIL FROM" is set to the bounce address, to behave in a way

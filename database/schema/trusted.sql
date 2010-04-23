@@ -1470,36 +1470,36 @@ $$;
 
 -- Update the (redundant) column bug.latest_patch_uploaded when a
 -- a bug attachment is added or removed or if its type is changed.
-CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer) RETURNS VOID
-    SECURITY DEFINER LANGUAGE plpgsql AS
-    $$
-    BEGIN
-        UPDATE bug SET latest_patch_uploaded =
-            (SELECT max(message.datecreated)
-                FROM message, bugattachment
-                WHERE bugattachment.message=message.id AND
-                    bugattachment.bug=$1 AND
-                    bugattachment.type=1)
-            WHERE bug.id=$1;
-    END;
-    $$;
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
+RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE bug SET latest_patch_uploaded =
+        (SELECT max(message.datecreated)
+            FROM message, bugattachment
+            WHERE bugattachment.message=message.id AND
+                bugattachment.bug=$1 AND
+                bugattachment.type=1)
+        WHERE bug.id=$1;
+END;
+$$;
 
 
-CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update() RETURNS trigger
-    SECURITY DEFINER LANGUAGE plpgsql AS
-    $$
-    BEGIN
-        PERFORM bug_update_latest_patch_uploaded(NEW.bug);
-        RETURN NULL; -- Ignored - this is an AFTER trigger
-    END;
-    $$;
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(NEW.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
 
 
-CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete() RETURNS trigger
-    SECURITY DEFINER LANGUAGE plpgsql AS
-    $$
-    BEGIN
-        PERFORM bug_update_latest_patch_uploaded(OLD.bug);
-        RETURN NULL; -- Ignored - this is an AFTER trigger
-    END;
-    $$;
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(OLD.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
