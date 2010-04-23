@@ -532,7 +532,7 @@ class IAppFrontPageSearchForm(Interface):
     search_text = TextLine(title=_('Search text'), required=False)
 
     scope = Choice(title=_('Search scope'), required=False,
-                   vocabulary='DistributionOrProductOrProject')
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class ILaunchpadSearch(Interface):
