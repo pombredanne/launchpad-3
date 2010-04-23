@@ -71,10 +71,8 @@ class BuildFarmJob(Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
-    def __init__(self, job_type, status=None, processor=None,
-                 virtualized=None):
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
+    def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
+                 processor=None, virtualized=None):
         self.job_type, self.status, self.process, self.virtualized = (
             job_type,
             status,
@@ -83,7 +81,7 @@ class BuildFarmJob(Storm):
             )
 
     @classmethod
-    def new(cls, job_type, status=None, processor=None,
+    def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
             virtualized=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(

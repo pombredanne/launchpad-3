@@ -67,14 +67,14 @@ class IBuildFarmJob(Interface):
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
             "The Processor required by this build farm job. "
-            "For processor-independent job types please return None."))
+            "This should be None for processor-independent job types."))
 
     virtualized = Bool(
         title=_('Virtualized'), required=False, readonly=True,
         description=_(
             "The virtualization setting required by this build farm job. "
-            "For job types that do not care about virtualization please "
-            "return None."))
+            "This should be None for job types that do not care whether "
+            "they run virtualized."))
 
     date_created = Datetime(
         title=_("Date created"), required=True, readonly=True,
@@ -90,7 +90,7 @@ class IBuildFarmJob(Interface):
 
     date_first_dispatched = Datetime(
         title=_("Date finished"), required=False, readonly=True,
-        description=_("The timestamp when the build farm job was finished."))
+        description=_("The timestamp when the build farm job was dispatched."))
 
     builder = Reference(
         title=_("Builder"), schema=IBuilder, required=False, readonly=True,
@@ -98,7 +98,7 @@ class IBuildFarmJob(Interface):
 
     status = Choice(
         title=_('Status'), required=True,
-        # Really PackagePublishingPocket, patched in
+        # Really BuildStatus, patched in
         # _schema_circular_imports.py
         vocabulary=DBEnumeratedType,
         description=_("The current status of the job."))
