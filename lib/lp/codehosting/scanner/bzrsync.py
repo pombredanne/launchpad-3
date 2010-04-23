@@ -21,14 +21,8 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
-from bzrlib import urlutils
-
-from lazr.uri import URI
-
 from lp.codehosting import iter_list_chunks
-from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
-from lp.codehosting.vfs.branchfs import BranchPolicy
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
@@ -36,33 +30,6 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
 
 UTC = pytz.timezone('UTC')
-
-
-class InvalidStackedBranchURL(Exception):
-    """Raised when we try to scan a branch stacked on an invalid URL."""
-
-
-class WarehouseBranchPolicy(BranchPolicy):
-
-    def checkOneURL(self, url):
-        """See `BranchOpener.checkOneURL`.
-
-        If the URLs we are mirroring from are anything but a
-        lp-mirrored:///~user/project/branch URLs, we don't want to scan them.
-        Opening branches on remote systems takes too long, and we want all of
-        our local access to be channelled through this transport.
-        """
-        uri = URI(url)
-        if uri.scheme != 'lp-mirrored':
-            raise InvalidStackedBranchURL(url)
-
-    def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
-
-        We're happy to open stacked branches in the usual manner, but want to
-        go on checking the URLs of any branches we then open.
-        """
-        return urlutils.join(branch.base, url), True
 
 
 class BzrSync:

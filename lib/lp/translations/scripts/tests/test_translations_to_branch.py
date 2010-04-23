@@ -76,7 +76,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock\n'
             'INFO    Exporting to translations branches.\n'
             'INFO    Exporting Committobranch trunk series.\n'
             'INFO    Processed 1 item(s); 0 failure(s).',

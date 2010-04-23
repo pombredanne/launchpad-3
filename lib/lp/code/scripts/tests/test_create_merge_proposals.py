@@ -40,7 +40,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
             'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
@@ -67,7 +67,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
             'cronscripts/create_merge_proposals.py', [])
         self.assertEqual(0, retcode)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
             'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
         bmp = branch.landing_candidates[0]
@@ -100,7 +100,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
-        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Creating lockfile:', stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
