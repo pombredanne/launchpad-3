@@ -143,7 +143,10 @@ def create_and_update_deb_src_source_list(distroseries):
         open(os.path.join(rootdir,"var/lib/dpkg/status"),"w")
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
-    cache.update(apt.progress.FetchProgress())
+    try:
+        cache.update(apt.progress.FetchProgress())
+    except SystemError:
+        logging.exception("cache.update() failed")
 
 def get_structure(distroname, version):
     """ Get structure file conent for named distro and distro version.
@@ -310,7 +313,10 @@ if __name__ == "__main__":
         rootdir="./aptroot.%s" % distro
         apt_pkg.Config.Set("APT::Architecture", arch)
         cache = apt.Cache(rootdir=rootdir)
-        cache.update(apt.progress.FetchProgress())
+        try:
+            cache.update(apt.progress.FetchProgress())
+        except SystemError:
+            logging.exception("cache.update() failed")
         cache.open(apt.progress.OpProgress())
         for pkg in cache:
             if not pkg.name in pkg_support_time:
