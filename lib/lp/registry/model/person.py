@@ -1164,11 +1164,8 @@ class Person(
                 "You need to specify a reviewer when a team joins another.")
             requester = self
 
-        expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
@@ -1263,7 +1260,7 @@ class Person(
                 comment=comment)
             # Accessing the id attribute ensures that the team
             # creation has been flushed to the database.
-            tm_id = tm.id
+            tm.id
             notify(event(person, self))
         else:
             # We can't use tm.setExpirationDate() here because the reviewer
@@ -2060,6 +2057,19 @@ class Person(
             self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+        # A team can have up to two addresses, the preferred one and one used
+        # by the team mailing list.
+        if self.mailing_list is not None:
+            mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
+                self.mailing_list.address)
+            mailing_list_email = IMasterObject(mailing_list_email)
+        else:
+            mailing_list_email = None
+        all_addresses = IMasterStore(self).find(
+            EmailAddress, EmailAddress.personID == self.id)
+        for address in all_addresses :
+            if address not in (email, mailing_list_email):
+                address.destroySelf()
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
@@ -2114,6 +2124,7 @@ class Person(
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
+        IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email

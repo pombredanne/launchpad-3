@@ -242,7 +242,7 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
