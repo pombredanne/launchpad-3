@@ -146,6 +146,22 @@ class BuildFarmJob(Storm):
         """See `IBuildFarmJob`."""
         return True
 
+    def _getProxiedFileURL(self, library_file):
+        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
+        # Avoiding circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(library_file, self)
+        return proxied_file.http_url
+
+    @property
+    def log_url(self):
+        """See `IBuildBase`."""
+        if self.log is None:
+            return None
+        return self._getProxiedFileURL(self.log)
+
 
 class BuildFarmJobDerived:
     """See `IBuildFarmJobDerived`."""

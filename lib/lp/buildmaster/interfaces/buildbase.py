@@ -113,6 +113,9 @@ class BuildStatus(DBEnumeratedType):
 
 class IBuildBase(Interface):
     """Common interface shared by farm jobs that build a package."""
+    # XXX 2010-04-21 michael.nelson bug=567922. This interface
+    # can be removed once all *Build classes inherit from
+    # IBuildFarmJob/IPackageBuild.
 
     # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
     # are bad.

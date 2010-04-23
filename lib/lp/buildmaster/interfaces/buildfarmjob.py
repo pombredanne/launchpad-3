@@ -15,8 +15,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime
+from zope.schema import Bool, Choice, Datetime, TextLine
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
@@ -76,37 +77,62 @@ class IBuildFarmJob(Interface):
             "For job types that do not care about virtualization please "
             "return None."))
 
-    date_created = Datetime(
-        title=_("Date created"), required=True, readonly=True,
-        description=_("The timestamp when the build farm job was created."))
+    date_created = exported(
+        Datetime(
+            title=_("Date created"), required=True, readonly=True,
+            description=_(
+                "The timestamp when the build farm job was created.")),
+        ("1.0", dict(exported=True, exported_as="datecreated")))
 
     date_started = Datetime(
         title=_("Date started"), required=False, readonly=True,
         description=_("The timestamp when the build farm job was started."))
 
-    date_finished = Datetime(
-        title=_("Date finished"), required=False, readonly=True,
-        description=_("The timestamp when the build farm job was finished."))
+    date_finished = exported(
+        Datetime(
+            title=_("Date finished"), required=False, readonly=True,
+            description=_("The timestamp when the build farm job was finished.")),
+        ("1.0", dict(exported=True, exported_as="datebuilt")))
 
-    date_first_dispatched = Datetime(
-        title=_("Date finished"), required=False, readonly=True,
-        description=_("The timestamp when the build farm job was finished."))
+    date_first_dispatched = exported(
+        Datetime(
+            title=_("Date finished"), required=False, readonly=True,
+            description=_("The actual build start time. Set when the build "
+                          "is dispatched the first time and not changed in "
+                          "subsequent build attempts.")))
 
     builder = Reference(
         title=_("Builder"), schema=IBuilder, required=False, readonly=True,
         description=_("The builder assigned to this job."))
 
-    status = Choice(
-        title=_('Status'), required=True,
-        # Really PackagePublishingPocket, patched in
-        # _schema_circular_imports.py
-        vocabulary=DBEnumeratedType,
-        description=_("The current status of the job."))
+    buildqueue_record = Reference(
+        # Really IBuildQueue, set in _schema_circular_imports to avoid
+        # circular import.
+        schema=Interface, required=True,
+        title=_("Corresponding BuildQueue record"))
+    Up to here: buildpackagejob.build needs to be updated in the schema to be a reference
+    to buildfarmjob rather than build.
+
+    status = exported(
+        Choice(
+            title=_('Status'), required=True,
+            # Really PackagePublishingPocket, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            description=_("The current status of the job.")),
+        ("1.0", dict(exported=True, exported_as="buildstate")))
 
     log = Reference(
         schema=ILibraryFileAlias, required=False,
         title=_(
             "The LibraryFileAlias containing the entire log for this job."))
+
+    log_url = exported(
+        TextLine(
+            title=_("Build Log URL"), required=False,
+            description=_("A URL for the build log. None if there is no "
+                          "log available.")),
+        ("1.0", dict(exported=True, exported_as="build_log_url")))
 
     job_type = Choice(
         title=_("Job type"), required=True, readonly=True,

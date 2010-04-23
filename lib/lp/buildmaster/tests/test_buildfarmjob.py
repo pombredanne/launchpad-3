@@ -115,6 +115,12 @@ class TestBuildFarmJob(TestCaseWithFactory):
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.failUnless(self.build_farm_job.date_started is None)
 
+    def test_log_url(self):
+        self.failUnless(False)
+
+    def test_buildqueue_record(self):
+        self.failUnless(False)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
