@@ -277,7 +277,7 @@ class IProductDriverRestricted(Interface):
     @rename_parameters_as(releasefileglob="release_url_pattern")
     @export_factory_operation(
         IProductSeries, ['name', 'summary', 'branch', 'releasefileglob'])
-    @export_operation_as('new_series')
+    @export_operation_as('newSeries')
     def newSeries(owner, name, summary, branch=None, releasefileglob=None):
         """Creates a new `IProductSeries` for this `IProduct`.
 

@@ -291,6 +291,17 @@ Series can also be accessed anonymously.
     >>> print series['total_size']
     2
 
+"newSeries" permits the creation of new series.
+
+    >>> experimental_new_series = webservice.named_post(
+    ...     firefox['self_link'], "newSeries", name="experimental",
+    ...     summary="An experimental new series.")
+    >>> print experimental_new_series
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../firefox/experimental
+    ...
+
 A list of releases can be accessed through the releases_collection_link.
 
     >>> response = webservice.get(firefox['releases_collection_link'])
