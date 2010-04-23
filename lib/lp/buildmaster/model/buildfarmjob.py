@@ -150,7 +150,7 @@ class BuildFarmJob(Storm):
 class BuildFarmJobDerived:
     """See `IBuildFarmJobDerived`."""
     implements(IBuildFarmJobDerived)
-    delegates(IBuildFarmJob, context='_build_farm_job')
+    delegates(IBuildFarmJob, context='build_farm_job')
 
     def __init__(self, *args, **kwargs):
         """Ensure the instance to which we delegate is set on creation."""
@@ -170,7 +170,7 @@ class BuildFarmJobDerived:
 
         Sub-classes can override as required.
         """
-        self._build_farm_job = BuildFarmJob(
+        self.build_farm_job = BuildFarmJob(
             job_type=BuildFarmJobType.PACKAGEBUILD)
 
     @classmethod

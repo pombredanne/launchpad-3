@@ -92,8 +92,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         can be removed once all *Build classes use the concrete
         BuildFarmJob.
         """
-        if self._is_concrete_object:
-            return self._build_farm_job.getTitle()
+        if self.has_concrete_build_farm_job:
+            return self.build_farm_job.getTitle()
 
         return self.build.title
 
@@ -118,6 +118,6 @@ class PackageBuildDerived(BuildFarmJobDerived):
     packages.
     """
     def _set_build_farm_job(self):
-        self._build_farm_job = PackageBuild(self.build)
+        self.build_farm_job = PackageBuild(self.build)
 
 
