@@ -42,9 +42,28 @@ Credentials object.
     >>> print credentials.access_token
     oauth_token_secret=...&oauth_token=...
 
-This can be used to create your own Launchpad object.
+This can be used to create your own Launchpad object.  Note you cannot
+use launchpadlib.uris.DEV_SERVICE_ROOT as the URL as it uses the https
+scheme which does not work in the test environment.
 
     >>> from launchpadlib.launchpad import Launchpad
     >>> launchpad = Launchpad(credentials, 'http://api.launchpad.dev/')
     >>> print launchpad.me.name
     no-priv
+
+    >>> lp_anon = Launchpad.login_anonymously('launchpadlib test',
+    ...                                       'http://api.launchpad.dev/')
+
+The Launchpad for the anonymous user can be used to access public information.
+
+    >>> apache_results = lp_anon.project_groups.search(text="Apache")
+    >>> print apache_results[0].name
+    apache
+
+But trying to access information that requires a logged in user
+results in an error.
+
+    >>> print lp_anon.me.name
+    Traceback (most recent call last):
+      ...
+    HTTPError: HTTP Error 401: Unauthorized...
