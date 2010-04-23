@@ -28,7 +28,7 @@ class TestIHasMergeProposals(TestCaseWithFactory):
         self.assertProvides(person, IHasMergeProposals)
 
     def test_project_implements_hasmergeproposals(self):
-        # Projects should implement IHasMergeProposals.
+        # ProjectGroups should implement IHasMergeProposals.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasMergeProposals)
 
