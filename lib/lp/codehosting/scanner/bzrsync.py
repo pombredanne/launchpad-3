@@ -79,8 +79,7 @@ class BzrSync:
         """Synchronize the database with a Bazaar branch, handling locking.
         """
         if bzr_branch is None:
-            bzr_branch = BranchMirrorer(WarehouseBranchPolicy()).open(
-                self.db_branch.warehouse_url)
+            bzr_branch = self.db_branch.getBzrBranch()
         bzr_branch.lock_read()
         try:
             self.syncBranch(bzr_branch)

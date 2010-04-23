@@ -325,7 +325,8 @@ class BranchUpgradeJob(BranchJobDerived):
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
             upgrade_transport.mkdir('.bzr')
-            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport = get_transport(
+                self.branch.getInternalBzrUrl())
             source_branch_transport.clone('.bzr').copy_tree_to_transport(
                 upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
