@@ -1057,7 +1057,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent = revision
             parent_ids = [parent.revision_id]
         branch.startMirroring()
-        branch.mirrorComplete(parent.revision_id)
+        removeSecurityProxy(branch).branchChanged(
+            '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id, sequence=None):
