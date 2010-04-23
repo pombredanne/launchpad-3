@@ -420,7 +420,6 @@
                     last_scanned
                     last_scanned_id
                     revision_count
-                    warehouse_url
                     bug_branches
                     linked_bugs
                     linkBug

@@ -149,7 +149,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     def _makeTranslationBranch(self, fake_pottery_compatible=None):
         """Create a branch that provides translations for a productseries."""
         if fake_pottery_compatible is None:
-            self.useBzrBranches()
+            self.useBzrBranches(direct_database=True)
             branch, tree = self.create_branch_and_tree()
         else:
             branch = self.factory.makeAnyBranch()
@@ -219,6 +219,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # If the feature is enabled, a TipChanged event for a branch that
         # generates templates will schedule a templates build.
         branch = self._makeTranslationBranch()
+        removeSecurityProxy(branch).last_scanned_id = 'null:'
         commit = DirectBranchCommit(branch)
         commit.writeFile('POTFILES.in', 'foo')
         commit.commit('message')
