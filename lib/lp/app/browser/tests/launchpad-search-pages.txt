@@ -193,7 +193,7 @@ when the start param is 0.
 
 When a Launchpad name can be made from the search text, the view tries
 to match the name to a pillar or person. a pillar is a distribution,
-product, or project. A person is a person or a team.
+product, or project group. A person is a person or a team.
 
     >>> search_view = getSearchView(
     ...     form={'field.text': 'launchpad'})

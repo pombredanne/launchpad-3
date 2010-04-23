@@ -10,13 +10,10 @@ __all__ = [
     'BugWatchEditView',
     'BugWatchView']
 
-from datetime import datetime
-from pytz import utc
 
 from zope.component import getUtility
 from zope.interface import Interface
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.widgets.textwidgets import URIWidget
 
@@ -33,9 +30,6 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.menu import structured
-
-
-WATCH_RESCHEDULE_THRESHOLD = 0.6
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -158,48 +152,15 @@ class BugWatchActivityPortletView(LaunchpadFormView):
 
     schema = BugWatchEditForm
 
-    @cachedproperty
-    def total_watch_activity_count(self):
-        return self.context.activity.count()
-
-    @cachedproperty
-    def failed_watch_activity_count(self):
-        failed_activity_count = len([
-            activity for activity in self.context.activity if
-            activity.result not in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES])
-        return failed_activity_count
-
     def userCanReschedule(self, action=None):
         """Return True if the current user can reschedule the bug watch."""
-        if (self.context.next_check is not None and
-            self.context.next_check <= datetime.now(utc)):
-            # If the watch is already scheduled for a time in the past
-            # (or for right now) it can't be rescheduled, since it
-            # should be be checked by the next checkwatches run anyway.
-            return False
-
-        if self.total_watch_activity_count == 0:
-            # Don't show the reschedule button if the watch has never
-            # been checked.
-            return False
-
-        if self.failed_watch_activity_count == 0:
-            # Don't show the reschedule button if the watch has never
-            # failed.
-            return False
-
-        # If the ratio is lower than the reschedule threshold, we
-        # can show the button.
-        failure_ratio = (
-            float(self.failed_watch_activity_count) /
-            self.total_watch_activity_count)
-        return failure_ratio <= WATCH_RESCHEDULE_THRESHOLD
+        return self.context.can_be_rescheduled
 
     @action('Update Now', name='reschedule', condition=userCanReschedule)
     def reschedule_action(self, action, data):
         """Schedule the current bug watch for immediate checking."""
         bugwatch = self.context
-        bugwatch.next_check = UTC_NOW
+        bugwatch.setNextCheck(UTC_NOW)
         self.request.response.addInfoNotification(
             structured(
                 'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a> '

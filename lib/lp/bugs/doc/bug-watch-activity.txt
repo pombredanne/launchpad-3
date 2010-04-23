@@ -71,12 +71,12 @@ Whenever an update is made to a BugWatch that update is recorded as a
 BugWatchActivity entry.
 
 We can demonstrate this by passing our bug watch to
-BugWatchUpdater.updateBugWatches().
+CheckwatchesMaster.updateBugWatches().
 
     >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
-    >>> updater = BugWatchUpdater(transaction, QuietFakeLogger())
+    >>> updater = CheckwatchesMaster(transaction, QuietFakeLogger())
     >>> updater.updateBugWatches(
     ...     TestExternalBugTracker('http://example.com'), [bug_watch])
 
@@ -132,7 +132,7 @@ The OOPS ID for the error will also have been recorded.
     >>> print most_recent_activity.oops_id
     OOPS...
 
-The BugWatchUpdater also adds BugWatchActivity entries when errors occur
+The CheckwatchesMaster also adds BugWatchActivity entries when errors occur
 that don't have an entry in the BugWatchActivityStatus DB Enum.
 
     >>> broken_bugtracker.get_remote_status_error = Exception

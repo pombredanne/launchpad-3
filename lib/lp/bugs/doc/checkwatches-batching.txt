@@ -6,10 +6,10 @@ given. Specifically, the _getRemoteIdsToCheck() method is responsible
 for batching up operations.
 
     >>> import transaction
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from pprint import pprint
 
-    >>> updater = BugWatchUpdater(transaction)
+    >>> updater = CheckwatchesMaster(transaction)
     >>> transaction.commit()
 
 

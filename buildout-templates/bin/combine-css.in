@@ -1,4 +1,10 @@
-#!/usr/bin/env ${buildout:directory}/bin/py
+#!${buildout:executable} -S
+
+# Initialize our paths.
+${python-relative-path-setup}
+import sys
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
 
 import os
 
@@ -6,7 +12,7 @@ from lazr.js.build import ComboFile
 from lazr.js.combo import combine_files
 
 
-root = '${buildout:directory}'
+root = ${buildout:directory|path-repr}
 icing = os.path.join(root, 'lib/canonical/launchpad/icing')
 target = os.path.join(icing, 'combo.css')
 # It'd probably be nice to have this script find all the CSS files we might

@@ -135,9 +135,9 @@ page:
     >>> browser.getLink('My questions').url
     '.../ubuntu/+source/mozilla-firefox/+myquestions'
 
-== Project ==
+== ProjectGroups ==
 
-Project also have the 'Latest questions' portlet and the
+ProjectGroups also have the 'Latest questions' portlet and the
 'Ask a question' button on their overview page.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')
