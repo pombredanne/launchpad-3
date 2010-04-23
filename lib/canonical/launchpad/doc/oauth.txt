@@ -103,7 +103,7 @@ token is considered used and can only be exchanged for an access token
 
 When reviewing a token, we can also change the context associated with
 it, which means the consumer using that token will only have access
-to things linked to that context (Product, Project, Distribution,
+to things linked to that context (Product, ProjectGroup, Distribution,
 DistroSourcePackage).
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
