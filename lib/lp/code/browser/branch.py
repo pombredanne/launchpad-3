@@ -80,6 +80,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType,
     CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
@@ -92,7 +93,6 @@ from lp.code.interfaces.branch import (
     user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -197,7 +197,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete', 'create_recipe')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -224,8 +224,13 @@ class BranchEditMenu(NavigationMenu):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
+    def create_recipe(self):
+        enabled = config.build_from_branch.enabled
+        text = 'Create source package recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
 
-class BranchContextMenu(ContextMenu):
+
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
@@ -233,7 +238,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
