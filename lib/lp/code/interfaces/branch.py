@@ -596,12 +596,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
 
     stacked_on = Attribute('Stacked-on branch')
 
-    warehouse_url = Attribute(
-        "URL for accessing the branch by ID. "
-        "This is for in-datacentre services only and allows such services to "
-        "be unaffected during branch renames. "
-        "See doc/bazaar for more information about the branch warehouse.")
-
     # Bug attributes
     bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
@@ -1075,6 +1069,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             3. Dictionnary mapping bzr bzr revision-ids to the database ids of
                the corresponding BranchRevision rows for this branch.
         """
+
+    def getInternalBzrUrl(self):
+        """XXX."""
 
     def getBzrBranch(self):
         """Return the BzrBranch for this database Branch.

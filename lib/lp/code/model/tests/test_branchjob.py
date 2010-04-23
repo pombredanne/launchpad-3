@@ -250,8 +250,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches()
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        db_branch, tree = self.create_branch_and_tree(format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         self.assertEqual(
@@ -279,8 +278,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
         self.useBzrBranches()
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        db_branch, tree = self.create_branch_and_tree(format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 

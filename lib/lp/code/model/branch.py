@@ -460,14 +460,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             "Private branch %s has no public URL." % self.unique_name)
         return compose_public_url(scheme, self.unique_name)
 
-    @property
-    def warehouse_url(self):
+    def getInternalBzrUrl(self):
         """See `IBranch`."""
-        return 'lp-mirrored:///%s' % self.unique_name
+        return 'lp-internal:///' + self.unique_name
 
     def getBzrBranch(self):
         """See `IBranch`."""
-        return safe_open('lp-internal', 'lp-internal:///' + self.unique_name)
+        return safe_open('lp-internal', self.getInternalBzrUrl())
 
     @property
     def displayname(self):

@@ -2370,7 +2370,7 @@ class TestGetBzrBranch(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useBzrBranches(real_server=True, direct_database=True)
+        self.useBzrBranches(direct_database=True)
 
     def test_simple(self):
         # safe_open returns the underlying bzr branch of a database branch in

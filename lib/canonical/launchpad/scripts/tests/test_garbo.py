@@ -504,7 +504,6 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
-        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
@@ -534,7 +533,6 @@ class TestGarbo(TestCaseWithFactory):
     def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
         # Check to make sure the garbo doesn't remove jobs that aren't more
         # than thirty days old.
-        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
