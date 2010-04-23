@@ -26,7 +26,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
+    ArchivePurpose, ArchiveStatus, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -94,6 +94,24 @@ class TestPublisher(TestPublisherBase):
         # file got published
         foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
+
+    def testDeletingPPA(self):
+        """Test deleting a PPA"""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = getPublisher(test_archive, None, self.logger)
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+            publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        publisher.deleteArchive()
+        self.assertFalse(os.path.exists(publisher._config.archiveroot))
+        self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
