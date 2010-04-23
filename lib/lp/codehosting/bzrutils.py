@@ -338,4 +338,4 @@ def safe_open(allowed_scheme, url):
     :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    checked_open(makeURLChecker(allowed_scheme), url)
+    return checked_open(makeURLChecker(allowed_scheme), url)
