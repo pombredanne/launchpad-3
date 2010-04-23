@@ -2,7 +2,7 @@
 
 Launchpad keeps track of the "upstream" world as well as the "distro" world.
 The anchorpiece of the "upstream" world is the Product, which is a piece of
-software. It can be part of a Project or it can be standalone.
+software. It can be part of a ProjectGroup or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
