@@ -122,6 +122,13 @@ BEGIN
             build_info.source_package_release);
         rows_migrated := rows_migrated + 1;
     END LOOP;
+
+    -- Set the sequences for the buildfarmjob and binarypackagebuild
+    -- tables as this won't have been done automatically due to the
+    -- above manually inserting the ids.
+    PERFORM setval('buildfarmjob_id_seq', build_info.id);
+    PERFORM setval('binarypackagebuild_id_seq', build_info.id);
+
     RETURN rows_migrated;
 END;
 $$;
