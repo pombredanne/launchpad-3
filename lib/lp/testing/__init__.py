@@ -525,7 +525,7 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self, real_server=False, direct_database=False):
+    def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
 
         This sets up support for lp-internal URLs, changes to a temp
