@@ -20,22 +20,27 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.webapp.adapter import (
-    clear_request_started, get_request_statements, set_request_started)
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
-from lp.bugs.scripts.checkwatches import (
-    BugWatchUpdater, CheckWatchesErrorUtility, TwistedThreadScheduler)
+from lp.bugs.scripts.checkwatches.core import (
+    CheckwatchesMaster, TwistedThreadScheduler)
+from lp.bugs.scripts.checkwatches.base import CheckWatchesErrorUtility
 from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
 from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
 
 
-def always_BugzillaAPI_get_external_bugtracker(bugtracker):
-    """A version of get_external_bugtracker that returns BugzillaAPI."""
-    return BugzillaAPI(bugtracker.baseurl)
+class BugzillaAPIWithoutProducts(BugzillaAPI):
+    """None of the remote bugs have products."""
+    def getProductsForRemoteBugs(self, remote_bug_ids):
+        return {}
+
+
+def always_BugzillaAPIWithoutProducts_get_external_bugtracker(bugtracker):
+    """get_external_bugtracker that returns BugzillaAPIWithoutProducts."""
+    return BugzillaAPIWithoutProducts(bugtracker.baseurl)
 
 
 class NonConnectingBugzillaAPI(BugzillaAPI):
@@ -52,8 +57,8 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
         return self
 
 
-class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
-    """A subclass of BugWatchUpdater with methods overridden for testing."""
+class NoBugWatchesByRemoteBugUpdater(checkwatches.CheckwatchesMaster):
+    """A subclass of CheckwatchesMaster with methods overridden for testing."""
 
     def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
         """Return an empty list.
@@ -75,13 +80,13 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # We monkey-patch externalbugtracker.get_external_bugtracker()
         # so that it always returns what we want.
         self.original_get_external_bug_tracker = (
-            checkwatches.updater.externalbugtracker.get_external_bugtracker)
-        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
-            always_BugzillaAPI_get_external_bugtracker)
+            checkwatches.core.externalbugtracker.get_external_bugtracker)
+        checkwatches.core.externalbugtracker.get_external_bugtracker = (
+            always_BugzillaAPIWithoutProducts_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
         # products.
-        self.updater = checkwatches.BugWatchUpdater(
+        self.updater = checkwatches.CheckwatchesMaster(
             transaction.manager, QuietFakeLogger(), ['test-product'])
 
     def tearDown(self):
@@ -107,43 +112,6 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
-
-
-class BugzillaAPIWithoutProducts(BugzillaAPI):
-    """None of the remote bugs have products."""
-    def getProductsForRemoteBugs(self, remote_bug_ids):
-        return {}
-
-
-def always_BugzillaAPIWithoutProducts_get_external_bugtracker(bugtracker):
-    """get_external_bugtracker that returns BugzillaAPIWithoutProducts."""
-    return BugzillaAPIWithoutProducts(bugtracker.baseurl)
-
-
-class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestCheckwatchesWithoutSyncableGnomeProducts, self).setUp()
-        transaction.commit()
-
-        # We monkey-patch externalbugtracker.get_external_bugtracker()
-        # so that it always returns what we want.
-        self.original_get_external_bug_tracker = (
-            checkwatches.updater.externalbugtracker.get_external_bugtracker)
-        checkwatches.updater.externalbugtracker.get_external_bugtracker = (
-            always_BugzillaAPIWithoutProducts_get_external_bugtracker)
-
-        # Create an updater with a limited set of syncable gnome
-        # products.
-        self.updater = checkwatches.BugWatchUpdater(
-            transaction.manager, QuietFakeLogger(), ['test-product'])
-
-    def tearDown(self):
-        checkwatches.externalbugtracker.get_external_bugtracker = (
-            self.original_get_external_bug_tracker)
-        super(TestCheckwatchesWithoutSyncableGnomeProducts, self).tearDown()
 
     def test__getExternalBugTrackersAndWatches(self):
         # When there are no syncable products defined, only one remote
@@ -176,17 +144,17 @@ class TestCheckwatchesWithoutSyncableGnomeProducts(TestCaseWithFactory):
         self.failIf(remote_system.sync_comments)
 
 
-class TestBugWatchUpdater(TestCaseWithFactory):
+class TestCheckwatchesMaster(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestBugWatchUpdater, self).setUp()
+        super(TestCheckwatchesMaster, self).setUp()
         transaction.abort()
 
     def test_bug_497141(self):
         # Regression test for bug 497141. KeyErrors raised in
-        # BugWatchUpdater.updateBugWatches() shouldn't cause
+        # CheckwatchesMaster.updateBugWatches() shouldn't cause
         # checkwatches to abort.
         updater = NoBugWatchesByRemoteBugUpdater(
             transaction.manager, QuietFakeLogger())
@@ -214,39 +182,19 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         self.assertTrue(
             last_oops.value.startswith('Spurious remote bug ID'))
 
-    def test_sql_log_cleared_in_oops_reporting(self):
-        # The log of SQL statements is cleared after an OOPS has been
-        # reported by checkwatches.report_oops().
-
-        # Enable SQL statment logging.
-        set_request_started()
-        try:
-            self.factory.makeBug()
-            self.assertTrue(
-                len(get_request_statements()) > 0,
-                "We need at least one statement in the SQL log.")
-            checkwatches.report_oops()
-            self.assertTrue(
-                len(get_request_statements()) == 0,
-                "SQL statement log not cleared by "
-                "checkwatches.report_oops().")
-        finally:
-            # stop SQL statemnet logging.
-            clear_request_started()
-
     def test_suggest_batch_size(self):
         class RemoteSystem: pass
         remote_system = RemoteSystem()
         # When the batch_size is None, suggest_batch_size() will set
         # it accordingly.
         remote_system.batch_size = None
-        checkwatches.updater.suggest_batch_size(remote_system, 1)
+        checkwatches.core.suggest_batch_size(remote_system, 1)
         self.failUnlessEqual(100, remote_system.batch_size)
         remote_system.batch_size = None
-        checkwatches.updater.suggest_batch_size(remote_system, 12350)
+        checkwatches.core.suggest_batch_size(remote_system, 12350)
         self.failUnlessEqual(247, remote_system.batch_size)
         # If the batch_size is already set, it will not be changed.
-        checkwatches.updater.suggest_batch_size(remote_system, 99999)
+        checkwatches.core.suggest_batch_size(remote_system, 99999)
         self.failUnlessEqual(247, remote_system.batch_size)
 
 
@@ -415,7 +363,7 @@ class ExternalBugTrackerForThreads(TestExternalBugTracker):
         return None
 
 
-class BugWatchUpdaterForThreads(BugWatchUpdater):
+class CheckwatchesMasterForThreads(CheckwatchesMaster):
     """Fake updater.
 
     Plumbs an `ExternalBugTrackerForThreads` into a given output file,
@@ -425,7 +373,7 @@ class BugWatchUpdaterForThreads(BugWatchUpdater):
 
     def __init__(self, output_file):
         logger = QuietFakeLogger()
-        super(BugWatchUpdaterForThreads, self).__init__(
+        super(CheckwatchesMasterForThreads, self).__init__(
             transaction.manager, logger)
         self.output_file = output_file
 
@@ -464,7 +412,7 @@ class TestTwistedThreadSchedulerInPlace(
         transaction.commit()
         # Prepare the updater with the Twisted scheduler.
         output_file = OutputFileForThreads()
-        threaded_bug_watch_updater = BugWatchUpdaterForThreads(output_file)
+        threaded_bug_watch_updater = CheckwatchesMasterForThreads(output_file)
         threaded_bug_watch_scheduler = TwistedThreadScheduler(
             num_threads=10, install_signal_handlers=False)
         # Run the updater.

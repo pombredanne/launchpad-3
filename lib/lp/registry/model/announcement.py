@@ -43,7 +43,7 @@ class Announcement(SQLBase):
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
-    project = ForeignKey(dbName='project', foreignKey='Project')
+    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)

@@ -565,7 +565,7 @@ We call setLaunchpadBugId() to set the Launchpad bug ID for a remote
 bug. setLaunchpadBugId() also requires authentication.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> trac.setLaunchpadBugId('3', 15)
+    >>> trac.setLaunchpadBugId('3', 15, 'http://bugs.launchpad.dev/bugs/xxx')
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -578,7 +578,7 @@ that's the Launchpad bug ID that we've just set.
 Passing a Launchpad bug ID of None to setLaunchpadBugId() will unset the
 Launchpad bug ID for the remote bug.
 
-    >>> trac.setLaunchpadBugId('3', None)
+    >>> trac.setLaunchpadBugId('3', None, None)
     >>> print trac.getLaunchpadBugId('3')
     None
 
@@ -590,7 +590,8 @@ remote bug that doesn't exist, a BugNotFound error will be raised.
       ...
     BugNotFound: 12345
 
-    >>> trac.setLaunchpadBugId('12345', 1)
+    >>> trac.setLaunchpadBugId(
+    ...     '12345', 1, 'http://bugs.launchpad.dev/bugs/xxx')
     Traceback (most recent call last):
       ...
     BugNotFound: 12345

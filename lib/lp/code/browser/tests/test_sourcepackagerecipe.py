@@ -1,6 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401
+# pylint: disable-msg=F0401,E1002
 
 """Tests for the source package recipe view classes and templates."""
 
@@ -194,9 +194,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
-        pattern = """\
-            Master Chef Recipes cake_recipe
 
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Master Chef Recipes cake_recipe
             Description
             This recipe .*changes.
 
@@ -213,23 +213,30 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/chocolate/cake"""
-        main_text = self.getMainText(recipe)
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+            lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
+
+    def assertContainsRe(self, regex, text):
+        """Assert that the text contains the specified regex."""
+        pattern = re.compile(regex, re.S)
+        self.assertTrue(pattern.search(text), text)
+
+    def test_index_no_builds(self):
+        """A message should be shown when there are no builds."""
+        recipe = self.makeRecipe()
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Build records
+            Status Time Distribution series Archive
+            This recipe has not been built yet.""", self.getMainText(recipe))
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
         removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        pattern = """\
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
             Build records
             Status Time Distribution series Archive
             No suitable builders Secret Squirrel Secret PPA
-            Request build\(s\)"""
-        main_text = self.getMainText(recipe)
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+            Request build\(s\)""", self.getMainText(recipe))
 
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""

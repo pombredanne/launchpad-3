@@ -313,9 +313,7 @@ class BinaryPackageBuild(BuildBase, SQLBase):
         store = Store.of(self)
         job = Job()
         store.add(job)
-        specific_job = BuildPackageJob()
-        specific_job.build = self.id
-        specific_job.job = job.id
+        specific_job = BuildPackageJob(build=self, job=job)
         store.add(specific_job)
         return specific_job
 

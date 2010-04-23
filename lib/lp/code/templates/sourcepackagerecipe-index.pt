@@ -94,6 +94,9 @@
             </tr>
           </tbody>
         </table>
+        <p tal:condition="not: view/builds">
+          This recipe has not been built yet.
+        </p>
         <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
       </div>
       <div class='portlet'>

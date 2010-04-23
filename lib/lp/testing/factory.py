@@ -694,7 +694,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
                     description=None):
-        """Create and return a new, arbitrary Project."""
+        """Create and return a new, arbitrary ProjectGroup."""
         if owner is None:
             owner = self.makePerson()
         if name is None:
