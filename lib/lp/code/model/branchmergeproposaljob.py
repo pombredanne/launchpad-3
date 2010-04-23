@@ -54,7 +54,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff
-from lp.codehosting.vfs import get_multi_server, get_scanner_server
+from lp.codehosting.vfs import get_ro_server, get_rw_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.runner import BaseRunnableJob
@@ -269,7 +269,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     def contextManager():
         """See `IUpdatePreviewDiffJobSource`."""
         errorlog.globalErrorUtility.configure('update_preview_diffs')
-        server = get_scanner_server()
+        server = get_ro_server()
         server.start_server()
         yield
         server.stop_server()
@@ -341,7 +341,7 @@ class CreateMergeProposalJob(BaseRunnableJob):
                 raise AssertionError('No principal found for %s' % email_addr)
             setupInteraction(principal, email_addr)
 
-            server = get_multi_server(write_hosted=True)
+            server = get_rw_server()
             server.start_server()
             try:
                 return CodeHandler().processMergeProposal(message)

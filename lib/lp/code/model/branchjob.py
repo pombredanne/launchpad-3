@@ -51,8 +51,8 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
-    get_scanner_server)
+from lp.codehosting.vfs import (
+    branch_id_to_path, get_rw_server, get_ro_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
@@ -284,7 +284,7 @@ class BranchScanJob(BranchJobDerived):
     def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_scanner_server()
+        cls.server = get_ro_server()
         cls.server.start_server()
         yield
         cls.server.stop_server()
@@ -313,7 +313,7 @@ class BranchUpgradeJob(BranchJobDerived):
     def contextManager():
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
-        server = get_multi_server(write_hosted=True)
+        server = get_rw_server()
         server.start_server()
         yield
         server.stop_server()

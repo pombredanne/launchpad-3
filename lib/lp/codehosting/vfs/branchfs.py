@@ -55,6 +55,7 @@ __all__ = [
     'DirectDatabaseLaunchpadServer',
     'get_lp_server',
     'get_multi_server',
+    'get_ro_server',
     'get_rw_server',
     'get_scanner_server',
     'make_branch_mirrorer',
@@ -167,15 +168,16 @@ def is_lock_directory(absolute_path):
     return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
-def get_scanner_server():
+def get_ro_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
     codehosting_endpoint = BlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.codehosting.internal_branch_by_id_root))
     return LaunchpadInternalServer(
-        'lp-mirrored:///', codehosting_endpoint, branch_transport)
+        'lp-internal:///', codehosting_endpoint, branch_transport)
 
+get_scanner_server = get_ro_server
 
 def get_rw_server(direct_database=False):
     """Get a server that can write to the Launchpad branch vfs.
