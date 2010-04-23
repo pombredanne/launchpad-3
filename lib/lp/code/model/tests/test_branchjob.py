@@ -100,7 +100,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_run_revision_ids(self):
         """Ensure that run calculates revision ids."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit', rev_id='rev1')
         job = BranchDiffJob.create(branch, '0', '1')
@@ -110,7 +110,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_run_diff_content(self):
         """Ensure that run generates expected diff."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
 
         tree_location = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_location)) 
@@ -134,7 +134,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
 
     def test_run_is_idempotent(self):
         """Ensure running an equivalent job emits the same diff."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         tree.commit('First commit')
         job1 = BranchDiffJob.create(branch, '0', '1')
@@ -149,7 +149,7 @@ class TestBranchDiffJob(TestCaseWithFactory):
         This diff contains an add of a file called hello.txt, with contents
         "Hello World\n".
         """
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         first_revision = 'rev-1'
         tree_transport = tree.bzrdir.root_transport
@@ -197,7 +197,7 @@ class TestBranchScanJob(TestCaseWithFactory):
 
     def test_run(self):
         """Ensure the job scans the branch."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
 
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit('First commit', rev_id='rev1')
@@ -249,7 +249,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
 
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree(format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
@@ -277,7 +277,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_existing_bzr_backup(self):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree(format='knit')
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
@@ -352,7 +352,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_perform_diff_performs_diff(self):
         """Ensure that a diff is generated when perform_diff is True."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         tree.bzrdir.root_transport.put_bytes('foo', 'bar\n')
         tree.add('foo')
@@ -364,7 +364,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_perform_diff_ignored_for_revno_0(self):
         """For the null revision, no diff is generated."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', True, 'subject')
@@ -463,7 +463,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_iterAddedMainline(self):
         """iterAddedMainline iterates through mainline revisions."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create3CommitsBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev2', '')
         job.bzr_branch.lock_read()
@@ -473,7 +473,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_iterAddedNonMainline(self):
         """iterAddedMainline drops non-mainline revisions."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create3CommitsBranch()
         tree.pull(tree.branch, overwrite=True, stop_revision='rev2')
         tree.add_parent_tree_id('rev3')
@@ -487,7 +487,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_iterAddedMainline_order(self):
         """iterAddedMainline iterates in commit order."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create3CommitsBranch()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
         job.bzr_branch.lock_read()
@@ -526,7 +526,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             that merges the others.
         :param include_ghost:If true, add revision 2c as a ghost revision.
         """
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         tree.branch.nick = 'nicholas'
         tree.commit('rev1')
@@ -556,7 +556,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_findRelatedBMP(self):
         """The related branch merge proposals can be identified."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         target_branch, tree = self.create_branch_and_tree('tree')
         desired_proposal = self.factory.makeBranchMergeProposal(
             target_branch=target_branch)
@@ -575,7 +575,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         """findRelatedBMP only returns the most recent proposal for any
         particular source branch.
         """
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         target_branch, tree = self.create_branch_and_tree('tree')
         the_past = datetime.datetime(2009, 1, 1, tzinfo=pytz.UTC)
         old_proposal = self.factory.makeBranchMergeProposal(
@@ -612,7 +612,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getRevisionMessage(self):
         """getRevisionMessage provides a correctly-formatted message."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.makeBranchWithCommit()
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
         message = job.getRevisionMessage('rev1', 1)
@@ -783,7 +783,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_email_format(self):
         """Contents of the email are as expected."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         first_revision = 'rev-1'
         tree.bzrdir.root_transport.put_bytes('hello.txt', 'Hello World\n')
@@ -842,7 +842,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_message_encoding(self):
         """Test handling of non-ASCII commit messages."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         rev_id = 'rev-1'
         tree.commit(
@@ -866,7 +866,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getMailerForRevision(self):
         """The mailer for the revision is as expected."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.makeBranchWithCommit()
         revision = tree.branch.repository.get_revision('rev1')
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev1', '')
@@ -879,7 +879,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
     def test_only_nodiff_subscribers_means_no_diff_generated(self):
         """No diff is generated when no subscribers need it."""
         self.layer.switchDbUser('launchpad')
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         subscriptions = branch.getSubscriptionsByLevel(
             [BranchSubscriptionNotificationLevel.FULL])
@@ -909,7 +909,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             in which case an arbitrary unique string is used.
         :returns: The revision of the first commit.
         """
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         self.branch, self.tree = self.create_branch_and_tree()
         return self._commitFilesToTree(files, 'First commit')
 
