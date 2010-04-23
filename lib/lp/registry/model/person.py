@@ -2084,17 +2084,6 @@ class Person(
         if email is None:
             self._unsetPreferredEmail()
             return
-        if (self.preferredemail is None
-            and self.account_status != AccountStatus.ACTIVE):
-            # XXX sinzui 2008-07-14 bug=248518:
-            # This is a hack to preserve this function's behaviour before
-            # Account was split from Person. This can be removed when
-            # all the callsites ensure that the account is ACTIVE first.
-            account = IMasterStore(Account).get(Account, self.accountID)
-            account.activate(
-                "Activated when the preferred email was set.",
-                password=self.password,
-                preferred_email=email)
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):

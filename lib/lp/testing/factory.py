@@ -406,10 +406,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
-            person.validateAndEnsurePreferredEmail(email)
             account = IMasterStore(Account).get(
                 Account, person.accountID)
             account.status = AccountStatus.ACTIVE
+            person.validateAndEnsurePreferredEmail(email)
 
         removeSecurityProxy(email).status = email_address_status
 
@@ -454,6 +454,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
             name=variable_name, displayname=full_name)
         if set_preferred_email:
+            # setPreferredEmail no longer activates the account
+            # automatically.
+            account = IMasterStore(Account).get(Account, person.accountID)
+            account.activate(
+                "Activated by factory.makePersonByName",
+                password='foo',
+                preferred_email=email)
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
