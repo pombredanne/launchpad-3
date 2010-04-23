@@ -275,17 +275,6 @@ class TestSafeOpen(TestCaseWithTransport):
             get_chrooted_url('stacked-on'))
         safe_open(scheme, get_chrooted_url('stacked'))
 
-    def test_reference_within_scheme(self):
-        # A branch reference to a URL of the same scheme is safe to open.
-        self.get_transport().mkdir('inside')
-        self.make_branch('inside/referenced')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        bzrdir = BzrDir.create(get_chrooted_url('reference'))
-        inside_branch = Branch.open(get_chrooted_url('referenced'))
-        BranchReferenceFormat().initialize(
-            bzrdir, target_branch=inside_branch)
-        safe_open(scheme, get_chrooted_url('reference'))
-
     def test_stacked_outside_scheme(self):
         # A branch that is stacked on a URL that is not of the same scheme is
         # not safe to open.
@@ -298,19 +287,6 @@ class TestSafeOpen(TestCaseWithTransport):
             self.get_url('outside/stacked-on'))
         self.assertRaises(
             UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('stacked'))
-
-    def test_reference_outside_scheme(self):
-        # A branch reference to a URL that is not of the same scheme is not
-        # safe to open.
-        self.get_transport().mkdir('inside')
-        self.get_transport().mkdir('outside')
-        outside_branch = self.make_branch('outside/referenced')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        bzrdir = BzrDir.create(get_chrooted_url('reference'))
-        BranchReferenceFormat().initialize(
-            bzrdir, target_branch=outside_branch)
-        self.assertRaises(
-            UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('reference'))
 
 
 def load_tests(basic_tests, module, loader):
