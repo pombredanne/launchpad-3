@@ -62,9 +62,7 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
     @property
     def url(self):
-        # Yes, this looks odd, but basically, the breadcrumb code wraps this
-        # class in an instance of itself (because it's doing double duty).
-        return canonical_url(self.context.context) + '/+recipes'
+        return canonical_url(self.context, view_name="+recipes")
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):

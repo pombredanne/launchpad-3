@@ -240,7 +240,7 @@ class Hierarchy(LaunchpadView):
         """
         breadcrumbs = []
         for obj in self.objects:
-            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            breadcrumb = IBreadcrumb(obj, None)
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
