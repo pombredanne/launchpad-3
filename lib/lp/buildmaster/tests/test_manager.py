@@ -323,7 +323,11 @@ class TestBuilddManager(TrialTestCase):
 
         reset_result_calls = []
         class LoggingResetResult(BaseDispatchResult):
-            """A DispatchResult that logs calls to itself."""
+            """A DispatchResult that logs calls to itself.
+
+            This *must* subclass BaseDispatchResult, otherwise finishCycle()
+            won't treat it like a dispatch result.
+            """
             def __init__(self, slave, info=None):
                 self.slave = slave
             def __call__(self):
@@ -351,7 +355,10 @@ class TestBuilddManager(TrialTestCase):
         return d.addCallback(
             lambda ignored: self.assertEqual([slave], reset_result_calls))
 
-    def test_fail_to_resume_slave_isolate_bug(self):
+    def test_failed_to_resume_slave_ready_for_reset(self):
+        # When a slave fails to resume, the manager has a Deferred in its
+        # Deferred list that is ready to fire with a ResetDispatchResult.
+
         # Make a failing slave that is requesting a resume.
         slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
         slave.resume_requested = True
@@ -366,9 +373,9 @@ class TestBuilddManager(TrialTestCase):
         [d] = self.manager._deferreds
 
         # The Deferred for our failing slave should be ready to fire
-        # successfully with a TestingFailDispatchResult.
+        # successfully with a ResetDispatchResult.
         def check_result(result):
-            self.assertIsInstance(result, TestingResetDispatchResult)
+            self.assertIsInstance(result, ResetDispatchResult)
             self.assertEqual(slave, result.slave)
             self.assertFalse(result.processed)
         return d.addCallback(check_result)
