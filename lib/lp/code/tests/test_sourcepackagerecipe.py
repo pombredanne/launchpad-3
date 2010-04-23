@@ -490,7 +490,7 @@ class TestWebservice(TestCaseWithFactory):
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
         archive = ws_object(launchpad, archive)
-        build = recipe.requestBuild(
+        recipe.requestBuild(
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
 

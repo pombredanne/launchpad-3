@@ -19,12 +19,12 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-        call_with, export_as_webservice_entry, export_factory_operation,
-        export_write_operation, exported, operation_parameters, REQUEST_USER)
+    call_with, export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
