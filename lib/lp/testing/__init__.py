@@ -496,26 +496,6 @@ class TestCaseWithFactory(TestCase):
         get_transport(base).create_prefix()
         return os.path.join(base, branch_id_to_path(branch.id))
 
-    def createMirroredBranchAndTree(self):
-        """Create a database branch, bzr branch and bzr checkout.
-
-        This always uses the configured mirrored area, ignoring whatever
-        server might be providing lp-mirrored: urls.
-
-        Unlike normal codehosting operation, the working tree is stored in the
-        branch directory.
-
-        The branch and tree files are automatically deleted at the end of the
-        test.
-
-        :return: a `Branch` and a workingtree.
-        """
-        # XXX kill this!!
-        db_branch = self.factory.makeAnyBranch()
-        bzr_branch = self.createBranchAtURL(self.getBranchPath(
-                db_branch, config.codehosting.internal_branch_by_id_root))
-        return db_branch, bzr_branch.bzrdir.open_workingtree()
-
     def useTempBzrHome(self):
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
