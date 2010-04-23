@@ -22,8 +22,8 @@ from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
 from bzrlib.transport import chroot
 
 from lp.codehosting.bzrutils import (
-    BranchLoopDetected, DenyingServer, UnsafeUrlSeen, _install_hook,
-    add_exception_logging_hook, get_branch_stacked_on_url,
+    DenyingServer, UnsafeUrlSeen, _install_checked_open_hook,
+    add_exception_logging_hook, checked_open, get_branch_stacked_on_url,
     get_vfs_format_classes, is_branch_stackable,
     remove_exception_logging_hook, safe_open)
 from lp.codehosting.tests.helpers import TestResultWrapper
@@ -206,12 +206,49 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
             get_vfs_format_classes(remote_branch))
 
 
+
+class TestCheckedOpen(TestCaseWithTransport):
+    """Tests for `checked_open`."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        _install_checked_open_hook()
+
+    def test_simple(self):
+        # Opening a branch with checked_open checks the branches url.
+        url = self.make_branch('branch').base
+        seen_urls = []
+        checked_open(seen_urls.append, url)
+        self.assertEqual([url], seen_urls)
+
+    def test_stacked(self):
+        # Opening a stacked branch with checked_open checks the branches url
+        # and then the stacked-on url.
+        stacked = self.make_branch('stacked')
+        stacked_on = self.make_branch('stacked_on')
+        stacked.set_stacked_on_url(stacked_on.base)
+        seen_urls = []
+        checked_open(seen_urls.append, stacked.base)
+        self.assertEqual([stacked.base, stacked_on.base], seen_urls)
+
+    def test_reference(self):
+        # Opening a branch reference with checked_open checks the branch
+        # references url and then the target of the reference.
+        target = self.make_branch('target')
+        reference_url = self.get_url('reference/')
+        BranchReferenceFormat().initialize(
+            BzrDir.create(reference_url), target_branch=target)
+        seen_urls = []
+        checked_open(seen_urls.append, reference_url)
+        self.assertEqual([reference_url, target.base], seen_urls)
+
+
 class TestSafeOpen(TestCaseWithTransport):
     """Tests for `safe_open`."""
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        _install_hook()
+        _install_checked_open_hook()
 
     def get_chrooted_scheme(self, relpath):
         """Create a server that is chrooted to `relpath`.
@@ -275,32 +312,6 @@ class TestSafeOpen(TestCaseWithTransport):
         self.assertRaises(
             UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('reference'))
 
-    def test_recursive_stacking(self):
-        # A branch stacked on itself is not safe to open.
-        self.get_transport().mkdir('inside')
-        self.make_branch('inside/self-stacked')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        inside_url = get_chrooted_url('self-stacked')
-        Branch.open(inside_url).get_config().set_user_option(
-            'stacked_on_location', inside_url)
-        self.assertRaises(
-            BranchLoopDetected, safe_open, scheme, inside_url)
-
-    def test_recursive_reference(self):
-        # A branch reference that refers to its own location is not not safe
-        # to open.
-        self.get_transport().mkdir('inside')
-        self.get_transport().mkdir('outside')
-        outside_branch = self.make_branch('outside/referenced')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        inside_url = get_chrooted_url('reference')
-        bzrdir = BzrDir.create(inside_url)
-        BranchReferenceFormat().initialize(
-            bzrdir, target_branch=outside_branch)
-        bzrdir.root_transport.put_bytes('.bzr/branch/location', inside_url)
-        self.assertRaises(
-            BranchLoopDetected, safe_open, scheme, inside_url)
-
 
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
@@ -317,6 +328,7 @@ def load_tests(basic_tests, module, loader):
     result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
     result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
     result.addTests(loader.loadTestsFromTestCase(TestSafeOpen))
+    result.addTests(loader.loadTestsFromTestCase(TestCheckedOpen))
     return result
 
 

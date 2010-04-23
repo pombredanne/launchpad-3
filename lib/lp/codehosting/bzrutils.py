@@ -275,69 +275,36 @@ def identical_formats(branch_one, branch_two):
             get_vfs_format_classes(branch_two))
 
 
-safe_open_data = threading.local()
+checked_open_data = threading.local()
 
 
-def _install_hook():
-    """Install `_safe_open_pre_open_hook` as a pre_open hook.
+def _install_checked_open_hook():
+    """Install `_checked_open_pre_open_hook` as a ``pre_open`` hook.
 
-    This is called at module import time, but _safe_open_pre_open_hook doesn't
-    do anything unless the `safe_open_data` threading.Local object has a
-    'safe_opener' attribute in this thread.
+    This is done at module import time, but _checked_open_pre_open_hook
+    doesn't do anything unless the `checked_open_data` threading.Local object
+    has a 'checked_opener' attribute in this thread.
+
+    This is in a module-level function rather than performed at module level
+    so that it can be called in setUp for testing `checked_open` as
+    bzrlib.tests.TestCase.setUp clears hooks.
     """
     BzrDir.hooks.install_named_hook(
-        'pre_open', _safe_open_pre_open_hook, 'safe open')
+        'pre_open', _checked_open_pre_open_hook, 'safe open')
 
 
-def _safe_open_pre_open_hook(transport):
-    """If a safe_opener is present in this thread, check `transport` is safe.
+def _checked_open_pre_open_hook(transport):
+    """If a checked_open validate function is present in this thread, call it.
     """
-    safe_opener = getattr(safe_open_data, 'safe_opener', None)
-    if safe_opener is None:
+    if not getattr(checked_open_data, 'validate', False):
         return
-    abspath = transport.base
-    safe_opener.checkURL(abspath)
+    checked_open_data.validate(transport.base)
 
 
-_install_hook()
+_install_checked_open_hook()
 
 
-class SafeOpenFailed(Exception):
-    """`safe_open` found a URL it refused to open."""
-
-
-class UnsafeUrlSeen(SafeOpenFailed):
-    """`safe_open` found a URL that was not on the configured scheme."""
-
-
-class BranchLoopDetected(SafeOpenFailed):
-    """`safe_open` detected a recursive branch loop.
-
-    `Branch.open` traverses branch references and stacked-on locations.
-    `safe_open` raises this exception if either traversal finds a URL that has
-    been seen earlier in the opening process.
-    """
-
-
-class _SafeOpener:
-    """A `_SafeOpener` knows which URLs are safe to open."""
-
-    def __init__(self, allowed_scheme):
-        self.seen_urls = set()
-        self.allowed_scheme = allowed_scheme
-
-    def checkURL(self, url):
-        """Check that `url` is safe to open."""
-        if url in self.seen_urls:
-            raise BranchLoopDetected()
-        self.seen_urls.add(url)
-        if URI(url).scheme != self.allowed_scheme:
-            raise UnsafeUrlSeen(
-                "Attempt to open %r which is not a %s URL" % (
-                    url, self.allowed_scheme))
-
-
-def safe_open(allowed_scheme, url):
+def checked_open(validation_function, url):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
     :raises BranchLoopDetected: If a stacked-on location or the target of a
@@ -346,10 +313,33 @@ def safe_open(allowed_scheme, url):
     :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    if hasattr(safe_open_data, 'safe_opener'):
-        raise AssertionError("safe_open called recursively")
-    safe_open_data.safe_opener = _SafeOpener(allowed_scheme)
+    if hasattr(checked_open_data, 'validate'):
+        raise AssertionError("checked_open called recursively")
+    checked_open_data.validate = validation_function
     try:
         return Branch.open(url)
     finally:
-        del safe_open_data.safe_opener
+        del checked_open_data.validate
+
+
+class UnsafeUrlSeen(Exception):
+    """`safe_open` found a URL that was not on the configured scheme."""
+
+
+def makeURLChecker(allowed_scheme):
+    def checkURL(url):
+        """Check that `url` is safe to open."""
+        if URI(url).scheme != allowed_scheme:
+            raise UnsafeUrlSeen(
+                "Attempt to open %r which is not a %s URL" % (
+                    url, allowed_scheme))
+    return checkURL
+
+
+def safe_open(allowed_scheme, url):
+    """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
+
+    :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
+        `allowed_scheme`.
+    """
+    checked_open(makeURLChecker(allowed_scheme), url)
