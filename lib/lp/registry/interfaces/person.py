@@ -845,6 +845,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         not teams can be converted into teams.
         """
 
+    @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         description=Text(),
         distroseries=List(value_type=Reference(schema=Interface)),
@@ -854,7 +855,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         )
     @export_factory_operation(Interface, [])
     def createRecipe(name, description, recipe_text, distroseries,
-                     sourcepackagename):
+                     sourcepackagename, registrant):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.

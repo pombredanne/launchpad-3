@@ -2261,15 +2261,15 @@ class Person(
         return rset
 
     def createRecipe(self, name, description, recipe_text, distroseries,
-                     sourcepackagename):
+                     sourcepackagename, registrant):
         """See `IPerson`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         builder_recipe = RecipeParser(recipe_text).parse()
         spnset = getUtility(ISourcePackageNameSet)
         sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
         return SourcePackageRecipe.new(
-            self, self, distroseries, sourcepackagename, name, builder_recipe,
-            description)
+            registrant, self, distroseries, sourcepackagename, name,
+            builder_recipe, description)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe

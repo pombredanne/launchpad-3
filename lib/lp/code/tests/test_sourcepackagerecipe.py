@@ -435,33 +435,37 @@ class TestWebservice(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         return self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
-    def makeRecipe(self, person=None, recipe_text=None):
-        if person is None:
-            person = self.factory.makePerson()
+    def makeRecipe(self, user=None, owner=None, recipe_text=None):
+        if user is None:
+            user = self.factory.makePerson()
+        if owner is None:
+            owner = user
         db_distroseries = self.factory.makeDistroSeries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
-        launchpad = launchpadlib_for('test', person,
+        launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
         distroseries = self.wsObject(launchpad, db_distroseries)
-        user = self.wsObject(launchpad, person)
-        recipe = user.createRecipe(
+        ws_owner = self.wsObject(launchpad, owner)
+        recipe = ws_owner.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
             description='a recipe', distroseries=[distroseries.self_link],
             recipe_text=recipe_text)
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
-        db_recipe = person.getRecipe(u'toaster-1')
+        db_recipe = owner.getRecipe(name=u'toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
-        return recipe, user, launchpad
+        return recipe, owner, launchpad
 
     def test_createRecipe(self):
         """Ensure recipe creation works."""
+        team = self.factory.makeTeam()
         recipe_text = self.makeRecipeText()
-        recipe, user = self.makeRecipe(recipe_text=recipe_text)[:2]
-        self.assertEqual(user.name, recipe.owner.name)
-        self.assertEqual(user.name, recipe.registrant.name)
+        recipe, user = self.makeRecipe(user=team.teamowner, owner=team,
+            recipe_text=recipe_text)[:2]
+        self.assertEqual(team.name, recipe.owner.name)
+        self.assertEqual(team.teamowner.name, recipe.registrant.name)
         self.assertEqual('toaster-1', recipe.name)
         self.assertEqual(recipe_text, recipe.recipe_text)
         self.assertEqual('toaster', recipe.sourcepackagename)
