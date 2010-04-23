@@ -184,7 +184,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             pattern, main_text)
 
 
-
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
@@ -195,52 +194,42 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
-        pattern = re.compile(dedent("""\
-            Master Chef
-            Branches
+        pattern = """\
+            Master Chef Recipes cake_recipe
+
             Description
             This recipe .*changes.
+
             Recipe information
-            Owner:
-            Master Chef
-            Base branch:
-            lp://dev/~chef/chocolate/cake
-            Debian version:
-            1.0
-            Distribution series:
-            Secret Squirrel
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/chocolate/cake
+            Debian version: 1.0
+            Distribution series: Secret Squirrel
+
             Build records
-            Status
-            Time
-            Distribution series
-            Archive
-            Successful build
-            on 2010-03-16
-            Secret Squirrel
-            Secret PPA
+            Status Time Distribution series Archive
+            Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
+
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/chocolate/cake"""), re.S)
+            lp://dev/~chef/chocolate/cake"""
         main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), repr(main_text))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
         removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        pattern = re.compile(dedent("""\
+        pattern = """\
             Build records
-            Status
-            Time
-            Distribution series
-            Archive
-            No suitable builders
-            Secret Squirrel
-            Secret PPA
-            Request build\(s\)"""), re.S)
+            Status Time Distribution series Archive
+            No suitable builders Secret Squirrel Secret PPA
+            Request build\(s\)"""
         main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
 
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""
@@ -254,21 +243,16 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         recipe = self.makeRecipe()
         self.makeBuildJob(recipe)
         self.factory.makeBuilder()
-        pattern = re.compile(dedent("""\
+        pattern = """\
             Build records
-            Status
-            Time
-            Distribution series
-            Archive
-            Pending build
-            in .*
-            \(estimated\)
-            Secret Squirrel
-            Secret PPA
+            Status Time Distribution series Archive
+            Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
-            Recipe contents"""), re.S)
+
+            Recipe contents"""
         main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
 
     def test_builds(self):
         """Ensure SourcePackageRecipeView.builds is as described."""
@@ -303,11 +287,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
         recipe = self.makeRecipe()
-        text = self.getMainText(recipe, '+request-builds')
-        self.assertEqual(dedent(u"""\
+        pattern = dedent("""\
             Request builds for cake_recipe
             Master Chef
-            Branches
+            Recipes
+            cake_recipe
             Request builds for cake_recipe
             Archive:
             Secret PPA (chef/ppa)
@@ -321,7 +305,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Guada2005
             Secret Squirrel
             or
-            Cancel"""), text)
+            Cancel""")
+        main_text = self.getMainText(recipe, '+request-builds')
+        self.assertEqual(pattern, main_text)
 
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
