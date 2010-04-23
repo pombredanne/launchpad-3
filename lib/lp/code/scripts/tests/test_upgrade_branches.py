@@ -31,7 +31,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
             target_tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
 
-        job = BranchUpgradeJob.create(target)
+        BranchUpgradeJob.create(target)
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
@@ -39,7 +39,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IBranchUpgradeJobSource jobs.\n', stderr)
+            'INFO    Ran 1 BranchUpgradeJob jobs.\n', stderr)
 
         target_branch = BzrBranch.open(target_tree.branch.base)
         self.assertEqual(
@@ -59,7 +59,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
             target_tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
 
-        job = BranchUpgradeJob.create(target)
+        BranchUpgradeJob.create(target)
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
@@ -67,7 +67,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IBranchUpgradeJobSource jobs.\n', stderr)
+            'INFO    Ran 1 BranchUpgradeJob jobs.\n', stderr)
 
         target_branch = BzrBranch.open(target_tree.branch.base)
         self.assertEqual(

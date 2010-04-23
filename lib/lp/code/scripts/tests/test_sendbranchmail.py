@@ -38,13 +38,14 @@ class TestSendbranchmail(TestCaseWithFactory):
         """Ensure sendbranchmail runs and sends email."""
         self.useTempBzrHome()
         branch, tree = self.createBranch()
-        job_1 = RevisionMailJob.create(
+        RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', True, 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
-        self.assertEqual('INFO    creating lockfile\n'
-                         'INFO    Ran 1 RevisionMailJobs.\n', stderr)
+        self.assertEqual(
+            'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'INFO    Ran 1 RevisionMailJobs.\n', stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
@@ -52,12 +53,14 @@ class TestSendbranchmail(TestCaseWithFactory):
         """Ensure sendbranchmail runs and sends email."""
         self.useTempBzrHome()
         branch = self.factory.makeBranch()
-        job_1 = RevisionMailJob.create(
+        RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', True, 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
-        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn(
+            'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n',
+            stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 RevisionMailJobs.\n', stderr)
         self.assertEqual('', stdout)
@@ -69,13 +72,15 @@ class TestSendbranchmail(TestCaseWithFactory):
         branch, tree = self.createBranch()
         tree.bzrdir.root_transport.put_bytes('foo', 'baz')
         tree.commit('Added foo.', rev_id='rev2')
-        job_1 = RevisionsAddedJob.create(
+        RevisionsAddedJob.create(
             branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
-        self.assertEqual('INFO    creating lockfile\n'
-                         'INFO    Ran 1 RevisionMailJobs.\n', stderr)
+        self.assertEqual(
+            'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'INFO    Ran 1 RevisionMailJobs.\n',
+            stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
