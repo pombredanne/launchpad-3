@@ -456,7 +456,7 @@ class TestWebservice(TestCaseWithFactory):
         transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
-        return recipe, owner, launchpad
+        return recipe, ws_owner, launchpad
 
     def test_createRecipe(self):
         """Ensure recipe creation works."""
