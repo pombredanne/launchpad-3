@@ -374,7 +374,7 @@ class GPGHandler:
 
         # Sign the text.
         try:
-            result = context.sign(plaintext, signature, mode)
+            context.sign(plaintext, signature, mode)
         except gpgme.GpgmeError:
             return None
 
@@ -620,7 +620,7 @@ class PymeKey:
         context = gpgme.Context()
         context.armor = True
         keydata = StringIO()
-        context.export(self.fingerprint, keydata)
+        context.export(self.fingerprint.encode('ascii'), keydata)
 
         return keydata.getvalue()
 

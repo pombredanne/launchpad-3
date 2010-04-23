@@ -38,7 +38,7 @@ To display the icon for a milestone, use image:icon:
     '<img ... src="/@@/milestone" />'
 
 The same image:icon, as well as a image:logo and a image:logo is also
-available for Person, Product, Project, Sprint and Distributions, since
+available for Person, Product, ProjectGroup, Sprint and Distributions, since
 they all implement IHasLogo, IHasMugshot and IHasIcon.
 
     >>> from canonical.launchpad.interfaces import IPersonSet

@@ -70,10 +70,7 @@ session.
 
   >>> from lp.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
-  >>> from cStringIO import StringIO
   >>> import glob
-  >>> import time
-  >>>
   >>> test_files_dir = os.path.join(config.root,
   ...                               "lib/lp/soyuz/scripts/"
   ...                               "tests/upload_test_files/")
@@ -223,8 +220,8 @@ So, load the GPG key:
   >>> key_data = open(key_path).read()
   >>> key = gpg_handler.importPublicKey(key_data)
   >>> assert key is not None
-  >>> key.fingerprint
-  '33C0A61893A5DC5EB325B29E415A12CAC2F30234'
+  >>> print key.fingerprint
+  33C0A61893A5DC5EB325B29E415A12CAC2F30234
 
 
 Create the katie user and register it in a team that is allowed to
@@ -532,7 +529,6 @@ These packages must now be in the publishing history. Let's check it.
 
   >>> from canonical.launchpad.database import (
   ...    SourcePackagePublishingHistory as SSPPH)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> package_names.sort()
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)

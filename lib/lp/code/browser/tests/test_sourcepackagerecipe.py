@@ -1,8 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401
+# pylint: disable-msg=F0401,E1002
 
-"""Tests for the product view classes and templates."""
+"""Tests for the source package recipe view classes and templates."""
 
 __metaclass__ = type
 
@@ -12,23 +12,24 @@ from textwrap import dedent
 import re
 
 from pytz import utc
-from canonical.testing import DatabaseFunctionalLayer
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing.pages import extract_text, find_main_content
+from canonical.launchpad.testing.pages import (
+    extract_text, find_main_content, find_tags_by_class)
+from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
-from lp.testing import (ANONYMOUS, login, TestCaseWithFactory)
+from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.testing import ANONYMOUS, BrowserTestCase, login
 
 
-class TestSourcePackageRecipeView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class TestCaseForRecipe(BrowserTestCase):
+    """Create some sample data for recipe tests."""
 
     def setUp(self):
         """Provide useful defaults."""
-        super(TestSourcePackageRecipeView, self).setUp()
+        super(TestCaseForRecipe, self).setUp()
         self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
         self.ppa = self.factory.makeArchive(
@@ -42,9 +43,9 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         cake_branch = self.factory.makeProductBranch(
             owner=self.chef, name='cake', product=chocolate)
         return self.factory.makeSourcePackageRecipe(
-            None, self.chef, self.squirrel, None, u'cake_recipe',
-            u'This recipe builds a foo for disto bar, with my Secret Squirrel'
-            ' changes.', cake_branch)
+            owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
+            description=u'This recipe builds a foo for disto bar, with my'
+            ' Secret Squirrel changes.', branches=[cake_branch])
 
     def getRecipeBrowser(self, recipe, view_name=None):
         """Return a browser for the specified recipe, opened as Chef."""
@@ -57,58 +58,185 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         browser = self.getRecipeBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
 
+
+class TestSourcePackageRecipeAddView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create_new_recipe(self):
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create source package recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        pattern = """\
+            Master Chef's daily recipe
+            .*
+
+            Description
+            Make some food!
+
+            Recipe information
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/veggies
+            Debian version: 1.0
+            Distribution series: Secret Squirrel
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/veggies"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
+    def test_create_recipe_bad_text(self):
+        # If a user tries to create source package recipe with bad text, they
+        # should get an error.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create source package recipe').click()
+
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Recipe text').value = 'Foo bar baz'
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'The recipe text is not a valid bzr-builder recipe.')
+
+
+class TestSourcePackageRecipeEditView(TestCaseForRecipe):
+    """Test the editing behaviour of a source package recipe."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_edit_recipe(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly')
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename='ratatouille')
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename='sloppyjoe')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            sourcepackagename=source_package.sourcepackagename,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl(name='field.name').value = 'fings'
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        pattern = """\
+            Master Chef's fings recipe
+            .*
+
+            Description
+            This is stuff
+
+            Recipe information
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: 1.0
+            Distribution series: Mumbly Midget
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
+
+class TestSourcePackageRecipeView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
+
     def test_index(self):
         recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.buildstate = BuildStatus.FULLYBUILT
         build.datebuilt = datetime(2010, 03, 16, tzinfo=utc)
-        pattern = re.compile(dedent("""\
-            Master Chef
-            Branches
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Master Chef Recipes cake_recipe
             Description
             This recipe .*changes.
+
             Recipe information
-            Owner:
-            Master Chef
-            Base branch:
-            lp://dev/~chef/chocolate/cake
-            Debian version:
-            1.0
-            Distribution series:
-            Secret Squirrel
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/chocolate/cake
+            Debian version: 1.0
+            Distribution series: Secret Squirrel
+
             Build records
-            Status
-            Time
-            Distribution series
-            Archive
-            Successful build
-            on 2010-03-16
-            Secret Squirrel
-            Secret PPA
+            Status Time Distribution series Archive
+            Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
+
             Recipe contents
             # bzr-builder format 0.2 deb-version 1.0
-            lp://dev/~chef/chocolate/cake"""), re.S)
-        main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), repr(main_text))
+            lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
+
+    def assertContainsRe(self, regex, text):
+        """Assert that the text contains the specified regex."""
+        pattern = re.compile(regex, re.S)
+        self.assertTrue(pattern.search(text), text)
+
+    def test_index_no_builds(self):
+        """A message should be shown when there are no builds."""
+        recipe = self.makeRecipe()
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Build records
+            Status Time Distribution series Archive
+            This recipe has not been built yet.""", self.getMainText(recipe))
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
         removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        pattern = re.compile(dedent("""\
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
             Build records
-            Status
-            Time
-            Distribution series
-            Archive
-            No suitable builders
-            Secret Squirrel
-            Secret PPA
-            Request build\(s\)"""), re.S)
-        main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+            Status Time Distribution series Archive
+            No suitable builders Secret Squirrel Secret PPA
+            Request build\(s\)""", self.getMainText(recipe))
 
     def makeBuildJob(self, recipe):
         """Return a build associated with a buildjob."""
@@ -122,21 +250,16 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         recipe = self.makeRecipe()
         self.makeBuildJob(recipe)
         self.factory.makeBuilder()
-        pattern = re.compile(dedent("""\
+        pattern = """\
             Build records
-            Status
-            Time
-            Distribution series
-            Archive
-            Pending build
-            in .*
-            \(estimated\)
-            Secret Squirrel
-            Secret PPA
+            Status Time Distribution series Archive
+            Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
-            Recipe contents"""), re.S)
+
+            Recipe contents"""
         main_text = self.getMainText(recipe)
-        self.assertTrue(pattern.search(main_text), main_text)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
 
     def test_builds(self):
         """Ensure SourcePackageRecipeView.builds is as described."""
@@ -171,11 +294,11 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
         recipe = self.makeRecipe()
-        text = self.getMainText(recipe, '+request-builds')
-        self.assertEqual(dedent(u"""\
+        pattern = dedent("""\
             Request builds for cake_recipe
             Master Chef
-            Branches
+            Recipes
+            cake_recipe
             Request builds for cake_recipe
             Archive:
             Secret PPA (chef/ppa)
@@ -189,7 +312,9 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
             Guada2005
             Secret Squirrel
             or
-            Cancel"""), text)
+            Cancel""")
+        main_text = self.getMainText(recipe, '+request-builds')
+        self.assertEqual(pattern, main_text)
 
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
@@ -203,3 +328,21 @@ class TestSourcePackageRecipeView(TestCaseWithFactory):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+
+
+class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_delete_recipe(self):
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+
+        browser = self.getUserBrowser(
+            canonical_url(recipe), user=self.chef)
+
+        browser.getLink('Delete recipe').click()
+        browser.getControl('Delete recipe').click()
+
+        self.assertEqual(
+            'http://code.launchpad.dev/~chef',
+            browser.url)

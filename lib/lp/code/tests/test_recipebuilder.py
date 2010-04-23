@@ -3,6 +3,8 @@
 
 """Test RecipeBuildBehavior."""
 
+# pylint: disable-msg=F0401
+
 __metaclass__ = type
 
 import transaction
@@ -62,7 +64,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         somebranch = self.factory.makeBranch(owner=requester, name="pkg",
             product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(requester, requester,
-             distroseries, spn, u"recept", u"Recipe description", somebranch)
+             distroseries, spn, u"recept", u"Recipe description",
+             branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, recipe=recipe, requester=requester)
         job = spb.makeJob()
@@ -109,7 +112,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
            'archives': get_sources_list_for_building(job.build,
-                distroarchseries, job.build.sourcepackagename.name)
+                distroarchseries, job.build.sourcepackagename.name),
+           'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave(self):

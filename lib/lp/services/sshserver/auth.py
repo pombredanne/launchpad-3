@@ -13,7 +13,8 @@ case of failed authentication (see `SSHUserAuthServer`).
 
 __metaclass__ = type
 __all__ = [
-    'get_portal',
+    'LaunchpadAvatar',
+    'PublicKeyFromLaunchpadChecker',
     'SSHUserAuthServer',
     ]
 
@@ -21,85 +22,61 @@ import binascii
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
-from twisted.conch.interfaces import IConchUser, ISession
-from twisted.conch.ssh import filetransfer, keys, userauth
+from twisted.conch.interfaces import IConchUser
+from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
 
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred import credentials
-from twisted.cred.portal import IRealm, Portal
 
 from twisted.internet import defer
 
-from twisted.python import components, failure
+from twisted.python import failure
 
 from zope.event import notify
 from zope.interface import implements
 
-from lp.codehosting import sftp
-from lp.codehosting.sshserver import accesslog
-from lp.codehosting.sshserver.session import (
-    launch_smart_server, PatchedSSHSession)
-from lp.services.twistedsupport.xmlrpc import trap_fault
-from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
+
+from lp.services.sshserver import events
+from lp.services.sshserver.sftp import FileTransferServer
+from lp.services.sshserver.session import PatchedSSHSession
+from lp.services.twistedsupport.xmlrpc import trap_fault
 
 
 class LaunchpadAvatar(avatar.ConchUser):
     """An account on the SSH server, corresponding to a Launchpad person.
 
-    :ivar branchfs_proxy: A Twisted XML-RPC client for the authserver. The
-        server must implement `IBranchFileSystem`.
     :ivar channelLookup: See `avatar.ConchUser`.
     :ivar subsystemLookup: See `avatar.ConchUser`.
     :ivar user_id: The Launchpad database ID of the Person for this account.
     :ivar username: The Launchpad username for this account.
     """
 
-    def __init__(self, userDict, branchfs_proxy):
+    def __init__(self, user_dict):
+        """Construct a `LaunchpadAvatar`.
+
+        :param user_dict: The result of a call to
+            `IAuthServer.getUserAndSSHKeys`.
+        """
         avatar.ConchUser.__init__(self)
-        self.branchfs_proxy = branchfs_proxy
-        self.user_id = userDict['id']
-        self.username = userDict['name']
+        self.user_id = user_dict['id']
+        self.username = user_dict['name']
 
         # Set the only channel as a standard SSH session (with a couple of bug
         # fixes).
         self.channelLookup = {'session': PatchedSSHSession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': sftp.FileTransferServer}
+        self.subsystemLookup = {'sftp': FileTransferServer}
 
     def logout(self):
-        notify(accesslog.UserLoggedOut(self))
-
-
-components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
-
-components.registerAdapter(
-    sftp.avatar_to_sftp_server, LaunchpadAvatar, filetransfer.ISFTPServer)
+        notify(events.UserLoggedOut(self))
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
     """UnauthorizedLogin which should be reported to the user."""
-
-
-class Realm:
-    implements(IRealm)
-
-    def __init__(self, authentication_proxy, branchfs_proxy):
-        self.authentication_proxy = authentication_proxy
-        self.branchfs_proxy = branchfs_proxy
-
-    def requestAvatar(self, avatarId, mind, *interfaces):
-        # Fetch the user's details from the authserver
-        deferred = mind.lookupUserDetails(self.authentication_proxy, avatarId)
-
-        # Once all those details are retrieved, we can construct the avatar.
-        def gotUserDict(userDict):
-            avatar = LaunchpadAvatar(userDict, self.branchfs_proxy)
-            return interfaces[0], avatar, avatar.logout
-        return deferred.addCallback(gotUserDict)
 
 
 class ISSHPrivateKeyWithMind(credentials.ISSHPrivateKey):
@@ -215,7 +192,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         # connection in the logs.
         avatar = self.transport.avatar
         avatar.transport = self.transport
-        notify(accesslog.UserLoggedIn(avatar))
+        notify(events.UserLoggedIn(avatar))
         return ret
 
     def _ebLogToBanner(self, reason):
@@ -303,7 +280,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UserDisplayedUnauthorizedLogin(
             "No such Launchpad account: %s" % credentials.username)
 
-    def _checkForAuthorizedKey(self, userDict, credentials):
+    def _checkForAuthorizedKey(self, user_dict, credentials):
         """Check the key data in credentials against the keys found in LP."""
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
@@ -313,12 +290,12 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             # unknown key type
             return False
 
-        if len(userDict['keys']) == 0:
+        if len(user_dict['keys']) == 0:
             raise UserDisplayedUnauthorizedLogin(
                 "Launchpad user %r doesn't have a registered SSH key"
                 % credentials.username)
 
-        for keytype, keytext in userDict['keys']:
+        for keytype, keytext in user_dict['keys']:
             if keytype != wantKeyType:
                 continue
             try:
@@ -330,11 +307,3 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
-
-
-def get_portal(authentication_proxy, branchfs_proxy):
-    """Get a portal for connecting to Launchpad codehosting."""
-    portal = Portal(Realm(authentication_proxy, branchfs_proxy))
-    portal.registerChecker(
-        PublicKeyFromLaunchpadChecker(authentication_proxy))
-    return portal

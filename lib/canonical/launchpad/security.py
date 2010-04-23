@@ -1,13 +1,15 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Security policies for using content objects."""
 
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.archiveuploader.permission import (
@@ -26,6 +28,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -239,7 +242,7 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
@@ -2162,6 +2165,28 @@ class EditArchiveSubscriber(AuthorizationBase):
         if auth_append.checkAuthenticated(user):
             return True
         return user.in_admin
+
+
+class ViewSourcePackageRecipe(AuthorizationBase):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipe
+
+    def iter_adapters(self):
+        for branch in self.obj.getReferencedBranches():
+            yield getAdapter(branch, IAuthorization, self.permission)
+
+    def checkAuthenticated(self, user):
+        for adapter in self.iter_adapters():
+            if not adapter.checkAuthenticated(user):
+                return False
+        return True
+
+    def checkUnauthenticated(self):
+        for adapter in self.iter_adapters():
+            if not adapter.checkUnauthenticated():
+                return False
+        return True
 
 
 class ViewSourcePackagePublishingHistory(ViewArchive):
