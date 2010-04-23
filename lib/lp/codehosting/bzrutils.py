@@ -10,7 +10,6 @@ integrates between Bazaar's infrastructure and Launchpad's infrastructure.
 __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
-    'BranchLoopDetected',
     'DenyingServer',
     'get_branch_stacked_on_url',
     'get_vfs_format_classes',
@@ -304,13 +303,10 @@ _install_checked_open_hook()
 
 
 def checked_open(validation_function, url):
-    """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
+    """Open a branch, calling `validation_function` with any URL thus found.
 
-    :raises BranchLoopDetected: If a stacked-on location or the target of a
-        branch reference turns out to be a URL we've already seen in this open
-        attempt.
-    :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
-        `allowed_scheme`.
+    This is intended to be used to open a branch ensuring that it's not
+    stacked or a reference to something unexpected.
     """
     if hasattr(checked_open_data, 'validate'):
         raise AssertionError("checked_open called recursively")
