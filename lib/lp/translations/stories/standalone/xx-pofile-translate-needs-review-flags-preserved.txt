@@ -1,6 +1,10 @@
-= Forcing suggestions =
+Someone should review this translation usage
+============================================
 
-When translation is restricted to a particular set of users
+Forcing suggestions
+-------------------
+
+When translating is restricted to a particular set of users
 (like Evolution product is restricted for Spanish), other users
 don't see a checkbox named 'Someone should review this translation'.
 
@@ -53,3 +57,58 @@ But a new suggestion is provided for this message.
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...                                   'msgset_130_es_suggestion_701_0'))
     New suggestion
+
+
+Reseting translations
+---------------------
+
+If the 'Someone should review this translation' checkbox is used without
+adding any new suggestions or adding an empty string, the current translation
+will be reset causing all suggestions entered for this message to be listed
+again.
+
+A new translation is entered and checked that it was saved as the current
+translation, while no suggestions are displayed.
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/man/es/1/+translate')
+    >>> inputradio = admin_browser.getControl(
+    ...    name='msgset_166_es_translation_0_radiobutton')
+    >>> inputradio.value = ['msgset_166_es_translation_0_new']
+    >>> inputfield = admin_browser.getControl(
+    ...     name='msgset_166_es_translation_0_new')
+    >>> inputfield.value = 'New test translation'
+    >>> admin_browser.getControl('Save & Continue').click()
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
+    ...                             'messages_to_translate'))
+    1. English: test man page
+    Current Spanish: New test translation Translated and reviewed ...
+    New translation:
+    Someone should review this translation
+    Located in ...
+
+'Someone should review this translation' can be used to reset the translation,
+when a new emtpy translation is added and marked as needing review.
+After clicking 'Save & Continue', all translations entered for this
+message will be listed as suggestions.
+
+    >>> admin_browser.getControl(
+    ...     'Someone should review this translation').selected = True
+    >>> inputradio = admin_browser.getControl(
+    ...    name='msgset_166_es_translation_0_radiobutton')
+    >>> inputradio.value = ['msgset_166_es_translation_0_new']
+    >>> admin_browser.getControl('Save & Continue').click()
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
+    ...                             'messages_to_translate'))
+    1. English: test man page
+    Current Spanish: (no translation yet)
+    Suggestions:
+    New test translation Suggested by Foo Bar ...
+    blah, blah, blah Suggested by Carlos ...
+    lalalala Suggested by Carlos ...
+    just a translation Suggested by Sample Person ...
+    Dismiss all suggestions above.
+    New translation:
+    Someone should review this translation
+    Located in ...
