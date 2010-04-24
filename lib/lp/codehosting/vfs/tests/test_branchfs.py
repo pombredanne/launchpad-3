@@ -865,7 +865,7 @@ class TestBranchChangedNotification(TestCaseWithTransport):
 
     def test_branch_unlock_reports_users_id(self):
         # Unlocking a branch calls branchChanged on the branch filesystem
-        # endpoint.
+        # endpoint with the logged in user's id.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
         branch = self.make_branch(db_branch.unique_name)
