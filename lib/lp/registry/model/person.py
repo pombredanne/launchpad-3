@@ -850,12 +850,19 @@ class Person(
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
         contributions = []
-        results = self._getProjectsWithTheMostKarma(limit=limit)
+        # Pillars names have no concept of active. Extra pillars names are
+        # requested because deactivated pillars will be filtered out.
+        extra_limit = limit + 5
+        results = self._getProjectsWithTheMostKarma(limit=extra_limit)
         for pillar_name, karma in results:
-            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            contributions.append(
-                {'project': pillar,
-                 'categories': self._getContributedCategories(pillar)})
+            pillar = getUtility(IPillarNameSet).getByName(
+                pillar_name, ignore_inactive=True)
+            if pillar is not None:
+                contributions.append(
+                    {'project': pillar,
+                     'categories': self._getContributedCategories(pillar)})
+            if len(contributions) == limit:
+                break
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
