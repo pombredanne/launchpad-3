@@ -593,7 +593,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         elif link_upstream_how == LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE:
             # Ensure there's a bug tracker for this email address.
             bug_url = 'mailto:' + data['upstream_email_address_done']
-            bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+            getUtility(IBugTrackerSet).ensureBugTracker(
                 bug_url, self.user, BugTrackerType.EMAILADDRESS)
             data['bug_url'] = bug_url
 
