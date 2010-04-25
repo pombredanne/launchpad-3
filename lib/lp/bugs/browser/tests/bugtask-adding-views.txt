@@ -12,7 +12,6 @@ affects and creates the new bugtask.
     >>> len(bug_four.bugtasks)
     1
     >>> firefox_task = bug_four.bugtasks[0]
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 The views registered at +choose-affected-product and +distrotask are in
 fact meta views responsible for calling other views in order to guide the
