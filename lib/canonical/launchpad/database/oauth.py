@@ -134,7 +134,8 @@ class OAuthAccessToken(OAuthBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
@@ -210,7 +211,8 @@ class OAuthRequestToken(OAuthBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)

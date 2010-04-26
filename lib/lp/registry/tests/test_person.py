@@ -7,6 +7,8 @@ import unittest
 from datetime import datetime
 import pytz
 
+import transaction
+
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
@@ -19,6 +21,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
 from lazr.lifecycle.snapshot import Snapshot
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -28,6 +31,7 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
+from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.person import Person
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
@@ -37,8 +41,8 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.testing.layers import DatabaseFunctionalLayer, reconnect_stores
+
 
 class TestPerson(TestCaseWithFactory):
 
@@ -137,13 +141,12 @@ class TestPerson(TestCaseWithFactory):
                 setattr, specification, attr_name, self.myteam)
 
     def test_visibility_validator_announcement(self):
-        announcement = self.bzr.announce(
+        self.bzr.announce(
             user = self.otherteam,
             title = 'title foo',
             summary = 'summary foo',
             url = 'http://foo.com',
-            publication_date = self.now
-            )
+            publication_date = self.now)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:
@@ -166,7 +169,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(fake_warning, warning)
 
     def test_visibility_validator_answer_contact(self):
-        answer_contact = AnswerContact(
+        AnswerContact(
             person=self.otherteam,
             product=self.bzr,
             distribution=None,
@@ -180,7 +183,7 @@ class TestPerson(TestCaseWithFactory):
                 'it is referenced by an answercontact.')
 
     def test_visibility_validator_archive(self):
-        archive = getUtility(IArchiveSet).new(
+        getUtility(IArchiveSet).new(
             owner=self.otherteam,
             description='desc foo',
             purpose=ArchivePurpose.PPA)
@@ -193,7 +196,7 @@ class TestPerson(TestCaseWithFactory):
                 'it is referenced by an archive.')
 
     def test_visibility_validator_branch(self):
-        branch = self.factory.makeProductBranch(
+        self.factory.makeProductBranch(
             registrant=self.otherteam,
             owner=self.otherteam,
             product=self.bzr)
@@ -262,7 +265,7 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_public(self):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
         except ImmutableVisibilityError, exc:
@@ -272,7 +275,7 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_public_view(self):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         # The view should add an error notification.
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
@@ -299,7 +302,7 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(self.otherteam.visibility, PersonVisibility.PUBLIC)
 
     def test_visibility_validator_team_mailinglist_private(self):
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:
@@ -310,7 +313,7 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_private_view(self):
         # The view should add a field error.
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
@@ -329,14 +332,14 @@ class TestPerson(TestCaseWithFactory):
         # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a
         # PRIVATE.
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_mailinglist_pmt_to_private_view(self):
         # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a
         # PRIVATE.
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        getUtility(IMailingListSet).new(self.otherteam)
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
@@ -377,7 +380,7 @@ class TestPerson(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        sub = StructuralSubscription(
+        StructuralSubscription(
             product=self.bzr, subscriber=self.otherteam,
             subscribed_by=foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
@@ -435,7 +438,7 @@ class TestPerson(TestCaseWithFactory):
 
 class TestPersonSet(unittest.TestCase):
     """Test `IPersonSet`."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -463,7 +466,7 @@ class TestPersonSet(unittest.TestCase):
 
 class TestCreatePersonAndEmail(unittest.TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         login(ANONYMOUS)
@@ -499,7 +502,7 @@ class TestCreatePersonAndEmail(unittest.TestCase):
 
 class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestPersonRelatedBugTaskSearch, self).setUp()
@@ -521,7 +524,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         # With no specified options, get_related_bugtasks_search_params()
         # returns 4 BugTaskSearchParams objects, each with a different
         # user field set.
-        search_params = get_related_bugtasks_search_params(self.user, self.context)
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context)
         self.assertEqual(len(search_params), 4)
         self.checkUserFields(
             search_params[0], assignee=self.context)
@@ -533,8 +537,8 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             search_params[3], bug_commenter=self.context)
 
     def test_get_related_bugtasks_search_params_with_assignee(self):
-        # With assignee specified, get_related_bugtasks_search_params() returns
-        # 3 BugTaskSearchParams objects.
+        # With assignee specified, get_related_bugtasks_search_params()
+        # returns 3 BugTaskSearchParams objects.
         search_params = get_related_bugtasks_search_params(
             self.user, self.context, assignee=self.user)
         self.assertEqual(len(search_params), 3)
@@ -595,6 +599,103 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             AssertionError,
             get_related_bugtasks_search_params, self.user, "Username",
             assignee=self.user)
+
+
+class TestPersonKarma(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonKarma, self).setUp()
+        self.person = self.factory.makePerson()
+        a_product = self.factory.makeProduct(name='aa')
+        b_product = self.factory.makeProduct(name='bb')
+        self.c_product = self.factory.makeProduct(name='cc')
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        self._makeKarmaCache(
+            self.person, a_product, [('bugs', 10)])
+        self._makeKarmaCache(
+            self.person, b_product, [('answers', 50)])
+        self._makeKarmaCache(
+            self.person, self.c_product, [('code', 100), (('bugs', 50))])
+
+    def _makeKarmaCache(self, person, product, category_name_values):
+        """Create a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma'. This requires a commit and invalidates the product
+        instance.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        total = 0
+        # Insert category total for person and project.
+        for category_name, value in category_name_values:
+            category = KarmaCategory.byName(category_name)
+            self.cache_manager.new(
+                value, person.id, category.id, product_id=product.id)
+            total += value
+        # Insert total cache for person and project.
+        self.cache_manager.new(
+            total, person.id, None, product_id=product.id)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+    def test__getProjectsWithTheMostKarma_ordering(self):
+        # Verify that pillars are ordered by karma.
+        results = removeSecurityProxy(
+            self.person)._getProjectsWithTheMostKarma()
+        self.assertEqual(
+            [('cc', 150), ('bb', 50), ('aa', 10)], results)
+
+    def test__getContributedCategories(self):
+        # Verify that a iterable of karma categories is returned.
+        categories = removeSecurityProxy(
+            self.person)._getContributedCategories(self.c_product)
+        names = sorted(category.name for category in categories)
+        self.assertEqual(['bugs', 'code'], names)
+
+    def test_getProjectsAndCategoriesContributedTo(self):
+        # Verify that a list of projects and contributed karma categories
+        # is returned.
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa'], names)
+        project_categories = results[0]
+        names = [
+            category.name for category in project_categories['categories']]
+        self.assertEqual(
+            ['code', 'bugs'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_active_only(self):
+        # Verify that deactivated pillars are not included.
+        login('admin@canonical.com')
+        a_product = getUtility(IProductSet).getByName('cc')
+        a_product.active = False
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['bb', 'aa'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_limit(self):
+        # Verify the limit of 5 is honored.
+        d_product = self.factory.makeProduct(name='dd')
+        self._makeKarmaCache(
+            self.person, d_product, [('bugs', 5)])
+        e_product = self.factory.makeProduct(name='ee')
+        self._makeKarmaCache(
+            self.person, e_product, [('bugs', 4)])
+        f_product = self.factory.makeProduct(name='ff')
+        self._makeKarmaCache(
+            self.person, f_product, [('bugs', 3)])
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'dd', 'ee'], names)
 
 
 def test_suite():

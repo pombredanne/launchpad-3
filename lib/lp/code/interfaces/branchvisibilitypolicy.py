@@ -61,7 +61,7 @@ class IHasBranchVisibilityPolicy(Interface):
 
         Products that don't have any explicitly defined team policies, use
         the team policies defined for the project if the product has an
-        associated project.  Projects can't have inherited policies.
+        associated project.  ProjectGroups can't have inherited policies.
         """
 
     def setBranchVisibilityTeamPolicy(team, rule):
