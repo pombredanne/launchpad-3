@@ -7,22 +7,18 @@ __metaclass__ = type
 __all__ = []
 
 
-import datetime
 import os
 from subprocess import PIPE, Popen
 import unittest
 
-import pytz
 
 import transaction
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
-from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import (
-    join as urljoin, local_path_from_url, local_path_to_url)
+from bzrlib.urlutils import join as urljoin, local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
 from zope.component import getUtility
@@ -30,7 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.codehosting.vfs import branch_id_to_path, get_lp_server
+from lp.codehosting.vfs import get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.tests.helpers import LoomTestMixin
 from canonical.config import config
@@ -223,18 +219,17 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         product = self.factory.makeProduct()
         default_branch = self.factory.makeProductBranch(
             product=product, private=private)
-        default_branch.last_mirrored_id = 'null:'
+        #default_branch.last_mirrored_id = 'null:'
         # Make it the default stacked-on branch.
         series = removeSecurityProxy(product.development_focus)
         series.branch = default_branch
+        transaction.commit()
+        lp_server = self.getLPServerForUser(default_branch.owner)
+        BzrDir.create_branch_convenience(
+            lp_server.get_url() + default_branch.unique_name)
+        transaction.commit()
         self.assertEqual(
             default_branch, IBranchTarget(product).default_stacked_on_branch)
-        branch_location = urljoin(
-            local_path_to_url(config.codehosting.mirrored_branches_root),
-            branch_id_to_path(default_branch.id))
-        get_transport(branch_location).create_prefix()
-        BzrDir.create_branch_convenience(branch_location)
-        transaction.commit()
         return default_branch
 
     def test_stack_mirrored_branch(self):
