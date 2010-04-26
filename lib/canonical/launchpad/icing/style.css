@@ -280,49 +280,6 @@ div#branch-description {
 .product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
-/* --- Home --- */
-
-
-/* -- Notices -- */
-
-.important-notice-container {
-  text-align: center;
-  width: 100%;
-  padding-bottom: 1em;
-  position: relative;
-}
-
-.important-notice-balloon {
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-  background-color: #ededed;
-  padding: 1em;
-  border: 1px solid #000;
-  width: auto;
-  overflow: hidden;
-}
-
-.important-notice-buttons {
-  float: right;
-}
-
-.important-notice-cancel-button {
-  visibility: hidden;
-  cursor: pointer;
-}
-
-.important-notice {
-  padding: 0px 0px 40px 0px;
-  height: 32px;
-  overflow: hidden;
-}
-
-.important-notice a {
-  font-weight: bold;
-  color: black;
-  text-decoration: underline;
-}
 
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
@@ -455,16 +412,6 @@ form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
 
-/* Colored build status. */
-.buildstatusNEEDSBUILD     {color: gray;}
-.buildstatusBUILDING       {color: black;}
-.buildstatusFULLYBUILT     {color: green;}
-.buildstatusFAILEDTOBUILD  {color: red;}
-.buildstatusMANUALDEPWAIT  {color: red;}
-.buildstatusCHROOTWAIT     {color: red;}
-.buildstatusSUPERSEDED     {color: red;}
-.buildstatusFAILEDTOUPLOAD {color: red;}
-
 /* Shaded logging area. */
 div.logtail {
     margin: 0.5em;
@@ -527,9 +474,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: #d18b39;
 }
 
-.stale-diff { color: #f60; }
-.conflicts-diff { color: red; }
-
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -559,13 +503,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 }
 
 .mergeproposal p {margin: 0.5em 0 }
-
-.vcsimportSUCCESS {} /* inherited text color */
-.vcsimportFAILURE {color: Red;}
-
-.greylink a:link, .greylink a:visited {
-  color: grey;
-}
 
 .commentSuffix {
   height: 2.5em;

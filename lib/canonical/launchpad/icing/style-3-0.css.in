@@ -944,6 +944,40 @@ table.form .error {
 .sml-informational::before {
     content: url('/@@/info');
     }
+.important-notice-container {
+    text-align: center;
+    width: 100%;
+    padding-bottom: 1em;
+    position: relative;
+    }
+.important-notice-balloon {
+    -moz-border-radius: 5px;
+    -o-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    background-color: #ededed;
+    padding: 1em;
+    border: 1px solid #000;
+    width: auto;
+    overflow: hidden;
+    }
+.important-notice-buttons {
+    float: right;
+    }
+.important-notice-cancel-button {
+    visibility: hidden;
+    cursor: pointer;
+    }
+.important-notice {
+    padding: 0px 0px 40px 0px;
+    height: 32px;
+    overflow: hidden;
+    }
+.important-notice a {
+    font-weight: bold;
+    color: black;
+    text-decoration: underline;
+    }
+
 
 /* =========================
    Common presentations
@@ -1518,6 +1552,21 @@ span.help {
 .code-stat {
     color: #D18B39;
     }
+.vcsimportSUCCESS {
+    /* inherited text color */
+    }
+.vcsimportFAILURE {
+    color: Red;
+    }
+.greylink a:link, .greylink a:visited {
+    color: gray;
+    }
+.stale-diff {
+    color: #f60;
+    }
+.conflicts-diff {
+    color: red;
+    }
 
 .translations-stat {
     color: #BB3A84;
@@ -1529,6 +1578,31 @@ span.help {
 .launchpad-gold {
     color: #F8C300;
     }
+.buildstatusNEEDSBUILD {
+    color: gray;
+    }
+.buildstatusBUILDING {
+    color: black;
+    }
+.buildstatusFULLYBUILT {
+    color: green;
+    }
+.buildstatusFAILEDTOBUILD {
+    color: red;
+    }
+.buildstatusMANUALDEPWAIT {
+    color: red;
+    }
+.buildstatusCHROOTWAIT {
+    color: red;
+    }
+.buildstatusSUPERSEDED {
+    color: red;
+    }
+.buildstatusFAILEDTOUPLOAD {
+    color: red;
+    }
+
 
 /* Clouds of links. */
 .cloud-size-smallest {
