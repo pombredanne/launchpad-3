@@ -69,12 +69,36 @@ class TestRecipientReason(TestCaseWithFactory):
         self.assertEqual(
             vote_reference.branch_merge_proposal.source_branch, reason.branch)
 
-    def test_getReasonReviewer(self):
-        bmp, vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        pending_review = vote_reference.comment is None
-        reason = RecipientReason.forReviewer(bmp, pending_review, subscriber)
+    def test_forReview_individual_pending(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson(name='eric')
+        reason = RecipientReason.forReviewer(bmp, True, reviewer)
+        self.assertEqual('Reviewer', reason.mail_header)
         self.assertEqual(
             'You are requested to review the proposed merge of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
+            reason.getReason())
+
+    def test_forReview_individual_in_progress(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson(name='eric')
+        reason = RecipientReason.forReviewer(bmp, False, reviewer)
+        self.assertEqual('Reviewer', reason.mail_header)
+        self.assertEqual(
+            'You are reviewing the proposed merge of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
+            reason.getReason())
+
+    def test_forReview_team_pending(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makeTeam(name='vikings')
+        reason = RecipientReason.forReviewer(bmp, True, reviewer)
+        self.assertEqual('Reviewer @vikings', reason.mail_header)
+        self.assertEqual(
+            'Your team Vikings is requested to review the proposed merge'
+            ' of %s into %s.'
             % (bmp.source_branch.bzr_identity,
                bmp.target_branch.bzr_identity),
             reason.getReason())

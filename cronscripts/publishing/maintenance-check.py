@@ -42,7 +42,7 @@ SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
 
 # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
 SERVER_SEEDS = [ "supported-server", "server-ship"]
-DESKTOP_SEEDS = ["ship", "supported-desktop"]
+DESKTOP_SEEDS = ["ship", "supported-desktop", "supported-desktop-extra"]
 SUPPORTED_SEEDS = [ "all" ]
 
 # normal support timeframe
@@ -62,7 +62,6 @@ SUPPORT_TIMEFRAME_LTS = [
 # distro names and if they get LTS support (order is important)
 DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
                                  ("kubuntu",  True),
-                                 ("edubuntu", False),
                                  ("netbook",  False),
                                ]
 
@@ -129,6 +128,9 @@ def create_and_update_deb_src_source_list(distroseries):
         sources_list.write(
             "deb-src %s %s main restricted\n" % (
                 ARCHIVE_ROOT, pocket))
+        sources_list.write(
+            "deb %s %s main restricted\n" % (
+                ARCHIVE_ROOT, pocket))
     sources_list.close()
     # create required dirs/files for apt.Cache(rootdir) to work on older
     # versions of python-apt. once lucid is used it can be removed
@@ -141,7 +143,10 @@ def create_and_update_deb_src_source_list(distroseries):
         open(os.path.join(rootdir,"var/lib/dpkg/status"),"w")
     # open cache with our just prepared rootdir
     cache = apt.Cache(rootdir=rootdir)
-    cache.update(apt.progress.FetchProgress())
+    try:
+        cache.update(apt.progress.FetchProgress())
+    except SystemError:
+        logging.exception("cache.update() failed")
 
 def get_structure(distroname, version):
     """ Get structure file conent for named distro and distro version.
@@ -206,6 +211,28 @@ def what_seeds(pkgname, seeds):
             in_seeds.add(s)
     return in_seeds
 
+def compare_support_level(x, y):
+    """
+    compare two support level strings of the form 18m, 3y etc
+    :parm x: the first support level
+    :parm y: the second support level
+    :return: negative if x < y, zero if x==y, positive if x > y
+    """
+    def support_to_int(support_time):
+        """
+        helper that takes a support time string and converts it to 
+        a integer for cmp()
+        """
+        # allow strings like "5y (kubuntu-common)
+        x = support_time.split()[0]
+        if x.endswith("y"):
+            return 12 * int(x[0:-1])
+        elif x.endswith("m"):
+            return int(x[0:-1])
+        else:
+            raise ValueError("support time '%s' has to end with y or m" % x)
+    return cmp(support_to_int(x), support_to_int(y))
+
 def get_packages_support_time(structure, name, pkg_support_time, support_timeframe_list):
     """
     input a structure file and a list of pair<timeframe, seedlist>
@@ -221,8 +248,15 @@ def get_packages_support_time(structure, name, pkg_support_time, support_timefra
             for pkg in pkgs_in_seeds[seed]:
                 if not pkg in pkg_support_time:
                     pkg_support_time[pkg] = timeframe
-                    if options.with_seeds:
-                        pkg_support_time[pkg] += " (%s)" % ", ".join(what_seeds(pkg, pkgs_in_seeds))
+                else:
+                    old_timeframe = pkg_support_time[pkg]
+                    if compare_support_level(old_timeframe, timeframe) < 0:
+                        logging.debug("overwriting %s from %s to %s" % (
+                                pkg, old_timeframe, timeframe))
+                        pkg_support_time[pkg] = timeframe
+                if options.with_seeds:
+                    pkg_support_time[pkg] += " (%s)" % ", ".join(what_seeds(pkg, pkgs_in_seeds))
+
 
     return pkg_support_time
 
@@ -272,6 +306,23 @@ if __name__ == "__main__":
         else:
             support_timeframe = SUPPORT_TIMEFRAME
         get_packages_support_time(structure, name, pkg_support_time, support_timeframe)
+
+    # now go over the bits in main that we have not seen (because
+    # they are not in any seed and got added manually into "main"
+    for arch in PRIMARY_ARCHES:
+        rootdir="./aptroot.%s" % distro
+        apt_pkg.Config.Set("APT::Architecture", arch)
+        cache = apt.Cache(rootdir=rootdir)
+        try:
+            cache.update(apt.progress.FetchProgress())
+        except SystemError:
+            logging.exception("cache.update() failed")
+        cache.open(apt.progress.OpProgress())
+        for pkg in cache:
+            if not pkg.name in pkg_support_time:
+                pkg_support_time[pkg.name] = support_timeframe[-1][0]
+                logging.warn("add package in main but not in seeds %s with %s" % 
+                             (pkg.name, pkg_support_time[pkg.name]))
 
     # now check the hints file that is used to overwrite 
     # the default seeds

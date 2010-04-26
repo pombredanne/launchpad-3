@@ -28,7 +28,7 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.project import Project
+from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.pofile import POFile
@@ -189,7 +189,7 @@ class TranslationsPerson:
         permission = Coalesce(
             Distribution.translationpermission,
             Product.translationpermission,
-            Project.translationpermission)
+            ProjectGroup.translationpermission)
         Reviewership = ClassAlias(TeamParticipation, 'Reviewership')
         # XXX JeroenVermeulen 2009-08-28 bug=420364: Storm's Coalesce()
         # can't currently infer its return type from its inputs, leading
@@ -240,7 +240,7 @@ class TranslationsPerson:
 
         Returns a list of Storm joins for a query on `POFile`.  The
         joins will involve `Distribution`, `DistroSeries`, `POFile`,
-        `Product`, `ProductSeries`, `Project`, `TranslationGroup`,
+        `Product`, `ProductSeries`, `ProjectGroup`, `TranslationGroup`,
         `TranslationTeam`, and `Translator`.
 
         The joins will restrict the ultimate query to `POFile`s
@@ -258,7 +258,7 @@ class TranslationsPerson:
         # and ProductSeries are left joins, but one of them may
         # ultimately lead to a TranslationGroup.  In the case of
         # ProductSeries it may lead to up to two: one for the Product
-        # and one for the Project.
+        # and one for the ProjectGroup.
         DistroSeriesJoin = LeftJoin(
             DistroSeries, DistroSeries.id == POTemplate.distroseriesID)
 
@@ -277,13 +277,14 @@ class TranslationsPerson:
             Product.id == ProductSeries.productID,
             Product.official_rosetta == True))
 
-        ProjectJoin = LeftJoin(Project, Project.id == Product.projectID)
+        ProjectJoin = LeftJoin(
+            ProjectGroup, ProjectGroup.id == Product.projectID)
 
         # Look up translation group.
         groupjoin_conditions = Or(
             TranslationGroup.id == Product.translationgroupID,
             TranslationGroup.id == Distribution.translationgroupID,
-            TranslationGroup.id == Project.translationgroupID)
+            TranslationGroup.id == ProjectGroup.translationgroupID)
         if expect_reviewer_status:
             GroupJoin = Join(TranslationGroup, groupjoin_conditions)
         else:

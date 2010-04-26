@@ -1515,8 +1515,8 @@ class PublishingSet:
             LibraryFileAlias,
             LibraryFileAlias.id == PackageUpload.changesfileID,
             PackageUpload.status == PackageUploadStatus.DONE,
-            PackageUpload.distroseriesID == spr.upload_distroseriesID,
-            PackageUpload.archiveID == spr.upload_archiveID,
+            PackageUpload.distroseriesID == spr.upload_distroseries.id,
+            PackageUpload.archiveID == spr.upload_archive.id,
             PackageUpload.id == PackageUploadSource.packageuploadID,
             PackageUploadSource.sourcepackagereleaseID == spr.id)
         return result_set.one()
