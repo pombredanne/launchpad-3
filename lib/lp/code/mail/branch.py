@@ -82,7 +82,8 @@ class RecipientReason:
         else:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
-        return cls(reviewer, reviewer, branch, 'Reviewer',
+        return cls(reviewer, reviewer, branch,
+                   cls.makeRationale('Reviewer', reviewer),
                    reason_template, branch_merge_proposal,
                    branch_identity_cache=branch_identity_cache)
 
@@ -122,16 +123,16 @@ class RecipientReason:
         The owner will be the sole recipient.
         """
         return cls(branch.owner, recipient, branch,
-                     cls.makeRationale('Owner', branch.owner, recipient),
+                     cls.makeRationale('Owner', branch.owner),
                      'You are getting this email as %(lc_entity_is)s the'
                      ' owner of the branch and someone has edited the'
                      ' details.',
                      branch_identity_cache=branch_identity_cache)
 
     @staticmethod
-    def makeRationale(rationale_base, subscriber, recipient):
-        if subscriber.isTeam():
-            return '%s @%s' % (rationale_base, subscriber.name)
+    def makeRationale(rationale_base, person):
+        if person.is_team:
+            return '%s @%s' % (rationale_base, person.name)
         else:
             return rationale_base
 
