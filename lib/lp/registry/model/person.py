@@ -850,12 +850,19 @@ class Person(
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
         contributions = []
-        results = self._getProjectsWithTheMostKarma(limit=limit)
+        # Pillars names have no concept of active. Extra pillars names are
+        # requested because deactivated pillars will be filtered out.
+        extra_limit = limit + 5
+        results = self._getProjectsWithTheMostKarma(limit=extra_limit)
         for pillar_name, karma in results:
-            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            contributions.append(
-                {'project': pillar,
-                 'categories': self._getContributedCategories(pillar)})
+            pillar = getUtility(IPillarNameSet).getByName(
+                pillar_name, ignore_inactive=True)
+            if pillar is not None:
+                contributions.append(
+                    {'project': pillar,
+                     'categories': self._getContributedCategories(pillar)})
+            if len(contributions) == limit:
+                break
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
@@ -2084,17 +2091,6 @@ class Person(
         if email is None:
             self._unsetPreferredEmail()
             return
-        if (self.preferredemail is None
-            and self.account_status != AccountStatus.ACTIVE):
-            # XXX sinzui 2008-07-14 bug=248518:
-            # This is a hack to preserve this function's behaviour before
-            # Account was split from Person. This can be removed when
-            # all the callsites ensure that the account is ACTIVE first.
-            account = IMasterStore(Account).get(Account, self.accountID)
-            account.activate(
-                "Activated when the preferred email was set.",
-                password=self.password,
-                preferred_email=email)
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):

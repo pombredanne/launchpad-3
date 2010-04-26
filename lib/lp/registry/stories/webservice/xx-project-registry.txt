@@ -108,6 +108,24 @@ all_milestones_collection_link.
     http://.../mozilla/+milestone/0.9.2
     http://.../mozilla/+milestone/1.0.0
 
+The milestones can also be accessed anonymously.
+
+    >>> response = anon_webservice.get(
+    ...     mozilla['active_milestones_collection_link'])
+    >>> active_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(active_milestones)
+    http://.../mozilla/+milestone/1.0
+
+    >>> response = anon_webservice.get(
+    ...     mozilla['all_milestones_collection_link'])
+    >>> all_milestones = response.jsonBody()
+    >>> print_self_link_of_entries(all_milestones)
+    http://.../mozilla/+milestone/0.8
+    http://.../mozilla/+milestone/0.9
+    http://.../mozilla/+milestone/0.9.1
+    http://.../mozilla/+milestone/0.9.2
+    http://.../mozilla/+milestone/1.0.0
+
 "getMilestone" returns a milestone for the given name, or None if there
 is no milestone for the given name.
 
