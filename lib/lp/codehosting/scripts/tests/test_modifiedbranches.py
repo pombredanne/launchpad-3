@@ -27,7 +27,7 @@ class TestModifiedBranchesLocations(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_branch(self):
-        # A hosted branch prints  mirrored locations.
+        # A branch location is the physical disk directory.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         script = ModifiedBranchesScript('modified-branches', test_args=[])
         location = script.branch_location(branch)
