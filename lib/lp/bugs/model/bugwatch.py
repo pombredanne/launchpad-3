@@ -641,7 +641,7 @@ class BugWatchSet(BugSetBase):
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
 
-    def bulkSetStatus(self, bug_watches, last_error_type=None):
+    def bulkSetError(self, bug_watches, last_error_type=None):
         """See `IBugWatchSet`."""
         bug_watch_ids = set(
             (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)

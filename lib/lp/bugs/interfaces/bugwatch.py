@@ -288,7 +288,12 @@ class IBugWatchSet(Interface):
         :type bug_watch_ids: An iterable of `int`s, or `None`.
         """
 
-    def bulkSetStatus(bug_watches, last_error_type=None):
+    # XXX: GavinPanella bug=570277 2010-04-26: In bulkSetError() the
+    # last_error_type argument accepts the same values as the result
+    # argument to bulkAddActivity(). Using different terms for
+    # essentially the same thing is confusing.
+
+    def bulkSetError(bug_watches, last_error_type=None):
         """Efficiently update the status of the given bug watches.
 
         Sets the `last_error_type` field as instructed, updates

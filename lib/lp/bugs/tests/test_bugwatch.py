@@ -463,36 +463,36 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
             self.failUnlessEqual(
                 last_error_type, bug_watch.last_error_type)
 
-    def test_bulkSetStatus(self):
-        # Called with only bug watches, bulkSetStatus() marks the
+    def test_bulkSetError(self):
+        # Called with only bug watches, bulkSetError() marks the
         # watches as checked without error, and unscheduled.
-        getUtility(IBugWatchSet).bulkSetStatus(self.bug_watches)
+        getUtility(IBugWatchSet).bulkSetError(self.bug_watches)
         self._checkStatusOfBugWatches(False, True, None)
 
-    def test_bulkSetStatus_with_error(self):
-        # Called with bug watches and an error, bulkSetStatus() marks
+    def test_bulkSetError_with_error(self):
+        # Called with bug watches and an error, bulkSetError() marks
         # the watches with the given error, and unschedules them.
         error = BugWatchActivityStatus.BUG_NOT_FOUND
-        getUtility(IBugWatchSet).bulkSetStatus(self.bug_watches, error)
+        getUtility(IBugWatchSet).bulkSetError(self.bug_watches, error)
         self._checkStatusOfBugWatches(False, True, error)
 
-    def test_bulkSetStatus_with_id_list(self):
+    def test_bulkSetError_with_id_list(self):
         # The ids of bug watches to update can be passed in.
-        getUtility(IBugWatchSet).bulkSetStatus(
+        getUtility(IBugWatchSet).bulkSetError(
             [bug_watch.id for bug_watch in self.bug_watches])
         self._checkStatusOfBugWatches(False, True, None)
 
-    def test_bulkSetStatus_with_mixed_list(self):
+    def test_bulkSetError_with_mixed_list(self):
         # The list passed in can contain a mix of bug watches and
         # their ids.
-        getUtility(IBugWatchSet).bulkSetStatus(
+        getUtility(IBugWatchSet).bulkSetError(
             [bug_watch.id for bug_watch in self.bug_watches[::2]] +
             [bug_watch for bug_watch in self.bug_watches[1::2]])
         self._checkStatusOfBugWatches(False, True, None)
 
-    def test_bulkSetStatus_with_iterator(self):
+    def test_bulkSetError_with_iterator(self):
         # Any iterator can be passed in.
-        getUtility(IBugWatchSet).bulkSetStatus(
+        getUtility(IBugWatchSet).bulkSetError(
             (bug_watch for bug_watch in self.bug_watches))
         self._checkStatusOfBugWatches(False, True, None)
 
