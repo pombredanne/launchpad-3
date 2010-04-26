@@ -31,6 +31,7 @@ __all__ = [
     'TestCaseWithFactory',
     'test_tales',
     'time_counter',
+    'unlink_source_packages',
     # XXX: This really shouldn't be exported from here. People should import
     # it from Zope.
     'verifyObject',
@@ -84,6 +85,7 @@ from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_rw_server
+from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -911,3 +913,15 @@ def validate_mock_class(mock_class):
                             name, mock_args, real_args))
                     else:
                         break
+
+def unlink_source_packages(product):
+    """Remove all links between the product and source packages.
+
+    A product cannot be deactivated if it is linked to source packages.
+    """
+    packaging_util = getUtility(IPackagingUtil)
+    for source_package in product.sourcepackages:
+        packaging_util.deletePackaging(
+            source_package.productseries,
+            source_package.sourcepackagename,
+            source_package.distroseries)

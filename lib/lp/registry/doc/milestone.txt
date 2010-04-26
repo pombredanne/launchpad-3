@@ -221,6 +221,10 @@ A project milestone is not shown for active milestones from inactive products.
 
     >>> print [milestone.name for milestone in gnome.milestones]
     [u'1.1.']
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> syncUpdate(netapplet)
     >>> print [milestone.name for milestone in gnome.milestones]
