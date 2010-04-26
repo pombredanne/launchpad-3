@@ -91,6 +91,18 @@ class TestRecipientReason(TestCaseWithFactory):
                bmp.target_branch.bzr_identity),
             reason.getReason())
 
+    def test_forReview_team_pending(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makeTeam(name='vikings')
+        reason = RecipientReason.forReviewer(bmp, True, reviewer)
+        self.assertEqual('Reviewer @vikings', reason.mail_header)
+        self.assertEqual(
+            'Your team Vikings is requested to review the proposed merge'
+            ' of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
+            reason.getReason())
+
     def test_getReasonPerson(self):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
