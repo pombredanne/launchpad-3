@@ -1391,16 +1391,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
 
-        # The PGP signature is stripped from all changesfiles for PPAs
-        # to avoid replay attacks (see bug 159304).
-        if archive.is_ppa:
-            signed_message = signed_message_from_string(changesfilecontent)
-            if signed_message is not None:
-                # Overwrite `changesfilecontent` with the text stripped
-                # of the PGP signature.
-                new_content = signed_message.signedContent
-                if new_content is not None:
-                    changesfilecontent = signed_message.signedContent
+        # The PGP signature is stripped from all changesfiles
+        # to avoid replay attacks (see bugs 159304 and 451396).
+        signed_message = signed_message_from_string(changesfilecontent)
+        if signed_message is not None:
+            # Overwrite `changesfilecontent` with the text stripped
+            # of the PGP signature.
+            new_content = signed_message.signedContent
+            if new_content is not None:
+                changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
