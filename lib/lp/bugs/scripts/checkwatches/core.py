@@ -33,21 +33,15 @@ from twisted.internet.threads import deferToThreadPool
 from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
-from zope.event import notify
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from lazr.lifecycle.event import ObjectCreatedEvent
-from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchActivityStatus, CreateBugParams,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.scripts.logger import log as default_log
-from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
@@ -55,7 +49,6 @@ from lp.bugs.externalbugtracker import (
     BugWatchUpdateError, InvalidBugId, PrivateRemoteBug,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
-from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
@@ -792,7 +785,8 @@ class CheckwatchesMaster(WorkingBase):
                             ('URL', remote_bug_url),
                             ('bug_id', remote_bug_id),
                             ('local_ids', local_ids),
-                            ] + get_remote_system_oops_properties(remotesystem),
+                            ] + get_remote_system_oops_properties(
+                                remotesystem),
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:

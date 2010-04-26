@@ -15,8 +15,6 @@ import sys
 from zope.component import getUtility
 from zope.event import notify
 
-from canonical.database.sqlbase import flush_database_updates
-
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
@@ -25,12 +23,10 @@ from canonical.launchpad.webapp.publisher import canonical_url
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
-from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase, commit_before, with_interaction)
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+    WorkingBase, commit_before)
+from lp.registry.interfaces.person import PersonCreationRationale
 
 
 class BugWatchUpdater(WorkingBase):
