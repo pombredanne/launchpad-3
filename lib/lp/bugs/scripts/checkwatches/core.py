@@ -869,12 +869,12 @@ class CheckwatchesMaster(WorkingBase):
                 reporter, summary, description, subscribe_owner=False,
                 filed_by=getUtility(ILaunchpadCelebrities).bug_watch_updater))
         [added_task] = bug.bugtasks
-        self.bug_watch = getUtility(IBugWatchSet).createBugWatch(
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,
             owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
             bugtracker=bugtracker, remotebug=remote_bug)
 
-        added_task.bugwatch = self.bug_watch
+        added_task.bugwatch = bug_watch
         # Need to flush databse updates, so that the bug watch knows it
         # is linked from a bug task.
         flush_database_updates()
