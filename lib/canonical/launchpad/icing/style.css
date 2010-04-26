@@ -25,15 +25,8 @@
 
 /* === Fonts and colors === */
 
-/* Monospace text uses the reciprocal of this percentage, so that it
-exactly obeys your preferred monospace font size: */
-.bug-comment, .bug-activity {
-  font: 120% monospace;
-}
 
-.bug-activity {
-  color: #555;
-}
+
 
 
 .exception {color: #cc0000;}
@@ -80,7 +73,6 @@ form.primary.search {
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
-.link_img {border: 0;}
 .debug {
   background: none;
   color: #f09;
@@ -328,7 +320,7 @@ form.package-search-filter {
     clear: both;
 }
 h1.disabled, .greyed-out {
-    color: grey;
+    color: gray;
 }
 table#packages_list {
     margin-top: 1em;
@@ -428,7 +420,6 @@ div.logtail p {
 pre.changelog {
     margin: 0.5em;
     padding: 5px;
-    font: 116% monospace;
 }
 
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
@@ -507,7 +498,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .replyLink {
   text-align: right;
 }
-.codereviewcomment {font: 120% monospace;}
 .codereviewcomment .attachment, #review-diff .attachment,
 div.diff .attachmentBody {
   background-color: #f6f6f6;
@@ -529,7 +519,6 @@ body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead 
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
-   font: 120% monospace;
    width: 100%;
    background-color: white;
    margin-bottom: 0.5em;

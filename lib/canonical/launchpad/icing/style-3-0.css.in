@@ -1502,6 +1502,9 @@ span.help {
 .bugs-stat {
     color: #9F2B33;
     }
+.bug-activity {
+    color: #555;
+    }
 .statusNEW, .statusNEW a {
     color: #930;
     }
@@ -1576,15 +1579,145 @@ a.unofficial-tag {
 .conflicts-diff {
     color: red;
     }
+.branchstatusMATURE, .branchstatusMATURE a {
+    color: #090;
+    }
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a {
+    color: #900;
+    }
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {
+    color: #930;
+    }
+.branchstatusMERGED, .branchstatusMERGED a {
+    color: #gray;
+    }
+.branchstatusABANDONED, .branchstatusABANDONED a {
+    color: #gray;
+    }
+.branchstatusNEW, .branchstatusNEW a {
+    color: black;
+    }
+.voteAPPROVE {
+    color: green;
+    }
+.voteNEEDS_FIXING {
+    color: #930;
+    }
+.voteDISAPPROVE {
+    color: red;
+    }
+.voteRESUBMIT {
+    color: red;
+    }
+.voteABSTAIN {
+    color: #bebebe;
+    }
+.votePENDING {
+    color: #f60;
+    }
+.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a {
+    color: black;
+    }
+.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a {
+    color: #f60;
+    }
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a {
+    color: green;
+    }
+.mergestatusREJECTED, .mergestatusREJECTED a {
+    color: red;
+    }
+.mergestatusMERGED, .mergestatusMERGED a {
+    color: green;
+    }
+.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a {
+    color: red;
+    }
+.mergestatusQUEUED, .mergestatusQUEUED a {
+    color: black;
+    }
+.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a {
+    color: #bebebe;
+    }
+.codeimportNEW {
+    color: #930;
+    }
+.codeimportINVALID {
+    color: red;
+    }
+.codeimportREVIEWED {
+    color: green;
+    }
+.codeimportSUSPENDED {
+    color: red;
+    }
+.codeimportFAILING {
+    color: red;
+    }
 
 
 .translations-stat {
     color: #BB3A84;
     }
+.translationimportstatusAPPROVED,
+.translationimportstatusAPPROVED a {
+    color: #050;
+    }
+.translationimportstatusIMPORTED,
+.translationimportstatusIMPORTED a {
+    color: green;
+    }
+.translationimportstatusDELETED,
+.translationimportstatusDELETED a {
+    color: black;
+    }
+.translationimportstatusFAILED,
+.translationimportstatusFAILED a {
+    color: red;
+    }
+.translationimportstatusNEEDS_REVIEW,
+.translationimportstatusNEEDS_REVIEW a {
+    color: #f60;
+    }
+.translationimportstatusBLOCKED,
+.translationimportstatusBLOCKED a {
+    color: blue;
+    }
+.translationimportstatusNEEDS_INFORMATION,
+.translationimportstatusNEEDS_INFORMATION a {
+    color: maroon;
+    }
 
 
 .registry-stat {
     /* default */
+    }
+.distromirrorstatusUP {
+    color: green;
+    }
+.distromirrorstatusONEHOURBEHIND {
+    color: green;
+    }
+.distromirrorstatusTWOHOURSBEHIND {
+    color: green;
+    }
+.distromirrorstatusFOURHOURSBEHIND {
+    color: green;
+    }
+.distromirrorstatusSIXHOURSBEHIND {
+    color: #f60;
+    }
+.distromirrorstatusONEDAYBEHIND {
+    color: #f60;
+    }
+.distromirrorstatusTWODAYSBEHIND {
+    color: red;
+    }
+.distromirrorstatusONEWEEKBEHIND {
+    color: red;
+    }
+.distromirrorstatusUNKNOWN {
+    color: #bebebe;
     }
 .buildstatusNEEDSBUILD {
     color: gray;
@@ -1614,6 +1747,11 @@ a.unofficial-tag {
 
 .launchpad-gold {
     color: #F8C300;
+    }
+pre.changelog, table.diff,
+.bug-comment, .bug-activity, .codereviewcomment {
+    font-size: 116%;
+    font-family: monospace;
     }
 .cloud-size-smallest {
     font-size: 77%;
@@ -2258,113 +2396,6 @@ ul.latest-ppa-updates li.BUILDING {
 /* ====
    Code
 */
-.branchstatusMATURE, .branchstatusMATURE a {
-    color: #090;
-    }
-.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a {
-    color: #900;
-    }
-.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {
-    color: #930;
-    }
-.branchstatusMERGED, .branchstatusMERGED a {
-    color: #666;
-    }
-.branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #666;
-    }
-.branchstatusNEW, .branchstatusNEW a {
-    color: black;
-    }
-
-.voteAPPROVE {
-    color: green;
-    }
-.voteNEEDS_FIXING {
-    color: #930;
-    }
-.voteDISAPPROVE {
-    color: red;
-    }
-.voteRESUBMIT {
-    color: red;
-    }
-.voteABSTAIN {
-    color: #bebebe;
-    }
-.votePENDING {
-    color: #f60;
-    }
-
-.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a {
-    color: black;
-    }
-.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a {
-    color: #f60;
-    }
-.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a {
-    color: green;
-    }
-.mergestatusREJECTED, .mergestatusREJECTED a {
-    color: red;
-    }
-.mergestatusMERGED, .mergestatusMERGED a {
-    color: green;
-    }
-.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a {
-    color: red;
-    }
-.mergestatusQUEUED, .mergestatusQUEUED a {
-    color: black;
-    }
-.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a {
-    color: #bebebe;
-    }
-
-.codeimportNEW {
-    color: #930;
-    }
-.codeimportINVALID {
-    color: red;
-    }
-.codeimportREVIEWED {
-    color: green;
-    }
-.codeimportSUSPENDED {
-    color: red;
-    }
-.codeimportFAILING {
-    color: red;
-    }
-
-.distromirrorstatusUP {
-    color: green;
-    }
-.distromirrorstatusONEHOURBEHIND {
-    color: green;
-    }
-.distromirrorstatusTWOHOURSBEHIND {
-    color: green;
-    }
-.distromirrorstatusFOURHOURSBEHIND {
-    color: green;
-    }
-.distromirrorstatusSIXHOURSBEHIND {
-    color: #f60;
-    }
-.distromirrorstatusONEDAYBEHIND {
-    color: #f60;
-    }
-.distromirrorstatusTWODAYSBEHIND {
-    color: red;
-    }
-.distromirrorstatusONEWEEKBEHIND {
-    color: red;
-    }
-.distromirrorstatusUNKNOWN {
-    color: #bebebe;
-    }
-
 table.code {
     margin-bottom: 1em;
     }
@@ -2380,35 +2411,6 @@ table.code th, table.code td {
 /* ============
    Translations
 */
-
-.translationimportstatusAPPROVED,
-.translationimportstatusAPPROVED a {
-    color: #050;
-    }
-.translationimportstatusIMPORTED,
-.translationimportstatusIMPORTED a {
-    color: green;
-    }
-.translationimportstatusDELETED,
-.translationimportstatusDELETED a {
-    color: black;
-    }
-.translationimportstatusFAILED,
-.translationimportstatusFAILED a {
-    color: red;
-    }
-.translationimportstatusNEEDS_REVIEW,
-.translationimportstatusNEEDS_REVIEW a {
-    color: #f60;
-    }
-.translationimportstatusBLOCKED,
-.translationimportstatusBLOCKED a {
-    color: blue;
-    }
-.translationimportstatusNEEDS_INFORMATION,
-.translationimportstatusNEEDS_INFORMATION a {
-    color: maroon;
-    }
 
 /* ==== Translations hand-made forms ==== */
 
