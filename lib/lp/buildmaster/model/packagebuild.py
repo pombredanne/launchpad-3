@@ -26,7 +26,7 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    default_component_dependency_name,)
+    default_component_dependency_name)
 from lp.soyuz.interfaces.component import IComponentSet
 
 
