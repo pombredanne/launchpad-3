@@ -1412,6 +1412,7 @@ span.help {
     color: #c00;
     }
 
+
 .blueprints-stat {
     color: #3594BB;
     }
@@ -1497,6 +1498,7 @@ span.help {
     color: green;
     }
 
+
 .bugs-stat {
     color: #9F2B33;
     }
@@ -1548,6 +1550,13 @@ span.help {
 .status :link, .importance :link {
     text-decoration: none;
     }
+a.official-tag {
+    /* Looks just like a normal link  */
+    }
+a.unofficial-tag {
+    color: #6699ee;
+    }
+
 
 .code-stat {
     color: #D18B39;
@@ -1568,15 +1577,14 @@ span.help {
     color: red;
     }
 
+
 .translations-stat {
     color: #BB3A84;
     }
 
-.registry-stat {
-    }
 
-.launchpad-gold {
-    color: #F8C300;
+.registry-stat {
+    /* default */
     }
 .buildstatusNEEDSBUILD {
     color: gray;
@@ -1604,7 +1612,9 @@ span.help {
     }
 
 
-/* Clouds of links. */
+.launchpad-gold {
+    color: #F8C300;
+    }
 .cloud-size-smallest {
     font-size: 77%;
     }

@@ -172,12 +172,6 @@ form.primary.search {
   text-decoration: underline;
 }
 
-a.official-tag { /* Looks just like a normal link  */}
-
-a.unofficial-tag {
-  color: #6699ee;
-}
-
 .tags-container {
   width: 45%;
   text-align: left;
