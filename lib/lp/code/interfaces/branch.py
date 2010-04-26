@@ -1070,7 +1070,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
                the corresponding BranchRevision rows for this branch.
         """
 
-    def getInternalBzrUrl(self):
+    def getInternalBzrUrl():
         """Get the internal URL for this branch.
 
         It's generally better to use `getBzrBranch` to open the branch
@@ -1078,7 +1078,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         a branch reference or stacked on something mischievous.
         """
 
-    def getBzrBranch(self):
+    def getBzrBranch():
         """Return the BzrBranch for this database Branch.
 
         You can only call this if a server returned by `get_ro_server` or
