@@ -389,7 +389,7 @@ class LaunchpadSearchView(LaunchpadFormView):
             name_token = self._getNameToken(self.text)
             if name_token is not None:
                 self._person_or_team = self._getPersonOrTeam(name_token)
-                self._pillar = self._getDistributionOrProductOrProject(
+                self._pillar = self._getDistributionOrProductOrProjectGroup(
                     name_token)
 
         self._pages = self.searchPages(self.text, start=self.start)
@@ -421,11 +421,11 @@ class LaunchpadSearchView(LaunchpadFormView):
             return person_or_team
         return None
 
-    def _getDistributionOrProductOrProject(self, name):
+    def _getDistributionOrProductOrProjectGroup(self, name):
         """Return the matching distribution, product or project, or None."""
         vocabulary_registry = getVocabularyRegistry()
         vocab = vocabulary_registry.get(
-            None, 'DistributionOrProductOrProject')
+            None, 'DistributionOrProductOrProjectGroup')
         try:
             return vocab.getTermByToken(name).value
         except LookupError:

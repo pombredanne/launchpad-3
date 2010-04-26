@@ -28,7 +28,7 @@ class FeaturedProjectForm(Interface):
         title=_("Add project"),
         description=_(
             "Choose a project to feature on the Launchpad home page."),
-        required=False, vocabulary='DistributionOrProductOrProject')
+        required=False, vocabulary='DistributionOrProductOrProjectGroup')
 
     remove = Set(
         title=u'Remove projects',

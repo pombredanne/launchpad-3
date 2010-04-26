@@ -109,10 +109,11 @@ BEGIN
         -- need to manually update the buildfarmjob_id_seq since we're not
         -- using it here?)
         INSERT INTO packagebuild (
-            build_farm_job, archive, upload_log, dependencies)
+            build_farm_job, archive, pocket, upload_log,
+            dependencies)
         VALUES (
-            build_info.id, build_info.archive, build_info.upload_log,
-            build_info.dependencies);
+            build_info.id, build_info.archive, build_info.pocket,
+            build_info.upload_log, build_info.dependencies);
         -- Get the key of the PackageBuild row just inserted.
         SELECT currval('packagebuild_id_seq') INTO packagebuild_id;
         INSERT INTO binarypackagebuild(

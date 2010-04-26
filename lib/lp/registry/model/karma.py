@@ -130,7 +130,7 @@ class KarmaCache(SQLBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False)
+        dbName='project', foreignKey='ProjectGroup', notNull=False)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=False)
     sourcepackagename = ForeignKey(

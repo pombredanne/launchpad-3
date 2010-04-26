@@ -274,7 +274,7 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
 
         Three BugTarget types are not supported because the UI does not
         provide bug-index to link to the 'bugs that can expire' page.
-        Project, SourcePackage, and DistributionSourcePackage will
+        ProjectGroup, SourcePackage, and DistributionSourcePackage will
         raise an NotImplementedError.
 
         Passing an unknown bugtarget type will raise an AssertionError.
