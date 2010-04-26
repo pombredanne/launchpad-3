@@ -378,15 +378,16 @@ class BuildBase:
         self.buildqueue_record.builder.cleanSlave()
         self.buildqueue_record.reset()
 
-    def getLogFromSlave(self):
+    @staticmethod
+    def getLogFromSlave(build):
         """See `IBuildBase`."""
-        return self.buildqueue_record.builder.transferSlaveFileToLibrarian(
-            'buildlog', self.buildqueue_record.getLogFileName(),
-            self.is_private)
+        return build.buildqueue_record.builder.transferSlaveFileToLibrarian(
+            'buildlog', build.buildqueue_record.getLogFileName(),
+            build.is_private)
 
     def storeBuildInfo(self, librarian, slave_status):
         """See `IBuildBase`."""
-        self.buildlog = self.getLogFromSlave()
+        self.buildlog = self.getLogFromSlave(self)
         self.builder = self.buildqueue_record.builder
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for

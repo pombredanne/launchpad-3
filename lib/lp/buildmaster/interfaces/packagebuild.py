@@ -97,6 +97,10 @@ class IPackageBuild(IBuildFarmJob):
             stored.
         """
 
+    def getLogFromSlave():
+        """Get last buildlog from slave. """
+
+
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
 

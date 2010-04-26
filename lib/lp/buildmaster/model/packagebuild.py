@@ -177,6 +177,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         return BuildBase.getUploaderCommand(
             self, upload_leaf, upload_logfilename)
 
+    def getLogFromSlave(self):
+        """See `IPackageBuild`."""
+        return None
+        return BuildBase.getLogFromSlave(self)
 
 class PackageBuildDerived(BuildFarmJobDerived):
     """Override the base delegate to use a build farm job specific to
