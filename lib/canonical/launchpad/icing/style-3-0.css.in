@@ -1357,22 +1357,114 @@ span.help {
 .answers-stat {
     color: #3840BE;
     }
+.questionstatusOPEN {
+    color: #000;
+    }
+.questionstatusNEEDSINFO {
+    /* brown */
+    color: #930;
+    }
+.questionstatusANSWERED {
+    /* grey-green */
+    color: #363;
+    }
+.questionstatusSOLVED {
+    color: #090;
+    }
+.questionstatusEXPIRED {
+    color: #666;
+    }
+.questionstatusINVALID {
+    color: #c00;
+    }
+
 .blueprints-stat {
     color: #3594BB;
     }
+.specstatusAPPROVED {
+    color: green;
+    }
+.specstatusPENDINGAPPROVAL {
+    color: #f09;
+    }
+.specstatusPENDINGREVIEW {
+    color: #f09;
+    }
+.specstatusDRAFT {
+    color: #930;
+    }
+.specstatusDISCUSSION {
+    color: #930;
+    }
+.specstatusNEW {
+    color: red;
+    }
+.specstatusSUPERSEDED {
+    color: gray;
+    }
+.specstatusOBSOLETE {
+    color: gray;
+    }
+.specpriorityNOTFORUS {
+    color: gray;
+    }
+.specpriorityUNDEFINED {
+    color: gray;
+    }
+.specpriorityLOW {
+    color: black;
+    }
+.specpriorityMEDIUM {
+    color: #f60;
+    }
+.specpriorityHIGH {
+    color: red;
+    }
+.specpriorityESSENTIAL {
+    color: red;
+    }
+.specdeliveryUNKNOWN {
+    color: gray;
+    }
+.specdeliveryNOTSTARTED {
+    color: gray;
+    }
+.specdeliveryDEFERRED {
+    color: red;
+    }
+.specdeliveryNEEDSINFRASTUCTURE {
+    color: red;
+    }
+.specdeliveryBLOCKED {
+    color: red;
+    }
+.specdeliverySTARTED {
+    color: blue;
+    }
+.specdeliverySLOW {
+    color: red;
+    }
+.specdeliveryGOOD {
+    color: blue;
+    }
+.specdeliveryBETA {
+    color: #f60;
+    }
+.specdeliveryNEEDSREVIEW {
+    color: purple;
+    }
+.specdeliveryAWAITINGDEPLOYMENT {
+    color: red;
+    }
+.specdeliveryIMPLEMENTED {
+    color: green;
+    }
+.specdeliveryINFORMATIONAL {
+    color: green;
+    }
+
 .bugs-stat {
     color: #9F2B33;
-    }
-.code-stat {
-    color: #D18B39;
-    }
-.translations-stat {
-    color: #BB3A84;
-    }
-.launchpad-gold {
-    color: #F8C300;
-    }
-.registry-stat {
     }
 .statusNEW, .statusNEW a {
     color: #930;
@@ -1422,6 +1514,22 @@ span.help {
 .status :link, .importance :link {
     text-decoration: none;
     }
+
+.code-stat {
+    color: #D18B39;
+    }
+
+.translations-stat {
+    color: #BB3A84;
+    }
+
+.registry-stat {
+    }
+
+.launchpad-gold {
+    color: #F8C300;
+    }
+
 /* Clouds of links. */
 .cloud-size-smallest {
     font-size: 77%;

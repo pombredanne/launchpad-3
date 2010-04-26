@@ -683,33 +683,6 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
   background: none;
   color: #3594bb;
 }
-.specstatusAPPROVED             {color: green;}
-.specstatusPENDINGAPPROVAL      {color: #f09;}
-.specstatusPENDINGREVIEW        {color: #f09;}
-.specstatusDRAFT                {color: #930;}
-.specstatusDISCUSSION           {color: #930;}
-.specstatusNEW                  {color: red;}
-.specstatusSUPERSEDED           {color: gray;}
-.specstatusOBSOLETE             {color: gray;}
-.specpriorityNOTFORUS           {color: gray;}
-.specpriorityUNDEFINED          {color: gray;}
-.specpriorityLOW                {color: black;}
-.specpriorityMEDIUM             {color: #f60;}
-.specpriorityHIGH               {color: red;}
-.specpriorityESSENTIAL          {color: red;}
-.specdeliveryUNKNOWN            {color: gray;}
-.specdeliveryNOTSTARTED         {color: gray;}
-.specdeliveryDEFERRED           {color: red;}
-.specdeliveryNEEDSINFRASTUCTURE {color: red;}
-.specdeliveryBLOCKED            {color: red;}
-.specdeliverySTARTED            {color: blue;}
-.specdeliverySLOW               {color: red;}
-.specdeliveryGOOD               {color: blue;}
-.specdeliveryBETA               {color: #f60;}
-.specdeliveryNEEDSREVIEW        {color: purple;}
-.specdeliveryAWAITINGDEPLOYMENT {color: red;}
-.specdeliveryIMPLEMENTED        {color: green;}
-.specdeliveryINFORMATIONAL      {color: green;}
 
 /* === Translations === */
 
@@ -746,13 +719,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   background: none;
   color: #3840be;
 }
-
-.questionstatusOPEN      {color: #000;} /* black */
-.questionstatusNEEDSINFO {color: #930;} /* brown */
-.questionstatusANSWERED  {color: #363;} /* grey-green */
-.questionstatusSOLVED    {color: #090;} /* green */
-.questionstatusEXPIRED   {color: #666;} /* dark grey */
-.questionstatusINVALID   {color: #c00;} /* red */
 
 .search-box {
   text-align: left;
