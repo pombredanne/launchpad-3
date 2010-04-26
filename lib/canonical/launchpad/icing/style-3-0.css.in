@@ -238,7 +238,8 @@ img, a img {
     border: none;
     }
 abbr[title], acronym[title] {
-    border-bottom: 1px dotted black; cursor: help;
+    border-bottom: 1px dotted black;
+    cursor: help;
     }
 em {
     font-style: italic;
@@ -340,7 +341,8 @@ ul.buttons {
     padding: 0 !important;
     }
 ul.buttons li {
-    display: inline; margin: 0 0 0 0;
+    display: inline;
+    margin: 0 0 0 0;
     }
 ul.cross-reference {
     font-size: 123.1%;
@@ -574,7 +576,9 @@ th.descending {
     display: none;
     }
 table.listing {
-    margin: 0; width: 100%; font-size: 93%;
+    margin: 0;
+    width: 100%;
+    font-size: 93%;
     }
 table.listing, table.listing tbody, table.listing td.end-of-section {
     border-bottom: 1px solid #d2d2d2;
@@ -613,10 +617,12 @@ table.listing table th, table.listing table td {
     padding: 0;
     }
 table.listing thead th, table.listing tr.thead th {
-    font-size: 108%; white-space: nowrap;
+    font-size: 108%;
+    white-space: nowrap;
     }
 table.listing td {
-    border: 1px #d2d2d2; border-style: dotted none none none;
+    border: 1px #d2d2d2;
+    border-style: dotted none none none;
     }
 table.listing tr.note td {
     border-style: none;
@@ -649,7 +655,8 @@ table.summary th {
     font-weight: normal;
     }
 table.summary caption {
-    font-style: italic; margin-left: 1em;
+    font-style: italic;
+    margin-left: 1em;
     }
 table.summary ul, table.summary ul li {
     list-style-position: inside;
@@ -788,7 +795,8 @@ table.listing div.field>table {
 table.listing div.field>label,
 table.listing div.field>div>label,
 table.listing div.actions {
-    display: block; margin-top: 1em;
+    display: block;
+    margin-top: 1em;
     }
 table.form, table.extra-options {
     /* Many forms are laid out using tables, with appropriate spacing: */
@@ -847,7 +855,8 @@ img.collapseIcon {
     text-decoration: underline;
     }
 .collapsed {
-    border: none; margin-bottom: 0;
+    border: none;
+    margin-bottom: 0;
     }
 h1 .edit {
     font-size: 50%;
@@ -1367,7 +1376,9 @@ ul.super-add-action li a {
     background: url(/@@/spinner) no-repeat center center;
     }
 #help-pane iframe {
-    width: 100%; height: 300px; border: 0;
+    width: 100%;
+    height: 300px;
+    border: 0;
     }
 #help-pane iframe.invisible {
     visibility: hidden;
