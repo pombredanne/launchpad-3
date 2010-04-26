@@ -140,8 +140,8 @@ For a new watch, the "Update Now" button isn't shown.
     ...     (bug_watch.bug.id, bug_watch.id))
     >>> logout()
 
-    >>> admin_browser.open(watch_url)
-    >>> admin_browser.getControl('Update Now')
+    >>> user_browser.open(watch_url)
+    >>> user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
     LookupError: label 'Update Now'
@@ -153,8 +153,8 @@ remain hidden.
     >>> bug_watch.addActivity()
     >>> logout()
 
-    >>> admin_browser.open(watch_url)
-    >>> admin_browser.getControl('Update Now')
+    >>> user_browser.open(watch_url)
+    >>> user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
     LookupError: label 'Update Now'
@@ -166,11 +166,11 @@ will appear on the page.
     >>> bug_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> logout()
 
-    >>> admin_browser.open(watch_url)
-    >>> reschedule_button = admin_browser.getControl('Update Now')
+    >>> user_browser.open(watch_url)
+    >>> reschedule_button = user_browser.getControl('Update Now')
 
     >>> data_tag = find_tag_by_id(
-    ...     admin_browser.contents, 'bugwatch-next_check')
+    ...     user_browser.contents, 'bugwatch-next_check')
     >>> print extract_text(data_tag.renderContents())
     Next check: Not yet scheduled
 
@@ -180,22 +180,22 @@ immediately.
     >>> reschedule_button.click()
 
     >>> for message in find_tags_by_class(
-    ...     admin_browser.contents, 'informational message'):
+    ...     user_browser.contents, 'informational message'):
     ...     print extract_text(message)
     The ... bug watch has been scheduled for immediate checking.
 
 Looking at the watch +edit page again, we can see that the watch has
 been scheduled.
 
-    >>> admin_browser.open(watch_url)
+    >>> user_browser.open(watch_url)
     >>> data_tag = find_tag_by_id(
-    ...     admin_browser.contents, 'bugwatch-next_check')
+    ...     user_browser.contents, 'bugwatch-next_check')
     >>> print extract_text(data_tag.renderContents())
     Next check: 2...
 
 The button will no longer be shown on the page.
 
-    >>> reschedule_button = admin_browser.getControl('Update Now')
+    >>> reschedule_button = user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
     LookupError: label 'Update Now'
