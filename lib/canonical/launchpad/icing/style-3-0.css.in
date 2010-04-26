@@ -1419,30 +1419,20 @@ span.help {
 .specstatusAPPROVED {
     color: green;
     }
-.specstatusPENDINGAPPROVAL {
-    color: #f09;
-    }
+.specstatusPENDINGAPPROVAL,
 .specstatusPENDINGREVIEW {
     color: #f09;
     }
-.specstatusDRAFT {
-    color: #930;
-    }
+.specstatusDRAFT,
 .specstatusDISCUSSION {
     color: #930;
     }
 .specstatusNEW {
     color: red;
     }
-.specstatusSUPERSEDED {
-    color: gray;
-    }
-.specstatusOBSOLETE {
-    color: gray;
-    }
-.specpriorityNOTFORUS {
-    color: gray;
-    }
+.specstatusSUPERSEDED,
+.specstatusOBSOLETE,
+.specpriorityNOTFORUS,
 .specpriorityUNDEFINED {
     color: gray;
     }
@@ -1452,24 +1442,16 @@ span.help {
 .specpriorityMEDIUM {
     color: #f60;
     }
-.specpriorityHIGH {
-    color: red;
-    }
+.specpriorityHIGH,
 .specpriorityESSENTIAL {
     color: red;
     }
-.specdeliveryUNKNOWN {
-    color: gray;
-    }
+.specdeliveryUNKNOWN,
 .specdeliveryNOTSTARTED {
     color: gray;
     }
-.specdeliveryDEFERRED {
-    color: red;
-    }
-.specdeliveryNEEDSINFRASTUCTURE {
-    color: red;
-    }
+.specdeliveryDEFERRED,
+.specdeliveryNEEDSINFRASTUCTURE,
 .specdeliveryBLOCKED {
     color: red;
     }
@@ -1491,9 +1473,7 @@ span.help {
 .specdeliveryAWAITINGDEPLOYMENT {
     color: red;
     }
-.specdeliveryIMPLEMENTED {
-    color: green;
-    }
+.specdeliveryIMPLEMENTED,
 .specdeliveryINFORMATIONAL {
     color: green;
     }
@@ -1508,9 +1488,7 @@ span.help {
 .statusNEW, .statusNEW a {
     color: #930;
     }
-.statusINCOMPLETE, .statusINCOMPLETE a {
-    color: red;
-    }
+.statusINCOMPLETE, .statusINCOMPLETE a,
 .statusCONFIRMED, .statusCONFIRMED a {
     color: red;
     }
@@ -1526,9 +1504,7 @@ span.help {
 .statusFIXRELEASED, .statusFIXRELEASED a {
     color: green;
     }
-.statusINVALID, .statusINVALID a {
-    color: gray;
-    }
+.statusINVALID, .statusINVALID a,
 .statusWONTFIX, .statusWONTFIX a {
     color: gray;
     }
@@ -1588,9 +1564,7 @@ a.unofficial-tag {
 .branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {
     color: #930;
     }
-.branchstatusMERGED, .branchstatusMERGED a {
-    color: #gray;
-    }
+.branchstatusMERGED, .branchstatusMERGED a,
 .branchstatusABANDONED, .branchstatusABANDONED a {
     color: #gray;
     }
@@ -1603,9 +1577,7 @@ a.unofficial-tag {
 .voteNEEDS_FIXING {
     color: #930;
     }
-.voteDISAPPROVE {
-    color: red;
-    }
+.voteDISAPPROVE,
 .voteRESUBMIT {
     color: red;
     }
@@ -1621,15 +1593,11 @@ a.unofficial-tag {
 .mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a {
     color: #f60;
     }
-.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a {
-    color: green;
-    }
-.mergestatusREJECTED, .mergestatusREJECTED a {
-    color: red;
-    }
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a,
 .mergestatusMERGED, .mergestatusMERGED a {
     color: green;
     }
+.mergestatusREJECTED, .mergestatusREJECTED a,
 .mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a {
     color: red;
     }
@@ -1642,15 +1610,11 @@ a.unofficial-tag {
 .codeimportNEW {
     color: #930;
     }
-.codeimportINVALID {
-    color: red;
-    }
 .codeimportREVIEWED {
     color: green;
     }
-.codeimportSUSPENDED {
-    color: red;
-    }
+.codeimportINVALID,
+.codeimportSUSPENDED,
 .codeimportFAILING {
     color: red;
     }
@@ -1692,27 +1656,15 @@ a.unofficial-tag {
 .registry-stat {
     /* default */
     }
-.distromirrorstatusUP {
-    color: green;
-    }
-.distromirrorstatusONEHOURBEHIND {
-    color: green;
-    }
-.distromirrorstatusTWOHOURSBEHIND {
-    color: green;
-    }
-.distromirrorstatusFOURHOURSBEHIND {
-    color: green;
-    }
-.distromirrorstatusSIXHOURSBEHIND {
-    color: #f60;
-    }
+.distromirrorstatusUP,
+.distromirrorstatusONEHOURBEHIND,
+.distromirrorstatusTWOHOURSBEHIND,
+.distromirrorstatusFOURHOURSBEHIND,
+.distromirrorstatusSIXHOURSBEHIND,
 .distromirrorstatusONEDAYBEHIND {
     color: #f60;
     }
-.distromirrorstatusTWODAYSBEHIND {
-    color: red;
-    }
+.distromirrorstatusTWODAYSBEHIND,
 .distromirrorstatusONEWEEKBEHIND {
     color: red;
     }
@@ -1728,18 +1680,10 @@ a.unofficial-tag {
 .buildstatusFULLYBUILT {
     color: green;
     }
-.buildstatusFAILEDTOBUILD {
-    color: red;
-    }
-.buildstatusMANUALDEPWAIT {
-    color: red;
-    }
-.buildstatusCHROOTWAIT {
-    color: red;
-    }
-.buildstatusSUPERSEDED {
-    color: red;
-    }
+.buildstatusFAILEDTOBUILD,
+.buildstatusMANUALDEPWAIT,
+.buildstatusCHROOTWAIT,
+.buildstatusSUPERSEDED,
 .buildstatusFAILEDTOUPLOAD {
     color: red;
     }
