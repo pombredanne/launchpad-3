@@ -52,8 +52,7 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
         self.makeCleanDirectory(
             local_path_from_url(config.launchpad.bzr_imports_root_url))
 
-    def assertMirrored(self, db_branch, source_branch,
-                       accessing_user=None):
+    def assertMirrored(self, db_branch, source_branch):
         """Assert that 'db_branch' was mirrored succesfully.
 
         This method checks that the fields on db_branch show that the branch
@@ -69,8 +68,7 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
             supplied create a fresh user for this -- but this won't work for a
             private branch.
         """
-        if accessing_user is None:
-            accessing_user = self.factory.makePerson()
+        accessing_user = self.factory.makePerson()
         transaction.commit()
         self.assertEqual(None, db_branch.mirror_status_message)
         self.assertEqual(
@@ -215,19 +213,19 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
             (defaults to not).
         :return: `IBranch`.
         """
-        # Make the branch.
+        # Make the branch in the database.
         product = self.factory.makeProduct()
         default_branch = self.factory.makeProductBranch(
             product=product, private=private)
-        #default_branch.last_mirrored_id = 'null:'
-        # Make it the default stacked-on branch.
-        series = removeSecurityProxy(product.development_focus)
-        series.branch = default_branch
         transaction.commit()
+        # Create the underlying bzr branch.
         lp_server = self.getLPServerForUser(default_branch.owner)
         BzrDir.create_branch_convenience(
             lp_server.get_url() + default_branch.unique_name)
         transaction.commit()
+        # Make it the default stacked-on branch for the product.
+        series = removeSecurityProxy(product.development_focus)
+        series.branch = default_branch
         self.assertEqual(
             default_branch, IBranchTarget(product).default_stacked_on_branch)
         return default_branch
