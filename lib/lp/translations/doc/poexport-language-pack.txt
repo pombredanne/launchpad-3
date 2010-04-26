@@ -55,8 +55,8 @@ This is handy for examining the tar files that are generated.
     ...             size = 'bin'
     ...         else:
     ...             size = len(tarfile.extractfile(member).readlines())
-    ...         # XXX: The .rstrip('/') is to make this pass on python2.5 and
-    ...         # 2.6.
+    ...         # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...         # make this pass on python2.5 and 2.6.
     ...         print "| %5s | %s" % (size, member.name.rstrip('/'))
 
 
@@ -95,7 +95,8 @@ Check that the log looks ok.
 The tarball has the right members.
 
     >>> for member in tarfile.getmembers():
-    ...     # XXX: The .rstrip('/') is to make this pass on python2.5 and 2.6.
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
     ...     print member.name.rstrip('/')
     rosetta-hoary
     ...
@@ -108,8 +109,8 @@ The tarball has the right members.
 
 Directory permissions allow correct use of those directories:
 
-    # XXX: This try/except is needed to make the test pass on python2.5 and
-    # 2.6.
+    # XXX: 2010-04-26, Salgado, bug=570244: This try/except is needed to make
+    # the test pass on python2.5 and 2.6.
     >>> try:
     ...     directory = tarfile.getmember('rosetta-hoary/')
     ... except KeyError:

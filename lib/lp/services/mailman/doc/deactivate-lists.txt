@@ -42,7 +42,8 @@ gzip'd tarfile containing the list's pickle data.
     >>> import tarfile
     >>> tarball = tarfile.open(backup_file, 'r:gz')
     >>> for name in sorted(tarball.getnames()):
-    ...     # XXX: The .rstrip('/') is to make this pass on python2.5 and 2.6.
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
     ...     print name.rstrip('/')
     itest-one
     itest-one/config.pck

@@ -15,6 +15,8 @@ from canonical.launchpad.scripts import logger, logger_options
 from lp.poppy.hooks import Hooks
 from lp.poppy.server import run_server
 
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
 warnings.filterwarnings(
     'ignore', '.*(md5|sha|sets)', DeprecationWarning,
     )

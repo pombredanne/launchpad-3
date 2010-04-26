@@ -620,7 +620,8 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
 
-    # XXX: The .rstrip('/') is to make this pass on python2.5 and 2.6.
+    # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to make this
+    # pass on python2.5 and 2.6.
     >>> sorted(name.rstrip('/') for name in tarfile.getnames())
     ['evolution-2.2', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',

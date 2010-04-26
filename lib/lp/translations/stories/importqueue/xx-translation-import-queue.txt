@@ -80,9 +80,10 @@ ignored, as well as empty files, and things whose names end in .po or
     >>> 'empty.po' in anon_browser.contents
     False
 
-    # XXX: Need this hack to make it pass on python2.5 (where
-    # tarball.getnames() include a trailing slash on directory names) and
-    # python2.6 (where directory names don't get a trailing slash).
+    # XXX: 2010-04-26, Salgado, bug=570244: Need this hack to make it pass on
+    # python2.5 (where tarball.getnames() include a trailing slash on
+    # directory names) and python2.6 (where directory names don't get a
+    # trailing slash).
     >>> ('directory.po' in tarball.getnames()
     ...  or 'directory.po/' in tarball.getnames())
     True

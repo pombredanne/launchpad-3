@@ -24,9 +24,9 @@ def valid_absolute_url(name):
     >>> valid_absolute_url('whatever:/uxample.com/blah')
     False
 
-    # XXX: This test only works against python2.6 but we still need to run on
-    # python2.5, so we should uncomment it only when we no longer need to run
-    # on 2.5.
+    # XXX: 2010-04-26, Salgado, bug=570244: This test only works against
+    # python2.6 but we still need to run on python2.5, so we should uncomment
+    # it only when we no longer need to run on 2.5.
     >>> #valid_absolute_url('whatever://example.com/blah')
     True
     """

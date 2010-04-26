@@ -79,7 +79,8 @@ When we export more than one file, we get a tarball.
     ...         lines = len(tarfile.extractfile(member).readlines())
     ...     else:
     ...         lines = 0
-    ...     # XXX: The .rstrip('/') is to make this pass on python2.5 and 2.6.
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
     ...     print "| %5d | %s" % (lines, member.name.rstrip('/'))
     |     0 | es
     |     0 | es/LC_MESSAGES

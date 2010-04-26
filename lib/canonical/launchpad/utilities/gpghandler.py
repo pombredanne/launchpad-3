@@ -160,8 +160,9 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, plain, None)
             except gpgme.GpgmeError, e:
-                # XXX: This hack is needed for python2.5 compatibility. We
-                # should remove it when we no longer need to run on python2.5.
+                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+                # for python2.5 compatibility. We should remove it when we no
+                # longer need to run on python2.5.
                 if hasattr(e, 'message'):
                     msg = e.message
                 else:
@@ -176,8 +177,9 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, None, plain)
             except gpgme.GpgmeError, e:
-                # XXX: This hack is needed for python2.5 compatibility. We
-                # should remove it when we no longer need to run on python2.5.
+                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+                # for python2.5 compatibility. We should remove it when we no
+                # longer need to run on python2.5.
                 if hasattr(e, 'message'):
                     msg = e.message
                 else:

@@ -55,6 +55,8 @@ def make_test_tarball_2():
 
     Check the expected files are in the archive.
 
+    # XXX: 2010-04-26, Salgado, bug=570244: This rstrip('/') is to make the
+    # test pass on python2.5 and 2.6.
     >>> [name.rstrip('/') for name in tarball.getnames()]
     ['test', 'test/cy.po', 'test/es.po', 'test/test.pot']
 
