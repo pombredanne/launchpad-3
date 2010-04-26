@@ -1352,7 +1352,7 @@ span.help {
 
 /* =========================
    Universal presentation
-   Colors
+   Colors and fonts
 */
 .answers-stat {
     color: #3840BE;
@@ -1373,6 +1373,79 @@ span.help {
     color: #F8C300;
     }
 .registry-stat {
+    }
+.statusNEW, .statusNEW a {
+    color: #930;
+    }
+.statusINCOMPLETE, .statusINCOMPLETE a {
+    color: red;
+    }
+.statusCONFIRMED, .statusCONFIRMED a {
+    color: red;
+    }
+.statusTRIAGED, .statusTRIAGED a {
+    color: #f60;
+    }
+.statusINPROGRESS, .statusINPROGRESS a {
+    color: black;
+    }
+.statusFIXCOMMITTED, .statusFIXCOMMITTED a {
+    color: #050;
+    }
+.statusFIXRELEASED, .statusFIXRELEASED a {
+    color: green;
+    }
+.statusINVALID, .statusINVALID a {
+    color: gray;
+    }
+.statusWONTFIX, .statusWONTFIX a {
+    color: gray;
+    }
+.importanceCRITICAL, .importanceCRITICAL a {
+    color: red;
+    }
+.importanceHIGH, .importanceHIGH a {
+    color: #f60;
+    }
+.importanceMEDIUM, .importanceMEDIUM a {
+    color: green;
+    }
+.importanceLOW, .importanceLOW a {
+    color: black;
+    }
+.importanceWISHLIST, .importanceWISHLIST a {
+    color: blue;
+    }
+.importanceUNDECIDED, .importanceUNDECIDED a {
+    color: #999;
+    }
+.status :link, .importance :link {
+    text-decoration: none;
+    }
+/* Clouds of links. */
+.cloud-size-smallest {
+    font-size: 77%;
+    }
+.cloud-size-small {
+    font-size: 85%;
+    }
+.cloud-size-medium {
+    font-size: 131%;
+    }
+.cloud-size-large {
+    font-size: 167%;
+    }
+.cloud-size-largest {
+    font-size: 197%;
+    }
+.cloud-dark {
+    color: #00f;
+    }
+.cloud-medium {
+    color: #7878ff;
+    }
+.cloud-light {
+    color: #b8b8ff;
     }
 
 

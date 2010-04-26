@@ -647,22 +647,6 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-.statusNEW,           .statusNEW a           {color: #930;}
-.statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
-.statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
-.statusTRIAGED,       .statusTRIAGED a       {color: #f60;}
-.statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
-.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: #050;}
-.statusFIXRELEASED,   .statusFIXRELEASED a   {color: green;}
-.statusINVALID,       .statusINVALID a       {color: gray;}
-.statusWONTFIX,       .statusWONTFIX a       {color: gray;}
-.importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
-.importanceHIGH,      .importanceHIGH a      {color: #f60;}
-.importanceMEDIUM,    .importanceMEDIUM a    {color: green;}
-.importanceLOW,       .importanceLOW a       {color: black;}
-.importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
-.importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
-.status :link, .importance :link {text-decoration: none;}
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
@@ -859,32 +843,6 @@ img.mugshot {display: block;}
 #project-tags a {
   padding-left: 0.5em;
   padding-right: 0.5em;
-}
-
-/* Clouds of links. */
-.cloud-size-smallest {
-  font-size: 0.8em;
-}
-.cloud-size-small {
-  font-size: 1.1em;
-}
-.cloud-size-medium {
-  font-size: 1.4em;
-}
-.cloud-size-large {
-  font-size: 1.7em;
-}
-.cloud-size-largest {
-  font-size: 2.0em;
-}
-.cloud-dark {
-  color: #00f;
-}
-.cloud-medium {
-  color: #7878ff;
-}
-.cloud-light {
-  color: #b8b8ff;
 }
 
 .lowerCaseText {
