@@ -265,7 +265,9 @@ invalid remote comment ID, an error will be raised:
     >>> broken_external_bugtracker = ErroringExternalBugTracker(
     ...     'http://example.com')
 
-    >>> bugwatch_updater.bug_watch = bug_watch
+    >>> bugwatch_updater = BugWatchUpdater(
+    ...     'bugwatch@bugs.launchpad.net', transaction,
+    ...     log, bug_watch, external_bugtracker)
     >>> bugwatch_updater.external_bugtracker = broken_external_bugtracker
     >>> bugwatch_updater.pushBugComments()
     Traceback (most recent call last):

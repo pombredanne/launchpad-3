@@ -391,7 +391,9 @@ Launchpad but will result in no Karma records being created.
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     >>> external_bugtracker.remote_comments = {
     ...     '5':"A comment containing a CVE entry: CVE-1991-9911."}
-    >>> bugwatch_updater.bug_watch = bug_watch
+    >>> bugwatch_updater = BugWatchUpdater(
+    ...     'bugwatch@bugs.launchpad.net', transaction,
+    ...     log, bug_watch, external_bugtracker)
     >>> bugwatch_updater.importBugComments()
     INFO:...:Imported 1 comments for remote bug 123456...
 
@@ -464,7 +466,9 @@ comments.
 
     >>> transaction.commit()
 
-    >>> bugwatch_updater.bug_watch = bug_watch
+    >>> bugwatch_updater = BugWatchUpdater(
+    ...     'bugwatch@bugs.launchpad.net', transaction,
+    ...     log, bug_watch, external_bugtracker)
     >>> bugwatch_updater.importBugComments()
     INFO:...:Imported 2 comments for remote bug 42 ...
 
