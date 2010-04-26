@@ -254,7 +254,7 @@ body.tab-overview #description, div#branch-description {
     width: 50em;
 }
 body.tab-overview #description fieldset, div#branch-description fieldset {
-    border: 1px solid #666;
+    border: 1px solid gray;
     padding: 0 1em;
     margin:0 1em 1em 0;
 }
@@ -271,7 +271,7 @@ div#branch-description {
  * under Overview)
  */
 #sources-list-entries {
-  border: 1px solid #666;
+  border: 1px solid gray;
   padding: 0.3em;
   margin: 1em 0 1em 0;
 }
@@ -305,7 +305,7 @@ div.archive #description {
     width: 50em;
 }
 div.archive #description fieldset {
-    border: 1px solid #666;
+    border: 1px solid gray;
     padding: 0 1em;
     margin:0 1em 1em 0;
 }
@@ -320,7 +320,7 @@ form.package-search-filter {
     clear: both;
 }
 h1.disabled, .greyed-out {
-    color: #666;
+    color: gray;
 }
 table#packages_list {
     margin-top: 1em;
@@ -403,7 +403,7 @@ div.logtail {
     margin: 0.5em;
     background-color: #f6f6f6;
     padding: 5px;
-    border: solid #666;
+    border: solid gray;
     border-width: 1px;
     font: 100% monospace;
     -moz-border-radius: 5px;
@@ -425,7 +425,7 @@ pre.changelog {
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
    linkified should be lined-through. */
 a.ppa-icon-inactive {
-    color: #666;
+    color: gray;
 }
 span.ppa-icon-inactive {
     text-decoration: line-through;

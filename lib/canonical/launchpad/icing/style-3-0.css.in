@@ -551,7 +551,7 @@ table.cozy-listing td {
     border-style: dotted none none none;
     }
 table.sortable a.sortheader {
-    color:#666666;
+    color:#666;
     font-weight: bold;
     text-decoration: none;
     display: block;
@@ -840,7 +840,8 @@ fieldset.collapsible legend {
     text-decoration: none;
     }
 img.collapseIcon {
-    text-decoration: none; vertical-align: middle;
+    text-decoration: none;
+    vertical-align: middle;
     }
 .collapsible legend a span {
     text-decoration: underline;
@@ -870,7 +871,7 @@ h1 .edit {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer
+    cursor:pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
@@ -886,7 +887,8 @@ h1 .edit {
 .error.message::before, .warning.message::before,
 .informational.message::before {
     /* The alerts are preceded with an icon overlaying the top left corner: */
-    display: block; margin: -15px 0 -6px -35px;
+    display: block;
+    margin: -15px 0 -6px -35px;
     }
 .error {
     /* Error messages are pink, with alerts having an error icon: */
@@ -912,7 +914,8 @@ h1 .edit {
     }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
-    background: #666; color: white;
+    background: #666;
+    color: white;
     }
 .debugging.message::before {
     content: url(/@@/info-large);
@@ -1434,7 +1437,7 @@ span.help {
 .specstatusOBSOLETE,
 .specpriorityNOTFORUS,
 .specpriorityUNDEFINED {
-    color: #666;
+    color: gray;
     }
 .specpriorityLOW {
     color: black;
@@ -1448,7 +1451,7 @@ span.help {
     }
 .specdeliveryUNKNOWN,
 .specdeliveryNOTSTARTED {
-    color: #666;
+    color: gray;
     }
 .specdeliveryDEFERRED,
 .specdeliveryNEEDSINFRASTUCTURE,
@@ -1506,7 +1509,7 @@ span.help {
     }
 .statusINVALID, .statusINVALID a,
 .statusWONTFIX, .statusWONTFIX a {
-    color: #666;
+    color: gray;
     }
 .importanceCRITICAL, .importanceCRITICAL a {
     color: red;
@@ -1547,7 +1550,7 @@ a.unofficial-tag {
     color: Red;
     }
 .greylink a:link, .greylink a:visited {
-    color: #666;
+    color: gray;
     }
 .stale-diff {
     color: #f60;
@@ -1566,7 +1569,7 @@ a.unofficial-tag {
     }
 .branchstatusMERGED, .branchstatusMERGED a,
 .branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #666;
+    color: #gray;
     }
 .branchstatusNEW, .branchstatusNEW a {
     color: black;
@@ -1672,7 +1675,7 @@ a.unofficial-tag {
     color: #bebebe;
     }
 .buildstatusNEEDSBUILD {
-    color: #666;
+    color: gray;
     }
 .buildstatusBUILDING {
     color: black;
