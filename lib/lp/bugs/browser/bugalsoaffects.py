@@ -103,26 +103,6 @@ class ChooseProductStep(AlsoAffectsStep):
         bugtask = self.context
         upstream = bugtask.target.upstream_product
         if upstream is not None:
-            if not upstream.active:
-                # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
-                # possible because of bug 140526, which allows packages to
-                # be linked to inactive products.
-                series = bugtask.distribution.currentseries
-                assert series is not None, (
-                    "This package is linked to a product series so this "
-                    "package's distribution must have at least one distro "
-                    "series.")
-                sourcepackage = series.getSourcePackage(
-                    bugtask.sourcepackagename)
-                self.request.response.addWarningNotification(
-                    structured(
-                    _("""
-                    This package is linked to an inactive upstream.  You
-                    can <a href="%(package_url)s/+edit-packaging">fix it</a>
-                    to avoid this step in the future."""),
-                    package_url=canonical_url(sourcepackage)))
-                return
-
             try:
                 valid_upstreamtask(bugtask.bug, upstream)
             except WidgetsError:
@@ -613,7 +593,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         elif link_upstream_how == LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE:
             # Ensure there's a bug tracker for this email address.
             bug_url = 'mailto:' + data['upstream_email_address_done']
-            bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+            getUtility(IBugTrackerSet).ensureBugTracker(
                 bug_url, self.user, BugTrackerType.EMAILADDRESS)
             data['bug_url'] = bug_url
 

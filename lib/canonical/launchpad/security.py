@@ -242,7 +242,7 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
@@ -373,6 +373,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
     usedfor = IDistributionMirror
+
+
+class ViewMilestone(AnonymousAuthorization):
+    """Anyone can view an IMilestone."""
+    usedfor = IMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
