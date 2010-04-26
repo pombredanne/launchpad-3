@@ -165,6 +165,15 @@ class BuildFarmJob(Storm):
         """
         return False
 
+    @property
+    def log_url(self):
+        """See `IBuildFarmJob`.
+
+        This base implementation of the property always returns None. Derived
+        implementations need to override for their specific context.
+        """
+        return None
+
 
 class BuildFarmJobDerived:
     """See `IBuildFarmJobDerived`."""

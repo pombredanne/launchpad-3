@@ -51,13 +51,6 @@ class IPackageBuild(IBuildFarmJob):
             description=_("A URL for failed upload logs."
                           "Will be None if there was no failure.")))
 
-    log_url = exported(
-        TextLine(
-            title=_("Build Log URL"), required=False,
-            description=_("A URL for the build log. None if there is no "
-                          "log available.")),
-        ("1.0", dict(exported=True, exported_as="build_log_url")))
-
     dependencies = exported(
         TextLine(
             title=_('Dependencies'), required=False,

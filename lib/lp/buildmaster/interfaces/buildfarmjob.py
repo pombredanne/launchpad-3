@@ -125,6 +125,13 @@ class IBuildFarmJob(Interface):
         title=_(
             "The LibraryFileAlias containing the entire log for this job."))
 
+    log_url = exported(
+        TextLine(
+            title=_("Build Log URL"), required=False,
+            description=_("A URL for the build log. None if there is no "
+                          "log available.")),
+        ("1.0", dict(exported=True, exported_as="build_log_url")))
+
     is_private = Bool(
         title=_("is private"), required=False, readonly=True,
         description=_("Whether the build should be treated as private."))

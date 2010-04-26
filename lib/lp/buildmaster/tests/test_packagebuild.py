@@ -9,6 +9,7 @@ import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -26,48 +27,68 @@ class TestPackageBuild(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makePackageBuild(self):
+    def setUp(self):
+        """Create a package build with which to test."""
+        super(TestPackageBuild, self).setUp()
+        joe = self.factory.makePerson(name="joe")
+        joes_ppa = self.factory.makeArchive(owner=joe)
+        self.package_build = self.makePackageBuild(archive=joes_ppa)
+
+    def makePackageBuild(self, archive=None):
+        if archive is None:
+            archive = self.factory.makeArchive()
+
         return getUtility(IPackageBuildSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD,
             virtualized=True,
-            archive=self.factory.makeArchive(),
+            archive=archive,
             pocket=PackagePublishingPocket.RELEASE)
 
     def test_providesInterface(self):
         # PackageBuild provides IPackageBuild
-        package_build = self.makePackageBuild()
-        self.assertProvides(package_build, IPackageBuild)
+        self.assertProvides(self.package_build, IPackageBuild)
 
     def test_saves_record(self):
         # A package build can be stored in the database.
-        package_build = self.makePackageBuild()
         flush_database_updates()
-        store = Store.of(package_build)
+        store = Store.of(self.package_build)
         retrieved_build = store.find(
             PackageBuild,
-            PackageBuild.id == package_build.id).one()
-        self.assertEqual(package_build, retrieved_build)
+            PackageBuild.id == self.package_build.id).one()
+        self.assertEqual(self.package_build, retrieved_build)
 
     def test_getTitle_not_implemented(self):
         # Classes deriving from PackageBuild must provide getTitle.
-        package_build = self.makePackageBuild()
-        self.assertRaises(NotImplementedError, package_build.getTitle)
+        self.assertRaises(NotImplementedError, self.package_build.getTitle)
 
     def test_default_values(self):
-        package_build = self.makePackageBuild()
-        self.failUnlessEqual('buildd', package_build.policy_name)
+        # PackageBuild has a number of default values.
+        self.failUnlessEqual('buildd', self.package_build.policy_name)
         self.failUnlessEqual(
-            'multiverse', package_build.current_component.name)
-        self.failUnlessEqual(None, package_build.distribution)
+            'multiverse', self.package_build.current_component.name)
+        self.failUnlessEqual(None, self.package_build.distribution)
 
     def test_log_url(self):
-        lfa = self.factory.makeLibraryFileAlias('myfile.txt')
-        import pdb;pdb.set_trace()
-        self.failUnless(
-            False, "Add test.")
+        # The url of the build log file is determined by the PackageBuild.
+        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
+        removeSecurityProxy(self.package_build).log = lfa
+        log_url = self.package_build.log_url
+        self.failUnlessEqual(
+            'http://launchpad.dev/~joe/'
+            '+archive/ppa/+build/%d/+files/mybuildlog.txt' % (
+                self.package_build.build_farm_job.id),
+            log_url)
 
     def test_upload_log_url(self):
-        self.failUnless(False, "Add a test")
+        # The url of the upload log file is determined by the PackageBuild.
+        lfa = self.factory.makeLibraryFileAlias('myuploadlog.txt')
+        removeSecurityProxy(self.package_build).upload_log = lfa
+        log_url = self.package_build.upload_log_url
+        self.failUnlessEqual(
+            'http://launchpad.dev/~joe/'
+            '+archive/ppa/+build/%d/+files/myuploadlog.txt' % (
+                self.package_build.build_farm_job.id),
+            log_url)
 
 
 def test_suite():

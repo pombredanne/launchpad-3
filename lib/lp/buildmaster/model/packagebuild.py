@@ -15,6 +15,8 @@ from zope.interface import classProvides, implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.browser.librarian import (
+    ProxiedLibraryFileAlias)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -152,28 +154,14 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IBuildBase`."""
         if self.upload_log is None:
             return None
-        return self._getProxiedFileURL(self.upload_log)
-
-    def _getProxiedFileURL(self, library_file):
-        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
-        # TODO: How can we avoid duplicate implementations of this
-        # (here and in buildbase) while temporarily transitioning
-        # the code? perhaps define this as a function instead.
-        # Actually, this particulary would be better suited in the
-        # librarian code?
-        # Avoiding circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(library_file, self)
-        return proxied_file.http_url
+        return ProxiedLibraryFileAlias(self.upload_log, self).http_url
 
     @property
     def log_url(self):
         """See `IBuildFarmJob`."""
         if self.log is None:
             return None
-        return self._getProxiedFileURL(self.log)
+        return ProxiedLibraryFileAlias(self.log, self).http_url
 
 
 class PackageBuildDerived(BuildFarmJobDerived):

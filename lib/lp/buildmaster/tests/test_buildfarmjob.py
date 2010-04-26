@@ -79,6 +79,7 @@ class TestBuildFarmJob(TestCaseWithFactory):
         self.assertEqual(None, self.build_farm_job.date_first_dispatched)
         self.assertEqual(None, self.build_farm_job.builder)
         self.assertEqual(None, self.build_farm_job.log)
+        self.assertEqual(None, self.build_farm_job.log_url)
 
     def test_unimplemented_methods(self):
         # A build farm job leaves the implementation of various
