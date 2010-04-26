@@ -99,7 +99,7 @@ tracker.
     >>> from lp.bugs.scripts.checkwatches.bugwatchupdater import (
     ...     BugWatchUpdater)
     >>> bugwatch_updater = BugWatchUpdater(
-    ...     'bugwatch@bugs.launchpad.net', LaunchpadZopelessLayer.txn,
+    ...     'bugwatch@bugs.launchpad.net', transaction,
     ...     log, bug_watch, external_bugtracker)
 
     >>> bugwatch_updater.pushBugComments()
