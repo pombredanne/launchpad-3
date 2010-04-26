@@ -101,14 +101,6 @@ show the 5 most active projects.
     Mozilla Thunderbird [u'bugs']
     Mozilla Firefox [u'bugs']
 
-As we can see, the results are ordered descending by the karma of the person
-on that project.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> print removeSecurityProxy(foobar)._getProjectsWithTheMostKarma()
-    [(u'evolution', 175), (u'ubuntu', 26), (u'gnomebaker', 15),
-     (u'thunderbird', 15), (u'firefox', 8), (u'bazaar', 2)]
-
 
 Karma Updater
 =============
