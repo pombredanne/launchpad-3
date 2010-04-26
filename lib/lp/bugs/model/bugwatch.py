@@ -653,7 +653,7 @@ class BugWatchSet(BugSetBase):
             last_error_type=last_error_type,
             next_check=None)
 
-    def bulkAddActivity(self, bug_watches, error=None, message=None,
+    def bulkAddActivity(self, bug_watches, result=None, message=None,
                         oops_id=None):
         """See `IBugWatchSet`."""
         bug_watch_ids = set(
@@ -667,7 +667,7 @@ class BugWatchSet(BugSetBase):
             )
         IStore(BugWatch).execute(
             insert_activity_statement % sqlvalues(
-                error, message, oops_id, bug_watch_ids))
+                result, message, oops_id, bug_watch_ids))
 
 
 class BugWatchActivity(Storm):

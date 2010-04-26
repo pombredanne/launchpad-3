@@ -301,7 +301,7 @@ class IBugWatchSet(Interface):
             or None.
         """
 
-    def bulkAddActivity(bug_watches, error=None, message=None, oops_id=None):
+    def bulkAddActivity(bug_watches, result=None, message=None, oops_id=None):
         """Efficiently add activity for the given bug watches.
 
         Add `BugWatchActivity` records for the given bug watches in
@@ -309,7 +309,7 @@ class IBugWatchSet(Interface):
 
         :param bug_watches: An iterable of `IBugWatch` objects or
             primary keys for the same.
-        :param error: See `IBugWatch.addActivity`.
+        :param result: See `IBugWatch.addActivity`.
         :param message: See `IBugWatch.addActivity`.
         :param oops_id: See `IBugWatch.addActivity`.
         """
