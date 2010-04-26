@@ -306,6 +306,13 @@ Now print out all subscriptions with their tokens for joesmith:
     PPA named p3a for Celso Providelo            test_token
     PPA named p3a for Mark Shuttleworth          None
 
+There's a also related method on IPerson that will return the archive URLs
+for the activated tokens.
+
+    >>> for url in joesmith.getArchiveSubscriptionURLs():
+    ...     print url
+    http://joesmith:test_token@private-ppa.launchpad.dev/cprov/p3a/ubuntu
+
 Deactivated tokens are not included with the returned token for a
 subscription:
 
@@ -317,6 +324,7 @@ subscription:
     ... sub_set.getBySubscriberWithActiveToken(joesmith))
     PPA named p3a for Celso Providelo            None
     PPA named p3a for Mark Shuttleworth          None
+
 
 == Amending Subscriptions ==
 
