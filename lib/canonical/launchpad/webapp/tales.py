@@ -1283,9 +1283,9 @@ class PillarFormatterAPI(CustomizableFormatter):
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
     def link(self, view_name, rootsite='mainsite'):
-        """The html to show a link to a Product, Project or distribution.
+        """The html to show a link to a Product, ProjectGroup or distribution.
 
-        In the case of Products or Project groups we display the custom
+        In the case of Products or ProjectGroups we display the custom
         icon, if one exists. The default URL for a pillar is to the mainsite.
         """
 

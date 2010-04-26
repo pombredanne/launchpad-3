@@ -825,7 +825,7 @@
             template="../templates/product-portlet-not-using-launchpad.pt"/>
     </browser:pages>
 
-<!-- Project views -->
+<!-- ProjectGroup views -->
 
     <browser:defaultView
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
