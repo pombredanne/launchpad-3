@@ -1312,14 +1312,6 @@ class IPersonViewRestricted(Interface):
         If no orderby is provided, Person.sortingColumns is used.
         """
 
-    def getArchiveSubscriptionURLs():
-        """Return private archive URLs that this person can see.
-
-        For each of the private archives (PPAs) that this person can see,
-        return a URL that includes the HTTP basic auth data.  The URL
-        returned is suitable for including in a sources.list file.
-        """
-
 
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
@@ -1458,6 +1450,14 @@ class IPersonEditRestricted(Interface):
         The given team's renewal policy must be ONDEMAND and the membership
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+    def getArchiveSubscriptionURLs():
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
         """
 
 

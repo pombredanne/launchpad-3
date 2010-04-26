@@ -313,6 +313,15 @@ for the activated tokens.
     ...     print url
     http://joesmith:test_token@private-ppa.launchpad.dev/cprov/p3a/ubuntu
 
+This method can only be used by someone with launchpad.Edit on the context
+IPerson:
+
+    >>> login("no-priv@canonical.com")
+    >>> urls = joesmith.getArchiveSubscriptionURLs()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ... 'getArchiveSubscriptionURLs', 'launchpad.Edit')
+
 Deactivated tokens are not included with the returned token for a
 subscription:
 
