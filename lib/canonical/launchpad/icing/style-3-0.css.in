@@ -74,10 +74,10 @@
 .footer .lp-arcana {
     background: url(/@@/footer-background.png) top left repeat-x;
     padding: 0.8em;
-    -moz-border-radius: 3px 3px 0 0;
-    -webkit-border-radius: 3px 3px 0 0;
-    -khtml-border-radius: 3px 3px 0 0;
-    border-radius: 3px 3px 0 0;
+    -moz-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    -khtml-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
     height:2em;
     }
 .footer .lp-arcana img {
@@ -1258,27 +1258,6 @@ div.watermark-apps-portlet span img {
     }
 .downloads .alternate {
     padding: 0 0 0 1em;
-    }
-ul.super-add-action {
-    margin: 0 auto 1em;
-    }
-ul.super-add-action li {
-    padding: 0;
-    }
-ul.super-add-action li a {
-    display: block;
-    border: 1px solid black;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    -khtml-border-radius: 3px;
-    background: #4f843c url(/@@/bg-action-add) center left no-repeat;
-    border-radius: 3px;
-    padding: 6%;
-    padding-left: 45px;
-    color: #fff;
-    font-size: 108%;
-    font-weight: bold;
-    text-decoration: underline;
     }
 .involvement li {
     border-top: 1px solid #d0d0d0;
