@@ -892,6 +892,11 @@ def wsgi_application(environ, start_response):
     if environ.pop('HTTP_X_ZOPE_HANDLE_ERRORS', 'True') == 'False':
         environ['wsgi.handleErrors'] = False
     handle_errors = environ.get('wsgi.handleErrors', True)
+
+    # Make sure the request method is something Launchpad will
+    # recognize. httplib2 usually takes care of this, but we've
+    # bypassed that code in our test environment.
+    environ['REQUEST_METHOD'] = environ['REQUEST_METHOD'].upper()
     # Now we do the proper dance to get the desired request.  This is an
     # almalgam of code from zope.app.testing.functional.HTTPCaller and
     # zope.publisher.paste.Application.
