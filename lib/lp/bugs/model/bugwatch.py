@@ -641,6 +641,18 @@ class BugWatchSet(BugSetBase):
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
 
+    def bulkSetStatus(self, bug_watches, last_error_type=None):
+        """See `IBugWatchSet`."""
+        bug_watch_ids = set(
+            (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
+            for bug_watch in bug_watches)
+        query = IStore(BugWatch).find(
+            BugWatch, In(BugWatch.id, list(bug_watch_ids)))
+        query.set(
+            lastchecked=UTC_NOW,
+            last_error_type=last_error_type,
+            next_check=None)
+
 
 class BugWatchActivity(Storm):
     """See `IBugWatchActivity`."""

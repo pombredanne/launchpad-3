@@ -480,7 +480,7 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # The ids of bug watches to update can be passed in.
         getUtility(IBugWatchSet).bulkSetStatus(
             [bug_watch.id for bug_watch in self.bug_watches])
-        self._checkStatusOfBugWatches(False, True)
+        self._checkStatusOfBugWatches(False, True, None)
 
     def test_bulkSetStatus_with_mixed_list(self):
         # The list passed in can contain a mix of bug watches and
@@ -488,13 +488,13 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         getUtility(IBugWatchSet).bulkSetStatus(
             [bug_watch.id for bug_watch in self.bug_watches[::2]] +
             [bug_watch for bug_watch in self.bug_watches[1::2]])
-        self._checkStatusOfBugWatches(False, True)
+        self._checkStatusOfBugWatches(False, True, None)
 
     def test_bulkSetStatus_with_iterator(self):
         # Any iterator can be passed in.
         getUtility(IBugWatchSet).bulkSetStatus(
             (bug_watch for bug_watch in self.bug_watches))
-        self._checkStatusOfBugWatches(False, True)
+        self._checkStatusOfBugWatches(False, True, None)
 
     def _checkActivityForBugWatches(self, result, message, oops_id):
         for bug_watch in self.bug_watches:
