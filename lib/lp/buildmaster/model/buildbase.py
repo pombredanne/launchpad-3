@@ -69,7 +69,8 @@ class BuildBase:
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
     @staticmethod
-    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
+    def getUploaderCommand(package_build, distroseries, upload_leaf,
+                           uploader_logfilename):
         """See `IBuildBase`."""
         root = os.path.abspath(config.builddmaster.root)
         uploader_command = list(config.builddmaster.uploader.split())
@@ -77,8 +78,8 @@ class BuildBase:
         # add extra arguments for processing a binary upload
         extra_args = [
             "--log-file", "%s" % uploader_logfilename,
-            "-d", "%s" % package_build.distribution.name,
-            "-s", "%s" % (package_build.distroseries.name +
+            "-d", "%s" % distroseries.distribution.name,
+            "-s", "%s" % (distroseries.name +
                           pocketsuffix[package_build.pocket]),
             "-b", "%s" % package_build.id,
             "-J", "%s" % upload_leaf,
@@ -207,7 +208,7 @@ class BuildBase:
             uploader_logfilename = os.path.join(
                 upload_dir, UPLOAD_LOG_FILENAME)
             uploader_command = self.getUploaderCommand(
-                self, upload_leaf, uploader_logfilename)
+                self, self.distroseries, upload_leaf, uploader_logfilename)
             logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
             logger.info("Invoking uploader on %s" % root)

@@ -172,10 +172,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         return BuildBase.getUploadDir(upload_leaf)
 
-    def getUploaderCommand(self, upload_leaf, upload_logfilename):
+    def getUploaderCommand(self, distro_series, upload_leaf, upload_logfilename):
         """See `IPackageBuild`."""
         return BuildBase.getUploaderCommand(
-            self, upload_leaf, upload_logfilename)
+            self, distro_series, upload_leaf, upload_logfilename)
 
     def getLogFromSlave(self):
         """See `IPackageBuild`."""

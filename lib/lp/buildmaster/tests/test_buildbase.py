@@ -90,9 +90,7 @@ class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
 
     def test_getUploaderCommand(self):
         upload_leaf = self.factory.getUniqueString('upload-leaf')
-        self.package_build.distroseries = self.factory.makeDistroSeries()
-        self.package_build.distribution = (
-            self.package_build.distroseries.distribution)
+        distro_series = self.factory.makeDistroSeries()
         self.package_build.pocket = self.factory.getAnyPocket()
         self.package_build.id = self.factory.getUniqueInteger()
         self.package_build.policy_name = self.factory.getUniqueString('policy-name')
@@ -100,16 +98,16 @@ class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
         log_file = self.factory.getUniqueString('logfile')
         config_args.extend(
             ['--log-file', log_file,
-             '-d', self.package_build.distribution.name,
-             '-s', (self.package_build.distroseries.name
-                    + pocketsuffix[self.package_build.pocket]),
+             '-d', distro_series.distribution.name,
+             '-s', (distro_series.name
+                       + pocketsuffix[self.package_build.pocket]),
              '-b', str(self.package_build.id),
              '-J', upload_leaf,
              '--context=%s' % self.package_build.policy_name,
              os.path.abspath(config.builddmaster.root),
              ])
         uploader_command = self.package_build.getUploaderCommand(
-            self.package_build, upload_leaf, log_file)
+            self.package_build, distro_series, upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
 
 

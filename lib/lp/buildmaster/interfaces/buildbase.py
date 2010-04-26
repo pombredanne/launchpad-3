@@ -212,7 +212,8 @@ class IBuildBase(Interface):
 
     title = exported(TextLine(title=_("Title"), required=False))
 
-    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
+    def getUploaderCommand(package_build, distro_series, upload_leaf,
+                           uploader_logfilename):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the
