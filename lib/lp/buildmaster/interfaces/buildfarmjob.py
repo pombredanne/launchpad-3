@@ -91,7 +91,8 @@ class IBuildFarmJob(Interface):
     date_finished = exported(
         Datetime(
             title=_("Date finished"), required=False, readonly=True,
-            description=_("The timestamp when the build farm job was finished.")),
+            description=_(
+                "The timestamp when the build farm job was finished.")),
         ("1.0", dict(exported=True, exported_as="datebuilt")))
 
     date_first_dispatched = exported(

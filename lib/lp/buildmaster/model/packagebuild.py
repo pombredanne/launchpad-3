@@ -23,6 +23,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
@@ -162,6 +163,19 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         if self.log is None:
             return None
         return ProxiedLibraryFileAlias(self.log, self).http_url
+
+    def getUploadLeaf(self, build_id, now=None):
+        """See `IPackageBuild`."""
+        return BuildBase.getUploadLeaf(build_id, now)
+
+    def getUploadDir(self, upload_leaf):
+        """See `IPackageBuild`."""
+        return BuildBase.getUploadDir(upload_leaf)
+
+    def getUploaderCommand(self, upload_leaf, upload_logfilename):
+        """See `IPackageBuild`."""
+        return BuildBase.getUploaderCommand(
+            self, upload_leaf, upload_logfilename)
 
 
 class PackageBuildDerived(BuildFarmJobDerived):

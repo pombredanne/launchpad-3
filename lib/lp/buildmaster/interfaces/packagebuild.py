@@ -75,6 +75,27 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
+    def getUploaderCommand(upload_leaf, uploader_logfilename):
+        """Get the command to run as the uploader.
+
+        :return: A list of command line arguments, beginning with the
+            executable.
+        """
+
+    def getUploadLeaf(build_id, now=None):
+        """Return a directory name to store build things in.
+
+        :param build_id: The id as returned by the slave, normally
+            $BUILD_ID-$BUILDQUEUE_ID
+        :param now: The `datetime` to use. If not provided, defaults to now.
+        """
+
+    def getUploadDir(upload_leaf):
+        """Return the complete directory that things will be stored in.
+
+        :param upload_leaf: The leaf directory name where things will be
+            stored.
+        """
 
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""

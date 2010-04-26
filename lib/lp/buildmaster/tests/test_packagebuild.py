@@ -18,21 +18,17 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.tests.test_buildbase import TestBuildBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
 
-class TestPackageBuild(TestCaseWithFactory):
-    """Tests for the package build object."""
+class TestPackageBuildBase(TestCaseWithFactory):
+    """Provide a factory method for creating PackageBuilds.
 
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        """Create a package build with which to test."""
-        super(TestPackageBuild, self).setUp()
-        joe = self.factory.makePerson(name="joe")
-        joes_ppa = self.factory.makeArchive(owner=joe)
-        self.package_build = self.makePackageBuild(archive=joes_ppa)
+    This is not included in the launchpad test factory because
+    only classes deriving from PackageBuild should be used.
+    """
 
     def makePackageBuild(self, archive=None):
         if archive is None:
@@ -43,6 +39,34 @@ class TestPackageBuild(TestCaseWithFactory):
             virtualized=True,
             archive=archive,
             pocket=PackagePublishingPocket.RELEASE)
+
+
+class TestBuildBaseMethods(TestBuildBase, TestPackageBuildBase):
+    """The new PackageBuild class provides the same methods as the BuildBase.
+
+    XXX 2010-04-21 michael.nelson bug=567922.
+    Until the BuildBase class and its tests are removed, we re-use the tests
+    here to ensure that there is no divergence. Once BuildBase is removed the
+    tests can be moved into TestPackageBuild.
+    """
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBuildBaseMethods, self).setUp()
+        self.package_build = self.makePackageBuild()
+
+
+class TestPackageBuild(TestPackageBuildBase):
+    """Tests for the package build object."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        """Create a package build with which to test."""
+        super(TestPackageBuild, self).setUp()
+        joe = self.factory.makePerson(name="joe")
+        joes_ppa = self.factory.makeArchive(owner=joe)
+        self.package_build = self.makePackageBuild(archive=joes_ppa)
 
     def test_providesInterface(self):
         # PackageBuild provides IPackageBuild

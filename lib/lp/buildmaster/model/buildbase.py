@@ -50,7 +50,8 @@ class BuildBase:
     """
     policy_name = 'buildd'
 
-    def getUploadLeaf(self, build_id, now=None):
+    @staticmethod
+    def getUploadLeaf(build_id, now=None):
         """Return a directory name to store build things in.
 
         :param build_id: The id as returned by the slave, normally
@@ -62,11 +63,13 @@ class BuildBase:
             now = datetime.datetime.now()
         return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id)
 
-    def getUploadDir(self, upload_leaf):
+    @staticmethod
+    def getUploadDir(upload_leaf):
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
-    def getUploaderCommand(self, upload_leaf, uploader_logfilename):
+    @staticmethod
+    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
         """See `IBuildBase`."""
         root = os.path.abspath(config.builddmaster.root)
         uploader_command = list(config.builddmaster.uploader.split())
@@ -74,12 +77,12 @@ class BuildBase:
         # add extra arguments for processing a binary upload
         extra_args = [
             "--log-file", "%s" % uploader_logfilename,
-            "-d", "%s" % self.distribution.name,
-            "-s", "%s" % (self.distroseries.name +
-                          pocketsuffix[self.pocket]),
-            "-b", "%s" % self.id,
+            "-d", "%s" % package_build.distribution.name,
+            "-s", "%s" % (package_build.distroseries.name +
+                          pocketsuffix[package_build.pocket]),
+            "-b", "%s" % package_build.id,
             "-J", "%s" % upload_leaf,
-            '--context=%s' % self.policy_name,
+            '--context=%s' % package_build.policy_name,
             "%s" % root,
             ]
 
@@ -204,7 +207,7 @@ class BuildBase:
             uploader_logfilename = os.path.join(
                 upload_dir, UPLOAD_LOG_FILENAME)
             uploader_command = self.getUploaderCommand(
-                upload_leaf, uploader_logfilename)
+                self, upload_leaf, uploader_logfilename)
             logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
             logger.info("Invoking uploader on %s" % root)
