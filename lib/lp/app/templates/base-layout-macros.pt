@@ -438,11 +438,9 @@
   </tal:comment>
   <tal:singular
     condition="python: count == 1"
-    replace="singular" />
-  <tal:plural
+    replace="singular" /><tal:plural
      define="l_default string:s;
              l_plural plural | string:$singular$l_default;"
     condition="python: count != 1"
-    replace="l_plural" />
-</metal:plural-msg>
+    replace="l_plural" /></metal:plural-msg>
 </macros>

@@ -22,100 +22,6 @@
 ...
 */
 
-/* == Guidelines == */
-/*
- * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
-   demand it. Otherwise, use relative units (%, em).
-*/
-.yui-ieditor {padding-right: 288px;}
-.lazr-multiline-edit .yui-ieditor {padding-right: 0;}
-.lazr-multiline-edit textarea {max-width: inherit;}
-.lazr-multiline-edit .yui-ieditor-input {padding-right: 5px !important;}
-
-.demo {background-color: #fee;}
-
-
-/* == Sprites == */
-
-ul.breadcrumbs a.bzr-favicon, ul.breadcrumbs a.person-tabs {
-    padding: 8px 18px 0 23px;
-}
-h1 .edit {
-    font-size: 50%;
-    position: relative;
-    top: -3px;
-    margin-left: 0.5em;
-}
-.offscreen {
-    position: absolute;
-    left: -999em;
-}
-span.invisible-link {display:none;}
-span.invisible {left:-9999em;display:block;}
-
-/* == Things browsers should do but don't == */
-
-.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
-}
-.clearfix {display: inline-table;}
-/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
-* html .clearfix {height: 1%;}
-.clearfix {display: block;}
-/* End hiding from MSIE for Mac */
-a {outline: none;}
-abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
-* html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
-caption {caption-side: bottom; text-align: left;}
-dt dfn {font-style: normal; font-weight: bold;}
-input {visibility:inherit;}
-input[type=radio] {margin-left: 1em;}
-kbd {
-  background-color: #ddd;
-  border: 1px solid;
-  border-color: white gray gray white;
-  color: black;
-  margin: 1px;
-  min-width: 1em;
-  outline: 1px #666;
-}
-label {white-space: nowrap;}
-.long td {
-    padding-right: 1em;
-    }
-.long fieldset {
-    margin-top: 1em;
-    }
-.long legend {
-    color: #666;
-    font-weight: bold;
-    font-size: 123.1%;
-    }
-.listbox { /* a scrolling list of checkboxes or radio buttons */
-  border: 1px solid #8cacbb;
-  display: inline-block;
-  max-height: 12em;
-  overflow: auto;
-  overflow: -moz-scrollbars-vertical;
-}
-.listbox label {
-  background-color: #f6f6f6;
-  border: solid white;
-  border-width: 0 0 1px 0;
-  display: block;
-}
-textarea {display: block;}
-th, td {vertical-align: baseline;}
-
-/* Opera doesn't use the general tr above for the radio button table */
-table.radio-button-widget tr td {vertical-align: top;}
-
-/* == Overall presentation == */
-/* These styles apply to pages regardless of layout or application. */
 
 /* === Fonts and colors === */
 
@@ -129,33 +35,6 @@ exactly obeys your preferred monospace font size: */
   color: #555;
 }
 
-/* Links are blue, brighter when clicked, and greyer once visited: */
-:link, :visited               {color: #03a;    text-decoration: none;}
-:link:hover, :visited:hover   {                text-decoration: underline;}
-:link:active, :visited:active {color: #36c;}
-/* Links that don't open separate pages are green to denote their behavior: */
-a[onclick], .collapsible legend a, a.js-action               {color: #093;}
-a[onclick]:active, .collapsible legend a:active, a.js-action {color: #093;}
-a.js-action:active {color: #093;}
-
-/* The js-action class is also used for non-links, for example, with
- * expand/collapse sections. */
-.widget-hd.js-action {color: #093; cursor:pointer}
-.widget-hd.js-action:hover {text-decoration: underline;}
-
-/* Help links */
-a.help {
-  border-bottom: 1px dotted #03a;
-  cursor: help;
-}
-a.help:hover, a.help:hover {
-  text-decoration: none;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  background: none;
-  clear: left;
-}
 
 .exception {color: #cc0000;}
 .discreet, .lesser, .duplicate-details {font-size: 90%;}
@@ -169,58 +48,6 @@ h1, h2, h3, h4, h5, h6 {
 .green {color: green;}
 .red {color: red;}
 
-/* === Error, warning, and informational messages === */
-/* Error, warning, and informational alerts are in a centered box: */
-.error.message, .warning.message, .informational.message {
-  border: solid #666;
-  border-width: 1px 2px 2px 1px;
-  color: black;
-  margin: 0 auto 10px auto;
-  padding: 0 10px 10px 20px;
-  width: 30em;
-}
-/* The alerts are preceded with an icon overlaying the top left corner: */
-.error.message::before, .warning.message::before,
-.informational.message::before {
-  display: block; margin: -15px 0 -6px -35px;
-}
-/* Error messages are pink, with alerts having an error icon: */
-.error         {background: #ffe4e4;}
-.error.message::before         {content: url(/@@/error-large);}
-/* Warning messages are orange, with alerts having a warning icon: */
-.warning       {background: #fff59c;}
-.warning.message::before       {content: url(/@@/warning-large);}
-/* Informational messages are blue-to-grey, with alerts having an info icon: */
-.informational {background: #d4e8ff url(/+icing/blue-fade-to-grey);}
-.informational.message::before {content: url(/@@/info-large);}
-/* Debugging messages are white on grey, with alerts having an info icon: */
-.debugging     {background: #666; color: white;}
-.debugging.message::before     {content: url(/@@/info-large);}
-/* Form errors override this background color, because the lack of space
-between the edge of fields and the edge of the color would look bad: */
-table.form .error {background: none;}
-/* And inside, the error message itself uses a smaller icon: */
-.error .message {
-  background: url(/@@/error) center left no-repeat;
-  margin-bottom: 0.25em;
-  padding-left: 18px;
-}
-
-/* Warning messages inlined in the page. */
-.inline-warning {
-    color: red;
-    font-weight: bold;
-}
-.sml-informational {
-  background: #d4e8ff url('/+icing/blue-fade-to-grey');
-  border: solid #666;
-  border-width: 1px 2px 2px 1px;
-  color: black;
-  padding: 5px 5px 5px 5px;
-  width:44em;
-}
-.sml-informational::before {content: url('/@@/info');}
-
 .helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
 }
@@ -231,47 +58,6 @@ table.form .error {background: none;}
 dd .whiteboard {
   padding-left: 1em;
 }
-
-/* === Forms === */
-
-form table label {font-weight: bold;}
-fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
-button{padding:0;}
-input.urlTextType {width: 40em;}
-.fieldRequired, .fieldOptional {color: #999;}
-.formHelp {margin: 0.2em 0 0.5em 0.2em; color: #777;}
-/* Hack to add breathing room to bug status forms: */
-table.listing div.field>table {margin-top: 0.5em;}
-table.listing div.field>label, table.listing div.field>div>label,
-table.listing div.actions {
-  display: block; margin-top: 1em;
-}
-/* Text fields occupy as much of the page width as possible, minus a safety
-margin for Internet Explorer, and up to a reasonable maximum: */
-textarea {width: 90%; max-width: 60em;}
-
-/* Many forms are laid out using tables, with appropriate spacing: */
-table.form, table.extra-options {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
-table.form th {font-weight: normal;}
-table.form th, table.form td,
-table.form table.extra-options td,
-table.form table.extra-options th {padding-bottom: 1em;}
-table.form td td {padding-bottom: 0;}
-
-/* === Tables === */
-table.latest th, table.latest td {padding-bottom: 2em;}
-
-th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
-th.icon.left, td.icon.left {padding-right: 0;}
-th.icon.right, td.icon.right {padding-left: 0;}
-th.nowrap, td.nowrap {white-space: nowrap;}
-tfoot th, table.contributions th {text-align: left;}
-table.contributions th {font-weight: normal;}
-table.contributions td {vertical-align: middle; width: 16px; text-align: left;}
-
-/* ==== Listing tables ==== */
-table.duplicate.listing * {color: #999;}
-
 
 form.primary.search {
   margin-bottom: 2em;
@@ -294,10 +80,6 @@ form.primary.search {
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
-strong em {
-  font-style: normal;
-  color: #353535;
-}
 .link_img {border: 0;}
 .debug {
   background: none;
@@ -307,9 +89,6 @@ strong em {
 .anchor {
   height: 1px;
   overflow: hidden;
-  display: none;
-}
-hr {
   display: none;
 }
 
@@ -416,32 +195,6 @@ a.unofficial-tag {
   border: 0 !important;
 }
 
-/* --- Various custom list formats --- */
-
-ul.architecture, li.architecture     {list-style-image: url(/@@/architecture);}
-ul.build-success, li.build-success   {list-style-image: url(/@@/build-success);}
-ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
-ul.language, li.language             {
-  list-style-image: url(/@@/language);
-  /* Disable .language sprite. */
-  background: inherit;
-}
-ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
-ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
-ul.news, li.news {
-  list-style-type: none;
-  margin-bottom: 1em;
-}
-ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
-ul.translation, li.translation       {list-style-image: url(/@@/translation);}
-ul.webref, li.webref                 {list-style-image: url(/@@/link);}
-
-/* --- A list with icons instead of bullets --- */
-ul.iconed {
-  list-style-type: none;
-  padding-left: 0 !important;
-  margin: 0 !important;
-}
 
 /* Various custom link icons */
 
@@ -503,8 +256,6 @@ a.bg-image {
   border-top: 1px solid #ddd;
 }
 .from-superseded {background-color: #ffffcc;}
-dl.faq dt {font-weight: bold;}
-dl.faq dd {margin: 1em 0 2em 4em;}
 .adminHiddenComment {background-color:yellow;}
 
 /* --- Overview --- */
@@ -531,13 +282,7 @@ div#branch-description {
 
 /* --- Home --- */
 
-/* The following style works around the fact that the locationbar, which is
-only used of the Login/Register links in 3.0 UI, is accessible on
-"locationless" pages. It adds extra space at the top of every page in
-Launchpad but that does actually look quite good ... ;-).*/
-#locationbar {
-    height: 1em;
-}
+
 /* -- Notices -- */
 
 .important-notice-container {
@@ -936,11 +681,6 @@ div#sub-unsub-spinner {
   font-size: 120%;
 }
 
-div.watermark-apps-portlet span img {
-    float: none;
-    margin: 0;
-}
-
 .patches-view-cell {
   padding-right: 1em;
 }
@@ -1110,24 +850,6 @@ img.mugshot {display: inline-table;}
 img.mugshot {display: block;}
 /* End hiding from MSIE for Mac */
 
-div.left, div.right {width: 50%;}
-div.left {clear: both; float: left;}
-div.right {clear: right; float: right;}
-
-div.three.column.middle {margin-right: 1%;}
-div.three.column.left, div.three.column.middle, div.three.column.right {
-  clear: none;
-  float: left;
-  width: 33%;
-}
-div.three.column.left, div.three.column.right { margin: 0;}
-.title {
-  font-weight: bold;
-}
-ul.buttons {margin: 0.5em 0 0.5em 0 !important; padding: 0 !important;}
-/*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
-ul.buttons li {display: inline; margin: 0 0 0 0;}
-ul.cross-reference {font-size: 1.25em;}
 
 #project-cloud-preview a {
   padding-left: 0.5em;
