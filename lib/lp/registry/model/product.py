@@ -273,7 +273,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
-    active = BoolCol(dbName='active', notNull=True, default=True)
     license_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
@@ -289,6 +288,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     _cached_licenses = None
+
+    def _validate_active(self, attr, value):
+        # Validate deactivation.
+        if self.active == True and value == False:
+            if len(self.sourcepackages) > 0:
+                raise AssertionError(
+                    'This project cannot be deactivated since it is '
+                    'linked to source packages.')
+        return value
+
+    active = BoolCol(dbName='active', notNull=True, default=True,
+                     storm_validator=_validate_active)
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
