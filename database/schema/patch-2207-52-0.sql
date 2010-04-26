@@ -6,6 +6,6 @@ SET client_min_messages=ERROR;
 -- Add a column to track when Launchpad can resume suggesting Ubuntu packages
 -- that the project provides.
 ALTER TABLE Product
-    ADD COLUMN next_suggest_packaging_date timestamp without time zone;
+    ADD COLUMN date_next_suggest_packaging timestamp without time zone;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 96, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 52, 0);

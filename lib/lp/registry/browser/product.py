@@ -1068,10 +1068,10 @@ class ProductPackagesPortletView(LaunchpadFormView):
             return True
         if self.user is None or config.launchpad.is_lpnet:
             return False
-        next_suggest_packaging_date = self.context.next_suggest_packaging_date
+        date_next_suggest_packaging = self.context.date_next_suggest_packaging
         return (
-            next_suggest_packaging_date is None
-            or next_suggest_packaging_date <= datetime.now(tz=pytz.UTC))
+            date_next_suggest_packaging is None
+            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
 
     @property
     def initial_values(self):
@@ -1130,7 +1130,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
             return
         if dsp is self.not_packaged:
             year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
-            self.context.next_suggest_packaging_date = year_from_now
+            self.context.date_next_suggest_packaging = year_from_now
             self.next_url = self.request.getURL()
             return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

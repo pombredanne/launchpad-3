@@ -567,7 +567,7 @@ class IProductPublic(
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
-    next_suggest_packaging_date = exported(
+    date_next_suggest_packaging = exported(
         Datetime(
             title=_('Next suggest packaging date'),
             description=_(

@@ -260,13 +260,13 @@ is lpnet.
     >>> ignore = config.pop('test_data')
 
 The can_show_portlet property is False when
-product.next_suggest_packaging_date is None or the date is more than one
+product.date_next_suggest_packaging is None or the date is more than one
 year ago.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
 
-    >>> print product.next_suggest_packaging_date
+    >>> print product.date_next_suggest_packaging
     None
 
     >>> view = create_initialized_view(
@@ -275,23 +275,23 @@ year ago.
     True
 
     >>> year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
-    >>> product.next_suggest_packaging_date = year_from_now
+    >>> product.date_next_suggest_packaging = year_from_now
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", principal=product.owner)
     >>> view.can_show_portlet
     False
 
     >>> yesterday = datetime.now(tz=pytz.UTC) - timedelta(days=1)
-    >>> product.next_suggest_packaging_date = yesterday
+    >>> product.date_next_suggest_packaging = yesterday
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages", principal=product.owner)
     >>> view.can_show_portlet
     True
 
-The +portlet-packages view can set the product next_suggest_packaging_date
+The +portlet-packages view can set the product date_next_suggest_packaging
 attribute so that suggestions are disabled.
 
-    >>> product.next_suggest_packaging_date = None
+    >>> product.date_next_suggest_packaging = None
     >>> almost_a_year = datetime.now(tz=pytz.UTC) + timedelta(days=364)
     >>> form = {
     ...     'field.distributionsourcepackage': 'NOT_PACKAGED',
@@ -302,7 +302,7 @@ attribute so that suggestions are disabled.
     >>> view.errors
     []
 
-    >>> print product.next_suggest_packaging_date > almost_a_year
+    >>> print product.date_next_suggest_packaging > almost_a_year
     True
 
 The +portlet-packages view can create a Packaging link.
