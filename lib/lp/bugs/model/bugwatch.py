@@ -33,7 +33,7 @@ from lazr.uri import find_uris_in_text
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -652,6 +652,21 @@ class BugWatchSet(BugSetBase):
             lastchecked=UTC_NOW,
             last_error_type=last_error_type,
             next_check=None)
+
+    def bulkAddActivity(self, bug_watches, error=None, message=None,
+                        oops_id=None):
+        """See `IBugWatchSet`."""
+        bug_watch_ids = set(
+            (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
+            for bug_watch in bug_watches)
+        insert = (
+            "INSERT INTO BugWatchActivity"
+            " (bug_watch, result, message, oops_id) "
+            "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
+            " WHERE BugWatch.id IN %s"
+            )
+        IStore(BugWatch).execute(
+            insert % sqlvalues(error, message, oops_id, bug_watch_ids))
 
 
 class BugWatchActivity(Storm):
