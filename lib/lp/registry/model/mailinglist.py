@@ -294,7 +294,9 @@ class MailingList(SQLBase):
             if email.id == self.team.preferredemail.id:
                 self.team.setContactAddress(None)
         assert email.personID == self.teamID, 'Incorrectly linked email.'
-        email.status = EmailAddressStatus.NEW
+        # Anyone with permission to deactivate a list can also set the
+        # email address status to NEW.
+        removeSecurityProxy(email).status = EmailAddressStatus.NEW
 
     def reactivate(self):
         """See `IMailingList`."""
