@@ -205,14 +205,18 @@ specifications:
 
 Specs from inactive products are filtered out.
 
- >>> from canonical.database.sqlbase import flush_database_updates
- >>> login('mark@example.com')
- >>> upstream_firefox.active = False
- >>> flush_database_updates()
- >>> for spec in specset.specifications(filter=['install']):
- ...     print spec.name, spec.target.name
- cluster-installation kubuntu
- media-integrity-check ubuntu
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('mark@example.com')
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(upstream_firefox)
+    >>> upstream_firefox.active = False
+    >>> flush_database_updates()
+    >>> for spec in specset.specifications(filter=['install']):
+    ...     print spec.name, spec.target.name
+    cluster-installation kubuntu
+    media-integrity-check ubuntu
 
 
 Reset firefox so we don't mess up later tests.

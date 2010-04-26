@@ -496,7 +496,7 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
         if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)

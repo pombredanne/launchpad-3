@@ -48,7 +48,7 @@ A team member will be able to see these parts of the team page.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    2 active members, 1 proposed members...
+    2 active members, 1 proposed member...
 
 
 == Team Participation ==
@@ -340,7 +340,7 @@ no user can specify that team as a translator.
     [...A private team is not allowed...
 
 
-== Restrict Project Owner ==
+== Restrict Project Group Owner ==
 
 To prevent leaking information about a team's private membership,
 no user can set that team as the owner/maintainer of a project.

@@ -889,7 +889,7 @@ class IFrontPageBugTaskSearch(IBugTaskSearchBase):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
-        vocabulary="DistributionOrProductOrProject")
+        vocabulary="DistributionOrProductOrProjectGroup")
 
 
 class IBugTaskDelta(Interface):
