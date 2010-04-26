@@ -646,9 +646,9 @@ class BugWatchSet(BugSetBase):
         bug_watch_ids = set(
             (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
             for bug_watch in bug_watches)
-        query = IStore(BugWatch).find(
+        bug_watches_in_database = IStore(BugWatch).find(
             BugWatch, In(BugWatch.id, list(bug_watch_ids)))
-        query.set(
+        bug_watches_in_database.set(
             lastchecked=UTC_NOW,
             last_error_type=last_error_type,
             next_check=None)
@@ -659,14 +659,15 @@ class BugWatchSet(BugSetBase):
         bug_watch_ids = set(
             (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
             for bug_watch in bug_watches)
-        insert = (
+        insert_activity_statement = (
             "INSERT INTO BugWatchActivity"
             " (bug_watch, result, message, oops_id) "
             "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
             " WHERE BugWatch.id IN %s"
             )
         IStore(BugWatch).execute(
-            insert % sqlvalues(error, message, oops_id, bug_watch_ids))
+            insert_activity_statement % sqlvalues(
+                error, message, oops_id, bug_watch_ids))
 
 
 class BugWatchActivity(Storm):
