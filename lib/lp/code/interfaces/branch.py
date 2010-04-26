@@ -1071,7 +1071,12 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         """
 
     def getInternalBzrUrl():
-        """XXX."""
+        """Get the internal URL for this branch.
+
+        It's generally better to use `getBzrBranch` to open the branch
+        directly, as that method is safe against the branch unexpectedly being
+        a branch reference or stacked on something mischievous.
+        """
 
     def getBzrBranch():
         """Return the BzrBranch for this database Branch.
