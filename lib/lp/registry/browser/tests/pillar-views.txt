@@ -88,7 +88,7 @@ to configure each service.
     configure_translations
     set_branch
 
-Project are supported too, but they only display the applications used by
+Project groups are supported too, but they only display the applications used by
 their products.
 
     >>> project_group = factory.makeProject(name='box', owner=product.owner)

@@ -7,9 +7,13 @@ __metaclass__ = type
 __all__ = [
     'ProcessMonitorProtocol',
     'ProcessMonitorProtocolWithTimeout',
+    'ProcessWithTimeout',
     'run_process_with_timeout',
     ]
 
+
+import os
+import StringIO
 
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
@@ -253,3 +257,68 @@ def run_process_with_timeout(args, timeout=5, clock=None):
     executable = args[0]
     reactor.spawnProcess(p, executable, args)
     return d
+
+
+class ProcessWithTimeout(ProcessProtocol, TimeoutMixin):
+    """Run a process and capture its output while applying a timeout."""
+
+    # XXX Julian 2010-04-21
+    # This class doesn't have any unit tests yet, it's used by
+    # lib/lp/buildmaster/manager.py which tests its features indirectly.
+
+    def __init__(self, deferred, timeout, clock=None):
+        self._deferred = deferred
+        self._clock = clock
+        self._timeout = timeout
+        self._out_buf = StringIO.StringIO()
+        self._err_buf = StringIO.StringIO()
+        self._process_transport = None
+
+        # outReceived and errReceived are callback methods on
+        # ProcessProtocol.
+        # All we want to do when we receive stuff from stdout
+        # or stderr is store it for later.
+        self.outReceived = self._out_buf.write
+        self.errReceived = self._err_buf.write
+
+    def callLater(self, period, func):
+        """Override TimeoutMixin.callLater so we use self._clock.
+
+        This allows us to write unit tests that don't depend on actual wall
+        clock time.
+        """
+        if self._clock is None:
+            return TimeoutMixin.callLater(self, period, func)
+
+        return self._clock.callLater(period, func)
+
+    def spawnProcess(self, *args, **kwargs):
+        """Start a process.
+        
+        See reactor.spawnProcess.
+        """
+        self._process_transport = reactor.spawnProcess(
+            self, *args, **kwargs)
+
+    def connectionMade(self):
+        """Start the timeout counter when connection is made."""
+        self.setTimeout(self._timeout)
+
+    def timeoutConnection(self):
+        """When a timeout occurs, kill the process with a SIGKILL."""
+        self._process_transport.signalProcess("KILL")
+        # processEnded will get called.
+
+    def processEnded(self, reason):
+        self.setTimeout(None)
+        out = self._out_buf.getvalue()
+        err = self._err_buf.getvalue()
+        e = reason.value
+        code = e.exitCode
+        if e.signal:
+            self._deferred.errback((out, err, e.signal))
+        elif code != os.EX_OK:
+            self._deferred.errback((out, err, code))
+        else:
+            self._deferred.callback((out, err, code))
+
