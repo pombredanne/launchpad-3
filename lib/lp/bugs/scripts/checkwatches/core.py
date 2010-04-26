@@ -167,8 +167,7 @@ class CheckwatchesMaster(WorkingBase):
             provides a similar interface.
 
         """
-        super(CheckwatchesMaster, self).__init__(
-            LOGIN, transaction_manager, logger)
+        self.init(LOGIN, transaction_manager, logger)
 
         # Override SYNCABLE_GNOME_PRODUCTS if necessary.
         if syncable_gnome_products is not None:
@@ -798,8 +797,7 @@ class CheckwatchesMaster(WorkingBase):
 
                 for bug_watch in bug_watches:
                     bug_watch_updater = BugWatchUpdater(
-                        LOGIN, self._transaction_manager,
-                        self.logger, bug_watch, remotesystem)
+                        self, bug_watch, remotesystem)
 
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,

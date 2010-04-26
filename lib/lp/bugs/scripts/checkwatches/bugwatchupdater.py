@@ -36,11 +36,8 @@ from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 class BugWatchUpdater(WorkingBase):
     """Handles the updating of a single BugWatch for checkwatches."""
 
-    def __init__(self, login, transaction_manager, logger, bug_watch,
-                 external_bugtracker):
-        super(BugWatchUpdater, self).__init__(
-            login, transaction_manager, logger)
-        self.logger = logger
+    def __init__(self, parent, bug_watch, external_bugtracker):
+        self.initFromParent(parent)
         self.bug_watch = bug_watch
         self.external_bugtracker = external_bugtracker
 
