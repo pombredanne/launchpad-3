@@ -1434,7 +1434,7 @@ span.help {
 .specstatusOBSOLETE,
 .specpriorityNOTFORUS,
 .specpriorityUNDEFINED {
-    color: gray;
+    color: #666;
     }
 .specpriorityLOW {
     color: black;
@@ -1448,7 +1448,7 @@ span.help {
     }
 .specdeliveryUNKNOWN,
 .specdeliveryNOTSTARTED {
-    color: gray;
+    color: #666;
     }
 .specdeliveryDEFERRED,
 .specdeliveryNEEDSINFRASTUCTURE,
@@ -1506,7 +1506,7 @@ span.help {
     }
 .statusINVALID, .statusINVALID a,
 .statusWONTFIX, .statusWONTFIX a {
-    color: gray;
+    color: #666;
     }
 .importanceCRITICAL, .importanceCRITICAL a {
     color: red;
@@ -1547,7 +1547,7 @@ a.unofficial-tag {
     color: Red;
     }
 .greylink a:link, .greylink a:visited {
-    color: gray;
+    color: #666;
     }
 .stale-diff {
     color: #f60;
@@ -1566,7 +1566,7 @@ a.unofficial-tag {
     }
 .branchstatusMERGED, .branchstatusMERGED a,
 .branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #gray;
+    color: #666;
     }
 .branchstatusNEW, .branchstatusNEW a {
     color: black;
@@ -1672,7 +1672,7 @@ a.unofficial-tag {
     color: #bebebe;
     }
 .buildstatusNEEDSBUILD {
-    color: gray;
+    color: #666;
     }
 .buildstatusBUILDING {
     color: black;
