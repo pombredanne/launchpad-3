@@ -133,15 +133,16 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.upload_log)
 
-    def handleStatus(self, status, librarian, slave_status):
+    @staticmethod
+    def handleStatus(build, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
 
-        method = getattr(self, '_handleStatus_' + status, None)
+        method = getattr(build, '_handleStatus_' + status, None)
 
         if method is None:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                            % (status, self.buildqueue_record.builder.url))
+                            % (status, build.buildqueue_record.builder.url))
             return
 
         method(librarian, slave_status, logger)

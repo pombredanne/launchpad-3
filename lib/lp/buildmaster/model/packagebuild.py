@@ -213,10 +213,20 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
 
 class PackageBuildDerived(BuildFarmJobDerived):
-    """Override the base delegate to use a build farm job specific to
-    packages.
-    """
     def _set_build_farm_job(self):
+        """Set the in-memory build farm job specifically for package builds.
+
+        XXX 2010-04-27 michael.nelson bug=570939
+        This only exists because, for historical reasons, certain classes
+        assume that BuildFarmJob/PackageBuild are in-memory objects
+        that simply provide methods to update the associated builds.
+        We can remove it once the above bug is completed.
+
+        TODO: move these in-memory definitions to those classes expecting
+        in memory versions, so the general case will be db-objects.
+        """
         self.build_farm_job = PackageBuild(self.build)
 
-
+    def handleStatus(self, status, librarian, slave_status):
+        """See `IPackageBuildDerived`."""
+        return BuildBase.handleStatus(self, status, librarian, slave_status)

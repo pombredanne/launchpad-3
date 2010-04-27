@@ -220,7 +220,7 @@ class IBuildBase(Interface):
             executable.
         """
 
-    def handleStatus(status, librarian, slave_status):
+    def handleStatus(build, status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.

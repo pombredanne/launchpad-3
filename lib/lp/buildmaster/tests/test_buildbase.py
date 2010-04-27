@@ -153,7 +153,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
-        self.build.handleStatus('OK', None, {
+        self.build.handleStatus(self.build, 'OK', None, {
                 'filemap': { 'myfile.py': 'test_file_hash'},
                 })
 
@@ -163,7 +163,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
-        self.build.handleStatus('OK', None, {
+        self.build.handleStatus(self.build, 'OK', None, {
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
@@ -172,7 +172,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
-        self.build.handleStatus('OK', None, {
+        self.build.handleStatus(self.build, 'OK', None, {
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)

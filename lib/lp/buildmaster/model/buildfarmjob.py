@@ -198,9 +198,15 @@ class BuildFarmJobDerived:
         self._set_build_farm_job()
 
     def _set_build_farm_job(self):
-        """Set the build farm job to which we will delegate.
+        """Set the in-memory build farm job to which we will delegate.
 
         Sub-classes can override as required.
+
+        XXX 2010-04-27 michael.nelson bug=570939
+        This only exists because, for historical reasons, certain classes
+        assume that BuildFarmJob/PackageBuild are in-memory objects
+        that simply provide methods to update the associated builds.
+        We can remove it once the above bug is completed.
         """
         self.build_farm_job = BuildFarmJob(
             job_type=BuildFarmJobType.PACKAGEBUILD)
