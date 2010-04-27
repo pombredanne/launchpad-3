@@ -15,9 +15,11 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -27,25 +29,42 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestBuildInterface(TestCaseWithFactory):
+class TestBinaryPackageBuild(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_providesInterfaces(self):
-        # Build provides IBuildBase and IBuild.
+    def setUp(self):
+        super(TestBinaryPackageBuild, self).setUp()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
-        gedit_src_hist = publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        build = gedit_src_hist.createMissingBuilds()[0]
+        gedit_spr = publisher.getPubSource(
+            spr_only=True, sourcename="gedit",
+            status=PackagePublishingStatus.PUBLISHED)
+        self.build = gedit_spr.createBuild(
+            distroarchseries=publisher.distroseries['i386'],
+            archive=gedit_spr.upload_archive,
+            pocket=gedit_spr.package_upload.pocket)
+
+    def test_providesInterfaces(self):
+        # Build provides IBuildBase and IBuild.
 
         # The IBinaryPackageBuild.calculated_buildstart property asserts
         # that both datebuilt and buildduration are set.
-        build.datebuilt = datetime.now(pytz.UTC)
-        build.buildduration = timedelta(0, 1)
+        self.build.datebuilt = datetime.now(pytz.UTC)
+        self.build.buildduration = timedelta(0, 1)
 
-        self.assertProvides(build, IBuildBase)
-        self.assertProvides(build, IBinaryPackageBuild)
+        self.assertProvides(self.build, IBuildBase)
+        self.assertProvides(self.build, IBinaryPackageBuild)
+
+    def test_queueBuild(self):
+        # BinaryPackageBuild can create the queue entry for itself.
+        bq = self.build.queueBuild()
+        self.assertProvides(bq, IBuildQueue)
+        self.assertProvides(bq.specific_job, IBuildPackageJob)
+        self.failUnlessEqual(self.build.is_virtualized, bq.virtualized)
+        self.failIfEqual(None, bq.processor)
+        self.failUnless(bq, self.build.buildqueue_record)
+
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 
