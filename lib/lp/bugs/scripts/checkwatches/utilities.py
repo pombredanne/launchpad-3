@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 
-from lp.bugs.interfaces.bug import BugWatchActivityStatus
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 
 
 def get_bugwatcherrortype_for_error(error):

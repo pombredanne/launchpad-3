@@ -10,20 +10,40 @@ __all__ = [
     'RemoteBugUpdater',
     ]
 
+import socket
 import sys
 
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 
-from lp.bugs.externalbugtracker.base import (
-    BugNotFound, InvalidBugId, PrivateRemoteBug)
+from lp.bugs.externalbugtracker import (
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
+    InvalidBugId, PrivateRemoteBug, UnknownBugTrackerTypeError,
+    UnknownRemoteStatusError, UnparseableBugData,
+    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus, IBugWatchSet
 from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
     get_bugwatcherrortype_for_error, get_remote_system_oops_properties)
+
+
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
+   (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion,
+    BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (InvalidBugId, BugWatchActivityStatus.INVALID_BUG_ID),
+   (BugNotFound, BugWatchActivityStatus.BUG_NOT_FOUND),
+   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
+   (socket.timeout, BugWatchActivityStatus.TIMEOUT)]
 
 
 class RemoteBugUpdater(WorkingBase):
