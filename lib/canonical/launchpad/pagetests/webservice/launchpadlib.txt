@@ -1,5 +1,6 @@
+*******************************
 Using launchpadlib in pagetests
-===============================
+*******************************
 
 As an alternative to crafting HTTP requests with the 'webservice'
 object, you can write pagetests using launchpadlib.
@@ -50,6 +51,7 @@ scheme which does not work in the test environment.
     >>> launchpad = Launchpad(credentials, 'http://api.launchpad.dev/')
     >>> print launchpad.me.name
     no-priv
+<<<<<<< TREE
 
     >>> lp_anon = Launchpad.login_anonymously('launchpadlib test',
     ...                                       'http://api.launchpad.dev/')
@@ -68,3 +70,73 @@ results in an error.
     Traceback (most recent call last):
       ...
     HTTPError: HTTP Error 401: Unauthorized...
+=======
+
+Anonymous access
+================
+
+    >>> lp_anon = Launchpad.login_anonymously('launchpadlib test',
+    ...                                       'http://api.launchpad.dev/')
+
+The Launchpad object for the anonymous user can be used to access
+public information.
+
+    >>> apache_results = lp_anon.project_groups.search(text="Apache")
+    >>> print apache_results[0].name
+    apache
+
+But trying to access information that requires a logged in user
+results in an error.
+
+    >>> print lp_anon.me.name
+    Traceback (most recent call last):
+      ...
+    HTTPError: HTTP Error 401: Unauthorized...
+
+Caching
+=======
+
+Let's make sure Launchpad serves caching-related headers that make
+launchpadlib work correctly. First, we set up a temporary directory to
+store the cache.
+
+    >>> import tempfile
+    >>> cache = tempfile.mkdtemp()
+
+Then we make it possible to view the HTTP traffic between launchpadlib
+and Launchpad.
+
+    >>> import httplib2
+    >>> old_debug_level = httplib2.debuglevel
+    >>> httplib2.debuglevel = 1
+
+Now create a Launchpad object and observe how it populates the cache.
+
+    >>> launchpad = Launchpad(
+    ...     credentials, 'http://api.launchpad.dev/', cache=cache)
+    send: 'GET /1.0/ ...accept: application/vnd.sun.wadl+xml...'
+    reply: 'HTTP/1.0 200 Ok\n'
+    ...
+    send: 'GET /1.0/ ...accept: application/json...'
+    reply: 'HTTP/1.0 200 Ok\n'
+    ...
+
+Create a second Launchpad object, and the cached documents will be
+used to make conditional HTTP requests. The conditions will succeed,
+and launchpadlib will not have to download the documents again.
+
+    >>> launchpad = Launchpad(
+    ...     credentials, 'http://api.launchpad.dev/', cache=cache)
+    send: 'GET /1.0/ ...accept: application/vnd.sun.wadl+xml...'
+    reply: 'HTTP/1.0 304 Not Modified\n'
+    ...
+    send: 'GET /1.0/ ...accept: application/json...'
+    reply: 'HTTP/1.0 304 Not Modified\n'
+    ...
+
+Cleanup.
+
+    >>> import shutil
+    >>> shutil.rmtree(cache)
+    >>> httplib2.debuglevel = old_debug_level
+>>>>>>> MERGE-SOURCE
