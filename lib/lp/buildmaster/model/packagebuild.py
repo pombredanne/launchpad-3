@@ -196,6 +196,21 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         return BuildBase.storeBuildInfo(self, librarian, slave_status)
 
+    def verifySuccessfulUpload(self):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
+    def storeUploadLog(self, content):
+        """See `IPackageBuild`."""
+        filename = "upload_%s_log.txt" % self.build_farm_job.id
+        library_file = BuildBase.createUploadLog(
+            self, content, filename=filename)
+        self.upload_log = library_file
+
+    def notify(self, extra_info=None):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
 
 class PackageBuildDerived(BuildFarmJobDerived):
     """Override the base delegate to use a build farm job specific to

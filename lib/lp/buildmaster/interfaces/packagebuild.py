@@ -118,6 +118,19 @@ class IPackageBuild(IBuildFarmJob):
         custom status handlers, but it should not be called externally.
         """
 
+    def verifySuccessfulUpload():
+        """Verify that the upload of this build completed succesfully."""
+
+    def storeUploadLog(content):
+        """Store the given content as the build upload_log.
+
+        :param content: string containing the upload-processor log output for
+            the binaries created in this build.
+        """
+
+    def notify(extra_info=None):
+        """Notify current build state to related people via email."""
+
 
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""

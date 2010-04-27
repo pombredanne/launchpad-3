@@ -405,25 +405,34 @@ class BuildBase:
         else:
             build.dependencies = None
 
-    def storeUploadLog(self, content):
-        """See `IBuildBase`."""
+    @staticmethod
+    def createUploadLog(build, content, filename=None):
+        """Creates a file on the librarian for the upload log.
+
+        :return: ILibraryFileAlias for the upload log file.
+        """
         # The given content is stored in the librarian, restricted as
         # necessary according to the targeted archive's privacy.  The content
         # object's 'upload_log' attribute will point to the
         # `LibrarianFileAlias`.
 
-        assert self.upload_log is None, (
+        assert build.upload_log is None, (
             "Upload log information already exists and cannot be overridden.")
 
-        filename = 'upload_%s_log.txt' % self.id
+        if filename is None:
+            filename = 'upload_%s_log.txt' % build.id
         contentType = filenameToContentType(filename)
         file_size = len(content)
         file_content = StringIO(content)
-        restricted = self.is_private
+        restricted = build.is_private
 
-        library_file = getUtility(ILibraryFileAliasSet).create(
+        return getUtility(ILibraryFileAliasSet).create(
             filename, file_size, file_content, contentType=contentType,
             restricted=restricted)
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        library_file = self.createUploadLog(self, content)
         self.upload_log = library_file
 
     def queueBuild(self, suspended=False):
