@@ -277,11 +277,10 @@ class BranchMergeProposal(SQLBase):
         # aleady.
         for review in self.votes:
             reviewer = review.reviewer
-            if not reviewer.is_team:
-                pending = review.comment is None
-                recipients[reviewer] = RecipientReason.forReviewer(
-                    self, pending, reviewer,
-                    branch_identity_cache=branch_identity_cache)
+            pending = review.comment is None
+            recipients[reviewer] = RecipientReason.forReviewer(
+                self, pending, reviewer,
+                branch_identity_cache=branch_identity_cache)
         # If the registrant of the proposal is getting emails, update the
         # rationale to say that they registered it.  Don't however send them
         # emails if they aren't asking for any.
