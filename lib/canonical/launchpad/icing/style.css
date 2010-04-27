@@ -25,15 +25,8 @@
 
 /* === Fonts and colors === */
 
-/* Monospace text uses the reciprocal of this percentage, so that it
-exactly obeys your preferred monospace font size: */
-.bug-comment, .bug-activity {
-  font: 120% monospace;
-}
 
-.bug-activity {
-  color: #555;
-}
+
 
 
 .exception {color: #cc0000;}
@@ -80,7 +73,6 @@ form.primary.search {
   -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
-.link_img {border: 0;}
 .debug {
   background: none;
   color: #f09;
@@ -170,12 +162,6 @@ form.primary.search {
 .official-tag-error-message-value {
   color: red;
   text-decoration: underline;
-}
-
-a.official-tag { /* Looks just like a normal link  */}
-
-a.unofficial-tag {
-  color: #6699ee;
 }
 
 .tags-container {
@@ -280,49 +266,6 @@ div#branch-description {
 .product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
-/* --- Home --- */
-
-
-/* -- Notices -- */
-
-.important-notice-container {
-  text-align: center;
-  width: 100%;
-  padding-bottom: 1em;
-  position: relative;
-}
-
-.important-notice-balloon {
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-  background-color: #ededed;
-  padding: 1em;
-  border: 1px solid #000;
-  width: auto;
-  overflow: hidden;
-}
-
-.important-notice-buttons {
-  float: right;
-}
-
-.important-notice-cancel-button {
-  visibility: hidden;
-  cursor: pointer;
-}
-
-.important-notice {
-  padding: 0px 0px 40px 0px;
-  height: 32px;
-  overflow: hidden;
-}
-
-.important-notice a {
-  font-weight: bold;
-  color: black;
-  text-decoration: underline;
-}
 
 /* Soyuz-related styles (that don't have a facet, but generally are
  * under Overview)
@@ -377,7 +320,7 @@ form.package-search-filter {
     clear: both;
 }
 h1.disabled, .greyed-out {
-    color: grey;
+    color: gray;
 }
 table#packages_list {
     margin-top: 1em;
@@ -455,16 +398,6 @@ form.archive-subscription-activation button:hover {
     text-decoration: underline;
 }
 
-/* Colored build status. */
-.buildstatusNEEDSBUILD     {color: gray;}
-.buildstatusBUILDING       {color: black;}
-.buildstatusFULLYBUILT     {color: green;}
-.buildstatusFAILEDTOBUILD  {color: red;}
-.buildstatusMANUALDEPWAIT  {color: red;}
-.buildstatusCHROOTWAIT     {color: red;}
-.buildstatusSUPERSEDED     {color: red;}
-.buildstatusFAILEDTOUPLOAD {color: red;}
-
 /* Shaded logging area. */
 div.logtail {
     margin: 0.5em;
@@ -487,7 +420,6 @@ div.logtail p {
 pre.changelog {
     margin: 0.5em;
     padding: 5px;
-    font: 116% monospace;
 }
 
 /* Disabled PPAs when linkified (uploaders) should be gray and when not
@@ -527,9 +459,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: #d18b39;
 }
 
-.stale-diff { color: #f60; }
-.conflicts-diff { color: red; }
-
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -560,13 +489,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 
 .mergeproposal p {margin: 0.5em 0 }
 
-.vcsimportSUCCESS {} /* inherited text color */
-.vcsimportFAILURE {color: Red;}
-
-.greylink a:link, .greylink a:visited {
-  color: grey;
-}
-
 .commentSuffix {
   height: 2.5em;
 }
@@ -576,7 +498,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .replyLink {
   text-align: right;
 }
-.codereviewcomment {font: 120% monospace;}
 .codereviewcomment .attachment, #review-diff .attachment,
 div.diff .attachmentBody {
   background-color: #f6f6f6;
@@ -598,7 +519,6 @@ body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead 
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
-   font: 120% monospace;
    width: 100%;
    background-color: white;
    margin-bottom: 0.5em;
@@ -647,22 +567,6 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-.statusNEW,           .statusNEW a           {color: #930;}
-.statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
-.statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
-.statusTRIAGED,       .statusTRIAGED a       {color: #f60;}
-.statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
-.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: #050;}
-.statusFIXRELEASED,   .statusFIXRELEASED a   {color: green;}
-.statusINVALID,       .statusINVALID a       {color: gray;}
-.statusWONTFIX,       .statusWONTFIX a       {color: gray;}
-.importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
-.importanceHIGH,      .importanceHIGH a      {color: #f60;}
-.importanceMEDIUM,    .importanceMEDIUM a    {color: green;}
-.importanceLOW,       .importanceLOW a       {color: black;}
-.importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
-.importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
-.status :link, .importance :link {text-decoration: none;}
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
@@ -699,33 +603,6 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
   background: none;
   color: #3594bb;
 }
-.specstatusAPPROVED             {color: green;}
-.specstatusPENDINGAPPROVAL      {color: #f09;}
-.specstatusPENDINGREVIEW        {color: #f09;}
-.specstatusDRAFT                {color: #930;}
-.specstatusDISCUSSION           {color: #930;}
-.specstatusNEW                  {color: red;}
-.specstatusSUPERSEDED           {color: gray;}
-.specstatusOBSOLETE             {color: gray;}
-.specpriorityNOTFORUS           {color: gray;}
-.specpriorityUNDEFINED          {color: gray;}
-.specpriorityLOW                {color: black;}
-.specpriorityMEDIUM             {color: #f60;}
-.specpriorityHIGH               {color: red;}
-.specpriorityESSENTIAL          {color: red;}
-.specdeliveryUNKNOWN            {color: gray;}
-.specdeliveryNOTSTARTED         {color: gray;}
-.specdeliveryDEFERRED           {color: red;}
-.specdeliveryNEEDSINFRASTUCTURE {color: red;}
-.specdeliveryBLOCKED            {color: red;}
-.specdeliverySTARTED            {color: blue;}
-.specdeliverySLOW               {color: red;}
-.specdeliveryGOOD               {color: blue;}
-.specdeliveryBETA               {color: #f60;}
-.specdeliveryNEEDSREVIEW        {color: purple;}
-.specdeliveryAWAITINGDEPLOYMENT {color: red;}
-.specdeliveryIMPLEMENTED        {color: green;}
-.specdeliveryINFORMATIONAL      {color: green;}
 
 /* === Translations === */
 
@@ -763,13 +640,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.questionstatusOPEN      {color: #000;} /* black */
-.questionstatusNEEDSINFO {color: #930;} /* brown */
-.questionstatusANSWERED  {color: #363;} /* grey-green */
-.questionstatusSOLVED    {color: #090;} /* green */
-.questionstatusEXPIRED   {color: #666;} /* dark grey */
-.questionstatusINVALID   {color: #c00;} /* red */
-
 .search-box {
   text-align: left;
   float: left;
@@ -793,12 +663,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 
 .bug-links td.bugs-link {
   text-align: left;
-}
-
-/* --- Other --- */
-
-ul#applicationchooser a, ul#applicationchooser a:hover {
-  color: #000;
 }
 
 /* ====== Content area styles ====== */
@@ -859,32 +723,6 @@ img.mugshot {display: block;}
 #project-tags a {
   padding-left: 0.5em;
   padding-right: 0.5em;
-}
-
-/* Clouds of links. */
-.cloud-size-smallest {
-  font-size: 0.8em;
-}
-.cloud-size-small {
-  font-size: 1.1em;
-}
-.cloud-size-medium {
-  font-size: 1.4em;
-}
-.cloud-size-large {
-  font-size: 1.7em;
-}
-.cloud-size-largest {
-  font-size: 2.0em;
-}
-.cloud-dark {
-  color: #00f;
-}
-.cloud-medium {
-  color: #7878ff;
-}
-.cloud-light {
-  color: #b8b8ff;
 }
 
 .lowerCaseText {
