@@ -1263,7 +1263,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def cleanBranchArea(self):
-        """Ensure that the branc areas is present and empty."""
+        """Ensure that the branch area is present and empty."""
         mirrored = config.codehosting.mirrored_branches_root
         shutil.rmtree(mirrored, ignore_errors=True)
         os.makedirs(mirrored)
