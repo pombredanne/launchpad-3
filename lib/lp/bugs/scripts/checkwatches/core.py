@@ -52,8 +52,9 @@ from lp.bugs.externalbugtracker import (
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
-from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
+from lp.bugs.scripts.checkwatches.utilities import (
+    get_bugwatcherrortype_for_error, get_remote_system_oops_properties)
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -93,14 +94,6 @@ _exception_to_bugwatcherrortype = [
    (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
    (socket.timeout, BugWatchActivityStatus.TIMEOUT)]
 
-def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchActivityStatus` for a given error."""
-    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
-        if isinstance(error, exc_type):
-            return bugwatcherrortype
-    else:
-        return BugWatchActivityStatus.UNKNOWN
-
 
 def unique(iterator):
     """Generate only unique items from an iterator."""
@@ -125,23 +118,6 @@ def suggest_batch_size(remote_system, num_watches):
         remote_system.batch_size = max(
             SUGGESTED_BATCH_SIZE_MIN,
             int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
-
-
-def get_remote_system_oops_properties(remote_system):
-    """Return (name, value) tuples describing a remote system.
-
-    Each item in the list is intended for use as an OOPS property.
-
-    :remote_system: The `ExternalBugTracker` instance from which the
-        OOPS properties should be extracted.
-    """
-    return [
-        ('batch_size', remote_system.batch_size),
-        ('batch_query_threshold', remote_system.batch_query_threshold),
-        ('sync_comments', remote_system.sync_comments),
-        ('externalbugtracker', remote_system.__class__.__name__),
-        ('baseurl', remote_system.baseurl)
-        ]
 
 
 class CheckwatchesMaster(WorkingBase):
@@ -610,17 +586,6 @@ class CheckwatchesMaster(WorkingBase):
             'unmodified_remote_ids': sorted(unmodified_remote_ids),
             }
 
-    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
-        """Return a list of bug watches for the given remote bug.
-
-        The returned watches will all be members of `bug_watch_ids`.
-
-        This method exists primarily to be overridden during testing.
-        """
-        return list(
-            getUtility(IBugWatchSet).getBugWatchesForRemoteBug(
-                remote_bug_id, bug_watch_ids))
-
     # XXX gmb 2008-11-07 [bug=295319]
     #     This method is 186 lines long. It needs to be shorter.
     @commit_before
@@ -707,27 +672,12 @@ class CheckwatchesMaster(WorkingBase):
                 "Comment importing supported, but server time can't be"
                 " trusted. No comments will be imported.")
 
-        error_type_messages = {
-            BugWatchActivityStatus.INVALID_BUG_ID:
-                ("Invalid bug %(bug_id)r on %(base_url)s "
-                 "(local bugs: %(local_ids)s)."),
-            BugWatchActivityStatus.BUG_NOT_FOUND:
-                ("Didn't find bug %(bug_id)r on %(base_url)s "
-                 "(local bugs: %(local_ids)s)."),
-            BugWatchActivityStatus.PRIVATE_REMOTE_BUG:
-                ("Remote bug %(bug_id)r on %(base_url)s is private "
-                 "(local bugs: %(local_ids)s)."),
-            }
-        error_type_message_default = (
-            "remote bug: %(bug_id)r; "
-            "base url: %(base_url)s; "
-            "local bugs: %(local_ids)s"
-            )
-
         for remote_bug_id in all_remote_ids:
             remote_bug_updater = RemoteBugUpdater(
-                self, remote_bug_id)
-            remote_bug_updater.updateRemoteBug()
+                self, remotesystem, remote_bug_id, bug_watch_ids,
+                unmodified_remote_ids)
+            remote_bug_updater.updateRemoteBug(
+                can_import_comments, can_push_comments, can_back_link)
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):

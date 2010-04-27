@@ -6,37 +6,85 @@
 from __future__ import with_statement
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'RemoteBugUpdater',
+    ]
 
+import sys
 
+from zope.component import getUtility
+
+from canonical.database.constants import UTC_NOW
+
+from lp.bugs.externalbugtracker.base import (
+    BugNotFound, InvalidBugId, PrivateRemoteBug)
+
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus, IBugWatchSet
 from lp.bugs.scripts.checkwatches.base import WorkingBase
+from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
+from lp.bugs.scripts.checkwatches.utilities import (
+    get_bugwatcherrortype_for_error, get_remote_system_oops_properties)
 
 
 class RemoteBugUpdater(WorkingBase):
 
-    def __init__(self, parent, remote_bug):
+    def __init__(self, parent, external_bugtracker, remote_bug,
+                 bug_watch_ids, unmodified_remote_ids):
         self.initFromParent(parent)
+        self.external_bugtracker = external_bugtracker
+        self.bug_tracker_url = external_bugtracker.baseurl
         self.remote_bug = remote_bug
+        self.bug_watch_ids = bug_watch_ids
+        self.unmodified_remote_ids = unmodified_remote_ids
 
-    def updateRemoteBug(self):
+        self.error_type_messages = {
+            BugWatchActivityStatus.INVALID_BUG_ID:
+                ("Invalid bug %(bug_id)r on %(base_url)s "
+                 "(local bugs: %(local_ids)s)."),
+            BugWatchActivityStatus.BUG_NOT_FOUND:
+                ("Didn't find bug %(bug_id)r on %(base_url)s "
+                 "(local bugs: %(local_ids)s)."),
+            BugWatchActivityStatus.PRIVATE_REMOTE_BUG:
+                ("Remote bug %(bug_id)r on %(base_url)s is private "
+                 "(local bugs: %(local_ids)s)."),
+            }
+        self.error_type_message_default = (
+            "remote bug: %(bug_id)r; "
+            "base url: %(base_url)s; "
+            "local bugs: %(local_ids)s"
+            )
+
+    def _getBugWatchesForRemoteBug(self):
+        """Return a list of bug watches for the current remote bug.
+
+        The returned watches will all be members of `self.bug_watch_ids`.
+
+        This method exists primarily to be overridden during testing.
+        """
+        return list(
+            getUtility(IBugWatchSet).getBugWatchesForRemoteBug(
+                self.remote_bug, self.bug_watch_ids))
+
+    def updateRemoteBug(self, can_import_comments, can_push_comments,
+                        can_back_link):
+        # Avoid circular imports
         with self.transaction:
-            bug_watches = self._getBugWatchesForRemoteBug(
-                self.remote_bug, bug_watch_ids)
+            bug_watches = self._getBugWatchesForRemoteBug()
             # If there aren't any bug watches for this remote bug,
             # just log a warning and carry on.
             if len(bug_watches) == 0:
                 self.warning(
                     "Spurious remote bug ID: No watches found for "
                     "remote bug %s on %s" % (
-                        self.remote_bug, remotesystem.baseurl))
-                continue
+                        self.remote_bug, self.external_bugtracker.baseurl))
+                return
             # Mark them all as checked.
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
                 bug_watch.next_check = None
             # Next if this one is definitely unmodified.
-            if self.remote_bug in unmodified_remote_ids:
-                continue
+            if self.remote_bug in self.unmodified_remote_ids:
+                return
             # Save the remote bug URL for error reporting.
             remote_bug_url = bug_watches[0].url
             # Save the list of local bug IDs for error reporting.
@@ -58,22 +106,24 @@ class RemoteBugUpdater(WorkingBase):
             #      136391 is dealt with.
             try:
                 new_remote_status = (
-                    remotesystem.getRemoteStatus(self.remote_bug))
+                    self.external_bugtracker.getRemoteStatus(
+                        self.remote_bug))
                 new_malone_status = self._convertRemoteStatus(
-                    remotesystem, new_remote_status)
+                    self.external_bugtracker, new_remote_status)
                 new_remote_importance = (
-                    remotesystem.getRemoteImportance(self.remote_bug))
+                    self.external_bugtracker.getRemoteImportance(
+                        self.remote_bug))
                 new_malone_importance = (
-                    remotesystem.convertRemoteImportance(
+                    self.external_bugtracker.convertRemoteImportance(
                         new_remote_importance))
             except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
                 error = get_bugwatcherrortype_for_error(ex)
-                message = error_type_messages.get(
-                    error, error_type_message_default)
+                message = self.error_type_messages.get(
+                    error, self.error_type_message_default)
                 oops_id = self.warning(
                     message % {
                         'bug_id': self.remote_bug,
-                        'base_url': remotesystem.baseurl,
+                        'base_url': self.external_bugtracker.baseurl,
                         'local_ids': local_ids,
                         },
                     properties=[
@@ -81,12 +131,12 @@ class RemoteBugUpdater(WorkingBase):
                         ('bug_id', self.remote_bug),
                         ('local_ids', local_ids),
                         ] + get_remote_system_oops_properties(
-                            remotesystem),
+                            self.external_bugtracker),
                     info=sys.exc_info())
 
             for bug_watch in bug_watches:
                 bug_watch_updater = BugWatchUpdater(
-                    self, bug_watch, remotesystem)
+                    self, bug_watch, self.external_bugtracker)
 
                 bug_watch_updater.updateBugWatch(
                     new_remote_status, new_malone_status,
@@ -102,12 +152,13 @@ class RemoteBugUpdater(WorkingBase):
             # Send the error to the log.
             oops_id = self.error(
                 "Failure updating bug %r on %s (local bugs: %s)." %
-                        (self.remote_bug, bug_tracker_url, local_ids),
+                        (self.remote_bug, self.bug_tracker_url, local_ids),
                 properties=[
                     ('URL', remote_bug_url),
                     ('bug_id', self.remote_bug),
                     ('local_ids', local_ids)] +
-                    get_remote_system_oops_properties(remotesystem))
+                    get_remote_system_oops_properties(
+                        self.external_bugtracker))
             # We record errors against the bug watches and update
             # their lastchecked dates so that we don't try to
             # re-check them every time checkwatches runs.
