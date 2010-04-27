@@ -331,7 +331,8 @@ class OpenIDCallbackView(OpenIDLogin):
 
             if account.status == AccountStatus.SUSPENDED:
                 return self.suspended_account_template()
-            elif account.status == AccountStatus.DEACTIVATED:
+            elif account.status in [AccountStatus.DEACTIVATED,
+                                    AccountStatus.NOACCOUNT]:
                 comment = 'Reactivated by the user'
                 password = '' # Needed just to please reactivate() below.
                 email_address, dummy = self._getEmailAddressAndFullName()
