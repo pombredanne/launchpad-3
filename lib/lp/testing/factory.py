@@ -1669,8 +1669,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description)
 
         if private:
-            archive.private = True
-            archive.buildd_secret = "sekrit"
+            naked_archive = removeSecurityProxy(archive)
+            naked_archive.private = True
+            naked_archive.buildd_secret = "sekrit"
 
         return archive
 
