@@ -10,7 +10,6 @@ __all__ = [
     'RemoteBugUpdater',
     ]
 
-import socket
 import sys
 
 from zope.component import getUtility
@@ -18,32 +17,14 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    InvalidBugId, PrivateRemoteBug, UnknownBugTrackerTypeError,
-    UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+    BugNotFound, InvalidBugId, PrivateRemoteBug, UnknownRemoteStatusError)
 
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus, IBugWatchSet
-from lp.bugs.scripts.checkwatches.base import WorkingBase
+from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_STATUS
+from lp.bugs.scripts.checkwatches.base import WorkingBase, commit_before
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
     get_bugwatcherrortype_for_error, get_remote_system_oops_properties)
-
-
-_exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
-   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
-   (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion,
-    BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion,
-    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError,
-    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
-   (InvalidBugId, BugWatchActivityStatus.INVALID_BUG_ID),
-   (BugNotFound, BugWatchActivityStatus.BUG_NOT_FOUND),
-   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
-   (socket.timeout, BugWatchActivityStatus.TIMEOUT)]
 
 
 class RemoteBugUpdater(WorkingBase):
@@ -85,8 +66,9 @@ class RemoteBugUpdater(WorkingBase):
             getUtility(IBugWatchSet).getBugWatchesForRemoteBug(
                 self.remote_bug, self.bug_watch_ids))
 
-    def updateRemoteBug(self, can_import_comments, can_push_comments,
-                        can_back_link):
+    @commit_before
+    def updateRemoteBug(self, can_import_comments=False,
+                        can_push_comments=False, can_back_link=False):
         # Avoid circular imports
         with self.transaction:
             bug_watches = self._getBugWatchesForRemoteBug()
@@ -129,7 +111,7 @@ class RemoteBugUpdater(WorkingBase):
                     self.external_bugtracker.getRemoteStatus(
                         self.remote_bug))
                 new_malone_status = self._convertRemoteStatus(
-                    self.external_bugtracker, new_remote_status)
+                    new_remote_status)
                 new_remote_importance = (
                     self.external_bugtracker.getRemoteImportance(
                         self.remote_bug))
@@ -190,3 +172,34 @@ class RemoteBugUpdater(WorkingBase):
                     bug_watch.last_error_type = error_type
                     bug_watch.addActivity(
                         result=error_type, oops_id=oops_id)
+
+    def _convertRemoteStatus(self, remote_status):
+        """Convert a remote bug status to a Launchpad status and return it.
+
+        :param remote_status: The remote status to be converted into a
+            Launchpad status.
+
+        If the remote status cannot be mapped to a Launchpad status,
+        BugTaskStatus.UNKNOWN will be returned and a warning will be
+        logged.
+        """
+        # We don't bother trying to convert UNKNOWN_REMOTE_STATUS.
+        if remote_status == UNKNOWN_REMOTE_STATUS:
+            return BugTaskStatus.UNKNOWN
+
+        try:
+            launchpad_status = self.external_bugtracker.convertRemoteStatus(
+                remote_status)
+        except UnknownRemoteStatusError:
+            # We log the warning, since we need to know about statuses
+            # that we don't handle correctly.
+            self.warning(
+                "Unknown remote status '%s'." % remote_status,
+                get_remote_system_oops_properties(
+                    self.external_bugtracker),
+                sys.exc_info())
+
+            launchpad_status = BugTaskStatus.UNKNOWN
+
+        return launchpad_status
+

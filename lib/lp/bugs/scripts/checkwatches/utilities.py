@@ -6,8 +6,31 @@
 __metaclass__ = type
 __all__ = []
 
+import socket
+
+from lp.bugs.externalbugtracker import (
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
+    InvalidBugId, PrivateRemoteBug, UnknownBugTrackerTypeError,
+    UnknownRemoteStatusError, UnparseableBugData,
+    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+
+
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchActivityStatus.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
+   (UnparseableBugData, BugWatchActivityStatus.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion,
+    BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError,
+    BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER),
+   (InvalidBugId, BugWatchActivityStatus.INVALID_BUG_ID),
+   (BugNotFound, BugWatchActivityStatus.BUG_NOT_FOUND),
+   (PrivateRemoteBug, BugWatchActivityStatus.PRIVATE_REMOTE_BUG),
+   (socket.timeout, BugWatchActivityStatus.TIMEOUT)]
 
 
 def get_bugwatcherrortype_for_error(error):

@@ -418,37 +418,6 @@ class CheckwatchesMaster(WorkingBase):
                 self.logger.debug(
                     "No watches to update on %s" % bug_tracker.baseurl)
 
-    def _convertRemoteStatus(self, remotesystem, remote_status):
-        """Convert a remote bug status to a Launchpad status and return it.
-
-        :param remotesystem: The `IExternalBugTracker` instance
-            representing the remote system.
-        :param remote_status: The remote status to be converted into a
-            Launchpad status.
-
-        If the remote status cannot be mapped to a Launchpad status,
-        BugTaskStatus.UNKNOWN will be returned and a warning will be
-        logged.
-        """
-        # We don't bother trying to convert UNKNOWN_REMOTE_STATUS.
-        if remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
-
-        try:
-            launchpad_status = remotesystem.convertRemoteStatus(
-                remote_status)
-        except UnknownRemoteStatusError:
-            # We log the warning, since we need to know about statuses
-            # that we don't handle correctly.
-            self.warning(
-                "Unknown remote status '%s'." % remote_status,
-                get_remote_system_oops_properties(remotesystem),
-                sys.exc_info())
-
-            launchpad_status = BugTaskStatus.UNKNOWN
-
-        return launchpad_status
-
     def _getRemoteIdsToCheck(self, remotesystem, bug_watches,
                              server_time=None, now=None, batch_size=None):
         """Return the remote bug IDs to check for a set of bug watches.
