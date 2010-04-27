@@ -173,6 +173,15 @@ class IBuildFarmJob(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
+    def makeJob():
+        """Create the related lp.services.job for this build farm job.
+
+        XXX 2010-04-26 michael.nelson bug=567922
+        Once all *Build classes are using BuildFarmJob we can lose the
+        'specific_job' attributes and simply have a reference to the
+        services job directly on the BuildFarmJob.
+        """
+
 
 class IBuildFarmJobDerived(Interface):
     """Common functionality required by classes delegating IBuildFarmJob.

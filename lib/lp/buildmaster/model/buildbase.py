@@ -106,7 +106,8 @@ class BuildBase:
             return None
         return self._getProxiedFileURL(self.buildlog)
 
-    def getUploadLogContent(self, root, leaf):
+    @staticmethod
+    def getUploadLogContent(root, leaf):
         """Retrieve the upload log contents.
 
         :param root: Root directory for the uploads

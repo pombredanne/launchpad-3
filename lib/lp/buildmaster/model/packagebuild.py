@@ -172,15 +172,23 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         return BuildBase.getUploadDir(upload_leaf)
 
-    def getUploaderCommand(self, distro_series, upload_leaf, upload_logfilename):
+    @staticmethod
+    def getUploaderCommand(package_build, distro_series, upload_leaf,
+                           upload_logfilename):
         """See `IPackageBuild`."""
         return BuildBase.getUploaderCommand(
-            self, distro_series, upload_leaf, upload_logfilename)
+            package_build, distro_series, upload_leaf, upload_logfilename)
 
     def getLogFromSlave(self):
         """See `IPackageBuild`."""
         return None
         return BuildBase.getLogFromSlave(self)
+
+    @staticmethod
+    def getUploadLogContent(root, leaf):
+        """See `IPackageBuild`."""
+        return BuildBase.getUploadLogContent(root, leaf)
+
 
 class PackageBuildDerived(BuildFarmJobDerived):
     """Override the base delegate to use a build farm job specific to

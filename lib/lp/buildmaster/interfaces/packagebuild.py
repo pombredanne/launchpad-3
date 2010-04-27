@@ -75,7 +75,7 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
 
-    def getUploaderCommand(upload_leaf, uploader_logfilename):
+    def getUploaderCommand(distro_series, upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the
@@ -99,6 +99,21 @@ class IPackageBuild(IBuildFarmJob):
 
     def getLogFromSlave():
         """Get last buildlog from slave. """
+
+    def getUploadLogContent(root, leaf):
+        """Retrieve the upload log contents.
+
+        :param root: Root directory for the uploads
+        :param leaf: Leaf for this particular upload
+        :return: Contents of log file or message saying no log file was found.
+        """
+
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
 
 
 class IPackageBuildSource(Interface):

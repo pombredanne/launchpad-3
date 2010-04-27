@@ -87,6 +87,7 @@ class TestBuildFarmJob(TestCaseWithFactory):
         self.assertRaises(NotImplementedError, self.build_farm_job.score)
         self.assertRaises(NotImplementedError, self.build_farm_job.getName)
         self.assertRaises(NotImplementedError, self.build_farm_job.getTitle)
+        self.assertRaises(NotImplementedError, self.build_farm_job.makeJob)
 
     def test_jobStarted(self):
         # Starting a job sets the date_started and status, as well as

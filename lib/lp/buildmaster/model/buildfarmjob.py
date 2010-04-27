@@ -118,6 +118,10 @@ class BuildFarmJob(Storm):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
 
+    def makeJob(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
     def jobStarted(self):
         """See `IBuildFarmJob`."""
         if not self.has_concrete_build_farm_job:

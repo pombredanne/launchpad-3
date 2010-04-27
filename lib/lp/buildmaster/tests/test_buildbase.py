@@ -64,6 +64,13 @@ class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        # Add dummy pocket and policy info to the in-memory base build.
+        super(TestBuildBaseWithDatabase, self).setUp()
+        self.package_build.pocket = self.factory.getAnyPocket()
+        self.package_build.id = self.factory.getUniqueInteger()
+        self.package_build.policy_name = self.factory.getUniqueString('policy-name')
+
     def test_getUploadLogContent_nolog(self):
         """If there is no log file there, a string explanation is returned.
         """
@@ -91,9 +98,6 @@ class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
     def test_getUploaderCommand(self):
         upload_leaf = self.factory.getUniqueString('upload-leaf')
         distro_series = self.factory.makeDistroSeries()
-        self.package_build.pocket = self.factory.getAnyPocket()
-        self.package_build.id = self.factory.getUniqueInteger()
-        self.package_build.policy_name = self.factory.getUniqueString('policy-name')
         config_args = list(config.builddmaster.uploader.split())
         log_file = self.factory.getUniqueString('logfile')
         config_args.extend(
