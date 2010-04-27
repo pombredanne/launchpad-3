@@ -74,10 +74,10 @@
 .footer .lp-arcana {
     background: url(/@@/footer-background.png) top left repeat-x;
     padding: 0.8em;
-    -moz-border-radius: 3px 3px 0 0;
-    -webkit-border-radius: 3px 3px 0 0;
-    -khtml-border-radius: 3px 3px 0 0;
-    border-radius: 3px 3px 0 0;
+    -moz-border-radius: 5px 5px 0 0;
+    -webkit-border-radius: 5px 5px 0 0;
+    -khtml-border-radius: 5px 5px 0 0;
+    border-radius: 5px 5px 0 0;
     height:2em;
     }
 .footer .lp-arcana img {
@@ -238,7 +238,8 @@ img, a img {
     border: none;
     }
 abbr[title], acronym[title] {
-    border-bottom: 1px dotted black; cursor: help;
+    border-bottom: 1px dotted black;
+    cursor: help;
     }
 em {
     font-style: italic;
@@ -340,7 +341,8 @@ ul.buttons {
     padding: 0 !important;
     }
 ul.buttons li {
-    display: inline; margin: 0 0 0 0;
+    display: inline;
+    margin: 0 0 0 0;
     }
 ul.cross-reference {
     font-size: 123.1%;
@@ -551,7 +553,7 @@ table.cozy-listing td {
     border-style: dotted none none none;
     }
 table.sortable a.sortheader {
-    color:#666666;
+    color:#666;
     font-weight: bold;
     text-decoration: none;
     display: block;
@@ -574,7 +576,9 @@ th.descending {
     display: none;
     }
 table.listing {
-    margin: 0; width: 100%; font-size: 93%;
+    margin: 0;
+    width: 100%;
+    font-size: 93%;
     }
 table.listing, table.listing tbody, table.listing td.end-of-section {
     border-bottom: 1px solid #d2d2d2;
@@ -613,10 +617,12 @@ table.listing table th, table.listing table td {
     padding: 0;
     }
 table.listing thead th, table.listing tr.thead th {
-    font-size: 108%; white-space: nowrap;
+    font-size: 108%;
+    white-space: nowrap;
     }
 table.listing td {
-    border: 1px #d2d2d2; border-style: dotted none none none;
+    border: 1px #d2d2d2;
+    border-style: dotted none none none;
     }
 table.listing tr.note td {
     border-style: none;
@@ -649,7 +655,8 @@ table.summary th {
     font-weight: normal;
     }
 table.summary caption {
-    font-style: italic; margin-left: 1em;
+    font-style: italic;
+    margin-left: 1em;
     }
 table.summary ul, table.summary ul li {
     list-style-position: inside;
@@ -788,7 +795,8 @@ table.listing div.field>table {
 table.listing div.field>label,
 table.listing div.field>div>label,
 table.listing div.actions {
-    display: block; margin-top: 1em;
+    display: block;
+    margin-top: 1em;
     }
 table.form, table.extra-options {
     /* Many forms are laid out using tables, with appropriate spacing: */
@@ -840,13 +848,15 @@ fieldset.collapsible legend {
     text-decoration: none;
     }
 img.collapseIcon {
-    text-decoration: none; vertical-align: middle;
+    text-decoration: none;
+    vertical-align: middle;
     }
 .collapsible legend a span {
     text-decoration: underline;
     }
 .collapsed {
-    border: none; margin-bottom: 0;
+    border: none;
+    margin-bottom: 0;
     }
 h1 .edit {
     font-size: 50%;
@@ -870,7 +880,7 @@ h1 .edit {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer
+    cursor:pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
@@ -886,7 +896,8 @@ h1 .edit {
 .error.message::before, .warning.message::before,
 .informational.message::before {
     /* The alerts are preceded with an icon overlaying the top left corner: */
-    display: block; margin: -15px 0 -6px -35px;
+    display: block;
+    margin: -15px 0 -6px -35px;
     }
 .error {
     /* Error messages are pink, with alerts having an error icon: */
@@ -912,7 +923,8 @@ h1 .edit {
     }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
-    background: #666; color: white;
+    background: #666;
+    color: white;
     }
 .debugging.message::before {
     content: url(/@@/info-large);
@@ -944,6 +956,40 @@ table.form .error {
 .sml-informational::before {
     content: url('/@@/info');
     }
+.important-notice-container {
+    text-align: center;
+    width: 100%;
+    padding-bottom: 1em;
+    position: relative;
+    }
+.important-notice-balloon {
+    -moz-border-radius: 5px;
+    -o-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    background-color: #ededed;
+    padding: 1em;
+    border: 1px solid #000;
+    width: auto;
+    overflow: hidden;
+    }
+.important-notice-buttons {
+    float: right;
+    }
+.important-notice-cancel-button {
+    visibility: hidden;
+    cursor: pointer;
+    }
+.important-notice {
+    padding: 0px 0px 40px 0px;
+    height: 32px;
+    overflow: hidden;
+    }
+.important-notice a {
+    font-weight: bold;
+    color: black;
+    text-decoration: underline;
+    }
+
 
 /* =========================
    Common presentations
@@ -1213,27 +1259,6 @@ div.watermark-apps-portlet span img {
 .downloads .alternate {
     padding: 0 0 0 1em;
     }
-ul.super-add-action {
-    margin: 0 auto 1em;
-    }
-ul.super-add-action li {
-    padding: 0;
-    }
-ul.super-add-action li a {
-    display: block;
-    border: 1px solid black;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    -khtml-border-radius: 3px;
-    background: #4f843c url(/@@/bg-action-add) center left no-repeat;
-    border-radius: 3px;
-    padding: 6%;
-    padding-left: 45px;
-    color: #fff;
-    font-size: 108%;
-    font-weight: bold;
-    text-decoration: underline;
-    }
 .involvement li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
@@ -1330,7 +1355,9 @@ ul.super-add-action li a {
     background: url(/@@/spinner) no-repeat center center;
     }
 #help-pane iframe {
-    width: 100%; height: 300px; border: 0;
+    width: 100%;
+    height: 300px;
+    border: 0;
     }
 #help-pane iframe.invisible {
     visibility: hidden;
@@ -1352,27 +1379,340 @@ span.help {
 
 /* =========================
    Universal presentation
-   Colors
+   Colors and fonts
 */
 .answers-stat {
     color: #3840BE;
     }
+.questionstatusOPEN {
+    color: #000;
+    }
+.questionstatusNEEDSINFO {
+    /* brown */
+    color: #930;
+    }
+.questionstatusANSWERED {
+    /* grey-green */
+    color: #363;
+    }
+.questionstatusSOLVED {
+    color: #090;
+    }
+.questionstatusEXPIRED {
+    color: #666;
+    }
+.questionstatusINVALID {
+    color: #c00;
+    }
+
+
 .blueprints-stat {
     color: #3594BB;
     }
+.specstatusAPPROVED {
+    color: green;
+    }
+.specstatusPENDINGAPPROVAL,
+.specstatusPENDINGREVIEW {
+    color: #f09;
+    }
+.specstatusDRAFT,
+.specstatusDISCUSSION {
+    color: #930;
+    }
+.specstatusNEW {
+    color: red;
+    }
+.specstatusSUPERSEDED,
+.specstatusOBSOLETE,
+.specpriorityNOTFORUS,
+.specpriorityUNDEFINED {
+    color: gray;
+    }
+.specpriorityLOW {
+    color: black;
+    }
+.specpriorityMEDIUM {
+    color: #f60;
+    }
+.specpriorityHIGH,
+.specpriorityESSENTIAL {
+    color: red;
+    }
+.specdeliveryUNKNOWN,
+.specdeliveryNOTSTARTED {
+    color: gray;
+    }
+.specdeliveryDEFERRED,
+.specdeliveryNEEDSINFRASTUCTURE,
+.specdeliveryBLOCKED {
+    color: red;
+    }
+.specdeliverySTARTED {
+    color: blue;
+    }
+.specdeliverySLOW {
+    color: red;
+    }
+.specdeliveryGOOD {
+    color: blue;
+    }
+.specdeliveryBETA {
+    color: #f60;
+    }
+.specdeliveryNEEDSREVIEW {
+    color: purple;
+    }
+.specdeliveryAWAITINGDEPLOYMENT {
+    color: red;
+    }
+.specdeliveryIMPLEMENTED,
+.specdeliveryINFORMATIONAL {
+    color: green;
+    }
+
+
 .bugs-stat {
     color: #9F2B33;
     }
+.bug-activity {
+    color: #555;
+    }
+.statusNEW, .statusNEW a {
+    color: #930;
+    }
+.statusINCOMPLETE, .statusINCOMPLETE a,
+.statusCONFIRMED, .statusCONFIRMED a {
+    color: red;
+    }
+.statusTRIAGED, .statusTRIAGED a {
+    color: #f60;
+    }
+.statusINPROGRESS, .statusINPROGRESS a {
+    color: black;
+    }
+.statusFIXCOMMITTED, .statusFIXCOMMITTED a {
+    color: #050;
+    }
+.statusFIXRELEASED, .statusFIXRELEASED a {
+    color: green;
+    }
+.statusINVALID, .statusINVALID a,
+.statusWONTFIX, .statusWONTFIX a {
+    color: gray;
+    }
+.importanceCRITICAL, .importanceCRITICAL a {
+    color: red;
+    }
+.importanceHIGH, .importanceHIGH a {
+    color: #f60;
+    }
+.importanceMEDIUM, .importanceMEDIUM a {
+    color: green;
+    }
+.importanceLOW, .importanceLOW a {
+    color: black;
+    }
+.importanceWISHLIST, .importanceWISHLIST a {
+    color: blue;
+    }
+.importanceUNDECIDED, .importanceUNDECIDED a {
+    color: #999;
+    }
+.status :link, .importance :link {
+    text-decoration: none;
+    }
+a.official-tag {
+    /* Looks just like a normal link  */
+    }
+a.unofficial-tag {
+    color: #6699ee;
+    }
+
+
 .code-stat {
     color: #D18B39;
     }
+.vcsimportSUCCESS {
+    /* inherited text color */
+    }
+.vcsimportFAILURE {
+    color: Red;
+    }
+.greylink a:link, .greylink a:visited {
+    color: gray;
+    }
+.stale-diff {
+    color: #f60;
+    }
+.conflicts-diff {
+    color: red;
+    }
+.branchstatusMATURE, .branchstatusMATURE a {
+    color: #090;
+    }
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a {
+    color: #900;
+    }
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {
+    color: #930;
+    }
+.branchstatusMERGED, .branchstatusMERGED a,
+.branchstatusABANDONED, .branchstatusABANDONED a {
+    color: #gray;
+    }
+.branchstatusNEW, .branchstatusNEW a {
+    color: black;
+    }
+.voteAPPROVE {
+    color: green;
+    }
+.voteNEEDS_FIXING {
+    color: #930;
+    }
+.voteDISAPPROVE,
+.voteRESUBMIT {
+    color: red;
+    }
+.voteABSTAIN {
+    color: #bebebe;
+    }
+.votePENDING {
+    color: #f60;
+    }
+.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a {
+    color: black;
+    }
+.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a {
+    color: #f60;
+    }
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a,
+.mergestatusMERGED, .mergestatusMERGED a {
+    color: green;
+    }
+.mergestatusREJECTED, .mergestatusREJECTED a,
+.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a {
+    color: red;
+    }
+.mergestatusQUEUED, .mergestatusQUEUED a {
+    color: black;
+    }
+.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a {
+    color: #bebebe;
+    }
+.codeimportNEW {
+    color: #930;
+    }
+.codeimportREVIEWED {
+    color: green;
+    }
+.codeimportINVALID,
+.codeimportSUSPENDED,
+.codeimportFAILING {
+    color: red;
+    }
+
+
 .translations-stat {
     color: #BB3A84;
     }
+.translationimportstatusAPPROVED,
+.translationimportstatusAPPROVED a {
+    color: #050;
+    }
+.translationimportstatusIMPORTED,
+.translationimportstatusIMPORTED a {
+    color: green;
+    }
+.translationimportstatusDELETED,
+.translationimportstatusDELETED a {
+    color: black;
+    }
+.translationimportstatusFAILED,
+.translationimportstatusFAILED a {
+    color: red;
+    }
+.translationimportstatusNEEDS_REVIEW,
+.translationimportstatusNEEDS_REVIEW a {
+    color: #f60;
+    }
+.translationimportstatusBLOCKED,
+.translationimportstatusBLOCKED a {
+    color: blue;
+    }
+.translationimportstatusNEEDS_INFORMATION,
+.translationimportstatusNEEDS_INFORMATION a {
+    color: maroon;
+    }
+
+
+.registry-stat {
+    /* default */
+    }
+.distromirrorstatusUP,
+.distromirrorstatusONEHOURBEHIND,
+.distromirrorstatusTWOHOURSBEHIND,
+.distromirrorstatusFOURHOURSBEHIND,
+.distromirrorstatusSIXHOURSBEHIND,
+.distromirrorstatusONEDAYBEHIND {
+    color: #f60;
+    }
+.distromirrorstatusTWODAYSBEHIND,
+.distromirrorstatusONEWEEKBEHIND {
+    color: red;
+    }
+.distromirrorstatusUNKNOWN {
+    color: #bebebe;
+    }
+.buildstatusNEEDSBUILD {
+    color: gray;
+    }
+.buildstatusBUILDING {
+    color: black;
+    }
+.buildstatusFULLYBUILT {
+    color: green;
+    }
+.buildstatusFAILEDTOBUILD,
+.buildstatusMANUALDEPWAIT,
+.buildstatusCHROOTWAIT,
+.buildstatusSUPERSEDED,
+.buildstatusFAILEDTOUPLOAD {
+    color: red;
+    }
+
+
 .launchpad-gold {
     color: #F8C300;
     }
-.registry-stat {
+pre.changelog, table.diff,
+.bug-comment, .bug-activity, .codereviewcomment {
+    font-size: 116%;
+    font-family: monospace;
+    }
+.cloud-size-smallest {
+    font-size: 77%;
+    }
+.cloud-size-small {
+    font-size: 85%;
+    }
+.cloud-size-medium {
+    font-size: 131%;
+    }
+.cloud-size-large {
+    font-size: 167%;
+    }
+.cloud-size-largest {
+    font-size: 197%;
+    }
+.cloud-dark {
+    color: #00f;
+    }
+.cloud-medium {
+    color: #7878ff;
+    }
+.cloud-light {
+    color: #b8b8ff;
     }
 
 
@@ -1993,113 +2333,6 @@ ul.latest-ppa-updates li.BUILDING {
 /* ====
    Code
 */
-.branchstatusMATURE, .branchstatusMATURE a {
-    color: #090;
-    }
-.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a {
-    color: #900;
-    }
-.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {
-    color: #930;
-    }
-.branchstatusMERGED, .branchstatusMERGED a {
-    color: #666;
-    }
-.branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #666;
-    }
-.branchstatusNEW, .branchstatusNEW a {
-    color: black;
-    }
-
-.voteAPPROVE {
-    color: green;
-    }
-.voteNEEDS_FIXING {
-    color: #930;
-    }
-.voteDISAPPROVE {
-    color: red;
-    }
-.voteRESUBMIT {
-    color: red;
-    }
-.voteABSTAIN {
-    color: #bebebe;
-    }
-.votePENDING {
-    color: #f60;
-    }
-
-.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a {
-    color: black;
-    }
-.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a {
-    color: #f60;
-    }
-.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a {
-    color: green;
-    }
-.mergestatusREJECTED, .mergestatusREJECTED a {
-    color: red;
-    }
-.mergestatusMERGED, .mergestatusMERGED a {
-    color: green;
-    }
-.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a {
-    color: red;
-    }
-.mergestatusQUEUED, .mergestatusQUEUED a {
-    color: black;
-    }
-.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a {
-    color: #bebebe;
-    }
-
-.codeimportNEW {
-    color: #930;
-    }
-.codeimportINVALID {
-    color: red;
-    }
-.codeimportREVIEWED {
-    color: green;
-    }
-.codeimportSUSPENDED {
-    color: red;
-    }
-.codeimportFAILING {
-    color: red;
-    }
-
-.distromirrorstatusUP {
-    color: green;
-    }
-.distromirrorstatusONEHOURBEHIND {
-    color: green;
-    }
-.distromirrorstatusTWOHOURSBEHIND {
-    color: green;
-    }
-.distromirrorstatusFOURHOURSBEHIND {
-    color: green;
-    }
-.distromirrorstatusSIXHOURSBEHIND {
-    color: #f60;
-    }
-.distromirrorstatusONEDAYBEHIND {
-    color: #f60;
-    }
-.distromirrorstatusTWODAYSBEHIND {
-    color: red;
-    }
-.distromirrorstatusONEWEEKBEHIND {
-    color: red;
-    }
-.distromirrorstatusUNKNOWN {
-    color: #bebebe;
-    }
-
 table.code {
     margin-bottom: 1em;
     }
@@ -2115,35 +2348,6 @@ table.code th, table.code td {
 /* ============
    Translations
 */
-
-.translationimportstatusAPPROVED,
-.translationimportstatusAPPROVED a {
-    color: #050;
-    }
-.translationimportstatusIMPORTED,
-.translationimportstatusIMPORTED a {
-    color: green;
-    }
-.translationimportstatusDELETED,
-.translationimportstatusDELETED a {
-    color: black;
-    }
-.translationimportstatusFAILED,
-.translationimportstatusFAILED a {
-    color: red;
-    }
-.translationimportstatusNEEDS_REVIEW,
-.translationimportstatusNEEDS_REVIEW a {
-    color: #f60;
-    }
-.translationimportstatusBLOCKED,
-.translationimportstatusBLOCKED a {
-    color: blue;
-    }
-.translationimportstatusNEEDS_INFORMATION,
-.translationimportstatusNEEDS_INFORMATION a {
-    color: maroon;
-    }
 
 /* ==== Translations hand-made forms ==== */
 
