@@ -8,10 +8,10 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
+
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.testing import ANONYMOUS, login
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):

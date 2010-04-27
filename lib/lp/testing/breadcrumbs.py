@@ -8,10 +8,12 @@ from zope.component import ComponentLookupError, getMultiAdapter
 
 from canonical.lazr.testing.menus import make_fake_request
 from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.webapp.publisher import RootObject
+from canonical.launchpad.webapp.publisher import canonical_url, RootObject
 from canonical.testing import DatabaseFunctionalLayer
+
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
+from lp.testing.publication import test_traverse
 
 
 class BaseBreadcrumbTestCase(TestCaseWithFactory):
@@ -23,8 +25,36 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
         super(BaseBreadcrumbTestCase, self).setUp()
         self.root = RootObject()
 
+    def assertBreadcrumbs(self, obj, expected):
+        """Assert that the breadcrumbs for obj match the expected values.
+
+        :param expected: A list of tuples containing (text, url) pairs.
+        """
+        crumbs = self.getBreadcrumbsForObject(obj)
+        self.assertEqual(
+            expected,
+            [(crumb.text, crumb.url) for crumb in crumbs])
+
+    def assertBreadcrumbTexts(self, obj, expected):
+        """The text of the breadcrumbs for obj match the expected values."""
+        crumbs = self.getBreadcrumbsForObject(obj)
+        self.assertEqual(expected, [crumb.text for crumb in crumbs])
+
+    def assertBreadcrumbUrls(self, obj, expected):
+        """The urls of the breadcrumbs for obj match the expected values."""
+        crumbs = self.getBreadcrumbsForObject(obj)
+        self.assertEqual(expected, [crumb.url for crumb in crumbs])
+
     def getBreadcrumbsForObject(self, obj):
-        view = create_initialized_view(obj, name='+hierarchy')
+        """Get the breadcrumbs for the specified object.
+
+        Traverse to the canonical_url of the object, and use the request from
+        that to feed into the initialized hierarchy view so we get the
+        traversed objects.
+        """
+        url = canonical_url(obj)
+        obj, view, request = test_traverse(url)
+        view = create_initialized_view(obj, '+hierarchy', request=request)
         return view.items
 
     def _getHierarchyView(self, url, traversed_objects):

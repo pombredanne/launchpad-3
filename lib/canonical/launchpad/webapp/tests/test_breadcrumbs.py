@@ -13,9 +13,8 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
 from lp.testing import login, TestCase
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class Cookbook:
@@ -52,9 +51,7 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         self.product_url = canonical_url(self.product)
 
     def test_default_page(self):
-        urls = self._getBreadcrumbsURLs(
-            self.product_url, [self.root, self.product])
-        self.assertEquals(urls, [self.product_url])
+        self.assertBreadcrumbUrls(self.product, [self.product_url])
 
     def test_non_default_page(self):
         downloads_url = "%s/+download" % self.product_url

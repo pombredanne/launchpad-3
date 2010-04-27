@@ -6,8 +6,8 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
+
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(

@@ -8,11 +8,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
+
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.browser.archivesubscription import PersonalArchiveSubscription
 from lp.testing import login, login_person
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestDistroArchSeriesBreadcrumb(BaseBreadcrumbTestCase):

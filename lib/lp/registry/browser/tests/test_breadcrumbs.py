@@ -9,8 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
+
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestDistroseriesBreadcrumb(BaseBreadcrumbTestCase):

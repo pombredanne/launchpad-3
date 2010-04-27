@@ -5,10 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing.publication import test_traverse
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
 class TestCodeImportMachineBreadcrumb(BaseBreadcrumbTestCase):
@@ -16,11 +13,12 @@ class TestCodeImportMachineBreadcrumb(BaseBreadcrumbTestCase):
 
     def test_machine(self):
         machine = self.factory.makeCodeImportMachine(hostname='apollo')
-        import pdb; pdb.set_trace()
-        url = canonical_url(machine)
-        obj, request = test_traverse(url)
-        crumbs = self.getBreadcrumbsForObject(machine)
-
+        expected = [
+            ('Code Import System', 'http://code.launchpad.dev/+code-imports'),
+            ('Machines', 'http://code.launchpad.dev/+code-imports/+machines'),
+            ('apollo',
+             'http://code.launchpad.dev/+code-imports/+machines/apollo')]
+        self.assertBreadcrumbs(machine, expected)
 
 
 def test_suite():

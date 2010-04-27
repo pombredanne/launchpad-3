@@ -9,10 +9,9 @@ from canonical.lazr.utils import smartquote
 
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tests.breadcrumbs import (
-    BaseBreadcrumbTestCase)
 
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.translations.interfaces.productserieslanguage import (
