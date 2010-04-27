@@ -53,8 +53,7 @@ class IRecipesForPerson(Interface):
 
 
 class RecipesForPersonBreadcrumb(Breadcrumb):
-    """A Breadcrumb that will handle the "Recipes" link for recipe breadcrumbs.
-    """
+    """A Breadcrumb to handle the "Recipes" link for recipe breadcrumbs."""
 
     rootsite = 'code'
     text = 'Recipes'
@@ -287,7 +286,7 @@ class RecipeTextValidatorMixin:
     def validate(self, data):
         try:
             parser = RecipeParser(data['recipe_text'])
-            recipe_text = parser.parse()
+            parser.parse()
         except RecipeParseError:
             self.setFieldError(
                 'recipe_text',
