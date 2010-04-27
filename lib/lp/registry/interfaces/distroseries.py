@@ -53,7 +53,6 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
 
 
-
 class DistroSeriesNameField(ContentNameField):
     """A class to ensure `IDistroSeries` has unique names."""
     errormessage = _("%s is already in use by another series.")
@@ -275,8 +274,8 @@ class IDistroSeriesPublic(
         title=_('Request a full language pack export'), required=True,
         description=_('''
             Whether next language pack generation will be a full export. This
-            is useful when update packs are too big and want to merge all
-            those changes in the base pack.
+            information is useful when update packs are too big and want to
+            merge all those changes in the base pack.
             '''))
 
     last_full_language_pack_exported = Object(

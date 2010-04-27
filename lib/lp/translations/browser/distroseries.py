@@ -124,6 +124,9 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
 
     @property
     def have_latest_full_pack(self):
+        """Checks if this distribution series has a full language pack newer
+        than the current one."""
+
         current = self.context.language_pack_base
         latest = self.context.last_full_language_pack_exported
         if (current is None or
@@ -135,6 +138,9 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
 
     @property
     def have_latest_delta_pack(self):
+        """Checks if this distribution series has a delta language pack newer
+        than the current one."""
+
         current = self.context.language_pack_delta
         latest = self.context.last_delta_language_pack_exported
         if (current is None or
