@@ -1,7 +1,9 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.5
+# XXX: Nasty hack to make sure the default python is used when
+# building/running.  Specially useful for source deps like pygettextpo.
+PYTHON_VERSION:=$(shell python -c 'import sys; print ".".join(["%d" % n for n in sys.version_info[:2]])')
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
