@@ -38,10 +38,10 @@
       </tal:devmode>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
-                  'lp.code.branchmergeproposal.diff', function(Y) {
+                  'code.branchmergeproposal.popupdiff', function(Y) {
             Y.bugs.setup_bugtask_index();
             Y.on('load', function(e) {
-              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+              Y.code.branchmergeproposal.popupdiff.connect_diff_links();
             }, window);
         });
       </script>
@@ -185,6 +185,7 @@
                       id="edit-tags-cancel" style="display: none"
                       type="button">Cancel</button>
            </form>
+           <a href="/+help/tag-help.html" target="help" class="icon"><img src="https://edge.launchpad.net/@@/maybe" alt="help" /></a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: ('tags-container ' +
@@ -193,6 +194,7 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
+            <a href="/+help/tag-help.html" target="help" class="icon"><img src="https://edge.launchpad.net/@@/maybe" alt="help" /></a>
           </div>
 
         <div class="clearfix"></div>
