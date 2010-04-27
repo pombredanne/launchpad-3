@@ -17,7 +17,7 @@ XMLRPC instance.
     ...     private_root.codehosting)
     True
 
-The CodeHosting view provides the ICodehostingAPI XML-RPC API:
+The CodehostingAPI view provides the ICodehostingAPI XML-RPC API:
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codehosting import ICodehostingAPI
