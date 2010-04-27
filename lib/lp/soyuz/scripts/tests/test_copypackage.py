@@ -2498,9 +2498,11 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
         test1 = self.factory.makeArchive(
-            owner=joe, purpose=ArchivePurpose.PPA, name='test1')
+            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
+            name='test1')
         test2 = self.factory.makeArchive(
-            owner=joe, purpose=ArchivePurpose.PPA, name='test2')
+            distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
+            name='test2')
         test1_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-1',
             distroseries=warty, archive=joe.archive,
