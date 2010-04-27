@@ -43,6 +43,11 @@ class BugSupervisorEditView(LaunchpadEditFormView):
         """The page title."""
         return self.label
 
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {BugSupervisorEditSchema: self.context}
+
     @action('Change', name='change')
     def change_action(self, action, data):
         """Redirect to the target page with a success message."""
