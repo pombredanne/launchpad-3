@@ -32,7 +32,7 @@ class TestingServer(LaunchpadInternalServer):
         an in-memory XML-RPC client and backed onto a LocalTransport.
         """
         frontend = InMemoryFrontend()
-        branchfs = frontend.getFilesystemEndpoint()
+        branchfs = frontend.getCodehostingEndpoint()
         branch = frontend.getLaunchpadObjectFactory().makeAnyBranch()
         self._branch_path = branch.unique_name
         # XXX: JonathanLange bug=276972 2008-10-07: This should back on to a
