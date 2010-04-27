@@ -2497,15 +2497,15 @@ class CopyPackageTestCase(TestCaseWithFactory):
         warty = ubuntu.getSeries('warty')
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
-        test1 = self.factory.makeArchive(
+        dest_ppa = self.factory.makeArchive(
             distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
             name='test1')
-        test2 = self.factory.makeArchive(
+        src_ppa = self.factory.makeArchive(
             distribution=ubuntu, owner=joe, purpose=ArchivePurpose.PPA,
             name='test2')
         test1_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-1',
-            distroseries=warty, archive=joe.archive,
+            distroseries=warty, archive=dest_ppa,
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED,
             section='misc')
@@ -2514,7 +2514,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test1_source.sourcepackagerelease.addFile(test1_tar)
         test2_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-2',
-            distroseries=warty, archive=test2,
+            distroseries=warty, archive=src_ppa,
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED,
             section='misc')
@@ -2524,7 +2524,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
 
-        checker = CopyChecker(test1, include_binaries=False)
+        checker = CopyChecker(dest_ppa, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
             "test-source_1.0.orig.tar.gz already exists in destination "
