@@ -34,7 +34,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.translations.utilities.rosettastats import RosettaStats
@@ -792,7 +791,6 @@ class POFile(SQLBase, POFileMixIn):
 
         # A POT set has "new" suggestions if there is a non current
         # TranslationMessage newer than the current reviewed one.
-        store = Store.of(self)
         query = (
             """POTMsgSet.id IN (SELECT DISTINCT TranslationMessage.potmsgset
                  FROM TranslationMessage, TranslationTemplateItem, POTMsgSet
@@ -1026,10 +1024,6 @@ class POFile(SQLBase, POFileMixIn):
         entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)
-        librarian_client = getUtility(ILibrarianClient)
-
-        import_file = librarian_client.getFileByAlias(
-            entry_to_import.content.id)
 
         # While importing a file, there are two kinds of errors:
         #
@@ -1125,7 +1119,6 @@ class POFile(SQLBase, POFileMixIn):
             # There were some errors with translations.
             errorsdetails = ''
             for error in errors:
-                pofile = error['pofile']
                 potmsgset = error['potmsgset']
                 pomessage = error['pomessage']
                 error_message = error['error-message']
@@ -1706,6 +1699,47 @@ class POFileToTranslationFileDataAdapter:
 
         return self._pofile.language.code
 
+    def _isWesternPluralForm(self, number, expression):
+        # Western style is nplurals=2;plural=n!=1.
+        if number != 2:
+            return False
+        if expression is None:
+            return False
+        # Normalize: Remove spaces.
+        expression = expression.replace(' ', '')
+        # Normalize: Remove enclosing brackets.
+        expression = expression.strip('()')
+        return expression in ('n!=1', '1!=n', 'n>1', '1<n')
+
+    def _updateHeaderPluralInfo(self, header):
+        header_nplurals = header.number_plural_forms
+        database_nplurals = self._pofile.language.pluralforms
+        # These checks are here to catch cases where the plural information
+        # from the header might be more acurate than what we have in the
+        # database. This is usually the case when the number of plural forms
+        # has grown but not if it's the standard western form.
+        # See bug 565294
+        if header_nplurals is not None and database_nplurals is not None:
+            if header_nplurals > database_nplurals:
+                is_western = self._isWesternPluralForm(
+                    header_nplurals, header.plural_form_expression)
+                if not is_western:
+                    # Use existing information from the header.
+                    return
+        if database_nplurals is None:
+            # In all other cases we never use the plural info from the header.
+            header.number_plural_forms = None
+            header.plural_form_expression = None
+        else:
+            # We have pluralforms information for this language so we
+            # update the header to be sure that we use the language
+            # information from our database instead of using the one
+            # that we got from upstream. We check this information so
+            # we are sure it's valid.
+            header.number_plural_forms = self._pofile.language.pluralforms
+            header.plural_form_expression = (
+                self._pofile.language.pluralexpression)
+
     @cachedproperty
     def header(self):
         """See `ITranslationFileData`."""
@@ -1713,28 +1747,13 @@ class POFileToTranslationFileDataAdapter:
         translation_header = self._pofile.getHeader()
         # Update default fields based on its values in the template header.
         translation_header.updateFromTemplateHeader(template_header)
-        date_reviewed = None
         translation_header.translation_revision_date = (
             self._pofile.date_changed)
 
         translation_header.comment = self._pofile.topcomment
 
         if self._pofile.potemplate.hasPluralMessage():
-            number_plural_forms = None
-            plural_form_expression = None
-            if self._pofile.language.pluralforms is not None:
-                # We have pluralforms information for this language so we
-                # update the header to be sure that we use the language
-                # information from our database instead of use the one
-                # that we got from upstream. We check this information so
-                # we are sure it's valid.
-                number_plural_forms = self._pofile.language.pluralforms
-                plural_form_expression = (
-                    self._pofile.language.pluralexpression)
-
-            translation_header.number_plural_forms = number_plural_forms
-            translation_header.plural_form_expression = plural_form_expression
-
+            self._updateHeaderPluralInfo(translation_header)
         if (self._pofile.lasttranslator is not None):
             email = self._pofile.lasttranslator.safe_email_or_blank
             if not email:
