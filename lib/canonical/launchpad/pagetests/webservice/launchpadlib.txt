@@ -102,17 +102,10 @@ Now create a Launchpad object and observe how it populates the cache.
     ...
 
 Create a second Launchpad object, and the cached documents will be
-used to make conditional HTTP requests. The conditions will succeed,
-and launchpadlib will not have to download the documents again.
+used instead of new HTTP requests being used.
 
     >>> launchpad = Launchpad(
     ...     credentials, 'http://api.launchpad.dev/', cache=cache)
-    send: 'GET /1.0/ ...accept: application/vnd.sun.wadl+xml...'
-    reply: 'HTTP/1.0 304 Not Modified\n'
-    ...
-    send: 'GET /1.0/ ...accept: application/json...'
-    reply: 'HTTP/1.0 304 Not Modified\n'
-    ...
 
 Cleanup.
 
