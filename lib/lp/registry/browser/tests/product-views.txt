@@ -458,6 +458,7 @@ officially supports.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
+    >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner
     >>> login_person(owner)
     >>> question = factory.makeQuestion(target=product)
