@@ -4,6 +4,6 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE SourcePackageRecipe
-   ADD COLUMN archive integer REFERENCES Archive;
+   ADD COLUMN daily_build_archive integer REFERENCES Archive;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);

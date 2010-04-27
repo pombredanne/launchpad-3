@@ -61,8 +61,8 @@ class SourcePackageRecipe(Storm):
 
     id = Int(primary=True)
 
-    archive_id = Int(name='archive', allow_none=True)
-    archive = Reference(archive_id, 'Archive.id')
+    daily_build_archive_id = Int(name='daily_build_archive', allow_none=True)
+    daily_build_archive = Reference(daily_build_archive_id, 'Archive.id')
 
     date_created = UtcDateTimeCol(notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True)

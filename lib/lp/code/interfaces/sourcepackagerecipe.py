@@ -75,8 +75,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     debianized source tree.
     """
 
-    archive = Reference(
-        IArchive, title=_("The archive to build into."))
+    daily_build_archive = Reference(
+        IArchive, title=_("The archive to use for daily builds."))
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
