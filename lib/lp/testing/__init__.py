@@ -519,6 +519,9 @@ class TestCaseWithFactory(TestCase):
 
         :param direct_database: If true, translate branch locations by
             directly querying the database, not the internal XML-RPC server.
+            If the test is in an AppServerLayer, you probably want to pass
+            direct_database=False and if not you probably want to pass
+            direct_database=True.
         """
         if self._use_bzr_branch_called:
             if direct_database != self.direct_database_server:
