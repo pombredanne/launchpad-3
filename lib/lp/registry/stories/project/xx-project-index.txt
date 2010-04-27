@@ -150,6 +150,12 @@ Inactive products are not included in that list, though.
     # (i.e. login()) and bypass the security proxy.
     >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> login('admin@canonical.com')
+    >>> unlink_source_packages(firefox)
+    >>> logout()
     >>> firefox.active = False
     >>> firefox.syncUpdate()
 
@@ -163,9 +169,9 @@ Inactive products are not included in that list, though.
     >>> firefox.syncUpdate()
 
 
-== Project bug subscriptions ==
+== Project Group bug subscriptions ==
 
-To receive email notifications about bugs pertaining to a project, we
+To receive email notifications about bugs pertaining to a project group, we
 can create structural bug subscriptions.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')
