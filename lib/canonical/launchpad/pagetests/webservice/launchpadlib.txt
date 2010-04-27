@@ -51,26 +51,6 @@ scheme which does not work in the test environment.
     >>> launchpad = Launchpad(credentials, 'http://api.launchpad.dev/')
     >>> print launchpad.me.name
     no-priv
-<<<<<<< TREE
-
-    >>> lp_anon = Launchpad.login_anonymously('launchpadlib test',
-    ...                                       'http://api.launchpad.dev/')
-
-The Launchpad object for the anonymous user can be used to access
-public information.
-
-    >>> apache_results = lp_anon.project_groups.search(text="Apache")
-    >>> print apache_results[0].name
-    apache
-
-But trying to access information that requires a logged in user
-results in an error.
-
-    >>> print lp_anon.me.name
-    Traceback (most recent call last):
-      ...
-    HTTPError: HTTP Error 401: Unauthorized...
-=======
 
 Anonymous access
 ================
@@ -139,4 +119,4 @@ Cleanup.
     >>> import shutil
     >>> shutil.rmtree(cache)
     >>> httplib2.debuglevel = old_debug_level
->>>>>>> MERGE-SOURCE
+
