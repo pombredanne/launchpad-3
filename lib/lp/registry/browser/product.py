@@ -44,7 +44,10 @@ __all__ = [
 
 
 from cgi import escape
+from datetime import datetime, timedelta
 from operator import attrgetter
+
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -1050,6 +1053,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
     suggestions = None
     max_suggestions = 8
     other_package = object()
+    not_packaged = object()
     initial_focus_widget = None
 
     @cachedproperty
@@ -1068,8 +1072,10 @@ class ProductPackagesPortletView(LaunchpadFormView):
             return True
         if self.user is None or config.launchpad.is_lpnet:
             return False
-        else:
-            return True
+        date_next_suggest_packaging = self.context.date_next_suggest_packaging
+        return (
+            date_next_suggest_packaging is None
+            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
 
     @property
     def initial_values(self):
@@ -1102,15 +1108,21 @@ class ProductPackagesPortletView(LaunchpadFormView):
         vocab_terms.append(
             SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
+        # Add an option to represent that the project is not packaged in
+        # Ubuntu.
+        description = 'This project is not packaged in Ubuntu'
+        vocab_terms.append(
+            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        series_display_name = ubuntu.currentseries.displayname
         self.form_fields = form.Fields(
             Choice(__name__=self.package_field_name,
-                   title=_('Ubuntu %s packages' %
-                           ubuntu.currentseries.displayname),
+                   title=_('Ubuntu %s packages') % series_display_name,
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Set Ubuntu package information'), name='link')
+    @action(_('Set Ubuntu Package Information'), name='link')
     def link(self, action, data):
         product = self.context
         dsp = data.get(self.package_field_name)
@@ -1119,6 +1131,11 @@ class ProductPackagesPortletView(LaunchpadFormView):
             # The user wants to link an alternate package to this project.
             self.next_url = canonical_url(
                 product_series, view_name="+ubuntupkg")
+            return
+        if dsp is self.not_packaged:
+            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
+            self.context.date_next_suggest_packaging = year_from_now
+            self.next_url = self.request.getURL()
             return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         product_series.setPackaging(ubuntu.currentseries,
