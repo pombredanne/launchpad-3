@@ -340,8 +340,7 @@ class CopyChecker:
                     "binaries conflicting with the existing ones")
 
         # Check if files with the same filename already exist in the target
-        destination_source_conflicts = self.archive.getPublishedSources(
-            name=source.sourcepackagerelease.name)
+        destination_source_conflicts = series.getAllPublishedSources()
         file_conflicts = {}
         for source_pub in destination_source_conflicts:
             for file_alias in source_pub.sourcepackagerelease.files:

@@ -2456,7 +2456,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         warty = ubuntu.getSeries('warty')
-        hoary = ubuntu.getSeries('hoary')
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
 
@@ -2488,6 +2487,48 @@ class CopyPackageTestCase(TestCaseWithFactory):
             "archive with different contents.",
             checker.checkCopy, proposed_source, warty,
             PackagePublishingPocket.UPDATES)
+
+    def testCopySourceWithConflictingFilesInPPAs(self):
+        """We can copy source if the source files match, both in name and
+        contents. We can't if they don't.
+        """
+        joe = self.factory.makePerson(email='joe@example.com')
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
+        test_publisher.addFakeChroots(warty)
+        test1 = self.factory.makeArchive(
+            owner=joe, purpose=ArchivePurpose.PPA, name='test1')
+        test2 = self.factory.makeArchive(
+            owner=joe, purpose=ArchivePurpose.PPA, name='test2')
+        test1_source = test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-1',
+            distroseries=warty, archive=joe.archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='misc')
+        test1_tar = test_publisher.addMockFile(
+            'test-source_1.0.orig.tar.gz', filecontent='aaabbbccc')
+        test1_source.sourcepackagerelease.addFile(test1_tar)
+        test2_source = test_publisher.getPubSource(
+            sourcename='test-source', version='1.0-2',
+            distroseries=warty, archive=test2,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED,
+            section='misc')
+        test2_tar = test_publisher.addMockFile(
+            'test-source_1.0.orig.tar.gz', filecontent='zzzyyyxxx')
+        test2_source.sourcepackagerelease.addFile(test2_tar)
+        # Commit to ensure librarian files are written.
+        self.layer.txn.commit()
+
+        checker = CopyChecker(test1, include_binaries=False)
+        self.assertRaisesWithContent(
+            CannotCopy,
+            "test-source_1.0.orig.tar.gz already exists in destination "
+            "archive with different contents.",
+            checker.checkCopy, test2_source, warty,
+            PackagePublishingPocket.RELEASE)
 
 
 def test_suite():
