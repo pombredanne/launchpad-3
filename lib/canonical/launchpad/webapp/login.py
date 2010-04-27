@@ -318,6 +318,9 @@ class OpenIDCallbackView(OpenIDLogin):
                 email_address, full_name = self._getEmailAddressAndFullName()
                 email = email_set.getByEmail(email_address)
                 if email is None:
+                    # We got an OpenID response containing a positive
+                    # assertion, but we don't have an account for the
+                    # identifier or for the email address.  We'll create one.
                     account = self._createAccount(
                         identifier, email_address, full_name)
                 else:
