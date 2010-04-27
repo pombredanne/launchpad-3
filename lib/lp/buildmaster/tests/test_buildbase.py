@@ -86,7 +86,6 @@ class TestProcessUpload(TestCaseWithFactory):
         """
         logger = BufferLogger()
         self.build_base.processUpload(self.leaf,
-            os.path.join(self.queue_location, "mylog"),
             self.queue_location, logger)
 
         # Directory tree in place.
@@ -95,63 +94,6 @@ class TestProcessUpload(TestCaseWithFactory):
 
         # Just to check if local assertion is working as expect.
         self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
-
-
-class TestBuildBaseWithDatabase(TestCaseWithFactory):
-    """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_getUploadLogContent_nolog(self):
-        """If there is no log file there, a string explanation is returned.
-        """
-        self.useTempDir()
-        build_base = BuildBase()
-        self.assertEquals('Could not find upload log file',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploadLogContent_only_dir(self):
-        """If there is a directory but no log file, expect the error string,
-        not an exception."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        build_base = BuildBase()
-        self.assertEquals('Could not find upload log file',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploadLogContent_readsfile(self):
-        """If there is a log file, return its contents."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        with open('accepted/myleaf/uploader.log', 'w') as f:
-            f.write('foo')
-        build_base = BuildBase()
-        self.assertEquals('foo',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploaderCommand(self):
-        build_base = BuildBase()
-        upload_leaf = self.factory.getUniqueString('upload-leaf')
-        build_base.distroseries = self.factory.makeDistroSeries()
-        build_base.distribution = build_base.distroseries.distribution
-        build_base.pocket = self.factory.getAnyPocket()
-        build_base.id = self.factory.getUniqueInteger()
-        build_base.policy_name = self.factory.getUniqueString('policy-name')
-        config_args = list(config.builddmaster.uploader.split())
-        log_file = self.factory.getUniqueString('logfile')
-        config_args.extend(
-            ['--log-file', log_file,
-             '-d', build_base.distribution.name,
-             '-s', (build_base.distroseries.name
-                    + pocketsuffix[build_base.pocket]),
-             '-b', str(build_base.id),
-             '-J', upload_leaf,
-             '--context=%s' % build_base.policy_name,
-             os.path.abspath(config.builddmaster.root),
-             ])
-        uploader_command = build_base.getUploaderCommand(
-            upload_leaf, log_file)
-        self.assertEqual(config_args, uploader_command)
 
 
 class TestBuildBaseHandleStatus(TestCaseWithFactory):
