@@ -155,7 +155,8 @@ judge the licenses.
     ['license_reviewed', 'license_approved', 'active', 'private_bugs',
      'reviewer_whiteboard']
 
-The reviewer can deactivate a project if he concludes it is bogus.
+The reviewer cannot deactivate a project if it is linked
+to a source package.
 
     >>> firefox.active
     True
@@ -168,10 +169,27 @@ The reviewer can deactivate a project if he concludes it is bogus.
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
+    [...This project cannot be deactivated since it is linked to
+    ...source packages</a>.']
+
+The reviewer can deactivate a project if he concludes it is bogus.
+
+    >>> product = factory.makeProduct(name='tomato', title='Tomato')
+    >>> product.active
+    True
+
+    >>> form = {
+    ...     'field.active.used': '', # unchecked
+    ...     'field.reviewer_whiteboard': 'Looks bogus',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name='+review-license', form=form)
+    >>> view.errors
     []
-    >>> firefox.active
+    >>> product.active
     False
-    >>> print firefox.reviewer_whiteboard
+    >>> print product.reviewer_whiteboard
     Looks bogus
 
 The reviewer can enable privileged features like private bugs. He can
@@ -440,7 +458,6 @@ officially supports.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
-    >>> product = factory.makeProduct(name='tomato', title='Tomato')
     >>> owner = product.owner
     >>> login_person(owner)
     >>> question = factory.makeQuestion(target=product)

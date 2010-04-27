@@ -49,6 +49,10 @@ Let's create a test project.
     >>> print view.suggestions
     []
 
+The view does not set focus to its form otherwise it will cause the page to scroll.
+    >>> view.focusedElementScript()
+    ''
+
 No distribution source packages match so the user is shown an
 appropriate message asking to suggest a match.
 

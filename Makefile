@@ -333,6 +333,7 @@ clean: clean_js
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
+	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \

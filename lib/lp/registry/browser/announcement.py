@@ -182,7 +182,7 @@ class AnnouncementRetargetForm(Interface):
     target = Choice(
         title=_("For"),
         description=_("The project where this announcement is being made."),
-        required=True, vocabulary='DistributionOrProductOrProject')
+        required=True, vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):

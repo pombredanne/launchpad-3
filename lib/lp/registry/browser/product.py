@@ -72,6 +72,7 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -428,7 +429,8 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
-class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
+                          HasRecipesMenuMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -454,6 +456,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'branchvisibility',
         'rdf',
         'branding',
+        'view_recipes',
         ]
 
     def top_contributors(self):
@@ -1051,6 +1054,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
     max_suggestions = 8
     other_package = object()
     not_packaged = object()
+    initial_focus_widget = None
 
     @cachedproperty
     def sourcepackages(self):
@@ -1393,7 +1397,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class EditPrivateBugsMixin:
+class ProductValidationMixin:
 
     def validate_private_bugs(self, data):
         """Perform validation for the private bugs setting."""
@@ -1404,8 +1408,20 @@ class EditPrivateBugsMixin:
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
+    def validate_deactivation(self, data):
+        """Verify whether a product can be safely deactivated."""
+        if data['active'] == False and self.context.active == True:
+            if len(self.context.sourcepackages) > 0:
+                self.setFieldError('active',
+                    structured(
+                        'This project cannot be deactivated since it is '
+                        'linked to one or more '
+                        '<a href="%s">source packages</a>.',
+                        canonical_url(self.context, view_name='+packages')))
 
-class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
+
+class ProductAdminView(ProductEditView, ProductValidationMixin):
+    """View for $project/+admin"""
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
@@ -1460,6 +1476,7 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     def validate(self, data):
         """See `LaunchpadFormView`."""
         self.validate_private_bugs(data)
+        self.validate_deactivation(data)
 
     @property
     def cancel_url(self):
@@ -1468,7 +1485,7 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
 
 
 class ProductReviewLicenseView(ReturnToReferrerMixin,
-                               ProductEditView, EditPrivateBugsMixin):
+                               ProductEditView, ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1507,6 +1524,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
+        self.validate_deactivation(data)
 
 
 class ProductAddSeriesView(LaunchpadFormView):

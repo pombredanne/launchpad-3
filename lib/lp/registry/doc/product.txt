@@ -2,7 +2,7 @@
 
 Launchpad keeps track of the "upstream" world as well as the "distro" world.
 The anchorpiece of the "upstream" world is the Product, which is a piece of
-software. It can be part of a Project or it can be standalone.
+software. It can be part of a ProjectGroup or it can be standalone.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -54,7 +54,7 @@ Let's call that evo from now onwards just so the tests can be clearer.
     >>> evo = p
 
 To fetch a product we use IProductSet.getByName() or IProductSet.__getitem__.
-The former will, by default, reeturn active and inactive products, while the
+The former will, by default, return active and inactive products, while the
 later returns only active ones. Both can be used to look up products by their
 aliases, though.
 
@@ -91,6 +91,9 @@ primary_translatable is nonexistent:
 
 Now, to test the active flag. If we disabled a product:
 
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(a52dec)
     >>> a52dec.active = False
 
 It should no longer be retrievable via ProductSet's __getitem__:
@@ -193,6 +196,9 @@ example.
 
 Only active products are listed as translatables.
 
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(evo)
     >>> evo.active = False
     >>> for product in productset.getTranslatables():
     ...    print product.name
@@ -542,12 +548,12 @@ the number of products returned.
 
 Only active products are returned.
 
-    >>> firefox.active = False
+    >>> evo.active = False
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(firefox)
     >>> for product in productset.getProductsWithBranches():
     ...     print product.name
-    evolution
+    firefox
     gnome-terminal
     iso-codes
     landscape
