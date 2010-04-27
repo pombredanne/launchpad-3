@@ -118,8 +118,10 @@ class BadUrlScheme(BadUrl):
 
 
 # The directories allowed directly beneath a branch directory. These are the
-# directories that Bazaar creates as part of regular operation.
-ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr')
+# directories that Bazaar creates as part of regular operation. We support
+# only two numbered backups to avoid indefinite space usage.
+ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr', 'backup.bzr.~1~',
+	'backup.bzr.~2~')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
