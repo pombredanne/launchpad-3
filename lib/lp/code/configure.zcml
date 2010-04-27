@@ -31,7 +31,7 @@
 
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
-    <require 
+    <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferenceEdit"/>
   </class>
@@ -969,6 +969,7 @@
      component="lp.code.model.sourcepackagerecipe.SourcePackageRecipe"
      provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
     <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+
   </securedutility>
 
   <class
@@ -988,6 +989,7 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <allow interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
   </class>
 
   <securedutility
@@ -1012,7 +1014,15 @@
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe build_daily"/>
+       set_attributes="
+           build_daily
+           builder_recipe
+           date_last_modified
+           description
+           distroseries
+           name
+           owner
+           sourcepackagename"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

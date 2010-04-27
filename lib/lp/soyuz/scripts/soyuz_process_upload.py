@@ -11,10 +11,10 @@ import os
 from lp.archiveuploader.uploadpolicy import findPolicyByOptions
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 
 
-class ProcessUpload(LaunchpadScript):
+class ProcessUpload(LaunchpadCronScript):
     """`LaunchpadScript` wrapper for `UploadProcessor`."""
 
     def add_my_options(self):

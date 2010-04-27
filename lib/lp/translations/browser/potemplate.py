@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=F0401
 
 """Browser code for PO templates."""
 
@@ -519,6 +520,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
+    PRIORITY_MIN_VALUE = 0
+    PRIORITY_MAX_VALUE = 100000
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -537,6 +540,19 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
             # care about regarding the date of last update.
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
+
+    def validate(self, data):
+        priority = data.get('priority')
+        if priority is None:
+            return
+
+        if (priority < self.PRIORITY_MIN_VALUE or
+            priority > self.PRIORITY_MAX_VALUE):
+            self.setFieldError(
+                'priority',
+                'The priority value must be between %s and %s.' % (
+                self.PRIORITY_MIN_VALUE, self.PRIORITY_MAX_VALUE))
+            return
 
     @property
     def _return_attribute_name(self):
@@ -578,6 +594,7 @@ class POTemplateAdminView(POTemplateEditView):
             return
 
     def validate(self, data):
+        super(POTemplateAdminView, self).validate(data)
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
         productseries = data.get('productseries')
