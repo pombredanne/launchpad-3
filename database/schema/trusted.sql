@@ -47,7 +47,8 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
+COMMENT ON FUNCTION null_count(anyarray) IS
+'Return the number of NULLs in the first row of the given array.';
 
 
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
@@ -114,6 +115,24 @@ $$;
 
 COMMENT ON FUNCTION update_replication_lag_cache() IS
 'Updates the DatabaseReplicationLag materialized view.';
+
+SET check_function_bodies=false; -- Handle forward references
+CREATE OR REPLACE FUNCTION update_database_table_stats() RETURNS void
+LANGUAGE sql VOLATILE SECURITY DEFINER AS
+$$
+    INSERT INTO DatabaseTableStats
+        SELECT
+            CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+            schemaname, relname, seq_scan, seq_tup_read,
+            idx_scan, idx_tup_fetch, n_tup_ins, n_tup_upd, n_tup_del,
+            n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
+            last_autovacuum, last_analyze, last_autoanalyze
+        FROM pg_catalog.pg_stat_user_tables;
+$$;
+SET check_function_bodies=true;
+
+COMMENT ON FUNCTION update_database_table_stats() IS
+'Copies rows from pg_stat_user_tables into DatabaseTableStats';
 
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
