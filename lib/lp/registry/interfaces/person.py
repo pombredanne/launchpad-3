@@ -865,6 +865,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :param sourcepackagename: The name of the sourcepackage for the recipe.
         :return: a SourcePackageRecipe.
         """
+
     @operation_parameters(name=TextLine(required=True))
     @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
     @export_read_operation()

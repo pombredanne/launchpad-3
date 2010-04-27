@@ -27,10 +27,12 @@ from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    ParticipatingPersonChoice, PublicPersonChoice
+)
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -83,12 +85,19 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
 
-    registrant = exported(Reference(
-        IPerson, title=_("The person who created this recipe"),
-        readonly=True))
-    owner = exported(Reference(
-        IPerson, title=_("The person or team who can edit this recipe"),
-        readonly=False))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The person who created this recipe."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
+
+    owner = exported(
+        ParticipatingPersonChoice(
+            title=_('Owner'),
+            required=True, readonly=False,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("The person or team who can edit this recipe.")))
+
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
