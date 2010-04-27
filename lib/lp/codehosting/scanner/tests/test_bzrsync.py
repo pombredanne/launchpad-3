@@ -69,7 +69,6 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
-        self.db_branch = self.makeDatabaseBranch()
         self.db_branch, self.bzr_tree = self.create_branch_and_tree(
             db_branch=self.makeDatabaseBranch())
         self.bzr_branch = self.bzr_tree.branch
