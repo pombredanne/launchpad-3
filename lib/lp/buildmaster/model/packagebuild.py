@@ -181,13 +181,20 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     def getLogFromSlave(self):
         """See `IPackageBuild`."""
-        return None
         return BuildBase.getLogFromSlave(self)
 
     @staticmethod
     def getUploadLogContent(root, leaf):
         """See `IPackageBuild`."""
         return BuildBase.getUploadLogContent(root, leaf)
+
+    def estimateDuration(self):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
+    def storeBuildInfo(self, librarian, slave_status):
+        """See `IPackageBuild`."""
+        return BuildBase.storeBuildInfo(self, librarian, slave_status)
 
 
 class PackageBuildDerived(BuildFarmJobDerived):

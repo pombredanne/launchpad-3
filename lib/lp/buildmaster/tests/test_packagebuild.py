@@ -91,9 +91,11 @@ class TestPackageBuild(TestPackageBuildBase):
             PackageBuild.id == self.package_build.id).one()
         self.assertEqual(self.package_build, retrieved_build)
 
-    def test_getTitle_not_implemented(self):
+    def test_unimplemented_methods(self):
         # Classes deriving from PackageBuild must provide getTitle.
         self.assertRaises(NotImplementedError, self.package_build.getTitle)
+        self.assertRaises(
+            NotImplementedError, self.package_build.estimateDuration)
 
     def test_default_values(self):
         # PackageBuild has a number of default values.

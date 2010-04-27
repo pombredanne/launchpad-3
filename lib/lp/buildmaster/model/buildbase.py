@@ -267,7 +267,7 @@ class BuildBase:
 
         # Store build information, build record was already updated during
         # the binary upload.
-        self.storeBuildInfo(librarian, slave_status)
+        self.storeBuildInfo(self, librarian, slave_status)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary
@@ -312,7 +312,7 @@ class BuildBase:
         remove Buildqueue entry.
         """
         self.buildstate = BuildStatus.FAILEDTOBUILD
-        self.storeBuildInfo(librarian, slave_status)
+        self.storeBuildInfo(self, librarian, slave_status)
         self.buildqueue_record.builder.cleanSlave()
         self.notify()
         self.buildqueue_record.destroySelf()
@@ -325,7 +325,7 @@ class BuildBase:
         entry and release builder slave for another job.
         """
         self.buildstate = BuildStatus.MANUALDEPWAIT
-        self.storeBuildInfo(librarian, slave_status)
+        self.storeBuildInfo(self, librarian, slave_status)
         logger.critical("***** %s is MANUALDEPWAIT *****"
                         % self.buildqueue_record.builder.name)
         self.buildqueue_record.builder.cleanSlave()
@@ -340,7 +340,7 @@ class BuildBase:
         and release the builder.
         """
         self.buildstate = BuildStatus.CHROOTWAIT
-        self.storeBuildInfo(librarian, slave_status)
+        self.storeBuildInfo(self, librarian, slave_status)
         logger.critical("***** %s is CHROOTWAIT *****" %
                         self.buildqueue_record.builder.name)
         self.buildqueue_record.builder.cleanSlave()
@@ -359,7 +359,7 @@ class BuildBase:
         self.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         # simply reset job
-        self.storeBuildInfo(librarian, slave_status)
+        self.storeBuildInfo(self, librarian, slave_status)
         self.buildqueue_record.reset()
 
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
@@ -372,7 +372,7 @@ class BuildBase:
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
-        self.storeBuildInfo(librarian, slave_status)
+        self.storeBuildInfo(self, librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
@@ -387,22 +387,23 @@ class BuildBase:
             'buildlog', build.buildqueue_record.getLogFileName(),
             build.is_private)
 
-    def storeBuildInfo(self, librarian, slave_status):
+    @staticmethod
+    def storeBuildInfo(build, librarian, slave_status):
         """See `IBuildBase`."""
-        self.buildlog = self.getLogFromSlave(self)
-        self.builder = self.buildqueue_record.builder
+        build.buildlog = build.getLogFromSlave(build)
+        build.builder = build.buildqueue_record.builder
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for
         # the duration spent building locally.
-        self.datebuilt = UTC_NOW
+        build.datebuilt = UTC_NOW
         # We need dynamic datetime.now() instance to be able to perform
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
-        self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
+        build.buildduration = RIGHT_NOW - build.buildqueue_record.date_started
         if slave_status.get('dependencies') is not None:
-            self.dependencies = unicode(slave_status.get('dependencies'))
+            build.dependencies = unicode(slave_status.get('dependencies'))
         else:
-            self.dependencies = None
+            build.dependencies = None
 
     def storeUploadLog(self, content):
         """See `IBuildBase`."""

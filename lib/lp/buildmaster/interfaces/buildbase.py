@@ -243,7 +243,7 @@ class IBuildBase(Interface):
     def estimateDuration():
         """Estimate the build duration."""
 
-    def storeBuildInfo(librarian, slave_status):
+    def storeBuildInfo(build, librarian, slave_status):
         """Store available information for the build job.
 
         Subclasses can override this as needed, and call it from custom status

@@ -108,11 +108,14 @@ class IPackageBuild(IBuildFarmJob):
         :return: Contents of log file or message saying no log file was found.
         """
 
-    def queueBuild(suspended=False):
-        """Create a BuildQueue entry for this build.
+    def estimateDuration():
+        """Estimate the build duration."""
 
-        :param suspended: Whether the associated `Job` instance should be
-            created in a suspended state.
+    def storeBuildInfo(librarian, slave_status):
+        """Store available information for the build job.
+
+        Derived classes can override this as needed, and call it from
+        custom status handlers, but it should not be called externally.
         """
 
 
