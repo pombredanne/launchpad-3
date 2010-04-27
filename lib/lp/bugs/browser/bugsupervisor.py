@@ -7,17 +7,30 @@ __metaclass__ = type
 
 __all__ = ['BugSupervisorEditView']
 
-
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
+from lazr.restful.interface import copy_field, use_template
+from zope.interface import Interface
 
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+
+class BugSupervisorEditSchema(Interface):
+    """Defines the fields for the edit form.
+
+    This is necessary to make an editable field for bug supervisor as it is
+    defined as read-only in the interface to prevent setting it directly.
+    """
+    use_template(IHasBugSupervisor, include=[
+        'bug_supervisor',
+        ])
+    bug_supervisor = copy_field(
+        IHasBugSupervisor['bug_supervisor'], readonly=False)
 
 class BugSupervisorEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug supervisor."""
 
-    schema = IHasBugSupervisor
+    schema = BugSupervisorEditSchema
     field_names = ['bug_supervisor']
 
     @property
