@@ -11,6 +11,7 @@ from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.publisher import RootObject
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 
 class BaseBreadcrumbTestCase(TestCaseWithFactory):
@@ -21,6 +22,10 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
     def setUp(self):
         super(BaseBreadcrumbTestCase, self).setUp()
         self.root = RootObject()
+
+    def getBreadcrumbsForObject(self, obj):
+        view = create_initialized_view(obj, name='+hierarchy')
+        return view.items
 
     def _getHierarchyView(self, url, traversed_objects):
         request = self._make_request(url, traversed_objects)
