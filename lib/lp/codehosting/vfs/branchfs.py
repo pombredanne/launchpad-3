@@ -671,7 +671,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         return deferred.addCallback(got_path_info).addErrback(log.err)
 
 
-def get_lp_server(user_id, codehosting_endpoint_url=None, branch_directory=None,
+def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
                   seen_new_branch_hook=None):
     """Create a Launchpad server.
 
@@ -686,10 +686,9 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_directory=None,
     # Get the defaults from the config.
     if codehosting_endpoint_url is None:
         codehosting_endpoint_url = config.codehosting.codehosting_endpoint
-    if branch_directory is None:
-        branch_directory = config.codehosting.mirrored_branches_root
+    if branch_url is None:
+        branch_url = config.codehosting.mirrored_branches_root
 
-    branch_url = urlutils.local_path_to_url(branch_directory)
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
     branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(

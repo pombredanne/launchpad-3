@@ -302,7 +302,7 @@ def _checked_open_pre_open_hook(transport):
 _install_checked_open_hook()
 
 
-def checked_open(validation_function, url):
+def checked_open(validation_function, url, possible_transports=None):
     """Open a branch, calling `validation_function` with any URL thus found.
 
     This is intended to be used to open a branch ensuring that it's not
@@ -312,7 +312,7 @@ def checked_open(validation_function, url):
         raise AssertionError("checked_open called recursively")
     checked_open_data.validate = validation_function
     try:
-        return Branch.open(url)
+        return Branch.open(url, possible_transports=possible_transports)
     finally:
         del checked_open_data.validate
 
@@ -332,10 +332,11 @@ def makeURLChecker(allowed_scheme):
     return checkURL
 
 
-def safe_open(allowed_scheme, url):
+def safe_open(allowed_scheme, url, possible_transports=None):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
     :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    return checked_open(makeURLChecker(allowed_scheme), url)
+    return checked_open(
+        makeURLChecker(allowed_scheme), url, possible_transports)

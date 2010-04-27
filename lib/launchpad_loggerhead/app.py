@@ -2,14 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
-import re
 import os
 import threading
 import urllib
 import urlparse
 import xmlrpclib
 
-from bzrlib import branch, errors, lru_cache, urlutils
+from bzrlib import errors, lru_cache, urlutils
 
 from loggerhead.apps import favicon_app, static_app
 from loggerhead.apps.branch import BranchWSGIApp
@@ -25,9 +24,11 @@ from paste.httpexceptions import (
 
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
-from lp.codehosting.vfs import branch_id_to_path
+    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
+from lp.codehosting.vfs import get_lp_server
+from lp.codehosting.bzrutils import safe_open
 
 robots_txt = '''\
 User-agent: *
@@ -39,16 +40,17 @@ robots_app = DataApp(robots_txt, content_type='text/plain')
 
 thread_transports = threading.local()
 
-def valid_launchpad_name(s):
-    return re.match('^[a-z0-9][a-z0-9\+\.\-]*$', s) is not None
 
+def check_fault(fault, *fault_classes):
+    """Check if 'fault's faultCode matches any of 'fault_classes'.
 
-def valid_launchpad_user_name(s):
-    return re.match('^~[a-z0-9][a-z0-9\+\.\-]*$', s) is not None
-
-
-def valid_launchpad_branch_name(s):
-    return re.match(r'^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z', s) is not None
+    :param fault: An instance of `xmlrpclib.Fault`.
+    :param fault_classes: Any number of `LaunchpadFault` subclasses.
+    """
+    for cls in fault_classes:
+        if fault.faultCode == cls.error_code:
+            return True
+    return False
 
 
 class RootApp:
@@ -56,36 +58,10 @@ class RootApp:
     def __init__(self, session_var):
         self.graph_cache = lru_cache.LRUCache(10)
         self.branchfs = xmlrpclib.ServerProxy(
-            config.codehosting.branchfs_endpoint)
+            config.codehosting.codehosting_endpoint)
         self.session_var = session_var
         self.store = MemoryStore()
         self.log = logging.getLogger('lp-loggerhead')
-        branch.Branch.hooks.install_named_hook(
-            'transform_fallback_location',
-            self._transform_fallback_location_hook,
-            'RootApp._transform_fallback_location_hook')
-
-    def _transform_fallback_location_hook(self, branch, url):
-        """Transform a human-readable fallback URL into and id-based one.
-
-        Branches on Launchpad record their stacked-on URLs in the form
-        '/~user/product/branch', but we need to access branches based on
-        database ID to gain access to private branches.  So we use this hook
-        into Bazaar's branch-opening process to translate the former to the
-        latter.
-        """
-        # It might seem that using the LAUNCHPAD_SERVICES 'user', which allows
-        # access to all branches, here would be a security risk.  But in fact
-        # it isn't, because a user will only have launchpad.View on the
-        # stacked branch if they have it for all the stacked-on branches.
-        # (It would be nice to use the user from the request, but that's far
-        # from simple because branch hooks are global per-process and we
-        # handle different requests in different threads).
-        transport_type, info, trail = self.branchfs.translatePath(
-            LAUNCHPAD_SERVICES, url)
-        return urlparse.urljoin(
-            config.codehosting.internal_branch_by_id_root,
-            branch_id_to_path(info['id']))
 
     def get_transports(self):
         t = getattr(thread_transports, 'transports', None)
@@ -106,8 +82,9 @@ class RootApp:
         the page they were looking at, with a cookie that gives us the
         username.
         """
+        openid_vhost = config.launchpad.openid_provider_vhost
         openid_request = self._make_consumer(environ).begin(
-            'https://' + config.vhost.openid.hostname)
+            allvhosts.configs[openid_vhost].rooturl)
         openid_request.addExtension(
             SRegRequest(required=['nickname']))
         back_to = construct_url(environ)
@@ -133,6 +110,7 @@ class RootApp:
         if response.status == SUCCESS:
             self.log.error('open id response: SUCCESS')
             sreg_info = SRegResponse.fromSuccessResponse(response)
+            print sreg_info
             environ[self.session_var]['user'] = sreg_info['nickname']
             raise HTTPMovedPermanently(query['back_to'])
         elif response.status == FAILURE:
@@ -165,68 +143,73 @@ class RootApp:
         path = environ['PATH_INFO']
         trailingSlashCount = len(path) - len(path.rstrip('/'))
         user = environ[self.session_var].get('user', LAUNCHPAD_ANONYMOUS)
+        lp_server = get_lp_server(
+            user, branch_url=config.codehosting.internal_branch_by_id_root)
+        lp_server.start_server()
         try:
-            transport_type, info, trail = self.branchfs.translatePath(
-                user, urlutils.escape(path))
-        except xmlrpclib.Fault, f:
-            if faults.check_fault(f, faults.PathTranslationError):
-                raise HTTPNotFound()
-            elif faults.check_fault(f, faults.PermissionDenied):
-                # If we're not allowed to see the branch...
-                if environ['wsgi.url_scheme'] != 'https':
-                    # ... the request shouldn't have come in over http, as
-                    # requests for private branches over http should be
-                    # redirected to https by the dynamic rewrite script we use
-                    # (which runs before this code is reached), but just in
-                    # case...
-                    env_copy = environ.copy()
-                    env_copy['wsgi.url_scheme'] = 'https'
-                    raise HTTPMovedPermanently(construct_url(env_copy))
-                elif user != LAUNCHPAD_ANONYMOUS:
-                    # ... if the user is already logged in and still can't see
-                    # the branch, they lose.
-                    exc = HTTPUnauthorized()
-                    exc.explanation = "You are logged in as %s." % user
-                    raise exc
+            try:
+                transport_type, info, trail = self.branchfs.translatePath(
+                    user, urlutils.escape(path))
+            except xmlrpclib.Fault, f:
+                if check_fault(f, faults.PathTranslationError):
+                    raise HTTPNotFound()
+                elif check_fault(f, faults.PermissionDenied):
+                    # If we're not allowed to see the branch...
+                    if environ['wsgi.url_scheme'] != 'https':
+                        # ... the request shouldn't have come in over http, as
+                        # requests for private branches over http should be
+                        # redirected to https by the dynamic rewrite script we
+                        # use (which runs before this code is reached), but
+                        # just in case...
+                        env_copy = environ.copy()
+                        env_copy['wsgi.url_scheme'] = 'https'
+                        raise HTTPMovedPermanently(construct_url(env_copy))
+                    elif user != LAUNCHPAD_ANONYMOUS:
+                        # ... if the user is already logged in and still can't
+                        # see the branch, they lose.
+                        exc = HTTPUnauthorized()
+                        exc.explanation = "You are logged in as %s." % user
+                        raise exc
+                    else:
+                        # ... otherwise, lets give them a chance to log in
+                        # with OpenID.
+                        return self._begin_login(environ, start_response)
                 else:
-                    # ... otherwise, lets give them a chance to log in with
-                    # OpenID.
-                    return self._begin_login(environ, start_response)
-            else:
-                raise
-        if transport_type != BRANCH_TRANSPORT:
-            raise HTTPNotFound()
-        trail = urlutils.unescape(trail).encode('utf-8')
-        trail += trailingSlashCount * '/'
-        amount_consumed = len(path) - len(trail)
-        consumed = path[:amount_consumed]
-        branch_name = consumed.strip('/')
-        self.log.info('Using branch: %s', branch_name)
-        if trail and not trail.startswith('/'):
-            trail = '/' + trail
-        environ['PATH_INFO'] = trail
-        environ['SCRIPT_NAME'] += consumed.rstrip('/')
-        branch_url = urlparse.urljoin(
-            config.codehosting.internal_branch_by_id_root,
-            branch_id_to_path(info['id']))
-        branch_link = urlparse.urljoin(
-            config.codebrowse.launchpad_root, branch_name)
-        cachepath = os.path.join(
-            config.codebrowse.cachepath, branch_name[1:])
-        if not os.path.isdir(cachepath):
-            os.makedirs(cachepath)
-        self.log.info('branch_url: %s', branch_url)
-        try:
-            bzr_branch = branch.Branch.open(
-                branch_url, possible_transports=self.get_transports())
-        except errors.NotBranchError, err:
-            self.log.warning('Not a branch: %s', err)
-            raise HTTPNotFound()
-        bzr_branch.lock_read()
-        try:
-            view = BranchWSGIApp(
-                bzr_branch, branch_name, {'cachepath': cachepath},
-                self.graph_cache, branch_link=branch_link, served_url=None)
-            return view.app(environ, start_response)
+                    raise
+            if transport_type != BRANCH_TRANSPORT:
+                raise HTTPNotFound()
+            trail = urlutils.unescape(trail).encode('utf-8')
+            trail += trailingSlashCount * '/'
+            amount_consumed = len(path) - len(trail)
+            consumed = path[:amount_consumed]
+            branch_name = consumed.strip('/')
+            self.log.info('Using branch: %s', branch_name)
+            if trail and not trail.startswith('/'):
+                trail = '/' + trail
+            environ['PATH_INFO'] = trail
+            environ['SCRIPT_NAME'] += consumed.rstrip('/')
+            branch_url = lp_server.get_url() + branch_name
+            branch_link = urlparse.urljoin(
+                config.codebrowse.launchpad_root, branch_name)
+            cachepath = os.path.join(
+                config.codebrowse.cachepath, branch_name[1:])
+            if not os.path.isdir(cachepath):
+                os.makedirs(cachepath)
+            self.log.info('branch_url: %s', branch_url)
+            try:
+                bzr_branch = safe_open(
+                    lp_server.get_url().strip(':/'), branch_url,
+                    possible_transports=self.get_transports())
+            except errors.NotBranchError, err:
+                self.log.warning('Not a branch: %s', err)
+                raise HTTPNotFound()
+            bzr_branch.lock_read()
+            try:
+                view = BranchWSGIApp(
+                    bzr_branch, branch_name, {'cachepath': cachepath},
+                    self.graph_cache, branch_link=branch_link, served_url=None)
+                return view.app(environ, start_response)
+            finally:
+                bzr_branch.unlock()
         finally:
-            bzr_branch.unlock()
+            lp_server.stop_server()
