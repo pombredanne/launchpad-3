@@ -355,7 +355,9 @@ class IBugWatchSet(Interface):
             or None.
         """
 
-    def bulkAddActivity(bug_watches, result=None, message=None, oops_id=None):
+    def bulkAddActivity(bug_watches,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
         """Efficiently add activity for the given bug watches.
 
         Add `BugWatchActivity` records for the given bug watches in

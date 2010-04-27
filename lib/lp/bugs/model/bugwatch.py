@@ -713,8 +713,9 @@ class BugWatchSet(BugSetBase):
             last_error_type=last_error_type,
             next_check=None)
 
-    def bulkAddActivity(self, bug_watches, result=None, message=None,
-                        oops_id=None):
+    def bulkAddActivity(self, bug_watches,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
         """See `IBugWatchSet`."""
         bug_watch_ids = set(
             (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
