@@ -1452,6 +1452,7 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    @export_read_operation()
     def getArchiveSubscriptionURLs():
         """Return private archive URLs that this person can see.
 
