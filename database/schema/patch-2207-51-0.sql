@@ -38,7 +38,8 @@ FROM pg_stat_user_tables
 WHERE FALSE;
 
 ALTER TABLE DatabaseTableStats
-ADD CONSTRAINT databasetablestats_pkey PRIMARY KEY (date_created);
+ADD CONSTRAINT databasetablestats_pkey
+PRIMARY KEY (date_created, schemaname, relname);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 51, 0);
 
