@@ -752,6 +752,21 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         subscriber_set = set([source_owner, target_owner, reviewer])
         self.assertEqual(subscriber_set, set(recipients.keys()))
 
+    def test_getNotificationRecipientsIncludesTeamReviewers(self):
+        # If the reviewer is a team, the team gets the email.
+        bmp = self.factory.makeBranchMergeProposal()
+        # Both of the branch owners are now subscribed to their own
+        # branches with full code review notification level set.
+        source_owner = bmp.source_branch.owner
+        target_owner = bmp.target_branch.owner
+        login_person(source_owner)
+        reviewer = self.factory.makeTeam()
+        bmp.nominateReviewer(reviewer, registrant=source_owner)
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        subscriber_set = set([source_owner, target_owner, reviewer])
+        self.assertEqual(subscriber_set, set(recipients.keys()))
+
     def test_getNotificationRecipients_Registrant(self):
         # If the registrant of the proposal is being notified of the
         # proposals, they get their rationale set to "Registrant".
