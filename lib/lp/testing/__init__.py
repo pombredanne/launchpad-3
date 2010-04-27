@@ -522,7 +522,9 @@ class TestCaseWithFactory(TestCase):
         """
         if self._use_bzr_branch_called:
             if direct_database != self.direct_database_server:
-                raise AssertionError("XXX")
+                raise AssertionError(
+                    "useBzrBranches called with inconsistent values for "
+                    "direct_database")
             return
         self._use_bzr_branch_called = True
         self.useTempBzrHome()
