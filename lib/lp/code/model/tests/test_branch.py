@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401,E1002
+
 """Tests for Branches."""
+
+
+from __future__ import with_statement
 
 __metaclass__ = type
 
@@ -66,7 +71,8 @@ from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
-    run_with_login, TestCase, TestCaseWithFactory, time_counter)
+    person_logged_in, run_with_login, TestCase, TestCaseWithFactory,
+    time_counter)
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -1182,7 +1188,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the prerequisite branch."""
         merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
-        ClearDependentBranch(merge_proposal)()
+        with person_logged_in(merge_proposal.prerequisite_branch.owner):
+            ClearDependentBranch(merge_proposal)()
         self.assertEqual(None, merge_proposal.prerequisite_branch)
 
     def test_ClearOfficialPackageBranch(self):
@@ -1229,6 +1236,32 @@ class TestBranchDeletionConsequences(TestCase):
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+    def test_deletionRequirements_with_SourcePackageRecipe(self):
+        """Recipes are listed as deletion requirements."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertEqual(
+            {recipe: ('delete', 'This recipe uses this branch.')},
+            recipe.base_branch.deletionRequirements())
+
+    def test_destroySelf_with_SourcePackageRecipe(self):
+        """If branch is a base_branch in a recipe, it is deleted."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        store = Store.of(recipe)
+        recipe.base_branch.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
+
+    def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
+        """If branch is referred to by a recipe, it is deleted."""
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            branches=[branch1, branch2])
+        store = Store.of(recipe)
+        branch2.destroySelf(break_references=True)
+        # show no DB constraints have been violated
+        store.flush()
 
 
 class StackedBranches(TestCaseWithFactory):

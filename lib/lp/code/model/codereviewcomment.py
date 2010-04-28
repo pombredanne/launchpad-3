@@ -75,6 +75,16 @@ class CodeReviewComment(SQLBase):
     vote_tag = StringCol(default=None)
 
     @property
+    def author(self):
+        """Defer to the related message."""
+        return self.message.owner
+
+    @property
+    def date_created(self):
+        """Defer to the related message."""
+        return self.message.datecreated
+
+    @property
     def target(self):
         """See `IHasBranchTarget`."""
         return self.branch_merge_proposal.target

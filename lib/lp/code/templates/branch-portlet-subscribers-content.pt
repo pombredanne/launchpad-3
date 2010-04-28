@@ -19,7 +19,7 @@
         </a>
 
         <a
-          tal:condition="subscription/editable"
+          tal:condition="subscription/required:launchpad.Edit"
           tal:attributes="
             href subscription/fmt:url;
             title string:Edit subscription ${subscription/person/fmt:displayname};

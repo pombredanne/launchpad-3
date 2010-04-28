@@ -33,7 +33,8 @@ from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.translationsperson import (
     ITranslationsPerson)
 from lp.translations.browser.translations import TranslationsMixin
-from lp.translations.utilities.pluralforms import make_friendly_plural_forms
+from lp.translations.utilities.pluralforms import (
+    BadPluralExpression, make_friendly_plural_forms)
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -49,6 +50,7 @@ def describe_language(language):
 
 class LanguageBreadcrumb(Breadcrumb):
     """`Breadcrumb` for `ILanguage`."""
+
     @property
     def text(self):
         return self.context.englishname
@@ -95,6 +97,7 @@ class ILanguageSetSearch(Interface):
     search_lang = TextLine(
         title=u'Name of the language to search for.',
         required=True)
+
 
 class LanguageSetView(LaunchpadFormView):
     """View class to render main ILanguageSet page."""
@@ -216,15 +219,15 @@ class LanguageView(TranslationsMixin, LaunchpadView):
     @property
     def top_contributors(self):
         """
-        Get the top 20 contributors for a language.
+        Get the top contributors for a language.
 
         If an account has been merged, the account into which it was
         merged will be returned.
         """
-        translators = []
-        for translator in reversed(list(self.context.translators)):
+        top_translators = []
+        for translator in self.context.translators[:30]:
             # Get only the top 20 contributors
-            if (len(translators) >= 20):
+            if (len(top_translators) >= 20):
                 break
 
             # For merged account add the target account
@@ -235,10 +238,10 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
             # Add translator only if it was not previouly added as a
             # merged account
-            if translator_target not in translators:
-                translators.append(translator_target)
+            if translator_target not in top_translators:
+                top_translators.append(translator_target)
 
-        return translators
+        return top_translators
 
     @property
     def friendly_plural_forms(self):
@@ -267,6 +270,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
             rosetta,
             view_name='+addquestion',
             rootsite='answers')
+
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
@@ -301,14 +305,26 @@ class LanguageAdminView(LaunchpadEditFormView):
     def admin_action(self, action, data):
         self.updateContextFromData(data)
 
-    def validate(self, data):
-        new_code = data.get('code')
-        if new_code == self.context.code:
-            # The code didn't change.
-            return
-
+    def _validateCode(self, new_code):
+        """Validate a change in language code."""
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
 
+    def _validatePluralData(self, pluralforms, pluralexpression):
+        """Validate plural expression and number of plural forms."""
+        try:
+            make_friendly_plural_forms(pluralexpression, pluralforms)
+        except BadPluralExpression, e:
+            self.setFieldError('pluralexpression', str(e))
+
+    def validate(self, data):
+        new_code = data.get('code')
+        if new_code != self.context.code:
+            self._validateCode(new_code)
+
+        pluralexpression = data.get('pluralexpression')
+        pluralforms = data.get('pluralforms')
+        if pluralexpression is not None:
+            self._validatePluralData(pluralforms, pluralexpression)

@@ -24,6 +24,7 @@ from lp.buildmaster.model.buildfarmjobbehavior import (
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.translations.model.approver import TranslationBuildApprover
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
@@ -78,7 +79,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             productseriesset.findByTranslationsImportBranch(branch))
         for series in related_series:
             queue.addOrUpdateEntriesFromTarball(
-                tarball, False, branch.owner, productseries=series)
+                tarball, False, branch.owner, productseries=series,
+                approver_factory=TranslationBuildApprover)
 
     def updateSlaveStatus(self, raw_slave_status, status):
         """See `IBuildFarmJobBehavior`."""

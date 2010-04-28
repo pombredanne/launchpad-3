@@ -63,7 +63,7 @@ of the intermediate failed states (FAILEDTOBUILD, MANUALDEPWAIT,
 CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
 
     >>> firefox_build.buildstate
-    <DBItem BuildStatus.FULLYBUILT, (1) Successful build>
+    <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
 
 Builds which were already processed also offer additional information
 about its process such as the time it was started and finished and its
@@ -137,8 +137,9 @@ property:
 If the build does not have any uploads, None is returned:
 
     >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> at_build = getUtility(IBuildSet).getByBuildID(15)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> at_build = getUtility(IBinaryPackageBuildSet).getByBuildID(15)
     >>> print at_build.package_upload
     None
 
@@ -147,7 +148,7 @@ Test "retry" functionality:
     >>> firefox_build.can_be_retried
     False
 
-    >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> frozen_build = getUtility(IBinaryPackageBuildSet).getByBuildID(9)
     >>> frozen_build.title
     u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
     >>> frozen_build.buildstate.title
@@ -155,12 +156,12 @@ Test "retry" functionality:
     >>> frozen_build.can_be_retried
     False
 
-See section 'AssertionErrors in IBuild' for further documentation about
-consequences of an denied 'retry' action.
+See section 'AssertionErrors in IBinaryPackageBuild' for further
+documentation about consequences of an denied 'retry' action.
 
 Let's retrieve a build record that can be retried.
 
-    >>> active_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> active_build = getUtility(IBinaryPackageBuildSet).getByBuildID(9)
 
     >>> print active_build.title
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -235,7 +236,7 @@ the next upload attempt only.
 
 In order to call storeUploadLog() again for the same build, we have to
 remove the previously stored 'upload_log'. See the check below in
-'AssertionErrors in IBuild' for more detail.
+'AssertionErrors in IBinaryPackageBuild' for more detail.
 
     >>> login('foo.bar@canonical.com')
     >>> active_build.upload_log = None
@@ -373,7 +374,7 @@ given build record entry.
 Invoke createBinaryPackageRelease with all required arguments.
 
     # Load a build from the samepledata for creating binaries.
-    >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
+    >>> pmount_build = getUtility(IBinaryPackageBuildSet).getByBuildID(19)
 
     >>> bin = pmount_build.createBinaryPackageRelease(
     ...     binarypackagename, version, summary, description,
@@ -453,7 +454,7 @@ Rollback transaction to no disturb the other tests:
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
 
-    >>> bs = getUtility(IBuildSet)
+    >>> bs = getUtility(IBinaryPackageBuildSet)
 
 We can find builds given a source package release and architecture tag.
 
@@ -461,7 +462,7 @@ We can find builds given a source package release and architecture tag.
     >>> i386_builds.count()
     4
 
-IHasBuildRecords uses a base method provided by IBuildSet,
+IHasBuildRecords uses a base method provided by IBinaryPackageBuildSet,
 getBuildsByArchIds():
 
 It receives list of architectures IDs:
@@ -519,8 +520,8 @@ primary archive.
     ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
-`IBuildSet` also provides getStatusSummaryForBuilds which summarizes the
-build status of a set of builds:
+`IBinaryPackageBuildSet` also provides getStatusSummaryForBuilds which
+summarizes the build status of a set of builds:
 
 First we'll define a helper to print the build summary:
 
@@ -543,11 +544,12 @@ The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
     >>> from storm.expr import In
-    >>> from lp.soyuz.model.build import Build
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> results = list(store.find(Build, In(Build.id, (2,6,7,8))))
+    >>> results = list(store.find(
+    ...     BinaryPackageBuild, In(BinaryPackageBuild.id, (2,6,7,8))))
     >>> rset = removeSecurityProxy(bs)._prefetchBuildData(results)
     >>> def filename_or_none(item):
     ...     if item is not None:
@@ -768,7 +770,7 @@ and name.  A user can also be passed for security checks on private builds;
 if user is not passed then the query runs anonymously which means private
 builds are excluded from anything returned.
 
-Log in as admin to avoid security on IBuild for the moment.
+Log in as admin to avoid security on IBinaryPackageBuild for the moment.
 
     >>> login('foo.bar@canonical.com')
 
@@ -889,16 +891,16 @@ You can filter on build state and package name:
     4
 
 
-== AssertionErrors in IBuild ==
+== AssertionErrors in IBinaryPackageBuild ==
 
 Build records inserted by gina don't provide calculated_buildstart
 value, since they miss fields used in its calculation.
 
-    >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
+    >>> gina_build = getUtility(IBinaryPackageBuildSet).getByBuildID(10)
     >>> gina_build.title
     u'i386 build of cnews cr.g7-37 in ubuntu warty RELEASE'
 
-even if IBuild.was_built return true:
+even if IBinaryPackageBuild.was_built return true:
 
     >>> gina_build.was_built
     True
@@ -916,10 +918,10 @@ CHROOTWAIT) can be retried. We must check if Soyuz is able to accept
 its result in case of success, i.e., we should not be able to retry a
 build for a released pocket.
 
-All those conditions are controlled by IBuild.can_be_retried() property
-(see above).
+All those conditions are controlled by
+IBinaryPackageBuild.can_be_retried() property (see above).
 
-    >>> failed_build = getUtility(IBuildSet).getByBuildID(6)
+    >>> failed_build = getUtility(IBinaryPackageBuildSet).getByBuildID(6)
 
     >>> failed_build.title
     u'i386 build of foobar 1.0 in ubuntu warty RELEASE'
@@ -963,7 +965,7 @@ they will happen in another archive.
 storeUploadLog() refuses to override any previously stored
 'upload_log'.
 
-    >>> failedtoupload_build = getUtility(IBuildSet).getByBuildID(22)
+    >>> failedtoupload_build = getUtility(IBinaryPackageBuildSet).getByBuildID(22)
     >>> print failedtoupload_build.title
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
@@ -993,17 +995,17 @@ build is retried.
 
 == Updating build-dependencies line ==
 
-The IBuild.dependencies field is only filled when a build job is
-collected as MANUALDEPWAIT, its content is informed by the
+The IBinaryPackageBuild.dependencies field is only filled when a build
+job is collected as MANUALDEPWAIT, its content is informed by the
 buildd-slave in the apt-dependencies format.
 
-    >>> depwait_build = getUtility(IBuildSet).getByBuildID(12)
+    >>> depwait_build = getUtility(IBinaryPackageBuildSet).getByBuildID(12)
     >>> print depwait_build.dependencies
     cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)
 
-IBuild.updateDependencies is designed to process this field and
-eliminate dependencies that can be satisfied. It is used as part of the
-auto-depwait processing where all builds marked as MANUALDEPWAIT are
+IBinaryPackageBuild.updateDependencies is designed to process this field
+and eliminate dependencies that can be satisfied. It is used as part of
+the auto-depwait processing where all builds marked as MANUALDEPWAIT are
 re-processed and the ones with empty dependencies are re-queued.
 
 If nothing has changed, which is the case of the current
@@ -1107,7 +1109,7 @@ Restore depwait_build previous state.
 It depends on the callsite to decide whether or not to 'retry' a
 build after calling updateDependencies, to encapsulate such decision
 for performing the mentioned  auto-depwait procedure we have a utility
-in IBuildSet called retryDepWaiting().
+in IBinaryPackageBuildSet called retryDepWaiting().
 
     >>> print depwait_build.buildstate.name
     MANUALDEPWAIT
@@ -1125,7 +1127,7 @@ In order to allow depwait_build to be retried we will forge a
 Then we can run the utility method for the target distroarchseries and
 expect depwait_build to be 'retried' and scored.
 
-    >>> getUtility(IBuildSet).retryDepWaiting(hoaryi386)
+    >>> getUtility(IBinaryPackageBuildSet).retryDepWaiting(hoaryi386)
 
     >>> print depwait_build.buildstate.name
     NEEDSBUILD
@@ -1173,8 +1175,8 @@ a CannotBeRescored exception is raised.
 
 == Build record security ==
 
-IBuild's content class is wrapped in a Zope security wrapper that prevents
-access to private builds for unauthorised users.
+IBinaryPackageBuild's content class is wrapped in a Zope security
+wrapper that prevents access to private builds for unauthorised users.
 
 Accessing the cprov builds when logged in as admin will see the records:
 
@@ -1373,7 +1375,7 @@ the main archive.
     datetime.timedelta(0, 3600)
 
 
-== IBuildSet.getBuildsBySourcePackageRelease() ==
+== IBinaryPackageBuildSet.getBuildsBySourcePackageRelease() ==
 
 getBuildsBySourcePackageRelease() will return all the Build records for
 all the SourcePackageRelease IDs passed.
@@ -1481,7 +1483,7 @@ specified builder ID, ordered from most-recently built.
     A call to getBuildsForBuilder returns only those builds that were
     built by the specified builder, ordered by datebuilt DESC:
 
-    >>> frog_builds = getUtility(IBuildSet).getBuildsForBuilder(
+    >>> frog_builds = getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
     ...     frog_builder.id)
     >>> print_build_details(frog_builds)
     ubuntu-team: i386 build of laterbuildsrc 666 in ubuntutest

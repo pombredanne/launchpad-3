@@ -88,7 +88,7 @@ to configure each service.
     configure_translations
     set_branch
 
-Project are supported too, but they only display the applications used by
+Project groups are supported too, but they only display the applications used by
 their products.
 
     >>> project_group = factory.makeProject(name='box', owner=product.owner)
@@ -131,16 +131,6 @@ DistroSeries can use this view. The distribution is used to set the links.
     >>> for link in view.enabled_links:
     ...     print link.name
     report_bug
-
-ProductSeries can use this view. The product is used to set the links,
-but the answers link will be disbaled.
-
-    >>> series = factory.makeProductSeries(product=product)
-    >>> product.official_answers = True
-    >>> view = create_view(series, '+get-involved')
-    >>> for link in view.enabled_links:
-    ...     print link.name
-    register_blueprint
 
 DistributionSourcePackages can use this view. The distribution is used to
 set the links.  Despite the fact that the distribution uses blueprints,

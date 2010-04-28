@@ -67,10 +67,10 @@ the virtualized ones if needed. Please note that 'frog' is a PPA
 builder and was reset due to a communication time-out.
 
     >>> builder_set.checkBuilders(logger, transaction)
-    WARNING:root:Resetting builder: http://localhost:9221/ -- (111, 'Connection refused')
+    WARNING:root:Resetting builder: http://localhost:9221/...Connection refused...
     Traceback (most recent call last):
     ...
-    error: (111, 'Connection refused')
+    error: ...Connection refused...
 
 The 'frog' builder was not marked as failed.
 
@@ -131,8 +131,9 @@ The single BuildQueue found is a non-virtual pending build:
 
     >>> job.id
     2
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
     >>> build.buildstate.name
     'NEEDSBUILD'
     >>> job.builder is None
@@ -172,7 +173,7 @@ Verify if the job (BuildQueue) was updated appropriately:
     >>> job.builder.id == bob_builder.id
     True
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
     >>> build.buildstate.name
     'BUILDING'
 
@@ -209,7 +210,7 @@ Create BuildQueue record and inspect some parameters:
 
 The build job's archive requires virtualized builds.
 
-    >>> build = getUtility(IBuildSet).getByQueueEntry(ppa_job)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(ppa_job)
     >>> build.archive.require_virtualized
     True
 
