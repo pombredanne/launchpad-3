@@ -58,8 +58,8 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
         return view.items
 
     def _getHierarchyView(self, url, traversed_objects):
-        request = self._make_request(url, traversed_objects)
-        return getMultiAdapter((self.root, request), name='+hierarchy')
+        obj, view, request = test_traverse(url)
+        return create_initialized_view(obj, '+hierarchy', request=request)
 
     def _getBreadcrumbs(self, url, traversed_objects):
         view = self._getHierarchyView(url, traversed_objects)
