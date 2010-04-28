@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'get_request_and_publication',
     'print_request_and_publication',
+    'test_traverse',
     ]
 
 from cStringIO import StringIO
@@ -95,6 +96,7 @@ def test_traverse(url):
     getUtility(IOpenLaunchBag).clear()
     app = publication.getApplication(request)
     view = request.traverse(app)
-    # Get the object from the view, but make sure it is proxied.
-    obj = ProxyFactory(removeSecurityProxy(view).context)
+    # Since the last traversed object is the view, the second last should be
+    # the object that the view is on.
+    obj = request.traversed_objects[-2]
     return obj, view, request
