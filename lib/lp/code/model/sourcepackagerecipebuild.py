@@ -28,7 +28,6 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -37,6 +36,7 @@ from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -226,7 +226,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobDerived, Storm):
         """ Setup the IBuildFarmJob delegate.
 
         We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = PackageBuild(self.build)
+        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @classmethod
     def new(cls, build, job):

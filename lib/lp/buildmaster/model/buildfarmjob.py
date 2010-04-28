@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
     'BuildFarmJobDerived',
+    'BuildFarmJobOld',
     ]
 
 
@@ -29,13 +30,52 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobDerived,
-    IBuildFarmJobSource)
+    IBuildFarmJobOld, IBuildFarmJobSource)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
-class BuildFarmJob(Storm):
-    """A base implementation for `IBuildFarmJob` classes."""
+class BuildFarmJobOld:
+    """See `IBuildFarmJobOld`."""
+    implements(IBuildFarmJobOld)
+    processor = None
+    virtualized = None
 
+    def score(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getLogFileName(self):
+        """See `IBuildFarmJobOld`."""
+        return 'buildlog.txt'
+
+    def getName(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getTitle(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def makeJob(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def jobStarted(self):
+        """See `IBuildFarmJobOld`."""
+        pass
+
+    def jobReset(self):
+        """See `IBuildFarmJobOld`."""
+        pass
+
+    def jobAborted(self):
+        """See `IBuildFarmJobOld`."""
+        pass
+
+
+
+class BuildFarmJob(BuildFarmJobOld, Storm):
+    """A base implementation for `IBuildFarmJob` classes."""
     __storm_table__ = 'BuildFarmJob'
 
     implements(IBuildFarmJob)
@@ -102,30 +142,12 @@ class BuildFarmJob(Storm):
         """See `IBuildFarmJob`."""
         return self.job_type.title
 
-    def score(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError
-
-    def getLogFileName(self):
-        """See `IBuildFarmJob`."""
-        return 'buildlog.txt'
-
-    def getName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError
-
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError
-
     def makeJob(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
 
     def jobStarted(self):
         """See `IBuildFarmJob`."""
-        if not self.has_concrete_build_farm_job:
-            return
         self.status = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
         self.date_started = UTC_NOW
@@ -134,8 +156,6 @@ class BuildFarmJob(Storm):
 
     def jobReset(self):
         """See `IBuildFarmJob`."""
-        if not self.has_concrete_build_farm_job:
-            return
         self.status = BuildStatus.NEEDSBUILD
         self.date_started = None
 

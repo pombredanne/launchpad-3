@@ -19,13 +19,13 @@ from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
 class BuildPackageJob(BuildFarmJobDerived, Storm):
@@ -49,7 +49,7 @@ class BuildPackageJob(BuildFarmJobDerived, Storm):
         """ Setup the IBuildFarmJob delegate.
 
         We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = PackageBuild(self.build)
+        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     def score(self):
         """See `IBuildPackageJob`."""

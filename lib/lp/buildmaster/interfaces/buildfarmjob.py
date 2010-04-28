@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmJobOld',
     'IBuildFarmJobSource',
     'IBuildFarmJobDerived',
     'BuildFarmJobType',
@@ -59,11 +60,18 @@ class BuildFarmJobType(DBEnumeratedType):
         """)
 
 
-class IBuildFarmJob(Interface):
-    """Operations that jobs for the build farm must implement."""
+class IBuildFarmJobOld(Interface):
+    """Defines the previous non-database BuildFarmJob interface.
 
-    id = Attribute('The build farm job ID.')
+    This interface is still used by the temporary build queue related
+    classes (TranslationTemplatesBuildJob, SourcePackageRecipeBuildJob
+    and BuildPackageJob).
 
+    XXX 2010-04-28 michael.nelson bug=567922
+    This class can be removed (merging all the attributes directly into
+    IBuildFarmJob) once all the corresponding *Build classes and the
+    BuildQueue have been transitioned to the new database schema.
+    """
     processor = Reference(
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
@@ -76,6 +84,33 @@ class IBuildFarmJob(Interface):
             "The virtualization setting required by this build farm job. "
             "This should be None for job types that do not care whether "
             "they run virtualized."))
+
+    def score():
+        """Calculate a job score appropriate for the job type in question."""
+
+    def getLogFileName():
+        """The preferred file name for this job's log."""
+
+    def getName():
+        """An appropriate name for this job."""
+
+    def getTitle():
+        """A string to identify and describe the job to users."""
+
+    def jobStarted():
+        """'Job started' life cycle event, handle as appropriate."""
+
+    def jobReset():
+        """'Job reset' life cycle event, handle as appropriate."""
+
+    def jobAborted():
+        """'Job aborted' life cycle event, handle as appropriate."""
+
+
+class IBuildFarmJob(IBuildFarmJobOld):
+    """Operations that jobs for the build farm must implement."""
+
+    id = Attribute('The build farm job ID.')
 
     date_created = exported(
         Datetime(
@@ -151,27 +186,6 @@ class IBuildFarmJob(Interface):
             'Whether this instance is or has a concrete build farm job.'))
 
     title = exported(TextLine(title=_("Title"), required=False))
-
-    def score():
-        """Calculate a job score appropriate for the job type in question."""
-
-    def getLogFileName():
-        """The preferred file name for this job's log."""
-
-    def getName():
-        """An appropriate name for this job."""
-
-    def getTitle():
-        """A string to identify and describe the job to users."""
-
-    def jobStarted():
-        """'Job started' life cycle event, handle as appropriate."""
-
-    def jobReset():
-        """'Job reset' life cycle event, handle as appropriate."""
-
-    def jobAborted():
-        """'Job aborted' life cycle event, handle as appropriate."""
 
     def makeJob():
         """Create the related lp.services.job for this build farm job.
