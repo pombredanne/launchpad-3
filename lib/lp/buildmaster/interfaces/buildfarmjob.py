@@ -177,14 +177,6 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
-    # XXX 2010-04-21 michael.nelson bug=567922. This property
-    # can be removed once all *Build classes use the concrete
-    # BuildFarmJob.
-    has_concrete_build_farm_job = Bool(
-        title=_('Has concrete build farm job'), required=False,
-        readonly=True, description=_(
-            'Whether this instance is or has a concrete build farm job.'))
-
     title = exported(TextLine(title=_("Title"), required=False))
 
     def makeJob():

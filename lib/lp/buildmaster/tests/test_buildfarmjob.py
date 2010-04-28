@@ -34,18 +34,6 @@ class TestBuildFarmJob(TestCaseWithFactory):
         return getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD)
 
-    def test_has_concrete_build_farm_job(self):
-        # This temporary property returns true if the instance
-        # corresponds to a concrete database record, even if
-        # db updates have not yet been flushed, and false
-        # otherwise.
-        concrete_build_farm_job = self.makeBuildFarmJob()
-        self.failUnless(concrete_build_farm_job.has_concrete_build_farm_job)
-
-        mem_build_farm_job = BuildFarmJob(
-            job_type=BuildFarmJobType.PACKAGEBUILD)
-        self.failIf(mem_build_farm_job.has_concrete_build_farm_job)
-
     def test_providesInterface(self):
         # BuildFarmJob provides IBuildFarmJob
         self.assertProvides(self.build_farm_job, IBuildFarmJob)

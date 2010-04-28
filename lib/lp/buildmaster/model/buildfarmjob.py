@@ -132,12 +132,6 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         return build_farm_job
 
     @property
-    def has_concrete_build_farm_job(self):
-        """See `IBuildFarmJob`."""
-        # Check if the object has been added to the store.
-        return get_obj_info(self).get('store') is not None
-
-    @property
     def title(self):
         """See `IBuildFarmJob`."""
         return self.job_type.title
