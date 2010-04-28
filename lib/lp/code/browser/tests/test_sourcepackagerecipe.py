@@ -23,7 +23,7 @@ from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeView, SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
-from lp.testing import ANONYMOUS, BrowserTestCase, login
+from lp.testing import ANONYMOUS, BrowserTestCase, login, TestCaseWithFactory
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -332,7 +332,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
 
 
-class TestSourcePackageRecipeBuildView(BrowserTestCase):
+class TestSourcePackageRecipeBuildView(TestCaseWithFactory):
     """Test behaviour of SourcePackageReciptBuildView."""
 
     layer = DatabaseFunctionalLayer
