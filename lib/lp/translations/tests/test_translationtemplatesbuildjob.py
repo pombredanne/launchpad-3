@@ -9,6 +9,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
+from sqlobject import SQLObjectNotFound
 from storm.store import Store
 
 from canonical.launchpad.webapp.testing import verifyObject
@@ -108,7 +109,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.
         job = removeSecurityProxy(self.specific_job.job)
-        buildqueue = getUtility(IBuildQueueSet).getByJob(job)
+        buildqueue = TranslationTemplatesBuildJob.getByJob(job)
 
         job_id = job.id
         store = Store.of(job)
@@ -119,7 +120,8 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # Job is gone.
         self.assertIs(None, store.find(Job, Job.id == job_id).one())
         # BuildQueue is gone.
-        self.assertIs(None, getUtility(IBuildQueueSet).get(job_id))
+        self.assertRaises(
+            SQLObjectNotFound, getUtility(IBuildQueueSet).get, job_id)
         # TranslationTemplatesBuildJob is gone.
         self.assertIs(None, self.jobset.getByJob(job_id))
         # Branch is still here.
