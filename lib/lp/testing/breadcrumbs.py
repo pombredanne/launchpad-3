@@ -72,33 +72,3 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
     def _getBreadcrumbsURLs(self, url, traversed_objects):
         crumbs = self._getBreadcrumbs(url, traversed_objects)
         return [crumb.url for crumb in crumbs]
-
-    def _make_request(self, url, traversed_objects):
-        """Create and return a LaunchpadTestRequest.
-
-        Set the given list of traversed objects as request.traversed_objects,
-        also appending the view that the given URL points to, to mimic how
-        request.traversed_objects behave in a real request.
-
-        XXX: salgado, bug=432025, 2009-09-17: Instead of setting
-        request.traversed_objects manually, we should duplicate parts of
-        zope.publisher.publish.publish here (or in make_fake_request()) so
-        that tests don't have to specify the list of traversed objects for us
-        to set here.
-        """
-        request = make_fake_request(url, traversed_objects=traversed_objects)
-        if self.request_layer is not None:
-            setFirstLayer(request, self.request_layer)
-        last_segment = request._traversed_names[-1]
-        if traversed_objects:
-            obj = traversed_objects[-1]
-            # Assume the last_segment is the name of the view on the last
-            # traversed object, and if we fail to find a view with that name,
-            # use the default view.
-            try:
-                view = getMultiAdapter((obj, request), name=last_segment)
-            except ComponentLookupError:
-                default_view_name = zapi.getDefaultViewName(obj, request)
-                view = getMultiAdapter((obj, request), name=default_view_name)
-            request.traversed_objects.append(view)
-        return request
