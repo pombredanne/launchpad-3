@@ -233,6 +233,9 @@ a.help {
 a.help:hover, a.help:hover {
     text-decoration: none;
     }
+a.help.icon {
+    border: none;
+}
 img, a img {
     /* No border on images that are links. */
     border: none;
