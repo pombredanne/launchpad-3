@@ -59,19 +59,14 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     policy_name = 'buildd'
     distribution = None
 
-    def __init__(self, build):
-        """Construct a PackageBuild.
-
-        XXX 2010-04-21 michael.nelson bug=570939
-        This initialiser is only used by IBuildFarmJobDerived classes
-        that are not yet expecting a concrete BuildFarmJob (and so are
-        expecting to pass in the build to which they refer, such as
-        BinaryPackageBuild/BuildPackageJob, SPRecipeBuild/SPRecipeBuildJob
-        and TranslationTemplatesBuild). Once they have been updated it
-        can be updated for use by new below.
-        """
+    def __init__(self, build_farm_job, archive, pocket,
+                 dependencies=None):
+        """Construct a PackageBuild."""
         super(PackageBuild, self).__init__()
-        self.build = build
+        self.build_farm_job = build_farm_job
+        self.archive = archive
+        self.pocket = pocket
+        self.dependencies = dependencies
 
     @classmethod
     def new(cls, job_type, virtualized, archive, pocket,
@@ -84,66 +79,9 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type, status, processor, virtualized)
 
-        # Update the __init__ and call instead once all callsites use
-        # instances of this class as a concrete class.
-        package_build = cls(None)
-        package_build.build_farm_job = build_farm_job
-        package_build.archive = archive
-        package_build.pocket = pocket
-        package_build.dependencies = dependencies
+        package_build = cls(build_farm_job, archive, pocket, dependencies)
         store.add(package_build)
         return package_build
-
-    def getTitle(self):
-        """See `IBuildFarmJob`.
-
-        XXX 2010-04-21 michael.nelson bug=567922. This method
-        can be removed once all *Build classes use the concrete
-        BuildFarmJob.
-        """
-        if self.has_concrete_build_farm_job:
-            return self.build_farm_job.getTitle()
-
-        return self.build.title
-
-    def jobStarted(self):
-        """See `IBuildFarmJob`.
-
-        XXX 2010-04-21 michael.nelson bug=567922. This method
-        can be removed once all *Build classes use the concrete
-        BuildFarmJob.
-        """
-        if self.has_concrete_build_farm_job:
-            return self.build_farm_job.jobStarted()
-
-        self.build.buildstate = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        if self.build.date_first_dispatched is None:
-            self.build.date_first_dispatched = UTC_NOW
-
-    def jobReset(self):
-        """See `IBuildFarmJob`.
-
-        XXX 2010-04-21 michael.nelson bug=567922. This method
-        can be removed once all *Build classes use the concrete
-        BuildFarmJob.
-        """
-        if self.has_concrete_build_farm_job:
-            return self.build_farm_job.jobReset()
-
-        self.build.buildstate = BuildStatus.NEEDSBUILD
-
-    def jobAborted(self):
-        """See `IBuildFarmJob`.
-
-        XXX 2010-04-21 michael.nelson bug=567922. This method
-        can be removed once all *Build classes use the concrete
-        BuildFarmJob.
-        """
-        if self.has_concrete_build_farm_job:
-            return self.build_farm_job.jobAborted()
-
-        self.build.buildstate = BuildStatus.NEEDSBUILD
 
     @property
     def current_component(self):
