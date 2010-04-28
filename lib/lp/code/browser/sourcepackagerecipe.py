@@ -33,13 +33,15 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, NavigationMenu)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
@@ -89,6 +91,17 @@ class SourcePackageRecipeHierarchy(Hierarchy):
 
         for item in traversed:
             yield item
+
+
+class SourcePackageRecipeNavigation(Navigation):
+    """Navigation from the SourcePackageRecipe."""
+
+    usedfor = ISourcePackageRecipe
+
+    @stepthrough('+build')
+    def traverse_recipe(self, id):
+        """Traverse to this person's recipes."""
+        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
