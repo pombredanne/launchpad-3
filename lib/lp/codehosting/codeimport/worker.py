@@ -96,7 +96,9 @@ class BazaarBranchStore:
         # at the vfs level.
         target = get_transport(target_path)
         target.ensure_base()
-        remote_bzr_dir.root_transport.copy_tree_to_transport(target)
+        target.mkdir('.bzr')
+        remote_bzr_dir.root_transport.clone('.bzr').copy_tree_to_transport(
+            target.clone('.bzr'))
         local_bzr_dir = BzrDir.open_from_transport(target)
         if needs_tree:
             local_bzr_dir.create_workingtree()
