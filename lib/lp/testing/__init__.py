@@ -31,6 +31,7 @@ __all__ = [
     'TestCaseWithFactory',
     'test_tales',
     'time_counter',
+    'unlink_source_packages',
     # XXX: This really shouldn't be exported from here. People should import
     # it from Zope.
     'verifyObject',
@@ -46,6 +47,7 @@ from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 from pprint import pformat
+import re
 import shutil
 import subprocess
 import subunit
@@ -82,7 +84,8 @@ from canonical.config import config
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.codehosting.vfs import branch_id_to_path, get_rw_server
+from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -408,7 +411,8 @@ class TestCaseWithFactory(TestCase):
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
-        self.real_bzr_server = False
+        self.direct_database_server = False
+        self._use_bzr_branch_called = False
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -440,23 +444,16 @@ class TestCaseWithFactory(TestCase):
         """
         if format is not None and isinstance(format, basestring):
             format = format_registry.get(format)()
-        transport = get_transport(branch_url)
-        if not self.real_bzr_server:
-            # for real bzr servers, the prefix always exists.
-            transport.create_prefix()
-        self.addCleanup(transport.delete_tree, '.')
         return BzrDir.create_branch_convenience(
             branch_url, format=format)
 
     def create_branch_and_tree(self, tree_location=None, product=None,
-                               hosted=False, db_branch=None, format=None,
+                               db_branch=None, format=None,
                                **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
 
         :param tree_location: The path on disk to create the tree at.
         :param product: The product to associate with the branch.
-        :param hosted: If True, create in the hosted area.  Otherwise, create
-            in the mirrored area.
         :param db_branch: If supplied, the database branch to use.
         :param format: Override the default bzrdir format to create.
         :return: a `Branch` and a workingtree.
@@ -466,11 +463,8 @@ class TestCaseWithFactory(TestCase):
                 db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
                 db_branch = self.factory.makeProductBranch(product, **kwargs)
-        if hosted:
-            branch_url = db_branch.getPullURL()
-        else:
-            branch_url = db_branch.warehouse_url
-        if self.real_bzr_server:
+        branch_url = 'lp-internal:///' + db_branch.unique_name
+        if not self.direct_database_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)
         if tree_location is None:
@@ -485,9 +479,10 @@ class TestCaseWithFactory(TestCase):
         :param db_branch: The database branch to create the branch for.
         :param parent: If supplied, the bzr branch to use as a parent.
         """
-        bzr_branch = self.createBranchAtURL(db_branch.warehouse_url)
+        bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
+            removeSecurityProxy(db_branch).last_scanned_id = bzr_branch.last_revision()
         return bzr_branch
 
     @staticmethod
@@ -504,25 +499,6 @@ class TestCaseWithFactory(TestCase):
         get_transport(base).create_prefix()
         return os.path.join(base, branch_id_to_path(branch.id))
 
-    def createMirroredBranchAndTree(self):
-        """Create a database branch, bzr branch and bzr checkout.
-
-        This always uses the configured mirrored area, ignoring whatever
-        server might be providing lp-mirrored: urls.
-
-        Unlike normal codehosting operation, the working tree is stored in the
-        branch directory.
-
-        The branch and tree files are automatically deleted at the end of the
-        test.
-
-        :return: a `Branch` and a workingtree.
-        """
-        db_branch = self.factory.makeAnyBranch()
-        bzr_branch = self.createBranchAtURL(self.getBranchPath(
-                db_branch, config.codehosting.internal_branch_by_id_root))
-        return db_branch, bzr_branch.bzrdir.open_workingtree()
-
     def useTempBzrHome(self):
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
@@ -535,35 +511,48 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self, real_server=False, direct_database=False):
+    def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
 
-        This sets up support for lp-hosted and lp-mirrored URLs,
-        changes to a temp directory, and overrides the bzr home directory.
+        This sets up support for lp-internal URLs, changes to a temp
+        directory, and overrides the bzr home directory.
 
-        :param real_server: If true, use the "real" code hosting server,
-            using an xmlrpc server, etc.
+        :param direct_database: If true, translate branch locations by
+            directly querying the database, not the internal XML-RPC server.
+            If the test is in an AppServerLayer, you probably want to pass
+            direct_database=False and if not you probably want to pass
+            direct_database=True.
         """
-        from lp.codehosting.scanner.tests.test_bzrsync import (
-            FakeTransportServer)
+        if self._use_bzr_branch_called:
+            if direct_database != self.direct_database_server:
+                raise AssertionError(
+                    "useBzrBranches called with inconsistent values for "
+                    "direct_database")
+            return
+        self._use_bzr_branch_called = True
         self.useTempBzrHome()
-        self.real_bzr_server = real_server
-        if real_server:
-            server = get_multi_server(
-                write_hosted=True, write_mirrored=True,
-                direct_database=direct_database)
-            server.start_server()
-            self.addCleanup(server.destroy)
-        else:
-            os.mkdir('lp-mirrored')
-            mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
-            mirror_server.start_server()
-            self.addCleanup(mirror_server.stop_server)
-            os.mkdir('lp-hosted')
-            hosted_server = FakeTransportServer(
-                get_transport('lp-hosted'), url_prefix='lp-hosted:///')
-            hosted_server.start_server()
-            self.addCleanup(hosted_server.stop_server)
+        self.direct_database_server = direct_database
+        server = get_rw_server(direct_database=direct_database)
+        server.start_server()
+        self.addCleanup(server.destroy)
+
+
+class BrowserTestCase(TestCaseWithFactory):
+    """A TestCase class for browser tests.
+
+    This testcase provides an API similar to page tests, and can be used for
+    cases when one wants a unit test and not a frakking pagetest.
+    """
+
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -840,7 +829,7 @@ def normalize_whitespace(string):
 
 # XXX: This doesn't seem to be a generically useful testing function. Perhaps
 # it should go into a sub-module? -- jml
-def map_branch_contents(branch_url):
+def map_branch_contents(branch):
     """Return all files in branch at `branch_url`.
 
     :param branch_url: the URL for an accessible branch.
@@ -848,7 +837,6 @@ def map_branch_contents(branch_url):
         files are included.
     """
     contents = {}
-    branch = BzrBranch.open(branch_url)
     tree = branch.basis_tree()
     tree.lock_read()
     try:
@@ -930,3 +918,15 @@ def validate_mock_class(mock_class):
                             name, mock_args, real_args))
                     else:
                         break
+
+def unlink_source_packages(product):
+    """Remove all links between the product and source packages.
+
+    A product cannot be deactivated if it is linked to source packages.
+    """
+    packaging_util = getUtility(IPackagingUtil)
+    for source_package in product.sourcepackages:
+        packaging_util.deletePackaging(
+            source_package.productseries,
+            source_package.sourcepackagename,
+            source_package.distroseries)

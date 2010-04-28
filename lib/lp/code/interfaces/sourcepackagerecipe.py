@@ -14,16 +14,19 @@ __all__ = [
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
+    'MINIMAL_RECIPE_TEXT',
     'TooNewRecipeFormat',
     ]
 
 
-from lazr.restful.fields import CollectionField, Reference
+from textwrap import dedent
 
+from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
@@ -33,6 +36,11 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
+
+MINIMAL_RECIPE_TEXT = dedent(u'''\
+    # bzr-builder format 0.2 deb-version 1.0
+    %s
+    ''')
 
 class ForbiddenInstruction(Exception):
     """A forbidden instruction was found in the recipe."""
@@ -67,7 +75,6 @@ class ISourcePackageRecipeData(Interface):
         """An iterator of the branches referenced by this recipe."""
 
 
-
 class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
 
@@ -83,9 +90,10 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
 
     registrant = Reference(
         IPerson, title=_("The person who created this recipe"), readonly=True)
-    owner = Reference(
-        IPerson, title=_("The person or team who can edit this recipe"),
-        readonly=False)
+    owner = ParticipatingPersonChoice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='UserTeamsParticipationPlusSelf',
+        description=_("The person or team who can edit this recipe."))
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),

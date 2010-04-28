@@ -19,7 +19,7 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, ISpecificBuildFarmJobClass)
+    IBuildFarmJob, IBuildFarmJobDerived)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -54,13 +54,11 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.specific_job = self.jobset.create(self.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
-        # TranslationTemplateBuildJob implements IBuildFarmJob and
-        # IBranchJob.
+        # TranslationTemplateBuildJob implements IBuildFarmJob,
+        # IBuildFarmJobDerived, and IBranchJob.
         verifyObject(IBranchJob, self.specific_job)
+        verifyObject(IBuildFarmJobDerived, self.specific_job)
         verifyObject(IBuildFarmJob, self.specific_job)
-
-        # The class also implements ISpecificBuildFarmJobClass.
-        verifyObject(ISpecificBuildFarmJobClass, TranslationTemplatesBuildJob)
 
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)
@@ -91,7 +89,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.assertNotEqual(self.specific_job.getName(), other_job.getName())
 
     def test_getTitle(self):
-        other_job = self.jobset.create(self.branch)
+        self.jobset.create(self.branch)
         self.assertEqual(
             '%s translation templates build' % self.branch.bzr_identity,
             self.specific_job.getTitle())
@@ -151,7 +149,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     def _makeTranslationBranch(self, fake_pottery_compatible=None):
         """Create a branch that provides translations for a productseries."""
         if fake_pottery_compatible is None:
-            self.useBzrBranches()
+            self.useBzrBranches(direct_database=True)
             branch, tree = self.create_branch_and_tree()
         else:
             branch = self.factory.makeAnyBranch()
@@ -191,7 +189,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # branch, generatesTemplates returns False.
         branch = self._makeTranslationBranch()
         self.assertFalse(self.jobsource.generatesTemplates(branch))
-    
+
     def test_branch_not_used(self):
         # We don't generate templates branches not attached to series.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
@@ -221,7 +219,8 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # If the feature is enabled, a TipChanged event for a branch that
         # generates templates will schedule a templates build.
         branch = self._makeTranslationBranch()
-        commit = DirectBranchCommit(branch, to_mirror=True)
+        removeSecurityProxy(branch).last_scanned_id = 'null:'
+        commit = DirectBranchCommit(branch)
         commit.writeFile('POTFILES.in', 'foo')
         commit.commit('message')
         notify(events.TipChanged(branch, None, False))

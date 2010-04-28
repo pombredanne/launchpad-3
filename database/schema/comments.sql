@@ -623,6 +623,7 @@ COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad adm
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
+COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';

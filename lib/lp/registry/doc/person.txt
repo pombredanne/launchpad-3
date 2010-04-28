@@ -119,11 +119,9 @@ visible to other users which are not admins.
 
 By default, newly created Person entries will have
 AccountStatus.NOACCOUNT as their account_status. This is only changed
-if/when we turn that entry into an actual user account. (Currently, we
-assume that a Person entry is turned into a user account when its first
-email address is confirmed) Note that both the Person and the
-EmailAddress have accounts when they are created using the
-createPersonAndEmail() method.
+if/when we turn that entry into an actual user account.  Note that both
+the Person and the EmailAddress have accounts when they are created
+using the createPersonAndEmail() method.
 
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
@@ -135,6 +133,16 @@ createPersonAndEmail() method.
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
 
+    >>> p.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from canonical.launchpad.database.account import Account
+    >>> account = IMasterStore(Account).get(Account, p.accountID)
+    >>> account.activate(
+    ...     "Activated by doc test.",
+    ...     password=p.password,
+    ...     preferred_email=email)
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
@@ -188,9 +196,6 @@ Unlike people, teams don't need a contact address, so we can pass None
 to setContactAddress() to leave a team without a contact address.
 
     >>> shipit_admins.setContactAddress(None)
-    >>> email.status
-    <DBItem EmailAddressStatus.VALIDATED...
-
     >>> print shipit_admins.preferredemail
     None
 
@@ -1347,6 +1352,10 @@ Inactive products are excluded from the listings.
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> cprov.specifications(filter=['svg']).count()

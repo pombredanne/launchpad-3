@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'BUG_WATCH_ACTIVITY_SUCCESS_STATUSES',
     'BugWatchActivityStatus',
+    'BugWatchCannotBeRescheduled',
     'IBugWatch',
     'IBugWatchActivity',
     'IBugWatchSet',
@@ -210,6 +211,10 @@ class IBugWatch(IHasBug):
         Text(title=_('The URL at which to view the remote bug.'),
              readonly=True))
 
+    can_be_rescheduled = Attribute(
+        "A True or False indicator of whether or not this watch can be "
+        "rescheduled.")
+
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.
 
@@ -249,6 +254,13 @@ class IBugWatch(IHasBug):
 
     def addActivity(result=None, message=None, oops_id=None):
         """Add an `IBugWatchActivity` record for this BugWatch."""
+
+    def setNextCheck(next_check):
+        """Set the next_check time of the watch.
+
+        :raises: `BugWatchCannotBeRescheduled` if
+                 `IBugWatch.can_be_rescheduled` is False.
+        """
 
 
 # Defined here because of circular imports.
@@ -325,6 +337,39 @@ class IBugWatchSet(Interface):
         :type bug_watch_ids: An iterable of `int`s, or `None`.
         """
 
+    # XXX: GavinPanella bug=570277 2010-04-26: In bulkSetError() the
+    # last_error_type argument accepts the same values as the result
+    # argument to bulkAddActivity(). Using different terms for
+    # essentially the same thing is confusing.
+
+    def bulkSetError(bug_watches, last_error_type=None):
+        """Efficiently update the status of the given bug watches.
+
+        Sets the `last_error_type` field as instructed, updates
+        `lastchecked` to now and resets `next_check` to None, all in
+        the most efficient way possible.
+
+        :param bug_watches: An iterable of `IBugWatch` objects or
+            primary keys for the same.
+        :param last_error_type: A member of `BugWatchActivityStatus`
+            or None.
+        """
+
+    def bulkAddActivity(bug_watches,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
+        """Efficiently add activity for the given bug watches.
+
+        Add `BugWatchActivity` records for the given bug watches in
+        the most efficient way possible.
+
+        :param bug_watches: An iterable of `IBugWatch` objects or
+            primary keys for the same.
+        :param result: See `IBugWatch.addActivity`.
+        :param message: See `IBugWatch.addActivity`.
+        :param oops_id: See `IBugWatch.addActivity`.
+        """
+
 
 class NoBugTrackerFound(Exception):
     """No bug tracker with the base_url is registered in Launchpad."""
@@ -363,3 +408,6 @@ class IBugWatchActivity(Interface):
         title=_('OOPS ID'), readonly=True,
         description=_("The OOPS ID associated with this activity."))
 
+
+class BugWatchCannotBeRescheduled(Exception):
+    """The current `IBugWatch` can't be rescheduled."""

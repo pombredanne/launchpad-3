@@ -90,13 +90,13 @@ remote server.
     >>> print comments
     [u'Pushing, for the purpose of.']
 
-The BugWatchUpdater method pushBugComments() is responsible for
+The CheckwatchesMaster method pushBugComments() is responsible for
 calling the addRemoteComment() method of ISupportsCommentPushing for
 each Launchpad comment that needs to be pushed to the remote bug
 tracker.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bugwatch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
 
     >>> transaction.commit()
 
@@ -305,7 +305,7 @@ formatted to include data about the comment in Launchpad.
     <BLANKLINE>
     --------------------
 
-The BugWatchUpdater class has a method, _formatRemoteComment() which
+The CheckwatchesMaster class has a method, _formatRemoteComment() which
 will take a Launchpad comment and format it ready for uploading to the
 remote server. This allows us to include salient information, such as
 the comment author, with the pushed comment.

@@ -26,9 +26,9 @@
     <div tal:condition="context/projects" style="margin-top:1em;">
       <h3 style="display: inline;">Project groups:</h3>
       <tal:project
-         repeat="project context/projects">
-        <a href="#" tal:replace="structure project/fmt:link">GNOME
-        </a><tal:comma condition="not:repeat/project/end">, </tal:comma>
+         repeat="projectgroup context/projects">
+        <a href="#" tal:replace="structure projectgroup/fmt:link">GNOME
+        </a><tal:comma condition="not:repeat/projectgroup/end">, </tal:comma>
       </tal:project>
     </div>
 

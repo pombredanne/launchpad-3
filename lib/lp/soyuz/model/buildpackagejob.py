@@ -12,13 +12,14 @@ import pytz
 
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.buildmaster.model.packagebuildfarmjob import (
+    PackageBuildFarmJobDerived)
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -27,7 +28,7 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(PackageBuildFarmJob, Storm):
+class BuildPackageJob(PackageBuildFarmJobDerived, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
@@ -39,6 +40,11 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
 
     build_id = Int(name='build', allow_none=False)
     build = Reference(build_id, 'BinaryPackageBuild.id')
+
+    def __init__(self, build, job):
+        """ Setup the IBuildFarmJob delegation when new items are created."""
+        self.build, self.job = build, job
+        super(BuildPackageJob, self).__init__()
 
     def score(self):
         """See `IBuildPackageJob`."""
@@ -166,7 +172,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         # Avoiding circular import.
         from lp.buildmaster.model.builder import Builder
 
@@ -236,7 +242,7 @@ class BuildPackageJob(PackageBuildFarmJob, Storm):
 
     @staticmethod
     def postprocessCandidate(job, logger):
-        """See `IBuildFarmCandidateJobSelection`."""
+        """See `IBuildFarmJob`."""
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will

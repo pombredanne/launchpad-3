@@ -9,8 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
-    'IBuildFarmCandidateJobSelection',
-    'ISpecificBuildFarmJobClass',
+    'IBuildFarmJobDerived',
     'BuildFarmJobType',
     ]
 
@@ -57,16 +56,6 @@ class BuildFarmJobType(DBEnumeratedType):
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
 
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
-        """
-
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
@@ -101,11 +90,10 @@ class IBuildFarmJob(Interface):
             "return None."))
 
 
-class ISpecificBuildFarmJobClass(Interface):
-    """Class interface provided by `IBuildFarmJob` classes.
+class IBuildFarmJobDerived(Interface):
+    """Common functionality required by classes delegating IBuildFarmJob.
 
-    Used by the `BuildQueue` to find the specific build-farm job objects
-    it needs to dispatch to builders.
+    An implementation of this class must setup the necessary delagation.
     """
 
     def getByJob(job):
@@ -114,15 +102,6 @@ class ISpecificBuildFarmJobClass(Interface):
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.
         """
-
-
-class IBuildFarmCandidateJobSelection(Interface):
-    """Operations for refining candidate job selection (optional).
-
-    Job type classes that do *not* need to refine candidate job selection may
-    be derived from `BuildFarmJob` which provides a base implementation of
-    this interface.
-    """
 
     def addCandidateSelectionCriteria(processor, virtualized):
         """Provide a sub-query to refine the candidate job selection.
@@ -159,3 +138,14 @@ class IBuildFarmCandidateJobSelection(Interface):
         :return: True if the candidate job should be dispatched
             to a builder, False otherwise.
         """
+
+    def generateSlaveBuildCookie():
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie need not be unique, but should be hard for a
+        compromised slave to guess.
+
+        :return: a hard-to-guess ASCII string that can be reproduced
+            accurately based on this job's properties.
+        """
+

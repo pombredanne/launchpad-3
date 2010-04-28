@@ -17,10 +17,10 @@
         <div>
           This watch has failed to update at
           <tal:fail-count
-              replace="view/failed_watch_activity_count" />
+              replace="context/failed_activity/count" />
           out of the last
           <tal:fail-count
-              replace="view/total_watch_activity_count" />
+              replace="context/activity/count" />
           attempts.
         </div>
         <div>

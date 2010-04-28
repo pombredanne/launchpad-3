@@ -253,7 +253,7 @@ class DebBugs(ExternalBugTracker):
         """See `ISupportsCommentImport`."""
         # This method does nothing since DebBugs bugs are stored locally
         # and their comments don't need to be pre-fetched. It exists
-        # purely to ensure that BugWatchUpdater doesn't choke on it.
+        # purely to ensure that CheckwatchesMaster doesn't choke on it.
         pass
 
     def getPosterForComment(self, remote_bug_id, comment_id):
