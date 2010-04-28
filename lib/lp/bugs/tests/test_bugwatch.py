@@ -490,6 +490,13 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
             [bug_watch for bug_watch in self.bug_watches[1::2]])
         self._checkStatusOfBugWatches(False, True, None)
 
+    def test_bulkSetError_with_others_in_list(self):
+        # Anything that doesn't look like a bug watch or a bug watch
+        # ID is silently ignored.
+        getUtility(IBugWatchSet).bulkSetError(
+            self.bug_watches + ['rabbit', object()])
+        self._checkStatusOfBugWatches(False, True, None)
+
     def test_bulkSetError_with_iterator(self):
         # Any iterator can be passed in.
         getUtility(IBugWatchSet).bulkSetError(
@@ -530,6 +537,13 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         getUtility(IBugWatchSet).bulkAddActivity(
             [bug_watch.id for bug_watch in self.bug_watches[::2]] +
             [bug_watch for bug_watch in self.bug_watches[1::2]])
+        self._checkActivityForBugWatches(None, None, None)
+
+    def test_bulkAddActivity_with_others_in_list(self):
+        # Anything that doesn't look like a bug watch or a bug watch
+        # ID is silently ignored.
+        getUtility(IBugWatchSet).bulkAddActivity(
+            self.bug_watches + ['rabbit', object()])
         self._checkActivityForBugWatches(None, None, None)
 
     def test_bulkAddActivity_with_iterator(self):
