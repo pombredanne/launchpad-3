@@ -51,17 +51,17 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         self.product_url = canonical_url(self.product)
 
     def test_default_page(self):
-        self.assertBreadcrumbUrls(self.product, [self.product_url])
+        self.assertBreadcrumbUrls([self.product_url], self.product)
 
     def test_non_default_page(self):
+        crumbs = self.getBreadcrumbsForObject(self.product, '+download')
         downloads_url = "%s/+download" % self.product_url
-        urls = self._getBreadcrumbsURLs(
-            downloads_url, [self.root, self.product])
-        self.assertEquals(urls, [self.product_url, downloads_url])
-        texts = self._getBreadcrumbsTexts(
-            downloads_url, [self.root, self.product])
-        self.assertEquals(texts[-1],
-                          '%s project files' % self.product.displayname)
+        self.assertEquals(
+            [self.product_url, downloads_url],
+            [crumb.url for crumb in crumbs])
+        self.assertEquals(
+            '%s project files' % self.product.displayname,
+            crumbs[-1].text)
 
     def test_zope_i18n_Messages_are_interpolated(self):
         # Views can use zope.i18nmessageid.Message as their title when they
@@ -105,28 +105,24 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
         self.package_bugtask_url = canonical_url(self.package_bugtask)
 
     def test_root_on_mainsite(self):
-        urls = self._getBreadcrumbsURLs('http://launchpad.dev/', [self.root])
+        urls = self._getBreadcrumbsURLs('http://launchpad.dev/')
         self.assertEquals(urls, [])
 
     def test_product_on_mainsite(self):
-        urls = self._getBreadcrumbsURLs(
-            self.product_url, [self.root, self.product])
+        urls = self._getBreadcrumbsURLs(self.product_url)
         self.assertEquals(urls, [self.product_url])
 
     def test_root_on_vhost(self):
         urls = self._getBreadcrumbsURLs(
-            'http://bugs.launchpad.dev/', [self.root])
+            'http://bugs.launchpad.dev/')
         self.assertEquals(urls, [])
 
     def test_product_on_vhost(self):
-        urls = self._getBreadcrumbsURLs(
-            self.product_bugs_url, [self.root, self.product])
+        urls = self._getBreadcrumbsURLs(self.product_bugs_url)
         self.assertEquals(urls, [self.product_url, self.product_bugs_url])
 
     def test_product_bugtask(self):
-        urls = self._getBreadcrumbsURLs(
-            self.product_bugtask_url,
-            [self.root, self.product, self.product_bugtask])
+        urls = self._getBreadcrumbsURLs(self.product_bugtask_url)
         self.assertEquals(
             urls, [self.product_url, self.product_bugs_url,
                    self.product_bugtask_url])
@@ -138,9 +134,7 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
         package_url = canonical_url(target)
         package_bugs_url = canonical_url(target, rootsite='bugs')
         urls = self._getBreadcrumbsURLs(
-            self.package_bugtask_url,
-            [self.root, target.distribution, target.distroseries, target,
-             self.package_bugtask])
+            self.package_bugtask_url)
         self.assertEquals(
             urls,
             [distro_url, distroseries_url, package_url, package_bugs_url,

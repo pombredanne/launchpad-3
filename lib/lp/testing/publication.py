@@ -18,7 +18,6 @@ from zope.app.publication.requestpublicationregistry import factoryRegistry
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
@@ -71,6 +70,20 @@ def print_request_and_publication(host='localhost', port=None,
 
 
 def test_traverse(url):
+    """Traverse the url in the same way normal publishing occurs.
+
+    Returns a tuple of (object, view, request) where:
+      object is the last model object in the traversal chain
+      view is the defined view for the object at the specified url (if
+        the url didn't directly specify a view, then the view is the
+        default view for the object.
+      request is the request object resulting from the traversal.  This
+        contains a populated traversed_objects list just as a browser
+        request would from a normal call into the app servers.
+
+    This call uses the currently logged in user, and does not start a new
+    transaction.
+    """
     url_parts = urlsplit(url)
     server_url = '://'.join(url_parts[0:2])
     path_info = url_parts[2]

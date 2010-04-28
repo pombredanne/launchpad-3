@@ -18,7 +18,7 @@ class TestCodeImportMachineBreadcrumb(BaseBreadcrumbTestCase):
             ('Machines', 'http://code.launchpad.dev/+code-imports/+machines'),
             ('apollo',
              'http://code.launchpad.dev/+code-imports/+machines/apollo')]
-        self.assertBreadcrumbs(machine, expected)
+        self.assertBreadcrumbs(expected, machine)
 
 
 def test_suite():

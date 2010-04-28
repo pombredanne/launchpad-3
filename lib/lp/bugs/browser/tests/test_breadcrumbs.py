@@ -21,27 +21,20 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         product = self.factory.makeProduct(
             name='crumb-tester', displayname="Crumb Tester")
         self.bug = self.factory.makeBug(product=product)
-        self.bugtask_url = canonical_url(
-            self.bug.default_bugtask, rootsite='bugs')
-        self.traversed_objects = [
-            self.root, product, self.bug.default_bugtask]
+        self.bugtask = self.bug.default_bugtask
+        self.bugtask_url = canonical_url(self.bugtask, rootsite='bugs')
 
     def test_bugtask(self):
-        urls = self._getBreadcrumbsURLs(
-            self.bugtask_url, self.traversed_objects)
-        self.assertEquals(urls[-1], self.bugtask_url)
-        texts = self._getBreadcrumbsTexts(
-            self.bugtask_url, self.traversed_objects)
-        self.assertEquals(texts[-1], "Bug #%d" % self.bug.id)
+        crumbs = self.getBreadcrumbsForObject(self.bugtask)
+        last_crumb = crumbs[-1]
+        self.assertEquals(self.bugtask_url, last_crumb.url)
+        self.assertEquals("Bug #%d" % self.bug.id, last_crumb.text)
 
     def test_bugtask_child(self):
-        url = canonical_url(
-            self.bug.default_bugtask, rootsite='bugs', view_name='+activity')
-        urls = self._getBreadcrumbsURLs(url, self.traversed_objects)
-        self.assertEquals(urls[-1], "%s/+activity" % self.bugtask_url)
-        self.assertEquals(urls[-2], self.bugtask_url)
-        texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
-        self.assertEquals(texts[-2], "Bug #%d" % self.bug.id)
+        crumbs = self.getBreadcrumbsForObject(self.bugtask, view_name='+activity')
+        self.assertEquals(crumbs[-1].url, "%s/+activity" % self.bugtask_url)
+        self.assertEquals(crumbs[-2].url, self.bugtask_url)
+        self.assertEquals(crumbs[-2].text, "Bug #%d" % self.bug.id)
 
     def test_bugtask_comment(self):
         login_person(self.bug.owner)
@@ -56,7 +49,7 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
             ('Comment #1',
              'http://bugs.launchpad.dev/crumb-tester/+bug/%s/comments/1' % self.bug.id),
             ]
-        self.assertBreadcrumbs(comment, expected_breadcrumbs)
+        self.assertBreadcrumbs(expected_breadcrumbs, comment)
 
 
 class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
@@ -72,28 +65,19 @@ class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
 
     def test_bug_tracker_set(self):
         # Check TestBugTrackerSetBreadcrumb.
-        traversed_objects = [
-            self.root, self.bug_tracker_set]
-        urls = self._getBreadcrumbsURLs(
-            self.bug_tracker_set_url, traversed_objects)
-        self.assertEquals(self.bug_tracker_set_url, urls[-1])
-        texts = self._getBreadcrumbsTexts(
-            self.bug_tracker_set_url, traversed_objects)
-        self.assertEquals("Bug trackers", texts[-1])
+        expected_breadcrumbs = [
+            ('Bug trackers', self.bug_tracker_set_url),
+            ]
+        self.assertBreadcrumbs(expected_breadcrumbs, self.bug_tracker_set)
 
     def test_bug_tracker(self):
         # Check TestBugTrackerBreadcrumb (and
         # TestBugTrackerSetBreadcrumb).
-        traversed_objects = [
-            self.root, self.bug_tracker_set, self.bug_tracker]
-        urls = self._getBreadcrumbsURLs(
-            self.bug_tracker_url, traversed_objects)
-        self.assertEquals(self.bug_tracker_url, urls[-1])
-        self.assertEquals(self.bug_tracker_set_url, urls[-2])
-        texts = self._getBreadcrumbsTexts(
-            self.bug_tracker_url, traversed_objects)
-        self.assertEquals(self.bug_tracker.title, texts[-1])
-        self.assertEquals("Bug trackers", texts[-2])
+        expected_breadcrumbs = [
+            ('Bug trackers', self.bug_tracker_set_url),
+            (self.bug_tracker.title, self.bug_tracker_url),
+            ]
+        self.assertBreadcrumbs(expected_breadcrumbs, self.bug_tracker)
 
 
 def test_suite():
