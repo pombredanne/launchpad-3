@@ -163,7 +163,8 @@
         <browser:url
             for="canonical.launchpad.interfaces.IBugComment"
             path_expression="string:comments/${index}"
-            attribute_to_parent="bugtask"/>
+            attribute_to_parent="bugtask"
+            rootsite="bugs"/>
         <browser:page
             for="canonical.launchpad.interfaces.IBugComment"
             name="+index"
