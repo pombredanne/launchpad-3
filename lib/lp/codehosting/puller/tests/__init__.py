@@ -7,10 +7,13 @@ __metaclass__ = type
 
 import os
 import shutil
+import socket
 from StringIO import StringIO
 
 from bzrlib.tests import HttpServer, TestCaseWithTransport
 from bzrlib import urlutils
+from bzrlib.tests.http_server import (
+    TestingHTTPServer, TestingThreadingHTTPServer)
 
 from lp.codehosting.vfs import branch_id_to_path
 from lp.codehosting.puller.worker import (
@@ -108,6 +111,37 @@ class PullerWorkerMixin:
             default_stacked_on_url=default_stacked_on_url, protocol=protocol,
             branch_mirrorer=opener, oops_prefix=oops_prefix)
 
+# XXX MichaelHudson, bug=564375: With changes to the SocketServer module in
+# Python 2.6 the thread created in serveOverHTTP cannot be joined, because
+# HttpServer.stop_server doesn't do enough to get the thread out of the select
+# call in SocketServer.BaseServer.handle_request().  So what follows is
+# slightly horrible code to use the version of handle_request from Python 2.5.
+
+def fixed_handle_request(self):
+    """Handle one request, possibly blocking. """
+    try:
+        request, client_address = self.get_request()
+    except socket.error:
+        return
+    if self.verify_request(request, client_address):
+        try:
+            self.process_request(request, client_address)
+        except:
+            self.handle_error(request, client_address)
+            self.close_request(request)
+
+
+class FixedTHS(TestingHTTPServer):
+    handle_request = fixed_handle_request
+
+
+class FixedTTHS(TestingThreadingHTTPServer):
+    handle_request = fixed_handle_request
+
+
+class FixedHttpServer(HttpServer):
+    http_server_class = {'HTTP/1.0': FixedTHS, 'HTTP/1.1': FixedTTHS}
+
 
 class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
                            LoomTestMixin):
@@ -154,7 +188,7 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
 
     def serveOverHTTP(self):
         """Serve the current directory over HTTP, returning the server URL."""
-        http_server = HttpServer()
+        http_server = FixedHttpServer()
         http_server.start_server()
         # Join cleanup added before the tearDown so the tearDown is executed
         # first as this tells the thread to die.  We then join explicitly as
