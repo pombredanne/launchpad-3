@@ -132,7 +132,7 @@ $$;
 SET check_function_bodies=true;
 
 COMMENT ON FUNCTION update_database_table_stats() IS
-'Copies rows from pg_stat_user_tables into DatabaseTableStats';
+'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
