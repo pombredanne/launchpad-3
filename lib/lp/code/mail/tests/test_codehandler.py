@@ -24,6 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.database import MessageSet
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.handlers import mail_handlers
@@ -244,6 +245,28 @@ class TestCodeHandler(TestCaseWithFactory):
         mail['Reply-to'] = self.factory.getUniqueEmailAddress()
         self.assertEqual(
             mail['Reply-to'], self.code_handler._getReplyAddress(mail))
+
+    def test_process_for_imported_branch(self):
+        """Make sure that the database user is able refer to import branches.
+
+        Import branches have different permission checks than other branches.
+        """
+        mail = self.factory.makeSignedMessage(body=' merge approved')
+        code_import = self.factory.makeCodeImport()
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=code_import.branch)
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        pop_notifications()
+        self.code_handler.process(mail, email_addr, None)
+        notification = pop_notifications()[0]
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        target = code_import.branch.bzr_identity
+        self.assertTrue(
+            "You are not a reviewer for the branch %s." % target
+            in message.get_payload(decode=True))
 
     def test_processVote(self):
         """Process respects the vote command."""
