@@ -20,7 +20,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob, BuildFarmJobDerived)
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -46,6 +47,14 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
 
     def __init__(self, branch_job):
         super(TranslationTemplatesBuildJob, self).__init__(branch_job)
+
+    def _set_build_farm_job(self):
+        """ Setup the IBuildFarmJob delegate.
+
+        We override this to provide a non-database delegate that simply
+        provides required functionality to the queue system."""
+        self.build_farm_job = BuildFarmJob(
+            job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
 
     def score(self):
         """See `IBuildFarmJob`."""

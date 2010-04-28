@@ -14,8 +14,10 @@ BuildFarmJob by inheriting BuildFarmJobDerived.
     >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
 
-The BuildFarmJob class does not (yet) do a lot itself, other than
-providing default implementations for its methods.
+The BuildFarmJob class provides many of the common attributes used by
+different types of build farm jobs, as well as default implementations
+for the common methods.  The BuildFarmJob class provides default
+implementations for many build-related methods.
 
     >>> print buildfarmjob.getLogFileName()
     buildlog.txt
@@ -25,6 +27,7 @@ providing default implementations for its methods.
     ...
     NotImplementedError
 
+For more details, please refer to lp.buildmaster.tests.test_buildfarmjob.
 
 BuildFarmJobDerived
 ===================
@@ -41,4 +44,3 @@ This class also includes the getByJob() class method used to find the
 instance of a specific build-farm job implementation associated with a
 given Job instance which must be called in the context of a concrete
 derived class. See lp.buildmaster.tests.test_buildqueue for examples.
-
