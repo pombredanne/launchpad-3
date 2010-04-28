@@ -92,7 +92,8 @@ class BuildFarmJobOldDerived:
     def _set_build_farm_job(self):
         """Set the build farm job to which we will delegate.
 
-        This is just a hook that can be used
+        Deriving classes must set the build_farm_job attribute for the
+        delegation.
         """
         raise NotImplementedError
 
@@ -172,6 +173,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None):
+        super(BuildFarmJob, self).__init__()
         self.job_type, self.status, self.process, self.virtualized = (
             job_type,
             status,

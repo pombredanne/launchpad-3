@@ -13,7 +13,6 @@ from storm.locals import Int, Reference, Storm, Unicode
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias)
