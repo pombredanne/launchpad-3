@@ -10,6 +10,7 @@ from canonical.lazr.utils import smartquote
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 from lp.translations.interfaces.distroserieslanguage import (
@@ -133,6 +134,7 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
             name='crumb-tester', displayname="Crumb Tester")
         series = self.factory.makeDistroRelease(
             name="test", version="1.0", distribution=distribution)
+        series.hide_all_translations = False
         serieslanguage = getUtility(IDistroSeriesLanguageSet).getDummy(
             series, self.language)
         self._testContextBreadcrumbs(
@@ -162,7 +164,7 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
 class TestPOTemplateBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
     def test_potemplate(self):
         product = self.factory.makeProduct(
-            name='crumb-tester', displayname="Crumb Tester")
+            name='crumb-tester', displayname="Crumb Tester", official_rosetta=True)
         series = self.factory.makeProductSeries(
             name="test", product=product)
         potemplate = self.factory.makePOTemplate(name="template",
@@ -184,7 +186,7 @@ class TestPOFileBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
         super(TestPOFileBreadcrumbs, self).setUp()
         self.language = getUtility(ILanguageSet)['eo']
         self.product = self.factory.makeProduct(
-            name='crumb-tester', displayname="Crumb Tester")
+            name='crumb-tester', displayname="Crumb Tester", official_rosetta=True)
         self.series = self.factory.makeProductSeries(
             name="test", product=self.product)
         self.potemplate = self.factory.makePOTemplate(self.series,
