@@ -70,7 +70,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
         pass
 
 
-def kill_by_pidfile(pidfile_path):
+def kill_by_pidfile(pidfile_path, poll_interval=0.1, num_polls=50):
     """Kill a process identified by the pid stored in a file.
 
     The pid file is removed from disk.
@@ -128,7 +128,13 @@ class TacTestSetup:
         remove_if_exists(self.logfile)
 
         self.setUpRoot()
-        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
+        args = [sys.executable,
+                # XXX: 2010-04-26, Salgado, bug=570246: Deprecation warnings
+                # in Twisted are not our problem.  They also aren't easy to
+                # suppress, and cause test failures due to spurious stderr
+                # output.  Just shut the whole bloody mess up.
+                '-Wignore::DeprecationWarning',
+                twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')

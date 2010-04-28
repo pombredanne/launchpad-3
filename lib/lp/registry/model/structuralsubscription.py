@@ -45,7 +45,8 @@ class StructuralSubscription(SQLBase):
         dbName='productseries', foreignKey='ProductSeries', notNull=False,
         default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone', notNull=False,
         default=None)

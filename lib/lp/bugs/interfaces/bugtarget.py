@@ -12,6 +12,7 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasBugHeat',
     'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
@@ -49,6 +50,8 @@ class IHasBugs(Interface):
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
+    high_bugtasks = Attribute(
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
@@ -56,10 +59,8 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
-    max_bug_heat = Attribute(
-        "The current highest bug heat value for this target.")
     has_bugtasks = Attribute(
-        "True if at least one BugTask has ever been reported for this target.")
+        "True if a BugTask has ever been reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
@@ -211,13 +212,6 @@ class IHasBugs(Interface):
                        None, all statuses will be included.
         """
 
-    def setMaxBugHeat(heat):
-        """Set the max_bug_heat for this context."""
-
-    def recalculateMaxBugHeat():
-        """Recalculate and set the max_bug_heat for this context."""
-
-
 
 class IBugTarget(IHasBugs):
     """An entity on which a bug can be reported.
@@ -255,6 +249,19 @@ class IBugTarget(IHasBugs):
 IBugTask['target'].schema = IBugTarget
 IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
+
+
+class IHasBugHeat(Interface):
+    """An entity which has bug heat."""
+
+    max_bug_heat = Attribute(
+        "The current highest bug heat value for this entity.")
+
+    def setMaxBugHeat(heat):
+        """Set the max_bug_heat for this context."""
+
+    def recalculateMaxBugHeat():
+        """Recalculate and set the max_bug_heat for this context."""
 
 
 class BugDistroSeriesTargetDetails:

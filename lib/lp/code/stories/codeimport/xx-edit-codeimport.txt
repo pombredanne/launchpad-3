@@ -12,7 +12,7 @@ can see a link to edit the details.
 
     >>> login(ANONYMOUS)
     >>> registrant = factory.makePerson(password='test')
-    >>> svn_import = factory.makeCodeImport(
+    >>> svn_import = factory.makeProductCodeImport(
     ...     svn_branch_url='svn://svn.example.com/fooix/trunk',
     ...     registrant=registrant)
     >>> svn_import_location = str(canonical_url(svn_import.branch))

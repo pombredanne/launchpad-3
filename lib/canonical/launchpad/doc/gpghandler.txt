@@ -59,8 +59,8 @@ Let's recover some coherent data and verify if it works as expected:
     >>> verifyObject(IPymeKey, key)
     True
 
-    >>> key.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print key.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
     >>> print key.secret
     False
@@ -119,8 +119,8 @@ Apparently GPGME is able to import an incomplete public key:
     >>> assert key is not None
     >>> verifyObject(IPymeKey, key)
     True
-    >>> key.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print key.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 But we get an error if the damage is big:
 (what probably happened in bug #2547)
@@ -230,10 +230,10 @@ set.
     Launchpad PPA for Celso áéíóú Providelo
 
     >>> uid.comment
-    ''
+    u''
 
     >>> uid.email
-    ''
+    u''
 
 The public key is also available.
 
@@ -332,7 +332,7 @@ in a error.
     Traceback (most recent call last):
     ...
     GPGUploadFailure: Could not reach keyserver at
-    http://localhost:11371 (111, 'Connection refused')
+    http://localhost:11371...Connection refused...
 
 
 == Fingerprint sanitizing ==

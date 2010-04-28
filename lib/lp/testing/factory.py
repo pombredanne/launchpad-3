@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Testing infrastructure for the Launchpad application.
 
 This module should not have any actual tests.
@@ -22,11 +24,8 @@ from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
-from textwrap import dedent
 
 import pytz
-from storm.store import Store
-import transaction
 
 from twisted.python.util import mergeFunctionMetadata
 
@@ -39,9 +38,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -79,12 +77,14 @@ from lp.code.enums import (
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -148,8 +148,8 @@ SPACE = ' '
 
 DIFF = """\
 === zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
---- yvo/yc/pbqr/vagresnprf/qvss.cl	2009-10-01 13:25:12 +0000
-+++ yvo/yc/pbqr/vagresnprf/qvss.cl	2010-02-02 15:48:56 +0000
+--- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000
++++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000
 @@ -121,6 +121,10 @@
                  'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
               ernqbayl=Gehr))
@@ -290,12 +290,6 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    # Used for makeBuilderRecipe.
-    MINIMAL_RECIPE_TEXT = dedent(u'''\
-        # bzr-builder format 0.2 deb-version 1.0
-        %s
-        ''')
-
     def doAsUser(self, user, factory_method, **factory_args):
         """Perform a factory method while temporarily logged in as a user.
 
@@ -306,7 +300,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         login(user)
         try:
             result = factory_method(**factory_args)
-            transaction.commit()
         finally:
             logout()
         return result
@@ -327,38 +320,19 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeAccount(self, displayname, email=None, password=None,
                     status=AccountStatus.ACTIVE,
-                    rationale=AccountCreationRationale.UNKNOWN,
-                    commit=True):
-        """Create and return a new Account.
-
-        If commit is True, we do a transaction.commit() at the end so that the
-        newly created objects can be seen in other stores as well.
-        """
+                    rationale=AccountCreationRationale.UNKNOWN):
+        """Create and return a new Account."""
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
         if email is None:
             email = self.getUniqueEmailAddress()
+        email_status = EmailAddressStatus.PREFERRED
+        if status != AccountStatus.ACTIVE:
+            email_status = EmailAddressStatus.NEW
         email = self.makeEmail(
-            email, person=None, account=account,
-            email_status=EmailAddressStatus.PREFERRED)
-        if commit:
-            transaction.commit()
+            email, person=None, account=account, email_status=email_status)
         return account
-
-    def makePerson(self, *args, **kwargs):
-        """As makePersonNoCommit, except with an implicit transaction commit.
-
-        makePersonNoCommit makes changes to two seperate database connections,
-        and the returned Person can have odd behavior until a commit is
-        made. For example, person.preferredemail will be None as this
-        is looking in the main Store for email address details, not the
-        email address master Store (the auth Store).
-        """
-        person = self.makePersonNoCommit(*args, **kwargs)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
-        return person
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
@@ -373,20 +347,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             active=True,
             can_encrypt=False)
 
-    def _stuff_preferredemail_cache(self, person):
-        """Stuff the preferredemail cache.
-
-        cachedproperty does not get reset across transactions,
-        so person.preferredemail can contain a bogus value even after
-        a commit, despite all changes now being available in the main
-        store.
-        """
-        naked_person = removeSecurityProxy(person)
-        naked_person._preferredemail_cached = Store.of(person).find(
-            EmailAddress, personID=person.id,
-            status=EmailAddressStatus.PREFERRED).one()
-
-    def makePersonNoCommit(
+    def makePerson(
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None):
@@ -439,10 +400,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
-            person.validateAndEnsurePreferredEmail(email)
             account = IMasterStore(Account).get(
                 Account, person.accountID)
             account.status = AccountStatus.ACTIVE
+            person.validateAndEnsurePreferredEmail(email)
 
         removeSecurityProxy(email).status = email_address_status
 
@@ -487,6 +448,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
             name=variable_name, displayname=full_name)
         if set_preferred_email:
+            # setPreferredEmail no longer activates the account
+            # automatically.
+            account = IMasterStore(Account).get(Account, person.accountID)
+            account.activate(
+                "Activated by factory.makePersonByName",
+                password='foo',
+                preferred_email=email)
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
@@ -498,8 +466,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         getUtility(IEmailAddressSet).new(
             alternative_address, person, EmailAddressStatus.VALIDATED,
             account)
-        transaction.commit()
-        self._stuff_preferredemail_cache(person)
         return person
 
     def makeEmail(self, address, person, account=None, email_status=None):
@@ -565,8 +531,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
-        transaction.commit()
-        self._stuff_preferredemail_cache(team)
         return team
 
     def makePoll(self, team, name, title, proposition):
@@ -634,7 +598,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProcessorFamily(self, name, title=None, description=None,
                             restricted=False):
         """Create a new processor family.
-        
+
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
@@ -677,24 +641,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             signature_content=signature_content,
             description=description)
 
-    def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an explicit transaction commit.
-
-        This ensures that generated owners and registrants are fully
-        flushed and available from all Stores.
-        """
-        product = self.makeProductNoCommit(*args, **kwargs)
-        transaction.commit()
-        return product
-
-    def makeProductNoCommit(
+    def makeProduct(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        official_rosetta=None):
+        official_rosetta=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
@@ -722,6 +676,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             product.official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
+        if bug_supervisor is not None:
+            naked_product = removeSecurityProxy(product)
+            naked_product.bug_supervisor = bug_supervisor
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -744,7 +701,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
                     description=None):
-        """Create and return a new, arbitrary Project."""
+        """Create and return a new, arbitrary ProjectGroup."""
         if owner is None:
             owner = self.makePerson()
         if name is None:
@@ -1125,9 +1082,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             to this URL.
         """
         if product is None:
-            product = self.makeProductNoCommit()
+            product = self.makeProduct()
         if owner is None:
-            owner = self.makePersonNoCommit()
+            owner = self.makePerson()
         if title is None:
             title = self.getUniqueString()
         if comment is None:
@@ -1209,8 +1166,43 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
 
-        return getUtility(IBugWatchSet).createBugWatch(
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
+
+        # You need to be an admin to set next_check on a BugWatch.
+        def set_next_check(bug_watch):
+            bug_watch.next_check = datetime.now(pytz.timezone('UTC'))
+
+        person = getUtility(IPersonSet).getByName('name16')
+        run_with_login(person, set_next_check, bug_watch)
+        return bug_watch
+
+    def makeBugComment(self, bug=None, owner=None, subject=None, body=None):
+        """Create and return a new bug comment.
+
+        :param bug: An `IBug` or a bug ID or name, or None, in which
+            case a new bug is created.
+        :param owner: An `IPerson`, or None, in which case a new
+            person is created.
+        :param subject: An `IMessage` or a string, or None, in which
+            case a new message will be generated.
+        :param body: An `IMessage` or a string, or None, in which
+            case a new message will be generated.
+        :return: An `IBugMessage`.
+        """
+        if bug is None:
+            bug = self.makeBug()
+        elif isinstance(bug, (int, long, basestring)):
+            bug = getUtility(IBugSet).getByNameOrID(str(bug))
+        if owner is None:
+            owner = self.makePerson()
+        if subject is None:
+            subject = self.getUniqueString()
+        if body is None:
+            body = self.getUniqueString()
+        return bug.newMessage(owner=owner, subject=subject,
+                              content=body, parent=None, bugwatch=None,
+                              remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
                           comment=None, filename=None, content_type=None,
@@ -1370,8 +1362,22 @@ class LaunchpadObjectFactory(ObjectFactory):
         return target.newFAQ(
             owner=target.owner, title=title, content='content')
 
+    def makePackageCodeImport(self, sourcepackage=None, **kwargs):
+        """Make a code import targetting a sourcepackage."""
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        target = IBranchTarget(sourcepackage)
+        return self.makeCodeImport(target=target, **kwargs)
+
+    def makeProductCodeImport(self, product=None, **kwargs):
+        """Make a code import targetting a product."""
+        if product is None:
+            product = self.makeProduct()
+        target = IBranchTarget(product)
+        return self.makeCodeImport(target=target, **kwargs)
+
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None, product=None, branch_name=None,
+                       cvs_module=None, target=None, branch_name=None,
                        git_repo_url=None, hg_repo_url=None, registrant=None,
                        rcs_type=None):
         """Create and return a new, arbitrary code import.
@@ -1384,8 +1390,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             hg_repo_url is None):
             svn_branch_url = self.getUniqueURL()
 
-        if product is None:
-            product = self.makeProduct()
+        if target is None:
+            target = IBranchTarget(self.makeProduct())
         if branch_name is None:
             branch_name = self.getUniqueString('name')
         if registrant is None:
@@ -1399,23 +1405,23 @@ class LaunchpadObjectFactory(ObjectFactory):
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, product, branch_name, rcs_type=rcs_type,
+                registrant, target, branch_name, rcs_type=rcs_type,
                 url=svn_branch_url)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
-                registrant, product, branch_name,
+                registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url)
         elif hg_repo_url is not None:
             return code_import_set.new(
-                registrant, product, branch_name,
+                registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
                 url=hg_repo_url)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
-                registrant, product, branch_name,
+                registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
 
@@ -1484,10 +1490,6 @@ class LaunchpadObjectFactory(ObjectFactory):
                               merge_proposal=None):
         if sender is None:
             sender = self.makePerson()
-            # Until we commit, sender.preferredemail returns None
-            # because the email address changes pending in the auth Store
-            # are not available via the main Store.
-            transaction.commit()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -1525,7 +1527,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         :param branch: If supplied, the branch to set as
             ProductSeries.branch.
-        :param product: If supplied, the name of the series.
+        :param name: If supplied, the name of the series.
         :param product: If supplied, the series is created for this product.
             Otherwise, a new product is created.
         """
@@ -1579,12 +1581,14 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None):
+                          parent_series=None, name=None, displayname=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
         if name is None:
             name = self.getUniqueString()
+        if displayname is None:
+            displayname = name.capitalize()
         if version is None:
             version = "%s.0" % self.getUniqueInteger()
 
@@ -1594,7 +1598,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         series = naked_distribution.newSeries(
             version=version,
             name=name,
-            displayname=name.capitalize(),
+            displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
@@ -1629,7 +1633,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
-                    virtualized=True, description=None):
+                    virtualized=True, description=None, displayname=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1662,18 +1666,20 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         archive = getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name, enabled=enabled,
-            require_virtualized=virtualized, description=description)
+            distribution=distribution, name=name, displayname=displayname,
+            enabled=enabled, require_virtualized=virtualized,
+            description=description)
 
         if private:
-            archive.private = True
-            archive.buildd_secret = "sekrit"
+            naked_archive = removeSecurityProxy(archive)
+            naked_archive.private = True
+            naked_archive.buildd_secret = "sekrit"
 
         return archive
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
-                    virtualized=True, vm_host=None):
+                    virtualized=True, vm_host=None, manual=False):
         """Make a new builder for i386 virtualized builds by default.
 
         Note: the builder returned will not be able to actually build -
@@ -1697,7 +1703,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IBuilderSet).new(
             processor, url, name, title, description, owner, active,
-            virtualized, vm_host)
+            virtualized, vm_host, manual=manual)
 
     def makeRecipe(self, *branches):
         """Make a builder recipe that references `branches`.
@@ -1710,7 +1716,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
         other_branches = branches[1:]
-        text = self.MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
         parser = RecipeParser(text)
@@ -1718,7 +1724,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, *branches):
+                                name=None, description=None, branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1726,22 +1732,34 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
+        if description is None:
+            description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
-        return getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, distroseries, sourcepackagename, name, recipe)
+        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
+            registrant, owner, [distroseries], sourcepackagename, name,
+            recipe, description)
+        IStore(source_package_recipe).flush()
+        return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
-                                     sourcename=None):
+                                     sourcename=None, distroseries=None):
         """Make a new SourcePackageRecipeBuild."""
-        if sourcepackage is None:
-            sourcepackage = self.makeSourcePackage(sourcename=sourcename)
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe()
+            recipe = self.makeSourcePackageRecipe(
+                sourcepackagename=self.makeSourcePackageName(sourcename))
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if sourcepackage is None:
+            sourcepackage = distroseries.getSourcePackage(
+                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
         if archive is None:
@@ -1754,11 +1772,12 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,
-        sourcename=None):
+        sourcename=None, recipe_build=None):
         """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
         testing."""
-        recipe_build = self.makeSourcePackageRecipeBuild(
-            sourcename=sourcename)
+        if recipe_build is None:
+            recipe_build = self.makeSourcePackageRecipeBuild(
+                sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1946,8 +1965,22 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list = self.makeMailingList(team, owner)
         return team, team_list
 
+    def makeMirrorProbeRecord(self, mirror):
+        """Create a probe record for a mirror of a distribution."""
+        log_file = StringIO()
+        log_file.write("Fake probe, nothing useful here.")
+        log_file.seek(0)
+
+        library_alias = getUtility(ILibraryFileAliasSet).create(
+            name='foo', size=len(log_file.getvalue()),
+            file=log_file, contentType='text/plain')
+
+        proberecord = mirror.newProbeRecord(library_alias)
+        return proberecord
+
     def makeMirror(self, distribution, displayname, country=None,
-                   http_url=None, ftp_url=None, rsync_url=None):
+                   http_url=None, ftp_url=None, rsync_url=None,
+                   official_candidate=False):
         """Create a mirror for the distribution."""
         # If no URL is specified create an HTTP URL.
         if http_url is None and ftp_url is None and rsync_url is None:
@@ -1966,7 +1999,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             http_base_url=http_url,
             ftp_base_url=ftp_url,
             rsync_base_url=rsync_url,
-            official_candidate=False)
+            official_candidate=official_candidate)
         return mirror
 
     def makeUniqueRFC822MsgId(self):
@@ -1996,11 +2029,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(
-        self, sourcepackagename=None, distroseries=None, sourcename=None):
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
         """Make an `ISourcePackage`."""
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName(sourcename)
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
@@ -2072,6 +2107,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
+            changelog=None,
             changelog_entry=None,
             dsc=None,
             copyright=self.getUniqueString(),
@@ -2183,14 +2219,20 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeDistroRelease()
         if pocket is None:
             pocket = self.getAnyPocket()
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         return SuiteSourcePackage(distroseries, pocket, sourcepackagename)
 
     def makeDistributionSourcePackage(self, sourcepackagename=None,
                                       distribution=None):
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        # Make sure we have a real sourcepackagename object.
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
         if distribution is None:
             distribution = self.makeDistribution()
 
@@ -2364,6 +2406,5 @@ class LaunchpadObjectFactory(ObjectFactory):
         if blob is None:
             blob = self.getUniqueString()
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
-        transaction.commit()
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)

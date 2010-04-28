@@ -301,8 +301,8 @@ not have edit permission.
     >>> login_person(person)
 
 
-Project milestones
-------------------
+ProjectGroup milestones
+-----------------------
 
 The projectgroup milestones are virtual and cannot be modified. The template
 generates CSS that hides the space occupied by the side portlets.

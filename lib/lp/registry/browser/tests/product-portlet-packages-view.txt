@@ -27,7 +27,7 @@ does not happen automatically.
     ...     transaction.commit()
     ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     updated = ubuntu.updateCompleteSourcePackageCache(
+    ...     ignore = ubuntu.updateCompleteSourcePackageCache(
     ...         archive=ubuntu.main_archive, log=logger, ztm=transaction)
     ...     transaction.commit()
     ...     reconnect_stores('launchpad')
@@ -39,7 +39,6 @@ does not happen automatically.
     ...     login(ANONYMOUS)
     ...     return (ubuntu, product, spn)
 
-
 Let's create a test project.
 
     >>> product = factory.makeProduct(name="bingo")
@@ -49,6 +48,10 @@ Let's create a test project.
     ...     principal=product.owner)
     >>> print view.suggestions
     []
+
+The view does not set focus to its form otherwise it will cause the page to scroll.
+    >>> view.focusedElementScript()
+    ''
 
 No distribution source packages match so the user is shown an
 appropriate message asking to suggest a match.
@@ -61,9 +64,10 @@ appropriate message asking to suggest a match.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    There are no unlinked source packages that are a good match. Can you suggest one?
-    Link to Ubuntu package
-
+    There are no unlinked source packages that are a good match. Can you
+    suggest one?
+    Ubuntu Hoary packages:
+    Choose another Ubuntu package
 
 A distribution source package in a distribution other than ubuntu will
 not be suggested.
@@ -92,15 +96,31 @@ for the current Ubuntu series will NOT be suggested.
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
+    >>> view.suggestions
+    []
+
+
+A source package that does NOT have a publishing history in the PENDING
+or PUBLISHED statuses will NOT be suggested.
+
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
+    ...     status=PackagePublishingStatus.DELETED)
+    >>> (ubuntu, product, spn) = updateCache()
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages",
+    ...     principal=product.owner)
     >>> for dsp in view.suggestions:
     ...     print dsp.name
 
 A source package that does have a publishing history for the current
-Ubuntu series will be suggested.
+Ubuntu series will be suggested. The view as a distributionsourcepackage
+field.
 
     >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> (ubuntu, product, spn) = updateCache()
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
+    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -108,9 +128,14 @@ Ubuntu series will be suggested.
     ...     print dsp.name
     bingo
 
+    >>> for field in view.form_fields:
+    ...     print field.__name__
+    distributionsourcepackage
+
 And the user is presented with a form to select the distribution
 source package.
 
+    >>> login_person(product.owner)
     >>> content = find_tag_by_id(view.render(), 'portlet-packages')
 
     >>> print extract_text(content)
@@ -120,7 +145,7 @@ source package.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     bingo...
 
 A distribution series with a matching name in the Ubuntu current
@@ -146,6 +171,7 @@ If multiple source packages match they will all be displayed.
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
     >>> (ubuntu, product, spn) = updateCache()
+    >>> login_person(product.owner)
     >>> view = create_initialized_view(
     ...     product, name="+portlet-packages",
     ...     principal=product.owner)
@@ -162,9 +188,14 @@ If multiple source packages match they will all be displayed.
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
-    Ubuntu packages:
+    Ubuntu Hoary packages:
     bingo
     ba-bingo...
+
+But the limit is 8 packages.
+
+    >>> view.max_suggestions
+    8
 
 If a package matches by name but is already linked to an Ubuntu
 package then it will not be shown as one of the suggestions.
@@ -182,3 +213,132 @@ package then it will not be shown as one of the suggestions.
     >>> for dsp in view.suggestions:
     ...     print dsp.name
     bingo
+
+The view is not rendered when there are no source packages and the user is
+anonymous.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.sourcepackages
+    []
+    >>> view.can_show_portlet
+    False
+
+The can_show_portlet property indicates that the portlet can be rendered. The
+portlet is not rendered if there are no source packages and the environment
+is lpnet.
+
+    >>> config.launchpad.is_lpnet
+    False
+
+    >>> login_person(product.owner)
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.sourcepackages
+    []
+
+    >>> view.can_show_portlet
+    True
+
+    >>> print extract_text(view.render())
+    All packages
+    Packages in Ubuntu ...
+
+    >>> test_data = """
+    ...     [launchpad]
+    ...     is_lpnet: True
+    ...     """
+    >>> config.push('test_data', test_data)
+    >>> config.launchpad.is_lpnet
+    True
+
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", principal=product.owner)
+    >>> view.can_show_portlet
+    False
+
+    >>> print extract_text(view.render())
+    <BLANKLINE>
+
+    >>> ignore = config.pop('test_data')
+
+The +portlet-packages view can create a Packaging link.
+
+    >>> product.sourcepackages
+    []
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'bingo',
+    ...     'field.actions.link': 'Set Ubuntu package information',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> for sp in product.sourcepackages:
+    ...     print sp.name
+    bingo
+
+    >>> from lp.registry.interfaces.packaging import (
+    ...     IPackagingUtil, PackagingType)
+
+    >>> packaging_util = getUtility(IPackagingUtil)
+    >>> packaging_util.deletePackaging(
+    ...     product.development_focus,
+    ...     getUtility(ISourcePackageNameSet)['bingo'],
+    ...     ubuntu.currentseries)
+
+Choosing the other_package option issues a redirect to the +ubuntupkg. The
+option is the default value.
+
+    >>> view.initial_values['distributionsourcepackage'] is view.other_package
+    True
+
+    >>> form = {
+    ...     'field.distributionsourcepackage': 'OTHER_PACKAGE',
+    ...     'field.actions.link': 'Set Ubuntu package information',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name="+portlet-packages", form=form)
+    >>> view.errors
+    []
+
+    >>> product.sourcepackages
+    []
+
+    >>> print view.next_url
+    http://launchpad.dev/bingo/trunk/+ubuntupkg
+
+The view's sourcepackages property filters out obsolete packages and
+reverses the order so that the latest packages for the current ubuntu
+series are shown first.
+
+    >>> spn = factory.makeSourcePackageName(name="a-obsolete-package")
+    >>> packaging_util.createPackaging(
+    ...     product.development_focus, spn, ubuntu.currentseries,
+    ...     PackagingType.PRIME, owner=product.owner)
+    >>> spn = factory.makeSourcePackageName(name="b-recent-package")
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
+    >>> packaging_util.createPackaging(
+    ...     product.development_focus, spn, ubuntu.currentseries,
+    ...     PackagingType.PRIME, owner=product.owner)
+    >>> spn = factory.makeSourcePackageName(name="c-current-package")
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
+    >>> packaging_util.createPackaging(
+    ...     product.development_focus, spn, ubuntu.currentseries,
+    ...     PackagingType.PRIME, owner=product.owner)
+    >>> for package in product.sourcepackages:
+    ...     print package.name
+    a-obsolete-package
+    b-recent-package
+    c-current-package
+
+    >>> view = create_initialized_view(product, name="+portlet-packages")
+    >>> for package in view.sourcepackages:
+    ...     print package.name
+    c-current-package
+    b-recent-package

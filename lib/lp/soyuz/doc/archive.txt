@@ -1319,6 +1319,14 @@ This method is aware of the archive dependency tree. So, even when a
 package is not published on the context PPA but is available somewhere
 in the archive dependency domain it will be found.
 
+We also add another archive dependency here to exercise findDepCandidateByName
+a little more.
+
+    >>> joe = factory.makePerson(email='joe@example.com')
+    >>> second_ppa = factory.makeArchive(name="secondppa", owner=joe)
+    >>> second_archive_dep = cprov.archive.addArchiveDependency(
+    ...     second_ppa, release_pocket, main_component)
+
 'at' binary package is not present in Celso's PPA.
 
     >>> cprov_archive.getAllPublishedBinaries(name='at').count()
@@ -1341,6 +1349,9 @@ Then a lookup on Celso's PPA will find it.
     >>> primary_candidate == ppa_candidate
     True
 
+And clean-up after ourselves:
+
+    >>> ignore = cprov.archive.removeArchiveDependency(second_ppa)
 
 == Creating a package copy request from an IArchive ==
 
@@ -1349,7 +1360,7 @@ package copy request:
 
     >>> requestor = factory.makePerson(name='me-copy')
     >>> copy_target = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, name='my-copy-archive')
+    ...     distribution=ubuntu, name='my-copy-archive', owner=requestor)
     >>> pcr = ubuntu.main_archive.requestPackageCopy(copy_target, requestor)
     >>> print pcr
     Package copy request
@@ -1398,10 +1409,10 @@ PPAs are created with the name attribute set to 'ppa' by default.
     ppa
 
 We can take the opportunity to check if the default 'authorized_size'
-corresponds to what we state in our policy, 1024 MiB:
+corresponds to what we state in our policy, 2048 MiB:
 
     >>> name16.archive.authorized_size
-    1024
+    2048
 
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
@@ -1520,7 +1531,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    18
+    20
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
@@ -1921,7 +1932,7 @@ given purpose:
     ...     ubuntu, purposes=ArchivePurpose.COPY)
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
 
 The method `getArchivesForDistribution` can also be used with multiple
 purposes. First we'll check how many partner archives are in the DB:
@@ -1939,7 +1950,7 @@ archives:
     ...     ubuntu, purposes=[ArchivePurpose.COPY, ArchivePurpose.PARTNER])
     >>> print_archive_names(copy_n_partner_archives)
     Name             Owner         Private  Enabled
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
     partner          ubuntu-team   False    True
 
 First we create four copy archives for ubuntu:
@@ -1971,7 +1982,7 @@ Now the `getArchivesForDistribution` finds the relevant COPY archives:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  False    True
+    my-copy-archive  me-copy       False    True
     team-archive     t1            False    True
     ultimate-copy    copy-owner1   False    True
 
@@ -2022,7 +2033,7 @@ The owner of the archive will also see their private archive in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  True     True
+    my-copy-archive  me-copy       True     True
     ultimate-copy    copy-owner1   False    True
 
 An admin will see all the private and disabled archives in the results:
@@ -2033,7 +2044,7 @@ An admin will see all the private and disabled archives in the results:
     >>> print_archive_names(ubuntu_copy_archives)
     Name             Owner         Private  Enabled
     fine-copy        copy-owner2   False    True
-    my-copy-archive  person-name6  True     True
+    my-copy-archive  me-copy       True     True
     team-archive     t1            True     True
     there-we-go      juergen       False    False
     true-copy        copy-owner2   False    False

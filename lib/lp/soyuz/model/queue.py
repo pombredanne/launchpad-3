@@ -43,6 +43,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -397,9 +398,12 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We explicitly allow unsigned uploads here since the .changes file
+        # is pulled from the librarian which are stripped of their
+        # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -430,9 +434,11 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         self.setRejected()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We allow unsigned uploads since they come from the librarian,
+        # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
     @property
@@ -612,6 +618,11 @@ class PackageUpload(SQLBase):
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
+                for custom_file in self.customfiles:
+                    update_files_privacy(custom_file)
+                    debug(logger,
+                          "Re-uploaded custom file %s to librarian" %
+                          custom_file.libraryfilealias.filename)
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     pas_verify = BuildDaemonPackagesArchSpecific(
                         config.builddmaster.root, self.distroseries)
@@ -694,11 +705,10 @@ class PackageUpload(SQLBase):
             unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
-        if self.isPPA():
-            # Leaving the PGP signature on a package uploaded to a PPA
-            # leaves the possibility of someone hijacking the notification
-            # and uploading to the Ubuntu archive as the signer.
-            changes_lines = self._stripPgpSignature(changes_lines)
+        # Leaving the PGP signature on a package uploaded
+        # leaves the possibility of someone hijacking the notification
+        # and uploading to any archive as the signer.
+        changes_lines = self._stripPgpSignature(changes_lines)
 
         return changes, changes_lines
 
@@ -1365,7 +1375,7 @@ class PackageUploadBuild(SQLBase):
         foreignKey='PackageUpload'
         )
 
-    build = ForeignKey(dbName='build', foreignKey='Build')
+    build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
@@ -1696,9 +1706,11 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         sourcepackagerelease = self.packageupload.sourcepackagerelease
 
-        # Ignore translation coming from PPA.
-        if self.packageupload.isPPA():
-            debug(logger, "Skipping translations since it is a PPA.")
+        # Ignore translations not with main distribution purposes.
+        if self.packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+            debug(logger,
+                  "Skipping translations since its purpose is not "
+                  "in MAIN_ARCHIVE_PURPOSES.")
             return
 
         valid_pockets = (

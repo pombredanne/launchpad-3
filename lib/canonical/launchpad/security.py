@@ -1,13 +1,15 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Security policies for using content objects."""
 
 __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getUtility
+from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
 from lp.archiveuploader.permission import (
@@ -26,6 +28,9 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
+from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -73,7 +78,7 @@ from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount)
-from lp.soyuz.interfaces.build import IBuild
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingEdit,
@@ -92,6 +97,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup, IProjectGroupSet)
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.code.interfaces.seriessourcepackagebranch import (
@@ -238,7 +244,7 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
@@ -369,6 +375,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
     usedfor = IDistributionMirror
+
+
+class ViewMilestone(AnonymousAuthorization):
+    """Anyone can view an IMilestone."""
+    usedfor = IMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -1435,12 +1446,12 @@ class EditBuilder(AdminByBuilddAdmin):
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
 
 class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
-    usedfor = IBuild
+    usedfor = IBinaryPackageBuild
 
     def checkAuthenticated(self, user):
         """Check write access for user and different kinds of archives.
@@ -1475,8 +1486,9 @@ class EditBuildRecord(AdminByBuilddAdmin):
 class ViewBuildRecord(EditBuildRecord):
     permission = 'launchpad.View'
 
-    # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
-    # otherwise users are likely to get 403 errors, or worse.
+    # This code MUST match the logic in
+    # IBinaryPackageBuildSet.getBuildsForBuilder() otherwise users are
+    # likely to get 403 errors, or worse.
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""
         if not self.obj.archive.private:
@@ -1517,7 +1529,7 @@ class ViewBuildFarmJob(AuthorizationBase):
     """Permission to view an `IBuildFarmJob`.
 
     This permission is based entirely on permission to view the
-    associated `IBuild` and/or `IBranch`.
+    associated `IBinaryPackageBuild` and/or `IBranch`.
     """
     permission = 'launchpad.View'
     usedfor = IBuildFarmJob
@@ -1627,9 +1639,19 @@ def can_edit_team(team, user):
         return team in user.person.getAdministratedTeams()
 
 
+class ViewLanguageSet(AnonymousAuthorization):
+    """Anyone can view an ILangaugeSet."""
+    usedfor = ILanguageSet
+
+
 class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguageSet
+
+
+class ViewLanguage(AnonymousAuthorization):
+    """Anyone can view an ILangauge."""
+    usedfor = ILanguage
 
 
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
@@ -2152,6 +2174,52 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
+class DerivedAuthorization(AuthorizationBase):
+    """An Authorization that is based on permissions for other objects.
+
+    Implementations must define permission, usedfor and iter_objects.
+    iter_objects should iterate through the objects to check permission on.
+
+    Failure on the permission check for any object causes an overall failure.
+    """
+
+    def iter_adapters(self):
+        return (
+            getAdapter(obj, IAuthorization, self.permission)
+            for obj in self.iter_objects())
+
+    def checkAuthenticated(self, user):
+        for adapter in self.iter_adapters():
+            if not adapter.checkAuthenticated(user):
+                return False
+        return True
+
+    def checkUnauthenticated(self):
+        for adapter in self.iter_adapters():
+            if not adapter.checkUnauthenticated():
+                return False
+        return True
+
+
+class ViewSourcePackageRecipe(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipe
+
+    def iter_objects(self):
+        return self.obj.getReferencedBranches()
+
+
+class ViewSourcePackageRecipeBuild(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipeBuild
+
+    def iter_objects(self):
+        yield self.obj.recipe
+        yield self.obj.archive
+
+
 class ViewSourcePackagePublishingHistory(ViewArchive):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
@@ -2175,7 +2243,8 @@ class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
     usedfor = IBinaryPackagePublishingHistory
 
 
-class ViewBinaryPackageReleaseDownloadCount(ViewSourcePackagePublishingHistory):
+class ViewBinaryPackageReleaseDownloadCount(
+    ViewSourcePackagePublishingHistory):
     """Restrict viewing of binary package download counts."""
     usedfor = IBinaryPackageReleaseDownloadCount
 
@@ -2292,6 +2361,10 @@ class EditEmailAddress(EditByOwnersOrAdmins):
             return True
         return super(EditEmailAddress, self).checkAccountAuthenticated(
             account)
+
+
+class ViewGPGKey(AnonymousAuthorization):
+    usedfor = IGPGKey
 
 
 class ViewIrcID(AnonymousAuthorization):

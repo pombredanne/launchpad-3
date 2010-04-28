@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0613,R0911
+# pylint: disable-msg=C0103,W0613,R0911,F0401
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
@@ -1283,9 +1283,9 @@ class PillarFormatterAPI(CustomizableFormatter):
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
     def link(self, view_name, rootsite='mainsite'):
-        """The html to show a link to a Product, Project or distribution.
+        """The html to show a link to a Product, ProjectGroup or distribution.
 
-        In the case of Products or Project groups we display the custom
+        In the case of Products or ProjectGroups we display the custom
         icon, if one exists. The default URL for a pillar is to the mainsite.
         """
 
@@ -1494,12 +1494,12 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(target)s: %(branch)s')
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {'product': self._context.product.displayname,
+        return {'target': self._context.branch.target.displayname,
                 'branch': self._context.branch.bzr_identity,
                }
 
@@ -1523,22 +1523,15 @@ class BuildBaseFormatterAPI(ObjectFormatterAPI):
         else:
             return ""
 
-    def icon(self, view_name):
-        if not check_permission('launchpad.View', self._context):
-            return '<img src="/@@/processing" alt="[build]" />'
-
-        return BuildImageDisplayAPI(self._context).icon()
-
     def link(self, view_name, rootsite=None):
-        icon = self.icon(view_name)
         build = self._context
         if not check_permission('launchpad.View', build):
-            return '%s private source' % icon
+            return 'private source'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
         title = cgi.escape(build.title)
         archive = self._composeArchiveReference(build.archive)
-        return '<a href="%s">%s%s</a>%s' % (url, icon, title, archive)
+        return '<a href="%s">%s</a>%s' % (url, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
@@ -1600,6 +1593,16 @@ class QuestionFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'id': str(self._context.id), 'title': self._context.title}
+
+
+class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipe objects."""
+
+    _link_summary_template = 'Recipe %(name)s for %(owner)s'
+
+    def _link_summary_values(self):
+        return {'name': self._context.name,
+                'owner': self._context.owner.displayname}
 
 
 class SpecificationFormatterAPI(CustomizableFormatter):

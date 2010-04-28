@@ -123,8 +123,7 @@ from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
@@ -263,22 +262,7 @@ class Person(
         return '<Person at 0x%x %s (%s)>' % (
             id(self), self.name, self.displayname)
 
-    def _sync_displayname(self, attr, value):
-        """Update any related Account.displayname.
-
-        We can't do this in a DB trigger as soon the Account table will
-        in a separate database to the Person table.
-        """
-        if self.accountID is not None:
-            auth_store = getUtility(IStoreSelector).get(
-                AUTH_STORE, MASTER_FLAVOR)
-            account = auth_store.get(Account, self.accountID)
-            if account.displayname != value:
-                account.displayname = value
-        return value
-
-    displayname = StringCol(dbName='displayname', notNull=True,
-                            storm_validator=_sync_displayname)
+    displayname = StringCol(dbName='displayname', notNull=True)
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -837,16 +821,6 @@ class Person(
         """No-op, to satisfy a requirement of HasBugsBase."""
         pass
 
-    @property
-    def max_bug_heat(self):
-        """Return None as this attribute is not implemented for a person.
-
-        XXX deryck 2010-02-28 bug=529846
-        This requires a DB patch to be done correctly, and we're
-        near release and tests are failing.
-        """
-        return None
-
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
         if search_params is None and len(args) == 0:
@@ -876,12 +850,19 @@ class Person(
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
         contributions = []
-        results = self._getProjectsWithTheMostKarma(limit=limit)
+        # Pillars names have no concept of active. Extra pillars names are
+        # requested because deactivated pillars will be filtered out.
+        extra_limit = limit + 5
+        results = self._getProjectsWithTheMostKarma(limit=extra_limit)
         for pillar_name, karma in results:
-            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            contributions.append(
-                {'project': pillar,
-                 'categories': self._getContributedCategories(pillar)})
+            pillar = getUtility(IPillarNameSet).getByName(
+                pillar_name, ignore_inactive=True)
+            if pillar is not None:
+                contributions.append(
+                    {'project': pillar,
+                     'categories': self._getContributedCategories(pillar)})
+            if len(contributions) == limit:
+                break
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
@@ -1187,11 +1168,8 @@ class Person(
                 "You need to specify a reviewer when a team joins another.")
             requester = self
 
-        expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
@@ -1286,7 +1264,7 @@ class Person(
                 comment=comment)
             # Accessing the id attribute ensures that the team
             # creation has been flushed to the database.
-            tm_id = tm.id
+            tm.id
             notify(event(person, self))
         else:
             # We can't use tm.setExpirationDate() here because the reviewer
@@ -2083,6 +2061,19 @@ class Person(
             self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+        # A team can have up to two addresses, the preferred one and one used
+        # by the team mailing list.
+        if self.mailing_list is not None:
+            mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
+                self.mailing_list.address)
+            mailing_list_email = IMasterObject(mailing_list_email)
+        else:
+            mailing_list_email = None
+        all_addresses = IMasterStore(self).find(
+            EmailAddress, EmailAddress.personID == self.id)
+        for address in all_addresses :
+            if address not in (email, mailing_list_email):
+                address.destroySelf()
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
@@ -2100,17 +2091,6 @@ class Person(
         if email is None:
             self._unsetPreferredEmail()
             return
-        if (self.preferredemail is None
-            and self.account_status != AccountStatus.ACTIVE):
-            # XXX sinzui 2008-07-14 bug=248518:
-            # This is a hack to preserve this function's behaviour before
-            # Account was split from Person. This can be removed when
-            # all the callsites ensure that the account is ACTIVE first.
-            account = IMasterStore(Account).get(Account, self.accountID)
-            account.activate(
-                "Activated when the preferred email was set.",
-                password=self.password,
-                preferred_email=email)
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2137,6 +2117,7 @@ class Person(
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
+        IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email
@@ -2283,6 +2264,12 @@ class Person(
 
         return rset
 
+    def getRecipe(self, name):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        return Store.of(self).find(
+            SourcePackageRecipe, SourcePackageRecipe.owner == self,
+            SourcePackageRecipe.name == name).one()
+
     def isUploader(self, distribution):
         """See `IPerson`."""
         permissions = getUtility(IArchivePermissionSet).componentsForUploader(
@@ -2384,6 +2371,14 @@ class Person(
         """See `IPerson`."""
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
+
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == self)
 
 
 class PersonSet:

@@ -204,7 +204,7 @@ doesn't handle the case where the same bug tracker is available through
 different URLs, for example where the host name is different (e.g.,
 bugs.gnome.org vs. bugzilla.gnome.org).
 
-    >>> old_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> old_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).queryByBaseURL(
     ...     'http://bugzilla.gnome.org/bugs')
     >>> gnome_bugzilla.name
@@ -214,7 +214,7 @@ bugs.gnome.org vs. bugzilla.gnome.org).
     ...     text, bug_one, sample_person)
     >>> gnome_bugwatch.bugtracker.name
     u'gnome-bugzilla'
-    >>> new_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> new_bugtracker_count = getUtility(IBugTrackerSet).count
     >>> old_bugtracker_count == new_bugtracker_count
     True
 
@@ -462,9 +462,9 @@ slaves must be updated through their conjoined master.
     >>> import transaction
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestRoundup)
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.launchpad.scripts.logger import FakeLogger
-    >>> bug_watch_updater = BugWatchUpdater(transaction, FakeLogger())
+    >>> bug_watch_updater = CheckwatchesMaster(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://some.where

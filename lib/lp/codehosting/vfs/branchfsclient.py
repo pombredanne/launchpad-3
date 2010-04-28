@@ -11,13 +11,11 @@ __all__ = [
     'BlockingProxy',
     'BranchFileSystemClient',
     'NotInCache',
-    'trap_fault',
     ]
 
 import time
 
 from twisted.internet import defer
-from twisted.web.xmlrpc import Fault
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
 
@@ -136,19 +134,3 @@ class BranchFileSystemClient:
                 'translatePath', self._user_id, path)
             deferred.addCallback(self._addToCache, path)
             return deferred
-
-
-def trap_fault(failure, *fault_classes):
-    """Trap a fault, based on fault code.
-
-    :param failure: A Twisted L{Failure}.
-    :param *fault_codes: `LaunchpadFault` subclasses.
-    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
-        does not match the given codes.
-    :return: The Fault if it matches one of the codes.
-    """
-    failure.trap(Fault)
-    fault = failure.value
-    if fault.faultCode in [cls.error_code for cls in fault_classes]:
-        return fault
-    raise failure

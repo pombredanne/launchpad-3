@@ -66,10 +66,12 @@ __all__ = [
 
 import xmlrpclib
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.errors import (
     NoSuchFile, NotBranchError, NotStacked, PermissionDenied,
     TransportNotPossible, UnstackableBranchFormat)
+from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
 from bzrlib import urlutils
@@ -83,16 +85,17 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy, BranchFileSystemClient, trap_fault)
+    BlockingProxy, BranchFileSystemClient)
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
+from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
-from canonical.launchpad.xmlrpc import faults
+from lp.services.twistedsupport.xmlrpc import trap_fault
 
 
 class BadUrl(Exception):
@@ -696,6 +699,46 @@ class BranchPolicy:
     stacked.
     """
 
+    def createDestinationBranch(self, source_branch, destination_url):
+        """Create a destination branch for 'source_branch'.
+
+        Creates a branch at 'destination_url' that is has the same format as
+        'source_branch'.  Any content already at 'destination_url' will be
+        deleted.  Generally the new branch will have no revisions, but they
+        will be copied for import branches, because this can be done safely
+        and efficiently with a vfs-level copy (see `ImportedBranchPolicy`,
+        below).
+
+        :param source_branch: The Bazaar branch that will be mirrored.
+        :param destination_url: The place to make the destination branch. This
+            URL must point to a writable location.
+        :return: The destination branch.
+        :raises StackedOnBranchNotFound: if the branch that the destination
+            branch will be stacked on does not yet exist in the mirrored area.
+        """
+        dest_transport = get_transport(destination_url)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
+        stacked_on_url = (
+            self.getStackedOnURLForDestinationBranch(
+                source_branch, destination_url))
+        if stacked_on_url is not None:
+            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
+            try:
+                Branch.open(stacked_on_url)
+            except NotBranchError:
+                from lp.codehosting.puller.worker import (
+                    StackedOnBranchNotFound)
+                raise StackedOnBranchNotFound()
+        if isinstance(source_branch, LoomSupport):
+            # Looms suck.
+            revision_id = None
+        else:
+            revision_id = 'null:'
+        source_branch.bzrdir.clone_on_transport(
+            dest_transport, revision_id=revision_id)
+        return Branch.open(destination_url)
+
     def getStackedOnURLForDestinationBranch(self, source_branch,
                                             destination_url):
         """Return the URL of the branch to stack the mirrored copy on.
@@ -764,15 +807,6 @@ class HostedBranchPolicy(BranchPolicy):
      - don't follow references,
      - assert we're pulling from a lp-hosted:/// URL.
     """
-
-    def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
-
-        We do not traverse references for HOSTED branches because that may
-        cause us to connect to remote locations, which we do not allow because
-        we want hosted branches to be mirrored quickly.
-        """
-        return False
 
     def _bzrdirExists(self, url):
         """Return whether a BzrDir exists at `url`."""
@@ -922,6 +956,27 @@ class ImportedBranchPolicy(BranchPolicy):
      - don't follow references,
      - assert the URLs start with the prefix we expect for imported branches.
     """
+
+    def createDestinationBranch(self, source_branch, destination_url):
+        """See `BranchPolicy.createDestinationBranch`.
+
+        Because we control the process that creates import branches, a
+        vfs-level copy is safe and more efficient than a bzr fetch.
+        """
+        source_transport = source_branch.bzrdir.root_transport
+        dest_transport = get_transport(destination_url)
+        while True:
+            # We loop until the remote file list before and after the copy is
+            # the same to catch the case where the remote side is being
+            # mutated as we copy it.
+            if dest_transport.has('.'):
+                dest_transport.delete_tree('.')
+            files_before = set(source_transport.iter_files_recursive())
+            source_transport.copy_tree_to_transport(dest_transport)
+            files_after = set(source_transport.iter_files_recursive())
+            if files_before == files_after:
+                break
+        return Branch.open_from_transport(dest_transport)
 
     def shouldFollowReferences(self):
         """See `BranchPolicy.shouldFollowReferences`.

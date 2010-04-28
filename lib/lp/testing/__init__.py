@@ -1,20 +1,28 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401,C0301
+# pylint: disable-msg=W0401,C0301,F0401
+
+
+from __future__ import with_statement
+
 
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
+    'build_yui_unittest_suite',
     'capture_events',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
+    'launchpadlib_for',
+    'launchpadlib_credentials_for',
     'login',
     'login_person',
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
+    'oauth_access_token_for',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -23,26 +31,30 @@ __all__ = [
     'TestCaseWithFactory',
     'test_tales',
     'time_counter',
+    'unlink_source_packages',
     # XXX: This really shouldn't be exported from here. People should import
     # it from Zope.
     'verifyObject',
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
 
-import copy
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 from pprint import pformat
+import re
 import shutil
 import subprocess
 import subunit
 import sys
 import tempfile
 import time
+import unittest
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
@@ -69,15 +81,20 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
 from canonical.launchpad.webapp import errorlog
 from canonical.config import config
+from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
-    ANONYMOUS, is_logged_in, login, login_person, logout)
+    is_logged_in, login, login_person, logout)
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
+from lp.testing._webservice import (
+    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -396,18 +413,23 @@ class TestCaseWithFactory(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.real_bzr_server = False
 
-    def getUserBrowser(self, url=None):
+    def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
+
+        :param user: The user to open a browser for.
+        :param password: The password to use.  (This cannot be determined
+            because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
         from canonical.launchpad.testing.pages import setupBrowser
         login(ANONYMOUS)
-        user = self.factory.makePerson(password='test')
+        if user is None:
+            user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
         logout()
         browser = setupBrowser(
-            auth="Basic %s:test" % str(email))
+            auth="Basic %s:%s" % (str(email), password))
         if url is not None:
             browser.open(url)
         return browser
@@ -547,6 +569,24 @@ class TestCaseWithFactory(TestCase):
             self.addCleanup(hosted_server.stop_server)
 
 
+class BrowserTestCase(TestCaseWithFactory):
+    """A TestCase class for browser tests.
+
+    This testcase provides an API similar to page tests, and can be used for
+    cases when one wants a unit test and not a frakking pagetest.
+    """
+
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
+
+
 class WindmillTestCase(TestCaseWithFactory):
     """A TestCase class for Windmill tests.
 
@@ -568,25 +608,65 @@ class WindmillTestCase(TestCaseWithFactory):
         self.client.open(url=u'http://launchpad.dev:8085')
 
 
-class WindmillTestCase(TestCaseWithFactory):
-    """A TestCase class for Windmill tests.
+class YUIUnitTestCase(WindmillTestCase):
 
-    It provides a WindmillTestClient (self.client) with Launchpad's front
-    page loaded.
-    """
-
+    layer = None
     suite_name = ''
 
+    _yui_results = None
+    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
+
+    def initialize(self, test_path):
+        self.test_path = test_path
+        self.yui_runner_url = self._view_name + test_path
+
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.client = WindmillTestClient(self.suite_name)
-        # Load the front page to make sure we don't get fooled by stale pages
-        # left by the previous test. (For some reason, when you create a new
-        # WindmillTestClient you get a new session and everything, but if you
-        # do anything before you open() something you'd be operating on the
-        # page that was last accessed by the previous test, which is the cause
-        # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        super(YUIUnitTestCase, self).setUp()
+        client = self.client
+        client.open(url=self.yui_runner_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(id='complete')
+        response = client.commands.getPageText()
+        self._yui_results = {}
+        # Maybe testing.pages should move to lp to avoid circular imports.
+        from canonical.launchpad.testing.pages import find_tags_by_class
+        entries = find_tags_by_class(
+            response['result'], 'yui-console-entry-TestRunner')
+        for entry in entries:
+            category = entry.find(
+                attrs={'class': 'yui-console-entry-cat'})
+            if category is None:
+                continue
+            result = category.string
+            if result not in ('pass', 'fail'):
+                continue
+            message = entry.pre.string
+            test_name, ignore = message.split(':', 1)
+            self._yui_results[test_name] = dict(
+                result=result, message=message)
+
+    def runTest(self):
+        if self._yui_results is None or len(self._yui_results) == 0:
+            self.fail("Test harness or js failed.")
+        for test_name in self._yui_results:
+            result = self._yui_results[test_name]
+            self.assertTrue('pass' == result['result'],
+                    'Failure in %s.%s: %s' % (
+                        self.test_path, test_name, result['message']))
+
+
+def build_yui_unittest_suite(app_testing_path, yui_test_class):
+    suite = unittest.TestSuite()
+    testing_path = os.path.join(config.root, 'lib', app_testing_path)
+    unit_test_names = [
+        file_name for file_name in os.listdir(testing_path)
+        if file_name.startswith('test_') and file_name.endswith('.html')]
+    for unit_test_name in unit_test_names:
+        test_path = os.path.join(app_testing_path, unit_test_name)
+        test_case = yui_test_class()
+        test_case.initialize(test_path)
+        suite.addTest(test_case)
+    return suite
 
 
 class ZopeTestInSubProcess:
@@ -711,16 +791,22 @@ def with_anonymous_login(function):
     return mergeFunctionMetadata(function, wrapped)
 
 
-def run_with_login(person, function, *args, **kwargs):
-    """Run 'function' with 'person' logged in."""
+@contextmanager
+def person_logged_in(person):
     current_person = getUtility(ILaunchBag).user
     logout()
     login_person(person)
     try:
-        return function(*args, **kwargs)
+        yield
     finally:
         logout()
         login_person(current_person)
+
+
+def run_with_login(person, function, *args, **kwargs):
+    """Run 'function' with 'person' logged in."""
+    with person_logged_in(person):
+        return function(*args, **kwargs)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -755,7 +841,7 @@ def run_script(cmd_line):
     script, passed as the `cmd_line` parameter, will fail if it doesn't set it
     up properly.
     """
-    env = copy.copy(os.environ)
+    env = os.environ.copy()
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -865,3 +951,15 @@ def validate_mock_class(mock_class):
                             name, mock_args, real_args))
                     else:
                         break
+
+def unlink_source_packages(product):
+    """Remove all links between the product and source packages.
+
+    A product cannot be deactivated if it is linked to source packages.
+    """
+    packaging_util = getUtility(IPackagingUtil)
+    for source_package in product.sourcepackages:
+        packaging_util.deletePackaging(
+            source_package.productseries,
+            source_package.sourcepackagename,
+            source_package.distroseries)

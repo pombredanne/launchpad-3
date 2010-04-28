@@ -216,7 +216,7 @@ by any user.
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> foogoo = factory.makeProduct(
     ...     name='foogoo', owner=sample_person)
-    >>> foogoo_svn_import = factory.makeCodeImport(
+    >>> foogoo_svn_import = factory.makeProductCodeImport(
     ...     svn_branch_url='http://foogoo.example.com',
     ...     branch_name='foogoo-svn', product=foogoo, registrant=sample_person)
     >>> foogoo_svn = foogoo_svn_import.branch

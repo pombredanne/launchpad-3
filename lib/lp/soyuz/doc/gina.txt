@@ -13,7 +13,7 @@ Get the current counts of stuff in the database:
     ...     BinaryPackagePublishingHistory,
     ...     EmailAddress,
     ...     BinaryPackageRelease,
-    ...     Build)
+    ...     BinaryPackageBuild)
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.registry.interfaces.pocket import (
@@ -28,7 +28,7 @@ Get the current counts of stuff in the database:
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
-    >>> orig_build_count = Build.select().count()
+    >>> orig_build_count = BinaryPackageBuild.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
     >>> orig_sspph_main_count = SSPPH.selectBy(
     ...     componentID=1, pocket=PackagePublishingPocket.RELEASE).count()
@@ -63,6 +63,8 @@ packages successfully (at least partially):
 
    * archive-copier, a source package which generates one udeb
      in debian-installer. Its maintainer has a name which contains a ","
+   * archive-copier, again, with a different version number to see that
+     both versions get correctly imported.
    * db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy, but its source
      package's section and its binary package's priority were changed in
@@ -317,13 +319,13 @@ successfully processed.
       util-linux (again, poor thing)
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    20
+    21
 
     >>> print SSPPH.selectBy(
     ...     componentID=1,
     ...     pocket=PackagePublishingPocket.RELEASE).count() - \
     ...     orig_sspph_main_count
-    20
+    21
 
 === Testing Binary Package Results ===
 
@@ -336,7 +338,7 @@ python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
     >>> SBPPH.select().count() - orig_sbpph_count
     46
@@ -524,7 +526,7 @@ changed, etc.
     13
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
 
 But the overrides do generate extra publishing entries:
@@ -532,7 +534,7 @@ But the overrides do generate extra publishing entries:
     >>> SBPPH.select().count() - orig_sbpph_count
     47
     >>> print SSPPH.select().count() - orig_sspph_count
-    22
+    23
 
 Check that the overrides we did were correctly issued. We can't use selectOneBy
 because, of course, there may be multiple rows published for that package --
@@ -607,7 +609,7 @@ There will now be a number of publishings in the partner archive:
 
     >>> source_difference = partner_source_set_after - partner_source_set
     >>> len(source_difference)
-    11
+    12
 
     >>> binary_difference = partner_binary_set_after - partner_binary_set
     >>> len(binary_difference)
@@ -700,7 +702,7 @@ targetted distroseries, 'lenny'.
 
     >>> lenny_sources = SSPPH.select("distroseries = %s" % sqlvalues(lenny))
     >>> lenny_sources.count()
-    11
+    12
 
     >>> print set([pub.status.name for pub in lenny_sources])
     set(['PENDING'])

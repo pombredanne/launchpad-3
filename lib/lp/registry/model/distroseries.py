@@ -45,8 +45,9 @@ from lp.soyuz.model.binarypackagerelease import (
         BinaryPackageRelease)
 from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
@@ -89,7 +90,7 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
@@ -126,11 +127,11 @@ from lp.soyuz.interfaces.sourcepackageformat import (
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
-                   StructuralSubscriptionTargetMixin):
+                   StructuralSubscriptionTargetMixin, HasBugHeatMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates)
+        ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
+        IHasQueueItems, IHasTranslationTemplates)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -1109,14 +1110,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog_entry, dsc, dscsigningkey, section,
+        urgency, changelog, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
@@ -1127,9 +1129,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
-            creator=creator, urgency=urgency, changelog_entry=changelog_entry,
-            dsc=dsc, dscsigningkey=dscsigningkey, section=section,
-            copyright=copyright, upload_archive=archive,
+            creator=creator, urgency=urgency, changelog=changelog,
+            changelog_entry=changelog_entry, dsc=dsc,
+            dscsigningkey=dscsigningkey, section=section, copyright=copyright,
+            upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
@@ -1388,16 +1391,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
 
-        # The PGP signature is stripped from all changesfiles for PPAs
-        # to avoid replay attacks (see bug 159304).
-        if archive.is_ppa:
-            signed_message = signed_message_from_string(changesfilecontent)
-            if signed_message is not None:
-                # Overwrite `changesfilecontent` with the text stripped
-                # of the PGP signature.
-                new_content = signed_message.signedContent
-                if new_content is not None:
-                    changesfilecontent = signed_message.signedContent
+        # The PGP signature is stripped from all changesfiles
+        # to avoid replay attacks (see bugs 159304 and 451396).
+        signed_message = signed_message_from_string(changesfilecontent)
+        if signed_message is not None:
+            # Overwrite `changesfilecontent` with the text stripped
+            # of the PGP signature.
+            new_content = signed_message.signedContent
+            if new_content is not None:
+                changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
@@ -1943,7 +1945,8 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
+            DistroSeries.id == POTemplate.distroseriesID)
+        result_set = result_set.config(distinct=True)
         # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
         # because ResultSet reports a wrong count() when using DISTINCT. Also
         # ResultSet does not implement __len__(), which would make it more

@@ -302,8 +302,9 @@ class StructuralSubscriptionMenuMixin:
             # self.context is a view, and the target is its context
             sst = self.context.context
 
-        # Project milestones aren't really structural subscription targets
-        # as they're not real milestones, so you can't subscribe to them.
+        # ProjectGroup milestones aren't really structural subscription
+        # targets as they're not real milestones, so you can't subscribe to
+        # them.
         enabled = not IProjectGroupMilestone.providedBy(sst)
 
         if sst.userHasBugSubscriptions(self.user):

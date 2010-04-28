@@ -92,7 +92,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
             os.path.dirname(__file__),'dummy_templates.tar.gz')
         tar = tarfile.open(dummy_tar, 'r|*')
         tar.extractall(branchdir)
-        potnames = [name for name in tar.getnames() if not name.endswith('/')]
+        potnames = [member.name for member in tar.getmembers() if not member.isdir()]
         tar.close()
 
         generator = GenerateTranslationTemplates(

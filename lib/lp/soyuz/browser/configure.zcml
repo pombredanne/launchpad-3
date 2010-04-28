@@ -342,17 +342,17 @@
         attribute_to_parent="archive"
         urldata="lp.soyuz.browser.archivepermission.ArchivePermissionURL"/>
     <browser:defaultView
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         name="+index"/>
     <browser:url
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         urldata="lp.soyuz.browser.build.BuildUrl"/>
     <browser:navigation
         module="lp.soyuz.browser.build"
         classes="
             BuildNavigation"/>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildView"
         permission="launchpad.View">
         <browser:page
@@ -361,7 +361,7 @@
             template="../templates/build-index.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRetryView"
         permission="launchpad.Edit">
         <browser:page
@@ -370,7 +370,7 @@
             template="../templates/build-retry.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRescoringView"
         permission="launchpad.Admin">
         <browser:page
@@ -681,7 +681,7 @@
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
             facet="overview"
-            class="canonical.launchpad.browser.ArchiveActivateView"
+            class="lp.soyuz.browser.archive.ArchiveActivateView"
             permission="launchpad.Edit"
             template="../templates/archive-activate.pt"/>
         <browser:page
