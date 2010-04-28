@@ -161,10 +161,10 @@ remote status for, the bug watch that we have created.
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)

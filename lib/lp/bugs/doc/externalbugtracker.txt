@@ -8,7 +8,7 @@ ExternalBugTracker instances.
 
 All the ExternalBugTrackers know how to update the status of a bug
 watch. The method that updates the bug watches is
-BugWatchUpdater.updateBugWatches(), which expects an IExternalBugTracker
+CheckwatchesMaster.updateBugWatches(), which expects an IExternalBugTracker
 and the bug watches to update.
 
 
@@ -26,8 +26,8 @@ transaction, since it doesn't need DB access.
     ...         print "initializeRemoteBugDB() called: %r" % (
     ...             remote_bug_ids, )
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(transaction)
     >>> bug_watch_updater.updateBugWatches(
     ...     InitializingExternalBugTracker(), [])
     initializeRemoteBugDB() called: []
@@ -49,7 +49,7 @@ original instance is to return itself.
     >>> chosen_bugtracker is external_bugtracker
     True
 
-BugWatchUpdater calls externalbugtracker.get_external_bugtracker(),
+CheckwatchesMaster calls externalbugtracker.get_external_bugtracker(),
 follwed by ExternalBugTracker.getExternalBugTrackerToUse() to get the
 correct ExternalBugTracker for a given BugTracker. It does this via the
 private _getExternalBugTrackersAndWatches() method, which returns a set of
@@ -193,17 +193,17 @@ sync comments with, _getExternalBugTrackersAndWatches() will return
 
 The checkwatches module contains a variable, SYNCABLE_GNOME_PRODUCTS,
 which defines the products that we want to sync comments for.
-BugWatchUpdater keeps a local copy of this variable, which we can
-override by passing a list of products to the BugWatchUpdater
+CheckwatchesMaster keeps a local copy of this variable, which we can
+override by passing a list of products to the CheckwatchesMaster
 constructor.
 
     >>> from lp.bugs.scripts import checkwatches
     >>> (bug_watch_updater._syncable_gnome_products ==
-    ...     checkwatches.updater.SYNCABLE_GNOME_PRODUCTS)
+    ...     checkwatches.core.SYNCABLE_GNOME_PRODUCTS)
     True
 
     >>> syncable_products = ['HeartOfGold']
-    >>> bug_watch_updater = BugWatchUpdater(
+    >>> bug_watch_updater = CheckwatchesMaster(
     ...     transaction, syncable_gnome_products=syncable_products)
 
     >>> bug_watches = [
@@ -256,7 +256,7 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
     ...     'HeartOfGold',
     ...     'InfiniteImprobabilityDrive',
     ...     ]
-    >>> bug_watch_updater = BugWatchUpdater(
+    >>> bug_watch_updater = CheckwatchesMaster(
     ...     transaction, syncable_gnome_products=syncable_products)
 
     >>> trackers_and_watches = get_trackers_and_watches(
@@ -294,7 +294,7 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
 If there are no syncable GNOME products, only one batch is returned,
 and the remote system is never asked about product information.
 
-    >>> bug_watch_updater = BugWatchUpdater(
+    >>> bug_watch_updater = CheckwatchesMaster(
     ...     transaction, syncable_gnome_products=[])
 
     >>> trackers_and_watches = get_trackers_and_watches(
@@ -352,7 +352,7 @@ is, an error is raised.
     TooMuchTimeSkew: ...
 
 The error is in fact raised by the _getRemoteIdsToCheck() method of
-BugWatchUpdater, which is passed a server_time variable by
+CheckwatchesMaster, which is passed a server_time variable by
 updateBugWatches(). updateBugWatches() is responsible for logging the
 error and for setting the last_error_type on all affected BugWatches
 before re-raising the error.
@@ -641,7 +641,7 @@ IDs to be updated.
 
 === Converting statuses ===
 
-Once it has retrieved the bugs from the remote server, BugWatchUpdater
+Once it has retrieved the bugs from the remote server, CheckwatchesMaster
 attempts to convert their statuses into Launchpad BugTaskStatuses by
 calling the convertRemoteStatus() method on the ExternalBugTracker via
 its own _convertRemoteStatus() method.
@@ -660,7 +660,7 @@ BugTaskStatus or will raise an UnknownRemoteStatusError.
     ...         else:
     ...             raise UnknownRemoteStatusError(remote_status)
 
-BugWatchUpdater._convertRemoteStatus() will handle these errors and will
+CheckwatchesMaster._convertRemoteStatus() will handle these errors and will
 return BugTaskStatus.UNKNOWN when they occur. It will also log a
 warning.
 
@@ -710,7 +710,7 @@ ExternalBugTracker.
     >>> external_bugtracker = TestBrokenExternalBugTracker(
     ...     'http://example.com')
     >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> bug_watch_updater = BugWatchUpdater(transaction, QuietFakeLogger())
+    >>> bug_watch_updater = CheckwatchesMaster(transaction, QuietFakeLogger())
 
 We'll create an example bug watch with which to test this. This will
 be passed to external_bugtracker's updateBugWatches() method and should
@@ -766,7 +766,7 @@ We temporarily silence the logging from this function because we're not
 interested in it. Again, the watch's lastchecked field will also be
 updated.
 
-    >>> from lp.bugs.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches.base import (
     ...     CheckWatchesErrorUtility)
     >>> error_utility = CheckWatchesErrorUtility()
 
@@ -1042,13 +1042,16 @@ ExternalBugTracker's batch_size is used to decide the number of IDs returned.
 
 _getRemoteIdsToCheck() will interpret a batch_size parameter of 0 as an
 instruction to ignore the batch size limitation altogether and just return all
-the IDs that need checking.
+the IDs that need checking. The constant BATCH_SIZE_UNLIMITED should
+be used in place of using 0 verbatim.
+
+    >>> from lp.bugs.externalbugtracker import BATCH_SIZE_UNLIMITED
 
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker,
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now,
-    ...     batch_size=0)
+    ...     batch_size=BATCH_SIZE_UNLIMITED)
     >>> print sorted(ids['remote_ids_to_check'])
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
 
@@ -1066,13 +1069,13 @@ updateBugWatches()).  In order to prevent it from attempting to connect to the
 outside world we'll subclass it to make sure it uses our non-connecting
 external_bugtracker.
 
-    >>> class NonConnectingBugWatchUpdater(BugWatchUpdater):
+    >>> class NonConnectingCheckwatchesMaster(CheckwatchesMaster):
     ...
     ...     def _getExternalBugTrackersAndWatches(self, bug_trackers,
     ...                                           bug_watches):
     ...         return [(external_bugtracker, bug_watches)]
 
-    >>> bug_watch_updater = NonConnectingBugWatchUpdater(
+    >>> bug_watch_updater = NonConnectingCheckwatchesMaster(
     ...     transaction, QuietFakeLogger())
     >>> transaction.commit()
     >>> bug_watch_updater._updateBugTracker(
@@ -1081,7 +1084,7 @@ external_bugtracker.
     getRemoteStatus() called: u'5'
     getRemoteStatus() called: u'6'
 
-The default entry point into BugWatchUpdater for the checkwatches script is
+The default entry point into CheckwatchesMaster for the checkwatches script is
 the updateBugTrackers() method. This, too, takes a batch_size parameter, which
 allows it to be passed as a command-line option when the checkwatches script
 is run.

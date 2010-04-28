@@ -261,3 +261,45 @@ existing product, an error is shown to the user.
     ...     print extract_text(message)
     There is 1 error.
     Invalid value
+
+
+Specifying the owner of the branch when it is being created
+===========================================================
+
+When a user is requesting a new code import, they are the owner of the new
+import branch.  sometimes the user may wish for the import branch to be owned
+by a team rather than just themselves.  There is a drop down choice shown for
+the user for the teams that they are a member of.
+
+    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> sample_browser.open("http://code.launchpad.dev/firefox/+new-import")
+    >>> sample_browser.getControl('Owner').displayValue
+    ['Sample Person (name12)']
+
+Change the owner to be a team that sample person is a member of.
+
+    >>> sample_browser.getControl('Owner').value = ['landscape-developers']
+    >>> sample_browser.getControl('Owner').displayValue
+    ['Landscape Developers (landscape-developers)']
+    >>> sample_browser.getControl('Branch URL').value = (
+    ...     "http://svn.example.com/firefox-beta/trunk")
+    >>> sample_browser.getControl('Request Import').click()
+
+    >>> print_tag_with_id(sample_browser.contents, 'registration')
+    Created by Sample Person ...
+    >>> print_tag_with_id(sample_browser.contents, 'owner')
+    Owner: Landscape Developers
+
+Admins can specify any owner for a new code import.
+
+    >>> admin_browser = setupBrowser(auth='Basic admin@canonical.com:test')
+    >>> admin_browser.open("http://code.launchpad.dev/firefox/+new-import")
+    >>> admin_browser.getControl('Owner').value = 'mark'
+    >>> admin_browser.getControl('Branch URL').value = (
+    ...     "http://svn.example.com/firefox-theta/trunk")
+    >>> admin_browser.getControl('Request Import').click()
+
+    >>> print_tag_with_id(admin_browser.contents, 'registration')
+    Created by Foo Bar ...
+    >>> print_tag_with_id(admin_browser.contents, 'owner')
+    Owner: Mark Shuttleworth

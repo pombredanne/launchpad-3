@@ -11,10 +11,8 @@ __all__ = [
     ]
 
 from simplejson import dumps
-from zope.event import notify
 
 from lazr.delegates import delegates
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
@@ -38,8 +36,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
     @action('Subscribe user', name='add')
     def add_action(self, action, data):
         person = data['person']
-        subscription = self.context.bug.subscribe(person, self.user)
-        notify(ObjectCreatedEvent(subscription, user=self.user))
+        self.context.bug.subscribe(person, self.user, send_notifications=True)
         if person.isTeam():
             message = '%s team has been subscribed to this bug.'
         else:

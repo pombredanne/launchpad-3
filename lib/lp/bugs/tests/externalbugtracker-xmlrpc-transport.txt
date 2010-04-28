@@ -5,7 +5,7 @@ use a special transport, which processes http cookies correctly, and
 which can connect through an http proxy server.
 
     >>> from lp.bugs.tests.externalbugtracker import (
-    ...     patch_transport_opener)
+    ...     Urlib2TransportTestHandler)
     >>> from lp.bugs.externalbugtracker.xmlrpc import (
     ...     UrlLib2Transport)
 
@@ -23,7 +23,8 @@ We patch the opener to return a fixed response without actually opening a
 connection.  The response returns the request-url as an XMLRPC parameter, and
 sets a cookie from the server, 'foo=bar'.
 
-    >>> patch_transport_opener(transport)
+    >>> test_handler = Urlib2TransportTestHandler()
+    >>> transport.opener.add_handler(test_handler)
 
 Before sending the request, the transport's cookie jar is empty.
 
@@ -61,6 +62,12 @@ In addition to cookies sent by the server, we can set cookies locally.
 If an error occurs trying to make the request, an
 `xmlrpclib.ProtocolError` is raised.
 
+    >>> from urllib2 import HTTPError
+    >>> test_handler.setError(
+    ...     HTTPError(
+    ...         'http://www.example.com/xmlrpc', 500, 'Internal Error', {},
+    ...          None),
+    ...     'http://www.example.com/xmlrpc')
     >>> request_body = """<?xml version="1.0"?>
     ... <methodCall>
     ...   <methodName>examples.testError</methodName>
@@ -83,9 +90,10 @@ If the transport encounters a redirect response it will make its request
 to the location indicated in that response rather than the original
 location.
 
+    >>> test_handler.setRedirect('http://www.example.com/xmlrpc/redirected')
     >>> request_body = """<?xml version="1.0"?>
     ... <methodCall>
-    ...   <methodName>examples.testRedirect</methodName>
+    ...   <methodName>examples.whatever</methodName>
     ...   <params>
     ...     <param>
     ...       <value>

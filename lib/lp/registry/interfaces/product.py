@@ -43,7 +43,9 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasCodeImports, IHasMergeProposals)
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.registry.interfaces.karma import IKarmaContext
@@ -271,6 +273,11 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(releasefileglob="release_url_pattern")
+    @export_factory_operation(
+        IProductSeries, ['name', 'summary', 'branch', 'releasefileglob'])
+    @export_operation_as('newSeries')
     def newSeries(owner, name, summary, branch=None, releasefileglob=None):
         """Creates a new `IProductSeries` for this `IProduct`.
 
@@ -338,7 +345,8 @@ class IProductPublic(
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
+    IHasCodeImports):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -350,11 +358,10 @@ class IProductPublic(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
-            vocabulary='Project',
+            vocabulary='ProjectGroup',
             schema=IProjectGroup,
             description=_(
-                'Super-project. In Launchpad, we can setup a special '
-                '"project group" that is an overarching initiative that '
+                'Project group. This is an overarching initiative that '
                 'includes several related projects. For example, the Mozilla '
                 'Project produces Firefox, Thunderbird and Gecko. This '
                 'information is used to group those projects in a coherent '
@@ -713,8 +720,8 @@ class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
                IStructuralSubscriptionTarget):
     """A Product.
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
+    The Launchpad Registry describes the open source world as ProjectGroups
+    and Products. Each ProjectGroup may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """

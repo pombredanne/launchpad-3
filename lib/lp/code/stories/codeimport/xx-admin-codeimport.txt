@@ -38,6 +38,11 @@ to edit the details.
     >>> hg_import_location = str(canonical_url(hg_import.branch))
     >>> hg_import_branch_unique_name = hg_import.branch.unique_name
 
+    >>> package_import = factory.makePackageCodeImport(
+    ...     hg_repo_url="http://hg.example.org/zap")
+    >>> package_import_location = str(canonical_url(package_import.branch))
+    >>> package_import_branch_unique_name = package_import.branch.unique_name
+
     >>> logout()
 
     >>> import_browser = setupBrowser(
@@ -109,6 +114,11 @@ in the form.
     >>> print_form_fields(import_browser)
     field.url: http://hg.example.org/bar
 
+    >>> import_browser.open(package_import_location)
+    >>> import_browser.getLink('Edit import source or review import').click()
+    >>> print_form_fields(import_browser)
+    field.url: http://hg.example.org/zap
+
 
 Editing the import location
 +++++++++++++++++++++++++++
@@ -159,7 +169,7 @@ Git imports,
     ...     print extract_text(message)
     The code import has been updated.
 
-and Mercurial imports.
+Mercurial imports,
 
     >>> import_browser.open(hg_import_location + '/+edit-import')
     >>> import_browser.getControl('URL').value = \
@@ -168,6 +178,17 @@ and Mercurial imports.
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
     The code import has been updated.
+
+and imports targetting source packages.
+
+    >>> import_browser.open(package_import_location + '/+edit-import')
+    >>> import_browser.getControl('URL').value = \
+    ...     'http://metal.example.org/zap'
+    >>> import_browser.getControl('Update').click()
+    >>> for message in get_feedback_messages(import_browser.contents):
+    ...     print extract_text(message)
+    The code import has been updated.
+
 
 Approving an import
 +++++++++++++++++++
