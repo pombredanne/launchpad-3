@@ -17,6 +17,10 @@ from lp.testing import TestCaseWithFactory
 
 class TestBugHeatCalculator(TestCaseWithFactory):
     """Tests for the BugHeatCalculator class."""
+    # If you change the way that bug heat is calculated, remember to update
+    # the description of how it is calculated at
+    # /lib/lp/bugs/help/bug-heat.html and
+    # https://help.launchpad.net/Bugs/BugHeat
 
     layer = LaunchpadZopelessLayer
 
@@ -230,4 +234,3 @@ class TestBugHeatCalculator(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
