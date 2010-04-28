@@ -1658,9 +1658,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if name is None:
-            try:
-                name = default_name_by_purpose[purpose]
-            except KeyError:
+            if purpose != ArchivePurpose.PPA:
+                name = default_name_by_purpose.get(purpose)
+            if name is None:
                 name = self.getUniqueString()
 
         # Making a distribution makes an archive, and there can be only one

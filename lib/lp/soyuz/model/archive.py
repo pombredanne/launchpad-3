@@ -1534,8 +1534,7 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, distribution=distribution, name=name,
-                purpose=ArchivePurpose.PPA)
+                owner=owner, name=name, purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
                     "Person '%s' already has a PPA named '%s'." %
