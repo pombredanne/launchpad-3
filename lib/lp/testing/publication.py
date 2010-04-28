@@ -12,11 +12,15 @@ __all__ = [
 from cStringIO import StringIO
 
 # Z3 doesn't make this available as a utility.
+from zope.app import zapi
 from zope.app.publication.requestpublicationregistry import factoryRegistry
 from zope.component import getUtility
+from zope.interface import providedBy
+from zope.publisher.interfaces.browser import IDefaultSkin
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
+import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
 
@@ -73,8 +77,22 @@ def test_traverse(url):
         host=url_parts[1], extra_environment={
             'SERVER_URL': server_url,
             'PATH_INFO': path_info})
-    getUtility(IOpenLaunchBag).clear()
+
     request.setPublication(publication)
+    # We avoid calling publication.beforePublication because this starts a new
+    # transaction, which causes an abort of the existing transaction, and the
+    # removal of any created and uncommitted objects.
+
+    # Set the default layer.
+    adapters = zapi.getGlobalSiteManager().adapters
+    layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
+    if layer is not None:
+        layers.setAdditionalLayer(request, layer)
+
+    principal = publication.getPrincipal(request)
+    request.setPrincipal(principal)
+
+    getUtility(IOpenLaunchBag).clear()
     app = publication.getApplication(request)
     view = request.traverse(app)
     # Get the object from the view, but make sure it is proxied.
