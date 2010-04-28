@@ -1,7 +1,7 @@
 SET client_min_messages=ERROR;
 
 -- Indices for BugJob
-CREATE UNIQUE INDEX bugjob__job__key ON BugJob(job);
+ALTER TABLE BugJob ADD CONSTRAINT bugjob__job__key UNIQUE (job);
 CREATE INDEX bugjob__bug__job_type__idx ON BugJob(bug, job_type);
 
 -- Indices for Job
