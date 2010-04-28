@@ -26,8 +26,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def make_branch_with_commits_and_scan_job(self, db_branch):
         """Create a branch from a db_branch, make commits and a scan job."""
-        target, target_tree = self.create_branch_and_tree(
-            db_branch=db_branch)
+        target, target_tree = self.create_branch_and_tree(db_branch=db_branch)
         target_tree.commit('First commit', rev_id='rev1')
         target_tree.commit('Second commit', rev_id='rev2')
         target_tree.commit('Third commit', rev_id='rev3')
@@ -45,7 +44,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def test_scan_branch(self):
         """Test that scan branches adds revisions to the database."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
 
         db_branch = self.factory.makeAnyBranch()
         self.make_branch_with_commits_and_scan_job(db_branch)
@@ -70,7 +69,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def test_scan_packagebranch(self):
         """Test that scan_branches can scan package branches."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
 
         db_branch = self.factory.makePackageBranch()
         self.make_branch_with_commits_and_scan_job(db_branch)
