@@ -178,5 +178,5 @@ will be displayed.
     >>> switch_working_mode = find_tag_by_id(
     ...     user_browser.contents,
     ...     'translation-switch-working-mode')
-    >>> switch_working_mode is None
-    True
+    >>> switch_working_mode is not None
+    False

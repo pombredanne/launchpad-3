@@ -167,7 +167,7 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         # We check that the mode was changed.
         current_is_reviewer = self.client.execJS(js=self.js_code)['output']
 
-        if reviewer and not current_is_reviewer:
-            raise AssertionError("Could not set reviewer mode.")
-        if translator and current_is_reviewer:
-            raise AssertionError("Could not set translator mode.")
+        switch_done = (
+            reviewer and current_is_reviewer or
+            translator and not current_is_reviewer)
+        assert switch_done is True, "Could not switch working mode."
