@@ -2459,6 +2459,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
 
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
         proposed_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-2',
             distroseries=warty, archive=warty.main_archive,
@@ -2466,7 +2467,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED,
             section='net')
         proposed_tar = test_publisher.addMockFile(
-            'test-source_1.0.orig.tar.gz', filecontent='aaabbbccc')
+            orig_tarball, filecontent='aaabbbccc')
         proposed_source.sourcepackagerelease.addFile(proposed_tar)
         updates_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-1',
@@ -2475,7 +2476,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED,
             section='misc')
         updates_tar = test_publisher.addMockFile(
-            'test-source_1.0.orig.tar.gz', filecontent='zzzyyyxxx')
+            orig_tarball, filecontent='zzzyyyxxx')
         updates_source.sourcepackagerelease.addFile(updates_tar)
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
@@ -2509,8 +2510,9 @@ class CopyPackageTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED,
             section='misc')
+        orig_tarball = 'test-source_1.0.orig.tar.gz'
         test1_tar = test_publisher.addMockFile(
-            'test-source_1.0.orig.tar.gz', filecontent='aaabbbccc')
+            orig_tarball, filecontent='aaabbbccc')
         test1_source.sourcepackagerelease.addFile(test1_tar)
         test2_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-2',
@@ -2519,7 +2521,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED,
             section='misc')
         test2_tar = test_publisher.addMockFile(
-            'test-source_1.0.orig.tar.gz', filecontent='zzzyyyxxx')
+            orig_tarball, filecontent='zzzyyyxxx')
         test2_source.sourcepackagerelease.addFile(test2_tar)
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
