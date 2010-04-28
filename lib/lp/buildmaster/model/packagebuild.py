@@ -8,8 +8,6 @@ __all__ = [
     ]
 
 
-from lazr.delegates import delegates
-
 from storm.locals import Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
@@ -64,7 +62,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     def __init__(self, build):
         """Construct a PackageBuild.
 
-        XXX 2010-04-21 michael.nelson bug=536700
+        XXX 2010-04-21 michael.nelson bug=570939
         This initialiser is only used by IBuildFarmJobDerived classes
         that are not yet expecting a concrete BuildFarmJob (and so are
         expecting to pass in the build to which they refer, such as
