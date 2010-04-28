@@ -15,6 +15,9 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.scripts.bugheat import BugHeatCalculator, BugHeatConstants
 from lp.testing import TestCaseWithFactory
 
+from zope.security.proxy import removeSecurityProxy
+
+
 class TestBugHeatCalculator(TestCaseWithFactory):
     """Tests for the BugHeatCalculator class."""
 
@@ -230,7 +233,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
     def test_getBugHeat_activity(self):
         # Bug heat increases by a quarter of the maximum bug heat divided by
         # the number of days between the bug's creating and its last activity.
-        active_bug = self.factory.makeBug()
+        active_bug = removeSecurityProxy(self.factory.makeBug())
         fresh_heat = BugHeatCalculator(active_bug).getBugHeat()
         active_bug.date_last_updated = (
             active_bug.date_last_updated - timedelta(days=10))
