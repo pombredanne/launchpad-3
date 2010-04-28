@@ -2,3 +2,9 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+The following temporary classes need to be removed before this branch can
+land:
+  * BuildFarmJobOld/IBuildFarmJobOld (update the classes using this to
+    use the new db versions).
+  * BuildFarmJobOldDerived (move queue-methods onto BuildFarmJobDerived).
+

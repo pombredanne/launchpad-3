@@ -27,7 +27,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -199,7 +199,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return
 
 
-class SourcePackageRecipeBuildJob(BuildFarmJobDerived, Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 

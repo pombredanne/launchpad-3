@@ -86,7 +86,6 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_saves_record(self):
         # A package build can be stored in the database.
-        flush_database_updates()
         store = Store.of(self.package_build)
         retrieved_build = store.find(
             PackageBuild,

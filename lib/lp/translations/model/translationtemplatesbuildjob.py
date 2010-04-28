@@ -21,7 +21,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobOld, BuildFarmJobDerived)
+    BuildFarmJobOld, BuildFarmJobOldDerived)
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -31,7 +31,7 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
+class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.

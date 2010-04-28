@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -28,7 +28,7 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
-class BuildPackageJob(BuildFarmJobDerived, Storm):
+class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 

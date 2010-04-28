@@ -6,6 +6,7 @@ __all__ = [
     'BuildFarmJob',
     'BuildFarmJobDerived',
     'BuildFarmJobOld',
+    'BuildFarmJobOldDerived',
     ]
 
 
@@ -14,7 +15,6 @@ from lazr.delegates import delegates
 import hashlib
 import pytz
 
-from storm.info import get_obj_info
 from storm.locals import Bool, DateTime, Int, Reference, Storm
 
 from zope.component import getUtility
@@ -72,6 +72,65 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         pass
 
+
+class BuildFarmJobOldDerived:
+    delegates(IBuildFarmJobOld, context='build_farm_job')
+
+    def __init__(self, *args, **kwargs):
+        """Ensure the instance to which we delegate is set on creation."""
+        self._set_build_farm_job()
+        super(BuildFarmJobOldDerived, self).__init__(*args, **kwargs)
+
+    def __storm_loaded__(self):
+        """Set the attribute for our IBuildFarmJob delegation.
+
+        This is needed here as __init__() is not called when a storm object
+        is loaded from the database.
+        """
+        self._set_build_farm_job()
+
+    def _set_build_farm_job(self):
+        """Set the build farm job to which we will delegate.
+
+        This is just a hook that can be used
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `IBuildFarmJobDerived`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `IBuildFarmJobDerived`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `IBuildFarmJobDerived`."""
+        return True
+
+    def generateSlaveBuildCookie(self):
+        """See `IBuildFarmJobDerived`."""
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+
+        if buildqueue.processor is None:
+            processor = '*'
+        else:
+            processor = repr(buildqueue.processor.id)
+
+        contents = ';'.join([
+            repr(removeSecurityProxy(self.job).id),
+            self.job.date_created.isoformat(),
+            repr(buildqueue.id),
+            buildqueue.job_type.name,
+            processor,
+            self.getName(),
+            ])
+
+        return hashlib.sha1(contents).hexdigest()
 
 
 class BuildFarmJob(BuildFarmJobOld, Storm):
@@ -198,65 +257,3 @@ class BuildFarmJobDerived:
     implements(IBuildFarmJobDerived)
     delegates(IBuildFarmJob, context='build_farm_job')
 
-    def __init__(self, *args, **kwargs):
-        """Ensure the instance to which we delegate is set on creation."""
-        self._set_build_farm_job()
-        super(BuildFarmJobDerived, self).__init__(*args, **kwargs)
-
-    def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation.
-
-        This is needed here as __init__() is not called when a storm object
-        is loaded from the database.
-        """
-        self._set_build_farm_job()
-
-    def _set_build_farm_job(self):
-        """Set the default build farm job to which we will delegate.
-
-        Sub-classes should override as required.
-
-        XXX 2010-04-27 michael.nelson bug=570939
-        This only exists because certain classes assume that
-        BuildFarmJob/PackageBuild are in-memory objects that simply
-        provide methods to update the associated builds.
-        We can remove it once the above bug is completed.
-        """
-        self.build_farm_job = BuildFarmJob(
-            job_type=BuildFarmJobType.PACKAGEBUILD)
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `IBuildFarmJobDerived`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobDerived`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobDerived`."""
-        return True
-
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJobDerived`."""
-        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
-
-        if buildqueue.processor is None:
-            processor = '*'
-        else:
-            processor = repr(buildqueue.processor.id)
-
-        contents = ';'.join([
-            repr(removeSecurityProxy(self.job).id),
-            self.job.date_created.isoformat(),
-            repr(buildqueue.id),
-            buildqueue.job_type.name,
-            processor,
-            self.getName(),
-            ])
-
-        return hashlib.sha1(contents).hexdigest()
