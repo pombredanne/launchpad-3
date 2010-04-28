@@ -216,7 +216,38 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
 class PackageBuildDerived:
     """See `IPackageBuildDerived`."""
+    implements(IPackageBuildDerived)
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuildDerived`."""
         return BuildBase.handleStatus(self, status, librarian, slave_status)
+
+    # The following private handlers currently re-use the BuildBase
+    # implementation until it is no longer in use. If we find in the
+    # future that it would be useful to delegate these also, they can be
+    # added to IBuildFarmJob or IPackageBuild as necessary.
+    def _handleStatus_OK(self, librarian, slave_status, logger):
+        return BuildBase._handleStatus_OK(
+            self, librarian, slave_status, logger)
+
+    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
+        return BuildBase._handleStatus_PACKAGEFAIL(
+            self, librarian, slave_status, logger)
+
+    def _handleStatus_DEPFAIL(self, librarian, slave_status, logger):
+        return BuildBase._handleStatus_DEPFAIL(
+            self, librarian, slave_status, logger)
+
+    def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger):
+        return BuildBase._handleStatus_CHROOTFAIL(
+            self, librarian, slave_status, logger)
+
+    def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger):
+        return BuildBase._handleStatus_BUILDERFAIL(
+            self, librarian, slave_status, logger)
+
+    def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
+        return BuildBase._handleStatus_GIVENBACK(
+            self, librarian, slave_status, logger)
+
+
