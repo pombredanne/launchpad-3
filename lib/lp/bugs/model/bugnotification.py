@@ -84,6 +84,8 @@ class BugNotificationSet:
 
     def addNotification(self, bug, is_comment, message, recipients):
         """See `IBugNotificationSet`."""
+        if not recipients:
+            return
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
             message=message, date_emailed=None)
