@@ -1,7 +1,4 @@
-# XXX: Nasty hack to make sure the default python is used when
-# building/running.  Specially useful for source deps like pygettextpo.
-PYTHON_VERSION:=$(shell python -c 'import sys; print ".".join(["%d" % n for n in sys.version_info[:2]])')
-PYTHON=python${PYTHON_VERSION}
+PYTHON=python
 # Not all packages have a working Makefile. Work around this by hardcoding
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
@@ -9,9 +6,7 @@ PYTHON=python${PYTHON_VERSION}
 build_dirs:=cscvs dulwich pygettextpo pygpgme subvertpy
 test_dirs:=cscvs pygettextpo
 
-TEST_ENV_VARS = \
-  PYTHON=$(PYTHON) \
-  PYTHON_VERSION=$(PYTHON_VERSION)
+TEST_ENV_VARS = PYTHON=$(PYTHON)
 
 all:
 

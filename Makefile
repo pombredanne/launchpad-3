@@ -1,10 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-# XXX: Nasty hack to make sure the default python is used when
-# building/running.  Specially useful for source deps like pygettextpo.
-PYTHON_VERSION:=$(shell python -c 'import sys; print ".".join(["%d" % n for n in sys.version_info[:2]])')
-PYTHON=python${PYTHON_VERSION}
+PYTHON=python
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -196,7 +193,7 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 
 compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
-	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build

@@ -1,7 +1,4 @@
-# XXX: Nasty hack to make sure the default python is used when
-# building/running.
-PYTHON_VERSION:=$(shell python -c 'import sys; print ".".join(["%d" % n for n in sys.version_info[:2]])')
-TWISTD:=twistd$(PYTHON_VERSION)
+TWISTD:=twistd
 
 PYTHONPATH=../..
 pythonpath=PYTHONPATH=$(PYTHONPATH)
