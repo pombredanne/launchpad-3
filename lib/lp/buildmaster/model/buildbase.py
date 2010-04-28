@@ -194,6 +194,8 @@ class BuildBase:
             upload_logger = BufferLogger()
             upload_log = self.processUpload(upload_leaf, root, upload_logger)
             uploader_log_content = upload_logger.buffer.getvalue()
+        else:
+            uploader_log_content = 'Copy from slave was unsuccessful.'
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
