@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.testing import ANONYMOUS, login
+from lp.testing import ANONYMOUS, login, login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
@@ -44,31 +44,19 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEquals(texts[-2], "Bug #%d" % self.bug.id)
 
     def test_bugtask_comment(self):
-        login('foo.bar@canonical.com')
+        login_person(self.bug.owner)
         comment = self.factory.makeBugComment(
             bug=self.bug, owner=self.bug.owner,
             subject="test comment subject", body="test comment body")
-        url = canonical_url(comment, rootsite='bugs')
-        urls = self._getBreadcrumbsURLs(url, self.traversed_objects)
-        texts = self._getBreadcrumbsTexts(url, self.traversed_objects)
-        self.assertEquals(url, "%s/comments/1" % self.bugtask_url)
-        self.assertEquals(urls[-1], "%s" % self.bugtask_url)
-        self.assertEquals(texts[-1], "Bug #%d" % self.bug.id)
-
-    def test_bugtask_private_bug(self):
-        # A breadcrumb is not generated for a bug that the user does
-        # not have permission to view.
-        login('foo.bar@canonical.com')
-        self.bug.setPrivate(True, self.bug.owner)
-        login(ANONYMOUS)
-        url = canonical_url(self.bug.default_bugtask, rootsite='bugs')
-        self.assertEquals(
-            ['http://launchpad.dev/crumb-tester',
-             'http://bugs.launchpad.dev/crumb-tester'],
-            self._getBreadcrumbsURLs(url, self.traversed_objects))
-        self.assertEquals(
-            ["Crumb Tester", "Bugs"],
-            self._getBreadcrumbsTexts(url, self.traversed_objects))
+        expected_breadcrumbs = [
+            ('Crumb Tester', 'http://launchpad.dev/crumb-tester'),
+            ('Bugs', 'http://bugs.launchpad.dev/crumb-tester'),
+            ('Bug #%s' % self.bug.id,
+             'http://bugs.launchpad.dev/crumb-tester/+bug/%s' % self.bug.id),
+            ('Comment #1',
+             'http://bugs.launchpad.dev/crumb-tester/+bug/%s/comments/1' % self.bug.id),
+            ]
+        self.assertBreadcrumbs(comment, expected_breadcrumbs)
 
 
 class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
