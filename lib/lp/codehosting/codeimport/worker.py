@@ -94,11 +94,12 @@ class BazaarBranchStore:
         # revisions are in the ancestry of the tip of the remote branch, which
         # we strictly don't care about, so we just copy the whole thing down
         # at the vfs level.
+        control_dir = remote_bzr_dir.root_transport.relpath(
+            remote_bzr_dir.transport.abspath('.'))
         target = get_transport(target_path)
-        target.ensure_base()
-        target.mkdir('.bzr')
-        remote_bzr_dir.root_transport.clone('.bzr').copy_tree_to_transport(
-            target.clone('.bzr'))
+        target_control = target.clone(control_dir)
+        target_control.create_prefix()
+        remote_bzr_dir.transport.copy_tree_to_transport(target_control)
         local_bzr_dir = BzrDir.open_from_transport(target)
         if needs_tree:
             local_bzr_dir.create_workingtree()
