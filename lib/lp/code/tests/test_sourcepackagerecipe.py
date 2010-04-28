@@ -25,7 +25,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooNewRecipeFormat)
+    TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipebuild import (
@@ -434,7 +434,7 @@ class TestWebservice(TestCaseWithFactory):
 
     def makeRecipeText(self):
         branch = self.factory.makeBranch()
-        return self.factory.MINIMAL_RECIPE_TEXT % branch.bzr_identity
+        return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
     def makeRecipe(self, user=None, owner=None, recipe_text=None):
         if user is None:
