@@ -120,8 +120,8 @@ and reviewer working mode.
     >>> switch_working_mode = find_tag_by_id(
     ...     user_browser.contents,
     ...     'translation-switch-working-mode')
-    >>> switch_working_mode is None
-    True
+    >>> switch_working_mode is not None
+    False
 
 If Evolution's translation is set to Closed mode, Joe will not be able
 to submit suggestions.
@@ -141,8 +141,8 @@ option to switch between translator and reviewer working mode.
     >>> switch_working_mode = find_tag_by_id(
     ...     user_browser.contents,
     ...     'translation-switch-working-mode')
-    >>> switch_working_mode is None
-    True
+    >>> switch_working_mode is not None
+    False
 
 There is a special case where Joe visits a translation into a language
 that isn't covered by the translation group: Joe is told he cannot enter

@@ -94,13 +94,13 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
     switch_working_mode = u'translation-switch-working-mode'
     force_suggestion = u'msgset_1_force_suggestion'
     new_translation = u'msgset_1_pt_BR_translation_0_new'
-    js_code = ("lookupNode({id: '%s'}).innerHTML.search('translator') > 0" %
-            switch_working_mode)
+    js_code = ("lookupNode({id: '%s'}).innerHTML.search('eviewer') > 0" %
+                switch_working_mode)
 
     def test_pofile_reviewer_mode(self):
         """Test for reviewer mode.
 
-        Adding new translations will not force them as suggestions.
+        Adding new translations will force them as suggestions.
         """
 
         self.client.open(
@@ -170,4 +170,4 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         if reviewer and not current_is_reviewer:
             raise AssertionError("Could not set reviewer mode.")
         if translator and current_is_reviewer:
-            raise AssertionError("Could not set reviewer mode.")
+            raise AssertionError("Could not set translator mode.")
