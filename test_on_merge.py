@@ -35,7 +35,7 @@ def main():
 
     # Tabnanny
     # NB. If tabnanny raises an exception, run
-    # python /usr/lib/python/tabnanny.py -vv lib/canonical
+    # python /usr/lib/python2.5/tabnanny.py -vv lib/canonical
     # for more detailed output.
     org_stdout = sys.stdout
     sys.stdout = StringIO()
