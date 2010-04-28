@@ -39,6 +39,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -361,6 +362,15 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
 
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
+class UserCannotEditBugTaskAssignee(Unauthorized):
+    """User not permitted to change bugtask assignees.
+
+    Raised when a user with insufficient prilieges tries to set
+    the assignee of a bug task.
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
