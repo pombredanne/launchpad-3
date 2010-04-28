@@ -31,6 +31,7 @@ __all__ = [
     'TestCaseWithFactory',
     'test_tales',
     'time_counter',
+    'unlink_source_packages',
     # XXX: This really shouldn't be exported from here. People should import
     # it from Zope.
     'verifyObject',
@@ -47,6 +48,7 @@ from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 from pprint import pformat
+import re
 import shutil
 import subprocess
 import subunit
@@ -85,6 +87,7 @@ from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.registry.interfaces.packaging import IPackagingUtil
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -568,6 +571,24 @@ class TestCaseWithFactory(TestCase):
             self.addCleanup(hosted_server.stop_server)
 
 
+class BrowserTestCase(TestCaseWithFactory):
+    """A TestCase class for browser tests.
+
+    This testcase provides an API similar to page tests, and can be used for
+    cases when one wants a unit test and not a frakking pagetest.
+    """
+
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
+
+
 class WindmillTestCase(TestCaseWithFactory):
     """A TestCase class for Windmill tests.
 
@@ -946,3 +967,15 @@ def ws_object(launchpad, obj):
     return launchpad.load(
         obj_url.replace('http://api.launchpad.dev/',
         str(launchpad._root_uri)))
+
+def unlink_source_packages(product):
+    """Remove all links between the product and source packages.
+
+    A product cannot be deactivated if it is linked to source packages.
+    """
+    packaging_util = getUtility(IPackagingUtil)
+    for source_package in product.sourcepackages:
+        packaging_util.deletePackaging(
+            source_package.productseries,
+            source_package.sourcepackagename,
+            source_package.distroseries)

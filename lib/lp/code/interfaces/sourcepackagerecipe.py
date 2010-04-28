@@ -14,15 +14,17 @@ __all__ = [
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
+    'MINIMAL_RECIPE_TEXT',
     'TooNewRecipeFormat',
     ]
 
+
+from textwrap import dedent
 
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_write_operation, exported,
     operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
-
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
 
@@ -39,6 +41,11 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.interfaces.archive import IArchive
 
+
+MINIMAL_RECIPE_TEXT = dedent(u'''\
+    # bzr-builder format 0.2 deb-version 1.0
+    %s
+    ''')
 
 class ForbiddenInstruction(Exception):
     """A forbidden instruction was found in the recipe."""
@@ -71,7 +78,6 @@ class ISourcePackageRecipeData(Interface):
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
-
 
 
 class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):

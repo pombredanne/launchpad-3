@@ -29,6 +29,8 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -373,6 +375,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
     usedfor = IDistributionMirror
+
+
+class ViewMilestone(AnonymousAuthorization):
+    """Anyone can view an IMilestone."""
+    usedfor = IMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -2167,14 +2174,19 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackageRecipe(AuthorizationBase):
+class DerivedAuthorization(AuthorizationBase):
+    """An Authorization that is based on permissions for other objects.
 
-    permission = "launchpad.View"
-    usedfor = ISourcePackageRecipe
+    Implementations must define permission, usedfor and iter_objects.
+    iter_objects should iterate through the objects to check permission on.
+
+    Failure on the permission check for any object causes an overall failure.
+    """
 
     def iter_adapters(self):
-        for branch in self.obj.getReferencedBranches():
-            yield getAdapter(branch, IAuthorization, self.permission)
+        return (
+            getAdapter(obj, IAuthorization, self.permission)
+            for obj in self.iter_objects())
 
     def checkAuthenticated(self, user):
         for adapter in self.iter_adapters():
@@ -2187,6 +2199,25 @@ class ViewSourcePackageRecipe(AuthorizationBase):
             if not adapter.checkUnauthenticated():
                 return False
         return True
+
+
+class ViewSourcePackageRecipe(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipe
+
+    def iter_objects(self):
+        return self.obj.getReferencedBranches()
+
+
+class ViewSourcePackageRecipeBuild(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipeBuild
+
+    def iter_objects(self):
+        yield self.obj.recipe
+        yield self.obj.archive
 
 
 class ViewSourcePackagePublishingHistory(ViewArchive):

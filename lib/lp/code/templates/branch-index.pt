@@ -213,6 +213,14 @@
     </li>
   </ul>
 
+  <div
+    style="margin-top: 1.5em"
+    tal:define="link context/menu:context/view_recipes"
+    tal:condition="link/enabled"
+    >
+    <a tal:replace="structure link/fmt:link" />
+  </div>
+
       </div>
 
 </div>
