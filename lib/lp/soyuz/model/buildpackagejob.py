@@ -18,8 +18,8 @@ from zope.interface import implements
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.model.packagebuild import (
-    PackageBuildDerived)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -28,7 +28,7 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(PackageBuildDerived, Storm):
+class BuildPackageJob(BuildFarmJobDerived, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
@@ -42,9 +42,14 @@ class BuildPackageJob(PackageBuildDerived, Storm):
     build = Reference(build_id, 'BinaryPackageBuild.id')
 
     def __init__(self, build, job):
-        """ Setup the IBuildFarmJob delegation when new items are created."""
         self.build, self.job = build, job
         super(BuildPackageJob, self).__init__()
+
+    def _set_build_farm_job(self):
+        """ Setup the IBuildFarmJob delegate.
+
+        We override this to provide a delegate specific to package builds."""
+        self.build_farm_job = PackageBuild(self.build)
 
     def score(self):
         """See `IBuildPackageJob`."""

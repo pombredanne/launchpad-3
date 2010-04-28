@@ -207,6 +207,9 @@ class BuildFarmJobDerived:
         assume that BuildFarmJob/PackageBuild are in-memory objects
         that simply provide methods to update the associated builds.
         We can remove it once the above bug is completed.
+
+        TODO: move these in-memory definitions to those classes expecting
+        in memory versions, so the general case will be db-objects.
         """
         self.build_farm_job = BuildFarmJob(
             job_type=BuildFarmJobType.PACKAGEBUILD)

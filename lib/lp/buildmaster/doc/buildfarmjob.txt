@@ -1,7 +1,8 @@
 BuildFarmJob
 ============
 
-    >>> from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+    >>> from lp.buildmaster.interfaces.buildfarmjob import (
+    ...     BuildFarmJobType, IBuildFarmJob)
     >>> from lp.buildmaster.model.buildfarmjob import (
     ...     BuildFarmJob, BuildFarmJobDerived)
 
@@ -9,7 +10,7 @@ BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
 specific build farm job classes will automatically delegate to
 BuildFarmJob by inheriting BuildFarmJobDerived.
 
-    >>> buildfarmjob = BuildFarmJob()
+    >>> buildfarmjob = BuildFarmJob(BuildFarmJobType.PACKAGEBUILD)
     >>> verifyObject(IBuildFarmJob, buildfarmjob)
     True
 

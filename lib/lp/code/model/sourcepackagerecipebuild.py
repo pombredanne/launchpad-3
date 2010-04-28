@@ -27,8 +27,8 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuild import (
-    PackageBuildDerived)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -199,7 +199,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return
 
 
-class SourcePackageRecipeBuildJob(PackageBuildDerived, Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJobDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -221,6 +221,12 @@ class SourcePackageRecipeBuildJob(PackageBuildDerived, Storm):
         self.build = build
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
+
+    def _set_build_farm_job(self):
+        """ Setup the IBuildFarmJob delegate.
+
+        We override this to provide a delegate specific to package builds."""
+        self.build_farm_job = PackageBuild(self.build)
 
     @classmethod
     def new(cls, build, job):

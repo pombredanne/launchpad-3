@@ -8,6 +8,8 @@ __all__ = [
     ]
 
 
+from lazr.delegates import delegates
+
 from storm.locals import Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
@@ -22,7 +24,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSource)
+    IPackageBuild, IPackageBuildDerived, IPackageBuildSource)
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -212,20 +214,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         raise NotImplementedError
 
 
-class PackageBuildDerived(BuildFarmJobDerived):
-    def _set_build_farm_job(self):
-        """Set the in-memory build farm job specifically for package builds.
-
-        XXX 2010-04-27 michael.nelson bug=570939
-        This only exists because, for historical reasons, certain classes
-        assume that BuildFarmJob/PackageBuild are in-memory objects
-        that simply provide methods to update the associated builds.
-        We can remove it once the above bug is completed.
-
-        TODO: move these in-memory definitions to those classes expecting
-        in memory versions, so the general case will be db-objects.
-        """
-        self.build_farm_job = PackageBuild(self.build)
+class PackageBuildDerived:
+    """See `IPackageBuildDerived`."""
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuildDerived`."""
