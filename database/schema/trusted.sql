@@ -128,6 +128,11 @@ $$
             n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
             last_autovacuum, last_analyze, last_autoanalyze
         FROM pg_catalog.pg_stat_user_tables;
+    -- Invoking this procedure every 3 minutes and keeping 21 days worth
+    -- of data gives us about 3.5 million rows.
+    DELETE FROM DatabaseTableStats
+    WHERE date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        + CAST('21 days' AS interval);
 $$;
 SET check_function_bodies=true;
 
