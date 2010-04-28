@@ -209,8 +209,9 @@ class NewCodeImportForm(Interface):
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
         description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
+            "The URL of a Subversion branch, starting with svn:// or "
+            "http(s)://.   You can include a username and password as part "
+            "of the url, but this will be displayed on the branch page."),
         allowed_schemes=["http", "https", "svn"],
         allow_userinfo=True,
         allow_port=True,
