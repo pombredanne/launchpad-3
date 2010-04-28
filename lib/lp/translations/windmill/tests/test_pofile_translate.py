@@ -323,11 +323,9 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             id=self.switch_working_mode, timeout=constants.FOR_ELEMENT)
 
         current_is_reviewer = self.client.execJS(js=self.js_code)['output']
-        need_to_switch_mode = False
-        if reviewer and not current_is_reviewer:
-            need_to_switch_mode = True
-        if translator and current_is_reviewer:
-            need_to_switch_mode = True
+        need_to_switch_mode = (
+            reviewer and not current_is_reviewer or
+            translator and current_is_reviewer)
         if need_to_switch_mode:
             self.client.click(id=self.switch_working_mode)
         else:
