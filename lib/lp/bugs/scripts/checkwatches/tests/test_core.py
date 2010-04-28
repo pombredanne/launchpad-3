@@ -207,8 +207,8 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         checkwatches.core.suggest_batch_size(remote_system, 99999)
         self.failUnlessEqual(247, remote_system.batch_size)
 
-    def test_makeRemoteBugUpdater(self):
-        # CheckwatchesMaster.makeRemoteBugUpdater() will return a
+    def test__makeRemoteBugUpdater(self):
+        # CheckwatchesMaster._makeRemoteBugUpdater() will return a
         # RemoteBugUpdater instance for a given remote bug, external bug
         # tracker and set of bug watches.
         remote_system = BugzillaAPI('http://example.com')
@@ -217,7 +217,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         unmodified_remote_ids = ['76']
 
         checkwatches_master = CheckwatchesMaster(transaction)
-        updater = checkwatches_master.makeRemoteBugUpdater(
+        updater = checkwatches_master._makeRemoteBugUpdater(
             remote_system, remote_bug_id, bug_watch_ids,
             unmodified_remote_ids)
 

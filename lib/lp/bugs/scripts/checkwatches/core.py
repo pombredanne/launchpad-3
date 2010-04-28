@@ -129,8 +129,8 @@ class CheckwatchesMaster(WorkingBase):
         else:
             self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
-    def makeRemoteBugUpdater(self, external_bugtracker, remote_bug,
-                             bug_watch_ids, unmodified_remote_ids):
+    def _makeRemoteBugUpdater(self, external_bugtracker, remote_bug,
+                              bug_watch_ids, unmodified_remote_ids):
         """Create and return a `RemoteBugUpdater` instance.
 
         This method exists purely for the sake of being able to
@@ -637,7 +637,7 @@ class CheckwatchesMaster(WorkingBase):
                 " trusted. No comments will be imported.")
 
         for remote_bug_id in all_remote_ids:
-            remote_bug_updater = self.makeRemoteBugUpdater(
+            remote_bug_updater = self._makeRemoteBugUpdater(
                 remotesystem, remote_bug_id, bug_watch_ids,
                 unmodified_remote_ids)
             remote_bug_updater.updateRemoteBug(
