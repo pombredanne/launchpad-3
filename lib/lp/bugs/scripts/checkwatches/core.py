@@ -129,6 +129,17 @@ class CheckwatchesMaster(WorkingBase):
         else:
             self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
+    def makeRemoteBugUpdater(self, external_bugtracker, remote_bug,
+                             bug_watch_ids, unmodified_remote_ids):
+        """Create and return a `RemoteBugUpdater` instance.
+
+        This method exists purely for the sake of being able to
+        overrride it in tests.
+        """
+        return RemoteBugUpdater(
+            self, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids)
+
     @with_interaction
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
@@ -626,8 +637,8 @@ class CheckwatchesMaster(WorkingBase):
                 " trusted. No comments will be imported.")
 
         for remote_bug_id in all_remote_ids:
-            remote_bug_updater = RemoteBugUpdater(
-                self, remotesystem, remote_bug_id, bug_watch_ids,
+            remote_bug_updater = self.makeRemoteBugUpdater(
+                remotesystem, remote_bug_id, bug_watch_ids,
                 unmodified_remote_ids)
             remote_bug_updater.updateRemoteBug(
                 can_import_comments, can_push_comments, can_back_link)

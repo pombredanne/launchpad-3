@@ -207,6 +207,37 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         checkwatches.core.suggest_batch_size(remote_system, 99999)
         self.failUnlessEqual(247, remote_system.batch_size)
 
+    def test_makeRemoteBugUpdater(self):
+        # CheckwatchesMaster.makeRemoteBugUpdater() will return a
+        # RemoteBugUpdater instance for a given remote bug, external bug
+        # tracker and set of bug watches.
+        remote_system = BugzillaAPI('http://example.com')
+        remote_bug_id = '42'
+        bug_watch_ids = [1, 2]
+        unmodified_remote_ids = ['76']
+
+        checkwatches_master = CheckwatchesMaster(transaction)
+        updater = checkwatches_master.makeRemoteBugUpdater(
+            remote_system, remote_bug_id, bug_watch_ids,
+            unmodified_remote_ids)
+
+        self.assertEqual(
+            remote_system, updater.external_bugtracker,
+            "Unexpected external_bugtracker for RemoteBugUpdater.")
+        self.assertEqual(
+            remote_bug_id, updater.remote_bug,
+            "RemoteBugUpdater's remote_bug should be '%s', was '%s'" %
+            (remote_bug_id, updater.remote_bug))
+        self.assertEqual(
+            bug_watch_ids, updater.bug_watch_ids,
+            "RemoteBugUpdater's bug_watch_ids should be '%s', were '%s'" %
+            (bug_watch_ids, updater.bug_watch_ids))
+        self.assertEqual(
+            unmodified_remote_ids, updater.unmodified_remote_ids,
+            "RemoteBugUpdater's unmodified_remote_ids should be '%s', "
+            "were '%s'" % 
+            (unmodified_remote_ids, updater.unmodified_remote_ids))
+
 
 class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
     """Tests for updating bugs with linked questions."""
