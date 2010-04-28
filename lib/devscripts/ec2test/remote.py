@@ -4,6 +4,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 __metatype__ = type
 
 import datetime
@@ -225,10 +227,8 @@ class BaseTestRunner:
         message['Subject'] = subject
 
         # Make the body.
-        try:
-            summary = open(summary_filename, 'r').read()
-        finally:
-            summary.close()
+        with open(summary_filename, 'r') as summary_fd:
+            summary = summary_fd.read()
         body = MIMEText.MIMEText(summary, 'plain', 'utf8')
         body['Content-Disposition'] = 'inline'
         message.attach(body)

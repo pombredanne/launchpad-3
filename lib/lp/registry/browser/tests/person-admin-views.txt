@@ -119,7 +119,7 @@ password is changed too.
     >>> user.account_status
     <DBItem AccountStatus.ACTIVE, ...>
     >>> print user.account_status_comment
-    Activated when the preferred email was set.
+    None
 
     >>> old_password = user.password
     >>> form = {
@@ -163,4 +163,3 @@ addresses; the user must use the reset password feature to restore these.
     True
     >>> print user.preferredemail
     None
-

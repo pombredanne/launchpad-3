@@ -63,7 +63,6 @@
       permission="zope.Public"
       />
 
-
 </facet>
 
     <browser:url
@@ -1056,6 +1055,19 @@
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
+        factory="lp.code.browser.codeimportmachine.CodeImportMachineBreadcrumb"
+        permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
+        factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
+        permission="zope.Public"/>
+
     <adapter
          factory="lp.code.browser.branchmergeproposal.PreviewDiffHTMLRepresentation"
          name="lazr.restful.EntryResource"/>
