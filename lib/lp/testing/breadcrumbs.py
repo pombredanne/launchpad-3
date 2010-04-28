@@ -51,11 +51,3 @@ class BaseBreadcrumbTestCase(TestCaseWithFactory):
         obj, view, request = test_traverse(url)
         view = create_initialized_view(obj, '+hierarchy', request=request)
         return view.items
-
-    def _getBreadcrumbsTexts(self, url):
-        crumbs = self.getBreadcrumbsForUrl(url)
-        return [crumb.text for crumb in crumbs]
-
-    def _getBreadcrumbsURLs(self, url):
-        crumbs = self.getBreadcrumbsForUrl(url)
-        return [crumb.url for crumb in crumbs]

@@ -105,27 +105,25 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
         self.package_bugtask_url = canonical_url(self.package_bugtask)
 
     def test_root_on_mainsite(self):
-        urls = self._getBreadcrumbsURLs('http://launchpad.dev/')
-        self.assertEquals(urls, [])
+        crumbs = self.getBreadcrumbsForUrl('http://launchpad.dev/')
+        self.assertEquals(crumbs, [])
 
     def test_product_on_mainsite(self):
-        urls = self._getBreadcrumbsURLs(self.product_url)
-        self.assertEquals(urls, [self.product_url])
+        self.assertBreadcrumbUrls([self.product_url], self.product)
 
     def test_root_on_vhost(self):
-        urls = self._getBreadcrumbsURLs(
-            'http://bugs.launchpad.dev/')
-        self.assertEquals(urls, [])
+        crumbs = self.getBreadcrumbsForUrl('http://bugs.launchpad.dev/')
+        self.assertEquals(crumbs, [])
 
     def test_product_on_vhost(self):
-        urls = self._getBreadcrumbsURLs(self.product_bugs_url)
-        self.assertEquals(urls, [self.product_url, self.product_bugs_url])
+        self.assertBreadcrumbUrls(
+            [self.product_url, self.product_bugs_url],
+            self.product, rootsite='bugs')
 
     def test_product_bugtask(self):
-        urls = self._getBreadcrumbsURLs(self.product_bugtask_url)
-        self.assertEquals(
-            urls, [self.product_url, self.product_bugs_url,
-                   self.product_bugtask_url])
+        self.assertBreadcrumbUrls(
+            [self.product_url, self.product_bugs_url, self.product_bugtask_url],
+            self.product_bugtask)
 
     def test_package_bugtask(self):
         target = self.package_bugtask.target
@@ -133,12 +131,11 @@ class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
         distroseries_url = canonical_url(target.distroseries)
         package_url = canonical_url(target)
         package_bugs_url = canonical_url(target, rootsite='bugs')
-        urls = self._getBreadcrumbsURLs(
-            self.package_bugtask_url)
-        self.assertEquals(
-            urls,
+
+        self.assertBreadcrumbUrls(
             [distro_url, distroseries_url, package_url, package_bugs_url,
-             self.package_bugtask_url])
+             self.package_bugtask_url],
+            self.package_bugtask)
 
 
 def test_suite():

@@ -25,30 +25,24 @@ class TestDistroArchSeriesBreadcrumb(BaseBreadcrumbTestCase):
 
     def test_distroarchseries(self):
         das_url = canonical_url(self.hoary_i386)
-        urls = self._getBreadcrumbsURLs(das_url)
-        texts = self._getBreadcrumbsTexts(das_url)
-
-        self.assertEquals(urls[-1], das_url)
-        self.assertEquals(texts[-1], "i386")
+        crumbs = self.getBreadcrumbsForObject(self.hoary_i386)
+        self.assertEquals(crumbs[-1].url, das_url)
+        self.assertEquals(crumbs[-1].text, "i386")
 
     def test_distroarchseriesbinarypackage(self):
         pmount_hoary_i386 = self.hoary_i386.getBinaryPackage("pmount")
         pmount_url = canonical_url(pmount_hoary_i386)
-        urls = self._getBreadcrumbsURLs(pmount_url)
-        texts = self._getBreadcrumbsTexts(pmount_url)
-
-        self.assertEquals(urls[-1], pmount_url)
-        self.assertEquals(texts[-1], "pmount")
+        crumbs = self.getBreadcrumbsForObject(pmount_hoary_i386)
+        self.assertEquals(crumbs[-1].url, pmount_url)
+        self.assertEquals(crumbs[-1].text, "pmount")
 
     def test_distroarchseriesbinarypackagerelease(self):
         pmount_hoary_i386 = self.hoary_i386.getBinaryPackage("pmount")
         pmount_release = pmount_hoary_i386['0.1-1']
         pmount_release_url = canonical_url(pmount_release)
-        urls = self._getBreadcrumbsURLs(pmount_release_url)
-        texts = self._getBreadcrumbsTexts(pmount_release_url)
-
-        self.assertEquals(urls[-1], pmount_release_url)
-        self.assertEquals(texts[-1], "0.1-1")
+        crumbs = self.getBreadcrumbsForObject(pmount_release)
+        self.assertEquals(crumbs[-1].url, pmount_release_url)
+        self.assertEquals(crumbs[-1].text, "0.1-1")
 
 
 class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
@@ -71,12 +65,9 @@ class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
 
     def test_personal_archive_subscription(self):
         subscription_url = canonical_url(self.personal_archive_subscription)
-
-        urls = self._getBreadcrumbsURLs(subscription_url)
-        texts = self._getBreadcrumbsTexts(subscription_url)
-
-        self.assertEquals(subscription_url, urls[-1])
-        self.assertEquals("Access to %s" % self.ppa.displayname, texts[-1])
+        crumbs = self.getBreadcrumbsForObject(self.personal_archive_subscription)
+        self.assertEquals(subscription_url, crumbs[-1].url)
+        self.assertEquals("Access to %s" % self.ppa.displayname, crumbs[-1].text)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
