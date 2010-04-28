@@ -109,7 +109,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.
         job = removeSecurityProxy(self.specific_job.job)
-        buildqueue = TranslationTemplatesBuildJob.getByJob(job)
+        buildqueue = getUtility(IBuildQueueSet).getByJob(job)
 
         job_id = job.id
         store = Store.of(job)
@@ -117,13 +117,13 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         buildqueue.destroySelf()
 
+        # BuildQueue is gone.
+        self.assertIs(
+            None, store.find(BuildQueue, BuildQueue.job == job_id).one())
         # Job is gone.
         self.assertIs(None, store.find(Job, Job.id == job_id).one())
-        # BuildQueue is gone.
-        self.assertRaises(
-            SQLObjectNotFound, getUtility(IBuildQueueSet).get, job_id)
         # TranslationTemplatesBuildJob is gone.
-        self.assertIs(None, self.jobset.getByJob(job_id))
+        self.assertIs(None, TranslationTemplatesBuildJob.getByJob(job_id))
         # Branch is still here.
         branch_set = getUtility(IBranchSet)
         self.assertEqual(self.branch, branch_set.getByUniqueName(branch_name))
