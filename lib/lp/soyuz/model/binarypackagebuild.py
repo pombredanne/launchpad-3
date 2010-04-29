@@ -80,49 +80,19 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     package_build_id = Int(name='package_build', allow_none=False)
     package_build = Reference(package_build_id, 'PackageBuild.id')
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
-    processor = ForeignKey(dbName='processor', foreignKey='Processor',
-        notNull=True)
-    distroarchseries = ForeignKey(dbName='distroarchseries',
+    distro_arch_series = ForeignKey(dbName='distro_arch_series',
         foreignKey='DistroArchSeries', notNull=True)
-    buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus)
-    sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
+    source_package_release = ForeignKey(dbName='source_package_release',
         foreignKey='SourcePackageRelease', notNull=True)
-    datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
-    buildduration = IntervalCol(dbName='buildduration', default=None)
-    buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias',
-        default=None)
-    builder = ForeignKey(dbName='builder', foreignKey='Builder',
-        default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
-                     notNull=True)
-    dependencies = StringCol(dbName='dependencies', default=None)
-    archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
-
-    date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
-
-    upload_log = ForeignKey(
-        dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
-
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`."""
-        store = Store.of(self)
-        results = store.find(
-            BuildQueue,
-            BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == self.id)
-        return results.one()
 
     def _getLatestPublication(self):
         store = Store.of(self)
         results = store.find(
             SourcePackagePublishingHistory,
             SourcePackagePublishingHistory.archive == self.archive,
-            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.distroseries == self.distro_series,
             SourcePackagePublishingHistory.sourcepackagerelease ==
-                self.sourcepackagerelease)
+                self.source_package_release)
         return results.order_by(
             Desc(SourcePackagePublishingHistory.id)).first()
 
@@ -140,7 +110,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         #assert latest_publication is not None, (
         #    'Build %d lacks a corresponding source publication.' % self.id)
         if latest_publication is None:
-            return self.sourcepackagerelease.component
+            return self.source_package_release.component
 
         return latest_publication.component
 
@@ -183,7 +153,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadBuild.build == self,
             PackageUpload.archive == self.archive,
-            PackageUpload.distroseries == self.distroseries)
+            PackageUpload.distroseries == self.distro_series)
 
         # Return the unique `PackageUpload` record that corresponds to the
         # upload of the result of this `Build`, load the `LibraryFileAlias`
@@ -192,14 +162,14 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return DecoratedResultSet(results, operator.itemgetter(0)).one()
 
     @property
-    def distroseries(self):
+    def distro_series(self):
         """See `IBuild`"""
-        return self.distroarchseries.distroseries
+        return self.distro_arch_series.distroseries
 
     @property
     def distribution(self):
         """See `IBuild`"""
-        return self.distroarchseries.distroseries.distribution
+        return self.distro_series.distribution
 
     @property
     def is_virtualized(self):
@@ -215,22 +185,22 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def title(self):
         """See `IBuild`"""
         return '%s build of %s %s in %s %s %s' % (
-            self.distroarchseries.architecturetag,
-            self.sourcepackagerelease.name,
-            self.sourcepackagerelease.version,
-            self.distribution.name, self.distroseries.name, self.pocket.name)
+            self.distro_arch_series.architecturetag,
+            self.source_package_release.name,
+            self.source_package_release.version,
+            self.distribution.name, self.distro_series.name, self.pocket.name)
 
     @property
     def was_built(self):
         """See `IBuild`"""
-        return self.buildstate not in [BuildStatus.NEEDSBUILD,
+        return self.status not in [BuildStatus.NEEDSBUILD,
                                        BuildStatus.BUILDING,
                                        BuildStatus.SUPERSEDED]
 
     @property
     def arch_tag(self):
         """See `IBuild`."""
-        return self.distroarchseries.architecturetag
+        return self.distro_arch_series.architecturetag
 
     @property
     def distributionsourcepackagerelease(self):
@@ -240,8 +210,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             DistributionSourcePackageRelease)
 
         return DistributionSourcePackageRelease(
-            distribution=self.distroarchseries.distroseries.distribution,
-            sourcepackagerelease=self.sourcepackagerelease)
+            distribution=self.distribution,
+            sourcepackagerelease=self.source_package_release)
 
     @property
     def binarypackages(self):
@@ -261,7 +231,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         from canonical.launchpad.database import (
             DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp)
+            self.distro_arch_series, bp)
             for bp in self.binarypackages]
 
     @property
@@ -270,12 +240,12 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # First check that the slave scanner would pick up the build record
         # if we reset it.  PPA and Partner builds are always ok.
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            not self.distroseries.canUploadToPocket(self.pocket)):
+            not self.distro_series.canUploadToPocket(self.pocket)):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
             return False
 
-        failed_buildstates = [
+        failed_statuses = [
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
@@ -284,12 +254,12 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
         # If the build is currently in any of the failed states,
         # it may be retried.
-        return self.buildstate in failed_buildstates
+        return self.status in failed_statuses
 
     @property
     def can_be_rescored(self):
         """See `IBuild`."""
-        return self.buildstate is BuildStatus.NEEDSBUILD
+        return self.status is BuildStatus.NEEDSBUILD
 
     def retry(self):
         """See `IBuild`."""

@@ -233,6 +233,12 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuildFarmJob`."""
         # Need to update the db schema for buildpackagejob before
         # this can be implemented here.
+        # store = Store.of(self)
+        # results = store.find(
+        #     BuildQueue,
+        #     BuildPackageJob.job == BuildQueue.jobID,
+        #     BuildPackageJob.build == self.id)
+        # return results.one()
         return None
 
     @property
