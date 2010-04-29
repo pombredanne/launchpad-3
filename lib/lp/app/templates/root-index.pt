@@ -117,27 +117,33 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
+                  <a href="http://blog.launchpad.net?p=1513">
+                  2GiB PPAs for everyone!</a><span class="registered"> &ndash; 04 May 2010</span><br />
+                  We've doubled the standard Personal Package Archive size to 2 GiB.
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net?p=1491">
+                  Automatic translation template generation</a><span class="registered"> &ndash; 04 May 2010</span><br />
+                  Opening a project for translation is now easier with automatic template generation direct from the
+                  project's Bazaar branch.
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net?p=1503">
+                  Link projects to Ubuntu packages</a><span class="registered"> &ndash; 04 May 2010</span><br />
+                  Launchpad now helps you specify which Ubuntu package is associated with any project in Launchpad.
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net?p=1501">
+                  Easier project configuration</a><span class="registered"> &ndash; 04 May 2010</span><br />
+                  There are new links to configure your project's use of Launchpad direct from its project overview page.
+                </li>
+                <li class="news">
                   <a href="http://blog.launchpad.net/?p=1356">
                   Finding and managing patches</a><span class="registered"> &ndash; 03 Mar 2010</span><br />
                   Pick the low-hanging fruit. Launchpad now makes it easy to find and work with all bug
                   patches associated with a project or package.
                 </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/?p=1316">
-                  Measuring bug heat</a><span class="registered"> &ndash; 27 Jan 2010</span><br />
-                  Launchpad shows a new calculated measure of a bug's importance to help make triage easier.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/general/anonymous-access-to-the-launchpad-web-service-api">
-                  Anonymous API access</a><span class="registered"> &ndash; 19 Jan 2010</span><br />
-                  Your launchpadlib scripts can now get read-only access to the Launchpad API without needing authentication.
-                </li>
-                <li class="news">
-                  <a href="http://blog.launchpad.net/coming-features/the-road-ahead">
-                  The road ahead for Launchpad</a><span class="registered"> &ndash; 08 Jan 2010</span><br />
-                  Take a look at where Launchpad is going, and where you can get involved, by reading our 2010 roadmap.
-                </li>
-                <li class="news">
+                    <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
                     Launchpad now open source</a><span class="registered"> &ndash; 21 Jul 2009</span><br />
                     Get the code to Launchpad and join our development community.
