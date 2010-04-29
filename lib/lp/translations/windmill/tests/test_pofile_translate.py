@@ -82,6 +82,83 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         self._checkTranslationAutoselect(
             start_url, new_translation_id, new_translation_select_id)
 
+    def test_pofile_new_translation_autoselect_exceptions(self):
+        """Test for exceptions in automatically selecting new translation.
+
+        When navigation keys are pressed while the focus is on the new
+        translation text fields, the associated radio button should not be
+        automatically selected.
+        """
+        self.test_user = lpuser.TRANSLATIONS_ADMIN
+
+        start_url = ('http://translations.launchpad.dev:8085/'
+                        'ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
+                        'pt_BR/1/+translate')
+        new_translation_id = u'msgset_152_pt_BR_translation_0_new'
+        current_translation_select_id = (
+            u'msgset_152_pt_BR_translation_0_radiobutton')
+        new_translation_select_id = (
+            u'msgset_152_pt_BR_translation_0_new_select')
+
+        self.client.open(url=start_url)
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+        self.client.waits.forElement(
+            id=new_translation_id, timeout=constants.FOR_ELEMENT)
+        self.client.waits.forElement(
+            id=current_translation_select_id, timeout=constants.FOR_ELEMENT)
+        self.client.waits.forElement(
+            id=new_translation_select_id, timeout=constants.FOR_ELEMENT)
+
+        # Type some text and check that the associated radio button is
+        # now selected.
+        self.client.type(
+            id=new_translation_id, text=u'A new translation')
+        self.client.asserts.assertChecked(id=new_translation_select_id)
+
+        # Clicking the current translation radio button will deselect the
+        # new translation.
+        self.client.click(id=current_translation_select_id)
+        self.client.asserts.assertNotChecked(id=new_translation_select_id)
+
+        # Pressing UP, DOWN, LEFT, RIGHT, or Alt+Shift+j and Alt+Shift+j, will
+        # not select the new translation.
+        self.client.keyPress(
+            id=new_translation_id,
+            options='37,true,false,false,false,false')
+        self.client.keyPress(
+            id=new_translation_id,
+            options='38,true,false,false,false,false')
+        self.client.keyPress(
+            id=new_translation_id,
+            options='39,true,false,false,false,false')
+        self.client.keyPress(
+            id=new_translation_id,
+            options='40,true,false,false,false,false')
+        self.client.keyPress(
+            id=new_translation_id,
+            options='j,true,false,true,true,false')
+        # Select the input again after the 'go to next field' action.
+        self.client.click(id=new_translation_id)
+        self.client.keyPress(
+            id=new_translation_id,
+            options='k,true,false,true,true,false')
+        # Select the input again after the 'go to previous field' action.
+        self.client.click(id=new_translation_id)
+
+        # Same for TAB or RETURN keys, but also
+        self.client.keyPress(
+            id=new_translation_id,
+            options='9,true,false,false,false,false')
+        # Select the input again after the tab action.
+        self.client.click(id=new_translation_id)
+#        self.client.keyPress(
+#            id=new_translation_id,
+#            options='13,true,false,false,false,false')
+
+        # Check that the new translation is not selected.
+        self.client.asserts.assertNotChecked(id=new_translation_select_id)
+
     def _checkResetTranslationSelect(
         self, client, checkbox, singular_new_select, singular_current_select,
         singular_new_field=None, plural_new_select=None):
