@@ -646,9 +646,9 @@ class ArchiveViewBase(LaunchpadView):
 
         if self.context.status in (
             ArchiveStatus.DELETED, ArchiveStatus.DELETING):
-            return "This %s has been deleted." % self.archive_label
+            return "This %s has been deleted." % self.archive_label.lower()
         else:
-            return "This %s has been disabled." % self.archive_label
+            return "This %s has been disabled." % self.archive_label.lower()
 
 
 class ArchiveSeriesVocabularyFactory:
