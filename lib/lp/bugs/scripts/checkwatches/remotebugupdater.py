@@ -167,12 +167,10 @@ class RemoteBugUpdater(WorkingBase):
             # re-check them every time checkwatches runs.
             error_type = get_bugwatcherrortype_for_error(error)
             with self.transaction:
-                for bug_watch in bug_watches:
-                    bug_watch.lastchecked = UTC_NOW
-                    bug_watch.next_check = None
-                    bug_watch.last_error_type = error_type
-                    bug_watch.addActivity(
-                        result=error_type, oops_id=oops_id)
+                getUtility(IBugWatchSet).bulkSetError(
+                    bug_watches, error_type)
+                getUtility(IBugWatchSet).bulkAddActivity(
+                    bug_watches, result=error_type, oops_id=oops_id)
 
     def _convertRemoteStatus(self, remote_status):
         """Convert a remote bug status to a Launchpad status and return it.
