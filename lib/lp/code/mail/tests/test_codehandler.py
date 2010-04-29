@@ -24,7 +24,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.database import MessageSet
-from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.handlers import mail_handlers
