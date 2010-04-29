@@ -32,6 +32,7 @@ import random
 import re
 import weakref
 
+from bzrlib.plugins.builder import RecipeParser
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
@@ -120,6 +121,8 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
@@ -2264,6 +2267,17 @@ class Person(
             prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
         return rset
+
+    def createRecipe(self, name, description, recipe_text, distroseries,
+                     sourcepackagename, registrant):
+        """See `IPerson`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        builder_recipe = RecipeParser(recipe_text).parse()
+        spnset = getUtility(ISourcePackageNameSet)
+        sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
+        return SourcePackageRecipe.new(
+            registrant, self, distroseries, sourcepackagename, name,
+            builder_recipe, description)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
