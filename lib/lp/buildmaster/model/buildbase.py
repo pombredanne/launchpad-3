@@ -51,17 +51,12 @@ class BuildBase:
     policy_name = 'buildd'
 
     @staticmethod
-    def getUploadLeaf(build_id, now=None):
-        """Return a directory name to store build things in.
-
-        :param build_id: The id as returned by the slave, normally
-            $BUILD_ID-$BUILDQUEUE_ID
-        :param now: The `datetime` to use. If not provided, defaults to now.
-        """
-        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
+    def getUploadDirLeaf(build_cookie, now=None):
+        """See `IPackageBuild`."""
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD-COOKIE>
         if now is None:
             now = datetime.datetime.now()
-        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id)
+        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie)
 
     @staticmethod
     def getUploadDir(upload_leaf):
@@ -170,7 +165,7 @@ class BuildBase:
         root = os.path.abspath(config.builddmaster.root)
 
         # create a single directory to store build result files
-        upload_leaf = self.getUploadLeaf(
+        upload_leaf = self.getUploadDirLeaf(
             '%s-%s' % (self.id, self.buildqueue_record.id))
         upload_dir = self.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)

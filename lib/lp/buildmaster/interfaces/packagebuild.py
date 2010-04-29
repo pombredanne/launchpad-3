@@ -82,16 +82,16 @@ class IPackageBuild(IBuildFarmJob):
             executable.
         """
 
-    def getUploadLeaf(build_id, now=None):
-        """Return a directory name to store build things in.
+    def getUploadDirLeaf(build_cookie, now=None):
+        """Return the directory-leaf where files to be uploaded are stored.
 
-        :param build_id: The id as returned by the slave, normally
-            $BUILD_ID-$BUILDQUEUE_ID
-        :param now: The `datetime` to use. If not provided, defaults to now.
+        :param build_cookie: The build cookie as returned by the slave.
+        :param now: The `datetime` to use when constructing the leaf
+            directory name. If not provided, defaults to now.
         """
 
     def getUploadDir(upload_leaf):
-        """Return the complete directory that things will be stored in.
+        """Return the full directory where files to be uploaded are stored.
 
         :param upload_leaf: The leaf directory name where things will be
             stored.

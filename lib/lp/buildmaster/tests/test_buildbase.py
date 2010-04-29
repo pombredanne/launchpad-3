@@ -40,19 +40,22 @@ class BuildBaseTestCase(TestCase):
 class TestBuildBase(BuildBaseTestCase):
     """Tests for `IBuildBase`."""
 
-    def test_getUploadLeaf(self):
-        # getUploadLeaf returns the current time, followed by the build id.
+    def test_getUploadDirLeaf(self):
+        # getUploadDirLeaf returns the current time, followed by the build
+        # cookie.
         now = datetime.now()
-        build_id = self.factory.getUniqueInteger()
-        upload_leaf = self.package_build.getUploadLeaf(build_id, now=now)
+        build_cookie = self.factory.getUniqueString()
+        upload_leaf = self.package_build.getUploadDirLeaf(
+            build_cookie, now=now)
         self.assertEqual(
-            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id), upload_leaf)
+            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
+            upload_leaf)
 
     def test_getUploadDir(self):
         # getUploadDir is the absolute path to the directory in which things
         # are uploaded to.
-        build_id = self.factory.getUniqueInteger()
-        upload_leaf = self.package_build.getUploadLeaf(build_id)
+        build_cookie = self.factory.getUniqueInteger()
+        upload_leaf = self.package_build.getUploadDirLeaf(build_cookie)
         upload_dir = self.package_build.getUploadDir(upload_leaf)
         self.assertEqual(
             os.path.join(config.builddmaster.root, 'incoming', upload_leaf),
