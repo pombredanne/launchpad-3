@@ -409,10 +409,8 @@ class CheckwatchesMaster(WorkingBase):
                 error_type = (
                     get_bugwatcherrortype_for_error(error))
                 with self.transaction:
-                    for bug_watch in bug_watches_to_update:
-                        bug_watch.last_error_type = error_type
-                        bug_watch.lastchecked = UTC_NOW
-                        bug_watch.next_check = None
+                    getUtility(IBugWatchSet).bulkSetError(
+                        bug_watches_to_update, error_type)
                 message = (
                     "ExternalBugtracker for BugTrackerType '%s' is not "
                     "known." % (error.bugtrackertypename))
@@ -576,12 +574,8 @@ class CheckwatchesMaster(WorkingBase):
             # If there's too much time skew we can't continue with this
             # run.
             with self.transaction:
-                error_type = get_bugwatcherrortype_for_error(error)
-                for bug_watch_id in bug_watch_ids:
-                    bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
-                    bug_watch.lastchecked = UTC_NOW
-                    bug_watch.next_check = None
-                    bug_watch.last_error_type = error_type
+                getUtility(IBugWatchSet).bulkSetError(
+                    bug_watch_ids, get_bugwatcherrortype_for_error(error))
             raise
 
         remote_ids_to_check = remote_ids['remote_ids_to_check']
@@ -607,12 +601,8 @@ class CheckwatchesMaster(WorkingBase):
             # bug watches' lastchecked dates so that checkwatches
             # doesn't keep trying to update them every time it runs.
             with self.transaction:
-                error_type = get_bugwatcherrortype_for_error(error)
-                for bug_watch_id in bug_watch_ids:
-                    bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
-                    bug_watch.lastchecked = UTC_NOW
-                    bug_watch.next_check = None
-                    bug_watch.last_error_type = error_type
+                getUtility(IBugWatchSet).bulkSetError(
+                    bug_watch_ids, get_bugwatcherrortype_for_error(error))
             raise
 
         # Whether we can import and / or push comments is determined
