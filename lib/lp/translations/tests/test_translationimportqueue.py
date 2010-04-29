@@ -13,8 +13,11 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
+from lp.services.worlddata.interfaces.language import (
+    ILanguageSet)
 
 from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -213,6 +216,73 @@ class TestCanSetStatusPOFileWithQueuedUser(TestCanSetStatusPOFile):
     dbuser = 'queued'
 
 
+class TestGetGuessedPOFile(TestCaseWithFactory):
+    """Base for tests that check that canSetStatus works ."""
+
+    layer = LaunchpadZopelessLayer
+    dbuser = None
+    entry = None
+
+    def setUp(self):
+        """Set up context to test in."""
+        self.queue = getUtility(ITranslationImportQueue)
+        self.factory = LaunchpadObjectFactory()
+        self.distribution = self.factory.makeDistribution('boohoo')
+        self.distroseries = self.factory.makeDistroRelease(self.distribution)
+        self.uploaderperson = self.factory.makePerson()
+
+    def createSourcePackageAndPOTemplate(self, sourcepackagename,
+                                         template):
+        target_sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.distroseries)
+        pot = self.factory.makePOTemplate(
+            sourcepackagename=target_sourcepackage.sourcepackagename,
+            distroseries=target_sourcepackage.distroseries,
+            name=template, translation_domain=template)
+        spn = self.factory.makeSourcePackageName(sourcepackagename)
+        l10n_sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=spn,
+            distroseries=self.distroseries)
+        return (l10n_sourcepackage, pot)
+
+    def _getGuessedPOFile(self, source_name, template_name):
+        package, pot = self.createSourcePackageAndPOTemplate(
+            source_name, template_name)
+        queue_entry = self.queue.addOrUpdateEntry(
+            '%s.po' % template_name, template_name, True, self.uploaderperson,
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile = queue_entry.getGuessedPOFile()
+        return (pot, pofile)
+
+    def test_KDE4_language(self):
+        # KDE translations come through kde-l10n-* sourcepackages.
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-sr', 'template')
+        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(serbian, pofile.language)
+        self.assertIs(None, pofile.variant)
+
+    def test_KDE4_language_country(self):
+        # KDE translations come through kde-l10n-* sourcepackages.
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-engb', 'template')
+        real_english = getUtility(ILanguageSet).getLanguageByCode('en_GB')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(real_english, pofile.language)
+        self.assertIs(None, pofile.variant)
+
+    def test_KDE4_language_variant(self):
+        # KDE translations come through kde-l10n-* sourcepackages.
+        potemplate, pofile = self._getGuessedPOFile(
+            'kde-l10n-ca-valencia', 'template')
+        catalan = getUtility(ILanguageSet).getLanguageByCode('ca')
+        self.assertEquals(potemplate, pofile.potemplate)
+        self.assertEquals(catalan, pofile.language)
+        self.assertEquals(u'valencia', pofile.variant)
+
+
 def test_suite():
     """Add only specific test cases and leave out the base case."""
     suite = unittest.TestSuite()
@@ -221,5 +291,6 @@ def test_suite():
     suite.addTest(
         unittest.makeSuite(TestCanSetStatusPOTemplateWithQueuedUser))
     suite.addTest(unittest.makeSuite(TestCanSetStatusPOFileWithQueuedUser))
+    suite.addTest(unittest.makeSuite(TestGetGuessedPOFile))
     return suite
 

@@ -1,7 +1,7 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212, W0403
 
 __metaclass__ = type
 __all__ = [
@@ -467,7 +467,7 @@ class TranslationImportQueueEntry(SQLBase):
         if (sourcepackagename is None and
             potemplate.sourcepackagename is not None):
             # We didn't know the sourcepackagename when we called this method,
-            # but know, we know it.
+            # but now we know it.
             sourcepackagename = potemplate.sourcepackagename
 
         if (self.sourcepackagename is not None and
@@ -516,11 +516,11 @@ class TranslationImportQueueEntry(SQLBase):
                 sourcepackagename=self.sourcepackagename,
                 productseries=self.productseries)
             if existing_entry is not None:
-                logging.warn(
-                    "%s: can't approve entry %d ('%s') "
-                    "because entry %d is in the way." % (
-                        potemplate.title, self.id, self.path,
-                        existing_entry.id))
+                warning = ("%s: can't approve entry %d ('%s') "
+                           "because entry %d is in the way." % (
+                               potemplate.title, self.id, self.path,
+                               existing_entry.id))
+                logging.warn(warning)
                 return None
 
             # We got the potemplate, try to guess the language from
@@ -613,9 +613,9 @@ class TranslationImportQueueEntry(SQLBase):
 
             # These language codes have special meanings.
             lang_mapping = {
+                'ca-valencia': 'ca@valencia',
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
-                'srlatn': 'sr@Latn',
                 'zhcn': 'zh_CN',
                 'zhtw': 'zh_TW',
                 }
