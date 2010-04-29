@@ -135,6 +135,7 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
 
     def _attemptTransition(self, proposal, to_state):
         """Try to transition the proposal into the state `to_state`."""
+        kwargs = {}
         method = getattr(proposal, self.transition_functions[to_state])
         if to_state in (BranchMergeProposalStatus.CODE_APPROVED,
                         BranchMergeProposalStatus.REJECTED,
@@ -143,10 +144,12 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         elif to_state in (BranchMergeProposalStatus.SUPERSEDED,):
             args = [proposal.registrant]
         elif to_state in (BranchMergeProposalStatus.MERGE_FAILED,):
-            args = [to_state] # transition via setStatus.
+            # transition via setStatus.
+            args = [to_state]
+            kwargs = dict(user=proposal.target_branch.owner)
         else:
             args = []
-        method(*args)
+        method(*args, **kwargs)
 
     def assertGoodTransition(self, from_state, to_state):
         """Assert that we can go from `from_state` to `to_state`."""
@@ -274,10 +277,10 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal()
         self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
             proposal.source_branch.owner))
-        # It is always valid to go to the same state.
         self.assertValidTransitions(set([
                 BranchMergeProposalStatus.MERGE_FAILED,
                 BranchMergeProposalStatus.CODE_APPROVED,
+                # It is always valid to go to the same state.
                 BranchMergeProposalStatus.QUEUED]),
             proposal, BranchMergeProposalStatus.QUEUED,
             proposal.source_branch.owner)
@@ -317,6 +320,20 @@ class TestBranchMergeProposalTransitions(TestCaseWithFactory):
         self.assertProposalState(
             proposal, BranchMergeProposalStatus.MERGE_FAILED)
         self.assertIs(None, proposal.queue_position)
+
+    def test_transition_to_merge_failed_non_reviewer(self):
+        # non reviewers cannot set merge-failed (target branch owners are
+        # implicitly reviewers).
+        proposal = self.factory.makeBranchMergeProposal()
+        self.assertFalse(proposal.target_branch.isPersonTrustedReviewer(
+            proposal.source_branch.owner))
+        self.assertValidTransitions(set([
+                # It is always valid to go to the same state.
+                BranchMergeProposalStatus.MERGE_FAILED,
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.QUEUED]),
+            proposal, BranchMergeProposalStatus.MERGE_FAILED,
+            proposal.source_branch.owner)
 
     def test_transitions_to_wip_resets_reviewer(self):
         # When a proposal was approved and is moved back into work in progress

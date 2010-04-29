@@ -77,19 +77,29 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     [wip, needs_review, code_approved, rejected,
      merged, merge_failed, queued, superseded
      ] = BranchMergeProposalStatus.items
-    # Transitioning to code approved, rejected or queued from
+    # Transitioning to code approved, rejected, failed or queued from
     # work in progress, needs review or merge failed needs the
     # user to be a valid reviewer, other states are fine.
     valid_reviewer = proposal.target_branch.isPersonTrustedReviewer(user)
-    if (next_state == rejected and not valid_reviewer):
-        return False
-    # Non-reviewers can toggle between code_approved and queued, but not
-    # make anything else approved or queued. They can also take merge failed
-    # and requeue or bounce all the way out to approved again.
-    elif (next_state in (code_approved, queued) and
-          from_state not in (code_approved, queued, merge_failed)
-          and not valid_reviewer):
-        return False
+    reviewed_ok_states = (code_approved, queued, merge_failed)
+    if not valid_reviewer:
+        # Non reviewers cannot reject proposals [XXX: what about their own?]
+        if next_state == rejected:
+            return False
+        # Non-reviewers can toggle within the reviewed ok states
+        # (approved/queued/failed): they can dequeue something they spot an
+        # environmental issue with (queued or failed to approved). Retry things
+        # that had an environmental issue (failed or approved to queued) and note
+        # things as failing (approved and queued to failed).
+        # This is perhaps more generous than needed, but its not clearly wrong
+        # - a key concern is to prevent non reviewers putting things in the 
+        # queue that haven't been oked (and thus moved to approved or one of the
+        # workflow states that approved leads to).
+        elif (next_state in reviewed_ok_states and
+              from_state not in reviewed_ok_states):
+            return False
+        else:
+            return True
     else:
         return True
 
@@ -344,7 +354,7 @@ class BranchMergeProposal(SQLBase):
         elif status == BranchMergeProposalStatus.MERGED:
             self.markAsMerged(merge_reporter=user)
         elif status == BranchMergeProposalStatus.MERGE_FAILED:
-            self._transitionToState(status)
+            self._transitionToState(status, user=user)
         else:
             raise AssertionError('Unexpected queue status: ' % status)
 
