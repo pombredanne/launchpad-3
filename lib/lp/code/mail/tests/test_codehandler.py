@@ -250,8 +250,13 @@ class TestCodeHandler(TestCaseWithFactory):
 
         Import branches have different permission checks than other branches.
 
-        The permission check needs to fall through from the owner, that is why
-        we are using a non-reviewer for this test.
+        Permission to mark a merge proposal as approved checks launchpad.Edit
+        of the target branch, or membership of the review team on the target
+        branch.  For import branches launchpad.Edit also checks the registrant
+        of the code import if there is one, and membership of vcs-imports.  So
+        if someone is attempting to review something on an import branch, but
+        they don't have launchpad.Edit but are a member of the review team,
+        then a check against the code import is done.
         """
         mail = self.factory.makeSignedMessage(body=' merge approved')
         code_import = self.factory.makeCodeImport()
