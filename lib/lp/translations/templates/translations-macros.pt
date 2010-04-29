@@ -131,7 +131,8 @@
             class="unseen">
           <span>
           <a id="translation-switch-working-mode"
-             class="sprite edit js-action widget-hd"></a>&nbsp;<!--
+             class="sprite edit js-action widget-hd">
+             Reviewer mode</a>&nbsp;<!--
             -->(<a href="/+help/working-modes.html" target="help"><!--
                 -->What's&nbsp;this?</a>)
           </span>
