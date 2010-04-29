@@ -29,15 +29,7 @@ from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
 
-class BuildBaseTestCase(TestCase):
-
-    def setUp(self):
-        """Create the package build for testing."""
-        super(BuildBaseTestCase, self).setUp()
-        self.package_build = BuildBase()
-
-
-class TestBuildBase(BuildBaseTestCase):
+class TestBuildBaseMixin:
     """Tests for `IBuildBase`."""
 
     def test_getUploadDirLeaf(self):
@@ -62,17 +54,19 @@ class TestBuildBase(BuildBaseTestCase):
             upload_dir)
 
 
-class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
+class TestBuildBase(TestCase, TestBuildBaseMixin):
+
+    def setUp(self):
+        """Create the package build for testing."""
+        super(TestBuildBase, self).setUp()
+        self.package_build = BuildBase()
+
+
+class TestBuildBaseWithDatabaseMixin:
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        # Add dummy pocket and policy info to the in-memory base build.
-        super(TestBuildBaseWithDatabase, self).setUp()
-        self.package_build.pocket = self.factory.getAnyPocket()
-        self.package_build.id = self.factory.getUniqueInteger()
-        self.package_build.policy_name = self.factory.getUniqueString('policy-name')
 
     def test_getUploadLogContent_nolog(self):
         """If there is no log file there, a string explanation is returned.
@@ -116,6 +110,18 @@ class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
         uploader_command = self.package_build.getUploaderCommand(
             self.package_build, distro_series, upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
+
+
+class TestBuildBaseWithDatabase(TestCaseWithFactory,
+                                TestBuildBaseWithDatabaseMixin):
+    def setUp(self):
+        # Add dummy pocket and policy info to the in-memory base build.
+        super(TestBuildBaseWithDatabase, self).setUp()
+        self.package_build = BuildBase()
+        self.package_build.pocket = self.factory.getAnyPocket()
+        self.package_build.id = self.factory.getUniqueInteger()
+        self.package_build.policy_name = self.factory.getUniqueString(
+            'policy-name')
 
 
 class TestBuildBaseHandleStatus(TestCaseWithFactory):
