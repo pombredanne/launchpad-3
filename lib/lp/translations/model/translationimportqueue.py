@@ -616,6 +616,7 @@ class TranslationImportQueueEntry(SQLBase):
                 'ca-valencia': 'ca@valencia',
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
+                'srlatn': 'sr@Latn',
                 'zhcn': 'zh_CN',
                 'zhtw': 'zh_TW',
                 }
