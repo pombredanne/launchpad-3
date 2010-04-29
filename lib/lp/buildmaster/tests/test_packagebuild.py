@@ -12,7 +12,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
@@ -78,7 +77,6 @@ class TestPackageBuild(TestPackageBuildBase):
         joe = self.factory.makePerson(name="joe")
         joes_ppa = self.factory.makeArchive(owner=joe)
         self.package_build = self.makePackageBuild(archive=joes_ppa)
-        flush_database_updates()
 
     def test_providesInterface(self):
         # PackageBuild provides IPackageBuild
@@ -86,8 +84,8 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_saves_record(self):
         # A package build can be stored in the database.
-        flush_database_updates()
         store = Store.of(self.package_build)
+        store.flush()
         retrieved_build = store.find(
             PackageBuild,
             PackageBuild.id == self.package_build.id).one()
@@ -131,6 +129,7 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
+        Store.of(self.package_build).flush()
         build_id = self.package_build.build_farm_job.id
         self.package_build.storeUploadLog("Some content")
         log_url = self.package_build.upload_log_url
