@@ -16,11 +16,10 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadZopelessLayer)
 from canonical.database.constants import UTC_NOW
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
