@@ -12,7 +12,7 @@ they are included in the launchpad.js file.
 __metaclass__ = type
 
 import os
-import sys
+
 
 TOP = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..'))
