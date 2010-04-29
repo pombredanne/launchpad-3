@@ -245,6 +245,35 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             mail['Reply-to'], self.code_handler._getReplyAddress(mail))
 
+    def test_process_for_imported_branch(self):
+        """Make sure that the database user is able refer to import branches.
+
+        Import branches have different permission checks than other branches.
+
+        Permission to mark a merge proposal as approved checks launchpad.Edit
+        of the target branch, or membership of the review team on the target
+        branch.  For import branches launchpad.Edit also checks the registrant
+        of the code import if there is one, and membership of vcs-imports.  So
+        if someone is attempting to review something on an import branch, but
+        they don't have launchpad.Edit but are a member of the review team,
+        then a check against the code import is done.
+        """
+        mail = self.factory.makeSignedMessage(body=' merge approved')
+        code_import = self.factory.makeCodeImport()
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=code_import.branch)
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        pop_notifications()
+        self.code_handler.process(mail, email_addr, None)
+        notification = pop_notifications()[0]
+        # The returned message is a multipart message, the first part is
+        # the message, and the second is the original message.
+        message, original = notification.get_payload()
+        self.assertTrue(
+            "You are not a reviewer for the branch" in
+            message.get_payload(decode=True))
+
     def test_processVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
