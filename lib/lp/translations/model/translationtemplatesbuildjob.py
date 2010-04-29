@@ -49,7 +49,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         super(TranslationTemplatesBuildJob, self).__init__(branch_job)
 
     def _set_build_farm_job(self):
-        """ Setup the IBuildFarmJob delegate.
+        """Setup the IBuildFarmJob delegate.
 
         We override this to provide a non-database delegate that simply
         provides required functionality to the queue system."""

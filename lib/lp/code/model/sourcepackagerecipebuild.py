@@ -223,7 +223,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         super(SourcePackageRecipeBuildJob, self).__init__()
 
     def _set_build_farm_job(self):
-        """ Setup the IBuildFarmJob delegate.
+        """Setup the IBuildFarmJob delegate.
 
         We override this to provide a delegate specific to package builds."""
         self.build_farm_job = BuildFarmBuildJob(self.build)
