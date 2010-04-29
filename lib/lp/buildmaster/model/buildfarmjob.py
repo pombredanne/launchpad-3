@@ -231,7 +231,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
-        None
+        return None
 
     @property
     def is_private(self):
