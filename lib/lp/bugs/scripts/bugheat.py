@@ -97,7 +97,7 @@ class BugHeatCalculator:
                 datetime.utcnow() - self.bug.datecreated.replace(tzinfo=None)).days
             max_heat = max(
                 task.target.max_bug_heat for task in self.bug.bugtasks)
-            if max_heat is not None:
+            if max_heat is not None and days_since_created > 0:
                 total_heat = total_heat + (max_heat * 0.25 / days_since_created)
 
         return int(total_heat)

@@ -237,9 +237,9 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         fresh_heat = BugHeatCalculator(active_bug).getBugHeat()
         active_bug.date_last_updated = (
             active_bug.date_last_updated - timedelta(days=10))
-        active_bug.date_created = datetime.utcnow() - timedelta(days=20)
+        active_bug.datecreated = (active_bug.datecreated - timedelta(days=20))
         active_bug.default_bugtask.target.setMaxBugHeat(100)
-        expected = int((fresh_heat * (0.99 ** 10)) + (100 * 0.25 / 20))
+        expected = int((fresh_heat * (0.99 ** 20)) + (100 * 0.25 / 20))
         heat = BugHeatCalculator(active_bug).getBugHeat()
         self.assertEqual(
             expected, heat,
