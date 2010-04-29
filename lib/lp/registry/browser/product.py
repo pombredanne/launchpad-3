@@ -1050,6 +1050,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
     suggestions = None
     max_suggestions = 8
     other_package = object()
+    initial_focus_widget = None
 
     @cachedproperty
     def sourcepackages(self):
