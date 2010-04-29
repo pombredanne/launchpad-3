@@ -50,7 +50,7 @@ As far as Mailman is concerned, the mailing list no longer exists.
 
 Now the team owner reactivates the list.
 
-    >>> browser.getLink('Create a mailing list').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Reactivate this Mailing List').click()
     >>> xmlrpc_watcher.wait_for_reactivation('itest-one')
 

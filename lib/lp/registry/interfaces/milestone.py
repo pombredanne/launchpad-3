@@ -32,10 +32,10 @@ from canonical.launchpad.components.apihelpers import (
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+    call_with, export_as_webservice_entry, export_destructor_operation,
+    export_factory_operation, exported, export_operation_as,
+    export_read_operation, operation_parameters, operation_returns_entry,
+    rename_parameters_as, REQUEST_USER)
 
 
 class MilestoneNameField(ContentNameField):
@@ -173,7 +173,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
         """
 
-    @export_write_operation()
+    @export_destructor_operation()
     @export_operation_as('delete')
     def destroySelf():
         """Delete this milestone.

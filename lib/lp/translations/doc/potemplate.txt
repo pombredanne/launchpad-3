@@ -619,10 +619,13 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
-    >>> sorted(tarfile.getnames())
-    ['evolution-2.2/', 'evolution-2.2/evolution-2.2-es.po',
+
+    # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to make this
+    # pass on python2.5 and 2.6.
+    >>> sorted(name.rstrip('/') for name in tarfile.getnames())
+    ['evolution-2.2', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
-     'po/', 'po/evolution-2.2.pot']
+     'po', 'po/evolution-2.2.pot']
 
 The *-es.po file is indeed the Spanish translation...
 
