@@ -27,6 +27,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
+from lp.bugs.model.bugwatch import get_bug_watch_ids
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 
@@ -402,6 +403,44 @@ class TestBugWatch(TestCaseWithFactory):
         bug.markAsDuplicate(None)
         bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
         self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
+
+    def test_get_bug_watch_ids(self):
+        # get_bug_watch_ids() yields the IDs for the given bug
+        # watches.
+        bug_watches = [self.factory.makeBugWatch()]
+        self.failUnlessEqual(
+            [bug_watch.id for bug_watch in bug_watches],
+            list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_iterator(self):
+        # get_bug_watch_ids() can also accept an iterator.
+        bug_watches = [self.factory.makeBugWatch()]
+        self.failUnlessEqual(
+            [bug_watch.id for bug_watch in bug_watches],
+            list(get_bug_watch_ids(iter(bug_watches))))
+
+    def test_get_bug_watch_ids_with_id_list(self):
+        # If something resembling an ID is found, get_bug_watch_ids()
+        # yields it unaltered.
+        bug_watches = [1, 2, 3]
+        self.failUnlessEqual(
+            bug_watches, list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_mixed_list(self):
+        # get_bug_watch_ids() does the right thing when the given
+        # objects are a mix of bug watches and IDs.
+        bug_watch = self.factory.makeBugWatch()
+        bug_watches = [1234, bug_watch]
+        self.failUnlessEqual(
+            [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_others_in_list(self):
+        # get_bug_watch_ids() ignores objects that are not bug watches
+        # and do not resemble IDs.
+        bug_watch = self.factory.makeBugWatch()
+        bug_watches = [1234, 'fred', bug_watch, object()]
+        self.failUnlessEqual(
+            [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
 
 
 class TestBugWatchSet(TestCaseWithFactory):
