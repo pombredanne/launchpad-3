@@ -12,6 +12,7 @@ import unittest
 
 import transaction
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -24,6 +25,7 @@ from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
@@ -761,6 +763,8 @@ class TestBugWatch:
 
     This bug watch is guaranteed to trigger a DB failure when `updateStatus`
     is called if its `failing` attribute is True."""
+
+    implements(IBugWatch)
 
     lastchecked = None
     unpushed_comments = FakeResultSet()
