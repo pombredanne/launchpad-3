@@ -20,7 +20,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.test_buildbase import (
-    TestBuildBase, TestBuildBaseWithDatabase)
+    TestBuildBaseMixin, TestBuildBaseWithDatabaseMixin)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
@@ -43,7 +43,7 @@ class TestPackageBuildBase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
 
 
-class TestBuildBaseMethods(TestBuildBase, TestPackageBuildBase):
+class TestBuildBaseMethods(TestPackageBuildBase, TestBuildBaseMixin):
     """The new PackageBuild class provides the same methods as the BuildBase.
 
     XXX 2010-04-21 michael.nelson bug=567922.
@@ -58,8 +58,8 @@ class TestBuildBaseMethods(TestBuildBase, TestPackageBuildBase):
         self.package_build = self.makePackageBuild()
 
 
-class TestBuildBaseDatabaseMethods(TestBuildBaseWithDatabase,
-                                   TestPackageBuildBase):
+class TestBuildBaseDatabaseMethods(TestPackageBuildBase,
+                                   TestBuildBaseWithDatabaseMixin):
     """See `TestBuildBaseMethods` above."""
 
     def setUp(self):

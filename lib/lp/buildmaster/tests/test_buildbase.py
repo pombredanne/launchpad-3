@@ -29,47 +29,44 @@ from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
 
-class BuildBaseTestCase(TestCase):
-
-    def setUp(self):
-        """Create the package build for testing."""
-        super(BuildBaseTestCase, self).setUp()
-        self.package_build = BuildBase()
-
-
-class TestBuildBase(BuildBaseTestCase):
+class TestBuildBaseMixin:
     """Tests for `IBuildBase`."""
 
-    def test_getUploadLeaf(self):
-        # getUploadLeaf returns the current time, followed by the build id.
+    def test_getUploadDirLeaf(self):
+        # getUploadDirLeaf returns the current time, followed by the build
+        # cookie.
         now = datetime.now()
-        build_id = self.factory.getUniqueInteger()
-        upload_leaf = self.package_build.getUploadLeaf(build_id, now=now)
+        build_cookie = self.factory.getUniqueString()
+        upload_leaf = self.package_build.getUploadDirLeaf(
+            build_cookie, now=now)
         self.assertEqual(
-            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id), upload_leaf)
+            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
+            upload_leaf)
 
     def test_getUploadDir(self):
         # getUploadDir is the absolute path to the directory in which things
         # are uploaded to.
-        build_id = self.factory.getUniqueInteger()
-        upload_leaf = self.package_build.getUploadLeaf(build_id)
+        build_cookie = self.factory.getUniqueInteger()
+        upload_leaf = self.package_build.getUploadDirLeaf(build_cookie)
         upload_dir = self.package_build.getUploadDir(upload_leaf)
         self.assertEqual(
             os.path.join(config.builddmaster.root, 'incoming', upload_leaf),
             upload_dir)
 
 
-class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
+class TestBuildBase(TestCase, TestBuildBaseMixin):
+
+    def setUp(self):
+        """Create the package build for testing."""
+        super(TestBuildBase, self).setUp()
+        self.package_build = BuildBase()
+
+
+class TestBuildBaseWithDatabaseMixin:
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        # Add dummy pocket and policy info to the in-memory base build.
-        super(TestBuildBaseWithDatabase, self).setUp()
-        self.package_build.pocket = self.factory.getAnyPocket()
-        self.package_build.id = self.factory.getUniqueInteger()
-        self.package_build.policy_name = self.factory.getUniqueString('policy-name')
 
     def test_getUploadLogContent_nolog(self):
         """If there is no log file there, a string explanation is returned.
@@ -113,6 +110,18 @@ class TestBuildBaseWithDatabase(BuildBaseTestCase, TestCaseWithFactory):
         uploader_command = self.package_build.getUploaderCommand(
             self.package_build, distro_series, upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
+
+
+class TestBuildBaseWithDatabase(TestCaseWithFactory,
+                                TestBuildBaseWithDatabaseMixin):
+    def setUp(self):
+        # Add dummy pocket and policy info to the in-memory base build.
+        super(TestBuildBaseWithDatabase, self).setUp()
+        self.package_build = BuildBase()
+        self.package_build.pocket = self.factory.getAnyPocket()
+        self.package_build.id = self.factory.getUniqueInteger()
+        self.package_build.policy_name = self.factory.getUniqueString(
+            'policy-name')
 
 
 class TestBuildBaseHandleStatus(TestCaseWithFactory):
