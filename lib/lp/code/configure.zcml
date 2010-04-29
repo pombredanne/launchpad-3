@@ -64,12 +64,6 @@
          appropriate. -->
   </class>
 
-  <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-      for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
-      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
-      permission="zope.Public"/>
-
   <!-- CodeImportMachineSet -->
 
   <securedutility
