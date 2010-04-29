@@ -594,7 +594,7 @@ class ArchiveViewBase(LaunchpadView):
         if self.context.is_ppa:
             return 'PPA'
         else:
-            return 'Archive'
+            return 'archive'
 
     @cachedproperty
     def build_counters(self):
@@ -646,9 +646,9 @@ class ArchiveViewBase(LaunchpadView):
 
         if self.context.status in (
             ArchiveStatus.DELETED, ArchiveStatus.DELETING):
-            return "This %s has been deleted." % self.archive_label.lower()
+            return "This %s has been deleted." % self.archive_label
         else:
-            return "This %s has been disabled." % self.archive_label.lower()
+            return "This %s has been disabled." % self.archive_label
 
 
 class ArchiveSeriesVocabularyFactory:
