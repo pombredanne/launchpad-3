@@ -130,7 +130,13 @@ class IPackageBuild(IBuildFarmJob):
         """
 
     def notify(extra_info=None):
-        """Notify current build state to related people via email."""
+        """Notify current build state to related people via email.
+
+        :param extra_info: Optional extra information that will be included
+            in the notification email. If the notification is for a
+            failed-to-upload error then this must be the content of the
+            upload log.
+        """
 
 
 class IPackageBuildSource(Interface):
