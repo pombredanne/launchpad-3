@@ -250,6 +250,9 @@ class TestCodeHandler(TestCaseWithFactory):
         """Make sure that the database user is able refer to import branches.
 
         Import branches have different permission checks than other branches.
+
+        The permission check needs to fall through from the owner, that is why
+        we are using a non-reviewer for this test.
         """
         mail = self.factory.makeSignedMessage(body=' merge approved')
         code_import = self.factory.makeCodeImport()
@@ -263,10 +266,9 @@ class TestCodeHandler(TestCaseWithFactory):
         # The returned message is a multipart message, the first part is
         # the message, and the second is the original message.
         message, original = notification.get_payload()
-        target = code_import.branch.bzr_identity
         self.assertTrue(
-            "You are not a reviewer for the branch %s." % target
-            in message.get_payload(decode=True))
+            "You are not a reviewer for the branch" in
+            message.get_payload(decode=True))
 
     def test_processVote(self):
         """Process respects the vote command."""
