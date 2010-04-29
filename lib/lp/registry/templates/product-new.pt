@@ -242,11 +242,11 @@ LPS.use('node', 'lazr.effects', function(Y) {
     <div style="font-size: larger; background: #e0f0d0;
         padding: 0.3em; -moz-border-radius: 5px; -o-border-radius: 5px;
        -webkit-border-radius: 5px; margin-bottom: 1em;">
-      <strong>Requesting Ubuntu CDs</strong> is done at <a
-      href="https://shipit.ubuntu.com/">shipit.ubuntu.com</a>
+      You can <strong>test Launchpad's features</strong> at <a
+      href="https://staging.launchpad.net/">staging.launchpad.net</a>
       <form style="display: inline; font-size: smaller"
-            action="https://shipit.ubuntu.com/">
-        <input type="submit" value="Oh, I want Ubuntu CDs" />
+            action="https://staging.launchpad.net/">
+        <input type="submit" value="Oh, I want to create a test project" />
       </form>
     </div>
 
