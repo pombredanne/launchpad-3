@@ -12,9 +12,8 @@ __all__ = [
 import socket
 
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    InvalidBugId, PrivateRemoteBug, UnknownBugTrackerTypeError,
-    UnknownRemoteStatusError, UnparseableBugData,
+    BugNotFound, BugTrackerConnectError, InvalidBugId, PrivateRemoteBug,
+    UnknownBugTrackerTypeError, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus

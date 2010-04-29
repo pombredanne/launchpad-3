@@ -19,6 +19,7 @@ from canonical.database.constants import UTC_NOW
 from lp.bugs.externalbugtracker import (
     BugNotFound, InvalidBugId, PrivateRemoteBug, UnknownRemoteStatusError)
 
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus, IBugWatchSet
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_STATUS
 from lp.bugs.scripts.checkwatches.base import WorkingBase, commit_before

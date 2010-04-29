@@ -37,24 +37,21 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugWatchActivityStatus, CreateBugParams,
-    IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
-    IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
-    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+    CreateBugParams, IBugTrackerSet, IBugWatchSet, IDistribution,
+    ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
+    ISupportsCommentPushing, PersonCreationRationale)
 from canonical.launchpad.scripts.logger import log as default_log
 
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
-    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError,
-    BugWatchUpdateError, InvalidBugId, PrivateRemoteBug,
-    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
-    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
+    BATCH_SIZE_UNLIMITED, BugWatchUpdateError,
+    UnknownBugTrackerTypeError)
 from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
-    get_bugwatcherrortype_for_error, get_remote_system_oops_properties)
+    get_bugwatcherrortype_for_error)
 from lp.services.scripts.base import LaunchpadCronScript
 
 
