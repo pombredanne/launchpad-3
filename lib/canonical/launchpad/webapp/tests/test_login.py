@@ -259,6 +259,28 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # stuff. 
         self.assertLastWriteIsSet(view.request)
 
+    def test_never_used_account(self):
+        # The account was created by one of our scripts but was never
+        # activated, so we just activate it.
+        email = 'foo@example.com'
+        account = self.factory.makeAccount(
+            'Test account', email=email, status=AccountStatus.NOACCOUNT)
+        self.assertIs(None, IPerson(account, None))
+        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_response = FakeOpenIDResponse(
+            'http://testopenid.dev/+id/%s' % openid_identifier,
+            status=SUCCESS, email=email, full_name=account.displayname)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createAndRenderView(openid_response)
+        self.assertIsNot(None, IPerson(account, None))
+        self.assertTrue(view.login_called)
+        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEquals(email, account.preferredemail.email)
+        # We also update the last_write flag in the session, to make sure
+        # further requests use the master DB and thus see the newly created
+        # stuff. 
+        self.assertLastWriteIsSet(view.request)
+
     def test_suspended_account(self):
         # There's a chance that our OpenID Provider lets a suspended account
         # login, but we must not allow that.
