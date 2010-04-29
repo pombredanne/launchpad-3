@@ -32,7 +32,7 @@ class RemoteBugUpdaterTestCase(TestCaseWithFactory):
         checkwatches_master = CheckwatchesMaster(transaction)
         updater = checkwatches_master.remote_bug_updater_factory(
             checkwatches_master, remote_system, remote_bug_id,
-            bug_watch_ids, unmodified_remote_ids)
+            bug_watch_ids, unmodified_remote_ids, None)
 
         self.assertTrue(
             isinstance(updater, RemoteBugUpdater),

@@ -606,30 +606,11 @@ class CheckwatchesMaster(WorkingBase):
                     bug_watch.last_error_type = error_type
             raise
 
-        # Whether we can import and / or push comments is determined
-        # on a per-bugtracker-type level.
-        can_import_comments = (
-            ISupportsCommentImport.providedBy(remotesystem) and
-            remotesystem.sync_comments)
-        can_push_comments = (
-            ISupportsCommentPushing.providedBy(remotesystem) and
-            remotesystem.sync_comments)
-        can_back_link = (
-            ISupportsBackLinking.providedBy(remotesystem) and
-            remotesystem.sync_comments)
-
-        if can_import_comments and server_time is None:
-            can_import_comments = False
-            self.warning(
-                "Comment importing supported, but server time can't be"
-                " trusted. No comments will be imported.")
-
         for remote_bug_id in all_remote_ids:
             remote_bug_updater = self.remote_bug_updater_factory(
                 self, remotesystem, remote_bug_id, bug_watch_ids,
-                unmodified_remote_ids)
-            remote_bug_updater.updateRemoteBug(
-                can_import_comments, can_push_comments, can_back_link)
+                unmodified_remote_ids, server_time)
+            remote_bug_updater.updateRemoteBug()
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):

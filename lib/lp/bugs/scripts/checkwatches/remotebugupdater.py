@@ -21,7 +21,9 @@ from lp.bugs.externalbugtracker import (
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus, IBugWatchSet
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_STATUS
+from lp.bugs.interfaces.externalbugtracker import (
+    ISupportsBackLinking, ISupportsCommentImport,
+    ISupportsCommentPushing, UNKNOWN_REMOTE_STATUS)
 from lp.bugs.scripts.checkwatches.base import WorkingBase, commit_before
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
@@ -31,7 +33,7 @@ from lp.bugs.scripts.checkwatches.utilities import (
 class RemoteBugUpdater(WorkingBase):
 
     def __init__(self, parent, external_bugtracker, remote_bug,
-                 bug_watch_ids, unmodified_remote_ids):
+                 bug_watch_ids, unmodified_remote_ids, server_time):
         self.initFromParent(parent)
         self.external_bugtracker = external_bugtracker
         self.bug_tracker_url = external_bugtracker.baseurl
@@ -56,6 +58,24 @@ class RemoteBugUpdater(WorkingBase):
             "local bugs: %(local_ids)s"
             )
 
+        # Whether we can import and / or push comments is determined
+        # on a per-bugtracker-type level.
+        self.can_import_comments = (
+            ISupportsCommentImport.providedBy(external_bugtracker) and
+            external_bugtracker.sync_comments)
+        self.can_push_comments = (
+            ISupportsCommentPushing.providedBy(external_bugtracker) and
+            external_bugtracker.sync_comments)
+        self.can_back_link = (
+            ISupportsBackLinking.providedBy(external_bugtracker) and
+            remotesystem.sync_comments)
+
+        if self.can_import_comments and server_time is None:
+            self.can_import_comments = False
+            self.warning(
+                "Comment importing supported, but server time can't be "
+                "trusted. No comments will be imported.")
+
     def _getBugWatchesForRemoteBug(self):
         """Return a list of bug watches for the current remote bug.
 
@@ -68,9 +88,7 @@ class RemoteBugUpdater(WorkingBase):
                 self.remote_bug, self.bug_watch_ids))
 
     @commit_before
-    def updateRemoteBug(self, can_import_comments=False,
-                        can_push_comments=False, can_back_link=False):
-        # Avoid circular imports
+    def updateRemoteBug(self):
         with self.transaction:
             bug_watches = self._getBugWatchesForRemoteBug()
             # If there aren't any bug watches for this remote bug,
@@ -85,7 +103,7 @@ class RemoteBugUpdater(WorkingBase):
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
                 bug_watch.next_check = None
-            # Next if this one is definitely unmodified.
+            # Return if this one is definitely unmodified.
             if self.remote_bug in self.unmodified_remote_ids:
                 return
             # Save the remote bug URL for error reporting.
@@ -144,12 +162,8 @@ class RemoteBugUpdater(WorkingBase):
                 bug_watch_updater.updateBugWatch(
                     new_remote_status, new_malone_status,
                     new_remote_importance, new_malone_importance,
-                    can_import_comments, can_push_comments,
-                    can_back_link, error, oops_id)
-
-        except (KeyboardInterrupt, SystemExit):
-            # We should never catch KeyboardInterrupt or SystemExit.
-            raise
+                    self.can_import_comments, self.can_push_comments,
+                    self.can_back_link, error, oops_id)
 
         except Exception, error:
             # Send the error to the log.
