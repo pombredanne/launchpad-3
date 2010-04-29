@@ -80,6 +80,16 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     source_package_release = ForeignKey(dbName='source_package_release',
         foreignKey='SourcePackageRelease', notNull=True)
 
+    @property
+    def buildqueue_record(self):
+        """See `IBuild`."""
+        store = Store.of(self)
+        results = store.find(
+            BuildQueue,
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildPackageJob.build == self.id)
+        return results.one()
+
     def _getLatestPublication(self):
         store = Store.of(self)
         results = store.find(

@@ -68,6 +68,7 @@ class TestBuildFarmJob(TestCaseWithFactory):
         self.assertEqual(None, self.build_farm_job.builder)
         self.assertEqual(None, self.build_farm_job.log)
         self.assertEqual(None, self.build_farm_job.log_url)
+        self.assertEqual(None, self.build_farm_job.buildqueue_record)
 
     def test_unimplemented_methods(self):
         # A build farm job leaves the implementation of various
@@ -110,10 +111,6 @@ class TestBuildFarmJob(TestCaseWithFactory):
         self.assertEqual(
             self.build_farm_job.job_type.title,
             self.build_farm_job.title)
-
-    def test_buildqueue_record(self):
-        self.failUnless(
-            False, "Update schema and move buildqueue_record implementation")
 
 
 def test_suite():
