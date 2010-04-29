@@ -24,6 +24,10 @@ class BugHeatConstants:
 
 class BugHeatCalculator:
     """A class to calculate the heat for a bug."""
+    # If you change the way that bug heat is calculated, remember to update
+    # the description of how it is calculated at
+    # /lib/lp/bugs/help/bug-heat.html and
+    # https://help.launchpad.net/Bugs/BugHeat
 
     def __init__(self, bug):
         self.bug = bug

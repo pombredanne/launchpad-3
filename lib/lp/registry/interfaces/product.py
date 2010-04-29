@@ -273,6 +273,11 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(releasefileglob="release_url_pattern")
+    @export_factory_operation(
+        IProductSeries, ['name', 'summary', 'branch', 'releasefileglob'])
+    @export_operation_as('newSeries')
     def newSeries(owner, name, summary, branch=None, releasefileglob=None):
         """Creates a new `IProductSeries` for this `IProduct`.
 
@@ -565,6 +570,16 @@ class IProductPublic(
         exported_as='bug_tracker')
 
     sourcepackages = Attribute(_("List of packages for this product"))
+
+    date_next_suggest_packaging = exported(
+        Datetime(
+            title=_('Next suggest packaging date'),
+            description=_(
+                "The date when Launchpad can resume suggesting Ubuntu "
+                "packages that the project provides. The default value is "
+                "one year after a user states the project is not packaged "
+                "in Ubuntu."),
+            required=False))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))

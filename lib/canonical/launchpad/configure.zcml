@@ -94,9 +94,4 @@
       module="canonical.launchpad.browser"
       classes="LaunchpadRootNavigation"
       />
-
-  <browser:resourceDirectory
-      name="PlotKit"
-      directory="../../contrib/PlotKit"
-      />
 </configure>
