@@ -434,13 +434,11 @@ class TestBugWatch(TestCaseWithFactory):
         self.failUnlessEqual(
             [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
 
-    def test_get_bug_watch_others_in_list(self):
-        # get_bug_watch_ids() ignores objects that are not bug watches
-        # and do not resemble IDs.
-        bug_watch = self.factory.makeBugWatch()
-        bug_watches = [1234, 'fred', bug_watch, object()]
-        self.failUnlessEqual(
-            [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
+    def test_get_bug_watch_ids_with_others_in_list(self):
+        # get_bug_watch_ids() asserts that all arguments are bug
+        # watches or resemble IDs.
+        self.assertRaises(
+            AssertionError, list, get_bug_watch_ids(['fred']))
 
 
 class TestBugWatchSet(TestCaseWithFactory):

@@ -79,7 +79,8 @@ def get_bug_watch_ids(references):
         elif isinstance(reference, (int, long)):
             yield reference
         else:
-            pass # Something else.
+            raise AssertionError(
+                '%r is not a bug watch or an ID.' % (reference,))
 
 
 class BugWatch(SQLBase):
