@@ -126,8 +126,6 @@ class ServersToStart(unittest.TestCase):
         launch_data = """
             [librarian_server]
             launch: True
-            [buildsequencer]
-            launch: False
             [codehosting]
             launch: False
             [launchpad]

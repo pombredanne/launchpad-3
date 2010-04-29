@@ -689,3 +689,101 @@ translation further, since it's already diverged.
     False
     >>> subview.shared_translationmessage == translationmessage
     True
+
+
+Resetting current translation
+-----------------------------
+
+The current translation can be reset by submitting an empty translation
+or a translation similar to the current one while forcing suggestions.
+
+We need to force timestamp update, since suggestions are submitted too fast.
+
+    >>> from lp.translations.interfaces.translationgroup import (
+    ...     TranslationPermission)
+    >>> pofile = factory.makePOFile('es')
+    >>> potemplate = pofile.potemplate
+    >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
+    >>> translationmessage = factory.makeTranslationMessage(
+    ...     potmsgset=potmsgset, pofile=pofile,
+    ...     translations = [u"A shared translation"])
+    >>> translationmessage.setPOFile(pofile)
+    >>> product = potemplate.productseries.product
+    >>> product.translationpermission = TranslationPermission.CLOSED
+    >>> year_tick = 2100
+    >>> def submit_translation(
+    ...     translationmessage, translation, force_suggestion=False):
+    ...     global year_tick
+    ...     pofile = translationmessage.pofile
+    ...     potmsgset = translationmessage.potmsgset
+    ...     server_url = '/'.join(
+    ...         [canonical_url(translationmessage), '+translate'])
+    ...     now = (str(year_tick) +
+    ...             datetime.now(UTC).strftime('-%m-%dT%H:%M:%S+00:00'))
+    ...     year_tick += 1
+    ...     msgset_id = 'msgset_' + str(potmsgset.id)
+    ...     msgset_id_lang = msgset_id + '_' + pofile.language.code
+    ...     form = {
+    ...         'lock_timestamp': now,
+    ...         'alt': None,
+    ...         msgset_id : None,
+    ...         msgset_id_lang + '_translation_0_radiobutton':
+    ...         msgset_id_lang + '_translation_0_new',
+    ...         msgset_id_lang + '_translation_0_new': translation,
+    ...         'submit_translations': 'Save &amp; Continue'}
+    ...     if force_suggestion:
+    ...         form[msgset_id_lang + '_needsreview'] = 'force_suggestion'
+    ...     tm_view = create_view(
+    ...         translationmessage, "+translate", form=form,
+    ...         layer=TranslationsLayer, server_url=server_url)
+    ...     tm_view.request.method = 'POST'
+    ...     tm_view.initialize()
+
+    >>> def print_current_translation(potmsgset, pofile):
+    ...     current_translation = potmsgset.getCurrentTranslationMessage(
+    ...         pofile.potemplate, pofile.language)
+    ...     if current_translation is not None:
+    ...         print current_translation.translations
+
+    >>> def print_local_suggestions(potmsgset, pofile):
+    ...     import operator
+    ...     local = sorted(
+    ...         potmsgset.getLocalTranslationMessages(
+    ...             pofile.potemplate, pofile.language),
+    ...         key=operator.attrgetter("date_created"),
+    ...         reverse=True)
+    ...     for suggestion in local:
+    ...         print suggestion.translations
+
+We will make an initial translation.
+
+    >>> submit_translation(
+    ...     translationmessage, u'Foo')
+    >>> print_local_suggestions(potmsgset, pofile)
+    >>> print_current_translation(potmsgset, pofile)
+    [u'Foo']
+
+Forcing suggestions while submitting an empty translation will reset the
+translation for this message and all previously entered translations will be
+listed as suggestions.
+
+    >>> submit_translation(translationmessage, u'', force_suggestion=True)
+    >>> print_local_suggestions(potmsgset, pofile)
+    [u'Foo']
+    [u'A shared translation']
+    >>> print_current_translation(potmsgset, pofile)
+
+Only users with edit rights are allowed to reset a translation.
+
+    >>> submit_translation(translationmessage, u'New current translation')
+    >>> print_current_translation(potmsgset, pofile)
+    [u'New current translation']
+    >>> print_local_suggestions(potmsgset, pofile)
+    >>> login('no-priv@canonical.com')
+    >>> submit_translation(
+    ...     translationmessage, u'New current translation',
+    ...     force_suggestion=True)
+    >>> login('carlos@canonical.com')
+    >>> print_local_suggestions(potmsgset, pofile)
+    >>> print_current_translation(potmsgset, pofile)
+    [u'New current translation']

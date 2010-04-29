@@ -5,7 +5,7 @@
 
 """Launchpad Pillars share a namespace.
 
-Pillars are currently Product, Project and Distribution.
+Pillars are currently Product, ProjectGroup and Distribution.
 """
 
 __metaclass__ = type
@@ -134,7 +134,7 @@ class PillarNameSet:
         """
         # These classes are imported in this method to prevent an import loop.
         from lp.registry.model.product import Product
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         from lp.registry.model.distribution import Distribution
         OtherPillarName = ClassAlias(PillarName)
         origin = [
@@ -142,7 +142,7 @@ class PillarNameSet:
             LeftJoin(
                 OtherPillarName, PillarName.alias_for == OtherPillarName.id),
             LeftJoin(Product, PillarName.product == Product.id),
-            LeftJoin(Project, PillarName.project == Project.id),
+            LeftJoin(ProjectGroup, PillarName.project == ProjectGroup.id),
             LeftJoin(
                 Distribution, PillarName.distribution == Distribution.id),
             ]
@@ -162,7 +162,7 @@ class PillarNameSet:
             ''' % sqlvalues(text=text))
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [
-            PillarName, OtherPillarName, Product, Project, Distribution]
+            PillarName, OtherPillarName, Product, ProjectGroup, Distribution]
         for column in extra_columns:
             columns.append(column)
         return store.using(*origin).find(tuple(columns), conditions)
@@ -277,7 +277,7 @@ class PillarName(SQLBase):
     product = ForeignKey(
         foreignKey='Product', dbName='product')
     project = ForeignKey(
-        foreignKey='Project', dbName='project')
+        foreignKey='ProjectGroup', dbName='project')
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)

@@ -1077,6 +1077,7 @@ emails from it.
     >>> team_names.append(team_seven.name)
 
     >>> sam = factory.makePersonByName('Samuel')
+    >>> transaction.commit()
 
     >>> list_seven.subscribe(sam)
     >>> sorted(email.email for email in list_seven.getSubscribedAddresses())

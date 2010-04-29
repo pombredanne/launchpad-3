@@ -36,7 +36,7 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
     def setUpRegistryExpert(self):
         """Create a registry expert and logs in as them."""
         login_person(self.admin)
-        self.expert = self.factory.makePersonNoCommit()
+        self.expert = self.factory.makePerson()
         getUtility(ILaunchpadCelebrities).registry_experts.addMember(
             self.expert, self.admin)
         login_person(self.expert)
@@ -46,7 +46,7 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
             "Anonymous user shouldn't have launchpad.Edit on ILaunchpadRoot")
 
     def test_regular_user_cannot_edit(self):
-        login_person(self.factory.makePersonNoCommit())
+        login_person(self.factory.makePerson())
         self.failIf(check_permission('launchpad.Edit', self.root),
             "Regular users shouldn't have launchpad.Edit on ILaunchpadRoot")
 

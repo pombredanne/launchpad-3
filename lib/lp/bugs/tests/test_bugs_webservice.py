@@ -192,7 +192,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         try:
             login('foo.bar@canonical.com')
             for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
-                person = self.factory.makePersonNoCommit()
+                person = self.factory.makePerson()
                 bug.subscribe(person, person)
             logout()
             response = webservice.named_post(

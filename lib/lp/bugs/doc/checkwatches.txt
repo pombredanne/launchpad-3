@@ -45,7 +45,7 @@ the watch.
 
     >>> print err
     INFO    creating lockfile
-    DEBUG   Using a global batch size of None
+    DEBUG   No global batch size specified.
     DEBUG   Skipping updating Ubuntu Bugzilla watches.
     DEBUG   No watches to update on http://bugs.debian.org
     DEBUG   No watches to update on mailto:bugs@example.com
@@ -63,7 +63,7 @@ OOPSes reported by the checkwatches process are raised using the
 CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix
 and their type is 'BugWatchUpdateWarning'.
 
-    >>> from lp.bugs.scripts.checkwatches import (
+    >>> from lp.bugs.scripts.checkwatches.base import (
     ...     CheckWatchesErrorUtility)
     >>> error_utility = CheckWatchesErrorUtility()
     >>> report = error_utility.getLastOopsReport()
@@ -109,7 +109,7 @@ First, we create some bug watches to test with:
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IBugSet)
     >>> from lp.bugs.scripts.checkwatches import (
-    ...     BugWatchUpdater)
+    ...     CheckwatchesMaster)
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
@@ -150,7 +150,7 @@ will also be automatically filled from the baseurl OOPS property.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     updater = BugWatchUpdater(transaction.manager)
+    ...     updater = CheckwatchesMaster(transaction.manager)
     ...     updater.updateBugTrackers(
     ...         bug_tracker_names=[example_bug_tracker_name])
     ... finally:
@@ -212,7 +212,7 @@ of the externalbugtracker module to ensure that it raises this error.
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
-    ...     updater = BugWatchUpdater(transaction.manager)
+    ...     updater = CheckwatchesMaster(transaction.manager)
     ...     transaction.commit()
     ...     updater._updateBugTracker(example_bug_tracker)
     ... finally:
@@ -261,20 +261,20 @@ requests are actually made.
     >>> from canonical.launchpad.scripts import FakeLogger
 
     >>> transaction.commit()
-    >>> updater = BugWatchUpdater(transaction.manager)
-    >>> original_log = updater.log
+    >>> updater = CheckwatchesMaster(transaction.manager)
+    >>> original_log = updater.logger
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
     ...     transaction.commit()
-    ...     updater.log = FakeLogger()
+    ...     updater.logger = FakeLogger()
     ...     updater.updateBugTrackers([example_bug_tracker_name])
     ... finally:
-    ...     updater.log = original_log
+    ...     updater.logger = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
-    DEBUG Using a global batch size of None
+    DEBUG No global batch size specified.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
     ERROR Connection timed out when updating ... (OOPS-...)
 
@@ -283,7 +283,7 @@ Updating all the watches on a bug tracker
 -----------------------------------------
 
 It's possible to update all the watches on a bug tracker using
-checkwatches using BugWatchUpdater's forceUpdateAll() method.
+checkwatches using CheckwatchesMaster's forceUpdateAll() method.
 forceUpdateAll() accepts a bug_tracker_name argument because it's
 called by the checkwatches script, which doesn't know or care about
 IBugTracker and instances thereof.
@@ -310,12 +310,12 @@ However, forceUpdateAll() will update every watch, whether they've
 been recently checked or not.
 
 We'll create a helper method here, because we want to monkey patch the
-BugWatchUpdater's logger.
+CheckwatchesMaster's logger.
 
     >>> def update_all(bug_tracker_name, batch_size=None):
     ...     transaction.commit()
-    ...     updater = BugWatchUpdater(transaction.manager)
-    ...     updater.log = FakeLogger()
+    ...     updater = CheckwatchesMaster(transaction.manager)
+    ...     updater.logger = FakeLogger()
     ...     updater.forceUpdateAll(bug_tracker_name, batch_size)
 
     >>> update_all('savannah', batch_size)
@@ -367,10 +367,10 @@ We'll add some more watches in order to demonstrate this.
     5
 
 With a batch_size of 1, only one bug watch will be updated at once.
-We'll use a custom BugWatchUpdater to make sure that no connections are
+We'll use a custom CheckwatchesMaster to make sure that no connections are
 made.
 
-    >>> class NonConnectingUpdater(BugWatchUpdater):
+    >>> class NonConnectingUpdater(CheckwatchesMaster):
     ...
     ...     def _updateBugTracker(self, bug_tracker, batch_size):
     ...         # Update as many watches as the batch size says.
@@ -384,7 +384,7 @@ made.
 
     >>> transaction.commit()
     >>> non_connecting_updater = NonConnectingUpdater(transaction.manager)
-    >>> non_connecting_updater.log = FakeLogger()
+    >>> non_connecting_updater.logger = FakeLogger()
     >>> non_connecting_updater.forceUpdateAll(empty_tracker_name, 1)
     INFO Resetting 5 bug watches for bug tracker 'auto-example.com'
     INFO Updating 5 watches on bug tracker 'auto-example.com'
@@ -412,7 +412,8 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     ISupportsCommentImport, ISupportsCommentPushing,
     ...     ISupportsBackLinking)
-    >>> from lp.bugs.externalbugtracker.base import ExternalBugTracker
+    >>> from lp.bugs.externalbugtracker.base import (
+    ...     BATCH_SIZE_UNLIMITED, ExternalBugTracker)
 
     >>> nowish = datetime.now(utc)
     >>> class UselessExternalBugTracker(ExternalBugTracker):
@@ -420,6 +421,8 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...     implements(
     ...         ISupportsBackLinking, ISupportsCommentImport,
     ...         ISupportsCommentPushing)
+    ...
+    ...     batch_size = BATCH_SIZE_UNLIMITED
     ...
     ...     def initializeRemoteBugDB(self, bug_ids):
     ...         # This just exists to stop errors from being raised.
@@ -455,7 +458,7 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...         print "getLaunchpadBugId() called"
     ...         return None
     ...
-    ...     def setLaunchpadBugId(self, bug_id, lp_bug_id):
+    ...     def setLaunchpadBugId(self, bug_id, lp_bug_id, lp_bug_url):
     ...         print "setLaunchpadBugId() called"
 
 We'll generate a bug watch with which to test this. The bug watch must
@@ -473,7 +476,7 @@ If we pass our UselessExternalBugTracker and the bug watch we just
 generated to updateBugWatches we can see that its comments will be
 synced and it will be linked to the remote bug.
 
-    >>> updater = BugWatchUpdater(transaction.manager)
+    >>> updater = CheckwatchesMaster(transaction.manager)
     >>> transaction.commit()
 
     >>> remote_system = UselessExternalBugTracker('http://example.com')

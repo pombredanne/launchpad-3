@@ -213,9 +213,9 @@ class LaunchpadBrowserPublication(
                     structured("""
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
-                        changes.</i> Please see the <a
-                        href="http://blog.launchpad.net/maintenance">Launchpad
-                        Blog</a> for details.
+                        changes.</i> You can find more information on the
+                        <a href="http://identi.ca/launchpadstatus">Launchpad
+                        system status</a> page.
                         """))
 
     def getPrincipal(self, request):
@@ -342,6 +342,12 @@ class LaunchpadBrowserPublication(
             # and launchpadlib used to make POST requests to
             # +request-token and +access-token without providing a
             # Referer.
+            #
+            # XXX Abel Deuring 2010-04-09 bug=550973
+            # The HWDB client "checkbox" accesses /+hwdb/+submit without
+            # a referer. This will change in the version in Ubuntu 10.04,
+            # but Launchpad should support HWDB submissions from older
+            # Ubuntu versions during their support period.
             #
             # We'll have to keep an application's one-off exception
             # until the application has been changed to send a

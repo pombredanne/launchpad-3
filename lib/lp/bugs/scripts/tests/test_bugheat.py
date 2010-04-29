@@ -17,6 +17,10 @@ from lp.testing import TestCaseWithFactory
 
 class TestBugHeatCalculator(TestCaseWithFactory):
     """Tests for the BugHeatCalculator class."""
+    # If you change the way that bug heat is calculated, remember to update
+    # the description of how it is calculated at
+    # /lib/lp/bugs/help/bug-heat.html and
+    # https://help.launchpad.net/Bugs/BugHeat
 
     layer = LaunchpadZopelessLayer
 
@@ -155,7 +159,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
 
         # If, on the other hand, the bug is security_related,
         # _getHeatFromSecurity() will return BugHeatConstants.SECURITY
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
         self.assertEqual(
             BugHeatConstants.SECURITY, self.calculator._getHeatFromSecurity())
 
@@ -179,7 +183,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         dupe = self.factory.makeBug()
         dupe.duplicateof = self.bug
         self.bug.setPrivate(True, self.bug.owner)
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
 
         expected_heat += (
             BugHeatConstants.DUPLICATE +
@@ -230,4 +234,3 @@ class TestBugHeatCalculator(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

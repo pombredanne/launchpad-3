@@ -18,10 +18,9 @@ from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, ISpecificBuildFarmJobClass)
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -31,17 +30,15 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
+class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
     """
     implements(IBuildFarmBranchJob)
-
     class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
 
-    classProvides(
-        ISpecificBuildFarmJobClass, ITranslationTemplatesBuildJobSource)
+    classProvides(ITranslationTemplatesBuildJobSource)
 
     duration_estimate = timedelta(seconds=10)
 
@@ -110,7 +107,6 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
             branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
         store.add(branch_job)
         specific_job = TranslationTemplatesBuildJob(branch_job)
-
         duration_estimate = cls.duration_estimate
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
@@ -133,7 +129,10 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     @classmethod
     def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
+        """See `IBuildFarmJobDerived`.
+
+        Overridden here to search via a BranchJob, rather than a Job.
+        """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch_job = store.find(BranchJob, BranchJob.job == job).one()
         if branch_job is None:

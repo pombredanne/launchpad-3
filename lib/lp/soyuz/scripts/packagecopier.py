@@ -28,7 +28,7 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)
@@ -338,6 +338,21 @@ class CopyChecker:
             if not copied_binaries.issuperset(published_binaries):
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
+
+        # Check if files with the same filename already exist in the target
+        destination_source_conflicts = self.archive.getPublishedSources(
+            name=source.sourcepackagerelease.name)
+        file_conflicts = {}
+        for source_pub in destination_source_conflicts:
+            for file_alias in source_pub.sourcepackagerelease.files:
+                library_file = file_alias.libraryfile
+                file_conflicts[library_file.filename] = library_file
+        for lf in source.sourcepackagerelease.files:
+            if lf.libraryfile.filename in file_conflicts.keys():
+                if lf.libraryfile != file_conflicts[lf.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % lf.libraryfile.filename)
 
     def checkCopy(self, source, series, pocket):
         """Check if the source can be copied to the given location.

@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401,W1001
+
 """Implementation of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
@@ -8,8 +10,10 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from lazr.delegates import delegates
+
 from storm.locals import (
-    Bool, Int, Reference, ReferenceSet, Store, Storm, Unicode)
+    Bool, Desc, Int, Reference, ReferenceSet, Store, Storm, Unicode)
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -19,10 +23,12 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource)
+    ISourcePackageRecipe, ISourcePackageRecipeSource,
+    ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
-from lp.code.model.sourcepackagerecipedata import _SourcePackageRecipeData
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
@@ -48,7 +54,10 @@ class SourcePackageRecipe(Storm):
     __storm_table__ = 'SourcePackageRecipe'
 
     implements(ISourcePackageRecipe)
+
     classProvides(ISourcePackageRecipeSource)
+
+    delegates(ISourcePackageRecipeData, context='_recipe_data')
 
     id = Int(primary=True)
 
@@ -77,15 +86,15 @@ class SourcePackageRecipe(Storm):
     @property
     def _recipe_data(self):
         return Store.of(self).find(
-            _SourcePackageRecipeData,
-            _SourcePackageRecipeData.sourcepackage_recipe == self).one()
+            SourcePackageRecipeData,
+            SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
     def _get_builder_recipe(self):
-        """Accesses of the recipe go to the _SourcePackageRecipeData."""
+        """Accesses of the recipe go to the SourcePackageRecipeData."""
         return self._recipe_data.getRecipe()
 
     def _set_builder_recipe(self, value):
-        """Setting of the recipe goes to the _SourcePackageRecipeData."""
+        """Setting of the recipe goes to the SourcePackageRecipeData."""
         self._recipe_data.setRecipe(value)
 
     builder_recipe = property(_get_builder_recipe, _set_builder_recipe)
@@ -94,17 +103,13 @@ class SourcePackageRecipe(Storm):
     def base_branch(self):
         return self._recipe_data.base_branch
 
-    def getReferencedBranches(self):
-        """See `ISourcePackageRecipe.getReferencedBranches`."""
-        return self._recipe_data.getReferencedBranches()
-
     @staticmethod
     def new(registrant, owner, distroseries, sourcepackagename, name,
             builder_recipe, description):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        _SourcePackageRecipeData(builder_recipe, sprecipe)
+        SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.sourcepackagename = sourcepackagename
@@ -114,6 +119,19 @@ class SourcePackageRecipe(Storm):
         sprecipe.description = description
         store.add(sprecipe)
         return sprecipe
+
+    def destroySelf(self):
+        store = Store.of(self)
+        self.distroseries.clear()
+        self._recipe_data.instructions.find().remove()
+        def destroyBuilds(pending):
+            builds = self.getBuilds(pending=pending)
+            for build in builds:
+                build.destroySelf()
+        destroyBuilds(pending=True)
+        destroyBuilds(pending=False)
+        store.remove(self._recipe_data)
+        store.remove(self)
 
     def requestBuild(self, archive, requester, distroseries, pocket):
         """See `ISourcePackageRecipe`."""
@@ -132,3 +150,15 @@ class SourcePackageRecipe(Storm):
             self, requester, archive)
         build.queueBuild()
         return build
+
+    def getBuilds(self, pending=False):
+        """See `ISourcePackageRecipe`."""
+        if pending:
+            clauses = [SourcePackageRecipeBuild.datebuilt == None]
+        else:
+            clauses = [SourcePackageRecipeBuild.datebuilt != None]
+        result = Store.of(self).find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self,
+            *clauses)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result
