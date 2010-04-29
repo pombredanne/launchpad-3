@@ -102,7 +102,7 @@ class ICodeImport(Interface):
         URIField(title=_("URL"), required=False, readonly=True,
             description=_("The URL of the VCS branch."),
             allowed_schemes=["http", "https", "svn", "git"],
-            allow_userinfo=False, # Only anonymous access is supported.
+            allow_userinfo=True,
             allow_port=True,
             allow_query=False,    # Query makes no sense in Subversion.
             allow_fragment=False, # Fragment makes no sense in Subversion.

@@ -275,7 +275,7 @@ An IBugComment.
     >>> bug_comment = BugComment(
     ...     1, bug_one.initial_message, bugtask_one, True)
     >>> canonical_url(bug_comment)
-    u'http://launchpad.dev/firefox/+bug/1/comments/1'
+    u'http://bugs.launchpad.dev/firefox/+bug/1/comments/1'
 
 An IBugNomination.
 
