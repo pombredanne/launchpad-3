@@ -12,7 +12,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
@@ -20,7 +19,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.test_buildbase import (
-    TestBuildBase, TestBuildBaseWithDatabase)
+    TestBuildBaseMixin, TestBuildBaseWithDatabaseMixin)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
@@ -43,7 +42,7 @@ class TestPackageBuildBase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
 
 
-class TestBuildBaseMethods(TestBuildBase, TestPackageBuildBase):
+class TestBuildBaseMethods(TestPackageBuildBase, TestBuildBaseMixin):
     """The new PackageBuild class provides the same methods as the BuildBase.
 
     XXX 2010-04-21 michael.nelson bug=567922.
@@ -58,8 +57,8 @@ class TestBuildBaseMethods(TestBuildBase, TestPackageBuildBase):
         self.package_build = self.makePackageBuild()
 
 
-class TestBuildBaseDatabaseMethods(TestBuildBaseWithDatabase,
-                                   TestPackageBuildBase):
+class TestBuildBaseDatabaseMethods(TestPackageBuildBase,
+                                   TestBuildBaseWithDatabaseMixin):
     """See `TestBuildBaseMethods` above."""
 
     def setUp(self):
@@ -78,7 +77,6 @@ class TestPackageBuild(TestPackageBuildBase):
         joe = self.factory.makePerson(name="joe")
         joes_ppa = self.factory.makeArchive(owner=joe)
         self.package_build = self.makePackageBuild(archive=joes_ppa)
-        flush_database_updates()
 
     def test_providesInterface(self):
         # PackageBuild provides IPackageBuild
@@ -87,6 +85,7 @@ class TestPackageBuild(TestPackageBuildBase):
     def test_saves_record(self):
         # A package build can be stored in the database.
         store = Store.of(self.package_build)
+        store.flush()
         retrieved_build = store.find(
             PackageBuild,
             PackageBuild.id == self.package_build.id).one()
@@ -130,6 +129,7 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
+        Store.of(self.package_build).flush()
         build_id = self.package_build.build_farm_job.id
         self.package_build.storeUploadLog("Some content")
         log_url = self.package_build.upload_log_url

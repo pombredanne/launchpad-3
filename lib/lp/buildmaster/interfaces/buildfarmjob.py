@@ -180,7 +180,7 @@ class IBuildFarmJob(IBuildFarmJobOld):
     title = exported(TextLine(title=_("Title"), required=False))
 
     def makeJob():
-        """Create the related lp.services.job for this build farm job.
+        """Create the specific job relating this with an lp.services.job.
 
         XXX 2010-04-26 michael.nelson bug=567922
         Once all *Build classes are using BuildFarmJob we can lose the
