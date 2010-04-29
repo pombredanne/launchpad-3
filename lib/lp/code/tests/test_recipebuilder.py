@@ -127,7 +127,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
 
-    def test__extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
+    def test_extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
         # Ensure _extraBuildArgs doesn't blow up with a badly formatted
         # bzr_builder_sources_list in the config.
         bzr_builder_config = """
@@ -159,6 +159,16 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertIn(
             "Exception processing bzr_builder_sources_list:",
             logger.buffer.getvalue())
+
+    def test_extraBuildArgs_withNoBZrBuilderConfigSet(self):
+        # Ensure _extraBuildArgs doesn't blow up when
+        # bzr_builder_sources_list isn't set.
+        job = self.makeJob()
+        distroarchseries = job.build.distroseries.architectures[0]
+        args = job._extraBuildArgs(distroarchseries)
+        expected_archives = get_sources_list_for_building(
+            job.build, distroarchseries, job.build.sourcepackagename.name)
+        self.assertEqual(args["archives"], expected_archives)
 
 
     def test_dispatchBuildToSlave(self):

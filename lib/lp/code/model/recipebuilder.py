@@ -79,17 +79,22 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         # sources.list entry for an archive that will contain a
         # bzr-builder package that needs to be used to build this
         # recipe.
-        extra_archive = config.builddmaster.bzr_builder_sources_list
+        try:
+            extra_archive = config.builddmaster.bzr_builder_sources_list
+        except AttributeError:
+            extra_archive = None
+
         if extra_archive is not None:
             try:
                 sources_line = extra_archive % (
                     {'series': self.build.distroseries.name})
                 args['archives'].append(sources_line)
-            except StandardError, e:
+            except StandardError:
                 # Someone messed up the config, don't add it.
                 logger.error(
                     "Exception processing bzr_builder_sources_list:\n%s"
                     % traceback.format_exc())
+
         args['distroseries_name'] = self.build.distroseries.name
         return args
 
