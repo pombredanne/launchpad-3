@@ -10,7 +10,9 @@
     i18n_domain="launchpad">
     <browser:navigation
         module="lp.code.browser.sourcepackagerecipe"
-        classes="SourcePackageRecipeNavigation" />
+        classes="SourcePackageRecipeNavigation
+        SourcePackageRecipeBuildNavigation" />
+
     <facet facet="branches">
 
         <browser:defaultView

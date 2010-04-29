@@ -58,6 +58,9 @@ class ISourcePackageRecipeBuild(IBuildBase):
         ISourcePackageRelease, title=_("The produced source package release"),
         readonly=True)
 
+    def getFileByName(filename):
+        """Return the file under +files with specified name."""
+
 
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""

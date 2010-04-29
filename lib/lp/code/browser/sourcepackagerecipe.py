@@ -29,6 +29,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
@@ -41,7 +42,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
@@ -217,6 +218,11 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
             self.context.requestBuild(
                 data['archive'], self.user, distroseries,
                 PackagePublishingPocket.RELEASE)
+
+
+class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
+
+    usedfor = ISourcePackageRecipeBuild
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
