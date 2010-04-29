@@ -888,6 +888,7 @@ class TestExternalBugTracker(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+
 class TestRemoteBugUpdater(RemoteBugUpdater):
 
     def __init__(self, parent, external_bugtracker, remote_bug,
