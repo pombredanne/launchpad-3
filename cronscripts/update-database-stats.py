@@ -2,7 +2,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Copy rows from pg_stat_user_tables into DatabaseTableStats."""
+"""Populate the DatabaseTableStats and DatabaseCpuStats tables."""
 
 __metaclass__ = type
 
@@ -15,8 +15,9 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.services.scripts.base import LaunchpadCronScript
 
+
 class UpdateDatabaseStats(LaunchpadCronScript):
-    """Copy rows from pg_stat_user_tables into DatabaseTableStats."""
+    """Populate the DatabaseTableStats and DatabaseCpuStats tables."""
 
     def main(self):
         "Run UpdateDatabaseTableStats."""

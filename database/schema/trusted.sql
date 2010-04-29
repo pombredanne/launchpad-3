@@ -147,7 +147,6 @@ $$
         plpy.notice("Stats wraparound. Purging DatabaseTableStats")
         plpy.execute("DELETE FROM DatabaseTableStats")
     else:
-        pass
         plpy.execute("""
             DELETE FROM DatabaseTableStats
             WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
@@ -181,7 +180,7 @@ $$
     stdout, stderr = ps.communicate()
     cpus = {}
     # We make the username match non-greedy so the trailing \d eats
-    # trailing numbers from the database username. This collapses
+    # trailing digits from the database username. This collapses
     # lpnet1, lpnet2 etc. into just lpnet.
     ps_re = re.compile(
         r"(?m)^\s*(\d+)\spostgres:\s(\w+?)\d*\s%s\s" % dbname)
