@@ -7,4 +7,8 @@ land:
   * BuildFarmJobOld/IBuildFarmJobOld (update the classes using this to
     use the new db versions).
   * BuildFarmJobOldDerived (move queue-methods onto BuildFarmJobDerived).
+  * BuildBase.
 
+The static methods on IBuildFarmJob/IPackageBuild should be reverted
+to normal methods once all *Build classes have transitioned to the new
+model and IBuildBase is removed.
