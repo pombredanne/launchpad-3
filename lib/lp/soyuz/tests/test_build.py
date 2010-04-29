@@ -3,8 +3,6 @@
 
 """Test Build features."""
 
-from datetime import datetime, timedelta
-import pytz
 import unittest
 
 from storm.store import Store

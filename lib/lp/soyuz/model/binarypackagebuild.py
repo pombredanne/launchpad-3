@@ -22,13 +22,10 @@ from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
+    ForeignKey, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
@@ -38,7 +35,6 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
@@ -52,7 +48,6 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildDerived
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -671,8 +666,6 @@ class BinaryPackageBuildSet:
             archive, pocket, status=BuildStatus.NEEDSBUILD,
             date_created=None):
         """See `IBinaryPackageBuildSet`."""
-        store = IMasterStore(BinaryPackageBuild)
-
         # Create the PackageBuild to which the new BinaryPackageBuild
         # will delegate.
         package_build = getUtility(IPackageBuildSource).new(
