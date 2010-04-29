@@ -124,10 +124,10 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         """ % tmp_dir
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
 
-        # We stub out our builds getUploaderCommand() method so
+        # We stub out our builds processUpload() method so
         # we can check whether it was called.
-        self.build.getUploaderCommand = FakeMethod(
-            result=['echo', 'noop'])
+        self.build.processUpload = FakeMethod(
+            result=None)
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
@@ -138,7 +138,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
                 })
 
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
-        self.assertEqual(1, self.build.getUploaderCommand.call_count)
+        self.assertEqual(1, self.build.processUpload.call_count)
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
@@ -147,7 +147,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
-        self.assertEqual(0, self.build.getUploaderCommand.call_count)
+        self.assertEqual(0, self.build.processUpload.call_count)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
@@ -156,7 +156,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
-        self.assertEqual(0, self.build.getUploaderCommand.call_count)
+        self.assertEqual(0, self.build.processUpload.call_count)
 
 
 def test_suite():
