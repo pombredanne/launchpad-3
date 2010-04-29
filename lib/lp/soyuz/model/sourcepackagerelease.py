@@ -41,6 +41,7 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType, SourcePackageUrgency)
 from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -310,12 +311,12 @@ class SourcePackageRelease(SQLBase):
         else:
             return 0.0
 
-    def createBuild(self, distroarchseries, pocket, archive, processor=None,
+    def createBuild(self, distro_arch_series, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
-            pf = distroarchseries.processorfamily
+            pf = distro_arch_series.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
@@ -325,15 +326,16 @@ class SourcePackageRelease(SQLBase):
         # Force the current timestamp instead of the default
         # UTC_NOW for the transaction, avoid several row with
         # same datecreated.
-        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+        date_created = datetime.datetime.now(pytz.timezone('UTC'))
 
-        return BinaryPackageBuild(distroarchseries=distroarchseries,
-                     sourcepackagerelease=self,
-                     processor=processor,
-                     buildstate=status,
-                     datecreated=datecreated,
-                     pocket=pocket,
-                     archive=archive)
+        return getUtility(IBinaryPackageBuildSet).new(
+            distro_arch_series=distro_arch_series,
+            source_package_release=self,
+            processor=processor,
+            status=status,
+            date_created=date_created,
+            pocket=pocket,
+            archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""

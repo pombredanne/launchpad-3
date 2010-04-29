@@ -13,9 +13,10 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
-from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
@@ -41,19 +42,13 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             spr_only=True, sourcename="gedit",
             status=PackagePublishingStatus.PUBLISHED)
         self.build = gedit_spr.createBuild(
-            distroarchseries=publisher.distroseries['i386'],
+            distro_arch_series=publisher.distroseries['i386'],
             archive=gedit_spr.upload_archive,
             pocket=gedit_spr.package_upload.pocket)
 
     def test_providesInterfaces(self):
-        # Build provides IBuildBase and IBuild.
-
-        # The IBinaryPackageBuild.calculated_buildstart property asserts
-        # that both datebuilt and buildduration are set.
-        self.build.datebuilt = datetime.now(pytz.UTC)
-        self.build.buildduration = timedelta(0, 1)
-
-        self.assertProvides(self.build, IBuildBase)
+        # Build provides IPackageBuild and IBuild.
+        self.assertProvides(self.build, IPackageBuild)
         self.assertProvides(self.build, IBinaryPackageBuild)
 
     def test_queueBuild(self):

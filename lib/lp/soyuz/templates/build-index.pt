@@ -169,7 +169,7 @@
       <tal:built condition="context/was_built">
         <li tal:condition="context/buildduration">
           Started <span
-           tal:define="start context/calculated_buildstart"
+           tal:define="start context/date_started"
            tal:attributes="title start/fmt:datetime"
            tal:content="start/fmt:displaydate">2008-01-01</span>
         </li>

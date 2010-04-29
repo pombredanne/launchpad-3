@@ -72,7 +72,7 @@ about its process such as the time it was started and finished and its
     >>> firefox_build.was_built
     True
 
-    >>> firefox_build.calculated_buildstart
+    >>> firefox_build.date_started
     datetime.datetime(...)
 
     >>> firefox_build.datebuilt
@@ -895,6 +895,7 @@ You can filter on build state and package name:
 
 Build records inserted by gina don't provide calculated_buildstart
 value, since they miss fields used in its calculation.
+TODO: check and update this based on the new model.
 
     >>> gina_build = getUtility(IBinaryPackageBuildSet).getByBuildID(10)
     >>> gina_build.title
@@ -908,7 +909,7 @@ even if IBinaryPackageBuild.was_built return true:
 this method is protected by an assertion on valid buildduration and
 datebuilt, it makes the diagnosis of problems in current DB easier.
 
-    >>> gina_build.calculated_buildstart
+    >>> gina_build.date_started
     Traceback (most recent call last):
     ...
     AssertionError: value is not suitable for this build record (10)

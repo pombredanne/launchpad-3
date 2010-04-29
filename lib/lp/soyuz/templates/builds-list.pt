@@ -59,9 +59,9 @@
               <tal:soyuz_record condition="build/buildduration">
                  <span
                    tal:attributes="
-                     title build/calculated_buildstart/fmt:datetime"
+                     title build/date_started/fmt:datetime"
                    tal:content="
-                   build/calculated_buildstart/fmt:displaydate" />
+                   build/date_started/fmt:displaydate" />
               </tal:soyuz_record>
               <tal:gina_record condition="not: build/buildduration">
                   <i>at an unknown time</i>

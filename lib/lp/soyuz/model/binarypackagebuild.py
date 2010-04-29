@@ -11,6 +11,10 @@ import datetime
 import logging
 import operator
 
+from lazr.delegates import delegates
+
+from storm.locals import Int, Reference
+
 from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -34,6 +38,7 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
@@ -43,8 +48,10 @@ from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.interfaces.packagebuild import (
+    IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.model.packagebuild import PackageBuildDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
@@ -52,7 +59,6 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus, CannotBeRescored, IBinaryPackageBuild,
     IBinaryPackageBuildSet)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.buildmaster.model.builder import Builder
@@ -63,12 +69,16 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class BinaryPackageBuild(BuildBase, SQLBase):
-    implements(IBuildBase, IBinaryPackageBuild)
-    _table = 'Build'
+class BinaryPackageBuild(PackageBuildDerived, SQLBase):
+    implements(IBinaryPackageBuild)
+    delegates(IPackageBuild, context="package_build")
+    _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
     build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
+
+    package_build_id = Int(name='package_build', allow_none=False)
+    package_build = Reference(package_build_id, 'PackageBuild.id')
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
@@ -280,14 +290,6 @@ class BinaryPackageBuild(BuildBase, SQLBase):
     def can_be_rescored(self):
         """See `IBuild`."""
         return self.buildstate is BuildStatus.NEEDSBUILD
-
-    @property
-    def calculated_buildstart(self):
-        """See `IBuild`."""
-        assert self.datebuilt and self.buildduration, (
-            "value is not suitable for this build record (%d)"
-            % self.id)
-        return self.datebuilt - self.buildduration
 
     def retry(self):
         """See `IBuild`."""
@@ -694,6 +696,25 @@ class BinaryPackageBuild(BuildBase, SQLBase):
 
 class BinaryPackageBuildSet:
     implements(IBinaryPackageBuildSet)
+
+    def new(self, distro_arch_series, source_package_release, processor,
+            archive, pocket, status=BuildStatus.NEEDSBUILD,
+            date_created=None):
+        """See `IBinaryPackageBuildSet`."""
+        store = IMasterStore(BinaryPackageBuild)
+
+        # Create the PackageBuild to which the new BinaryPackageBuild
+        # will delegate.
+        package_build = getUtility(IPackageBuildSource).new(
+            BinaryPackageBuild.build_farm_job_type,
+            archive.require_virtualized, archive, pocket, processor,
+            status) #, date_created)
+
+        binary_package_build = BinaryPackageBuild(
+            package_build=package_build,
+            distro_arch_series=distro_arch_series,
+            source_package_release=source_package_release)
+        return binary_package_build
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         """See `IBinaryPackageBuildSet`"""

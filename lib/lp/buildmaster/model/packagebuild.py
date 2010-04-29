@@ -8,6 +8,8 @@ __all__ = [
     ]
 
 
+from lazr.delegates import delegates
+
 from storm.locals import Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
@@ -152,6 +154,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 class PackageBuildDerived:
     """See `IPackageBuildDerived`."""
     implements(IPackageBuildDerived)
+    delegates(IPackageBuild, context="package_build")
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuildDerived`."""
