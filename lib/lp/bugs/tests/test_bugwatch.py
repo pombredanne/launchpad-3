@@ -13,6 +13,8 @@ from urlparse import urlunsplit
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
+
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
@@ -23,7 +25,9 @@ from canonical.testing import (
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
+    UnrecognizedBugTrackerURL)
+from lp.bugs.model.bugwatch import get_bug_watch_ids
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 
@@ -400,6 +404,42 @@ class TestBugWatch(TestCaseWithFactory):
         bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
         self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
 
+    def test_get_bug_watch_ids(self):
+        # get_bug_watch_ids() yields the IDs for the given bug
+        # watches.
+        bug_watches = [self.factory.makeBugWatch()]
+        self.failUnlessEqual(
+            [bug_watch.id for bug_watch in bug_watches],
+            list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_iterator(self):
+        # get_bug_watch_ids() can also accept an iterator.
+        bug_watches = [self.factory.makeBugWatch()]
+        self.failUnlessEqual(
+            [bug_watch.id for bug_watch in bug_watches],
+            list(get_bug_watch_ids(iter(bug_watches))))
+
+    def test_get_bug_watch_ids_with_id_list(self):
+        # If something resembling an ID is found, get_bug_watch_ids()
+        # yields it unaltered.
+        bug_watches = [1, 2, 3]
+        self.failUnlessEqual(
+            bug_watches, list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_mixed_list(self):
+        # get_bug_watch_ids() does the right thing when the given
+        # objects are a mix of bug watches and IDs.
+        bug_watch = self.factory.makeBugWatch()
+        bug_watches = [1234, bug_watch]
+        self.failUnlessEqual(
+            [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_others_in_list(self):
+        # get_bug_watch_ids() asserts that all arguments are bug
+        # watches or resemble IDs.
+        self.assertRaises(
+            AssertionError, list, get_bug_watch_ids(['fred']))
+
 
 class TestBugWatchSet(TestCaseWithFactory):
     """Tests for the bugwatch updating system."""
@@ -432,6 +472,68 @@ class TestBugWatchSet(TestCaseWithFactory):
             set(bug_watches_bob[:1]),
             set(bug_watch_set.getBugWatchesForRemoteBug('bob', [
                         bug_watch.id for bug_watch in bug_watches_limited])))
+
+
+class TestBugWatchSetBulkOperations(TestCaseWithFactory):
+    """Tests for the bugwatch updating system."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBugWatchSetBulkOperations, self).setUp()
+        self.bug_watches = [
+            self.factory.makeBugWatch(remote_bug='alice'),
+            self.factory.makeBugWatch(remote_bug='bob'),
+            ]
+        for bug_watch in self.bug_watches:
+            bug_watch.lastchecked = None
+            bug_watch.last_error_type = None
+            bug_watch.next_check = UTC_NOW
+
+    def _checkStatusOfBugWatches(
+        self, last_checked_is_null, next_check_is_null, last_error_type):
+        for bug_watch in self.bug_watches:
+            self.failUnlessEqual(
+                last_checked_is_null, bug_watch.lastchecked is None)
+            self.failUnlessEqual(
+                next_check_is_null, bug_watch.next_check is None)
+            self.failUnlessEqual(
+                last_error_type, bug_watch.last_error_type)
+
+    def test_bulkSetError(self):
+        # Called with only bug watches, bulkSetError() marks the
+        # watches as checked without error, and unscheduled.
+        getUtility(IBugWatchSet).bulkSetError(self.bug_watches)
+        self._checkStatusOfBugWatches(False, True, None)
+
+    def test_bulkSetError_with_error(self):
+        # Called with bug watches and an error, bulkSetError() marks
+        # the watches with the given error, and unschedules them.
+        error = BugWatchActivityStatus.BUG_NOT_FOUND
+        getUtility(IBugWatchSet).bulkSetError(self.bug_watches, error)
+        self._checkStatusOfBugWatches(False, True, error)
+
+    def _checkActivityForBugWatches(self, result, message, oops_id):
+        for bug_watch in self.bug_watches:
+            latest_activity = bug_watch.activity.first()
+            self.failUnlessEqual(result, latest_activity.result)
+            self.failUnlessEqual(message, latest_activity.message)
+            self.failUnlessEqual(oops_id, latest_activity.oops_id)
+
+    def test_bulkAddActivity(self):
+        # Called with only bug watches, bulkAddActivity() adds
+        # successful activity records for the given bug watches.
+        getUtility(IBugWatchSet).bulkAddActivity(self.bug_watches)
+        self._checkActivityForBugWatches(None, None, None)
+
+    def test_bulkAddActivity_with_error(self):
+        # Called with additional error information, bulkAddActivity()
+        # adds appropriate and identical activity records for each of
+        # the given bug watches.
+        error = BugWatchActivityStatus.PRIVATE_REMOTE_BUG
+        getUtility(IBugWatchSet).bulkAddActivity(
+            self.bug_watches, error, "Forbidden", "OOPS-1234")
+        self._checkActivityForBugWatches(error, "Forbidden", "OOPS-1234")
 
 
 class TestBugWatchBugTasks(TestCaseWithFactory):
