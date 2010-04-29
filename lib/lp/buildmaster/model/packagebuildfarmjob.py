@@ -56,5 +56,3 @@ class PackageBuildFarmJobDerived(BuildFarmJobDerived):
     """
     def _set_build_farm_job(self):
         self._build_farm_job = PackageBuildFarmJob(self.build)
-
-
