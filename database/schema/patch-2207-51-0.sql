@@ -38,8 +38,32 @@ FROM pg_stat_user_tables
 WHERE FALSE;
 
 ALTER TABLE DatabaseTableStats
-ADD CONSTRAINT databasetablestats_pkey
-PRIMARY KEY (date_created, schemaname, relname);
+    ADD CONSTRAINT databasetablestats_pkey
+    PRIMARY KEY (date_created, schemaname, relname),
+    ALTER COLUMN date_created
+        SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    ALTER COLUMN date_created SET NOT NULL,
+    ALTER COLUMN schemaname SET NOT NULL,
+    ALTER COLUMN relname SET NOT NULL,
+    ALTER COLUMN seq_scan SET NOT NULL,
+    ALTER COLUMN seq_tup_read SET NOT NULL,
+    ALTER COLUMN idx_scan SET NOT NULL,
+    ALTER COLUMN idx_tup_fetch SET NOT NULL,
+    ALTER COLUMN n_tup_ins SET NOT NULL,
+    ALTER COLUMN n_tup_upd SET NOT NULL,
+    ALTER COLUMN n_tup_del SET NOT NULL,
+    ALTER COLUMN n_tup_hot_upd SET NOT NULL,
+    ALTER COLUMN n_live_tup SET NOT NULL,
+    ALTER COLUMN n_dead_tup SET NOT NULL;
+
+CREATE TABLE DatabaseCpuStats (
+    date_created timestamp without time zone NOT NULL
+        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    username text NOT NULL,
+    cpu integer NOT NULL,
+    CONSTRAINT databasecpustats_pkey PRIMARY KEY (date_created, username)
+    );
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 51, 0);
 

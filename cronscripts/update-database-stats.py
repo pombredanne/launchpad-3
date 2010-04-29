@@ -15,23 +15,28 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.services.scripts.base import LaunchpadCronScript
 
-class UpdateDatabaseTableStats(LaunchpadCronScript):
+class UpdateDatabaseStats(LaunchpadCronScript):
     """Copy rows from pg_stat_user_tables into DatabaseTableStats."""
 
     def main(self):
         "Run UpdateDatabaseTableStats."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        insert_result = store.execute("SELECT update_database_table_stats()")
-        self.logger.debug("Invoked update_database_table_stats()");
+
+        # The logic is in a stored procedure because we want to run
+        # ps(1) on the database server rather than the host this script
+        # is running on.
+        self.logger.debug("Invoking update_database_stats()")
+        store.execute("SELECT update_database_stats()", noresult=True)
+
+        self.logger.debug("Committing")
         store.commit()
-        self.logger.debug("Committed")
 
     def add_my_options(self):
         """Add standard database command line options."""
         db_options(self.parser)
 
 if __name__ == '__main__':
-    script = UpdateDatabaseTableStats(
-        'update-database-table-stats', dbuser='update-database-table-stats')
+    script = UpdateDatabaseStats(
+        'update-database-stats', dbuser='database_stats_update')
     script.lock_and_run()
 

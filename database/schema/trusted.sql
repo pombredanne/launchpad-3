@@ -116,27 +116,86 @@ $$;
 COMMENT ON FUNCTION update_replication_lag_cache() IS
 'Updates the DatabaseReplicationLag materialized view.';
 
-SET check_function_bodies=false; -- Handle forward references
-CREATE OR REPLACE FUNCTION update_database_table_stats() RETURNS void
-LANGUAGE sql VOLATILE SECURITY DEFINER AS
+CREATE OR REPLACE FUNCTION update_database_stats() RETURNS void
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS
 $$
-    INSERT INTO DatabaseTableStats
-        SELECT
-            CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
-            schemaname, relname, seq_scan, seq_tup_read,
-            idx_scan, idx_tup_fetch, n_tup_ins, n_tup_upd, n_tup_del,
-            n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
-            last_autovacuum, last_analyze, last_autoanalyze
-        FROM pg_catalog.pg_stat_user_tables;
-    -- Invoking this procedure every 3 minutes and keeping 21 days worth
-    -- of data gives us about 3.5 million rows.
-    DELETE FROM DatabaseTableStats
-    WHERE date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        + CAST('21 days' AS interval);
-$$;
-SET check_function_bodies=true;
+    import re
+    import subprocess
 
-COMMENT ON FUNCTION update_database_table_stats() IS
+    # Prune DatabaseTableStats and insert current data.
+    # First, detect if the statistics have been reset.
+    stats_reset = plpy.execute("""
+        SELECT *
+        FROM
+            pg_catalog.pg_stat_user_tables AS NowStat,
+            DatabaseTableStats AS LastStat
+        WHERE
+            LastStat.date_created = (
+                SELECT max(date_created) FROM DatabaseTableStats)
+            AND NowStat.schemaname = LastStat.schemaname
+            AND NowStat.relname = LastStat.relname
+            AND (
+                NowStat.seq_scan < LastStat.seq_scan
+                OR NowStat.idx_scan < LastStat.idx_scan
+                OR NowStat.n_tup_ins < LastStat.n_tup_ins
+                OR NowStat.n_tup_upd < LastStat.n_tup_upd
+                OR NowStat.n_tup_del < LastStat.n_tup_del
+                OR NowStat.n_tup_hot_upd < LastStat.n_tup_hot_upd)
+        LIMIT 1
+        """, 1).nrows() > 0
+    if stats_reset:
+        plpy.notice("Stats wraparound. Purging DatabaseTableStats")
+        plpy.execute("DELETE FROM DatabaseTableStats")
+    else:
+        pass
+        plpy.execute("""
+            DELETE FROM DatabaseTableStats
+            WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('21 days' AS interval));
+            """)
+    # Insert current data.
+    plpy.execute("""
+        INSERT INTO DatabaseTableStats
+            SELECT
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                schemaname, relname, seq_scan, seq_tup_read,
+                idx_scan, idx_tup_fetch, n_tup_ins, n_tup_upd, n_tup_del,
+                n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
+                last_autovacuum, last_analyze, last_autoanalyze
+            FROM pg_catalog.pg_stat_user_tables;
+        """)
+
+    # Prune DatabaseCpuStats. Calculate CPU utilization information
+    # and insert current data.
+    plpy.execute("""
+        DELETE FROM DatabaseCpuStats
+        WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('21 days' AS interval));
+        """)
+    dbname = plpy.execute(
+        "SELECT current_database() AS dbname", 1)[0]['dbname']
+    ps = subprocess.Popen(
+        ["ps", "-C", "postgres", "--no-headers", "-o", "cp,args"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    stdout, stderr = ps.communicate()
+    cpus = {}
+    # We make the username match non-greedy so the trailing \d eats
+    # trailing numbers from the database username. This collapses
+    # lpnet1, lpnet2 etc. into just lpnet.
+    ps_re = re.compile(
+        r"(?m)^\s*(\d+)\spostgres:\s(\w+?)\d*\s%s\s" % dbname)
+    for ps_match in ps_re.finditer(stdout):
+        cpu, username = ps_match.groups()
+        cpus[username] = int(cpu) + cpus.setdefault(username, 0)
+    cpu_ins = plpy.prepare(
+        "INSERT INTO DatabaseCpuStats (username, cpu) VALUES ($1, $2)",
+        ["text", "integer"])
+    for cpu_tuple in cpus.items():
+        plpy.execute(cpu_ins, cpu_tuple)
+$$;
+
+COMMENT ON FUNCTION update_database_stats() IS
 'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
 
