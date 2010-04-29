@@ -252,7 +252,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
 
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:step fill-slot="extra_info">
-      <div style="text-align: right;">Not sure what to do?
+      <div style="float: right;">Not sure what to do?
         <a href="https://help.launchpad.net/Feedback">Contact us</a>
       </div>
       <h2 class="legend" id="step-title">Step
@@ -295,7 +295,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
 
         <div id="registration-details-title"
              style="font-size: larger; max-width: 60em;"
-             tal:condition="python: view.step_number == 2">
+             tal:condition="view/is_step/2">
           <h3 id="registration-separator"
               style="margin-top: 3em;"
               tal:condition="view/search_results_count"
@@ -308,7 +308,6 @@ LPS.use('node', 'lazr.effects', function(Y) {
         </div>
       </metal:extra>
     </div>
-
   </div>
 </body>
 </html>
