@@ -13,6 +13,8 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
+from storm.store import Store
+
 from canonical.config import config
 
 from canonical.launchpad.webapp.interfaces import (
@@ -66,6 +68,14 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
     def getTitle(self):
         """See `IBuildFarmJob`."""
         return '%s translation templates build' % self.branch.bzr_identity
+
+    def cleanUp(self):
+        """See `IBuildFarmJob`."""
+        # This class is not itself database-backed.  But it delegates to
+        # one that is.  We can't call its SQLObject destroySelf method
+        # though, because then the BuildQueue and the BranchJob would
+        # both try to delete the attached Job.
+        Store.of(self.context).remove(self.context)
 
     @classmethod
     def _hasPotteryCompatibleSetup(cls, branch):

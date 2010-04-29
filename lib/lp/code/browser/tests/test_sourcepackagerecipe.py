@@ -19,9 +19,11 @@ from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tags_by_class)
 from canonical.testing import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.browser.sourcepackagerecipe import SourcePackageRecipeView
+from lp.code.browser.sourcepackagerecipe import (
+    SourcePackageRecipeView, SourcePackageRecipeBuildView
+)
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
-from lp.testing import ANONYMOUS, BrowserTestCase, login
+from lp.testing import ANONYMOUS, BrowserTestCase, login, TestCaseWithFactory
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -328,6 +330,50 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+
+
+class TestSourcePackageRecipeBuildView(TestCaseWithFactory):
+    """Test behaviour of SourcePackageReciptBuildView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_estimate(self):
+        """Time should be estimated until the job is completed."""
+        build = self.factory.makeSourcePackageRecipeBuild()
+        queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=build)
+        self.factory.makeBuilder()
+        view = SourcePackageRecipeBuildView(build, None)
+        self.assertTrue(view.estimate)
+        queue_entry.job.start()
+        self.assertTrue(view.estimate)
+        removeSecurityProxy(build).datebuilt = datetime.now(utc)
+        self.assertFalse(view.estimate)
+
+    def test_eta(self):
+        """ETA should be reasonable.
+
+        It should be None if there is no builder or queue entry.
+        It should be getEstimatedJobStartTime + estimated duration for jobs
+        that have not started.
+        It should be job.date_started + estimated duration for jobs that have
+        started.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        view = SourcePackageRecipeBuildView(build, None)
+        self.assertIs(None, view.eta)
+        queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=build)
+        queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, utc)
+        self.factory.makeBuilder()
+        self.assertIsNot(None, view.eta)
+        self.assertEqual(
+            queue_entry.getEstimatedJobStartTime() +
+            queue_entry.estimated_duration, view.eta)
+        queue_entry.job.start()
+        self.assertEqual(
+            queue_entry.job.date_started + queue_entry.estimated_duration,
+            view.eta)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
