@@ -16,7 +16,7 @@ __all__ = [
 from lazr.restful.fields import Reference
 
 from zope.interface import Interface
-from zope.schema import Int, Object
+from zope.schema import Datetime, Int, Object
 
 from canonical.launchpad import _
 
@@ -34,6 +34,8 @@ class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
 
     id = Int(title=_("Identifier for this build."))
+
+    datestarted = Datetime()
 
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),

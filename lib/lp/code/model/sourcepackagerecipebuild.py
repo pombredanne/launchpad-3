@@ -78,6 +78,14 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
     datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
+
+    @property
+    def datestarted(self):
+        """See `IBuild`."""
+        if None in (self.datebuilt, self.buildduration):
+            return None
+        return self.datebuilt - self.buildduration
+
     date_first_dispatched = UtcDateTimeCol(notNull=False)
 
     distroseries_id = Int(name='distroseries', allow_none=True)

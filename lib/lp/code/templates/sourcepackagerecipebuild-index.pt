@@ -91,8 +91,8 @@
             class string:buildstatus${context/buildstate/name};"
             tal:content="context/buildstate/title">Fully built</span>
       <tal:building condition="context/buildstate/enumvalue:BUILDING">
-        on <a tal:content="view/buildqueue/builder/title"
-              tal:attributes="href view/buildqueue/builder/fmt:url"/>
+        on <a tal:content="context/buildqueue_record/builder/title"
+              tal:attributes="href context/buildqueue_record/builder/fmt:url"/>
       </tal:building>
       <tal:built condition="context/builder">
         on <a tal:content="context/builder/title"
@@ -105,7 +105,7 @@
         Missing build dependencies: <em
          tal:content="context/dependencies">x, y, z</em>
       </li>
-      <tal:pending condition="not: context/datebuilt">
+      <tal:pending condition="context/buildstate/enumvalue:NEEDSBUILD">
         <li tal:define="eta view/eta">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
@@ -114,15 +114,15 @@
       <tal:building condition="context/buildstate/enumvalue:BUILDING">
         <li>
           Started
-          <span tal:attributes="title view/buildqueue/job/date_started/fmt:datetime"
-                tal:content="view/buildqueue/job/date_started/fmt:approximatedate"
+          <span tal:attributes="title context/buildqueue_record/job/date_started/fmt:datetime"
+                tal:content="context/buildqueue_record/job/date_started/fmt:approximatedate"
             >5 minutes ago</span>
         </li>
       </tal:building>
       <tal:built condition="context/datebuilt">
-        <li tal:condition="context/buildduration">
+        <li tal:condition="context/datestarted">
           Started <span
-           tal:define="start context/calculated_buildstart"
+           tal:define="start context/datestarted"
            tal:attributes="title start/fmt:datetime"
            tal:content="start/fmt:displaydate">2008-01-01</span>
         </li>
