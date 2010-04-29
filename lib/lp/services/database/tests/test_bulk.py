@@ -7,8 +7,10 @@ __metaclass__ = type
 
 import unittest
 
-from lp.services.database import bulk
+import zope.security.checker
+import zope.security.proxy
 
+from lp.services.database import bulk
 from lp.testing import TestCase
 
 
@@ -33,7 +35,13 @@ class TestFunctions(TestCase):
             [(4, ['fred', 'joss']), (6, ['barney'])],
             sorted(bulk.collate(['fred', 'barney', 'joss'], len)))
 
+    def test_get_type(self):
+        self.failUnlessEqual(object, bulk.get_type(object()))
 
+    def test_get_type_with_proxied_object(self):
+        proxied_object = zope.security.proxy.Proxy(
+            'fred', zope.security.checker.Checker({}))
+        self.failUnlessEqual(str, bulk.get_type(proxied_object))
 
 
 def test_suite():
