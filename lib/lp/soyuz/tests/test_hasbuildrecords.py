@@ -13,7 +13,9 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
+from lp.soyuz.tests.test_binarypackagebuild import (
+    BaseTestCaseWithThreeBuilds)
+
 
 class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
     """Tests the implementation of IHasBuildRecords by the

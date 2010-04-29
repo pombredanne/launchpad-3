@@ -156,6 +156,10 @@ class PackageBuildDerived:
     implements(IPackageBuildDerived)
     delegates(IPackageBuild, context="package_build")
 
+    def queueBuild(self, suspended=False):
+        """See `IPackageBuild`."""
+        return BuildBase.queueBuild(self, suspended=False)
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuildDerived`."""
         return BuildBase.handleStatus(self, status, librarian, slave_status)

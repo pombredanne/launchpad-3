@@ -14,7 +14,8 @@ from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.interfaces.packagebuild import (
+    IPackageBuild, IPackageBuildDerived)
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
@@ -47,6 +48,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
     def test_providesInterfaces(self):
         # Build provides IPackageBuild and IBuild.
         self.assertProvides(self.build, IPackageBuild)
+        self.assertProvides(self.build, IPackageBuildDerived)
         self.assertProvides(self.build, IBinaryPackageBuild)
 
     def test_queueBuild(self):

@@ -437,20 +437,21 @@ class BuildBase:
         library_file = self.createUploadLog(self, content)
         self.upload_log = library_file
 
-    def queueBuild(self, suspended=False):
+    @staticmethod
+    def queueBuild(build, suspended=False):
         """See `IBuildBase`"""
-        specific_job = self.makeJob()
+        specific_job = build.makeJob()
 
         # This build queue job is to be created in a suspended state.
         if suspended:
             specific_job.job.suspend()
 
-        duration_estimate = self.estimateDuration()
+        duration_estimate = build.estimateDuration()
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
-            job_type=self.build_farm_job_type,
+            job_type=build.build_farm_job_type,
             job=specific_job.job, processor=specific_job.processor,
             virtualized=specific_job.virtualized)
-        Store.of(self).add(queue_entry)
+        Store.of(build).add(queue_entry)
         return queue_entry
 

@@ -20,6 +20,7 @@ from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -116,6 +117,11 @@ class IBuildBase(Interface):
     # XXX 2010-04-21 michael.nelson bug=567922. This interface
     # can be removed once all *Build classes inherit from
     # IBuildFarmJob/IPackageBuild.
+
+    build_farm_job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
 
     # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
     # are bad.
@@ -233,7 +239,7 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def queueBuild(suspended=False):
+    def queueBuild(build, suspended=False):
         """Create a BuildQueue entry for this build.
 
         :param suspended: Whether the associated `Job` instance should be

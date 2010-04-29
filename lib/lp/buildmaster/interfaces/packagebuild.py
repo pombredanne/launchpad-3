@@ -155,3 +155,10 @@ class IPackageBuildDerived(Interface):
         :param slave_status: A dict as returned by IBuilder.slaveStatus
         """
 
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
+
