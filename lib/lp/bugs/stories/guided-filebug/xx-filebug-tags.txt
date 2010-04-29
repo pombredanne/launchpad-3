@@ -23,6 +23,7 @@ is being filed.
     ...      print a_tag.renderContents()
     bar
     foo
+    <img src="/@@/maybe" alt="help" />
 
 
 == Pre-populating the tags field ==
@@ -39,4 +40,3 @@ This works for the normal bug filing process:
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Tags').value
     'bar foo'
-

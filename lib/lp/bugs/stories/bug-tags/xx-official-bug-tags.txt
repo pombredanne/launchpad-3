@@ -79,6 +79,7 @@ They are grouped together at the beginning of the list.
     official-tag charlie
     unofficial-tag bravo
     unofficial-tag delta
+    icon <img src="/@@/maybe" alt="help" />
 
 
 == Official Tags in Tags Portlet ==
@@ -211,4 +212,3 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> print js
     <script...>var available_official_tags =
     ["eenie", "meenie", "miney", "moe"];</script>
-

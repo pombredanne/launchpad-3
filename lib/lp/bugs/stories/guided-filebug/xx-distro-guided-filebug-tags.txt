@@ -32,3 +32,4 @@ After submitting the bug, the tags are added to the bug.
     ...   if a_tag['href'] != '+edit':
     ...       print a_tag.renderContents()
     new-package
+    <img src="/@@/maybe" alt="help" />
