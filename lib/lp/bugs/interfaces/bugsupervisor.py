@@ -21,7 +21,6 @@ from lazr.restful.declarations import (
     mutator_for, operation_parameters)
 from lazr.restful.interface import copy_field
 
-from lp.registry.interfaces.person import IPerson
 
 class IHasBugSupervisor(Interface):
 
@@ -38,3 +37,5 @@ class IHasBugSupervisor(Interface):
     @export_write_operation()
     def setBugSupervisor(bug_supervisor, user):
         """Set the bug contact and create a bug subscription."""
+
+

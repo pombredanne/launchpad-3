@@ -15,17 +15,16 @@ from zope.interface import Interface
 
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 
+
 class BugSupervisorEditSchema(Interface):
     """Defines the fields for the edit form.
 
     This is necessary to make an editable field for bug supervisor as it is
     defined as read-only in the interface to prevent setting it directly.
     """
-    use_template(IHasBugSupervisor, include=[
-        'bug_supervisor',
-        ])
     bug_supervisor = copy_field(
         IHasBugSupervisor['bug_supervisor'], readonly=False)
+
 
 class BugSupervisorEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug supervisor."""

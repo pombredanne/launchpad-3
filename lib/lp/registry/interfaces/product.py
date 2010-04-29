@@ -716,7 +716,8 @@ class IProductPublic(
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IHasBugSupervisor, IProductEditRestricted, 
+class IProduct(
+    IHasBugSupervisor, IProductEditRestricted, 
     IProductProjectReviewRestricted, IProductDriverRestricted, 
     IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
