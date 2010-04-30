@@ -21,7 +21,6 @@ from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
@@ -495,7 +494,7 @@ class CodeHandler:
         # source branch - one that has *no* Bazaar data.  Together these
         # prevent users from using Launchpad disk space at a rate that is
         # disproportionately greater than data uploaded.
-        mirrored_bzr_target = removeSecurityProxy(db_target).getBzrBranch()
+        mirrored_bzr_target = db_target.getBzrBranch()
         if not is_branch_stackable(mirrored_bzr_target):
             return db_source
         assert db_source.branch_type == BranchType.HOSTED, (

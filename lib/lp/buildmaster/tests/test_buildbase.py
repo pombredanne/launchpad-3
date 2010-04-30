@@ -9,15 +9,17 @@ __metaclass__ = type
 
 from datetime import datetime
 import os
+import shutil
+import tempfile
 import unittest
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadZopelessLayer)
+from canonical.database.constants import UTC_NOW
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
@@ -48,61 +50,49 @@ class TestBuildBase(TestCase):
             upload_dir)
 
 
-class TestBuildBaseWithDatabase(TestCaseWithFactory):
-    """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
+class TestProcessUpload(TestCaseWithFactory):
+    """Test the execution of process-upload."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
-    def test_getUploadLogContent_nolog(self):
-        """If there is no log file there, a string explanation is returned.
+    def setUp(self):
+        self.queue_location = tempfile.mkdtemp()
+        self.leaf = "theleaf"
+        os.mkdir(os.path.join(self.queue_location, self.leaf))
+        super(TestProcessUpload, self).setUp()
+        self.build_base = BuildBase()
+        self.build_base.distroseries = self.factory.makeDistroSeries()
+        self.build_base.distribution = self.build_base.distroseries.distribution
+        self.build_base.pocket = self.factory.getAnyPocket()
+        self.build_base.id = self.factory.getUniqueInteger()
+        self.build_base.policy_name = "insecure"
+
+    def tearDown(self):
+        super(TestProcessUpload, self).tearDown()
+        shutil.rmtree(self.queue_location)
+
+    def assertQueuePath(self, path):
+        """Check if given path exists within the current queue_location."""
+        probe_path = os.path.join(self.queue_location, path)
+        self.assertTrue(
+            os.path.exists(probe_path), "'%s' does not exist." % path)
+
+    def testSimpleRun(self):
+        """Try a simple process-upload run.
+
+        Observe it creating the required directory tree for a given
+        empty queue_location.
         """
-        self.useTempDir()
-        build_base = BuildBase()
-        self.assertEquals('Could not find upload log file',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+        logger = BufferLogger()
+        self.build_base.processUpload(self.leaf,
+            self.queue_location, logger)
 
-    def test_getUploadLogContent_only_dir(self):
-        """If there is a directory but no log file, expect the error string,
-        not an exception."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        build_base = BuildBase()
-        self.assertEquals('Could not find upload log file',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+        # Directory tree in place.
+        for directory in ['incoming', 'accepted', 'rejected', 'failed']:
+            self.assertQueuePath(directory)
 
-    def test_getUploadLogContent_readsfile(self):
-        """If there is a log file, return its contents."""
-        self.useTempDir()
-        os.makedirs("accepted/myleaf")
-        with open('accepted/myleaf/uploader.log', 'w') as f:
-            f.write('foo')
-        build_base = BuildBase()
-        self.assertEquals('foo',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
-
-    def test_getUploaderCommand(self):
-        build_base = BuildBase()
-        upload_leaf = self.factory.getUniqueString('upload-leaf')
-        build_base.distroseries = self.factory.makeDistroSeries()
-        build_base.distribution = build_base.distroseries.distribution
-        build_base.pocket = self.factory.getAnyPocket()
-        build_base.id = self.factory.getUniqueInteger()
-        build_base.policy_name = self.factory.getUniqueString('policy-name')
-        config_args = list(config.builddmaster.uploader.split())
-        log_file = self.factory.getUniqueString('logfile')
-        config_args.extend(
-            ['--log-file', log_file,
-             '-d', build_base.distribution.name,
-             '-s', (build_base.distroseries.name
-                    + pocketsuffix[build_base.pocket]),
-             '-b', str(build_base.id),
-             '-J', upload_leaf,
-             '--context=%s' % build_base.policy_name,
-             os.path.abspath(config.builddmaster.root),
-             ])
-        uploader_command = build_base.getUploaderCommand(
-            upload_leaf, log_file)
-        self.assertEqual(config_args, uploader_command)
+        # Just to check if local assertion is working as expect.
+        self.assertRaises(AssertionError, self.assertQueuePath, 'foobar')
 
 
 class TestBuildBaseHandleStatus(TestCaseWithFactory):
@@ -134,10 +124,10 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         """ % tmp_dir
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
 
-        # We stub out our builds getUploaderCommand() method so
+        # We stub out our builds processUpload() method so
         # we can check whether it was called.
-        self.build.getUploaderCommand = FakeMethod(
-            result=['echo', 'noop'])
+        self.build.processUpload = FakeMethod(
+            result=None)
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
@@ -148,7 +138,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
                 })
 
         self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
-        self.assertEqual(1, self.build.getUploaderCommand.call_count)
+        self.assertEqual(1, self.build.processUpload.call_count)
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
@@ -157,7 +147,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
-        self.assertEqual(0, self.build.getUploaderCommand.call_count)
+        self.assertEqual(0, self.build.processUpload.call_count)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
@@ -166,7 +156,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
         self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
-        self.assertEqual(0, self.build.getUploaderCommand.call_count)
+        self.assertEqual(0, self.build.processUpload.call_count)
 
 
 def test_suite():

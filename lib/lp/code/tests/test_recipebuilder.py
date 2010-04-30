@@ -12,6 +12,7 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts.logger import BufferLogger
 
@@ -100,8 +101,19 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def test__extraBuildArgs(self):
         # _extraBuildArgs will return a sane set of additional arguments
+        bzr_builder_config = """
+            [builddmaster]
+            bzr_builder_sources_list = deb http://foo %(series)s main
+            """
+        config.push("bzr_builder_config", bzr_builder_config)
+        self.addCleanup(config.pop, "bzr_builder_config")
+
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
+        expected_archives = get_sources_list_for_building(
+            job.build, distroarchseries, job.build.sourcepackagename.name)
+        expected_archives.append(
+            "deb http://foo %s main" % job.build.distroseries.name)
         self.assertEqual({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
@@ -111,10 +123,53 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
-           'archives': get_sources_list_for_building(job.build,
-                distroarchseries, job.build.sourcepackagename.name),
+           'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
+
+    def test_extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
+        # Ensure _extraBuildArgs doesn't blow up with a badly formatted
+        # bzr_builder_sources_list in the config.
+        bzr_builder_config = """
+            [builddmaster]
+            bzr_builder_sources_list = deb http://foo %(series) main
+            """
+        # (note the missing 's' in %(series)
+
+        config.push("bzr_builder_config", bzr_builder_config)
+        self.addCleanup(config.pop, "bzr_builder_config")
+
+        job = self.makeJob()
+        distroarchseries = job.build.distroseries.architectures[0]
+        expected_archives = get_sources_list_for_building(
+            job.build, distroarchseries, job.build.sourcepackagename.name)
+        logger = BufferLogger()
+        self.assertEqual({
+           'author_email': u'requester@ubuntu.com',
+           'suite': u'mydistro',
+           'author_name': u'Joe User',
+           'package_name': u'apackage',
+           'archive_purpose': 'PPA',
+           'ogrecomponent': 'universe',
+           'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
+                          'lp://dev/~joe/someapp/pkg\n',
+           'archives': expected_archives,
+           'distroseries_name': job.build.distroseries.name,
+            }, job._extraBuildArgs(distroarchseries, logger))
+        self.assertIn(
+            "Exception processing bzr_builder_sources_list:",
+            logger.buffer.getvalue())
+
+    def test_extraBuildArgs_withNoBZrBuilderConfigSet(self):
+        # Ensure _extraBuildArgs doesn't blow up when
+        # bzr_builder_sources_list isn't set.
+        job = self.makeJob()
+        distroarchseries = job.build.distroseries.architectures[0]
+        args = job._extraBuildArgs(distroarchseries)
+        expected_archives = get_sources_list_for_building(
+            job.build, distroarchseries, job.build.sourcepackagename.name)
+        self.assertEqual(args["archives"], expected_archives)
+
 
     def test_dispatchBuildToSlave(self):
         # Ensure dispatchBuildToSlave will make the right calls to the slave

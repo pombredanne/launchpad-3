@@ -28,7 +28,7 @@ import urllib2
 import weakref
 import transaction
 
-from zope.testbrowser.browser import Browser as _Browser
+from zope.testbrowser.browser import Browser as _Browser, fix_exception_name
 
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tag_by_id, get_feedback_messages)

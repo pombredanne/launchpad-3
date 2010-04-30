@@ -51,8 +51,8 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
-    get_scanner_server)
+from lp.codehosting.vfs import (
+    branch_id_to_path, get_rw_server, get_ro_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
@@ -284,7 +284,7 @@ class BranchScanJob(BranchJobDerived):
     def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_scanner_server()
+        cls.server = get_ro_server()
         cls.server.start_server()
         yield
         cls.server.stop_server()
@@ -313,7 +313,7 @@ class BranchUpgradeJob(BranchJobDerived):
     def contextManager():
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
-        server = get_multi_server(write_hosted=True)
+        server = get_rw_server()
         server.start_server()
         yield
         server.stop_server()
@@ -325,7 +325,8 @@ class BranchUpgradeJob(BranchJobDerived):
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
             upgrade_transport.mkdir('.bzr')
-            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport = get_transport(
+                self.branch.getInternalBzrUrl())
             source_branch_transport.clone('.bzr').copy_tree_to_transport(
                 upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
@@ -944,13 +945,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        mirrored_path = os.path.join(
+        branch_path = os.path.join(
             config.codehosting.mirrored_branches_root,
             branch_id_to_path(self.branch_id))
-        hosted_path = os.path.join(
-            config.codehosting.hosted_branches_root,
-            branch_id_to_path(self.branch_id))
-        if os.path.exists(mirrored_path):
-            shutil.rmtree(mirrored_path)
-        if os.path.exists(hosted_path):
-            shutil.rmtree(hosted_path)
+        if os.path.exists(branch_path):
+            shutil.rmtree(branch_path)
