@@ -45,13 +45,13 @@ ACCESS_LOG_NAME = 'codehosting.access'
 class CodehostingAvatar(LaunchpadAvatar):
     """An SSH avatar specific to codehosting.
 
-    :ivar branchfs_proxy: A Twisted XML-RPC client for the authserver. The
-        server must implement `IBranchFileSystem`.
+    :ivar codehosting_proxy: A Twisted XML-RPC client for the private XML-RPC
+        server. The server must implement `ICodehostingAPI`.
     """
 
-    def __init__(self, user_dict, branchfs_proxy):
+    def __init__(self, user_dict, codehosting_proxy):
         LaunchpadAvatar.__init__(self, user_dict)
-        self.branchfs_proxy = branchfs_proxy
+        self.codehosting_proxy = codehosting_proxy
 
 
 components.registerAdapter(launch_smart_server, CodehostingAvatar, ISession)
@@ -63,9 +63,9 @@ components.registerAdapter(
 class Realm:
     implements(IRealm)
 
-    def __init__(self, authentication_proxy, branchfs_proxy):
+    def __init__(self, authentication_proxy, codehosting_proxy):
         self.authentication_proxy = authentication_proxy
-        self.branchfs_proxy = branchfs_proxy
+        self.codehosting_proxy = codehosting_proxy
 
     def requestAvatar(self, avatar_id, mind, *interfaces):
         # Fetch the user's details from the authserver
@@ -74,15 +74,15 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def got_user_dict(user_dict):
-            avatar = CodehostingAvatar(user_dict, self.branchfs_proxy)
+            avatar = CodehostingAvatar(user_dict, self.codehosting_proxy)
             return interfaces[0], avatar, avatar.logout
 
         return deferred.addCallback(got_user_dict)
 
 
-def get_portal(authentication_proxy, branchfs_proxy):
+def get_portal(authentication_proxy, codehosting_proxy):
     """Get a portal for connecting to Launchpad codehosting."""
-    portal = Portal(Realm(authentication_proxy, branchfs_proxy))
+    portal = Portal(Realm(authentication_proxy, codehosting_proxy))
     portal.registerChecker(
         PublicKeyFromLaunchpadChecker(authentication_proxy))
     return portal
@@ -101,5 +101,5 @@ def make_portal():
     """
     authentication_proxy = Proxy(
         config.codehosting.authentication_endpoint)
-    branchfs_proxy = Proxy(config.codehosting.branchfs_endpoint)
-    return get_portal(authentication_proxy, branchfs_proxy)
+    codehosting_proxy = Proxy(config.codehosting.codehosting_endpoint)
+    return get_portal(authentication_proxy, codehosting_proxy)

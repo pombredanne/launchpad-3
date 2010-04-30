@@ -186,7 +186,7 @@ class IBuildFarmJob(Interface):
 class IBuildFarmJobDerived(Interface):
     """Common functionality required by classes delegating IBuildFarmJob.
 
-    An implementation of this class must setup the necessary delagation.
+    An implementation of this class must setup the necessary delegation.
     """
 
     def getByJob(job):
@@ -241,6 +241,9 @@ class IBuildFarmJobDerived(Interface):
         :return: a hard-to-guess ASCII string that can be reproduced
             accurately based on this job's properties.
         """
+
+    def cleanUp():
+        """Job's finished.  Delete its supporting data."""
 
 
 class IBuildFarmJobSource(Interface):
