@@ -42,8 +42,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication)
 from lp.registry.interfaces.product import IProduct
@@ -61,18 +60,11 @@ class AuthServerApplication:
     title = "Auth Server"
 
 
-class BranchFileSystemApplication:
-    """BranchFileSystem End-Point."""
-    implements(IBranchFileSystemApplication)
+class CodehostingApplication:
+    """Codehosting End-Point."""
+    implements(ICodehostingApplication)
 
-    title = "Branch File System"
-
-
-class BranchPullerApplication:
-    """BranchPuller End-Point."""
-    implements(IBranchPullerApplication)
-
-    title = "Puller API"
+    title = "Codehosting API"
 
 
 class CodeImportSchedulerApplication:

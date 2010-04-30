@@ -332,7 +332,7 @@ in a error.
     Traceback (most recent call last):
     ...
     GPGUploadFailure: Could not reach keyserver at
-    http://localhost:11371 (111, 'Connection refused')
+    http://localhost:11371...Connection refused...
 
 
 == Fingerprint sanitizing ==

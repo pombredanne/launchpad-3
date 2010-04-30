@@ -119,13 +119,19 @@ def report_warning(message, properties=None, info=None,
 class WorkingBase:
     """A base class for writing a long-running process."""
 
-    def __init__(self, login, transaction_manager, logger):
+    def init(self, login, transaction_manager, logger):
         self._login = login
         self._principal = (
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
                 self._login, want_password=False))
         self._transaction_manager = transaction_manager
         self.logger = logger
+
+    def initFromParent(self, parent):
+        self._login = parent._login
+        self._principal = parent._principal
+        self._transaction_manager = parent._transaction_manager
+        self.logger = parent.logger
 
     @property
     @contextmanager

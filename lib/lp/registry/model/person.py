@@ -80,6 +80,7 @@ from canonical.launchpad.interfaces.account import (
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.model.hasbranches import (
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
@@ -2304,6 +2305,14 @@ class Person(
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
+
+    def getArchiveSubscriptionURLs(self):
+        """See `IPerson`."""
+        subscriptions = getUtility(
+            IArchiveSubscriberSet).getBySubscriberWithActiveToken(
+                subscriber=self)
+        return [token.archive_url for (subscription, token) in subscriptions
+                if token is not None]
 
     @property
     def ppas(self):
