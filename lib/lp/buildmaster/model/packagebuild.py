@@ -75,7 +75,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     @classmethod
     def new(cls, job_type, virtualized, archive, pocket,
-            processor=None, status=BuildStatus.BUILDING, dependencies=None):
+            processor=None, status=BuildStatus.NEEDSBUILD, dependencies=None):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
 
@@ -203,5 +203,3 @@ class PackageBuildDerived(BuildFarmJobDerived):
     """
     def _set_build_farm_job(self):
         self.build_farm_job = PackageBuild(self.build)
-
-

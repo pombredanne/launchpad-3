@@ -18,8 +18,7 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.buildmaster.tests.test_buildbase import (
-    TestBuildBaseMixin, TestBuildBaseWithDatabaseMixin)
+from lp.buildmaster.tests.test_buildbase import TestBuildBaseMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
@@ -54,15 +53,6 @@ class TestBuildBaseMethods(TestPackageBuildBase, TestBuildBaseMixin):
 
     def setUp(self):
         super(TestBuildBaseMethods, self).setUp()
-        self.package_build = self.makePackageBuild()
-
-
-class TestBuildBaseDatabaseMethods(TestPackageBuildBase,
-                                   TestBuildBaseWithDatabaseMixin):
-    """See `TestBuildBaseMethods` above."""
-
-    def setUp(self):
-        super(TestBuildBaseDatabaseMethods, self).setUp()
         self.package_build = self.makePackageBuild()
 
 

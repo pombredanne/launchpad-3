@@ -229,13 +229,13 @@ run_all: check_schema inplace stop hosted_branches
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
-	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
 
 start_codebrowse: build
-	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
 
 stop_codebrowse:
-	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
