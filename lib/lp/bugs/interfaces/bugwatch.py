@@ -293,26 +293,26 @@ class IBugWatchSet(Interface):
     # argument to bulkAddActivity(). Using different terms for
     # essentially the same thing is confusing.
 
-    def bulkSetError(bug_watches, last_error_type=None):
+    def bulkSetError(references, last_error_type=None):
         """Efficiently update the status of the given bug watches.
 
         Sets the `last_error_type` field as instructed, updates
         `lastchecked` to now and resets `next_check` to None, all in
         the most efficient way possible.
 
-        :param bug_watches: An iterable of `IBugWatch` objects or
+        :param references: An iterable of `IBugWatch` objects or
             primary keys for the same.
         :param last_error_type: A member of `BugWatchActivityStatus`
             or None.
         """
 
-    def bulkAddActivity(bug_watches, result=None, message=None, oops_id=None):
+    def bulkAddActivity(references, result=None, message=None, oops_id=None):
         """Efficiently add activity for the given bug watches.
 
         Add `BugWatchActivity` records for the given bug watches in
         the most efficient way possible.
 
-        :param bug_watches: An iterable of `IBugWatch` objects or
+        :param references: An iterable of `IBugWatch` objects or
             primary keys for the same.
         :param result: See `IBugWatch.addActivity`.
         :param message: See `IBugWatch.addActivity`.

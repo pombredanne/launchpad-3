@@ -14,6 +14,7 @@ __all__ = [
     ]
 
 from lazr.restful.fields import Reference
+from lazr.restful.declarations import export_as_webservice_entry
 
 from zope.interface import Interface
 from zope.schema import Int, Object
@@ -32,6 +33,7 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
+    export_as_webservice_entry()
 
     id = Int(title=_("Identifier for this build."))
 

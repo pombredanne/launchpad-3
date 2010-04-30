@@ -182,8 +182,8 @@ class LoopTuner:
         If the sleep interval would put us over the tasks timeout,
         do nothing.
         """
-        if not self._isTimedOut(self.cooldown_time):
-            time.sleep(self.cooldown_time)
+        if not self._isTimedOut(seconds):
+            time.sleep(seconds)
 
 
 def timedelta_to_seconds(td):
