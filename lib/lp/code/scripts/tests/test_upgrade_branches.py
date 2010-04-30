@@ -22,9 +22,8 @@ class TestUpgradeBranches(TestCaseWithFactory):
 
     def test_upgrade_branches(self):
         """Test that upgrade_branches upgrades branches."""
-        self.useBzrBranches(real_server=True)
-        target, target_tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        self.useBzrBranches()
+        target, target_tree = self.create_branch_and_tree(format='knit')
         target.branch_format = BranchFormat.BZR_BRANCH_5
         target.repository_format = RepositoryFormat.BZR_KNIT_1
 
@@ -49,10 +48,10 @@ class TestUpgradeBranches(TestCaseWithFactory):
 
     def test_upgrade_branches_packagebranch(self):
         """Test that upgrade_branches can upgrade package branches."""
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches()
         package_branch = self.factory.makePackageBranch()
         target, target_tree = self.create_branch_and_tree(
-            db_branch=package_branch, hosted=True, format='knit')
+            db_branch=package_branch, format='knit')
         target.branch_format = BranchFormat.BZR_BRANCH_5
         target.repository_format = RepositoryFormat.BZR_KNIT_1
 

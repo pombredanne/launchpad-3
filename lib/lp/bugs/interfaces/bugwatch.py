@@ -337,6 +337,39 @@ class IBugWatchSet(Interface):
         :type bug_watch_ids: An iterable of `int`s, or `None`.
         """
 
+    # XXX: GavinPanella bug=570277 2010-04-26: In bulkSetError() the
+    # last_error_type argument accepts the same values as the result
+    # argument to bulkAddActivity(). Using different terms for
+    # essentially the same thing is confusing.
+
+    def bulkSetError(references, last_error_type=None):
+        """Efficiently update the status of the given bug watches.
+
+        Sets the `last_error_type` field as instructed, updates
+        `lastchecked` to now and resets `next_check` to None, all in
+        the most efficient way possible.
+
+        :param references: An iterable of `IBugWatch` objects or
+            primary keys for the same.
+        :param last_error_type: A member of `BugWatchActivityStatus`
+            or None.
+        """
+
+    def bulkAddActivity(references,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
+        """Efficiently add activity for the given bug watches.
+
+        Add `BugWatchActivity` records for the given bug watches in
+        the most efficient way possible.
+
+        :param references: An iterable of `IBugWatch` objects or
+            primary keys for the same.
+        :param result: See `IBugWatch.addActivity`.
+        :param message: See `IBugWatch.addActivity`.
+        :param oops_id: See `IBugWatch.addActivity`.
+        """
+
 
 class NoBugTrackerFound(Exception):
     """No bug tracker with the base_url is registered in Launchpad."""

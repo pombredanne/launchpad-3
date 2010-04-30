@@ -315,8 +315,7 @@ class TestWebServiceRequest(WebServiceTestCase):
     def test_response_should_vary_based_on_content_type(self):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
         self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept')
+            request.response.getHeader('Vary'), 'Accept')
 
 
 class TestBasicLaunchpadRequest(TestCase):

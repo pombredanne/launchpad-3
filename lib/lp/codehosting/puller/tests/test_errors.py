@@ -18,7 +18,7 @@ from bzrlib.errors import (
 
 from lp.codehosting.puller.worker import (
     BranchMirrorer, BranchReferenceForbidden, BranchLoopError, PullerWorker,
-    PullerWorkerProtocol, StackedOnBranchNotFound)
+    PullerWorkerProtocol)
 from lp.codehosting.vfs.branchfs import (
     BadUrlLaunchpad, BadUrlScheme, BadUrlSsh)
 from lp.code.enums import BranchType
@@ -111,14 +111,6 @@ class TestErrorCatching(unittest.TestCase):
             BranchReferenceForbidden(),
             branch_type=BranchType.HOSTED)
         self.assertEqual(expected_msg, msg)
-
-    def testStackedOnBranchNotFound(self):
-        # If StackedOnBranchNotFound is raised then we send mirrorDeferred to
-        # the scheduler.
-        worker = self.makeRaisingWorker(StackedOnBranchNotFound())
-        worker.mirror()
-        self.assertEqual(
-            [('startMirroring',), ('mirrorDeferred',)], worker.protocol.calls)
 
     def testLocalURL(self):
         # A file:// branch reference for a mirror branch must cause an error.
