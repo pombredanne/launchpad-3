@@ -105,28 +105,27 @@
         Missing build dependencies: <em
          tal:content="context/dependencies">x, y, z</em>
       </li>
-      <tal:pending condition="context/buildstate/enumvalue:NEEDSBUILD">
-        <li tal:define="eta view/eta">
+      <tal:pending condition="context/buildqueue_record/job/status/enumvalue:WAITING">
+        <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
         </li>
       </tal:pending>
-      <tal:building condition="context/buildstate/enumvalue:BUILDING">
-        <li>
-          Started
-          <span tal:attributes="title context/buildqueue_record/job/date_started/fmt:datetime"
-                tal:content="context/buildqueue_record/job/date_started/fmt:approximatedate"
-            >5 minutes ago</span>
-        </li>
-      </tal:building>
-      <tal:built condition="context/datebuilt">
+      <tal:started condition="context/datestarted">
         <li tal:condition="context/datestarted">
           Started <span
            tal:define="start context/datestarted"
            tal:attributes="title start/fmt:datetime"
            tal:content="start/fmt:displaydate">2008-01-01</span>
         </li>
-      </tal:built>
+      </tal:started>
+      <tal:finish condition="not: context/datebuilt">
+        <li tal:define="eta view/eta" tal:condition="view/eta">
+          Estimated finish <tal:eta
+            replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+        </li>
+      </tal:finish>
+
       <li tal:condition="context/datebuilt">
         Finished <span
           tal:attributes="title context/datebuilt/fmt:datetime"

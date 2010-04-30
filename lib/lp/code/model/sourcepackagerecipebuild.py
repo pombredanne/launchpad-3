@@ -83,9 +83,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     @property
     def datestarted(self):
         """See `IBuild`."""
-        if None in (self.datebuilt, self.buildduration):
+        if None not in (self.datebuilt, self.buildduration):
+            return self.datebuilt - self.buildduration
+        queue_record = self.buildqueue_record
+        if queue_record is None:
             return None
-        return self.datebuilt - self.buildduration
+        return queue_record.job.date_started
 
     date_first_dispatched = UtcDateTimeCol(notNull=False)
 

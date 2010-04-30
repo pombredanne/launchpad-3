@@ -124,11 +124,20 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             datetime.timedelta(minutes=2), spb.estimateDuration())
 
     def test_datestarted(self):
+        """Datestarted is taken from job if not specified in the build.
+
+        Specifying datestarted in the build requires datebuilt and
+        buildduration to be specified.
+        """
         spb = self.makeSourcePackageRecipeBuild()
         self.assertIs(None, spb.datestarted)
+        job = self.factory.makeSourcePackageRecipeBuildJob(
+            recipe_build=spb).job
+        job.start()
+        self.assertEqual(job.date_started, spb.datestarted)
         now = datetime.datetime.now(utc)
         removeSecurityProxy(spb).datebuilt = now
-        self.assertIs(None, spb.datestarted)
+        self.assertEqual(job.date_started, spb.datestarted)
         duration = datetime.timedelta(minutes=1)
         removeSecurityProxy(spb).buildduration = duration
         self.assertEqual(now - duration, spb.datestarted)
