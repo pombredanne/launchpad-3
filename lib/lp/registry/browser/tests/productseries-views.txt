@@ -23,9 +23,6 @@ ProductSeries Involvement links
 The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
-    >>> from operator import attrgetter
-    >>> from canonical.launchpad.webapp.tales import MenuAPI
-
     >>> login_person(product.owner)
     >>> product.official_answers = True
     >>> product.official_blueprints = True
