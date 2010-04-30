@@ -23,21 +23,21 @@ from lp.services.database import bulk
 from lp.testing import TestCase, TestCaseWithFactory
 
 
-identity = lambda thing: thing
+object_is_key = lambda thing: thing
 
 
 class TestBasicFunctions(TestCase):
 
     def test_collate_empty_list(self):
-        self.failUnlessEqual([], list(bulk.collate([], identity)))
+        self.failUnlessEqual([], list(bulk.collate([], object_is_key)))
 
-    def test_collate_with_identity(self):
+    def test_collate_when_object_is_key(self):
         self.failUnlessEqual(
             [(1, [1])],
-            list(bulk.collate([1], identity)))
+            list(bulk.collate([1], object_is_key)))
         self.failUnlessEqual(
             [(1, [1]), (2, [2, 2])],
-            sorted(bulk.collate([1, 2, 2], identity)))
+            sorted(bulk.collate([1, 2, 2], object_is_key)))
 
     def test_collate_with_key_function(self):
         self.failUnlessEqual(
