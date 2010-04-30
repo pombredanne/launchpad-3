@@ -56,7 +56,6 @@ rendering links:
 Setting a branch for the series should enable the +addbranch link.
 
     >>> series.branch = factory.makeBranch()
-    >>> transaction.commit()
     >>> view = create_view(series, '+get-involved')
     >>> print view.official_codehosting
     True
@@ -388,7 +387,6 @@ view's can_delete property checks this rule.
 The delete action will not delete a series that is the active focus of
 development.
 
-    >>> transaction.commit()
     >>> form = {
     ...     'field.actions.delete': 'Delete this Series',
     ...     }
