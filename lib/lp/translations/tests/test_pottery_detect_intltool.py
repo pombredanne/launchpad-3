@@ -19,6 +19,8 @@ from lp.testing import TestCase
 
 class SetupTestPackageMixin(object):
 
+    test_data_dir = "pottery_test_data"
+
     def prepare_package(self, packagename):
         """Unpack the specified package in a temporary directory.
 
@@ -26,7 +28,8 @@ class SetupTestPackageMixin(object):
         """
         # First build the path for the package.
         packagepath = os.path.join(
-            os.getcwd(), os.path.dirname(__file__), packagename + ".tar.bz2")
+            os.getcwd(), os.path.dirname(__file__),
+            self.test_data_dir, packagename + ".tar.bz2")
         # Then change into the temporary directory and unpack it.
         self.useTempDir()
         tar = tarfile.open(packagepath, "r:bz2")
