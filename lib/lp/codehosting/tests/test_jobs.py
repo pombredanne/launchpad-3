@@ -25,7 +25,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_runJob_generates_diff(self):
         """Ensure that a diff is actually generated in this environment."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,

@@ -251,10 +251,6 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
-        if (destination_archive_conflicts.count() == 0 and
-            len(inventory_conflicts) == 0):
-            return
-
         # Cache the conflicting publications because they will be iterated
         # more than once.
         destination_archive_conflicts = list(destination_archive_conflicts)

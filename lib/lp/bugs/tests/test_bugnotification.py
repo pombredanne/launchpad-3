@@ -10,13 +10,14 @@ import unittest
 from zope.event import notify
 from zope.interface import providedBy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.config import config
-from canonical.launchpad.database import BugNotification
-from lazr.lifecycle.event import ObjectModifiedEvent
+from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.ftests import login
 from lp.bugs.interfaces.bugtask import BugTaskStatus, IUpstreamBugTask
+from lp.bugs.model.bugnotification import BugNotification, BugNotificationSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -117,6 +118,30 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
             [self.product.owner.preferredemail.email,
              self.subscriber.preferredemail.email],
             [mail['To'] for mail in pop_notifications()])
+
+
+class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
+    """Adding notificatons without any recipients does not cause any harm.
+
+    In some cases, we may have attempts to send bug notifications for bugs
+    that do not have any notification recipients.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def test_addNotification_without_recipients(self):
+        # We can call BugNotificationSet.addNotification() with a empty
+        # recipient list.
+        #
+        # No explicit assertion is necessary in this test -- we just want
+        # to be sure that calling BugNotificationSet.addNotification()
+        # does not lead to an exception caused by an SQL syntax error for
+        # a command that ends with "VALUES ;"
+        bug = self.factory.makeBug()
+        message = MessageSet().fromText(
+            subject='subject', content='content')
+        BugNotificationSet().addNotification(
+            bug=bug, is_comment=False, message=message, recipients=[])
 
 
 def test_suite():

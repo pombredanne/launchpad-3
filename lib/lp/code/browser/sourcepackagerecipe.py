@@ -45,6 +45,7 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import JobStatus
 
 
 class IRecipesForPerson(Interface):
@@ -52,8 +53,7 @@ class IRecipesForPerson(Interface):
 
 
 class RecipesForPersonBreadcrumb(Breadcrumb):
-    """A Breadcrumb that will handle the "Recipes" link for recipe breadcrumbs.
-    """
+    """A Breadcrumb to handle the "Recipes" link for recipe breadcrumbs."""
 
     rootsite = 'code'
     text = 'Recipes'
@@ -229,14 +229,26 @@ class SourcePackageRecipeBuildView(LaunchpadView):
 
     @property
     def eta(self):
-        """The datetime when the build job is estimated to begin."""
+        """The datetime when the build job is estimated to complete.
+
+        This is the BuildQueue.estimated_duration plus the
+        Job.date_started or BuildQueue.getEstimatedJobStartTime.
+        """
         if self.context.buildqueue_record is None:
             return None
-        return self.context.buildqueue_record.getEstimatedJobStartTime()
+        queue_record = self.context.buildqueue_record
+        if queue_record.job.status == JobStatus.WAITING:
+            start_time = queue_record.getEstimatedJobStartTime()
+            if start_time is None:
+                return None
+        else:
+            start_time = queue_record.job.date_started
+        duration = queue_record.estimated_duration
+        return start_time + duration
 
     @property
     def date(self):
-        """The date when the build complete or will begin."""
+        """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
         return self.context.datebuilt
@@ -244,7 +256,9 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     @property
     def estimate(self):
         """If true, the date value is an estimate."""
-        return (self.context.datebuilt is None and self.eta is not None)
+        if self.context.datebuilt is not None:
+            return False
+        return self.eta is not None
 
 
 class ISourcePackageAddEditSchema(Interface):
@@ -272,7 +286,7 @@ class RecipeTextValidatorMixin:
     def validate(self, data):
         try:
             parser = RecipeParser(data['recipe_text'])
-            recipe_text = parser.parse()
+            parser.parse()
         except RecipeParseError:
             self.setFieldError(
                 'recipe_text',
