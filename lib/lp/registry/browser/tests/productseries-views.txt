@@ -32,14 +32,42 @@ rendering links:
     >>> product.official_malone = True
     >>> product.official_rosetta = True
     >>> view = create_view(series, '+get-involved')
-    >>> menuapi = MenuAPI(view)
-    >>> for link in sorted(
-    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+
+    # official_answers is always false for product series.
+    >>> print view.official_answers
+    False
+    >>> print view.official_blueprints
+    True
+    >>> print view.official_malone
+    True
+    >>> print view.official_rosetta
+    True
+    >>> print view.official_codehosting
+    False
+    >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
     http://translations.launchpad.dev/app/simple
-    http://code.launchpad.dev/app/+addbranch
     http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
+    http://code.launchpad.dev/app/simple/+addbranch
+
+Setting a branch for the series should enable the +addbranch link.
+
+    >>> series.branch = factory.makeBranch()
+    >>> transaction.commit()
+    >>> view = create_view(series, '+get-involved')
+    >>> print view.official_codehosting
+    True
+    >>> for link in view.enabled_links:
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://code.launchpad.dev/app/simple/+addbranch
+    http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
 
 
 ProductSeries view
