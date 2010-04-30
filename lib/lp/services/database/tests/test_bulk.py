@@ -123,7 +123,7 @@ class TestLoaders(TestCaseWithFactory):
         # gen_reload_queries() does not like non-Storm objects.
         self.assertRaisesWithContent(
             AssertionError,
-            'Cannot load objects of type str.',
+            "Cannot load objects of type str: ['fred']",
             list, bulk.gen_reload_queries(['fred']))
 
     def test_gen_reload_queries_with_compound_primary_keys(self):

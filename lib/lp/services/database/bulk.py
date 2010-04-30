@@ -45,7 +45,8 @@ def gen_reload_queries(objects):
     for object_type, objects in collate(objects, get_type):
         if not issubclass(object_type, Storm):
             raise AssertionError(
-                "Cannot load objects of type %s." % object_type.__name__)
+                "Cannot load objects of type %s: %r" % (
+                    object_type.__name__, objects))
         primary_key = get_cls_info(object_type).primary_key
         if len(primary_key) != 1:
             raise AssertionError(
