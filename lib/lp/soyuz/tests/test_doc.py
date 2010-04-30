@@ -133,14 +133,12 @@ special = {
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
-    # XXX Tim Penhey 2010-04-30 bug=572005
-    # Disabled as part of conflict resolution.
-    #'buildd-slavescanner.txt': LayeredDocFileSuite(
-    #    '../doc/buildd-slavescanner.txt',
-    #    setUp=builddmasterSetUp,
-    #    layer=LaunchpadZopelessLayer,
-    #    stdout_logging_level=logging.WARNING
-    #    ),
+    'buildd-slavescanner.txt': LayeredDocFileSuite(
+        '../doc/buildd-slavescanner.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        stdout_logging_level=logging.WARNING
+        ),
     # XXX Michael Nelson 2010-04-01 bug=553259
     # Disabling the buildd-slave.txt test until the
     # timing issue is sorted (see bug).
