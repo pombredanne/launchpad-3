@@ -57,7 +57,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
         :return: a fresh lp.code.model.Branch backed by a real bzr branch.
         """
-        db_branch, tree = self.create_branch_and_tree(hosted=True)
+        db_branch, tree = self.create_branch_and_tree()
         populist = DirectBranchCommit(db_branch)
         last_revision = populist.bzrbranch.last_revision()
         db_branch.last_scanned_id = populist.last_scanned_id = last_revision
@@ -71,13 +71,13 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
     def test_getBranch_bzr(self):
         # _getBranch can retrieve branch contents from a branch URL.
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         marker_text = "Ceci n'est pas cet branch."
         branch = self._createBranch({'marker.txt': marker_text})
-        branch_url = branch.getPullURL()
 
         generator = GenerateTranslationTemplates(
-            branch_url, self.result_name, self.makeTemporaryDirectory())
+            branch.getInternalBzrUrl(), self.result_name,
+            self.makeTemporaryDirectory())
         generator.branch_dir = self.makeTemporaryDirectory()
         generator._getBranch()
 
@@ -92,7 +92,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
             os.path.dirname(__file__),'dummy_templates.tar.gz')
         tar = tarfile.open(dummy_tar, 'r|*')
         tar.extractall(branchdir)
-        potnames = [name for name in tar.getnames() if not name.endswith('/')]
+        potnames = [member.name for member in tar.getmembers() if not member.isdir()]
         tar.close()
 
         generator = GenerateTranslationTemplates(

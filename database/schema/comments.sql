@@ -623,6 +623,7 @@ COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad adm
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
+COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -1344,6 +1345,8 @@ COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the sour
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
 COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
 
+COMMENT ON COLUMN SourcePackageREcipe.daily_build_archive IS 'The archive to build into for daily builds.';
+
 -- SourcePackageRecipeDistroSeries
 
 COMMENT ON TABLE SourcePackageRecipeDistroSeries IS 'Link table for sourcepackagerecipe and distroseries.';
@@ -1586,23 +1589,32 @@ COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push 
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
 
--- Build
-COMMENT ON TABLE Build IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchseries.';
-COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
-COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
-COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
-COMMENT ON COLUMN Build.distroarchseries IS 'Points the target Distroarchrelease for this build.';
-COMMENT ON COLUMN Build.processor IS 'Points to the Distroarchrelease available processor target for this build.';
-COMMENT ON COLUMN Build.sourcepackagerelease IS 'Sourcepackagerelease which originated this build.';
-COMMENT ON COLUMN Build.buildstate IS 'Stores the current build procedure state.';
-COMMENT ON COLUMN Build.buildlog IS 'Points to the buildlog file stored in librarian.';
-COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once processed it.';
-COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
-COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
-COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
-COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
-COMMENT ON COLUMN Build.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
-COMMENT ON COLUMN Build.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the binaries resulted from this build.';
+-- -- BuildFarmJob, and its related tables, PackageBuild, BinaryPackageBuild
+-- COMMENT ON TABLE BuildFarmJob IS 'BuildFarmJob: This table stores the information common to all jobs on the Launchpad build farm.';
+-- COMMENT ON COLUMN BuildFarmJob.processor IS 'Points to the required processor target for this job, or null.';
+-- COMMENT ON COLUMN BuildlFarmJob.virtualized IS 'The virtualization setting required by this build farm job, or null.';
+-- COMMENT ON COLUMN BuildFarmJob.date_created IS 'When the build farm job record was created.';
+-- COMMENT ON COLUMN BuildFarmJob.date_started IS 'When the build farm job started being processed.';
+-- COMMENT ON COLUMN BuildFarmJob.date_finished IS 'When the build farm job finished being processed.';
+-- COMMENT ON COLUMN BuildFarmJob.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+-- COMMENT ON COLUMN BuildFarmJob.builder IS 'Points to the builder which processed this build farm job.';
+-- COMMENT ON COLUMN BuildFarmJob.status IS 'Stores the current build status.';
+-- COMMENT ON COLUMN BuildFarmJob.log IS 'Points to the log for this build farm job file stored in librarian.';
+-- COMMENT ON COLUMN BuildFarmJob.job_type IS 'The type of build farm job to which this record corresponds.';
+--
+-- -- PackageBuild
+-- COMMENT ON TABLE PackageBuild IS 'PackageBuild: This table stores the information common to build farm jobs that build source or binary packages.';
+-- COMMENT ON COLUMN PackageBuild.build_farm_job IS 'Points to the build farm job with the base information.';
+-- COMMENT ON COLUMN PackageBuild.archive IS 'Targeted archive for this package build.';
+-- COMMENT ON COLUMN PackageBuild.pocket IS 'Stores the target pocket identifier for this package build.';
+-- COMMENT ON COLUMN PackageBuild.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the packages resulting from this package build.';
+-- COMMENT ON COLUMN PackageBuild.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
+--
+-- -- BinaryPackageBuild
+-- COMMENT ON TABLE BinaryPackageBuild IS 'BinaryPackageBuild: This table links a package build with a distroarchseries and sourcepackagerelease.';
+-- COMMENT ON COLUMN BinaryPackageBuild.package_build IS 'Points to the related package build with the base information.';
+-- COMMENT ON COLUMN BinaryPackageBuild.distro_arch_series IS 'Points the target DistroArchSeries for this build.';
+-- COMMENT ON COLUMN BinaryPackageBuild.source_package_release IS 'SourcePackageRelease which originated this build.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';

@@ -10,12 +10,15 @@ __all__ = [
     ]
 
 
+import hashlib
+
 from lazr.delegates import delegates
 
 import hashlib
 import pytz
 
 from storm.locals import Bool, DateTime, Int, Reference, Storm
+from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
@@ -132,6 +135,10 @@ class BuildFarmJobOldDerived:
             ])
 
         return hashlib.sha1(contents).hexdigest()
+
+    def cleanUp(self):
+        """See `IBuildFarmJob`."""
+        Store.of(self).remove(self)
 
 
 class BuildFarmJob(BuildFarmJobOld, Storm):
@@ -256,4 +263,3 @@ class BuildFarmJobDerived:
     """See `IBuildFarmJobDerived`."""
     implements(IBuildFarmJobDerived)
     delegates(IBuildFarmJob, context='build_farm_job')
-
