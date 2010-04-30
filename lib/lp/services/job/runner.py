@@ -158,8 +158,8 @@ class BaseJobRunner(object):
 
         try:
             job.run()
-        except Exception, e:
-            self.logger.exception(e)
+        except Exception:
+            self.logger.exception("Job execution raised an exception.")
             transaction.abort()
             job.fail()
             # Record the failure.
@@ -192,11 +192,12 @@ class BaseJobRunner(object):
                 except Exception:
                     info = sys.exc_info()
                     return self._doOops(job, info)
-            except Exception, e:
+            except Exception:
                 # This only happens if sending attempting to notify users
                 # about errors fails for some reason (like a misconfigured
                 # email server).
-                self.logger.exception(e)
+                self.logger.exception(
+                    "Failed to notify users about a failure.")
                 info = sys.exc_info()
                 self.error_utility.raising(info)
                 oops = self.error_utility.getLastOopsReport()
