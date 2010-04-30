@@ -1636,7 +1636,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
-            made with makeDistribution().
+            made with makeDistribution() for non-PPAs and ubuntu for PPAs.
         :param owner: Supper IPerson, defaults to a new one made with
             makePerson().
         :param name: Name of the archive, defaults to a random string.
@@ -1646,16 +1646,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param virtualized: Whether the archive is virtualized.
         :param description: A description of the archive.
         """
-        if distribution is None:
-            distribution = self.makeDistribution()
-        if owner is None:
-            owner = self.makePerson()
         if purpose is None:
             purpose = ArchivePurpose.PPA
+        if distribution is None:
+            # See bug #568769
+            if purpose == ArchivePurpose.PPA:
+                distribution = getUtility(ILaunchpadCelebrities).ubuntu
+            else:
+                distribution = self.makeDistribution()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
-            try:
-                name = default_name_by_purpose[purpose]
-            except KeyError:
+            if purpose != ArchivePurpose.PPA:
+                name = default_name_by_purpose.get(purpose)
+            if name is None:
                 name = self.getUniqueString()
 
         # Making a distribution makes an archive, and there can be only one
