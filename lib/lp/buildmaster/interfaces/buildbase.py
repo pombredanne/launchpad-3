@@ -40,7 +40,7 @@ class BuildStatus(DBEnumeratedType):
     """
 
     NEEDSBUILD = DBItem(0, """
-        Pending build
+        Needs building
 
         Build record is fresh and needs building. Nothing is yet known to
         block this build and it is a candidate for building on any free
@@ -48,7 +48,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     FULLYBUILT = DBItem(1, """
-        Successful build
+        Successfully built
 
         Build record is an historic account of the build. The build is complete
         and needs no further work to complete it. The build log etc are all
@@ -65,7 +65,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     MANUALDEPWAIT = DBItem(3, """
-        Could not build because of missing dependencies
+        Dependency wait
 
         Build record represents a package whose build dependencies cannot
         currently be satisfied within the relevant DistroArchSeries. This
@@ -74,7 +74,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     CHROOTWAIT = DBItem(4, """
-        Could not build because of chroot problem
+        Chroot problem
 
         Build record represents a build which needs a chroot currently known
         to be damaged or bad in some way. The buildd maintainer will have to
@@ -83,7 +83,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     SUPERSEDED = DBItem(5, """
-        Could not build because source package was superseded
+        Build for superseded Source
 
         Build record represents a build which never got to happen because the
         source package release for the build was superseded before the job
@@ -99,7 +99,7 @@ class BuildStatus(DBEnumeratedType):
         """)
 
     FAILEDTOUPLOAD = DBItem(7, """
-        Could not be uploaded correctly
+        Failed to upload
 
         Build record is an historic account of a build that could not be
         uploaded correctly. It's mainly genereated by failures in
@@ -209,11 +209,12 @@ class IBuildBase(Interface):
 
     title = exported(TextLine(title=_("Title"), required=False))
 
-    def getUploaderCommand(upload_leaf, uploader_logfilename):
-        """Get the command to run as the uploader.
-
-        :return: A list of command line arguments, beginning with the
-            executable.
+    def processUpload(leaf, root, logger):
+        """Process an upload.
+        
+        :param leaf: Leaf for this particular upload
+        :param root: Root directory for the uploads
+        :param logger: A logger object
         """
 
     def handleStatus(status, librarian, slave_status):

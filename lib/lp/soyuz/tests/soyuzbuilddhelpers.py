@@ -173,14 +173,19 @@ class WaitingSlave(OkSlave):
         self.dependencies = dependencies
         self.build_id = build_id
 
+        # By default, the slave only has a buildlog, but callsites
+        # can update this list as needed.
+        self.valid_file_hashes = ['buildlog']
+
     def status(self):
         return ('BuilderStatus.WAITING', self.state, self.build_id, {},
                 self.dependencies)
 
-    def getFile(self, sum):
-        if sum == "buildlog":
-            s = StringIO("This is a build log")
-            s.headers = {'content-length':19}
+    def getFile(self, hash):
+        if hash in self.valid_file_hashes:
+            content = "This is a %s" % hash
+            s = StringIO(content)
+            s.headers = {'content-length':len(content)}
             return s
 
 

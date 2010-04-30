@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,F0401
 
 """Interface of the `SourcePackageRecipe` content type."""
 
@@ -14,24 +14,33 @@ __all__ = [
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
+    'MINIMAL_RECIPE_TEXT',
     'TooNewRecipeFormat',
     ]
 
 
-from lazr.restful.fields import CollectionField, Reference
+from textwrap import dedent
 
+from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
 from zope.schema import Bool, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
+
+MINIMAL_RECIPE_TEXT = dedent(u'''\
+    # bzr-builder format 0.2 deb-version 1.0
+    %s
+    ''')
 
 class ForbiddenInstruction(Exception):
     """A forbidden instruction was found in the recipe."""
@@ -62,6 +71,9 @@ class ISourcePackageRecipeData(Interface):
         description = _(
             'The template that will be used to generate a deb version.'),)
 
+    def getReferencedBranches():
+        """An iterator of the branches referenced by this recipe."""
+
 
 class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
@@ -70,14 +82,18 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     debianized source tree.
     """
 
+    daily_build_archive = Reference(
+        IArchive, title=_("The archive to use for daily builds."))
+
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
 
     registrant = Reference(
         IPerson, title=_("The person who created this recipe"), readonly=True)
-    owner = Reference(
-        IPerson, title=_("The person or team who can edit this recipe"),
-        readonly=False)
+    owner = ParticipatingPersonChoice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='UserTeamsParticipationPlusSelf',
+        description=_("The person or team who can edit this recipe."))
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
@@ -105,9 +121,6 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         IBranch, title=_("The base branch used by this recipe."),
         required=True, readonly=True)
 
-    def getReferencedBranches():
-        """An iterator of the branches referenced by this recipe."""
-
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
 
@@ -123,6 +136,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
 
         :param pending: If True, select all builds that are pending.  If
             False, select all builds that are not pending.
+        """
+
+    def destroySelf():
+        """Remove this SourcePackageRecipe from the database.
+
+        This requires deleting any rows with non-nullable foreign key
+        references to this object.
         """
 
 

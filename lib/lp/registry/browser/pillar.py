@@ -82,7 +82,7 @@ class PillarView(LaunchpadView):
         if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
-            # Projectgroups do not support submit code, override the
+            # Project groups do not support submit code, override the
             # default.
             self.official_codehosting = False
         else:

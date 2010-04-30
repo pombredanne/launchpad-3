@@ -64,12 +64,6 @@
          appropriate. -->
   </class>
 
-  <adapter
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-      for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
-      factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
-      permission="zope.Public"/>
-
   <!-- CodeImportMachineSet -->
 
   <securedutility
@@ -244,7 +238,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id review_diff"
+                        root_message_id review_diff prerequisite_branch"
         attributes="
                     deleteProposal
                     setStatus
@@ -421,11 +415,6 @@
   <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
   <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
-  <securedutility
-      class="lp.code.model.branchscanner.BranchScanner"
-      provides="lp.code.interfaces.branchscanner.IBranchScanner">
-    <allow interface="lp.code.interfaces.branchscanner.IBranchScanner"/>
-  </securedutility>
 
   <!-- BranchSubscription -->
 
@@ -476,7 +465,6 @@
                     last_scanned
                     last_scanned_id
                     revision_count
-                    warehouse_url
                     bug_branches
                     linked_bugs
                     linkBug
@@ -518,16 +506,16 @@
                     getMainlineBranchRevisions
                     getMergeProposals
                     getStackedBranches
-                    getStackedBranchesWithIncompleteMirrors
                     createBranchRevision
                     getTipRevision
                     updateScannedDetails
                     getNotificationRecipients
                     getScannerData
                     getPullURL
+                    getInternalBzrUrl
+                    getBzrBranch
                     requestMirror
                     startMirroring
-                    mirrorComplete
                     mirrorFailed
                     branch_format
                     repository_format
@@ -554,7 +542,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf destroySelfBreakReferences setPrivate
-                    setOwner setTarget requestUpgrade"
+                    setOwner setTarget requestUpgrade branchChanged"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
@@ -840,7 +828,8 @@
                        getImportDetailsForDisplay"/>
     <require
        permission="launchpad.AnyPerson"
-       attributes="tryFailingImportAgain"/>
+       attributes="tryFailingImportAgain
+                   requestImport"/>
     <require
        permission="launchpad.Edit"
        attributes="updateFromData"/>
@@ -1015,6 +1004,7 @@
      component="lp.code.model.sourcepackagerecipe.SourcePackageRecipe"
      provides="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
     <allow interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+
   </securedutility>
 
   <class
@@ -1034,6 +1024,7 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>
+    <allow interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
   </class>
 
   <securedutility
@@ -1058,7 +1049,15 @@
     interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
     <require
        permission="launchpad.Edit"
-       set_attributes="builder_recipe build_daily"/>
+       set_attributes="
+           build_daily
+           builder_recipe
+           date_last_modified
+           description
+           distroseries
+           name
+           owner
+           sourcepackagename"/>
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

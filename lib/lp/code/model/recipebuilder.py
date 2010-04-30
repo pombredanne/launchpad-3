@@ -8,8 +8,12 @@ __all__ = [
     'RecipeBuildBehavior',
     ]
 
-from zope.component import adapts, getUtility
+import traceback
+
+from zope.component import adapts
 from zope.interface import implements
+
+from canonical.config import config
 
 from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -18,8 +22,7 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildSource)
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+    ISourcePackageRecipeBuildJob)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
@@ -51,7 +54,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info("startBuild(%s)", self.display_name)
 
-    def _extraBuildArgs(self, distroarchseries):
+    def _extraBuildArgs(self, distroarchseries, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
@@ -71,6 +74,28 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             self.build.sourcepackagename.name)
         args['archives'] = get_sources_list_for_building(self.build,
             distroarchseries, self.build.sourcepackagename.name)
+
+        # config.builddmaster.bzr_builder_sources_list can contain a
+        # sources.list entry for an archive that will contain a
+        # bzr-builder package that needs to be used to build this
+        # recipe.
+        try:
+            extra_archive = config.builddmaster.bzr_builder_sources_list
+        except AttributeError:
+            extra_archive = None
+
+        if extra_archive is not None:
+            try:
+                sources_line = extra_archive % (
+                    {'series': self.build.distroseries.name})
+                args['archives'].append(sources_line)
+            except StandardError:
+                # Someone messed up the config, don't add it.
+                logger.error(
+                    "Exception processing bzr_builder_sources_list:\n%s"
+                    % traceback.format_exc())
+
+        args['distroseries_name'] = self.build.distroseries.name
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
@@ -101,7 +126,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs(distroarchseries)
+        args = self._extraBuildArgs(distroarchseries, logger)
         status, info = self._builder.slave.build(
             cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):

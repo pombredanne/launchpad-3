@@ -38,13 +38,13 @@ and None otherwise:
     None
 
 The ArchiveView includes an archive_label property that returns either
-the string 'PPA' or 'Archive' depending on whether the archive is a PPA
+the string 'PPA' or 'archive' depending on whether the archive is a PPA
 (this is mainly for branding purposes):
 
     >>> print ppa_archive_view.archive_label
     PPA
     >>> print copy_archive_view.archive_label
-    Archive
+    archive
 
 The ArchiveView is provides the html for the inline description
 editing widget.
@@ -141,7 +141,7 @@ The COPY archive has no packages.
     >>> print_repository_usage(copy_repository_usage)
     binaries_size:   0
     binary_label:    0 binary packages
-    quota:           1073741824
+    quota:           2147483648
     source_label:    0 source packages
     sources_size:    0
     used:            0

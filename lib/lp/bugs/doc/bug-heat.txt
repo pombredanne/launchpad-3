@@ -29,6 +29,28 @@ Its heat_last_updated will also have been set.
     datetime.datetime(..., tzinfo=<UTC>)
 
 
+Adjusting bug heat in transaction
+---------------------------------
+
+Sometimes, when a bug changes, we want to see the changes reflected in the bug's
+heat value immidiately, without waiting for heat to be recalculated. Currently
+we adjust heat immidiately for bug privacy and security.
+
+    >>> bug_owner = factory.makePerson()
+    >>> bug = factory.makeBug(owner=bug_owner)
+    >>> bug.heat
+    0
+    >>> changed = bug.setPrivate(True, bug_owner)
+    >>> bug.heat
+    150
+    >>> changed = bug.setSecurityRelated(True)
+    >>> bug.heat
+    400
+    >>> changed = bug.setPrivate(False, bug_owner)
+    >>> bug.heat
+    250
+
+
 Getting bugs whose heat is outdated
 -----------------------------------
 

@@ -7,10 +7,20 @@
 # This file works if the Python has been started with -S, or if bin/py
 # has been used.
 
+# Auto-generated code to handle relative paths
+${python-relative-path-setup}
+
 import os
 import sys
+import warnings
 
-site_dir = "${scripts:parts-directory}"
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
+
+site_dir = ${scripts:parts-directory|path-repr}
 
 if ('site' in sys.modules and
     not sys.modules['site'].__file__.startswith(
@@ -18,9 +28,11 @@ if ('site' in sys.modules and
     # We have the wrong site.py, so our paths are not set up correctly.
     # We blow up, with a hopefully helpful error message.
     raise RuntimeError(
-        'The wrong site.py is imported. Scripts should usually be '
+        'The wrong site.py is imported (%r imported, %r expected). '
+        'Scripts should usually be '
         "started with Launchpad's bin/py, or with a Python invoked with "
-        'the -S flag.')
+        'the -S flag.' % (
+        sys.modules['site'].__file__, os.path.join(site_dir, 'site.py')))
 
 if site_dir not in sys.path:
     sys.path.insert(0, site_dir)

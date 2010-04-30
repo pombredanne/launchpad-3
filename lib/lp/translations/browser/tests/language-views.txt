@@ -33,6 +33,20 @@ to its index.
     http://translations.launchpad.dev/+languages/pt_BR
 
 
+Validation
+----------
+
+Plural information entered on the admin page is checked for validity.
+
+    >>> language_admin_view.validate({
+    ...     'code': 'pt_BR',
+    ...     'pluralforms': 2,
+    ...     'pluralexpression': '1/n',
+    ...     })
+    >>> print language_admin_view.getFieldError('pluralexpression')
+    Division by zero in plural expression for n = 0.
+
+
 Add Language
 ------------
 
@@ -106,17 +120,13 @@ formula expression to see how it works.
     1 : 2, 3, 4, 22, 23, 24...
     2 : 0, 5, 6, 7, 8, 9...
 
-The top 20 contributors are listed on the language page, and for merged account
+The top contributors are listed on the language page, and for a merged account
 we will see their targed account.
 
 Create some translators and a merged account.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> translators = []
-    >>> for translator_nr in range(22):
-    ...     translators.append(factory.makePerson(
-    ...         name='translator-' + str(translator_nr),
-    ...         displayname='Translator No.' + str(translator_nr)))
     >>> translator_main = factory.makePerson(
     ...     name='translator-main',
     ...     displayname='Translator Main')
@@ -126,6 +136,10 @@ Create some translators and a merged account.
     ...     displayname='Translator Merged'))
     >>> translators.append(translator_merged)
     >>> translator_merged.merged = translator_main
+    >>> for translator_nr in range(22):
+    ...     translators.append(factory.makePerson(
+    ...         name='translator-' + str(translator_nr),
+    ...         displayname='Translator No.' + str(translator_nr)))
 
 Create a product, a template with one msgset and a pofile
 
@@ -147,6 +161,8 @@ accounts.
     ...     pofile=pofile, translator=translator_main, potmsgset=potmsgset)
 
 Langauge.translators is Monkey-patched to avoid fetching KarmaCache.
+Language.translator is a list containing all contributors decreasingly sorted
+according to their karma value.
 
     >>> serbian.translators = translators
     >>> language_view = create_initialized_view(serbian, '+index',
@@ -156,10 +172,17 @@ Langauge.translators is Monkey-patched to avoid fetching KarmaCache.
     True
     >>> translator_merged in top_contributors
     False
+    >>> for translator in top_contributors:
+    ...     print translator.name
+    translator-main
+    translator-0
+    translator-1
+    translator-2 ...
 
 In the end, the changes done to Language class are reverted.
 
     >>> Language.translators = translators_method
+
 
 View LanguageSet
 ------------------

@@ -45,6 +45,8 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.is_main
     False
+    >>> cprov_archive.is_active
+    True
     >>> cprov_archive.distribution.main_archive.is_main
     True
     >>> cprov_archive.total_count
@@ -1407,10 +1409,10 @@ PPAs are created with the name attribute set to 'ppa' by default.
     ppa
 
 We can take the opportunity to check if the default 'authorized_size'
-corresponds to what we state in our policy, 1024 MiB:
+corresponds to what we state in our policy, 2048 MiB:
 
     >>> name16.archive.authorized_size
-    1024
+    2048
 
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":

@@ -150,7 +150,8 @@ class Archive(SQLBase):
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     status = EnumCol(
-        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus,
+        default=ArchiveStatus.ACTIVE)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -164,7 +165,7 @@ class Archive(SQLBase):
         dbName='require_virtualized', notNull=True, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=1024)
+        dbName='authorized_size', notNull=False, default=2048)
 
     sources_cached = IntCol(
         dbName='sources_cached', notNull=False, default=0)
@@ -267,6 +268,11 @@ class Archive(SQLBase):
     def is_main(self):
         """See `IArchive`."""
         return self.purpose in MAIN_ARCHIVE_PURPOSES
+
+    @property
+    def is_active(self):
+        """See `IArchive`."""
+        return self.status == ArchiveStatus.ACTIVE
 
     @property
     def series_with_sources(self):
@@ -1408,6 +1414,26 @@ class Archive(SQLBase):
         assert self._enabled == True, "This archive is already disabled."
         self._enabled = False
         self._setBuildStatuses(JobStatus.SUSPENDED)
+
+    def delete(self, deleted_by):
+        """See `IArchive`."""
+        assert self.status not in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
+            "This archive is already deleted.")
+
+        # Set all the publications to DELETED.
+        statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        sources = list(self.getPublishedSources(status=statuses))
+        getUtility(IPublishingSet).requestDeletion(
+            sources, removed_by=deleted_by,
+            removal_comment="Removed when deleting archive")
+
+        # Mark the archive's status as DELETING so the repository can be
+        # removed by the publisher.
+        self.status = ArchiveStatus.DELETING
+        self.disable()
 
 
 class ArchiveSet:

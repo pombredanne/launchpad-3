@@ -34,7 +34,9 @@ def check_default_stacked_on(branch):
     Branches that are *not* suitable include:
       - remote branches
       - branches the user cannot see
-      - branches that have not yet been successfully processed by the puller.
+      - branches that have no last revision information set (hosted branches
+        where a push hasn't completed or a mirrored branch that hasn't been
+        mirrored, etc).
 
     If the given branch is not suitable, return None. For convenience, also
     returns None if passed None. Otherwise, return the branch.
@@ -47,7 +49,7 @@ def check_default_stacked_on(branch):
         return None
     if branch_type == BranchType.REMOTE:
         return None
-    if branch.last_mirrored is None:
+    if branch.last_mirrored_id is None:
         return None
     return branch
 
@@ -121,7 +123,7 @@ class IBranchTarget(IPrimaryContext):
         """Get the BugTask for a given bug related to the branch target."""
 
     def newCodeImport(registrant, branch_name, rcs_type, url=None,
-                      cvs_root=None, cvs_module=None):
+                      cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import for this target.
 
         :param registrant: the `IPerson` who should be recorded as creating
@@ -131,6 +133,8 @@ class IBranchTarget(IPrimaryContext):
         :param url: the url to import from if the import isn't CVS.
         :param cvs_root: if the import is from CVS the CVSROOT to import from.
         :param cvs_module: if the import is from CVS the module to import.
+        :param owner: the `IPerson` to own the resulting branch, or None to
+            use registrant.
         :returns: an `ICodeImport`.
         :raises AssertionError: if supports_code_imports is False.
         """
