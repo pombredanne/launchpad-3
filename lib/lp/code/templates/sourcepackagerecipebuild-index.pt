@@ -154,44 +154,6 @@
     </ul>
   </metal:macro>
 
-  <metal:macro define-macro="binaries">
-    <tal:comment replace="nothing">
-      Binaries section.
-    </tal:comment>
-    <h2>Binary packages</h2>
-
-    <tal:upload_done condition="view/has_published_binaries">
-      <p class="discreet">Binary packages produced by this build:</p>
-    </tal:upload_done>
-    <tal:upload_not_done condition="not: view/has_published_binaries">
-      <p class="discreet"
-         tal:condition="view/package_upload/status/enumvalue:ACCEPTED"
-        >Binary packages awaiting publication:</p>
-      <p class="discreet"
-         tal:condition="not: view/package_upload/status/enumvalue:ACCEPTED"
-        >Binary packages awaiting approval
-         in <span tal:replace="view/package_upload/status/name"
-              >NEW</span> queue:</p>
-    </tal:upload_not_done>
-
-  </metal:macro>
-
-  <metal:macro define-macro="files">
-    <tal:comment replace="nothing">
-      Files section.
-    </tal:comment>
-    <h2>Built files</h2>
-    <p class="discreet">Files resulting from this build:</p>
-    <ul>
-      <li tal:repeat="file view/files">
-        <a class="sprite download"
-           tal:content="file/filename"
-           tal:attributes="href file/http_url"></a>
-        (<span tal:replace="file/content/filesize/fmt:bytes" />)
-      </li>
-    </ul>
-  </metal:macro>
-
   <metal:macro define-macro="buildlog">
     <tal:comment replace="nothing">
       Buildlog section.
@@ -208,7 +170,6 @@
   </metal:macro>
 
 </metal:macros>
-
 
   </body>
 </html>
