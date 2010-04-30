@@ -38,6 +38,7 @@ from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -57,6 +58,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
+
+    @property
+    def binary_builds(self):
+        return Store.of(self).find(BinaryPackageBuild,
+            BinaryPackageBuild.sourcepackagerelease==SourcePackageRelease.id,
+            SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
 

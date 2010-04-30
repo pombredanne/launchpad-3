@@ -279,6 +279,9 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             return False
         return self.eta is not None
 
+    def binary_builds(self):
+        return list(self.context.binary_builds)
+
 
 class ISourcePackageAddEditSchema(Interface):
     """Schema for adding or editing a recipe."""

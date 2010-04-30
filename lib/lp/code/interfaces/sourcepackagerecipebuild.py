@@ -13,7 +13,7 @@ __all__ = [
     'ISourcePackageRecipeBuildJobSource',
     ]
 
-from lazr.restful.fields import Reference
+from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import export_as_webservice_entry
 
 from zope.interface import Interface
@@ -22,6 +22,7 @@ from zope.schema import Datetime, Int, Object
 from canonical.launchpad import _
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.registry.interfaces.person import IPerson
@@ -36,6 +37,11 @@ class ISourcePackageRecipeBuild(IBuildBase):
     export_as_webservice_entry()
 
     id = Int(title=_("Identifier for this build."))
+
+    binary_builds = CollectionField(
+        Reference(IBinaryPackageBuild),
+            title=_("The binary builds that resulted from this."),
+            readonly=True)
 
     datestarted = Datetime()
 

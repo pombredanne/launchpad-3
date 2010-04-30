@@ -66,6 +66,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildqueue import BuildQueue
 
@@ -131,6 +132,7 @@ from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 from lp.testing import run_with_login, time_counter, login, logout
@@ -580,7 +582,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProcessor(self, family, name, title=None, description=None):
+    def makeProcessor(self, family=None, name=None, title=None,
+                      description=None):
         """Create a new processor.
 
         :param family: Family of the processor
@@ -589,13 +592,17 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param description: Optional description
         :return: A `IProcessor`
         """
+        if name is None:
+            name = self.getUniqueString()
+        if family is None:
+            family = self.makeProcessorFamily()
         if title is None:
             title = "The %s processor" % name
         if description is None:
             description = "The %s and processor and compatible processors"
         return family.addProcessor(name, title, description)
 
-    def makeProcessorFamily(self, name, title=None, description=None,
+    def makeProcessorFamily(self, name=None, title=None, description=None,
                             restricted=False):
         """Create a new processor family.
 
@@ -605,6 +612,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param restricted: Whether the processor family is restricted
         :return: A `IProcessorFamily`
         """
+        if name is None:
+            name = self.getUniqueString()
         if description is None:
             description = "Description of the %s processor family" % name
         if title is None:
@@ -1620,7 +1629,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             processorfamily = ProcessorFamilySet().getByName('powerpc')
         if owner is None:
             owner = self.makePerson()
-
+        if architecturetag is None:
+            architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
             architecturetag, processorfamily, official, owner,
             supports_virtualized)
@@ -1759,15 +1769,16 @@ class LaunchpadObjectFactory(ObjectFactory):
         if recipe is None:
             recipe = self.makeSourcePackageRecipe(
                 sourcepackagename=self.makeSourcePackageName(sourcename))
+        if archive is None:
+            archive = self.makeArchive()
         if distroseries is None:
-            distroseries = self.makeDistroSeries()
+            distroseries = self.makeDistroSeries(
+                distribution=archive.distribution)
         if sourcepackage is None:
             sourcepackage = distroseries.getSourcePackage(
                 recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
-        if archive is None:
-            archive = self.makeArchive()
         return getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=sourcepackage,
             recipe=recipe,
@@ -2124,6 +2135,27 @@ class LaunchpadObjectFactory(ObjectFactory):
             archive=archive,
             dateuploaded=date_uploaded,
             source_package_recipe_build=source_package_recipe_build)
+
+    def makeBinaryPackageBuild(self, source_package_release=None):
+        archive = self.makeArchive()
+        if source_package_release is None:
+            source_package_release = self.makeSourcePackageRelease(archive)
+        processor = self.makeProcessor()
+        distroarchseries = self.makeDistroArchSeries(
+            distroseries=source_package_release.upload_distroseries,
+            processorfamily=processor.family,
+            architecturetag=None)
+        binary_package_build = BinaryPackageBuild(
+            sourcepackagerelease=source_package_release,
+            processor=processor,
+            distroarchseries=distroarchseries,
+            buildstate=BuildStatus.NEEDSBUILD,
+            archive=archive)
+        binary_package_build_job = binary_package_build.makeJob()
+        BuildQueue(
+            job=binary_package_build_job.job,
+            job_type=BuildFarmJobType.PACKAGEBUILD)
+        return binary_package_build
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
                                            distroseries=None, maintainer=None,

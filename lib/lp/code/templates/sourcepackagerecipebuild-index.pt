@@ -79,7 +79,12 @@
       </dl>
       <dl>
         <dt>Result:</dt>
-          <dd tal:content="structure context/source_package_release/fmt:link"></dd>
+        <dd tal:content="structure context/source_package_release/fmt:link"></dd>
+        <dt>Binary builds:</dt>
+        <dd tal:repeat="binary context/binary_builds"
+            tal:content="structure binary/fmt:link">
+        </dd>
+        <dd tal:condition="not: context/binary_builds">None</dd>
     </div>
   </metal:macro>
 
@@ -107,13 +112,15 @@
       <li tal:condition="context/dependencies">
         Missing build dependencies: <em
          tal:content="context/dependencies">x, y, z</em>
-      </li>
+     </li>
+      <tal:reallypending condition="context/buildqueue_record">
       <tal:pending condition="context/buildqueue_record/job/status/enumvalue:WAITING">
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
         </li>
       </tal:pending>
+      </tal:reallypending>
       <tal:started condition="context/datestarted">
         <li tal:condition="context/datestarted">
           Started <span

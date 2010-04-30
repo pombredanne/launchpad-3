@@ -12,6 +12,7 @@ import unittest
 
 from pytz import utc
 import transaction
+from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -156,6 +157,16 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         removeSecurityProxy(spb).upload_log = (
             self.factory.makeLibraryFileAlias(filename='upload.txt.gz'))
         self.assertEqual(spb.upload_log, spb.getFileByName('upload.txt.gz'))
+
+    def test_binary_builds(self):
+        spb = self.factory.makeSourcePackageRecipeBuild()
+        spr = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=spb)
+        self.assertEqual([], list(spb.binary_builds))
+        binary = self.factory.makeBinaryPackageBuild(spr)
+        Store.of(binary).flush()
+        self.assertEqual([binary], list(spb.binary_builds))
+
 
 
 def test_suite():
