@@ -144,7 +144,7 @@ class TestLoaders(TestCaseWithFactory):
         self.failUnlessEqual(None, db_object_info.get('invalidated'))
         IStore(db_object).invalidate(db_object)
         self.failUnlessEqual(True, db_object_info.get('invalidated'))
-        bulk.load([db_object])
+        bulk.reload([db_object])
         self.failUnlessEqual(None, db_object_info.get('invalidated'))
 
 

@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'load',
+    'reload',
     ]
 
 
@@ -59,7 +59,7 @@ def gen_reload_queries(objects):
             yield store.find(object_type, condition)
 
 
-def load(objects):
+def reload(objects):
     """Reload a large number of objects efficiently."""
     for query in gen_reload_queries(objects):
         list(query)
