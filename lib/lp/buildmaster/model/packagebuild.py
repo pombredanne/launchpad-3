@@ -69,7 +69,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
     @classmethod
     def new(cls, job_type, virtualized, archive, pocket,
-            processor=None, status=BuildStatus.BUILDING, dependencies=None):
+            processor=None, status=BuildStatus.NEEDSBUILD, dependencies=None):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
 
@@ -184,5 +184,3 @@ class PackageBuildDerived:
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
         return BuildBase._handleStatus_GIVENBACK(
             self, librarian, slave_status, logger)
-
-

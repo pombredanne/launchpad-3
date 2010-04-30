@@ -1452,6 +1452,15 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    @export_read_operation()
+    def getArchiveSubscriptionURLs():
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
 
 class IPersonModerate(Interface):
     """IPerson attributes that require launchpad.Moderate."""

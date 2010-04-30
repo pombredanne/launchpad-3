@@ -23,7 +23,7 @@ class TestSendbranchmail(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def createBranch(self):
-        branch, tree = self.createMirroredBranchAndTree()
+        branch, tree = self.create_branch_and_tree()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
@@ -36,7 +36,7 @@ class TestSendbranchmail(TestCaseWithFactory):
 
     def test_sendbranchmail(self):
         """Ensure sendbranchmail runs and sends email."""
-        self.useTempBzrHome()
+        self.useBzrBranches()
         branch, tree = self.createBranch()
         RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', True, 'foo')
@@ -68,7 +68,7 @@ class TestSendbranchmail(TestCaseWithFactory):
 
     def test_revision_added_job(self):
         """RevisionsAddedJobs are run by sendbranchmail."""
-        self.useTempBzrHome()
+        self.useBzrBranches()
         branch, tree = self.createBranch()
         tree.bzrdir.root_transport.put_bytes('foo', 'baz')
         tree.commit('Added foo.', rev_id='rev2')
