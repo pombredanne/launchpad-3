@@ -45,6 +45,8 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.is_main
     False
+    >>> cprov_archive.is_active
+    True
     >>> cprov_archive.distribution.main_archive.is_main
     True
     >>> cprov_archive.total_count
@@ -1529,7 +1531,7 @@ including PPA, DEBUG, PRIMARY, PARTNER and COPY:
 
     >>> archive_purposes = [archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    20
+    19
 
     >>> print sorted(set(archive_purposes))
     ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']

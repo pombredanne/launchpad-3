@@ -99,13 +99,12 @@
                 context/distribution/@@+language-pack-admin-info" />
 
             <div>
-              <strong>Current base pack:</strong>
-              <a tal:condition="context/language_pack_base"
+              <strong>Base pack:</strong>
+              <a class="sprite download"
+                 tal:condition="context/language_pack_base"
                  tal:attributes="href context/language_pack_base/file/http_url">
                 <tal:export-date
                    replace="context/language_pack_base/date_exported/fmt:datetime" />
-                <img tal:condition="context/language_pack_base"
-                     alt="download icon" src="/@@/download" />
               </a>
               <tal:not-export-date condition="not: context/language_pack_base">
                 none yet
@@ -113,15 +112,14 @@
             </div>
             <div>
               <strong>Update pack:</strong>
-              <a tal:condition="context/language_pack_delta"
+              <a class="sprite download"
+                 tal:condition="context/language_pack_delta"
                  tal:attributes="href context/language_pack_delta/file/http_url">
                 <tal:export-date
                    replace="context/language_pack_delta/date_exported/fmt:datetime" />
-                <img tal:condition="context/language_pack_delta"
-                     alt="download icon" src="/@@/download" />
               </a>
               <tal:not-export-date condition="not: context/language_pack_delta">
-                none yet
+                no update
               </tal:not-export-date>
             </div>
             <p>
