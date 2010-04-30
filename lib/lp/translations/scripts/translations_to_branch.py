@@ -17,7 +17,7 @@ from zope.component import getUtility
 from storm.expr import Join, SQL
 
 from canonical.launchpad.helpers import shortlist
-from lp.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_rw_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -270,7 +270,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
 
-        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver = get_rw_server()
         bzrserver.start_server()
         try:
             self._exportToBranches(productseries)
