@@ -87,11 +87,3 @@ the Launchpad DB. (simply check if it doesn't explode)
 Tested, time to shutdown.
 
   >>> BuilddSlaveTestSetup().tearDown()
-
-At this point the buildd-slave is not accessible anymore.
-
-  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
-  >>> s.info()
-  Traceback (most recent call last):
-  ...
-  error: ...Connection refused...
