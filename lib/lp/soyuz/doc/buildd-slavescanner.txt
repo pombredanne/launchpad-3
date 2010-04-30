@@ -383,12 +383,11 @@ upload log information:
      * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
-    ...
-	DEBUG: Beginning processing
+    DEBUG: Beginning processing
     ...
     DEBUG: Moving upload directory /var/tmp/builddmaster/incoming/...
     ... to /var/tmp/builddmaster/failed/...
-	...
+    ...
 
 When a failure in processing the generated binaries occurs, the log
 output is both emailed in an immediate notification, and stored in the
@@ -619,22 +618,6 @@ Check the failed builds have made it into the failed directory:
     >>> failed_uploads = sorted(os.listdir(failed_dir))
     >>> len(failed_uploads)
     2
-
-    >>> failed_upload = failed_uploads[0]
-    >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
-    ...                                  'uploader.log'))
-
-    >>> print uploader_log.read()
-    INFO    Creating lockfile: /var/lock/process-upload-buildd.lock
-    DEBUG   Initialising connection.
-    DEBUG   Beginning processing
-    DEBUG   Creating directory /var/tmp/builddmaster/accepted
-    DEBUG   Creating directory /var/tmp/builddmaster/rejected
-    DEBUG   Creating directory /var/tmp/builddmaster/failed
-    ...
-    DEBUG   Rolling back any remaining transactions.
-    DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
-    <BLANKLINE>
 
 Remove build upload results root
 
