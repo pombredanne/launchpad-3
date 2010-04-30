@@ -151,6 +151,7 @@ Projects are available at their canonical URL on the API virtual host.
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
+    bug_supervisor_link: None
     bug_tracker_link: None
     commercial_subscription_is_due: True
     commercial_subscription_link: None
@@ -181,6 +182,7 @@ Projects are available at their canonical URL on the API virtual host.
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard: None
     screenshots_url: None
+    security_contact_link: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
     sourceforge_project: None
@@ -210,6 +212,7 @@ several that are not available to non-privileged users marked as
     all_milestones_collection_link: u'http://.../firefox/all_milestones'
     brand_link: u'http://.../firefox/brand'
     bug_reporting_guidelines: None
+    bug_supervisor_link: None
     bug_tracker_link: None
     commercial_subscription_is_due: True
     commercial_subscription_link: None
@@ -240,6 +243,7 @@ several that are not available to non-privileged users marked as
     resource_type_link: u'http://.../#project'
     reviewer_whiteboard:...redacted...
     screenshots_url: None
+    security_contact_link: None
     self_link: u'http://.../firefox'
     series_collection_link: u'http://.../firefox/series'
     sourceforge_project: None
