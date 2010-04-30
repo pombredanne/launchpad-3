@@ -471,6 +471,9 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
         commenter = self.code_review_comment.message.owner
         return [format_address_for_person(commenter)]
 
+    def getOperationDescription(self):
+        return 'emailing a code review comment'
+
 
 class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
     """Send email to the reviewer telling them to review the proposal.
@@ -532,6 +535,9 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
         if self.requester is not None:
             recipients.append(format_address_for_person(self.requester))
         return recipients
+
+    def getOperationDescription(self):
+        return 'emailing a reviewer requesting a review'
 
 
 class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
@@ -597,6 +603,9 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
         if self.editor is not None:
             recipients.append(format_address_for_person(self.editor))
         return recipients
+
+    def getOperationDescription(self):
+        return 'emailing subscribers about merge proposal changes'
 
 
 class BranchMergeProposalJobFactory:
