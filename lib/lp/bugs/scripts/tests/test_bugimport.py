@@ -16,10 +16,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from lp.bugs.externalbugtracker import (
-    ExternalBugTracker)
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+
+from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
@@ -27,7 +27,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
-from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+from lp.bugs.scripts.checkwatches import CheckwatchesMaster, core
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
@@ -895,7 +895,12 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
     def _updateBugTracker(self, bug_tracker):
         # Save the current bug tracker, so _getBugWatch can reference it.
         self.bugtracker = bug_tracker
-        super(TestCheckwatchesMaster, self)._updateBugTracker(bug_tracker)
+        reload = core.reload
+        try:
+            core.reload = lambda objects: objects
+            super(TestCheckwatchesMaster, self)._updateBugTracker(bug_tracker)
+        finally:
+            core.reload = reload
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """See `CheckwatchesMaster`."""
