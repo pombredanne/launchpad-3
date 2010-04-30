@@ -455,8 +455,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             distroarchseries = %s AND
             archive IN %s AND
             buildstate = %s
-            """ % sqlvalues(self, self.sourcepackagerelease.name,
-                            self.distroarchseries, archives,
+            """ % sqlvalues(self, self.source_package_release.name,
+                            self.distro_arch_series, archives,
                             BuildStatus.FULLYBUILT),
             orderBy=['-datebuilt', '-id'],
             clauseTables=['SourcePackageName', 'SourcePackageRelease'])
