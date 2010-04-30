@@ -710,10 +710,10 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         pocket = source.pocket
 
         utc = pytz.timezone('UTC')
-        old_date = datetime.datetime(1970, 1, 1, tzinfo=utc)
+        expire = datetime.datetime.now(utc) + datetime.timedelta(days=365)
 
         a_source_file = source.sourcepackagerelease.files[0]
-        a_source_file.libraryfile.expires = old_date
+        a_source_file.libraryfile.expires = expire
 
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
