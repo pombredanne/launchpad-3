@@ -72,6 +72,9 @@ class BaseRunnableJob:
         """Return a list of email-ids to notify about oopses."""
         return self.getErrorRecipients()
 
+    def getOperationDescription(self):
+        return 'unspecified operation'
+
     def getErrorRecipients(self):
         """Return a list of email-ids to notify about user errors."""
         return []
@@ -181,13 +184,24 @@ class BaseJobRunner(object):
         with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
             try:
-                self.logger.debug('Running %r', job)
-                self.runJob(job)
-            except job.user_error_types, e:
-                job.notifyUserError(e)
-            except Exception:
+                try:
+                    self.logger.debug('Running %r', job)
+                    self.runJob(job)
+                except job.user_error_types, e:
+                    job.notifyUserError(e)
+                except Exception:
+                    info = sys.exc_info()
+                    return self._doOops(job, info)
+            except Exception, e:
+                # This only happens if sending attempting to notify users
+                # about errors fails for some reason (like a misconfigured
+                # email server).
+                self.logger.error(e)
                 info = sys.exc_info()
-                return self._doOops(job, info)
+                self.error_utility.raising(info)
+                oops = self.error_utility.getLastOopsReport()
+                # Returning the oops says something went wrong.
+                return oops
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
