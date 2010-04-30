@@ -380,14 +380,15 @@ upload log information:
     ...
     X-Launchpad-Build-State: FAILEDTOUPLOAD
     ...
-    * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
+     * Build Log: http://.../...i386.mozilla-firefox_0.9_NEEDSBUILD.txt.gz
     ...
     Upload log:
-    INFO    Creating lockfile: /var/lock/process-upload-buildd.lock
-    DEBUG   Initialising connection.
     ...
-    DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
+	DEBUG: Beginning processing
     ...
+    DEBUG: Moving upload directory /var/tmp/builddmaster/incoming/...
+    ... to /var/tmp/builddmaster/failed/...
+	...
 
 When a failure in processing the generated binaries occurs, the log
 output is both emailed in an immediate notification, and stored in the
@@ -612,7 +613,7 @@ users to view it.
     >>> print headers['content-type']
     text/plain
 
-Check the log from the uploader run has made it into the upload directory:
+Check the failed builds have made it into the failed directory:
 
     >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
     >>> failed_uploads = sorted(os.listdir(failed_dir))

@@ -72,6 +72,22 @@ BUG_TRACKER_URL_FORMATS = {
 
 WATCH_RESCHEDULE_THRESHOLD = 0.6
 
+def get_bug_watch_ids(references):
+    """Yield bug watch IDs from any given iterator.
+
+    For each item in the given iterators, yields the ID if it provides
+    IBugWatch, and yields if it is an integer. Everything else is
+    discarded.
+    """
+    for reference in references:
+        if IBugWatch.providedBy(reference):
+            yield reference.id
+        elif isinstance(reference, (int, long)):
+            yield reference
+        else:
+            raise AssertionError(
+                '%r is not a bug watch or an ID.' % (reference,))
+
 
 class BugWatch(SQLBase):
     """See `IBugWatch`."""
@@ -701,34 +717,32 @@ class BugWatchSet(BugSetBase):
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
 
-    def bulkSetError(self, bug_watches, last_error_type=None):
+    def bulkSetError(self, references, last_error_type=None):
         """See `IBugWatchSet`."""
-        bug_watch_ids = set(
-            (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
-            for bug_watch in bug_watches)
-        bug_watches_in_database = IStore(BugWatch).find(
-            BugWatch, In(BugWatch.id, list(bug_watch_ids)))
-        bug_watches_in_database.set(
-            lastchecked=UTC_NOW,
-            last_error_type=last_error_type,
-            next_check=None)
+        bug_watch_ids = set(get_bug_watch_ids(references))
+        if len(bug_watch_ids) > 0:
+            bug_watches_in_database = IStore(BugWatch).find(
+                BugWatch, In(BugWatch.id, list(bug_watch_ids)))
+            bug_watches_in_database.set(
+                lastchecked=UTC_NOW,
+                last_error_type=last_error_type,
+                next_check=None)
 
-    def bulkAddActivity(self, bug_watches,
+    def bulkAddActivity(self, references,
                         result=BugWatchActivityStatus.SYNC_SUCCEEDED,
                         message=None, oops_id=None):
         """See `IBugWatchSet`."""
-        bug_watch_ids = set(
-            (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
-            for bug_watch in bug_watches)
-        insert_activity_statement = (
-            "INSERT INTO BugWatchActivity"
-            " (bug_watch, result, message, oops_id) "
-            "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
-            " WHERE BugWatch.id IN %s"
-            )
-        IStore(BugWatch).execute(
-            insert_activity_statement % sqlvalues(
-                result, message, oops_id, bug_watch_ids))
+        bug_watch_ids = set(get_bug_watch_ids(references))
+        if len(bug_watch_ids) > 0:
+            insert_activity_statement = (
+                "INSERT INTO BugWatchActivity"
+                " (bug_watch, result, message, oops_id) "
+                "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
+                " WHERE BugWatch.id IN %s"
+                )
+            IStore(BugWatch).execute(
+                insert_activity_statement % sqlvalues(
+                    result, message, oops_id, bug_watch_ids))
 
 
 class BugWatchActivity(Storm):

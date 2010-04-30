@@ -45,6 +45,8 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.is_main
     False
+    >>> cprov_archive.is_active
+    True
     >>> cprov_archive.distribution.main_archive.is_main
     True
     >>> cprov_archive.total_count

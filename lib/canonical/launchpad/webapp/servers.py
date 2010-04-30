@@ -1267,8 +1267,26 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
             body_instream, environ, response)
-        # Web service requests use content negotiation.
-        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
+        # Web service requests use content negotiation, so we put
+        # 'Accept' in the Vary header. They don't use cookies, so
+        # there's no point in putting 'Cookie' in the Vary header, and
+        # putting 'Authorization' in the Vary header totally destroys
+        # caching because every web service request contains a
+        # distinct OAuth nonce in its Authorization header.
+        #
+        # Because 'Authorization' is not in the Vary header, a client
+        # that reuses a single cache for different OAuth credentials
+        # could conceivably leak private information to an
+        # unprivileged user via the cache. This won't happen for the
+        # web service root resource because the service root is the
+        # same for everybody. It won't happen for entry resources
+        # because if two users have a different representation of an
+        # entry, the ETag will also be different and a conditional
+        # request will fail.
+        #
+        # Once lazr.restful starts setting caching directives other
+        # than ETag, we may have to revisit this.
+        self.response.setHeader('Vary', 'Accept')
 
     def getRootURL(self, rootsite):
         """See IBasicLaunchpadRequest."""
