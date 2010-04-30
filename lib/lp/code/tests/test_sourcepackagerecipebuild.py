@@ -10,11 +10,14 @@ __metaclass__ = type
 import datetime
 import unittest
 
+from pytz import utc
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -27,7 +30,7 @@ from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     """Test the source package build object."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def makeSourcePackageRecipeBuild(self):
         """Create a `SourcePackageRecipeBuild` for testing."""
@@ -119,6 +122,31 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(
             datetime.timedelta(minutes=2), spb.estimateDuration())
+
+    def test_datestarted(self):
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertIs(None, spb.datestarted)
+        now = datetime.datetime.now(utc)
+        removeSecurityProxy(spb).datebuilt = now
+        self.assertIs(None, spb.datestarted)
+        duration = datetime.timedelta(minutes=1)
+        removeSecurityProxy(spb).buildduration = duration
+        self.assertEqual(now - duration, spb.datestarted)
+
+    def test_getFileByName(self):
+        """getFileByName returns the logs when requested by name."""
+        spb = self.factory.makeSourcePackageRecipeBuild()
+        removeSecurityProxy(spb).buildlog = (
+            self.factory.makeLibraryFileAlias(filename='buildlog.txt.gz'))
+        self.assertEqual(spb.buildlog, spb.getFileByName('buildlog.txt.gz'))
+        self.assertRaises(NotFoundError, spb.getFileByName, 'foo')
+        removeSecurityProxy(spb).buildlog = (
+            self.factory.makeLibraryFileAlias(filename='foo'))
+        self.assertEqual(spb.buildlog, spb.getFileByName('foo'))
+        self.assertRaises(NotFoundError, spb.getFileByName, 'buildlog.txt.gz')
+        removeSecurityProxy(spb).upload_log = (
+            self.factory.makeLibraryFileAlias(filename='upload.txt.gz'))
+        self.assertEqual(spb.upload_log, spb.getFileByName('upload.txt.gz'))
 
 
 def test_suite():

@@ -209,13 +209,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def getFileByName(self, filename):
         """See `ISourcePackageRecipeBuild`."""
-        if filename.endswith('.txt.gz'):
-            file_object = self.buildlog
-        else:
+        files = dict((lfa.filename, lfa)
+                     for lfa in [self.buildlog, self.upload_log]
+                     if lfa is not None)
+        try:
+            return files[filename]
+        except KeyError:
             raise NotFoundError(filename)
-
-        if file_object is not None and file_object.filename == filename:
-            return file_object
 
 
 class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
