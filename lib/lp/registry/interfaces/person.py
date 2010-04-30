@@ -41,7 +41,8 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -844,6 +845,30 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         not teams can be converted into teams.
         """
 
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        description=Text(),
+        distroseries=List(value_type=Reference(schema=Interface)),
+        name=TextLine(),
+        recipe_text=Text(),
+        sourcepackagename=TextLine(),
+        )
+    @export_factory_operation(Interface, [])
+    def createRecipe(name, description, recipe_text, distroseries,
+                     sourcepackagename, registrant):
+        """Create a SourcePackageRecipe owned by this person.
+
+        :param name: the name to use for referring to the recipe.
+        :param description: A description of the recipe.
+        :param recipe_text: The text of the recipe.
+        :param distroseries: The distroseries to use.
+        :param sourcepackagename: The name of the sourcepackage for the recipe.
+        :return: a SourcePackageRecipe.
+        """
+
+    @operation_parameters(name=TextLine(required=True))
+    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @export_read_operation()
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 

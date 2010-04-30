@@ -19,7 +19,7 @@ is being filed.
 
     >>> tags_div = find_tag_by_id(user_browser.contents, 'bug-tags')
     >>> for a_tag in tags_div('a'):
-    ...   if a_tag['href'] != '+edit':
+    ...   if a_tag['href'] != '+edit' and a_tag['href'] != '/+help/tag-help.html':
     ...      print a_tag.renderContents()
     bar
     foo
@@ -39,4 +39,3 @@ This works for the normal bug filing process:
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Tags').value
     'bar foo'
-

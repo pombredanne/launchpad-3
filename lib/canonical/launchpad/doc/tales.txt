@@ -157,10 +157,10 @@ them.
 
     >>> login('admin@canonical.com')
     >>> private_ppa = factory.makeArchive(
-    ...     name='ppa', private=True, owner=owner)
+    ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/ppa" class="sprite ppa-icon">PPA
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon">PPA named pppa
     for Joe Smith</a>
 
     >>> login(ANONYMOUS)
@@ -178,7 +178,7 @@ a subscription to the PPA.
     >>> ignore = private_ppa.newSubscription(ppa_user, owner)
     >>> login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
-    ppa:joe/ppa
+    ppa:joe/pppa
 
 We also have icons for builds which may have different dimensions.
 

@@ -11,6 +11,8 @@ __all__ = [
     'oauth_access_token_for',
     ]
 
+
+import transaction
 from zope.component import getUtility
 from launchpadlib.credentials import AccessToken, Credentials
 from launchpadlib.launchpad import Launchpad
@@ -117,5 +119,6 @@ def launchpadlib_for(
     """
     credentials = launchpadlib_credentials_for(
         consumer_name, person, permission, context)
+    transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
     return Launchpad(credentials, service_root, version=version)
