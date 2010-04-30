@@ -53,6 +53,7 @@ from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
+from lp.services.database.bulk import reload
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -379,6 +380,7 @@ class CheckwatchesMaster(WorkingBase):
             other_watches = []
 
             with self.transaction:
+                reload(bug_watches)
                 remote_bug_ids = [
                     bug_watch.remotebug for bug_watch in bug_watches]
 
@@ -387,6 +389,7 @@ class CheckwatchesMaster(WorkingBase):
                     remote_bug_ids))
 
             with self.transaction:
+                reload(bug_watches)
                 for bug_watch in bug_watches:
                     if (remote_products.get(bug_watch.remotebug) in
                         self._syncable_gnome_products):
@@ -526,6 +529,7 @@ class CheckwatchesMaster(WorkingBase):
             batch_size = remotesystem.batch_size
 
         with self.transaction:
+            reload(bug_watches)
             old_bug_watches = set(
                 bug_watch for bug_watch in bug_watches
                 if bug_watch.lastchecked is not None)
@@ -664,6 +668,7 @@ class CheckwatchesMaster(WorkingBase):
         # Remove from the list of bug watches any watch whose remote ID
         # doesn't appear in the list of IDs to check.
         with self.transaction:
+            reload(bug_watches)
             for bug_watch in list(bug_watches):
                 if bug_watch.remotebug not in remote_ids_to_check:
                     bug_watches.remove(bug_watch)
