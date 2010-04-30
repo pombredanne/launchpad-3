@@ -1333,6 +1333,18 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
+class SourcePackageReleaseFormatterAPI(SourcePackageFormatterAPI):
+
+    """Adapter for ISourcePackageRelease objects to a formatted string."""
+
+    _link_summary_template = '%(sourcepackage)s %(version)s'
+
+    def _link_summary_values(self):
+        return {'sourcepackage':
+                self._context.distrosourcepackage.displayname,
+                'version': self._context.version}
+
+
 class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
     """Adapter for `IProductReleaseFile` objects to a formatted string."""
 

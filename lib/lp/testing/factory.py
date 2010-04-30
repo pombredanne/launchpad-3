@@ -2054,7 +2054,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                                  dsc_maintainer_rfc822=None,
                                  dsc_standards_version='3.6.2',
                                  dsc_format='1.0', dsc_binaries='foo-bin',
-                                 date_uploaded=UTC_NOW):
+                                 date_uploaded=UTC_NOW,
+                                 source_package_recipe_build=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if archive is None:
@@ -2117,7 +2118,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
             archive=archive,
-            dateuploaded=date_uploaded)
+            dateuploaded=date_uploaded,
+            source_package_recipe_build=source_package_recipe_build)
 
     def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
                                            distroseries=None, maintainer=None,

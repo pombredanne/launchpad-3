@@ -77,6 +77,9 @@
         <dt>Pocket:</dt>
           <dd><span tal:replace="context/pocket/title">Release</span></dd>
       </dl>
+      <dl>
+        <dt>Result:</dt>
+          <dd tal:content="structure context/source_package_release/fmt:link"></dd>
     </div>
   </metal:macro>
 
