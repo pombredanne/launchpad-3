@@ -150,12 +150,33 @@ DROP FUNCTION migrate_build_rows();
 -- launchpad_dev-#     and t.constraint_type = 'FOREIGN KEY'
 -- launchpad_dev-#     and c.table_name = 'build'
 -- launchpad_dev-# ;
---                    constraint_name                    |           table_name           | constraint_type | table_name | column_name
---                 ------------------------------------------------------+--------------------------------+-----------------+------------+-------------
---                  binarypackagerelease__build__fk                      | binarypackagerelease           | FOREIGN KEY     | build      | id
---                  buildpackagejob__build__fk                           | buildpackagejob                | FOREIGN KEY     | build      | id
---                  packageuploadbuild_build_fk                          | packageuploadbuild             | FOREIGN KEY     | build      | id
---                  securebinarypackagepublishinghistory_supersededby_fk | binarypackagepublishinghistory | FOREIGN KEY     | build      | id
+
+-- "binarypackagerelease__build__fk" FOREIGN KEY (build) REFERENCES build(id) ON DELETE CASCADE
+ALTER TABLE BinaryPackageRelease DROP CONSTRAINT binarypackagerelease__build__fk;
+ALTER TABLE BinaryPackageRelease
+    ADD CONSTRAINT binarypackagerelease_build_fk
+    FOREIGN KEY (build) REFERENCES binarypackagebuild(id) ON DELETE CASCADE;
+
+-- "buildpackagejob__build__fk" FOREIGN KEY (build) REFERENCES build(id)
+ALTER TABLE BuildPackageJob DROP CONSTRAINT buildpackagejob__build__fk;
+ALTER TABLE BuildPackageJob
+    ADD CONSTRAINT buildpackagejob_build_fk
+    FOREIGN KEY (build) REFERENCES binarypackagebuild(id);
+
+-- "packageuploadbuild_build_fk" FOREIGN KEY (build) REFERENCES build(id)
+ALTER TABLE packageuploadbuild DROP CONSTRAINT packageuploadbuild_build_fk;
+ALTER TABLE packageuploadbuild
+    ADD CONSTRAINT packageuploadbuild_build_fk
+    FOREIGN KEY (build) REFERENCES binarypackagebuild(id);
+
+
+-- "securebinarypackagepublishinghistory_supersededby_fk" FOREIGN KEY (supersededby) REFERENCES build(id)
+ALTER TABLE binarypackagepublishinghistory
+    DROP CONSTRAINT securebinarypackagepublishinghistory_supersededby_fk;
+ALTER TABLE binarypackagepublishinghistory
+    ADD CONSTRAINT binarypackagepublishinghistory_supersededby_fk
+    FOREIGN KEY (supersededby) REFERENCES binarypackagebuild(id);
+
 
 -- Step 4
 -- Note, to enable parallel development getting the codebase updated, we will
