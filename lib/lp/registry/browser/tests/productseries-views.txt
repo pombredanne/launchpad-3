@@ -23,23 +23,47 @@ ProductSeries Involvement links
 The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
 rendering links:
 
-    >>> from operator import attrgetter
-    >>> from canonical.launchpad.webapp.tales import MenuAPI
-
     >>> login_person(product.owner)
     >>> product.official_answers = True
     >>> product.official_blueprints = True
     >>> product.official_malone = True
     >>> product.official_rosetta = True
     >>> view = create_view(series, '+get-involved')
-    >>> menuapi = MenuAPI(view)
-    >>> for link in sorted(
-    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+
+    # official_answers is always false for product series.
+    >>> print view.official_answers
+    False
+    >>> print view.official_blueprints
+    True
+    >>> print view.official_malone
+    True
+    >>> print view.official_rosetta
+    True
+    >>> print view.official_codehosting
+    False
+    >>> for link in view.enabled_links:
     ...     print link.url
     http://bugs.launchpad.dev/app/simple/+filebug
     http://translations.launchpad.dev/app/simple
-    http://code.launchpad.dev/app/+addbranch
     http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
+    http://code.launchpad.dev/app/simple/+addbranch
+
+Setting a branch for the series should enable the +addbranch link.
+
+    >>> series.branch = factory.makeBranch()
+    >>> view = create_view(series, '+get-involved')
+    >>> print view.official_codehosting
+    True
+    >>> for link in view.enabled_links:
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://code.launchpad.dev/app/simple/+addbranch
+    http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
 
 
 ProductSeries view
@@ -360,7 +384,6 @@ view's can_delete property checks this rule.
 The delete action will not delete a series that is the active focus of
 development.
 
-    >>> transaction.commit()
     >>> form = {
     ...     'field.actions.delete': 'Delete this Series',
     ...     }
