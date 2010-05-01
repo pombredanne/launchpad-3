@@ -380,6 +380,12 @@ class CopyChecker:
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))
 
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
+
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()
             if len(built_binaries) == 0:
