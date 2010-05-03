@@ -7,6 +7,7 @@ import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
@@ -220,7 +221,8 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
         # Results can be filtered by architecture tag.
         i386_builds = self.builds[:]
         hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+        removeSecurityProxy(hppa_build).distro_arch_series = (
+            self.publisher.distroseries['hppa'])
 
         builds = self.build_set.getBuildsForArchive(self.archive,
                                                     arch_tag="i386")
@@ -258,7 +260,6 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         # Results can be filtered by architecture tag.
         i386_builds = self.builds[:]
         hppa_build = i386_builds.pop()
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(hppa_build).distro_arch_series = (
             self.publisher.distroseries['hppa'])
 
