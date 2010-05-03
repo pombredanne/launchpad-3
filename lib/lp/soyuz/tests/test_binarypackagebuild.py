@@ -258,7 +258,9 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         # Results can be filtered by architecture tag.
         i386_builds = self.builds[:]
         hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(hppa_build).distro_arch_series = (
+            self.publisher.distroseries['hppa'])
 
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
