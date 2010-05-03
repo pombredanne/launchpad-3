@@ -163,18 +163,57 @@ class TestIntltoolDomain(TestCase, SetupTestPackageMixin):
             "packagename-ac",
             get_translation_domain("po"))
 
-    def test_get_translation_domain_configure_ac_init(self):
-        # Find a translation domain in configure.ac in AC_INIT.
+    def prepare_ac_init(self, parameters):
+        # Prepare test for various permutations of AC_INIT parameters
+        configure_ac_content = dedent("""
+            AC_INIT(%s)
+            GETTEXT_PACKAGE=AC_PACAKGE_NAME
+            """) % parameters
         self.prepare_package(
             "intltool_domain_base",
             {
-                "configure.ac" : dedent("""
-                    AC_INIT(packagename-ac-init, 1.0, http://bug.org)
-                    GETTEXT_PACKAGE=AC_PACAKGE_NAME
-                    """),
+                "configure.ac": configure_ac_content,
             })
+
+    def test_get_translation_domain_configure_ac_init(self):
+        # Find a translation domain in configure.ac in AC_INIT.
+        self.prepare_ac_init("packagename-ac-init, 1.0, http://bug.org")
         self.assertEqual(
             "packagename-ac-init",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_configure_ac_init_brackets(self):
+        # Find a translation domain in configure.ac in AC_INIT with brackets.
+        self.prepare_ac_init("[packagename-ac-init], 1.0, http://bug.org")
+        self.assertEqual(
+            "packagename-ac-init",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_configure_ac_init_tarname(self):
+        # Find a translation domain in configure.ac in AC_INIT tar name
+        # parameter.
+        self.prepare_ac_init(
+            "[Package name], 1.0, http://bug.org, [package-tarname]")
+        self.assertEqual(
+            "package-tarname",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_configure_ac_init_multiline(self):
+        # Find a translation domain in configure.ac in AC_INIT when it
+        # spans multiple lines.
+        self.prepare_ac_init(
+            "[packagename-ac-init],\n    1.0,\n    http://bug.org")
+        self.assertEqual(
+            "packagename-ac-init",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_configure_ac_init_multiline_tarname(self):
+        # Find a translation domain in configure.ac in AC_INIT tar name
+        # parameter that is on a different line.
+        self.prepare_ac_init(
+            "[Package name], 1.0,\n    http://bug.org, [package-tarname]")
+        self.assertEqual(
+            "package-tarname",
             get_translation_domain("po"))
 
     def test_get_translation_domain_configure_in(self):
