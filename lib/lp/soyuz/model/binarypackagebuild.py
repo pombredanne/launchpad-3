@@ -744,19 +744,25 @@ class BinaryPackageBuildSet:
             query clause if present.
         """
 
+        # Ensure the underlying buildfarmjob and package build tables
+        # are included.
+        queries.append('BinaryPackageBuild.package_build = PackageBuild.id')
+        queries.append('PackageBuild.build_farm_job = BuildFarmJob.id')
+        tables.extend(['PackageBuild', 'BuildFarmJob'])
+
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            queries.append('Build.buildstate=%s' % sqlvalues(status))
+            queries.append('BuildFarmJob.status=%s' % sqlvalues(status))
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('Build.pocket=%s' % sqlvalues(pocket))
+            queries.append('PackageBuild.pocket=%s' % sqlvalues(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
             queries.append('''
-                Build.distroarchseries = DistroArchSeries.id AND
+                BinaryPackageBuild.distro_arch_series = DistroArchSeries.id AND
                 DistroArchSeries.architecturetag = %s
             ''' % sqlvalues(arch_tag))
             tables.extend(['DistroArchSeries'])
@@ -765,7 +771,8 @@ class BinaryPackageBuildSet:
         # latter is provided.
         if name is not None:
             queries.append('''
-                Build.sourcepackagerelease = SourcePackageRelease.id AND
+                BinaryPackageBuild.source_package_release =
+                    SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = SourcePackageName.id
                 AND SourcepackageName.name LIKE '%%' || %s || '%%'
             ''' % quote_like(name))
@@ -783,7 +790,7 @@ class BinaryPackageBuildSet:
 
         # This code MUST match the logic in the Build security adapter,
         # otherwise users are likely to get 403 errors, or worse.
-        queries.append("Archive.id = Build.archive")
+        queries.append("Archive.id = PackageBuild.archive")
         clauseTables.append('Archive')
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
@@ -801,7 +808,7 @@ class BinaryPackageBuildSet:
 
         return BinaryPackageBuild.select(
             " AND ".join(queries), clauseTables=clauseTables,
-            orderBy=["-Build.datebuilt", "id"])
+            orderBy=["-BuildFarmJob.date_finished", "id"])
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None, arch_tag=None):
