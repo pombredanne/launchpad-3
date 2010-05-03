@@ -122,6 +122,34 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
 
         return unused_language_packs
 
+    @property
+    def have_latest_full_pack(self):
+        """Checks if this distribution series has a full language pack newer
+        than the current one."""
+
+        current = self.context.language_pack_base
+        latest = self.context.last_full_language_pack_exported
+        if (current is None or
+            latest is None or
+            current.file.http_url == latest.file.http_url):
+            return False
+        else:
+            return True
+
+    @property
+    def have_latest_delta_pack(self):
+        """Checks if this distribution series has a delta language pack newer
+        than the current one."""
+
+        current = self.context.language_pack_delta
+        latest = self.context.last_delta_language_pack_exported
+        if (current is None or
+            latest is None or
+            current.file.http_url == latest.file.http_url):
+            return False
+        else:
+            return True
+
     def _request_full_export(self):
         if (self.old_request_value !=
             self.context.language_pack_full_export_requested):
@@ -135,9 +163,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
                     "Your request has been noted. Next language pack "
                     "export will be made relative to the current base "
                     "language pack.")
-        else:
-            self.request.response.addInfoNotification(
-                "You didn't change anything.")
 
     @action("Change Settings", condition=is_translations_admin)
     def change_action(self, action, data):
@@ -232,7 +257,8 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
     usedfor = IDistroSeries
     facet = 'translations'
     links = [
-        'translations', 'templates', 'admin', 'language_packs', 'imports']
+        'translations', 'templates', 'admin', 'language_packs',
+        'latest_full_language_pack', 'latest_delta_language_pack', 'imports']
 
     def translations(self):
         return Link('', 'Overview')
@@ -250,6 +276,16 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     def language_packs(self):
         return Link('+language-packs', 'Language packs')
+
+    def latest_full_language_pack(self):
+        return Link(
+            '+latest-full-language-pack',
+            'Latest full language pack')
+
+    def latest_delta_language_pack(self):
+        return Link(
+            '+latest-delta-language-pack',
+            'Latest delta language pack')
 
 
 def check_distroseries_translations_viewable(distroseries):

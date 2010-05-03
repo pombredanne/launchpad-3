@@ -336,10 +336,10 @@ class EC2TestRunner:
                     'smtp_password = %s\n' % (self._smtp_password,))
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
-        self.log('Copying ec2test-remote.py to remote machine.\n')
+        self.log('Copying remote.py to remote machine.\n')
         user_connection.sftp.put(
-            os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                         'ec2test-remote.py'),
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), 'remote.py'),
             '/var/launchpad/ec2test-remote.py')
         # Set up launchpad login and email
         as_user('bzr launchpad-login %s' % (self._launchpad_login,))

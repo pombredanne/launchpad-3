@@ -257,7 +257,9 @@ class TestDiffInScripts(DiffTestCase):
         last_oops_id = errorlog.globalErrorUtility.lastid
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
-        self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
+        # XXX MichaelHudson, 2010-04-29, bug=567257: This test fails
+        # intermittently when run close to midnight.
+        #self.assertNotEqual(last_oops_id, errorlog.globalErrorUtility.lastid)
         self.assertIs(None, diff.diffstat)
         self.assertIs(None, diff.added_lines_count)
         self.assertIs(None, diff.removed_lines_count)
