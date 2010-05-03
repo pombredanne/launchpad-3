@@ -165,3 +165,8 @@ The pillar involvement view uses the InvolvedMenu when rendering links:
     http://translations.launchpad.dev/bread
     http://code.launchpad.dev/bread/+addbranch
     http://blueprints.launchpad.dev/bread/+addspec
+
+    >>> from lp.testing.menu import check_menu_links
+    >>> from lp.registry.browser.pillar import InvolvedMenu
+    >>> check_menu_links(InvolvedMenu(product))
+    True
