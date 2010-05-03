@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 import os
 import tarfile
 import unittest
@@ -21,10 +23,14 @@ class SetupTestPackageMixin(object):
 
     test_data_dir = "pottery_test_data"
 
-    def prepare_package(self, packagename):
+    def prepare_package(self, packagename, buildfiles={}):
         """Unpack the specified package in a temporary directory.
 
         Change into the package's directory.
+
+        :param packagename: The name of the package to prepare.
+        :param buildfiles: A dictionary of path:content describing files to
+            add to the package.
         """
         # First build the path for the package.
         packagepath = os.path.join(
@@ -32,10 +38,22 @@ class SetupTestPackageMixin(object):
             self.test_data_dir, packagename + ".tar.bz2")
         # Then change into the temporary directory and unpack it.
         self.useTempDir()
-        tar = tarfile.open(packagepath, "r:bz2")
+        tar = tarfile.open(packagepath, "r|bz2")
         tar.extractall()
         tar.close()
         os.chdir(packagename)
+        # Add files as requested.
+        for path, content in buildfiles.items():
+            directory= os.path.dirname(path)
+            if directory != '':
+                try:
+                    os.makedirs(directory)
+                except OSError, e:
+                    # Doesn't matter if it already exists.
+                    if e.errno != 17:
+                        raise
+            with open(path, 'w') as the_file:
+                the_file.write(content)
 
 
 class TestDetectIntltool(TestCase, SetupTestPackageMixin):
@@ -94,11 +112,41 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
         self.assertEqual(
             ["./po-module2"], find_intltool_dirs())
 
+
+class TestIntltoolDomain(TestCase, SetupTestPackageMixin):
+
     def test_get_translation_domain_makevars(self):
         # Find a translation domain in Makevars.
         self.prepare_package("intltool_domain_makevars")
         self.assertEqual(
             "translationdomain",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_makevars_subst_1(self):
+        # Find a translation domain in Makevars, substituted from
+        # Makefile.in.in.
+        self.prepare_package(
+            "intltool_domain_base",
+            {
+                "po/Makefile.in.in": "PACKAGE=packagename-in-in\n",
+                "po/Makevars": "DOMAIN = $(PACKAGE)\n",
+            })
+        self.assertEqual(
+            "packagename-in-in",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_makevars_subst_2(self):
+        # Find a translation domain in Makevars, substituted from
+        # configure.ac.
+        self.prepare_package(
+            "intltool_domain_base",
+            {
+                "configure.ac": "PACKAGE=packagename-ac\n",
+                "po/Makefile.in.in": "# No domain here.\n",
+                "po/Makevars": "DOMAIN = $(PACKAGE)\n",
+            })
+        self.assertEqual(
+            "packagename-ac",
             get_translation_domain("po"))
 
     def test_get_translation_domain_makefile_in_in(self):
@@ -113,6 +161,20 @@ class TestDetectIntltool(TestCase, SetupTestPackageMixin):
         self.prepare_package("intltool_domain_configure_ac")
         self.assertEqual(
             "packagename-ac",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_configure_ac_init(self):
+        # Find a translation domain in configure.ac in AC_INIT.
+        self.prepare_package(
+            "intltool_domain_base",
+            {
+                "configure.ac" : dedent("""
+                    AC_INIT(packagename-ac-init, 1.0, http://bug.org)
+                    GETTEXT_PACKAGE=AC_PACAKGE_NAME
+                    """),
+            })
+        self.assertEqual(
+            "packagename-ac-init",
             get_translation_domain("po"))
 
     def test_get_translation_domain_configure_in(self):
