@@ -76,6 +76,16 @@ class RaisingJob(NullJob):
         raise RaisingJobException(self.message)
 
 
+class RaisingJobRaisingOopsRecipients(NullJob):
+    """A job that raises when it runs, and when getting oops recipients."""
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+    def getOopsRecipients(self):
+        return RaisingJobException('oops generating recipients')
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -253,6 +263,13 @@ class TestJobRunner(TestCaseWithFactory):
         # has been committed.
         transaction.abort()
         self.assertEqual(JobStatus.FAILED, job.job.status)
+
+    def test_runJobHandleErrors_oops_generated(self):
+        """The handle errors method records an oops for raised errors."""
+        job = RaisingJob('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
 
 
 class StuckJob(BaseRunnableJob):
