@@ -67,6 +67,11 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
+    def tearDown(self):
+        # Must tear down both base classes.
+        TestCaseWithFactory.tearDown(self)
+        TestCaseWithTransport.tearDown(self)
+
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
         self.db_branch, self.bzr_tree = self.create_branch_and_tree(
