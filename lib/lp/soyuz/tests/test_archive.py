@@ -682,7 +682,8 @@ class TestARMBuildsAllowed(TestCaseWithFactory):
     def test_default(self):
         """By default, ARM builds are not allowed."""
         self.assertEquals(0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+            self.archive_arch_set.getByArchive(
+                self.archive, self.arm).count())
         self.assertFalse(self.archive.arm_builds_allowed)
 
     def test_get_uses_archivearch(self):
@@ -711,7 +712,8 @@ class TestARMBuildsAllowed(TestCaseWithFactory):
         self.assertTrue(self.archive.arm_builds_allowed)
         self.archive.arm_builds_allowed = False
         self.assertEquals(0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+            self.archive_arch_set.getByArchive(
+                self.archive, self.arm).count())
         self.assertFalse(self.archive.arm_builds_allowed)
 
 
