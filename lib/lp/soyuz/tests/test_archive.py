@@ -947,8 +947,8 @@ class TestArchiveDelete(TestCaseWithFactory):
         self.archive.delete(deleted_by=self.archive.owner)
         self.failUnlessEqual(ArchiveStatus.DELETING, self.archive.status)
 
-    def test_delete_when_disabled_bug_574246(self):
-        # A disabled archive can also be deleted.
+    def test_delete_when_disabled(self):
+        # A disabled archive can also be deleted (bug 574246).
         self.archive.disable()
         self.archive.delete(deleted_by=self.archive.owner)
         self.failUnlessEqual(ArchiveStatus.DELETING, self.archive.status)
