@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -21,7 +21,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.interfaces.archive import (
-    IArchiveSet, ArchivePurpose, CannotSwitchPrivacy)
+    IArchiveSet, ArchivePurpose, ArchiveStatus, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
@@ -31,7 +31,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import login_person, TestCaseWithFactory
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
@@ -924,6 +924,32 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             None,
             self.factory.makeArchive().getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
+
+
+class TestArchiveDelete(TestCaseWithFactory):
+    """Edge-case tests for PPA deletion.
+
+    PPA deletion is also documented in lp/soyuz/doc/archive-deletion.txt.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        """Create a test archive and login as the owner."""
+        super(TestArchiveDelete, self).setUp()
+        self.archive = self.factory.makeArchive()
+        login_person(self.archive.owner)
+
+    def test_delete(self):
+        # Sanity check for the unit-test.
+        self.archive.delete(deleted_by=self.archive.owner)
+        self.failUnlessEqual(ArchiveStatus.DELETING, self.archive.status)
+
+    def test_delete_when_disabled_bug_574246(self):
+        # A disabled archive can also be deleted.
+        self.archive.disable()
+        self.archive.delete(deleted_by=self.archive.owner)
+        self.failUnlessEqual(ArchiveStatus.DELETING, self.archive.status)
 
 
 def test_suite():
