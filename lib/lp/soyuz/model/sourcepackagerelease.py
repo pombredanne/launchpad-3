@@ -347,9 +347,9 @@ class SourcePackageRelease(SQLBase):
             'DistroArchSeries']
 
         query = """
-            Build.sourcepackagerelease = %s AND
-            BinaryPackageRelease.build = Build.id AND
-            DistroArchSeries.id = Build.distroarchseries AND
+            BinaryPackageBuild.source_package_release = %s AND
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND
             DistroArchSeries.architecturetag = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -360,7 +360,7 @@ class SourcePackageRelease(SQLBase):
 
         select_results = BinaryPackageBuild.select(
             query, clauseTables=clauseTables, distinct=True,
-            orderBy='-Build.id')
+            orderBy='-BinaryPackageBuild.id')
 
         # XXX cprov 20080216: this if/elif/else block could be avoided or,
         # at least, simplified if SelectOne accepts 'distinct' argument.
@@ -386,7 +386,11 @@ class SourcePackageRelease(SQLBase):
             # inheritance tree. See bellow.
             pass
 
-        queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
+        queries = [
+            "BinaryPackageBuild.package_build = PackageBuild.id AND "
+            "PackageBuild.build_farm_job = BuildFarmJob.id AND "
+            "BinaryPackageBuild.source_package_release = %s" % (
+            sqlvalues(self))]
 
         # Find out all the possible parent DistroArchSeries
         # a build could be issued (then inherited).
@@ -417,7 +421,8 @@ class SourcePackageRelease(SQLBase):
         architectures = [
             architecture.id for architecture in parent_architectures]
         queries.append(
-            "Build.distroarchseries IN %s" % sqlvalues(architectures))
+            "BinaryPackageBuild.distro_arch_series IN %s" % (
+                sqlvalues(architectures)))
 
         # Follow archive inheritance across distribution offical archives,
         # for example:
@@ -436,13 +441,15 @@ class SourcePackageRelease(SQLBase):
             archives = [archive.id, ]
 
         queries.append(
-            "Build.archive IN %s" % sqlvalues(archives))
+            "PackageBuild.archive IN %s" % sqlvalues(archives))
 
         # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)
 
-        return BinaryPackageBuild.selectFirst(query, orderBy=['-datecreated'])
+        return BinaryPackageBuild.selectFirst(
+            query, clauseTables=['BuildFarmJob', 'PackageBuild'],
+            orderBy=['-BuildFarmJob.date_created'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""

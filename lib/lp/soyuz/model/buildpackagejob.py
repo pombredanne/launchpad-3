@@ -101,13 +101,13 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # Please note: the score for language packs is to be zero because
         # they unduly delay the building of packages in the main component
         # otherwise.
-        if self.build.sourcepackagerelease.section.name == 'translations':
+        if self.build.source_package_release.section.name == 'translations':
             pass
         elif self.build.archive.purpose == ArchivePurpose.COPY:
             score = rebuild_archive_score
         else:
             # Calculates the urgency-related part of the score.
-            urgency = score_urgency[self.build.sourcepackagerelease.urgency]
+            urgency = score_urgency[self.build.source_package_release.urgency]
             score += urgency
 
             # Calculates the pocket-related part of the score.
@@ -140,8 +140,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
     def getLogFileName(self):
         """See `IBuildPackageJob`."""
-        sourcename = self.build.sourcepackagerelease.name
-        version = self.build.sourcepackagerelease.version
+        sourcename = self.build.source_package_release.name
+        version = self.build.source_package_release.version
         # we rely on previous storage of current buildstate
         # in the state handling methods.
         state = self.build.buildstate.name
@@ -163,7 +163,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
     def getName(self):
         """See `IBuildPackageJob`."""
-        return self.build.sourcepackagerelease.name
+        return self.build.source_package_release.name
 
     @property
     def processor(self):

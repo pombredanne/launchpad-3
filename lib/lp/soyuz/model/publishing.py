@@ -568,7 +568,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             return None
 
         build = self.sourcepackagerelease.createBuild(
-            distroarchseries=arch, archive=self.archive, pocket=self.pocket)
+            distro_arch_series=arch, archive=self.archive, pocket=self.pocket)
         # Create the builds in suspended mode for disabled archives.
         build_queue = build.queueBuild(suspended=not self.archive.enabled)
         build_queue.score()
