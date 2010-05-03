@@ -16,11 +16,12 @@ from bzrlib.plugins.builder.recipe import RecipeParser
 from pytz import UTC
 from storm.locals import Store
 
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.archiveuploader.permission import (
@@ -29,7 +30,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooNewRecipeFormat)
+    TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipebuild import (
@@ -41,7 +42,9 @@ from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
-    login_person, person_logged_in, TestCaseWithFactory)
+    ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
+    TestCaseWithFactory, ws_object)
+
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
@@ -505,6 +508,73 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(None, location)
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
+
+
+class TestWebservice(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def makeRecipeText(self):
+        branch = self.factory.makeBranch()
+        return MINIMAL_RECIPE_TEXT % branch.bzr_identity
+
+    def makeRecipe(self, user=None, owner=None, recipe_text=None):
+        if user is None:
+            user = self.factory.makePerson()
+        if owner is None:
+            owner = user
+        db_distroseries = self.factory.makeDistroSeries()
+        if recipe_text is None:
+            recipe_text = self.makeRecipeText()
+        launchpad = launchpadlib_for('test', user,
+                service_root="http://api.launchpad.dev:8085")
+        login(ANONYMOUS)
+        distroseries = ws_object(launchpad, db_distroseries)
+        ws_owner = ws_object(launchpad, owner)
+        recipe = ws_owner.createRecipe(
+            name='toaster-1', sourcepackagename='toaster',
+            description='a recipe', distroseries=[distroseries.self_link],
+            recipe_text=recipe_text)
+        # at the moment, distroseries is not exposed in the API.
+        transaction.commit()
+        db_recipe = owner.getRecipe(name=u'toaster-1')
+        self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
+        return recipe, ws_owner, launchpad
+
+    def test_createRecipe(self):
+        """Ensure recipe creation works."""
+        team = self.factory.makeTeam()
+        recipe_text = self.makeRecipeText()
+        recipe, user = self.makeRecipe(user=team.teamowner, owner=team,
+            recipe_text=recipe_text)[:2]
+        self.assertEqual(team.name, recipe.owner.name)
+        self.assertEqual(team.teamowner.name, recipe.registrant.name)
+        self.assertEqual('toaster-1', recipe.name)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+        self.assertEqual('toaster', recipe.sourcepackagename)
+
+    def test_recipe_text(self):
+        recipe_text2 = self.makeRecipeText()
+        recipe = self.makeRecipe()[0]
+        recipe.setRecipeText(recipe_text=recipe_text2)
+        self.assertEqual(recipe_text2, recipe.recipe_text)
+
+    def test_getRecipe(self):
+        """Person.getRecipe returns the named recipe."""
+        recipe, user = self.makeRecipe()[:-1]
+        self.assertEqual(recipe, user.getRecipe(name=recipe.name))
+
+    def test_requestBuild(self):
+        """Build requests can be performed."""
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(owner=person)
+        distroseries = self.factory.makeDistroSeries()
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+        archive = ws_object(launchpad, archive)
+        recipe.requestBuild(
+            archive=archive, distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE.title)
 
 
 def test_suite():

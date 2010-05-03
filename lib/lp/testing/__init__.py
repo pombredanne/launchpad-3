@@ -38,6 +38,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'ws_object'
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
@@ -79,7 +80,8 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
@@ -928,6 +930,20 @@ def validate_mock_class(mock_class):
                             name, mock_args, real_args))
                     else:
                         break
+
+
+def ws_object(launchpad, obj):
+    """Convert an object into its webservice version.
+
+    :param launchpad: The Launchpad instance to convert from.
+    :param obj: The object to convert.
+    :return: A launchpadlib Entry object.
+    """
+    api_request = WebServiceTestRequest()
+    obj_url = canonical_url(obj, request=api_request)
+    return launchpad.load(
+        obj_url.replace('http://api.launchpad.dev/',
+        str(launchpad._root_uri)))
 
 def unlink_source_packages(product):
     """Remove all links between the product and source packages.
