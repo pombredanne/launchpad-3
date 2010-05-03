@@ -151,5 +151,5 @@ submitting a new branch.
     >>> user_browser.getLink('Submit code')
     <Link ... url='http://code.launchpad.dev/evolution/+addbranch'>
     >>> user_browser.getLink('Submit code').click()
-    >>> print user_browser.url
-    http://code.launchpad.dev/evolution/+addbranch
+    >>> print user_browser.title
+    Register a branch : Branches : Evolution
