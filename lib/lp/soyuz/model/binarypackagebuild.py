@@ -46,8 +46,10 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuild import PackageBuildDerived
+from lp.buildmaster.model.packagebuild import (
+    PackageBuild, PackageBuildDerived)
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -824,9 +826,9 @@ class BinaryPackageBuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
+            orderBy = ["-BuildFarmJob.date_created"]
         else:
-            orderBy = ["-Build.datebuilt"]
+            orderBy = ["-BuildFarmJob.date_finished"]
         # All orders fallback to id if the primary order doesn't succeed
         orderBy.append("id")
 
@@ -1033,24 +1035,30 @@ class BinaryPackageBuildSet:
         origin = (
             BinaryPackageBuild,
             LeftJoin(
+                PackageBuild,
+                BinaryPackageBuild.package_build == PackageBuild.id),
+            LeftJoin(
+                BuildFarmJob,
+                PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(
                 SourcePackageRelease,
                 (SourcePackageRelease.id ==
-                    BinaryPackageBuild.sourcepackagereleaseID)),
+                    BinaryPackageBuild.source_package_releaseID)),
             LeftJoin(
                 SourcePackageName,
                 SourcePackageName.id
                     == SourcePackageRelease.sourcepackagenameID),
             LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == BinaryPackageBuild.buildlogID),
+                     LibraryFileAlias.id == BuildFarmJob.log_id),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
                 Builder,
-                Builder.id == BinaryPackageBuild.builderID),
+                Builder.id == BuildFarmJob.builder_id),
             )
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
-             LibraryFileContent, Builder),
+             LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
             In(BinaryPackageBuild.id, build_ids))
 
         # Force query execution so that the ancillary data gets fetched
