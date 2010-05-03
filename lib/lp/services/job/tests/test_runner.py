@@ -77,7 +77,7 @@ class RaisingJob(NullJob):
 
 
 class RaisingJobUserError(NullJob):
-    """A job that raises when it runs."""
+    """A job that raises a user error when it runs."""
 
     user_error_types = (RaisingJobException, )
 
@@ -86,7 +86,7 @@ class RaisingJobUserError(NullJob):
 
 
 class RaisingJobRaisingNotifyOops(NullJob):
-    """A job that raises when it runs, and when getting oops recipients."""
+    """A job that raises when it runs, and when calling notifyOops."""
 
     def run(self):
         raise RaisingJobException(self.message)
