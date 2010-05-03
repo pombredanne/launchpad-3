@@ -56,7 +56,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplateBuildJob implements IBuildFarmJobOld,
         # IBuildFarmJobDerived, and IBranchJob.
         verifyObject(IBranchJob, self.specific_job)
-        verifyObject(IBuildFarmJobDerived, self.specific_job)
         verifyObject(IBuildFarmJobOld, self.specific_job)
 
         # Each of these jobs knows the branch it will operate on.

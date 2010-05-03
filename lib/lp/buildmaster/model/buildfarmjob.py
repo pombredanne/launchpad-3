@@ -14,7 +14,6 @@ import hashlib
 
 from lazr.delegates import delegates
 
-import hashlib
 import pytz
 
 from storm.locals import Bool, DateTime, Int, Reference, Storm
@@ -181,7 +180,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None):
         super(BuildFarmJob, self).__init__()
-        self.job_type, self.status, self.process, self.virtualized = (
+        self.job_type, self.status, self.processor, self.virtualized = (
             job_type,
             status,
             processor,

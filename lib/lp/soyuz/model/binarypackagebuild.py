@@ -447,30 +447,35 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # and get the (successfully built) build records for this
         # package.
         completed_builds = BinaryPackageBuild.select("""
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            Build.id != %s AND
-            Build.buildduration IS NOT NULL AND
+            BinaryPackageBuild.source_package_release = SourcePackageRelease.id AND
+            BinaryPackageBuild.id != %s AND
+            BinaryPackageBuild.distro_arch_series = %s AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
             SourcePackageName.name = %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            buildstate = %s
-            """ % sqlvalues(self, self.source_package_release.name,
-                            self.distro_arch_series, archives,
+            BinaryPackageBuild.package_build = PackageBuild.id AND
+            PackageBuild.archive IN %s AND
+            PackageBuild.build_farm_job = BuildFarmJob.id AND
+            BuildFarmJob.date_finished IS NOT NULL AND
+            BuildFarmJob.status = %s
+            """ % sqlvalues(self, self.distro_arch_series,
+                            self.source_package_release.name, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'],
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+            orderBy=['-BuildFarmJob.date_finished', '-id'],
+            clauseTables=['PackageBuild', 'BuildFarmJob', 'SourcePackageName',
+                          'SourcePackageRelease'])
 
         if completed_builds.count() > 0:
             # Historic build data exists, use the most recent value.
             most_recent_build = completed_builds[0]
-            estimated_duration = most_recent_build.buildduration
+            date_finished = most_recent_build.date_finished
+            date_started = most_recent_build.date_started
+            estimated_duration = date_finished - date_started
         else:
             # Estimate the build duration based on package size if no
             # historic build data exists.
 
             # Get the package size in KB.
-            package_size = self.sourcepackagerelease.getPackageSize()
+            package_size = self.source_package_release.getPackageSize()
 
             if package_size > 0:
                 # Analysis of previous build data shows that a build rate
