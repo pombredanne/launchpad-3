@@ -197,6 +197,11 @@ class ConfigFile(object):
                 variable = result.group(1)
         return variable
 
+    def getFunctionParams(self, function_name):
+        """Search file for a function call with this name, return parameters.
+        """
+        return []
+
 
 class Substitution(object):
     """Find and replace substitutions.

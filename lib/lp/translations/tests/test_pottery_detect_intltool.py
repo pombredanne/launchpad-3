@@ -375,9 +375,16 @@ class TestConfigFile(TestCase):
             # Demo config file
             CCC
             AAA=
+            FUNC_1(param1)
             BBB = 
+            FUNC_2(param1, param2,param3 )
             CCC = ccc # comment
+            ML_FUNC_1(param1,
+                param2, param3)
             DDD=dd.d
+            ML_FUNC_2(
+            param1,
+            param2)
             """)))
 
     def test_getVariable_exists(self):
@@ -390,6 +397,25 @@ class TestConfigFile(TestCase):
 
     def test_getVariable_nonexistent(self):
         self.assertIs(None, self.configfile.getVariable('FFF'))
+
+    def test_getFunctionParams_single(self):
+        self.assertEqual(
+            ['param1'], self.configfile.getFunctionParams('FUNC_1'))
+
+    def test_getFunctionParams_multiple(self):
+        self.assertEqual(
+            ['param1', 'param2', 'param3'],
+            self.configfile.getFunctionParams('FUNC_2'))
+
+    def test_getFunctionParams_multiline_indented(self):
+        self.assertEqual(
+            ['param1', 'param2', 'param3'],
+            self.configfile.getFunctionParams('ML_FUNC_1'))
+
+    def test_getFunctionParams_multiline_not_indented(self):
+        self.assertEqual(
+            ['param1', 'param2'],
+            self.configfile.getFunctionParams('ML_FUNC_2'))
 
 
 def test_suite():
