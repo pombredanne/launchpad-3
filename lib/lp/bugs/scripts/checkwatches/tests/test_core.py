@@ -11,6 +11,7 @@ import unittest
 
 import transaction
 
+from datetime import datetime
 from zope.component import getUtility
 
 from canonical.config import config
@@ -176,13 +177,13 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         for bug_watch in bug_watches:
             updater = NoBugWatchesByRemoteBugUpdater(
                 working_base, remote_system, bug_watch.remotebug,
-                [bug_watch.id], [])
+                [bug_watch.id], [], datetime.now())
 
             # Calling updateRemoteBug() shouldn't raise a KeyError,
             # even though with our broken updater
             # _getExternalBugTrackersAndWatches() will return an empty
             # dict.
-            updater.updateRemoteBug(remote_system, bug_watches)
+            updater.updateRemoteBug()
 
             # An error will have been logged instead of the KeyError being
             # raised.
