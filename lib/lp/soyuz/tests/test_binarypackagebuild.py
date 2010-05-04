@@ -301,13 +301,11 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         # Set something just to make sure that storeBuildInfo actually
         # empties it.
         self.build.dependencies = u'something'
-
         self.build.storeBuildInfo(self.build, None, {})
-        self.assertIsNot(None, self.build.buildlog)
+        self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
-        self.assertIsNot(None, self.build.datebuilt)
-        self.assertIsNot(None, self.build.buildduration)
+        self.assertIsNot(None, self.build.date_finished)
 
 
 def test_suite():

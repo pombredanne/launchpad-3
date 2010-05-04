@@ -144,9 +144,9 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         version = self.build.source_package_release.version
         # we rely on previous storage of current buildstate
         # in the state handling methods.
-        state = self.build.buildstate.name
+        state = self.build.status.name
 
-        dar = self.build.distroarchseries
+        dar = self.build.distro_arch_series
         distroname = dar.distroseries.distribution.name
         distroseriesname = dar.distroseries.name
         archname = dar.architecturetag

@@ -118,9 +118,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         return BuildBase.getUploaderCommand(
             package_build, distro_series, upload_leaf, upload_logfilename)
 
-    def getLogFromSlave(self):
+    @staticmethod
+    def getLogFromSlave(package_build):
         """See `IPackageBuild`."""
-        return BuildBase.getLogFromSlave(self)
+        return BuildBase.getLogFromSlave(package_build)
 
     @staticmethod
     def getUploadLogContent(root, leaf):
@@ -131,9 +132,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
-    def storeBuildInfo(self, librarian, slave_status):
+    @staticmethod
+    def storeBuildInfo(package_build, librarian, slave_status):
         """See `IPackageBuild`."""
-        return BuildBase.storeBuildInfo(self, librarian, slave_status)
+        return BuildBase.storeBuildInfo(package_build, librarian,
+                                        slave_status)
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
