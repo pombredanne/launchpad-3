@@ -332,22 +332,38 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
 
 
-class TestSourcePackageRecipeBuildView(TestCaseWithFactory):
+class TestSourcePackageRecipeBuildView(BrowserTestCase):
     """Test behaviour of SourcePackageReciptBuildView."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_estimate(self):
-        """Time should be estimated until the job is completed."""
-        build = self.factory.makeSourcePackageRecipeBuild()
+    def setUp(self):
+        """Provide useful defaults."""
+        super(TestSourcePackageRecipeBuildView, self).setUp()
+        self.build_owner = self.factory.makePerson(
+            displayname='Owner', name='build-owner', password='test')
+
+    def makeBuildView(self):
+        archive = self.factory.makeArchive(name='build',
+            owner=self.build_owner)
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.build_owner,
+            name=u'my-recipe')
+        distro_series = self.factory.makeDistroSeries(name='squirrel')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            requester=self.build_owner, archive=archive, recipe=recipe,
+            distroseries=distro_series)
         queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=build)
         self.factory.makeBuilder()
-        view = SourcePackageRecipeBuildView(build, None)
+        return SourcePackageRecipeBuildView(build, None)
+
+    def test_estimate(self):
+        """Time should be estimated until the job is completed."""
+        view = self.makeBuildView()
         self.assertTrue(view.estimate)
-        queue_entry.job.start()
+        view.context.buildqueue_record.job.start()
         self.assertTrue(view.estimate)
-        removeSecurityProxy(build).datebuilt = datetime.now(utc)
+        removeSecurityProxy(view.context).datebuilt = datetime.now(utc)
         self.assertFalse(view.estimate)
 
     def test_eta(self):
@@ -374,6 +390,35 @@ class TestSourcePackageRecipeBuildView(TestCaseWithFactory):
         self.assertEqual(
             queue_entry.job.date_started + queue_entry.estimated_duration,
             view.eta)
+
+    def getBuildBrowser(self, build, view_name=None):
+        """Return a browser for the specified build, opened as owner."""
+        login(ANONYMOUS)
+        url = canonical_url(build, view_name=view_name)
+        return self.getUserBrowser(url, self.build_owner)
+
+    def test_render_index(self):
+        view = self.makeBuildView()
+        browser = self.getBuildBrowser(view.context, '+index')
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Branches
+            my-recipe
+            Build status
+            Needs building
+            Start in 4 seconds
+            Estimated finish in 1 minute
+            Build details
+            Recipe:
+            Recipe my-recipe for Owner
+            Archive:
+            PPA named build for Owner
+            Series:
+            Squirrel
+            Pocket:
+            Release
+            Binary builds:
+            None""", main_text)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
