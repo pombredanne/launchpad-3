@@ -46,10 +46,7 @@
          tal:define="search_url string:+bugs;
                      advanced_search_url string:+bugs?advanced=1">
 
-      <tal:uses_malone condition="view/uses_launchpad_bugtracker">
-      <div class="yui-g">
-        <div class="yui-u first">
-        <div class="portlet">
+        <div class="two-column-list">
           <dl tal:define="bug_supervisor context/bug_supervisor">
             <dt id="bug-supervisor">Bug supervisor:</dt>
               <dd>
@@ -84,10 +81,10 @@
                 </tal:edit-securitycontact>
               </dd>
             </dl>
-        </div>
-        </div>
+          </div>
 
-      <div class="yui-u">
+
+      <tal:uses_malone condition="view/uses_launchpad_bugtracker">
       <tal:has_bugtasks condition="context/has_bugtasks">
         <div class="search-box">
           <metal:search
@@ -98,8 +95,6 @@
              $('field.searchtext').focus();
         --></script>
       </tal:has_bugtasks>
-      </div>
-    </div> <!-- yui-g -->
 
       <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
         <h2 style="margin-top: 1em">Hot bugs</h2>
