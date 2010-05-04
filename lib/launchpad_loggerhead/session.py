@@ -64,10 +64,17 @@ class SessionHandler(object):
             session = pickle.loads(environ[self.session_var])
         else:
             session = {}
+        existed = bool(session)
         environ[self.session_var] = session
         def response_hook(status, response_headers, exc_info=None):
             session = environ.pop(self.session_var)
-            if session:
+            # paste.auth.cookie does not delete cookies (see
+            # http://trac.pythonpaste.org/pythonpaste/ticket/139).  A
+            # reasonable workaround is to make the value empty.  Therefore,
+            # we explicitly set the value in the session (to be encrypted)
+            # if the value is non-empty *or* if it was non-empty at the start
+            # of the request.
+            if existed or session:
                 environ[self.session_var] = pickle.dumps(session)
             return start_response(status, response_headers, exc_info)
         return self.application(environ, response_hook)
