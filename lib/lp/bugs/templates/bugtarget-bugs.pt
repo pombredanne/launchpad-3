@@ -33,20 +33,7 @@
           </li>
         </ul>
       </div>
-      <div tal:replace="structure context/@@+portlet-bugfilters" />
-      <div tal:replace="structure context/@@+portlet-bugtags" />
-      <tal:releasecriticalbugs
-          tal:condition="view/shouldShowReleaseCriticalPortlet"
-          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
-      <tal:milestonecriticalbugs
-          tal:condition="view/shouldShowReleaseCriticalPortlet"
-          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
-    </tal:side>
-    <div metal:fill-slot="main" class="tab-bugs"
-         tal:define="search_url string:+bugs;
-                     advanced_search_url string:+bugs?advanced=1">
-
-        <div class="two-column-list">
+      <div class="portlet">
           <dl tal:define="bug_supervisor context/bug_supervisor">
             <dt id="bug-supervisor">Bug supervisor:</dt>
               <dd>
@@ -81,7 +68,20 @@
                 </tal:edit-securitycontact>
               </dd>
             </dl>
-          </div>
+      </div>
+      <div tal:replace="structure context/@@+portlet-bugfilters" />
+      <div tal:replace="structure context/@@+portlet-bugtags" />
+      <tal:releasecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+      <tal:milestonecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
+    </tal:side>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
+
 
 
       <tal:uses_malone condition="view/uses_launchpad_bugtracker">
