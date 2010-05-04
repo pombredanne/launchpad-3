@@ -13,7 +13,6 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobDerived
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
@@ -235,6 +234,3 @@ class TestBuildPackageJob(TestBuildJobBase):
         build_farm_job = bq.specific_job
         self.assertProvides(build_farm_job, IBuildPackageJob)
         self.assertProvides(build_farm_job, IBuildFarmBuildJob)
-        self.assertProvides(build_farm_job, IBuildFarmJobDerived)
-
-

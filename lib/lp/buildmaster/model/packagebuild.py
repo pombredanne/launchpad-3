@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildDerived, IPackageBuildSource)
+    IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -58,7 +58,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
     policy_name = 'buildd'
+
+    # The following two properties are part of the IPackageBuild
+    # interface, but need to be provided by derived classes.
     distribution = None
+    distro_series = None
 
     def __init__(self, build_farm_job, archive, pocket,
                  dependencies=None):
@@ -153,10 +157,17 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def handleStatus(self, status, librarian, slave_status):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
 
 class PackageBuildDerived:
-    """See `IPackageBuildDerived`."""
-    implements(IPackageBuildDerived)
+    """Setup the delegation for package build.
+
+    This class also provides some common implementation for handling
+    build status.
+    """
     delegates(IPackageBuild, context="package_build")
 
     def queueBuild(self, suspended=False):
@@ -164,7 +175,7 @@ class PackageBuildDerived:
         return BuildBase.queueBuild(self, suspended=False)
 
     def handleStatus(self, status, librarian, slave_status):
-        """See `IPackageBuildDerived`."""
+        """See `IPackageBuild`."""
         return BuildBase.handleStatus(self, status, librarian, slave_status)
 
     # The following private handlers currently re-use the BuildBase

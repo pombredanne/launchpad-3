@@ -201,8 +201,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def was_built(self):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
-                                       BuildStatus.BUILDING,
-                                       BuildStatus.SUPERSEDED]
+                                   BuildStatus.BUILDING,
+                                   BuildStatus.SUPERSEDED]
 
     @property
     def arch_tag(self):

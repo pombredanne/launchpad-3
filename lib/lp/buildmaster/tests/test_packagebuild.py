@@ -89,6 +89,9 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertRaises(
             NotImplementedError, self.package_build.verifySuccessfulUpload)
         self.assertRaises(NotImplementedError, self.package_build.notify)
+        self.assertRaises(
+            NotImplementedError, self.package_build.handleStatus,
+            None, None, None)
 
     def test_default_values(self):
         # PackageBuild has a number of default values.
@@ -96,6 +99,7 @@ class TestPackageBuild(TestPackageBuildBase):
         self.failUnlessEqual(
             'multiverse', self.package_build.current_component.name)
         self.failUnlessEqual(None, self.package_build.distribution)
+        self.failUnlessEqual(None, self.package_build.distro_series)
 
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.

@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'IPackageBuild',
     'IPackageBuildSource',
-    'IPackageBuildDerived',
     ]
 
 
@@ -19,6 +18,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -75,6 +75,12 @@ class IPackageBuild(IBuildFarmJob):
             schema=IDistribution,
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
+
+    distro_series = exported(
+        Reference(
+            schema=IDistroSeries,
+            title=_("Distribution series"), required=True,
+            description=_("Shortcut for its distribution series.")))
 
     def getUploaderCommand(distro_series, upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
@@ -138,22 +144,6 @@ class IPackageBuild(IBuildFarmJob):
             upload log.
         """
 
-
-class IPackageBuildSource(Interface):
-    """A utility of this interface used to create _things_."""
-
-    def new(archive, pocket, dependencies=None):
-        """Create a new `IPackageBuild`.
-
-        :param archive: An `IArchive`.
-        :param pocket: An item of `PackagePublishingPocket`.
-        :param dependencies: An optional debian-like dependency line.
-        """
-
-
-class IPackageBuildDerived(Interface):
-    """Classes deriving from IPackageBuild inherit the default handleStatus.
-    """
     def handleStatus(status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
@@ -168,3 +158,14 @@ class IPackageBuildDerived(Interface):
             created in a suspended state.
         """
 
+
+class IPackageBuildSource(Interface):
+    """A utility of this interface used to create _things_."""
+
+    def new(archive, pocket, dependencies=None):
+        """Create a new `IPackageBuild`.
+
+        :param archive: An `IArchive`.
+        :param pocket: An item of `PackagePublishingPocket`.
+        :param dependencies: An optional debian-like dependency line.
+        """

@@ -11,7 +11,6 @@ __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobOld',
     'IBuildFarmJobSource',
-    'IBuildFarmJobDerived',
     'BuildFarmJobType',
     ]
 
@@ -106,6 +105,71 @@ class IBuildFarmJobOld(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide a sub-query to refine the candidate job selection.
+
+        Return a sub-query to narrow down the list of candidate jobs.
+        The sub-query will become part of an "outer query" and is free to
+        refer to the `BuildQueue` and `Job` tables already utilized in the
+        latter.
+
+        Example (please see the `BuildPackageJob` implementation for a
+        complete example):
+
+            SELECT TRUE
+            FROM Archive, Build, BuildPackageJob, DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND
+            ..
+
+        :param processor: the type of processor that the candidate jobs are
+            expected to run on.
+        :param virtualized: whether the candidate jobs are expected to run on
+            the `processor` natively or inside a virtual machine.
+        :return: a string containing a sub-query that narrows down the list of
+            candidate jobs.
+        """
+
+    def postprocessCandidate(job, logger):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+
+        :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
+        """
+
+    def getByJob(job):
+        """Get the specific `IBuildFarmJob` for the given `Job`.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has an entry associated with `job`.
+        """
+
+    def generateSlaveBuildCookie():
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie need not be unique, but should be hard for a
+        compromised slave to guess.
+
+        :return: a hard-to-guess ASCII string that can be reproduced
+            accurately based on this job's properties.
+        """
+
+    def makeJob():
+        """Create the specific job relating this with an lp.services.job.
+
+        XXX 2010-04-26 michael.nelson bug=567922
+        Once all *Build classes are using BuildFarmJob we can lose the
+        'specific_job' attributes and simply have a reference to the
+        services job directly on the BuildFarmJob.
+        """
+
+    def cleanUp():
+        """Job's finished.  Delete its supporting data."""
+
 
 class IBuildFarmJob(IBuildFarmJobOld):
     """Operations that jobs for the build farm must implement."""
@@ -178,78 +242,6 @@ class IBuildFarmJob(IBuildFarmJobOld):
         description=_("The specific type of job."))
 
     title = exported(TextLine(title=_("Title"), required=False))
-
-    def makeJob():
-        """Create the specific job relating this with an lp.services.job.
-
-        XXX 2010-04-26 michael.nelson bug=567922
-        Once all *Build classes are using BuildFarmJob we can lose the
-        'specific_job' attributes and simply have a reference to the
-        services job directly on the BuildFarmJob.
-        """
-
-
-class IBuildFarmJobDerived(Interface):
-    """Common functionality required by classes delegating IBuildFarmJob.
-
-    An implementation of this class must setup the necessary delegation.
-    """
-
-    def getByJob(job):
-        """Get the specific `IBuildFarmJob` for the given `Job`.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has an entry associated with `job`.
-        """
-
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """Provide a sub-query to refine the candidate job selection.
-
-        Return a sub-query to narrow down the list of candidate jobs.
-        The sub-query will become part of an "outer query" and is free to
-        refer to the `BuildQueue` and `Job` tables already utilized in the
-        latter.
-
-        Example (please see the `BuildPackageJob` implementation for a
-        complete example):
-
-            SELECT TRUE
-            FROM Archive, Build, BuildPackageJob, DistroArchSeries
-            WHERE
-            BuildPackageJob.job = Job.id AND
-            ..
-
-        :param processor: the type of processor that the candidate jobs are
-            expected to run on.
-        :param virtualized: whether the candidate jobs are expected to run on
-            the `processor` natively or inside a virtual machine.
-        :return: a string containing a sub-query that narrows down the list of
-            candidate jobs.
-        """
-
-    def postprocessCandidate(job, logger):
-        """True if the candidate job is fine and should be dispatched
-        to a builder, False otherwise.
-
-        :param job: The `BuildQueue` instance to be scrutinized.
-        :param logger: The logger to use.
-
-        :return: True if the candidate job should be dispatched
-            to a builder, False otherwise.
-        """
-
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
-        """
-
-    def cleanUp():
-        """Job's finished.  Delete its supporting data."""
 
 
 class IBuildFarmJobSource(Interface):
