@@ -47,14 +47,8 @@
                      advanced_search_url string:+bugs?advanced=1">
 
       <tal:uses_malone condition="view/uses_launchpad_bugtracker">
-        <div class="portlet" style="float: right; border: none">
+        <div class="portlet">
           <ul>
-            <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
-              <strong>Bug tracker:</strong><br />
-              <span style="margin-left: 1em">
-                <tal:bugtracker replace="structure view/bugtracker" />
-              </span>
-            </li>
             <li id="bug-supervisor"
                 tal:define="bug_supervisor context/bug_supervisor">
               Bug supervisor:<br />
@@ -167,6 +161,14 @@
     <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker">
       <p id="no-malone"><strong><tal:project_title replace="context/title" /> does not use Launchpad for
         bug tracking.</strong></p>
+          <ul>
+            <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
+              <strong>Bug tracker:</strong><br />
+              <span style="margin-left: 1em">
+                <tal:bugtracker replace="structure view/bugtracker" />
+              </span>
+            </li>
+          </ul>
 
         <p tal:condition="context/required:launchpad.Edit"
            id="no-malone-edit"
