@@ -258,6 +258,11 @@ class ObjectFactory:
             host = "%s.domain.com" % self.getUniqueString('domain')
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
+    def getUniqueDate(self):
+        epoch = datetime(2009, 1, 1, tzinfo=pytz.UTC)
+        return epoch + timedelta(minutes=self.getUniqueInteger())
+
+
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     url=None, cvs_root=None, cvs_module=None):
         if branch_id is None:
@@ -2073,11 +2078,15 @@ class LaunchpadObjectFactory(ObjectFactory):
                                  source_package_recipe_build=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
-            if archive is None:
-                distribution = None
+            if source_package_recipe_build is not None:
+                distroseries = source_package_recipe_build.distroseries
             else:
-                distribution = archive.distribution
-            distroseries = self.makeDistroRelease(distribution=distribution)
+                if archive is None:
+                    distribution = None
+                else:
+                    distribution = archive.distribution
+                distroseries = self.makeDistroRelease(
+                    distribution=distribution)
 
         if archive is None:
             archive = self.makeArchive(
@@ -2085,7 +2094,11 @@ class LaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+            if source_package_recipe_build is not None:
+                sourcepackagename = (
+                    source_package_recipe_build.sourcepackagename)
+            else:
+                sourcepackagename = self.makeSourcePackageName()
 
         if component is None:
             component = self.makeComponent()
@@ -2136,21 +2149,27 @@ class LaunchpadObjectFactory(ObjectFactory):
             dateuploaded=date_uploaded,
             source_package_recipe_build=source_package_recipe_build)
 
-    def makeBinaryPackageBuild(self, source_package_release=None):
-        archive = self.makeArchive()
+    def makeBinaryPackageBuild(self, source_package_release=None,
+            distroarchseries=None, archive=None):
+        if source_package_release is None:
+            archive = self.makeArchive()
+        else:
+            archive = source_package_release.upload_archive
         if source_package_release is None:
             source_package_release = self.makeSourcePackageRelease(archive)
         processor = self.makeProcessor()
-        distroarchseries = self.makeDistroArchSeries(
-            distroseries=source_package_release.upload_distroseries,
-            processorfamily=processor.family,
-            architecturetag=None)
+        if distroarchseries is None:
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=source_package_release.upload_distroseries,
+                processorfamily=processor.family,
+                architecturetag=None)
         binary_package_build = BinaryPackageBuild(
             sourcepackagerelease=source_package_release,
             processor=processor,
             distroarchseries=distroarchseries,
             buildstate=BuildStatus.NEEDSBUILD,
-            archive=archive)
+            archive=archive,
+            datecreated=self.getUniqueDate())
         binary_package_build_job = binary_package_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,

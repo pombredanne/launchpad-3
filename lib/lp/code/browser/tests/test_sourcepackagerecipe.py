@@ -340,17 +340,18 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def setUp(self):
         """Provide useful defaults."""
         super(TestSourcePackageRecipeBuildView, self).setUp()
-        self.build_owner = self.factory.makePerson(
+        self.user = self.factory.makePerson(
             displayname='Owner', name='build-owner', password='test')
 
     def makeBuild(self):
         archive = self.factory.makeArchive(name='build',
-            owner=self.build_owner)
-        recipe = self.factory.makeSourcePackageRecipe(owner=self.build_owner,
-            name=u'my-recipe')
-        distro_series = self.factory.makeDistroSeries(name='squirrel')
+            owner=self.user)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.user, name=u'my-recipe', sourcepackagename='mypackage')
+        distro_series = self.factory.makeDistroSeries(
+            name='squirrel', distribution=archive.distribution)
         build = self.factory.makeSourcePackageRecipeBuild(
-            requester=self.build_owner, archive=archive, recipe=recipe,
+            requester=self.user, archive=archive, recipe=recipe,
             distroseries=distro_series)
         queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=build)
@@ -401,8 +402,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         return self.getUserBrowser(url, self.build_owner)
 
     def test_render_index(self):
-        view = self.makeBuildView()
-        browser = self.getBuildBrowser(view.context, '+index')
+        browser = self.getViewBrowser(self.makeBuild(), '+index')
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Branches
@@ -417,6 +417,40 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Series:        Squirrel
             Pocket:        Release
             Binary builds: None""", main_text)
+
+    def makeBuildAndRelease(self):
+        build = self.makeBuild()
+        return self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build, version='3.14')
+
+    def test_render_sourcepackage_release(self):
+        release = self.makeBuildAndRelease()
+        browser = self.getViewBrowser(
+            release.source_package_recipe_build, '+index')
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Result: mypackage in ubuntu 3.14""", main_text)
+
+    def makeBinaryBuild(self, release, architecturetag):
+        distroarchseries = self.factory.makeDistroArchSeries(
+            architecturetag=architecturetag,
+            distroseries=release.upload_distroseries,
+            processorfamily=self.factory.makeProcessorFamily())
+        binary_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=release, distroarchseries=distroarchseries)
+
+    def test_render_binary_builds(self):
+        release = self.makeBuildAndRelease()
+        self.makeBinaryBuild(release, 'itanic')
+        self.makeBinaryBuild(release, 'x87-64')
+        browser = self.getViewBrowser(
+            release.source_package_recipe_build, '+index')
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Binary builds:
+            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
+            x87-64 build of mypackage 3.14 in ubuntu squirrel RELEASE$""",
+            main_text)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
