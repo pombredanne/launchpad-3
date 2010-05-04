@@ -89,6 +89,9 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertRaises(
             NotImplementedError, self.package_build.verifySuccessfulUpload)
         self.assertRaises(NotImplementedError, self.package_build.notify)
+        self.assertRaises(
+            NotImplementedError, self.package_build.handleStatus,
+            None, None, None)
 
     def test_default_values(self):
         # PackageBuild has a number of default values.

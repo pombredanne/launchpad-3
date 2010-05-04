@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'IPackageBuild',
     'IPackageBuildSource',
-    'IPackageBuildDerived',
     ]
 
 
@@ -145,6 +144,13 @@ class IPackageBuild(IBuildFarmJob):
             upload log.
         """
 
+    def handleStatus(status, librarian, slave_status):
+        """Handle a finished build status from a slave.
+
+        :param status: Slave build status string with 'BuildStatus.' stripped.
+        :param slave_status: A dict as returned by IBuilder.slaveStatus
+        """
+
 
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
@@ -156,15 +162,3 @@ class IPackageBuildSource(Interface):
         :param pocket: An item of `PackagePublishingPocket`.
         :param dependencies: An optional debian-like dependency line.
         """
-
-
-class IPackageBuildDerived(Interface):
-    """Classes deriving from IPackageBuild inherit the default handleStatus.
-    """
-    def handleStatus(status, librarian, slave_status):
-        """Handle a finished build status from a slave.
-
-        :param status: Slave build status string with 'BuildStatus.' stripped.
-        :param slave_status: A dict as returned by IBuilder.slaveStatus
-        """
-

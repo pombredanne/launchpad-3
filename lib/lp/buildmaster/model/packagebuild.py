@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildDerived, IPackageBuildSource)
+    IPackageBuild, IPackageBuildSource)
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -154,14 +154,25 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def handleStatus(self, status, librarian, slave_status):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
 
 class PackageBuildDerived:
-    """See `IPackageBuildDerived`."""
-    implements(IPackageBuildDerived)
     delegates(IPackageBuild, context="package_build")
 
+
+class PackageBuildStatusHandlerMixin:
+    """A mixin to provide the common implementation of handleStatus.
+
+    This can be used by classes based on PackageBuild to provide
+    the implementation of handleStatus, ensuring that the methods
+    called during handleStatus are called on the top-level object
+    first.
+    """
     def handleStatus(self, status, librarian, slave_status):
-        """See `IPackageBuildDerived`."""
+        """See `IPackageBuild`."""
         return BuildBase.handleStatus(self, status, librarian, slave_status)
 
     # The following private handlers currently re-use the BuildBase
