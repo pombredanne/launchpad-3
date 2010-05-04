@@ -48,11 +48,9 @@
 
       <tal:uses_malone condition="view/uses_launchpad_bugtracker">
         <div class="portlet">
-          <ul>
-            <li id="bug-supervisor"
-                tal:define="bug_supervisor context/bug_supervisor">
-              Bug supervisor:<br />
-              <span style="margin-left: 1em">
+          <dl tal:define="bug_supervisor context/bug_supervisor">
+            <dt id="bug-supervisor">Bug supervisor:</dt>
+              <dd>
                 <tal:none condition="not:bug_supervisor">None set</tal:none>
                 <a tal:condition="bug_supervisor"
                    tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
@@ -64,12 +62,11 @@
                     <img tal:attributes="alt link/text" src="/@@/edit" />
                   </a>
                 </tal:edit-bug-supervisor>
-              </span>
-            </li>
-            <li id="bug-security"
-                tal:define="securitycontact context/security_contact">
-              Security contact:<br />
-              <span style="margin-left: 1em">
+              </dd>
+            </dl>
+            <dl tal:define="securitycontact context/security_contact">
+              <dt id="bug-security">Security contact:</dt>
+              <dd>
                 <tal:none condition="not:securitycontact">None set</tal:none>
                 <a tal:condition="securitycontact"
                    tal:replace="structure securitycontact/fmt:link">
@@ -83,11 +80,8 @@
                     <img tal:attributes="alt link/text" src="/@@/edit" />
                   </a>
                 </tal:edit-securitycontact>
-              </span>
-            </li>
-            <li>
-            </li>
-          </ul>
+              </dd>
+            </dl>
         </div>
 
       <tal:has_bugtasks condition="context/has_bugtasks">
