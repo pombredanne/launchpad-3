@@ -96,6 +96,7 @@ class TestPackageBuild(TestPackageBuildBase):
         self.failUnlessEqual(
             'multiverse', self.package_build.current_component.name)
         self.failUnlessEqual(None, self.package_build.distribution)
+        self.failUnlessEqual(None, self.package_build.distro_series)
 
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.

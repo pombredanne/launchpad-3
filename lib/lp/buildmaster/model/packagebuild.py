@@ -58,7 +58,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
     policy_name = 'buildd'
+
+    # The following two properties are part of the IPackageBuild
+    # interface, but need to be provided by derived classes.
     distribution = None
+    distro_series = None
 
     def __init__(self, build_farm_job, archive, pocket,
                  dependencies=None):

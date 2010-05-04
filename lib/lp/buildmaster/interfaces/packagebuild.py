@@ -19,6 +19,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -75,6 +76,12 @@ class IPackageBuild(IBuildFarmJob):
             schema=IDistribution,
             title=_("Distribution"), required=True,
             description=_("Shortcut for its distribution.")))
+
+    distro_series = exported(
+        Reference(
+            schema=IDistroSeries,
+            title=_("Distribution series"), required=True,
+            description=_("Shortcut for its distribution series.")))
 
     def getUploaderCommand(distro_series, upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
