@@ -343,7 +343,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.build_owner = self.factory.makePerson(
             displayname='Owner', name='build-owner', password='test')
 
-    def makeBuildView(self):
+    def makeBuild(self):
         archive = self.factory.makeArchive(name='build',
             owner=self.build_owner)
         recipe = self.factory.makeSourcePackageRecipe(owner=self.build_owner,
@@ -355,7 +355,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=build)
         self.factory.makeBuilder()
-        return SourcePackageRecipeBuildView(build, None)
+        return build
+
+    def makeBuildView(self):
+        return SourcePackageRecipeBuildView(self.makeBuild(), None)
 
     def test_estimate(self):
         """Time should be estimated until the job is completed."""
@@ -406,19 +409,14 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             my-recipe
             Build status
             Needs building
-            Start in 4 seconds
-            Estimated finish in 1 minute
+            Start in .*
+            Estimated finish in .*
             Build details
-            Recipe:
-            Recipe my-recipe for Owner
-            Archive:
-            PPA named build for Owner
-            Series:
-            Squirrel
-            Pocket:
-            Release
-            Binary builds:
-            None""", main_text)
+            Recipe:        Recipe my-recipe for Owner
+            Archive:       PPA named build for Owner
+            Series:        Squirrel
+            Pocket:        Release
+            Binary builds: None""", main_text)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
