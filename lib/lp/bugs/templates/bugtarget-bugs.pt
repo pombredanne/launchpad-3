@@ -153,21 +153,17 @@
       </tal:no_hot_bugs>
     </tal:uses_malone>
 
-    <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker">
+    <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker"
+     tal:define ="configure_bugtracker context/menu:overview/configure_bugtracker | nothing">
       <p id="no-malone"><strong><tal:project_title replace="context/title" /> does not use Launchpad for
         bug tracking.</strong></p>
-          <ul>
-            <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
-              <strong>Bug tracker:</strong><br />
-              <span style="margin-left: 1em">
-                <tal:bugtracker replace="structure view/bugtracker" />
-              </span>
-            </li>
-          </ul>
+          <p tal:condition="view/external_bugtracker"
+             id="bugtracker"><strong>Bugs are tracked in
+            <tal:bugtracker replace="structure view/bugtracker" />.</strong>
+          </p>
 
         <p tal:condition="context/required:launchpad.Edit"
            id="no-malone-edit"
-           tal:define ="configure_bugtracker context/menu:overview/configure_bugtracker | nothing"
            >
           <a tal:condition="configure_bugtracker"
              tal:replace="structure configure_bugtracker/fmt:link"/>
