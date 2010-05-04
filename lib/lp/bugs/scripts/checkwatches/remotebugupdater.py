@@ -68,7 +68,7 @@ class RemoteBugUpdater(WorkingBase):
             external_bugtracker.sync_comments)
         self.can_back_link = (
             ISupportsBackLinking.providedBy(external_bugtracker) and
-            remotesystem.sync_comments)
+            external_bugtracker.sync_comments)
 
         if self.can_import_comments and server_time is None:
             self.can_import_comments = False
