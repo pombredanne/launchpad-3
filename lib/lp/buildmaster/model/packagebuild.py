@@ -160,17 +160,13 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
 
 class PackageBuildDerived:
+    """Setup the delegation for package build.
+
+    This class also provides some common implementation for handling
+    build status.
+    """
     delegates(IPackageBuild, context="package_build")
 
-
-class PackageBuildStatusHandlerMixin:
-    """A mixin to provide the common implementation of handleStatus.
-
-    This can be used by classes based on PackageBuild to provide
-    the implementation of handleStatus, ensuring that the methods
-    called during handleStatus are called on the top-level object
-    first.
-    """
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
         return BuildBase.handleStatus(self, status, librarian, slave_status)
