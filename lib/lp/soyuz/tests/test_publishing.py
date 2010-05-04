@@ -317,8 +317,8 @@ class SoyuzTestPublisher:
         replaces=None, provides=None, pre_depends=None, enhances=None,
         breaks=None, format=BinaryPackageFormat.DEB):
         """Return the corresponding `BinaryPackageRelease`."""
-        sourcepackagerelease = build.sourcepackagerelease
-        distroarchseries = build.distroarchseries
+        sourcepackagerelease = build.source_package_release
+        distroarchseries = build.distro_arch_series
         architecturespecific = (
             not sourcepackagerelease.architecturehintlist == 'all')
 
@@ -367,11 +367,11 @@ class SoyuzTestPublisher:
         build.buildduration = datetime.timedelta(minutes=5)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
-            build.distroseries.name,
-            build.distroarchseries.architecturetag,
-            build.sourcepackagerelease.name,
-            build.sourcepackagerelease.version,
-            build.buildstate.name)
+            build.distro_series.name,
+            build.distro_arch_series.architecturetag,
+            build.source_package_release.name,
+            build.source_package_release.version,
+            build.status.name)
         build.buildlog = self.addMockFile(
             buildlog_filename, filecontent='Built!',
             restricted=build.archive.private)
@@ -384,7 +384,7 @@ class SoyuzTestPublisher:
         pocket=PackagePublishingPocket.RELEASE,
         scheduleddeletiondate=None, dateremoved=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
-        distroarchseries = binarypackagerelease.build.distroarchseries
+        distroarchseries = binarypackagerelease.build.distro_arch_series
 
         # Publish the binary.
         if binarypackagerelease.architecturespecific:
@@ -898,7 +898,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.addFakeChroots(self.distroseries)
 
     def getPubSource(self, architecturehintlist):
-        """Return a mock source package publishing record for the archive 
+        """Return a mock source package publishing record for the archive
         and architecture used in this testcase.
 
         :param architecturehintlist: Architecture hint list (e.g. "i386 amd64")
@@ -922,13 +922,13 @@ class BuildRecordCreationTests(TestNativePublishingBase):
     def test__getAllowedArchitectures_restricted_override(self):
         """Test _getAllowedArchitectures honors overrides of restricted archs.
 
-        Restricted architectures should only be allowed if there is 
+        Restricted architectures should only be allowed if there is
         an explicit ArchiveArch association with the archive.
         """
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
         getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
         pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEquals([self.sparc_distroarch, self.avr_distroarch], 
+        self.assertEquals([self.sparc_distroarch, self.avr_distroarch],
             pubrec._getAllowedArchitectures(available_archs))
 
     def test_createMissingBuilds_restricts_any(self):
@@ -941,7 +941,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
-        """createMissingBuilds() should limit builds targeted at a 
+        """createMissingBuilds() should limit builds targeted at a
         variety of architectures architecture to those allowed for the archive.
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
@@ -951,7 +951,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
     def test_createMissingBuilds_restricts_all(self):
         """createMissingBuilds() should limit builds targeted at 'all'
-        architectures to the nominated independent architecture, 
+        architectures to the nominated independent architecture,
         if that is allowed for the archive.
         """
         pubrec = self.getPubSource(architecturehintlist='all')
@@ -961,7 +961,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
 
     def test_createMissingBuilds_restrict_override(self):
         """createMissingBuilds() should limit builds targeted at 'any'
-        architecture to architectures that are unrestricted or 
+        architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
         getUtility(IArchiveArchSet).new(self.archive, self.avr_family)

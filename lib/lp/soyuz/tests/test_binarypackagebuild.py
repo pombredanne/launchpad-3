@@ -15,8 +15,7 @@ from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildDerived)
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
@@ -49,7 +48,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
     def test_providesInterfaces(self):
         # Build provides IPackageBuild and IBuild.
         self.assertProvides(self.build, IPackageBuild)
-        self.assertProvides(self.build, IPackageBuildDerived)
         self.assertProvides(self.build, IBinaryPackageBuild)
 
     def test_queueBuild(self):
@@ -84,7 +82,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         [depwait_build] = depwait_source.createMissingBuilds()
         depwait_build.buildstate = BuildStatus.MANUALDEPWAIT
-        depwait_build.dependencies = 'dep-bin'
+        depwait_build.dependencies = u'dep-bin'
 
         return depwait_build
 
@@ -162,10 +160,11 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         # valid ubuntu component.
         depwait_build = self._setupSimpleDepwaitContext()
 
+        spr = depwait_build.source_package_release
         depwait_build.current_source_publication.requestDeletion(
-            depwait_build.sourcepackagerelease.creator)
+            spr.creator)
         contrib = getUtility(IComponentSet).new('contrib')
-        depwait_build.sourcepackagerelease.component = contrib
+        removeSecurityProxy(spr).component = contrib
 
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')

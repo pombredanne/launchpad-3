@@ -22,7 +22,7 @@ from lazr.enum import EnumeratedType, Item
 from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildDerived)
+    IPackageBuild)
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory)
@@ -40,7 +40,7 @@ class CannotBeRescored(Exception):
     _message_prefix = "Cannot rescore build"
 
 
-class IBinaryPackageBuildView(IPackageBuild, IPackageBuildDerived):
+class IBinaryPackageBuildView(IPackageBuild):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 

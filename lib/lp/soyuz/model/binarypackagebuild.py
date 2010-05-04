@@ -45,7 +45,7 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild, IPackageBuildSource)
+    IPackageBuildSource)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
@@ -68,7 +68,6 @@ from lp.soyuz.model.queue import (
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     implements(IBinaryPackageBuild)
-    delegates(IPackageBuild, context="package_build")
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
@@ -357,7 +356,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         name, version, relation = self._parseDependencyToken(token)
 
         dep_candidate = self.archive.findDepCandidateByName(
-            self.distroarchseries, name)
+            self.distro_arch_series, name)
 
         if not dep_candidate:
             return False
@@ -406,7 +405,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = ", ".join(remaining_deps)
+        self.dependencies = u", ".join(remaining_deps)
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
