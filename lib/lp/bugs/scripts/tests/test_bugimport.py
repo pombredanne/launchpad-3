@@ -896,10 +896,11 @@ class TestExternalBugTracker(ExternalBugTracker):
 class TestRemoteBugUpdater(RemoteBugUpdater):
 
     def __init__(self, parent, external_bugtracker, remote_bug,
-                 bug_watch_ids, unmodified_remote_ids, bugtracker):
+                 bug_watch_ids, unmodified_remote_ids, server_time,
+                 bugtracker):
         super(TestRemoteBugUpdater, self). __init__(
             parent, external_bugtracker, remote_bug, bug_watch_ids,
-            unmodified_remote_ids)
+            unmodified_remote_ids, server_time)
         self.bugtracker = bugtracker
 
     def _getBugWatchesForRemoteBug(self):
@@ -928,11 +929,12 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
         """See `CheckwatchesMaster`."""
         return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
-    def _makeRemoteBugUpdater(self, external_bugtracker, remote_bug,
-                              bug_watch_ids, unmodified_remote_ids):
+    def remote_bug_updater_factory(self, parent, external_bugtracker,
+                                   remote_bug, bug_watch_ids,
+                                   unmodified_remote_ids, server_time):
         return TestRemoteBugUpdater(
             self, external_bugtracker, remote_bug, bug_watch_ids,
-            unmodified_remote_ids, self.bugtracker)
+            unmodified_remote_ids, server_time, self.bugtracker)
 
 
 class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
@@ -942,7 +944,6 @@ class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def test_checkwatches_error_recovery(self):
-
         firefox = getUtility(IProductSet).get(4)
         foobar = getUtility(IPersonSet).get(16)
         params = CreateBugParams(
