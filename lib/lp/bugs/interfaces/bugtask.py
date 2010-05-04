@@ -491,7 +491,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                  readonly=True,
                  required=False))
     date_fix_released = exported(
-        Datetime(title=_("Date Fix Relesaed"),
+        Datetime(title=_("Date Fix Released"),
                  description=_("The date on which this task was marked "
                                "Fix Released."),
                  readonly=True,
@@ -555,7 +555,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     is_complete = exported(
         Bool(description=_(
                 "True or False depending on whether or not there is more "
-                " work required on this bug task."),
+                "work required on this bug task."),
              readonly=True))
 
     @operation_returns_collection_of(Interface) # Actually IBug.
