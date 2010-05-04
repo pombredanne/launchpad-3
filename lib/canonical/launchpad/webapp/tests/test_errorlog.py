@@ -35,7 +35,7 @@ from canonical.launchpad.webapp.errorlog import (
     ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
     _is_sensitive)
 from canonical.launchpad.webapp.interfaces import (
-    TranslationUnavailable, NoReferrerError)
+    NoReferrerError, TranslationUnavailable)
 from lazr.restful.declarations import webservice_error
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
