@@ -14,7 +14,6 @@ import hashlib
 
 from lazr.delegates import delegates
 
-import hashlib
 import pytz
 
 from storm.locals import Bool, DateTime, Int, Reference, Storm
@@ -32,8 +31,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobDerived,
-    IBuildFarmJobOld, IBuildFarmJobSource)
+    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobOld,
+    IBuildFarmJobSource)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 
 
@@ -63,6 +62,10 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
+    def getByJob(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
     def jobStarted(self):
         """See `IBuildFarmJobOld`."""
         pass
@@ -75,8 +78,27 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         pass
 
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `IBuildFarmJobOld`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `IBuildFarmJobOld`."""
+        return True
+
+    def cleanUp(self):
+        """See `IBuildFarmJob`."""
+        Store.of(self).remove(self)
+
+    def generateSlaveBuildCookie(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
 
 class BuildFarmJobOldDerived:
+    """Setup the delegation and provide some common implementation."""
     delegates(IBuildFarmJobOld, context='build_farm_job')
 
     def __init__(self, *args, **kwargs):
@@ -102,22 +124,12 @@ class BuildFarmJobOldDerived:
 
     @classmethod
     def getByJob(cls, job):
-        """See `IBuildFarmJobDerived`."""
+        """See `IBuildFarmJobOld`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(cls, cls.job == job).one()
 
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobDerived`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobDerived`."""
-        return True
-
     def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJobDerived`."""
+        """See `IBuildFarmJobOld`."""
         buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
 
         if buildqueue.processor is None:
@@ -135,10 +147,6 @@ class BuildFarmJobOldDerived:
             ])
 
         return hashlib.sha1(contents).hexdigest()
-
-    def cleanUp(self):
-        """See `IBuildFarmJob`."""
-        Store.of(self).remove(self)
 
 
 class BuildFarmJob(BuildFarmJobOld, Storm):
@@ -258,8 +266,16 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """
         return None
 
+    def cleanUp(self):
+        """See `IBuildFarmJobOld`.
+
+        XXX 2010-05-04 michael.nelson bug=570939
+        This can be removed once IBuildFarmJobOld is no longer used
+        and services jobs are linked directly to IBuildFarmJob.
+        """
+        pass
+
 
 class BuildFarmJobDerived:
-    """See `IBuildFarmJobDerived`."""
-    implements(IBuildFarmJobDerived)
+    implements(IBuildFarmJob)
     delegates(IBuildFarmJob, context='build_farm_job')

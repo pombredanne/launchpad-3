@@ -848,8 +848,6 @@
         class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
-        <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
     </class>
     <!--
         The registration below is used to discover all build farm job classes

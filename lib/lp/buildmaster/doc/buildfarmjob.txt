@@ -29,17 +29,6 @@ implementations for many build-related methods.
 
 For more details, please refer to lp.buildmaster.tests.test_buildfarmjob.
 
-BuildFarmJobDerived
-===================
-
-BuildFarmJobDerived exists to encapsulate the functionality required
-by classes delegating IBuildFarmJob.
-
-    >>> from lp.buildmaster.interfaces.buildfarmjob import (
-    ...     IBuildFarmJobDerived)
-    >>> verifyObject(IBuildFarmJobDerived, BuildFarmJobDerived())
-    True
-
 This class also includes the getByJob() class method used to find the
 instance of a specific build-farm job implementation associated with a
 given Job instance which must be called in the context of a concrete

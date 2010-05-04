@@ -147,7 +147,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
 
     @classmethod
     def getByJob(cls, job):
-        """See `IBuildFarmJobDerived`.
+        """See `IBuildFarmJob`.
 
         Overridden here to search via a BranchJob, rather than a Job.
         """
