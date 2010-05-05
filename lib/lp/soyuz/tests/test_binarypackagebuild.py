@@ -22,6 +22,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
@@ -94,6 +95,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         """
         # Create a build in depwait.
         depwait_build = self._setupSimpleDepwaitContext()
+        depwait_build_id = depwait_build.id
 
         # Grab the relevant db records for later comparison.
         store = Store.of(depwait_build)
@@ -119,6 +121,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(
             store.find(BuildQueue, BuildQueue.id == build_queue_id).count(),
             0)
+        # But the build itself still exists.
+        self.assertEqual(
+            store.find(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == depwait_build_id).count(),
+            1)
+
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBinaryPackageBuild.updateDependencies` makes the build
@@ -139,17 +148,17 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             AssertionError, depwait_build.updateDependencies)
 
         # Missing 'name'.
-        depwait_build.dependencies = '(>> version)'
+        depwait_build.dependencies = u'(>> version)'
         self.assertRaises(
             AssertionError, depwait_build.updateDependencies)
 
         # Missing 'version'.
-        depwait_build.dependencies = 'name (>>)'
+        depwait_build.dependencies = u'name (>>)'
         self.assertRaises(
             AssertionError, depwait_build.updateDependencies)
 
         # Missing comman between dependencies.
-        depwait_build.dependencies = 'name1 name2'
+        depwait_build.dependencies = u'name1 name2'
         self.assertRaises(
             AssertionError, depwait_build.updateDependencies)
 
@@ -289,11 +298,10 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         """Verify that storeBuildInfo sets any dependencies."""
         self.build.storeBuildInfo(
             self.build, None, {'dependencies': 'somepackage'})
-        self.assertIsNot(None, self.build.buildlog)
+        self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)
-        self.assertIsNot(None, self.build.datebuilt)
-        self.assertIsNot(None, self.build.buildduration)
+        self.assertIsNot(None, self.build.date_finished)
 
     def testWithoutDependencies(self):
         """Verify that storeBuildInfo clears the build's dependencies."""

@@ -22,7 +22,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -44,7 +43,8 @@ class BuildBase:
     the properties defined on IBuildBase on the inheriting class tables.
     BuildBase cannot therefore implement IBuildBase itself, as storm requires
     that the corresponding __storm_table__ be defined for the class. Instead,
-    the classes using the BuildBase mixin must ensure that they implement IBuildBase.
+    the classes using the BuildBase mixin must ensure that they implement
+    IBuildBase.
     """
     policy_name = 'buildd'
 
@@ -332,16 +332,18 @@ class BuildBase:
     @staticmethod
     def storeBuildInfo(build, librarian, slave_status):
         """See `IBuildBase`."""
-        build.buildlog = build.getLogFromSlave(build)
-        build.builder = build.buildqueue_record.builder
+        # XXX michaeln 2010-05-05 bug=567922
+        # As this method is temporarily static until BuildBase is
+        # removed and the implementation moved to PackageBuild,
+        # self.attr_name is temporarily build.attr_name, which
+        # means we cannot set the build attributes.
+        naked_build = removeSecurityProxy(build)
+        naked_build.log = build.getLogFromSlave(build)
+        naked_build.builder = build.buildqueue_record.builder
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for
         # the duration spent building locally.
-        build.datebuilt = UTC_NOW
-        # We need dynamic datetime.now() instance to be able to perform
-        # the time operations for duration.
-        RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
-        build.buildduration = RIGHT_NOW - build.buildqueue_record.date_started
+        naked_build.date_finished = datetime.datetime.now(pytz.UTC)
         if slave_status.get('dependencies') is not None:
             build.dependencies = unicode(slave_status.get('dependencies'))
         else:

@@ -90,7 +90,7 @@ class BuildFarmJobOld:
 
     def cleanUp(self):
         """See `IBuildFarmJob`."""
-        Store.of(self).remove(self)
+        pass
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -147,6 +147,14 @@ class BuildFarmJobOldDerived:
             ])
 
         return hashlib.sha1(contents).hexdigest()
+
+    def cleanUp(self):
+        """See `IBuildFarmJob`.
+
+        Classes that derive from BuildFarmJobOld need to clean up
+        after themselves correctly.
+        """
+        Store.of(self).remove(self)
 
 
 class BuildFarmJob(BuildFarmJobOld, Storm):
