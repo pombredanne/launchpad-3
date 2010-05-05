@@ -24,7 +24,7 @@ from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeView, SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
-from lp.testing import ANONYMOUS, BrowserTestCase, login, TestCaseWithFactory
+from lp.testing import ANONYMOUS, BrowserTestCase, login
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -361,8 +361,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build = self.factory.makeSourcePackageRecipeBuild(
             requester=self.user, archive=archive, recipe=recipe,
             distroseries=distro_series)
-        queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.factory.makeBuilder()
         return build
 
@@ -479,7 +478,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             architecturetag=architecturetag,
             distroseries=release.upload_distroseries,
             processorfamily=self.factory.makeProcessorFamily())
-        binary_build = self.factory.makeBinaryPackageBuild(
+        return self.factory.makeBinaryPackageBuild(
             source_package_release=release, distroarchseries=distroarchseries)
 
     def test_render_binary_builds(self):
