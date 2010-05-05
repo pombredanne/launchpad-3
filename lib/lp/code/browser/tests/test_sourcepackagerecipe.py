@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 from textwrap import dedent
-import re
 
 from pytz import utc
 from zope.security.proxy import removeSecurityProxy
