@@ -159,11 +159,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(spb.upload_log, spb.getFileByName('upload.txt.gz'))
 
     def test_binary_builds(self):
+        """The binary_builds property should be populated automatically."""
         spb = self.factory.makeSourcePackageRecipeBuild()
         spr = self.factory.makeSourcePackageRelease(
             source_package_recipe_build=spb)
         self.assertEqual([], list(spb.binary_builds))
         binary = self.factory.makeBinaryPackageBuild(spr)
+        self.factory.makeBinaryPackageBuild()
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
 

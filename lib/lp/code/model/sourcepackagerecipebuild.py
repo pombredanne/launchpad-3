@@ -61,6 +61,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     @property
     def binary_builds(self):
+        """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
             BinaryPackageBuild.sourcepackagerelease==SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build==self.id)
@@ -90,6 +91,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     @property
     def datestarted(self):
         """See `IBuild`."""
+        # datestarted is not stored on Build.  It can be calculated from
+        # self.datebuilt and self.buildduration, if both are set.  This does
+        # not happen until the build is complete.
+        #
+        # Before the build is complete, there will be a buildqueue_record.
+        # If buildqueue_record is set, buildqueue_record.job.date_started can
+        # be used.  Otherwise, None is returned.
         if None not in (self.datebuilt, self.buildduration):
             return self.datebuilt - self.buildduration
         queue_record = self.buildqueue_record

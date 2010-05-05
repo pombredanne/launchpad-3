@@ -1333,7 +1333,7 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
-class SourcePackageReleaseFormatterAPI(SourcePackageFormatterAPI):
+class SourcePackageReleaseFormatterAPI(CustomizableFormatter):
 
     """Adapter for ISourcePackageRelease objects to a formatted string."""
 

@@ -35,6 +35,7 @@ class TestCaseForRecipe(BrowserTestCase):
         super(TestCaseForRecipe, self).setUp()
         self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
+        self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
         self.squirrel = self.factory.makeDistroSeries(
@@ -50,15 +51,9 @@ class TestCaseForRecipe(BrowserTestCase):
             description=u'This recipe builds a foo for disto bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch])
 
-    def getRecipeBrowser(self, recipe, view_name=None):
-        """Return a browser for the specified recipe, opened as Chef."""
-        login(ANONYMOUS)
-        url = canonical_url(recipe, view_name=view_name)
-        return self.getUserBrowser(url, self.chef)
-
     def getMainText(self, recipe, view_name=None):
         """Return the main text of a recipe page, as seen by Chef."""
-        browser = self.getRecipeBrowser(recipe, view_name)
+        browser = self.getViewBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
 
 
@@ -218,18 +213,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
-    def containsRe(self, regex, text):
-        pattern = re.compile(regex, re.S)
-        return bool(pattern.search(text))
-
-    def assertContainsRe(self, regex, text):
-        """Assert that the text contains the specified regex."""
-        self.assertTrue(self.containsRe(regex, text))
-
-    def assertNotContainsRe(self, regex, text):
-        """Assert that the text contains the specified regex."""
-        self.assertFalse(self.containsRe(regex, text))
-
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
@@ -329,7 +312,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
         recipe = self.makeRecipe()
-        browser = self.getRecipeBrowser(recipe, '+request-builds')
+        browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
         build_distros = [
@@ -352,6 +335,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             displayname='Owner', name='build-owner', password='test')
 
     def makeBuild(self, buildstate=None):
+        """Make a build suitabe for testing."""
         archive = self.factory.makeArchive(name='build',
             owner=self.user)
         recipe = self.factory.makeSourcePackageRecipe(
@@ -366,6 +350,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         return build
 
     def makeBuildView(self):
+        """Return a view of a build suitable for testing."""
         return SourcePackageRecipeBuildView(self.makeBuild(), None)
 
     def test_estimate(self):
@@ -409,8 +394,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         return self.getUserBrowser(url, self.build_owner)
 
     def test_render_index(self):
-        browser = self.getViewBrowser(self.makeBuild(), '+index')
-        main_text = extract_text(find_main_content(browser.contents))
+        """Test the basic index page."""
+        main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Branches
             my-recipe
@@ -426,6 +411,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Binary builds: None""", main_text)
 
     def test_render_index_completed(self):
+        """Test the index page of a completed build."""
         release = self.makeBuildAndRelease()
         self.makeBinaryBuild(release, 'itanic')
         naked_build = removeSecurityProxy(release.source_package_recipe_build)
@@ -437,9 +423,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             content='buildlog')
         naked_build.upload_log = self.factory.makeLibraryFileAlias(
             content='upload_log')
-        browser = self.getViewBrowser(
+        main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
-        main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Branches
             my-recipe
@@ -461,19 +446,21 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             main_text)
 
     def makeBuildAndRelease(self):
+        """Make a build and release suitable for testing."""
         build = self.makeBuild()
         return self.factory.makeSourcePackageRelease(
             source_package_recipe_build=build, version='3.14')
 
     def test_render_sourcepackage_release(self):
+        """SourcePackageReleases are shown if set."""
         release = self.makeBuildAndRelease()
-        browser = self.getViewBrowser(
+        main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
-        main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Result: mypackage in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
+        """Make a binary build with specified release and architecturetag."""
         distroarchseries = self.factory.makeDistroArchSeries(
             architecturetag=architecturetag,
             distroseries=release.upload_distroseries,
@@ -482,12 +469,12 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             source_package_release=release, distroarchseries=distroarchseries)
 
     def test_render_binary_builds(self):
+        """BinaryBuilds for this source build are shown if they exist."""
         release = self.makeBuildAndRelease()
         self.makeBinaryBuild(release, 'itanic')
         self.makeBinaryBuild(release, 'x87-64')
-        browser = self.getViewBrowser(
+        main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
-        main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Binary builds:
             itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
@@ -499,17 +486,16 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build = self.makeBuild()
         build.buildqueue_record.logtail = 'Logs have no tails!'
         build.buildqueue_record.builder = self.factory.makeBuilder()
-        browser = self.getViewBrowser(build, '+index')
-        main_text = extract_text(find_main_content(browser.contents))
+        main_text = self.getMainText(build, '+index')
         self.assertNotIn('Logs have no tails!', main_text)
         removeSecurityProxy(build).buildstate = BuildStatus.BUILDING
-        browser = self.getViewBrowser(build, '+index')
-        main_text = extract_text(find_main_content(browser.contents))
+        main_text = self.getMainText(build, '+index')
         self.assertIn('Logs have no tails!', main_text)
         removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
+        """"Return the main text of a view's web page."""
         browser = self.getViewBrowser(build, '+index')
         return extract_text(find_main_content(browser.contents))
 

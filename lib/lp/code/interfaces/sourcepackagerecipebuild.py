@@ -43,7 +43,7 @@ class ISourcePackageRecipeBuild(IBuildBase):
             title=_("The binary builds that resulted from this."),
             readonly=True)
 
-    datestarted = Datetime()
+    datestarted = Datetime(title=u'The time the build started.')
 
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),

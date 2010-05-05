@@ -100,8 +100,8 @@ class SourcePackageRecipeNavigation(Navigation):
     usedfor = ISourcePackageRecipe
 
     @stepthrough('+build')
-    def traverse_recipe(self, id):
-        """Traverse to this person's recipes."""
+    def traverse_build(self, id):
+        """Traverse to this recipe's builds."""
         return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
 
 

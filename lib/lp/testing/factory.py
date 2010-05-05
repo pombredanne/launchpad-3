@@ -259,9 +259,13 @@ class ObjectFactory:
         return '%s://%s/%s' % (scheme, host, self.getUniqueString('path'))
 
     def getUniqueDate(self):
+        """Return a unique date since January 1 2009.
+
+        Each date returned by this function will more recent (or further into
+        the future) than the previous one.
+        """
         epoch = datetime(2009, 1, 1, tzinfo=pytz.UTC)
         return epoch + timedelta(minutes=self.getUniqueInteger())
-
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     url=None, cvs_root=None, cvs_module=None):
@@ -2150,7 +2154,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             source_package_recipe_build=source_package_recipe_build)
 
     def makeBinaryPackageBuild(self, source_package_release=None,
-            distroarchseries=None, archive=None):
+            distroarchseries=None):
+        """Create a BinaryPackageBuild.
+
+        If supplied, the source_package_release is used to determine archive.
+        :param source_package_release: The SourcePackageRelease this binary
+            build uses as its source.
+        :param distroarchseries: The DistroArchSeries to use.
+        """
         if source_package_release is None:
             archive = self.makeArchive()
         else:
