@@ -6,6 +6,7 @@
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
@@ -27,7 +28,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Ensure all the builds have been built.
         for build in self.builds:
-            build.buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         self.publishing_set = getUtility(IPublishingSet)
 
     def _getBuildsForResults(self, results):

@@ -13,6 +13,7 @@ import unittest
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -361,10 +362,12 @@ class SoyuzTestPublisher:
         binarypackagerelease.addFile(alias)
 
         # Adjust the build record in way it looks complete.
-        build.buildstate = BuildStatus.FULLYBUILT
-        build.datebuilt = datetime.datetime(
-            2008, 1, 1, 0, 5, 0, tzinfo=pytz.timezone("UTC"))
-        build.buildduration = datetime.timedelta(minutes=5)
+        naked_build = removeSecurityProxy(build)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_finished = datetime.datetime(
+            2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
+        naked_build.date_started = (
+            build.date_finished - datetime.timedelta(minutes=5))
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
             build.distro_series.name,
@@ -372,7 +375,7 @@ class SoyuzTestPublisher:
             build.source_package_release.name,
             build.source_package_release.version,
             build.status.name)
-        build.buildlog = self.addMockFile(
+        naked_build.log = self.addMockFile(
             buildlog_filename, filecontent='Built!',
             restricted=build.archive.private)
 
@@ -938,7 +941,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
+        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() should limit builds targeted at a
@@ -947,7 +950,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
+        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_all(self):
         """createMissingBuilds() should limit builds targeted at 'all'
@@ -957,7 +960,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='all')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distroarchseries)
+        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restrict_override(self):
         """createMissingBuilds() should limit builds targeted at 'any'
@@ -968,8 +971,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEquals(2, len(builds))
-        self.assertEquals(self.avr_distroarch, builds[0].distroarchseries)
-        self.assertEquals(self.sparc_distroarch, builds[1].distroarchseries)
+        self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
+        self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
 
 
 def test_suite():

@@ -11,8 +11,6 @@ import datetime
 import logging
 import operator
 
-from lazr.delegates import delegates
-
 from storm.locals import Int, Reference
 
 from zope.interface import implements
@@ -76,10 +74,13 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     package_build_id = Int(name='package_build', allow_none=False)
     package_build = Reference(package_build_id, 'PackageBuild.id')
 
-    distro_arch_series = ForeignKey(dbName='distro_arch_series',
-        foreignKey='DistroArchSeries', notNull=True)
-    source_package_release = ForeignKey(dbName='source_package_release',
-        foreignKey='SourcePackageRelease', notNull=True)
+    distro_arch_series_id = Int(name='distro_arch_series', allow_none=False)
+    distro_arch_series = Reference(
+        distro_arch_series_id, 'DistroArchSeries.id')
+    source_package_release_id = Int(
+        name='source_package_release', allow_none=False)
+    source_package_release = Reference(
+        source_package_release_id, 'SourcePackageRelease.id')
 
     @property
     def buildqueue_record(self):
@@ -442,7 +443,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # in a PPA or copy archive).
         archives = [self.archive.id]
         if self.archive.purpose != ArchivePurpose.PRIMARY:
-            archives.append(self.distroarchseries.main_archive.id)
+            archives.append(self.distro_arch_series.main_archive.id)
 
         # Look for all sourcepackagerelease instances that match the name
         # and get the (successfully built) build records for this
@@ -1042,7 +1043,7 @@ class BinaryPackageBuildSet:
             LeftJoin(
                 SourcePackageRelease,
                 (SourcePackageRelease.id ==
-                    BinaryPackageBuild.source_package_releaseID)),
+                    BinaryPackageBuild.source_package_release_id)),
             LeftJoin(
                 SourcePackageName,
                 SourcePackageName.id
