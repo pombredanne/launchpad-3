@@ -86,7 +86,7 @@
 
       <tal:uses_malone condition="view/uses_launchpad_bugtracker">
       <tal:has_bugtasks condition="context/has_bugtasks">
-        <div class="search-box">
+        <div class="search-box" style="margin-bottom:2em">
           <metal:search
             use-macro="context/@@+bugtarget-macros-search/simple-search-form"
           />
@@ -97,7 +97,7 @@
       </tal:has_bugtasks>
 
       <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
-        <h2 style="margin-top: 1em">Hot bugs</h2>
+        <h2>Hot bugs</h2>
 
         <table class="listing" id="hot-bugs"
           tal:define="show_package python: 'packagename' in view.columns_to_show
