@@ -182,10 +182,11 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
         'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
 
     def submit_code(self):
-        product = self.context.context.product
+        view = self.context
+        product_series = view.context
         target = canonical_url(
-            product, view_name='+addbranch', rootsite='code')
-        enabled = product.official_codehosting
+            product_series, view_name='+addbranch', rootsite='code')
+        enabled = view.official_codehosting
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
@@ -1029,7 +1030,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
                     if branch is None:
-                        self.errors_in_action = True
                         return
 
                     self.context.branch = branch
@@ -1060,6 +1060,10 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         self._setBranchExists(e.existing_branch,
                                               'branch_name')
                         self.errors_in_action = True
+                        # Abort transaction. This is normally handled
+                        # by LaunchpadFormView, but we are already in
+                        # the success handler.
+                        self._abort()
                         return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
@@ -1089,6 +1093,11 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch, 'branch_name')
+        if branch is None:
+            self.errors_in_action = True
+            # Abort transaction. This is normally handled by
+            # LaunchpadFormView, but we are already in the success handler.
+            self._abort()
         return branch
 
 

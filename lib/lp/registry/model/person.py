@@ -32,6 +32,7 @@ import random
 import re
 import weakref
 
+from bzrlib.plugins.builder import RecipeParser
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
@@ -80,6 +81,7 @@ from canonical.launchpad.interfaces.account import (
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.model.hasbranches import (
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
@@ -119,6 +121,8 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
@@ -2264,6 +2268,17 @@ class Person(
 
         return rset
 
+    def createRecipe(self, name, description, recipe_text, distroseries,
+                     sourcepackagename, registrant):
+        """See `IPerson`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        builder_recipe = RecipeParser(recipe_text).parse()
+        spnset = getUtility(ISourcePackageNameSet)
+        sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
+        return SourcePackageRecipe.new(
+            registrant, self, distroseries, sourcepackagename, name,
+            builder_recipe, description)
+
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         return Store.of(self).find(
@@ -2304,6 +2319,14 @@ class Person(
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
+
+    def getArchiveSubscriptionURLs(self):
+        """See `IPerson`."""
+        subscriptions = getUtility(
+            IArchiveSubscriberSet).getBySubscriberWithActiveToken(
+                subscriber=self)
+        return [token.archive_url for (subscription, token) in subscriptions
+                if token is not None]
 
     @property
     def ppas(self):

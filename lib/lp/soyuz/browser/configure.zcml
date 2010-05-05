@@ -276,6 +276,13 @@
         permission="launchpad.Edit"
         template="../templates/archive-edit.pt"/>
     <browser:page
+        name="+delete"
+        facet="overview"
+        for="lp.soyuz.interfaces.archive.IArchive"
+        class="lp.soyuz.browser.archive.ArchiveDeleteView"
+        permission="launchpad.Edit"
+        template="../templates/archive-delete.pt"/>
+    <browser:page
         name="+admin"
         facet="overview"
         for="lp.soyuz.interfaces.archive.IArchive"

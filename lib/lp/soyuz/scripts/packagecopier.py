@@ -251,10 +251,6 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
-        if (destination_archive_conflicts.count() == 0 and
-            len(inventory_conflicts) == 0):
-            return
-
         # Cache the conflicting publications because they will be iterated
         # more than once.
         destination_archive_conflicts = list(destination_archive_conflicts)
@@ -383,6 +379,12 @@ class CopyChecker:
             raise CannotCopy(
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))
+
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()
