@@ -7,7 +7,7 @@
 __metaclass__ = type
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from textwrap import dedent
 import re
 
@@ -425,6 +425,41 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Series:        Squirrel
             Pocket:        Release
             Binary builds: None""", main_text)
+
+    def test_render_index_completed(self):
+        release = self.makeBuildAndRelease()
+        self.makeBinaryBuild(release, 'itanic')
+        naked_build = removeSecurityProxy(release.source_package_recipe_build)
+        naked_build.buildstate = BuildStatus.FULLYBUILT
+        naked_build.buildduration = timedelta(minutes=1)
+        naked_build.datebuilt = datetime(2009, 1, 1, tzinfo=utc)
+        naked_build.buildqueue_record.destroySelf()
+        naked_build.buildlog = self.factory.makeLibraryFileAlias(
+            content='buildlog')
+        naked_build.upload_log = self.factory.makeLibraryFileAlias(
+            content='upload_log')
+        browser = self.getViewBrowser(
+            release.source_package_recipe_build, '+index')
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Branches
+            my-recipe
+            Build status
+            Successfully built
+            Started on 2008-12-31
+            Finished on 2009-01-01
+            \(took 1 minute, 0.0 seconds\)
+            buildlog \(8 bytes\)
+            uploadlog \(10 bytes\)
+            Build details
+            Recipe:        Recipe my-recipe for Owner
+            Archive:       PPA named build for Owner
+            Series:        Squirrel
+            Pocket:        Release
+            Result:        mypackage in ubuntu 3.14
+            Binary builds:
+            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE""",
+            main_text)
 
     def makeBuildAndRelease(self):
         build = self.makeBuild()
