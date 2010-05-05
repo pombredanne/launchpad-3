@@ -146,7 +146,7 @@
 
       <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
         <p id="no-bugs-filed"><strong>There are currently no
-          <span tal:condition="context/has_bugtasks">hot</span> bugs filed
+          <span tal:condition="context/has_bugtasks">open</span> bugs filed
           against <tal:project_title replace="context/title" />.</strong></p>
 
         <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
