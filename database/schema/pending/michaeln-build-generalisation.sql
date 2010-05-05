@@ -183,3 +183,36 @@ ALTER TABLE binarypackagepublishinghistory
 -- uncomment the following deletion of the build table once the code has been
 -- updated.
 -- ALTER TABLE Build SET SCHEMA todrop;
+
+-- Step 5
+-- Update views that reference the build table:
+CREATE OR REPLACE VIEW PublishedPackage AS
+SELECT securebinarypackagepublishinghistory.id, distroarchseries.id AS distroarchseries, distroseries.distribution, distroseries.id AS distroseries, distroseries.name AS distroseriesname, processorfamily.id AS processorfamily, processorfamily.name AS processorfamilyname, securebinarypackagepublishinghistory.status AS packagepublishingstatus, component.name AS component, section.name AS section, binarypackagerelease.id AS binarypackagerelease, binarypackagename.name AS binarypackagename, binarypackagerelease.summary AS binarypackagesummary, binarypackagerelease.description AS binarypackagedescription, binarypackagerelease.version AS binarypackageversion, binarypackagebuild.id AS build, buildfarmjob.date_finished AS datebuilt, sourcepackagerelease.id AS sourcepackagerelease, sourcepackagerelease.version AS sourcepackagereleaseversion, sourcepackagename.name AS sourcepackagename, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive, binarypackagerelease.fti AS binarypackagefti
+   FROM binarypackagepublishinghistory securebinarypackagepublishinghistory
+   JOIN distroarchseries ON distroarchseries.id = securebinarypackagepublishinghistory.distroarchseries
+   JOIN distroseries ON distroarchseries.distroseries = distroseries.id
+   JOIN processorfamily ON distroarchseries.processorfamily = processorfamily.id
+   JOIN component ON securebinarypackagepublishinghistory.component = component.id
+   JOIN binarypackagerelease ON securebinarypackagepublishinghistory.binarypackagerelease = binarypackagerelease.id
+   JOIN section ON securebinarypackagepublishinghistory.section = section.id
+   JOIN binarypackagename ON binarypackagerelease.binarypackagename = binarypackagename.id
+   JOIN binarypackagebuild ON binarypackagerelease.build = binarypackagebuild.id
+   JOIN packagebuild ON binarypackagebuild.package_build = packagebuild.id
+   JOIN buildfarmjob ON packagebuild.build_farm_job = buildfarmjob.id
+   JOIN sourcepackagerelease ON binarypackagebuild.source_package_release = sourcepackagerelease.id
+   JOIN sourcepackagename ON sourcepackagerelease.sourcepackagename = sourcepackagename.id
+   WHERE securebinarypackagepublishinghistory.dateremoved IS NULL;
+
+CREATE OR REPLACE VIEW BinaryPackageFilePublishing As
+SELECT (libraryfilealias.id::text || '.'::text) || securebinarypackagepublishinghistory.id::text AS id, distroseries.distribution, securebinarypackagepublishinghistory.id AS binarypackagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distroseries.name AS distroseriesname, distroarchseries.architecturetag, securebinarypackagepublishinghistory.status AS publishingstatus, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive
+   FROM binarypackagepublishinghistory securebinarypackagepublishinghistory
+   JOIN binarypackagerelease ON securebinarypackagepublishinghistory.binarypackagerelease = binarypackagerelease.id
+   JOIN binarypackagebuild ON binarypackagerelease.build = binarypackagebuild.id
+   JOIN sourcepackagerelease ON binarypackagebuild.source_package_release = sourcepackagerelease.id
+   JOIN sourcepackagename ON sourcepackagerelease.sourcepackagename = sourcepackagename.id
+   JOIN binarypackagefile ON binarypackagefile.binarypackagerelease = binarypackagerelease.id
+   JOIN libraryfilealias ON binarypackagefile.libraryfile = libraryfilealias.id
+   JOIN distroarchseries ON securebinarypackagepublishinghistory.distroarchseries = distroarchseries.id
+   JOIN distroseries ON distroarchseries.distroseries = distroseries.id
+   JOIN component ON securebinarypackagepublishinghistory.component = component.id
+  WHERE securebinarypackagepublishinghistory.dateremoved IS NULL;
