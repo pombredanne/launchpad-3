@@ -85,6 +85,7 @@
             tal:content="structure binary/fmt:link">
         </dd>
         <dd tal:condition="not: view/binary_builds">None</dd>
+      </dl>
     </div>
   </metal:macro>
 
