@@ -17,7 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tags_by_class)
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeView, SourcePackageRecipeBuildView
@@ -217,10 +218,17 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
+    def containsRe(self, regex, text):
+        pattern = re.compile(regex, re.S)
+        return bool(pattern.search(text))
+
     def assertContainsRe(self, regex, text):
         """Assert that the text contains the specified regex."""
-        pattern = re.compile(regex, re.S)
-        self.assertTrue(pattern.search(text), text)
+        self.assertTrue(self.containsRe(regex, text))
+
+    def assertNotContainsRe(self, regex, text):
+        """Assert that the text contains the specified regex."""
+        self.assertFalse(self.containsRe(regex, text))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
@@ -335,7 +343,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
     """Test behaviour of SourcePackageReciptBuildView."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Provide useful defaults."""
@@ -343,7 +351,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.user = self.factory.makePerson(
             displayname='Owner', name='build-owner', password='test')
 
-    def makeBuild(self):
+    def makeBuild(self, buildstate=None):
         archive = self.factory.makeArchive(name='build',
             owner=self.user)
         recipe = self.factory.makeSourcePackageRecipe(
@@ -451,6 +459,43 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
             x87-64 build of mypackage 3.14 in ubuntu squirrel RELEASE$""",
             main_text)
+
+    def test_logtail(self):
+        """Logtail is shown for BUILDING builds."""
+        build = self.makeBuild()
+        build.buildqueue_record.logtail = 'Logs have no tails!'
+        build.buildqueue_record.builder = self.factory.makeBuilder()
+        browser = self.getViewBrowser(build, '+index')
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertNotIn('Logs have no tails!', main_text)
+        removeSecurityProxy(build).buildstate = BuildStatus.BUILDING
+        browser = self.getViewBrowser(build, '+index')
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertIn('Logs have no tails!', main_text)
+        removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+        self.assertIn('Logs have no tails!', main_text)
+
+    def getMainText(self, build, view_name=None):
+        browser = self.getViewBrowser(build, '+index')
+        return extract_text(find_main_content(browser.contents))
+
+    def test_buildlog(self):
+        """A link to the build log is shown if available."""
+        build = self.makeBuild()
+        removeSecurityProxy(build).buildlog = (
+            self.factory.makeLibraryFileAlias())
+        browser = self.getViewBrowser(build)
+        link = browser.getLink('buildlog')
+        self.assertEqual(build.build_log_url, link.url)
+
+    def test_uploadlog(self):
+        """A link to the upload log is shown if available."""
+        build = self.makeBuild()
+        removeSecurityProxy(build).upload_log = (
+            self.factory.makeLibraryFileAlias())
+        browser = self.getViewBrowser(build)
+        link = browser.getLink('uploadlog')
+        self.assertEqual(build.upload_log_url, link.url)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):
