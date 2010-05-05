@@ -43,23 +43,20 @@ class BugWatchUpdater(WorkingBase):
     @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
                        new_remote_importance, new_malone_importance,
-                       can_import_comments, can_push_comments, can_back_link,
-                       error, oops_id):
+                       can_import_comments, can_push_comments, can_back_link):
         """Update the BugWatch."""
         with self.transaction:
-            self.bug_watch.last_error_type = error
             if new_malone_status is not None:
                 self.bug_watch.updateStatus(
                     new_remote_status, new_malone_status)
             if new_malone_importance is not None:
                 self.bug_watch.updateImportance(
                     new_remote_importance, new_malone_importance)
-            # Only sync comments and backlink if there was no
-            # earlier error, the local bug isn't a duplicate,
-            # *and* if the bug watch is associated with a bug
-            # task. This helps us to avoid spamming upstream.
+            # Only sync comments and backlink if the local bug isn't a
+            # duplicate and the bug watch is associated with a bug task.
+            # This helps us to avoid spamming both upstream and
+            # ourselves.
             do_sync = (
-                error is None and
                 self.bug_watch.bug.duplicateof is None and
                 len(self.bug_watch.bugtasks) > 0
                 )
@@ -78,8 +75,7 @@ class BugWatchUpdater(WorkingBase):
                 self.linkLaunchpadBug()
 
         with self.transaction:
-            self.bug_watch.addActivity(
-                result=error, oops_id=oops_id)
+            self.bug_watch.addActivity()
 
     @commit_before
     def importBugComments(self):

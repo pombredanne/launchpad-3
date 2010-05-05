@@ -173,7 +173,7 @@ class RemoteBugUpdater(WorkingBase):
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance,
                         self.can_import_comments, self.can_push_comments,
-                        self.can_back_link, error, oops_id)
+                        self.can_back_link)
 
         except Exception, error:
             # Send the error to the log.
