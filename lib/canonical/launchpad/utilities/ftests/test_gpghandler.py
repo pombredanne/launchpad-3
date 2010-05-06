@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import gpgme
-import os
 import unittest
 
 from zope.component import getUtility
@@ -10,9 +9,7 @@ from zope.component import getUtility
 from canonical.launchpad.ftests import (
     ANONYMOUS, keys_for_tests, login, logout)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.utilities.gpghandler import GPGHandler
 from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing.fakemethod import FakeMethod
 
 
 class TestImportKeyRing(unittest.TestCase):
