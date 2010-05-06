@@ -2,14 +2,17 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import gpgme
+import os
 import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.ftests import keys_for_tests
+from canonical.launchpad.ftests import (
+    ANONYMOUS, keys_for_tests, login, logout)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.utilities.gpghandler import GPGHandler
 from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestImportKeyRing(unittest.TestCase):
@@ -148,6 +151,41 @@ class TestImportKeyRing(unittest.TestCase):
         for ring in keys_for_tests.test_keyrings():
             self.gpg_handler.importKeyringFile(ring)
         self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
+
+
+class TestGenerateKey(unittest.TestCase):
+
+    def setUp(self):
+        """Create a GPGHandler for testing which will not generate keys."""
+        # Use an instance of GPGHandler rather than the utility so we
+        # can stub methods without affecting other tests.
+        self.gpg_handler = GPGHandler()
+        # We insert our own pre-generated key into the local key
+        # list:
+        filepath = os.path.join(
+            keys_for_tests.gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        seckey = open(filepath).read()
+        self.pre_gen_key = self.gpg_handler.importSecretKey(seckey)
+
+        # And then (due to a lack of entropy and a serious amount of
+        # time required) we stub the gpg_handler method which calls
+        # gpgme.Context().genkey() and instead return the unicode
+        # fingerprint of our pre-generated key.
+        self.fake_generate_key_fingerprint = FakeMethod(
+            result=self.pre_gen_key.fingerprint)
+
+        self.gpg_handler._generateKeyFingerprint = (
+            self.fake_generate_key_fingerprint)
+
+    def test_generateKey(self):
+        # Ensure that generateKey returns the correct key from the local
+        # keyring after the new key is generated.
+        returned_key = self.gpg_handler.generateKey(
+            u'Launchpad PPA for Celso Providelo')
+        self.failUnlessEqual(
+            self.pre_gen_key.fingerprint, returned_key.fingerprint)
+        self.failUnlessEqual(
+            1, self.fake_generate_key_fingerprint.call_count)
 
 
 def test_suite():
