@@ -15,7 +15,8 @@ it completes that task it will set the status to DELETED.
     >>> login("admin@canonical.com")
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
-    >>> archive = factory.makeArchive()
+    >>> owner = factory.makePerson(name='archive-owner')
+    >>> archive = factory.makeArchive(owner=owner)
 
 The archive is currently active:
 
@@ -67,12 +68,12 @@ status is DELETING to tell the publisher to remove the repository:
     >>> for pub in publications:
     ...     print "%s, %s by %s" % (
     ...         pub.displayname, pub.status.name, pub.removed_by.name)
-    foo 666 in breezy-autotest, DELETED by person-name12
-    foo 666 in breezy-autotest, DELETED by person-name12
-    foo-bin1 666 in breezy-autotest i386, DELETED by person-name12
-    foo-bin1 666 in breezy-autotest hppa, DELETED by person-name12
-    foo-bin2 666 in breezy-autotest i386, DELETED by person-name12
-    foo-bin2 666 in breezy-autotest hppa, DELETED by person-name12
+    foo 666 in breezy-autotest, DELETED by archive-owner
+    foo 666 in breezy-autotest, DELETED by archive-owner
+    foo-bin1 666 in breezy-autotest i386, DELETED by archive-owner
+    foo-bin1 666 in breezy-autotest hppa, DELETED by archive-owner
+    foo-bin2 666 in breezy-autotest i386, DELETED by archive-owner
+    foo-bin2 666 in breezy-autotest hppa, DELETED by archive-owner
 
     >>> print archive.enabled
     False

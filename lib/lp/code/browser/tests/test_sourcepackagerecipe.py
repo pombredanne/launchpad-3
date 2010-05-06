@@ -35,7 +35,7 @@ class TestCaseForRecipe(BrowserTestCase):
         self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
         self.ppa = self.factory.makeArchive(
-            displayname='Secret PPA', owner=self.chef)
+            displayname='Secret PPA', owner=self.chef, name='ppa')
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret')
 

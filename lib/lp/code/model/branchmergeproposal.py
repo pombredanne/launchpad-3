@@ -141,21 +141,18 @@ class BranchMergeProposal(SQLBase):
     def next_preview_diff_job(self):
         # circular dependencies
         from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob, MergeProposalCreatedJob,
-            UpdatePreviewDiffJob)
-        job_classes = [MergeProposalCreatedJob, UpdatePreviewDiffJob]
-        type_classes = dict(
-            (job_class.class_job_type, job_class)
-            for job_class in job_classes)
+            BranchMergeProposalJob, BranchMergeProposalJobFactory,
+            BranchMergeProposalJobType)
         job = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type.is_in(type_classes.keys()),
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
             BranchMergeProposalJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
             ).order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
-            return type_classes[job.job_type](job)
+            return BranchMergeProposalJobFactory.create(job)
         else:
             return None
 
@@ -280,10 +277,10 @@ class BranchMergeProposal(SQLBase):
         # aleady.
         for review in self.votes:
             reviewer = review.reviewer
-            if not reviewer.is_team:
-                recipients[reviewer] = RecipientReason.forReviewer(
-                    review, reviewer,
-                    branch_identity_cache=branch_identity_cache)
+            pending = review.comment is None
+            recipients[reviewer] = RecipientReason.forReviewer(
+                self, pending, reviewer,
+                branch_identity_cache=branch_identity_cache)
         # If the registrant of the proposal is getting emails, update the
         # rationale to say that they registered it.  Don't however send them
         # emails if they aren't asking for any.
@@ -619,7 +616,7 @@ class BranchMergeProposal(SQLBase):
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
-        chunk = MessageChunk(message=message, content=content, sequence=1)
+        MessageChunk(message=message, content=content, sequence=1)
         return self.createCommentFromMessage(
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
