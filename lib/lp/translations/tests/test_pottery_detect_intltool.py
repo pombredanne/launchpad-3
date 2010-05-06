@@ -385,18 +385,27 @@ class TestConfigFile(TestCase):
             ML_FUNC_2(
             param1,
             param2)
+            EEE 
+            = eee
             """)))
 
     def test_getVariable_exists(self):
-        self.assertEqual('ccc', self.configfile.getVariable('CCC'))
         self.assertEqual('dd.d', self.configfile.getVariable('DDD'))
+
+    def test_getVariable_exists_spaces_comment(self):
+        self.assertEqual('ccc', self.configfile.getVariable('CCC'))
 
     def test_getVariable_empty(self):
         self.assertEqual('', self.configfile.getVariable('AAA'))
+
+    def test_getVariable_empty_spaces(self):
         self.assertEqual('', self.configfile.getVariable('BBB'))
 
     def test_getVariable_nonexistent(self):
         self.assertIs(None, self.configfile.getVariable('FFF'))
+
+    def test_getVariable_broken(self):
+        self.assertIs(None, self.configfile.getVariable('EEE'))
 
     def test_getFunctionParams_single(self):
         self.assertEqual(

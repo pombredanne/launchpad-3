@@ -185,17 +185,16 @@ class ConfigFile(object):
             conf_file = file(file_or_name)
         else:
             conf_file = file_or_name
-        self.content_lines = conf_file.readlines()
+        self.content = conf_file.read()
 
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
-        pattern = re.compile("^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name))
-        variable = None
-        for line in self.content_lines:
-            result = pattern.match(line)
-            if result is not None:
-                variable = result.group(1)
-        return variable
+        pattern = re.compile("^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name), re.M)
+        result = pattern.search(self.content)
+        if result is None:
+            return None
+        else:
+            return result.group(1)
 
     def getFunctionParams(self, function_name):
         """Search file for a function call with this name, return parameters.
