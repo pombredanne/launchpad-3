@@ -404,7 +404,7 @@ class GPGHandler:
         # Currently gpgme.Context().keylist fails if passed a unicode
         # string even though that's what is returned for fingerprints.
         if type(filter) == unicode:
-           filter = str(filter)
+            filter = str(filter)
 
         for key in ctx.keylist(filter, secret):
             yield PymeKey.newFromGpgmeKey(key)
