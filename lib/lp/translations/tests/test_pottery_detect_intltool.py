@@ -167,7 +167,7 @@ class TestIntltoolDomain(TestCase, SetupTestPackageMixin):
         # Prepare test for various permutations of AC_INIT parameters
         configure_ac_content = dedent("""
             AC_INIT(%s)
-            GETTEXT_PACKAGE=AC_PACAKGE_NAME
+            GETTEXT_PACKAGE=AC_PACKAGE_NAME
             """) % parameters
         self.prepare_package(
             "intltool_domain_base",

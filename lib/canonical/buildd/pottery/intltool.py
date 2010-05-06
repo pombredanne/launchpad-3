@@ -74,14 +74,34 @@ def find_intltool_dirs():
     """
     return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
+def _get_AC_PACKAGE_NAME(config_file):
+        """Get the value of AC_PACKAGE_NAME from function parameters.
 
-def _try_substitution(path, substitution):
-    """Try to find a substitution in the given config file.
+        The value of AC_PACKAGE_NAME is either the first or the fourth
+        parameter of the AC_INIT call if it is called with at least two
+        parameters. They may be enclosed in [].
+        """
+        params = config_file.getFunctionParams("AC_INIT")
+        if params is None or len(params) < 2:
+            return None
+        if len(params) < 4:
+            value = params[0]
+        else:
+            value = params[3]
+        return value.strip("[]")
+
+def _try_substitution(config_files, substitution):
+    """Try to find a substitution in the config files.
 
     :returns: The completed substitution or None if none was found.
     """
-    subst_value = ConfigFile(path).getVariable(substitution.name)
-    if subst_value is None:
+    subst_value = None
+    for config_file in reversed(config_files):
+        subst_value = config_file.getVariable(substitution.name)
+        if subst_value is not None:
+            # Substitution found.
+            break
+    else:
         # No substitution found.
         return None
     return substitution.replace(subst_value)
@@ -110,27 +130,30 @@ def get_translation_domain(dirname):
     ]
     value = None
     substitution = None
+    config_files = []
     for filename, varname in locations:
         path = os.path.join(dirname, filename)
         if not os.access(path, os.R_OK):
             # Skip non-existent files.
             continue
+        config_files.append(ConfigFile(path))
         if substitution is None:
-            value = ConfigFile(path).getVariable(varname)
+            value = config_files[-1].getVariable(varname)
             if value is not None:
+                if value == "AC_PACKAGE_NAME":
+                    value = _get_AC_PACKAGE_NAME(config_files[-1])
                 # Check if the value need a substitution.
                 substitution = Substitution.get(value)
                 if substitution is not None:
-                    # Try to substitute with value from current file but
-                    # avoid recursion.
+                    # Try to substitute with value.
                     if substitution.name != varname:
-                        value = _try_substitution(path, substitution)
+                        value = _try_substitution(config_files, substitution)
                     else:
                         # The value has not been found yet but is now stored
                         # in the Substitution instance.
                         value = None
         else:
-            value = _try_substitution(path, substitution)
+            value = _try_substitution(config_files, substitution)
         if value is not None:
             # A value has been found.
             break
