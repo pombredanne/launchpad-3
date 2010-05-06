@@ -23,7 +23,7 @@ class SetupTestPackageMixin(object):
 
     test_data_dir = "pottery_test_data"
 
-    def prepare_package(self, packagename, buildfiles={}):
+    def prepare_package(self, packagename, buildfiles=None):
         """Unpack the specified package in a temporary directory.
 
         Change into the package's directory.
@@ -42,9 +42,13 @@ class SetupTestPackageMixin(object):
         tar.extractall()
         tar.close()
         os.chdir(packagename)
+
+        if buildfiles is None:
+            return
+
         # Add files as requested.
         for path, content in buildfiles.items():
-            directory= os.path.dirname(path)
+            directory = os.path.dirname(path)
             if directory != '':
                 try:
                     os.makedirs(directory)

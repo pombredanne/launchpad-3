@@ -74,28 +74,33 @@ def find_intltool_dirs():
     """
     return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
+
 def _get_AC_PACKAGE_NAME(config_file):
-        """Get the value of AC_PACKAGE_NAME from function parameters.
+    """Get the value of AC_PACKAGE_NAME from function parameters.
 
-        The value of AC_PACKAGE_NAME is either the first or the fourth
-        parameter of the AC_INIT call if it is called with at least two
-        parameters. They may be enclosed in [].
-        """
-        params = config_file.getFunctionParams("AC_INIT")
-        if params is None or len(params) < 2:
-            return None
-        if len(params) < 4:
-            value = params[0]
-        else:
-            value = params[3]
-        return value.strip("[]")
+    The value of AC_PACKAGE_NAME is either the first or the fourth
+    parameter of the AC_INIT call if it is called with at least two
+    parameters. They may be enclosed in [].
+    """
+    params = config_file.getFunctionParams("AC_INIT")
+    if params is None or len(params) < 2:
+        return None
+    if len(params) < 4:
+        value = params[0]
+    else:
+        value = params[3]
+    return value.strip("[]")
 
-def _try_substitution(config_files, substitution):
+
+def _try_substitution(config_files, varname, substitution):
     """Try to find a substitution in the config files.
 
     :returns: The completed substitution or None if none was found.
     """
     subst_value = None
+    if varname == substitution.name:
+        # Do not look for the same name in the current file.
+        config_files = config_files[:-1]
     for config_file in reversed(config_files):
         subst_value = config_file.getVariable(substitution.name)
         if subst_value is not None:
@@ -123,44 +128,38 @@ def get_translation_domain(dirname):
     substitutions or multi-level substitutions are not supported.
     """
     locations = [
-        ('Makefile.in.in', 'GETTEXT_PACKAGE'),
-        ('../configure.ac', 'GETTEXT_PACKAGE'),
-        ('../configure.in', 'GETTEXT_PACKAGE'),
-        ('Makevars', 'DOMAIN'),
+        ('../configure.ac', 'GETTEXT_PACKAGE', True),
+        ('../configure.in', 'GETTEXT_PACKAGE', True),
+        ('Makefile.in.in', 'GETTEXT_PACKAGE', False),
+        ('Makevars', 'DOMAIN', False),
     ]
     value = None
     substitution = None
     config_files = []
-    for filename, varname in locations:
+    for filename, varname, keep_trying in locations:
         path = os.path.join(dirname, filename)
         if not os.access(path, os.R_OK):
             # Skip non-existent files.
             continue
         config_files.append(ConfigFile(path))
-        if substitution is None:
-            value = config_files[-1].getVariable(varname)
-            if value is not None:
-                if value == "AC_PACKAGE_NAME":
-                    value = _get_AC_PACKAGE_NAME(config_files[-1])
-                else:
-                    # Check if the value need a substitution.
-                    substitution = Substitution.get(value)
-                    if substitution is not None:
-                        # Try to substitute with value.
-                        if substitution.name != varname:
-                            value = _try_substitution(config_files, substitution)
-                        else:
-                            # The value has not been found yet but is now stored
-                            # in the Substitution instance.
-                            value = None
-        else:
-            value = _try_substitution(config_files, substitution)
-        if value is not None:
+        new_value = config_files[-1].getVariable(varname)
+        if new_value is not None:
+            value = new_value
+            if value == "AC_PACKAGE_NAME":
+                value = _get_AC_PACKAGE_NAME(config_files[-1])
+            else:
+                # Check if the value need a substitution.
+                substitution = Substitution.get(value)
+                if substitution is not None:
+                    # Try to substitute with value.
+                    value = _try_substitution(
+                        config_files, varname, substitution)
+                    if value is None:
+                        # No substitution found, the setup is broken.
+                        break
+        if value is not None and not keep_trying:
             # A value has been found.
             break
-    if substitution is not None and not substitution.replaced:
-        # Substitution failed.
-        return None
     return value
 
 
