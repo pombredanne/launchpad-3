@@ -142,16 +142,17 @@ def get_translation_domain(dirname):
             if value is not None:
                 if value == "AC_PACKAGE_NAME":
                     value = _get_AC_PACKAGE_NAME(config_files[-1])
-                # Check if the value need a substitution.
-                substitution = Substitution.get(value)
-                if substitution is not None:
-                    # Try to substitute with value.
-                    if substitution.name != varname:
-                        value = _try_substitution(config_files, substitution)
-                    else:
-                        # The value has not been found yet but is now stored
-                        # in the Substitution instance.
-                        value = None
+                else:
+                    # Check if the value need a substitution.
+                    substitution = Substitution.get(value)
+                    if substitution is not None:
+                        # Try to substitute with value.
+                        if substitution.name != varname:
+                            value = _try_substitution(config_files, substitution)
+                        else:
+                            # The value has not been found yet but is now stored
+                            # in the Substitution instance.
+                            value = None
         else:
             value = _try_substitution(config_files, substitution)
         if value is not None:
