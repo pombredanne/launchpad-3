@@ -161,6 +161,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def queueBuild(self, suspended=False):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
 
 class PackageBuildDerived:
     """Setup the delegation for package build.
