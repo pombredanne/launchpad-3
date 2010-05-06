@@ -24,6 +24,7 @@ from zope.session.interfaces import ISession
 from openid import oidutil
 from openid.server.server import CheckIDRequest, Server
 from openid.store.memstore import MemoryStore
+from openid.extensions.sreg import SRegRequest, SRegResponse
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -41,6 +42,7 @@ from lp.services.openid.browser.openiddiscovery import (
 from lp.testopenid.interfaces.server import (
     get_server_url, ITestOpenIDApplication, ITestOpenIDLoginForm,
     ITestOpenIDPersistentIdentity)
+from lp.registry.interfaces.person import IPerson
 
 
 OPENID_REQUEST_SESSION_KEY = 'testopenid.request'
@@ -196,6 +198,12 @@ class OpenIDMixin:
         else:
             response = self.openid_request.answer(True)
 
+        sreg_fields = dict(nickname=IPerson(self.account).name)
+        sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+        sreg_response = SRegResponse.extractResponse(
+            sreg_request, sreg_fields)
+        response.addExtension(sreg_response)
+
         return response
 
     def createFailedResponse(self):
@@ -216,7 +224,7 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
     This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
-    
+
     Note that the checkid_immediate mode is not supported.
     """
 
