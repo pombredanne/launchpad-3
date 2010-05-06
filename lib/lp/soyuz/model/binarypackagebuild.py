@@ -853,11 +853,16 @@ class BinaryPackageBuildSet:
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
-            condition_clauses = [('distroarchseries=%s'
+            condition_clauses = [('distro_arch_series=%s'
                                   % sqlvalues(arch_ids[0]))]
         else:
-            condition_clauses = [('distroarchseries IN %s'
+            condition_clauses = [('distro_arch_series IN %s'
                                   % sqlvalues(arch_ids))]
+
+        condition_clauses.extend([
+            "BinaryPackageBuild.package_build = PackageBuild.id",
+            "PackageBuild.build_farm_job = BuildFarmJob.id"
+            ])
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -866,10 +871,11 @@ class BinaryPackageBuildSet:
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         if status == BuildStatus.FULLYBUILT:
-            condition_clauses.append("Build.datebuilt IS NOT NULL")
+            condition_clauses.append("BuildFarmJob.date_finished IS NOT NULL")
         else:
             condition_clauses.append(
-                "(Build.buildstate <> %s OR Build.datebuilt IS NOT NULL)"
+                "(BuildFarmJob.status <> %s OR "
+                " BuildFarmJob.date_finished IS NOT NULL)"
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
@@ -881,12 +887,13 @@ class BinaryPackageBuildSet:
             orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
-            condition_clauses.append('BuildPackageJob.build = Build.id')
+            condition_clauses.append(
+                'BuildPackageJob.build = BinaryPackageBuild.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = ["-Build.datecreated"]
+            orderBy = ["-BuildFarmJob.date_created"]
         else:
-            orderBy = ["-Build.datebuilt"]
+            orderBy = ["-BuildFarmJob.date_finished"]
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -898,7 +905,7 @@ class BinaryPackageBuildSet:
         clauseTables.append("Archive")
         condition_clauses.append("""
             Archive.purpose IN (%s) AND
-            Archive.id = Build.archive
+            Archive.id = PackageBuild.archive
             """ % ','.join(
                 sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 

@@ -6,6 +6,7 @@
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -49,7 +50,9 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
         # in total, two of which are i386 and one hppa.
         i386_builds = self.builds[:]
         hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+        removeSecurityProxy(
+            hppa_build).distro_arch_series = self.publisher.distroseries[
+                'hppa']
 
         builds = self.context.getBuildRecords(arch_tag="i386")
         self.assertContentEqual(i386_builds, builds)
@@ -103,16 +106,17 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
     def setUp(self):
         super(TestSourcePackageHasBuildRecords, self).setUp()
 
-        gedit_name = self.builds[0].sourcepackagerelease.sourcepackagename
+        gedit_name = self.builds[0].source_package_release.sourcepackagename
         self.context = SourcePackage(
             gedit_name,
-            self.builds[0].distroarchseries.distroseries)
+            self.builds[0].distro_arch_series.distroseries)
 
         # Convert the other two builds to be builds of
         # gedit as well so that the one source package (gedit) will have
         # three builds.
-        self.builds[1].sourcepackagerelease.sourcepackagename = gedit_name
-        self.builds[2].sourcepackagerelease.sourcepackagename = gedit_name
+        for build in self.builds[1:3]:
+            spr = build.source_package_release
+            removeSecurityProxy(spr).sourcepackagename = gedit_name
 
 
 def test_suite():
