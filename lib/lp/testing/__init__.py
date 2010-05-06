@@ -57,7 +57,6 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 
