@@ -93,8 +93,9 @@ class BuildBase:
 
         if method is None:
             if build.buildqueue_record is not None:
-                logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                                % (status, build.buildqueue_record.builder.url))
+                logger.critical(
+                    "Unknown BuildStatus '%s' for builder '%s'" % (
+                        status, build.buildqueue_record.builder.url))
             else:
                 logger.critical("Unknown BuildStatus '%s' for %r"
                                 % (status, build))

@@ -1477,7 +1477,8 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # otherwise, how can they give it back?
         check_perms = check_upload_to_archive(
             user.person, self.obj.distro_series,
-            self.obj.source_package_release.sourcepackagename, self.obj.archive,
+            self.obj.source_package_release.sourcepackagename,
+            self.obj.archive,
             self.obj.current_component, self.obj.pocket,
             strict_component=True)
         return check_perms == None

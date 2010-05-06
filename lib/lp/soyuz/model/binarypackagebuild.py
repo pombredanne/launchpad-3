@@ -19,8 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
-from sqlobject import (
-    ForeignKey, SQLObjectNotFound)
+from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
