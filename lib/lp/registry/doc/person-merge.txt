@@ -161,7 +161,7 @@ time the caches are rebuilt.
     >>> sample.karma == sampleperson_old_karma
     True
 
-A merged account gets a -merged suffix on its name.
+A merged person gets a -merged suffix on its name.
 
     >>> from storm.store import Store
     >>> store = Store.of(marilize)
@@ -186,8 +186,8 @@ A merged account gets a -merged suffix on its name.
     >>> results.get_one()[0]
     u'name12'
 
-The account that has been merged is flagged. We can use this to eliminate
-merged accounts from lists etc.
+The person that has been merged is flagged. We can use this to eliminate
+merged person from lists etc.
 
     >>> results = store.execute(
     ...     "SELECT merged FROM Person WHERE name='marilize-merged'")

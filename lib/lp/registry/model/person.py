@@ -3354,7 +3354,7 @@ class PersonSet:
             # from being merged.
             ('mailinglist', 'team'),
             # I don't think we need to worry about the votecast and vote
-            # tables, because a real human should never have two accounts
+            # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
             # in a given poll. -- GuilhermeSalgado 2005-07-07
             # We also can't afford to change poll results after they are
@@ -3507,7 +3507,7 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
-        # Append a -merged suffix to the account's name.
+        # Append a -merged suffix to the person's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
         cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
