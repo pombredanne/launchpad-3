@@ -33,6 +33,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
@@ -1146,7 +1148,7 @@ class Archive(SQLBase):
             BinaryPackageRelease.binarypackagename == name,
             BinaryPackageRelease.version == version,
             BinaryPackageBuild.id == BinaryPackageRelease.buildID,
-            DistroArchSeries.id == BinaryPackageBuild.distroarchseriesID,
+            DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
             DistroArchSeries.architecturetag == archtag,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
@@ -1343,13 +1345,17 @@ class Archive(SQLBase):
 
         extra_exprs = []
         if build_status is not None:
-            extra_exprs.append(BinaryPackageBuild.buildstate == build_status)
+            extra_exprs = [
+                PackageBuild.build_farm_job == BuildFarmJob.id,
+                BuildFarmJob.status == build_status,
+                ]
 
         result_set = store.find(
             SourcePackageRelease,
-            (BinaryPackageBuild.sourcepackagereleaseID ==
+            (BinaryPackageBuild.source_package_release_id ==
                 SourcePackageRelease.id),
-            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
             *extra_exprs)
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
@@ -1389,15 +1395,18 @@ class Archive(SQLBase):
 
         query = """
             UPDATE Job SET status = %s
-            FROM Build, BuildPackageJob, BuildQueue
+            FROM BinaryPackageBuild, PackageBuild, BuildFarmJob,
+                 BuildPackageJob, BuildQueue
             WHERE
+                BinaryPackageBuild.package_build = PackageBuild.id
                 -- insert self.id here
-                Build.archive = %s
-                AND BuildPackageJob.build = Build.id
+                AND PackageBuild.archive = %s
+                AND BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND Build.buildstate = %s;
+                AND PackageBuild.build_farm_job = BuildFarmJob.id
+                AND BuildFarmJob.status = %s;
         """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
 
         store = Store.of(self)
