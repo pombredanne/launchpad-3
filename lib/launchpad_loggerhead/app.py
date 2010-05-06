@@ -132,6 +132,10 @@ class RootApp:
             raise exc
 
     def _logout(self, environ, start_response):
+        """Logout of loggerhead.
+
+        Clear the cookie and redirect to `next_to`.
+        """
         environ[self.session_var].clear()
         query = dict(parse_querystring(environ))
         next_url = query.get('next_to')

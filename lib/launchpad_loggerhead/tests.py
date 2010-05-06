@@ -25,6 +25,7 @@ SECRET = 'secret'
 
 
 def session_scribbler(app, test):
+    """Squirrel away the session variable."""
     def scribble(environ, start_response):
         test.session = environ[SESSION_VAR] # Yay for mutables.
         return app(environ, start_response)
@@ -32,11 +33,13 @@ def session_scribbler(app, test):
 
 
 def dummy_destination(environ, start_response):
+    """Return a fake response."""
     start_response('200 OK', [('Content-type','text/plain')])
     return ['This is a dummy destination.\n']
 
 
 class SimpleLogInRootApp(RootApp):
+    """A mock root app that doesn't require open id."""
     def _complete_login(self, environ, start_response):
         environ[SESSION_VAR]['user'] = 'bob'
         start_response('200 OK', [('Content-type','text/plain')])
@@ -47,6 +50,7 @@ class TestLogout(TestCase):
     layer = DatabaseFunctionalLayer
 
     def intercept(self, uri, app):
+        """Install wsgi interceptors for the uri, app tuple."""
         if isinstance(uri, basestring):
             uri = lazr.uri.URI(uri)
         port = uri.port
