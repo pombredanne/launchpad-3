@@ -182,6 +182,11 @@ class TestIntltoolDomain(TestCase, SetupTestPackageMixin):
             "packagename-ac-init",
             get_translation_domain("po"))
 
+    def test_get_translation_domain_configure_ac_init_single_param(self):
+        # Find a translation domain in configure.ac in AC_INIT.
+        self.prepare_ac_init("[Just 1 param]")
+        self.assertIs(None, get_translation_domain("po"))
+
     def test_get_translation_domain_configure_ac_init_brackets(self):
         # Find a translation domain in configure.ac in AC_INIT with brackets.
         self.prepare_ac_init("[packagename-ac-init], 1.0, http://bug.org")
