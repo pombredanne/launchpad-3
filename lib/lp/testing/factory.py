@@ -1626,7 +1626,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     makeDistroSeries = makeDistroRelease
 
     def makeDistroArchSeries(self, distroseries=None,
-                             architecturetag='powerpc', processorfamily=None,
+                             architecturetag=None, processorfamily=None,
                              official=True, owner=None,
                              supports_virtualized=False):
         """Create a new distroarchseries"""
