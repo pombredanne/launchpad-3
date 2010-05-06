@@ -13,7 +13,6 @@ __all__ = [
 from datetime import datetime
 import os.path
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
 import pytz
@@ -76,6 +75,7 @@ from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
+from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.services.job.interfaces.job import JobStatus
@@ -427,18 +427,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
 
-    def getStackedBranchesWithIncompleteMirrors(self):
-        """See `IBranch`."""
-        store = Store.of(self)
-        return store.find(
-            Branch, Branch.stacked_on == self,
-            # Have been started.
-            Branch.last_mirror_attempt != None,
-            # Either never successfully mirrored or started since the last
-            # successful mirror.
-            Or(Branch.last_mirrored == None,
-               Branch.last_mirror_attempt > Branch.last_mirrored))
-
     def getMergeQueue(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""
@@ -472,17 +460,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             "Private branch %s has no public URL." % self.unique_name)
         return compose_public_url(scheme, self.unique_name)
 
-    @property
-    def warehouse_url(self):
+    def getInternalBzrUrl(self):
         """See `IBranch`."""
-        return 'lp-mirrored:///%s' % self.unique_name
+        return 'lp-internal:///' + self.unique_name
 
     def getBzrBranch(self):
-        """Return the BzrBranch for this database Branch.
-
-        This provides the mirrored copy of the branch.
-        """
-        return BzrBranch.open(self.warehouse_url)
+        """See `IBranch`."""
+        return safe_open('lp-internal', self.getInternalBzrUrl())
 
     @property
     def displayname(self):
@@ -844,6 +828,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         new_data_pushed = (
              self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
              and self.next_mirror_time is not None)
+        # XXX 2010-04-22, MichaelHudson: This should really look for a branch
+        # scan job.
         pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
         pull_in_progress = (
             self.last_mirror_attempt is not None
@@ -883,10 +869,6 @@ class Branch(SQLBase, BzrIdentityMixin):
             # another RCS system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
-        elif self.branch_type == BranchType.HOSTED:
-            # This is a push branch, hosted on Launchpad (pushed there by
-            # users via sftp or bzr+ssh).
-            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -911,24 +893,37 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
-    def mirrorComplete(self, last_revision_id):
+    def branchChanged(self, stacked_on_location, last_revision_id,
+                      control_format, branch_format, repository_format):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError(self.unique_name)
-        assert self.last_mirror_attempt != None, (
-            "startMirroring must be called before mirrorComplete.")
-        self.last_mirrored = self.last_mirror_attempt
-        self.mirror_failures = 0
         self.mirror_status_message = None
+        if stacked_on_location == '':
+            stacked_on_branch = None
+        else:
+            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
+                stacked_on_location.strip('/'))
+            if stacked_on_branch is None:
+                self.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
+        self.stacked_on = stacked_on_branch
+        if self.branch_type == BranchType.HOSTED:
+            self.last_mirrored = UTC_NOW
+        else:
+            self.last_mirrored = self.last_mirror_attempt
+        self.mirror_failures = 0
         if (self.next_mirror_time is None
             and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
             increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
-        self.last_mirrored_id = last_revision_id
-        from lp.code.model.branchjob import BranchScanJob
-        BranchScanJob.create(self)
+        if self.last_mirrored_id != last_revision_id:
+            self.last_mirrored_id = last_revision_id
+            from lp.code.model.branchjob import BranchScanJob
+            BranchScanJob.create(self)
+        self.control_format = control_format
+        self.branch_format = branch_format
+        self.repository_format = repository_format
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""

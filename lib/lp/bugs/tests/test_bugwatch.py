@@ -524,7 +524,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # Called with only bug watches, bulkAddActivity() adds
         # successful activity records for the given bug watches.
         getUtility(IBugWatchSet).bulkAddActivity(self.bug_watches)
-        self._checkActivityForBugWatches(None, None, None)
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
 
     def test_bulkAddActivity_with_error(self):
         # Called with additional error information, bulkAddActivity()
@@ -534,6 +535,29 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         getUtility(IBugWatchSet).bulkAddActivity(
             self.bug_watches, error, "Forbidden", "OOPS-1234")
         self._checkActivityForBugWatches(error, "Forbidden", "OOPS-1234")
+
+    def test_bulkAddActivity_with_id_list(self):
+        # The ids of bug watches can be passed in.
+        getUtility(IBugWatchSet).bulkAddActivity(
+            [bug_watch.id for bug_watch in self.bug_watches])
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
+
+    def test_bulkAddActivity_with_mixed_list(self):
+        # The list passed in can contain a mix of bug watches and
+        # their ids.
+        getUtility(IBugWatchSet).bulkAddActivity(
+            [bug_watch.id for bug_watch in self.bug_watches[::2]] +
+            [bug_watch for bug_watch in self.bug_watches[1::2]])
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
+
+    def test_bulkAddActivity_with_iterator(self):
+        # Any iterator can be passed in.
+        getUtility(IBugWatchSet).bulkAddActivity(
+            (bug_watch for bug_watch in self.bug_watches))
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
 
 
 class TestBugWatchBugTasks(TestCaseWithFactory):

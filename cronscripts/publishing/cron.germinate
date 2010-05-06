@@ -127,7 +127,7 @@ done
 echo " done."
 
 # now generate the Supported extra overrides
-$MAINTAINCE_CHECK $suite > "$MISCROOT/more-extra.override.$suite.main.supported"
+$MAINTAINCE_CHECK $suite > "$MISCROOT/more-extra.override.$suite.main.supported" 2> _maintenance-check.stderr
 if [ $? -eq 0 ]; then
     cat "$MISCROOT/more-extra.override.$suite.main.supported" >> "$MISCROOT/more-extra.override.$suite.main.new"
 fi
