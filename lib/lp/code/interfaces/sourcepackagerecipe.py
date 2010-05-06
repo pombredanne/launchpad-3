@@ -35,6 +35,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import IArchive
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -87,6 +89,9 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     debianized source tree.
     """
     export_as_webservice_entry()
+
+    daily_build_archive = Reference(
+        IArchive, title=_("The archive to use for daily builds."))
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)

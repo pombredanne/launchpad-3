@@ -59,7 +59,7 @@ from zope.component import getUtility
 from lp.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from lp.archiveuploader.uploadpolicy import (
-    UploadPolicyError)
+    findPolicyByOptions, UploadPolicyError)
 from lp.soyuz.interfaces.archive import IArchiveSet, NoSuchPPA
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
@@ -108,60 +108,43 @@ class PPAUploadPathError(Exception):
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
 
-    def __init__(self, base_fsroot, dry_run, no_mails, keep, policy_for_distro,
-                 ztm, log):
-        """Create a new upload processor.
-
-        :param base_fsroot: Root path for queue to use
-        :param dry_run: Run but don't commit changes to database
-        :param no_mails: Don't send out any emails
-        :param keep: Leave the files in place, don't move them away
-        :param policy_for_distro: callback to obtain Policy object for a
-            distribution
-        :param ztm: Database transaction to use
-        :param log: Logger to use for reporting
-        """
-        self.base_fsroot = base_fsroot
-        self.dry_run = dry_run
-        self.keep = keep
-        self.last_processed_upload = None
-        self.log = log
-        self.no_mails = no_mails
-        self._getPolicyForDistro = policy_for_distro
+    def __init__(self, options, ztm, log):
+        self.options = options
         self.ztm = ztm
+        self.log = log
+        self.last_processed_upload = None
 
-    def processUploadQueue(self, leaf_name=None):
+    def processUploadQueue(self):
         """Search for uploads, and process them.
 
-        Uploads are searched for in the 'incoming' directory inside the
+	Uploads are searched for in the 'incoming' directory inside the
         base_fsroot.
 
         This method also creates the 'incoming', 'accepted', 'rejected', and
         'failed' directories inside the base_fsroot if they don't yet exist.
         """
-        self.ztm.commit()
         try:
             self.log.debug("Beginning processing")
 
             for subdir in ["incoming", "accepted", "rejected", "failed"]:
-                full_subdir = os.path.join(self.base_fsroot, subdir)
+                full_subdir = os.path.join(self.options.base_fsroot, subdir)
                 if not os.path.exists(full_subdir):
                     self.log.debug("Creating directory %s" % full_subdir)
                     os.mkdir(full_subdir)
 
-            fsroot = os.path.join(self.base_fsroot, "incoming")
+            fsroot = os.path.join(self.options.base_fsroot, "incoming")
             uploads_to_process = self.locateDirectories(fsroot)
             self.log.debug("Checked in %s, found %s"
                            % (fsroot, uploads_to_process))
             for upload in uploads_to_process:
                 self.log.debug("Considering upload %s" % upload)
-                self.processUpload(fsroot, upload, leaf_name)
+                self.processUpload(fsroot, upload)
 
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
 
-    def processUpload(self, fsroot, upload, leaf_name=None):
+    def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
 
         The destination directory depends on the result of the processing
@@ -169,14 +152,14 @@ class UploadProcessor:
         is 'failed', otherwise it is the worst of the results from the
         individual changes files, in order 'failed', 'rejected', 'accepted'.
 
-        If the leaf_name option is set but its value is not the same as the
+        If the leafname option is set but its value is not the same as the
         name of the upload directory, skip it entirely.
 
         """
-        if (leaf_name is not None and
-            upload != leaf_name):
+        if (self.options.leafname is not None and
+            upload != self.options.leafname):
             self.log.debug("Skipping %s -- does not match %s" % (
-                upload, leaf_name))
+                upload, self.options.leafname))
             return
 
         upload_path = os.path.join(fsroot, upload)
@@ -259,7 +242,7 @@ class UploadProcessor:
             # Skip lockfile deletion, see similar code in lp.poppy.hooks.
             fsroot_lock.release(skip_delete=True)
 
-        sorted_dir_names = sorted(
+        sorted_dir_names =  sorted(
             dir_name
             for dir_name in dir_names
             if os.path.isdir(os.path.join(fsroot, dir_name)))
@@ -338,7 +321,8 @@ class UploadProcessor:
                          "https://help.launchpad.net/Packaging/PPA#Uploading "
                          "and update your configuration.")))
         self.log.debug("Finding fresh policy")
-        policy = self._getPolicyForDistro(distribution)
+        self.options.distro = distribution.name
+        policy = findPolicyByOptions(self.options)
         policy.archive = archive
 
         # DistroSeries overriding respect the following precedence:
@@ -411,7 +395,7 @@ class UploadProcessor:
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
             notify = True
-            if self.dry_run or self.no_mails:
+            if self.options.dryrun or self.options.nomails:
                 notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
@@ -430,7 +414,7 @@ class UploadProcessor:
                 for msg in upload.rejections:
                     self.log.warn("\t%s" % msg)
 
-            if self.dry_run:
+            if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
             else:
@@ -449,21 +433,21 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        if self.keep or self.dry_run:
+        if self.options.keep or self.options.dryrun:
             self.log.debug("Keeping contents untouched")
             return
 
         pathname = os.path.basename(upload)
 
         target_path = os.path.join(
-            self.base_fsroot, subdir_name, pathname)
+            self.options.base_fsroot, subdir_name, pathname)
         self.log.debug("Moving upload directory %s to %s" %
             (upload, target_path))
         shutil.move(upload, target_path)
 
         distro_filename = upload + ".distro"
         if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.base_fsroot, subdir_name,
+            target_path = os.path.join(self.options.base_fsroot, subdir_name,
                                        os.path.basename(distro_filename))
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
