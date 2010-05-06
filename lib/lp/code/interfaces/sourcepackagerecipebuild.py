@@ -40,8 +40,7 @@ class ISourcePackageRecipeBuild(IBuildBase):
 
     binary_builds = CollectionField(
         Reference(IBinaryPackageBuild),
-            title=_("The binary builds that resulted from this."),
-            readonly=True)
+        title=_("The binary builds that resulted from this."), readonly=True)
 
     datestarted = Datetime(title=u'The time the build started.')
 
