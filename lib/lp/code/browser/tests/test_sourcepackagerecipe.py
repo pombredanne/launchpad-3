@@ -429,8 +429,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             my-recipe
             Build status
             Successfully built
-            Started on 2008-12-31
-            Finished on 2009-01-01
+            Started on .*
+            Finished on .*
             \(took 1 minute, 0.0 seconds\)
             buildlog \(8 bytes\)
             uploadlog \(10 bytes\)
