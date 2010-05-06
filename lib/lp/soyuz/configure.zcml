@@ -507,8 +507,8 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="buildlog datebuilt buildduration builder
-                            buildstate dependencies upload_log"/>
+            set_attributes="log date_finished date_started builder
+                            status dependencies upload_log"/>
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

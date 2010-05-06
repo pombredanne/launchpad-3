@@ -82,7 +82,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
 
         [depwait_build] = depwait_source.createMissingBuilds()
-        depwait_build.buildstate = BuildStatus.MANUALDEPWAIT
+        depwait_build.status = BuildStatus.MANUALDEPWAIT
         depwait_build.dependencies = u'dep-bin'
 
         return depwait_build
