@@ -273,7 +273,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
+            'INFO    Ran 1 ProcessApportBlobJob jobs.\n', stderr)
 
     def test_getFileBugData(self):
         # The IProcessApportBlobJobSource.getFileBugData() method
