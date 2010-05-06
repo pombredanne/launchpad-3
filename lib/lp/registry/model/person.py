@@ -277,12 +277,6 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    # XXX StuartBishop 2008-05-13 bug=237280: The password,
-    # account_status and account_status_comment properties should go. Note
-    # that they override the current strict controls on Account, allowing
-    # access via Person to use the less strict controls on that interface.
-    # Part of the process of removing these methods from Person will be
-    # loosening the permissions on Account or fixing the callsites.
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
@@ -3522,6 +3516,15 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+
+        # Change the merged Account's OpenID identifier so that it cannot be
+        # used to lookup the merged Person; Launchpad will instead select the
+        # remaining Person based on the email address.
+        if not to_person.isTeam():
+            account = IMasterObject(from_person.account)
+            # This works because dashes do not occur in SSO identifiers.
+            merge_identifier = 'merged-%s' % account.openid_identifier
+            removeSecurityProxy(account).openid_identifier = merge_identifier
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():
