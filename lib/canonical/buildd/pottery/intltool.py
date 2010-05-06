@@ -193,13 +193,18 @@ class ConfigFile(object):
         result = pattern.search(self.content)
         if result is None:
             return None
-        else:
-            return result.group(1)
+        return result.group(1)
 
-    def getFunctionParams(self, function_name):
+    def getFunctionParams(self, name):
         """Search file for a function call with this name, return parameters.
         """
-        return []
+        pattern = re.compile("^%s\(([^)]*)\)" % re.escape(name), re.M)
+        result = pattern.search(self.content)
+        if result is None:
+            return None
+        return [
+            param.strip()
+            for param in result.group(1).strip().split(',')]
 
 
 class Substitution(object):
