@@ -30,6 +30,7 @@ from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
 from lp.bugs.scripts.checkwatches import CheckwatchesMaster, core
+from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
@@ -892,6 +893,29 @@ class TestExternalBugTracker(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
 
+class TestRemoteBugUpdater(RemoteBugUpdater):
+
+    def __init__(self, parent, external_bugtracker, remote_bug,
+                 bug_watch_ids, unmodified_remote_ids, server_time,
+                 bugtracker):
+        super(TestRemoteBugUpdater, self). __init__(
+            parent, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids, server_time)
+        self.bugtracker = bugtracker
+
+    def _getBugWatchesForRemoteBug(self):
+        """Returns a list of fake bug watch objects.
+
+        We override this method so that we always return bug watches
+        from our list of fake bug watches.
+        """
+        return [
+            bug_watch for bug_watch in (
+                self.bugtracker.watches_needing_update)
+            if (bug_watch.remotebug == self.remote_bug and
+                bug_watch.id in self.bug_watch_ids)
+            ]
+
 
 class TestCheckwatchesMaster(CheckwatchesMaster):
     """A mock `CheckwatchesMaster` object."""
@@ -910,28 +934,21 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
         """See `CheckwatchesMaster`."""
         return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
-    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
-        """Returns a list of fake bug watch objects.
-
-        We override this method so that we always return bug watches
-        from our list of fake bug watches.
-        """
-        return [
-            bug_watch for bug_watch in (
-                self.bugtracker.watches_needing_update)
-            if (bug_watch.remotebug == remote_bug_id and
-                bug_watch.id in bug_watch_ids)
-            ]
+    def remote_bug_updater_factory(self, parent, external_bugtracker,
+                                   remote_bug, bug_watch_ids,
+                                   unmodified_remote_ids, server_time):
+        return TestRemoteBugUpdater(
+            self, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids, server_time, self.bugtracker)
 
 
-class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
+class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
     """Test that errors in the bugwatch import process don't
     invalidate the entire run.
     """
     layer = LaunchpadZopelessLayer
 
-    def test_checkbugwatches_error_recovery(self):
-
+    def test_checkwatches_error_recovery(self):
         firefox = getUtility(IProductSet).get(4)
         foobar = getUtility(IPersonSet).get(16)
         params = CreateBugParams(
