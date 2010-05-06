@@ -216,34 +216,6 @@ def _deepCopy(thing):
     return thing # Assume we can't copy it deeply
 
 
-class FakeDownloadClient:
-    """Fake up a FileDownloadClient for the tests"""
-    def __init__(self):
-        pass
-
-    def getFileByAlias(self, alias):
-        """Fake this up by returning data/aliases/alias"""
-        return file("%s/%s" % (datadir("aliases"), alias), "r")
-
-    def getPathForAlias(self, alias):
-        """Fake this up by returning the PATH 'alias/alias/alias'"""
-        return "/%s/%s/%s" % (alias, alias, alias)
-
-
-class FakeUploadClient:
-    """Fake up a FileUploadClient for the tests"""
-    def __init__(self):
-        pass
-
-    def connect(self, host, port):
-        pass
-
-    def addFile(self, name, size, fileobj, contentType, digest):
-        fileid = '1'
-        filealias = '1'
-        return fileid, filealias
-
-
 # NOTE: If you alter the configs here remember to add tests in test_config.py
 fake_ubuntu = FakeDistribution("ubuntu",
                         """

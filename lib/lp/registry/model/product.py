@@ -254,6 +254,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
     max_bug_heat = Int()
+    date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
     def official_codehosting(self):

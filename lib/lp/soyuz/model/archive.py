@@ -1433,7 +1433,8 @@ class Archive(SQLBase):
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
         self.status = ArchiveStatus.DELETING
-        self.disable()
+        if self.enabled:
+            self.disable()
 
 
 class ArchiveSet:
@@ -1560,8 +1561,7 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, distribution=distribution, name=name,
-                purpose=ArchivePurpose.PPA)
+                owner=owner, name=name, purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
                     "Person '%s' already has a PPA named '%s'." %
