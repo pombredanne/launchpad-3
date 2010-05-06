@@ -863,13 +863,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the branch of the
-        # development focus series.
+        # We just remove the security proxies to be able to change the objects
+        # here.
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.branch = branch
         return branch
@@ -881,11 +878,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
+        # We just remove the security proxies to be able to change the branch
+        # here.
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,
@@ -1061,6 +1057,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
+        branch.startMirroring()
+        removeSecurityProxy(branch).branchChanged(
+            '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id, sequence=None):
@@ -2291,8 +2290,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
             public_branch=source_branch.get_public_branch(),
-            target_branch=target_branch.warehouse_url,
-            local_target_branch=target_branch.warehouse_url, time=0,
+            target_branch=target_branch.getInternalBzrUrl(),
+            local_target_branch=target_branch.getInternalBzrUrl(), time=0,
             timezone=0)
         email = None
         if sender is not None:

@@ -117,6 +117,7 @@ and there is information available about the import itsef.
     >>> print representation['date_last_successful']
     None
 
+
 == Creating Imports ==
 
 We can create an import using the API by calling a method on the project.

@@ -69,23 +69,23 @@ class RecipientReason:
             review_level=subscription.review_level)
 
     @classmethod
-    def forReviewer(cls, vote_reference, recipient,
+    def forReviewer(cls, branch_merge_proposal, pending_review, reviewer,
                     branch_identity_cache=None):
         """Construct RecipientReason for a reviewer.
 
         The reviewer will be the sole recipient.
         """
-        merge_proposal = vote_reference.branch_merge_proposal
-        branch = merge_proposal.source_branch
-        if vote_reference.comment is None:
+        branch = branch_merge_proposal.source_branch
+        if pending_review:
             reason_template = (
                 '%(entity_is)s requested to review %(merge_proposal)s.')
         else:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
-        return cls(vote_reference.reviewer, recipient, branch,
-                     'Reviewer', reason_template, merge_proposal,
-                     branch_identity_cache=branch_identity_cache)
+        return cls(reviewer, reviewer, branch,
+                   cls.makeRationale('Reviewer', reviewer),
+                   reason_template, branch_merge_proposal,
+                   branch_identity_cache=branch_identity_cache)
 
     @classmethod
     def forRegistrant(cls, merge_proposal, branch_identity_cache=None):
@@ -93,7 +93,6 @@ class RecipientReason:
 
         The registrant will be the sole recipient.
         """
-        branch = merge_proposal.source_branch
         reason_template = 'You proposed %(branch_name)s for merging.'
         return cls(merge_proposal.registrant, merge_proposal.registrant,
                      merge_proposal.source_branch,
@@ -124,16 +123,16 @@ class RecipientReason:
         The owner will be the sole recipient.
         """
         return cls(branch.owner, recipient, branch,
-                     cls.makeRationale('Owner', branch.owner, recipient),
+                     cls.makeRationale('Owner', branch.owner),
                      'You are getting this email as %(lc_entity_is)s the'
                      ' owner of the branch and someone has edited the'
                      ' details.',
                      branch_identity_cache=branch_identity_cache)
 
     @staticmethod
-    def makeRationale(rationale_base, subscriber, recipient):
-        if subscriber.isTeam():
-            return '%s @%s' % (rationale_base, subscriber.name)
+    def makeRationale(rationale_base, person):
+        if person.is_team:
+            return '%s @%s' % (rationale_base, person.name)
         else:
             return rationale_base
 
