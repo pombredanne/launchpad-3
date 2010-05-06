@@ -8,7 +8,7 @@ import lazr.uri
 import wsgi_intercept
 from wsgi_intercept.urllib2_intercept import install_opener, uninstall_opener
 import wsgi_intercept.zope_testbrowser
-from paste.httpexceptions import HTTPExceptionHandler, HTTPMovedPermanently
+from paste.httpexceptions import HTTPExceptionHandler
 
 from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -23,11 +23,13 @@ SESSION_VAR = 'lh.session'
 # mechanism for getting the secret.
 SECRET = 'secret'
 
+
 def session_scribbler(app, test):
     def scribble(environ, start_response):
         test.session = environ[SESSION_VAR] # Yay for mutables.
         return app(environ, start_response)
     return scribble
+
 
 def dummy_destination(environ, start_response):
     start_response('200 OK', [('Content-type','text/plain')])
@@ -71,7 +73,8 @@ class TestLogout(TestCase):
         self.cookie_name = app.cookie_handler.cookie_name
         self.intercept(config.codehosting.codebrowse_root, app)
         self.intercept(config.codehosting.secure_codebrowse_root, app)
-        self.intercept(allvhosts.configs['mainsite'].rooturl, dummy_destination)
+        self.intercept(allvhosts.configs['mainsite'].rooturl,
+                       dummy_destination)
         install_opener()
         self.browser = wsgi_intercept.zope_testbrowser.WSGI_Browser()
         # We want to pretend we are not a robot, or else mechanize will honor
@@ -131,7 +134,8 @@ class TestLogout(TestCase):
 
         # Now, though, we are redirected to the ``next_to`` destination.
         self.assertEqual(self.browser.url, dummy_root + '+logout')
-        self.assertEqual(self.browser.contents, 'This is a dummy destination.\n')
+        self.assertEqual(self.browser.contents,
+                         'This is a dummy destination.\n')
 
 
 def test_suite():
