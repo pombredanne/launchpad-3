@@ -2171,8 +2171,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
-                processorfamily=processor.family,
-                architecturetag=None)
+                processorfamily=processor.family)
         binary_package_build = BinaryPackageBuild(
             sourcepackagerelease=source_package_release,
             processor=processor,
