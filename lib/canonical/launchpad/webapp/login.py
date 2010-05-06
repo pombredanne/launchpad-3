@@ -199,7 +199,7 @@ class OpenIDLogin(LaunchpadView):
         return_to = "%s?%s" % (return_to, starting_url)
         form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
-        # The consumer.begin() call above will insert rows into the 
+        # The consumer.begin() call above will insert rows into the
         # OpenIDAssociations table, but since this will be a GET request, the
         # transaction would be rolled back, so we need an explicit commit
         # here.
@@ -287,7 +287,7 @@ class OpenIDCallbackView(OpenIDLogin):
     def processPositiveAssertion(self):
         """Process an OpenID response containing a positive assertion.
 
-        We'll get the account with the given OpenID identifier (creating one 
+        We'll get the account with the given OpenID identifier (creating one
         if it doesn't already exist) and act according to the account's state:
           - If the account is suspended, we stop and render an error page;
           - If the account is deactivated, we reactivate it and proceed;
@@ -502,10 +502,11 @@ class CookieLogoutPage:
 
     def logout(self):
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
-            _(u'You have been logged out')
-            )
-        target = '%s/?loggingout=1' % self.request.URL[-1]
+        openid_vhost = config.launchpad.openid_provider_vhost
+        openid_root = allvhosts.configs[openid_vhost].rooturl
+        target = '%s+logout?%s' % (
+            config.codehosting.secure_codebrowse_root,
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root,))))
         self.request.response.redirect(target)
         return ''
 
