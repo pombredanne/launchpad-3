@@ -342,10 +342,12 @@ class CopyChecker:
         for source_pub in destination_source_conflicts:
             for file_alias in source_pub.sourcepackagerelease.files:
                 library_file = file_alias.libraryfile
-                file_conflicts[library_file.filename] = library_file
+                sha1 = library_file.content.sha1
+                file_conflicts[library_file.filename] = sha1
         for lf in source.sourcepackagerelease.files:
             if lf.libraryfile.filename in file_conflicts.keys():
-                if lf.libraryfile != file_conflicts[lf.libraryfile.filename]:
+                sha1 = lf.libraryfile.content.sha1
+                if sha1 != file_conflicts[lf.libraryfile.filename]:
                     raise CannotCopy(
                         "%s already exists in destination archive with "
                         "different contents." % lf.libraryfile.filename)

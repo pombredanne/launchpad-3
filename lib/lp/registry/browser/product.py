@@ -1070,7 +1070,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """Are there packages, or can packages be suggested."""
         if len(self.sourcepackages) > 0:
             return True
-        if self.user is None or config.launchpad.is_lpnet:
+        if self.user is None:
             return False
         date_next_suggest_packaging = self.context.date_next_suggest_packaging
         return (

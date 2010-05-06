@@ -8,7 +8,6 @@ __all__ = ['ProcessUpload']
 
 import os
 
-from lp.archiveuploader.uploadpolicy import findPolicyByOptions
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
@@ -75,13 +74,8 @@ class ProcessUpload(LaunchpadCronScript):
                 "%s is not a directory" % self.options.base_fsroot)
 
         self.logger.debug("Initialising connection.")
-        def getPolicy(distro):
-            self.options.distro = distro.name
-            return findPolicyByOptions(self.options)
-        processor = UploadProcessor(self.options.base_fsroot, 
-            self.options.dryrun, self.options.nomails, self.options.keep,
-            getPolicy, self.txn, self.logger)
-        processor.processUploadQueue(self.options.leafname)
+        UploadProcessor(
+            self.options, self.txn, self.logger).processUploadQueue()
 
     @property
     def lockfilename(self):

@@ -674,7 +674,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
 
 def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
-                  seen_new_branch_hook=None):
+                  seen_new_branch_hook=None, branch_transport=None):
     """Create a Launchpad server.
 
     :param user_id: A unique database ID of the user whose branches are
@@ -689,10 +689,17 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
     if codehosting_endpoint_url is None:
         codehosting_endpoint_url = config.codehosting.codehosting_endpoint
     if branch_url is None:
-        branch_url = config.codehosting.mirrored_branches_root
+        if branch_transport is None:
+            branch_url = config.codehosting.mirrored_branches_root
+            branch_transport = get_chrooted_transport(branch_url)
+    else:
+        if branch_transport is None:
+            branch_transport = get_chrooted_transport(branch_url)
+        else:
+            raise AssertionError(
+                "can't supply both branch_url and branch_transport!")
 
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
-    branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(
         BlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)

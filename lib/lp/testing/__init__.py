@@ -73,7 +73,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 from windmill.authoring import WindmillTestClient
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
@@ -83,6 +83,7 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
@@ -97,6 +98,7 @@ from lp.testing._login import (
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+from lp.testing.fixture import ZopeEventHandlerFixture
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -384,6 +386,14 @@ class TestCase(testtools.TestCase):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+        # Record the oopses generated during the test run.
+        self.oopses = []
+        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+
+    @adapter(ErrorReportEvent)
+    def _recordOops(self, event):
+        """Add the oops to the testcase's list."""
+        self.oopses.append(event.object)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
