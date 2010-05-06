@@ -6,6 +6,7 @@
 from datetime import timedelta
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -26,7 +27,7 @@ from lp.testing import TestCaseWithFactory
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     for build in test.builds:
-        if (build.sourcepackagerelease.name == name
+        if (build.source_package_release.name == name
             and build.processor.name == processor):
             return (build, build.buildqueue_record)
     return (None, None)
@@ -203,7 +204,8 @@ class TestBuildPackageJob(TestBuildJobBase):
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
-            bq.estimated_duration = timedelta(seconds=duration)
+            removeSecurityProxy(bq).estimated_duration = timedelta(
+                seconds=duration)
 
     def test_processor(self):
         # Test that BuildPackageJob returns the correct processor.
