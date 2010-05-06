@@ -212,7 +212,8 @@ class ConfigFile(object):
 
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
-        pattern = re.compile("^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name), re.M)
+        pattern = re.compile(
+            "^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name), re.M)
         result = pattern.search(self.content)
         if result is None:
             return None
