@@ -11,28 +11,36 @@ from datetime import timedelta
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
+
+from storm.store import Store
+
+from canonical.config import config
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.code.interfaces.branchjob import IBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
+class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(IBranchJob, IBuildFarmJob)
-    classProvides(
-        ISpecificBuildFarmJobClass, ITranslationTemplatesBuildJobSource)
+    implements(IBuildFarmBranchJob)
+    class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
+
+    classProvides(ITranslationTemplatesBuildJobSource)
 
     duration_estimate = timedelta(seconds=10)
 
@@ -54,24 +62,61 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     def getName(self):
         """See `IBuildFarmJob`."""
-        return '%s-%d' % (self.branch.name, self.job.id)
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
+        return '%s-%d' % (self.branch.name, buildqueue.id)
 
     def getTitle(self):
         """See `IBuildFarmJob`."""
         return '%s translation templates build' % self.branch.bzr_identity
+
+    def cleanUp(self):
+        """See `IBuildFarmJob`."""
+        # This class is not itself database-backed.  But it delegates to
+        # one that is.  We can't call its SQLObject destroySelf method
+        # though, because then the BuildQueue and the BranchJob would
+        # both try to delete the attached Job.
+        Store.of(self.context).remove(self.context)
+
+    @classmethod
+    def _hasPotteryCompatibleSetup(cls, branch):
+        """Does `branch` look as if pottery can generate templates for it?
+
+        :param branch: A `Branch` object.
+        """
+        bzr_branch = removeSecurityProxy(branch).getBzrBranch()
+        return is_intltool_structure(bzr_branch.basis_tree())
+
+    @classmethod
+    def generatesTemplates(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        if branch.private:
+            # We don't support generating template from private branches
+            # at the moment.
+            return False
+
+        utility = getUtility(IRosettaUploadJobSource)
+        if not utility.providesTranslationFiles(branch):
+            # Nobody asked for templates generated from this branch.
+            return False
+
+        if not cls._hasPotteryCompatibleSetup(branch):
+            # Nothing we could do with this branch if we wanted to.
+            return False
+
+        # Yay!  We made it.
+        return True
 
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-        # We don't have any JSON metadata for this BranchJob type.
-        metadata = {}
+        # Pass public HTTP URL for the branch.
+        metadata = {'branch_url': branch.composePublicURL()}
         branch_job = BranchJob(
             branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
         store.add(branch_job)
         specific_job = TranslationTemplatesBuildJob(branch_job)
-
         duration_estimate = cls.duration_estimate
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
@@ -82,8 +127,22 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         return specific_job
 
     @classmethod
+    def scheduleTranslationTemplatesBuild(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        if not config.rosetta.generate_templates:
+            # This feature is disabled by default.
+            return
+
+        if cls.generatesTemplates(branch):
+            # This branch is used for generating templates.
+            cls.create(branch)
+
+    @classmethod
     def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
+        """See `IBuildFarmJobDerived`.
+
+        Overridden here to search via a BranchJob, rather than a Job.
+        """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch_job = store.find(BranchJob, BranchJob.job == job).one()
         if branch_job is None:

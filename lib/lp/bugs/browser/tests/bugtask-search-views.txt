@@ -283,10 +283,10 @@ The same is true for a sarge package.
     []
 
 
-== Project Search Page ==
+== ProjectGroup Search Page ==
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
 
 The simple search form returns only open bugtasks.
 

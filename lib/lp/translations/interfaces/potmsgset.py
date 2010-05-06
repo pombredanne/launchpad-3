@@ -163,19 +163,25 @@ class IPOTMsgSet(Interface):
         """
 
     def getExternallyUsedTranslationMessages(language):
-        """Returns all externally used translations.
+        """Find externally used translations for the same message.
 
-        External are those on other templates for the same English message.
-        "Used" messages are either current or imported ones.
+        This is used to find suggestions for translating this
+        `POTMsgSet` that are actually used (i.e. current or imported) in
+        other templates.
+
+        The suggestions are read-only; they come from the slave store.
 
         :param language: language we want translations for.
         """
 
     def getExternallySuggestedTranslationMessages(language):
-        """Return all externally suggested translations.
+        """Find externally suggested translations for the same message.
 
-        External are those on other templates for the same English message.
-        "Suggested" messages are those which are neither current nor imported.
+        This is used to find suggestions for translating this
+        `POTMsgSet` that were entered in another context, but for the
+        same English text, and are not in actual use.
+
+        The suggestions are read-only; they come from the slave store.
 
         :param language: language we want translations for.
         """
@@ -238,6 +244,18 @@ class IPOTMsgSet(Interface):
 
         :param pofile: a `POFile` to dismiss suggestions from.
         :param reviewer: the person that is doing the dismissal.
+        :param lock_timestamp: the timestamp when we checked the values we
+            want to update.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+
+    def resetCurrentTranslation(pofile, lock_timestamp):
+        """Reset the currently used translation.
+
+        This will set the "is_current" attribute to False and if the message
+        is diverge, will try to converge it.
+        :param pofile: a `POFile` to dismiss suggestions from.
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.
 

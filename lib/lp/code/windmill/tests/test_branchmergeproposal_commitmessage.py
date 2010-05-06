@@ -9,31 +9,30 @@ __all__ = []
 import transaction
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing.constants import (
     FOR_ELEMENT, PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
 EDIT_COMMIT_LINK = u'//a[contains(@href, "+edit-commit-message")]'
 # There seem to be two textareas rendered for the yui-ieditor-input for some
 # reason.
 EDIT_COMMENT_TEXTBOX = (
-    u'//div[@id="edit-commit-message"]//textarea[@class="yui-ieditor-input"][1]')
+    u'//div[@id="edit-commit_message"]//textarea[@class="yui-ieditor-input"][1]')
 EDIT_COMMENT_SUBMIT = (
-    u'//div[@id="edit-commit-message"]//'
+    u'//div[@id="edit-commit_message"]//'
     'button[contains(@class, "yui-ieditor-submit_button")]')
 COMMIT_MESSAGE_TEXT = (
-    u'//div[@id="edit-commit-message"]//div[@class="yui-editable_text-text"]')
+    u'//div[@id="edit-commit_message"]//div[@class="yui-editable_text-text"]')
 
 
-class TestCommitMessage(TestCaseWithFactory):
+class TestCommitMessage(WindmillTestCase):
 
     layer = CodeWindmillLayer
+    suite_name = "Commit message editing."
 
     def test_set_commit_message(self):
         """Test the commit message multiline editor."""
@@ -43,7 +42,7 @@ class TestCommitMessage(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal(registrant=eric)
         transaction.commit()
 
-        client = WindmillTestClient("Commit message editing.")
+        client = self.client
 
         login_person(eric, "test", client)
 
@@ -70,9 +69,10 @@ class TestCommitMessage(TestCaseWithFactory):
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
 
 
-class TestQueueStatus(TestCaseWithFactory):
+class TestQueueStatus(WindmillTestCase):
 
     layer = CodeWindmillLayer
+    suite_name = "Queue status setting"
 
     def test_inline_queue_status_setting(self):
         """Test setting the queue_status with the ChoiceWidget."""
@@ -81,10 +81,11 @@ class TestQueueStatus(TestCaseWithFactory):
             email="mike@example.com")
         branch = self.factory.makeBranch(owner=mike)
         second_branch = self.factory.makeBranch(product=branch.product)
+        self.factory.makeRevisionsForBranch(second_branch)
         merge_proposal = second_branch.addLandingTarget(mike, branch)
         transaction.commit()
 
-        client = WindmillTestClient("Queue status setting")
+        client = self.client
 
         merge_url = canonical_url(merge_proposal)
         client.open(url=merge_url)
@@ -99,12 +100,16 @@ class TestQueueStatus(TestCaseWithFactory):
             xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
 
         # Change the status to experimental.
-        client.click(link=u'Rejected')
+        client.click(link=u'Approved')
         client.waits.sleep(milliseconds=SLEEP)
 
         client.asserts.assertText(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
-            validator=u'Rejected')
+            validator=u'Approved')
+
+        client.asserts.assertText(
+            xpath=u'//tr[@id="summary-row-3-approved-revision"]/td',
+            validator=u'5')
 
         # Reload the page and make sure the change sticks.
         client.open(url=merge_url)
@@ -114,7 +119,7 @@ class TestQueueStatus(TestCaseWithFactory):
             timeout=FOR_ELEMENT)
         client.asserts.assertText(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
-            validator=u'Rejected')
+            validator=u'Approved')
 
 
 def test_suite():

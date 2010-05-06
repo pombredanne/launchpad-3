@@ -110,11 +110,37 @@ separate browser instance to avoid breaking the other page tests.
     >>> sample_browser.url
     'http://launchpad.dev/testy'
 
+By default, a newly created project doesn't use Launchpad for bug
+tracking, and none of the bug lists or edit controls will be
+available.
+
+    >>> sample_browser.getLink('Bugs').click()
+    >>> uses_malone_p = find_tag_by_id(sample_browser.contents, 'no-malone')
+    >>> print extract_text(uses_malone_p)
+    A product for testing things does not use Launchpad for bug tracking.
+
+We can change the settings to use Launchpad for bug tracking.
+
+    >>> sample_browser.getLink(
+    ...     'Configure bug tracker').click()
+    >>> print sample_browser.title
+    Configure bug tracker : Bugs : Test Product
+    >>> sample_browser.getControl('In Launchpad').click()
+    >>> sample_browser.getControl('Change').click()
+
+Now, information about bug tracking (bug supervisor, security contact)
+and their edit controls are available on the page.
+
+    >>> bug_supervisor = find_tag_by_id(
+    ...     sample_browser.contents, 'bug-supervisor')
+    >>> print extract_text(bug_supervisor)
+    Bug supervisor:
+    None set
+
 Sample Person is a member of "Warty Security Team".  However, he should not be
 able to set Warty Security Team as a bug supervisor for Test Project as he's
 not an admin of that team.
 
-    >>> sample_browser.getLink('Bugs').click()
     >>> sample_browser.getLink('Change bug supervisor').click()
     >>> sample_browser.url
     'http://bugs.launchpad.dev/testy/+bugsupervisor'

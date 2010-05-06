@@ -254,3 +254,67 @@ templates.
     >>> group_owner_browser.getControl('Change').click()
 
 
+Input Check
+-----------
+
+The template admin form requires either a productseries or a
+distroseries.
+
+    >>> login(ANONYMOUS)
+    >>> product = factory.makeProduct(name='aproduct')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product.getSeries('trunk'))
+    >>> template_url = canonical_url(template)
+    >>> logout()
+
+    >>> admin_browser.open(template_url + '/+admin')
+
+    >>> admin_browser.getControl(name='field.distroseries').value = [None]
+    >>> admin_browser.getControl(name='field.productseries').value = ''
+    >>> admin_browser.getControl('Change').click()
+    >>> print_errors(admin_browser.contents)
+    There is 1 error.
+    Choose either a distribution release series or a project release series.
+
+It can't be both.
+
+    >>> admin_browser.open(template_url + '/+admin')
+
+    >>> admin_browser.getControl(name='field.distroseries').value = [
+    ...     'ubuntu/hoary']
+    >>> admin_browser.getControl(name='field.productseries').value = (
+    ...     'aproduct/trunk')
+    >>> admin_browser.getControl('Change').click()
+    >>> print_errors(admin_browser.contents)
+    There is 1 error.
+    Choose a distribution release series or a project release series,
+    but not both.
+
+Also, the form won't allow you to set a name that duplicates that of
+another template.
+
+    >>> login(ANONYMOUS)
+    >>> other_template = factory.makePOTemplate(
+    ...     productseries=template.productseries)
+    >>> other_name = other_template.name
+    >>> other_domain = other_template.translation_domain
+    >>> logout()
+
+    >>> admin_browser.open(template_url + '/+admin')
+    >>> admin_browser.getControl(name='field.name').value = other_name
+    >>> admin_browser.getControl('Change').click()
+    >>> print_errors(admin_browser.contents)
+    There is 1 error.
+    Template name: Name is already in use.
+    ...
+
+Similar for the translation domain.
+
+    >>> admin_browser.open(template_url + '/+admin')
+    >>> admin_browser.getControl(name='field.translation_domain').value = (
+    ...     other_domain)
+    >>> admin_browser.getControl('Change').click()
+    >>> print_errors(admin_browser.contents)
+    There is 1 error.
+    Translation domain: Domain is already in use.
+    ...

@@ -56,7 +56,7 @@ from canonical.launchpad.helpers import (
 
 from canonical.launchpad.interfaces import (
     IAnswersFrontPageSearchForm, IFAQ, IFAQTarget,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProjectGroup, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
     QuestionSort, NotFoundError, UnexpectedFormData)
@@ -357,7 +357,8 @@ class QuestionLanguageVocabularyFactory:
 
         :param view: The view that provides the request used to determine the
         user languages. The view contains the Product widget selected by the
-        user in the case where a question is asked in the context of a Project.
+        user in the case where a question is asked in the context of a
+        ProjectGroup.
         """
         self.view = view
 
@@ -377,12 +378,12 @@ class QuestionLanguageVocabularyFactory:
         languages.insert(0, english)
 
         # The vocabulary indicates which languages are supported.
-        if context is not None and not IProject.providedBy(context):
+        if context is not None and not IProjectGroup.providedBy(context):
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
-        elif (IProject.providedBy(context) and
+        elif (IProjectGroup.providedBy(context) and
                 self.view.question_target is not None):
-            # Projects do not implement IQuestionTarget--the user must
+            # ProjectGroups do not implement IQuestionTarget--the user must
             # choose a product while asking a question.
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
@@ -664,7 +665,8 @@ class QuestionEditView(LaunchpadEditFormView):
     schema = IQuestion
     label = 'Edit question'
     field_names = [
-        "language", "title", "description", "target", "assignee", "whiteboard"]
+        "language", "title", "description", "target", "assignee",
+        "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)

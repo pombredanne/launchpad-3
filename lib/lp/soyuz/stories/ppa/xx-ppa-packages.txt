@@ -35,7 +35,7 @@ the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    Builds for...
+    Builds : PPA for Celso Providelo : Celso Providelo
 
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
@@ -96,7 +96,7 @@ The detailed Packages list
     Source              Published   Status     Series      Section  Build
         Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
-    ice...(sources.changes) 2007-07-09  Published  Warty       Editors  i386
+    ice...(changes file) 2007-07-09  Published  Warty       Editors  i386
     pmount - 0.1-1      2007-07-09  Published  Warty       Editors
 
 Each data row is expandable to contain some sections containing:
@@ -134,14 +134,15 @@ published, this will be indicated to the viewer:
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_ppa = cprov.archive
     >>> pmount_i386_pub = cprov_ppa.getAllPublishedBinaries(
     ...     name='pmount', version='0.1-1')[1]
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-    >>> pmount_i386_pub.secure_record.status = PackagePublishingStatus.PENDING
-    >>> pmount_i386_pub.secure_record.datepublished = None
+    >>> pmount_i386_pub.status = PackagePublishingStatus.PENDING
+    >>> pmount_i386_pub.datepublished = None
     >>> transaction.commit()
     >>> logout()
 
@@ -178,38 +179,69 @@ back to the source PPA.
     'http://launchpad.dev/~mark/+archive/ppa'
 
 This link is not present if the user does not have permission to view
-the PPA.  If we make mark's PPA private and then browse back as
-an anonymous user, the link will be gone.
+the PPA.  We create a private PPA with a published source and then copy
+the source into a public PPA to demonstrate this.
 
-    >>> admin_browser.open("http://launchpad.dev/~mark/+archive/ppa/+admin")
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName(
+    ...     'ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
+    >>> private_ppa = factory.makeArchive(
+    ...     name='p3a', private=True, owner=cprov,
+    ...     distribution=ubuntu)
+    >>> joe = factory.makePerson(name="joe")
+    >>> public_ppa = factory.makeArchive(
+    ...     owner=joe, distribution=ubuntu, name='ppa')
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> source = test_publisher.getPubSource(
+    ...     sourcename='foo', archive=private_ppa, distroseries=warty)
+    >>> copied_source = source.copyTo(
+    ...     source.distroseries, source.pocket, public_ppa)
+    >>> expander_link_id = "pub%s-expander" % copied_source.id
+    >>> logout()
 
-    >>> anon_browser.open(expander_url)
-    >>> anon_browser.getLink("PPA for Mark Shuttleworth")
+
+We can view the link on the public PPA to Celso's private PPA when logged
+in as Celso.
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open(
+    ...     "http://launchpad.dev/~joe/+archive/ppa/+packages")
+    >>> expander_url = cprov_browser.getLink(id=expander_link_id).url
+    >>> cprov_browser.open(expander_url)
+    >>> print cprov_browser.getLink("PPA named p3a for Celso Providelo").url
+    http://launchpad.dev/~cprov/+archive/p3a
+
+But Joe himself will not see the link.
+
+    >>> joe_browser = setupBrowser(
+    ...     auth="Basic joe@example.com:test")
+    >>> joe_browser.open(expander_url)
+    >>> joe_browser.getLink("PPA named p3a for Celso Providelo")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-While we are there, we can also see that Mark's PPA 'repository-size'
-pagelet isn't publicly available once the PPA was marked private.
+And neither can an anonymous user.
+
+    >>> anon_browser.open(expander_url)
+    >>> anon_browser.getLink("PPA named p3a for Celso Providelo")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+While we are there, we can also see that the private PPA's 'repository-size'
+pagelet isn't publicly available.
 
     >>> anon_browser.open(
-    ...     "http://launchpad.dev/~mark/+archive/ppa/+repository-size")
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+repository-size")
     Traceback (most recent call last):
     ...
     Unauthorized: (..., 'launchpad.View')
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
-
-Set mark's archive back to public before continuing.
-
-    >>> admin_browser.open("http://launchpad.dev/~mark/+archive/ppa/+admin")
-    >>> admin_browser.getControl(name="field.private").value = False
-    >>> admin_browser.getControl(name="field.buildd_secret").value = ""
-    >>> admin_browser.getControl("Save").click()
 
 
 Searching the packages list
@@ -218,6 +250,8 @@ Searching the packages list
 We can search a PPA for a particular package.  A non-existent package shows
 no results.
 
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
     >>> field = anon_browser.getControl(name='field.name_filter')
     >>> field.value = 'nonexistentpackage'
     >>> anon_browser.getControl('Filter', index=0).click()
@@ -244,18 +278,16 @@ for iceweasel before marking it as superseded.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
     ...     name='iceweasel')[0]
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> test_publisher = SoyuzTestPublisher()
     >>> bpr = test_publisher.uploadBinaryForBuild(
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
-    >>> iceweasel_pub.secure_record.status = (
+    >>> iceweasel_pub.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
     >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
-    >>> pmount_pub.secure_record.status = PackagePublishingStatus.DELETED
-    >>> pmount_pub.secure_record.removed_by = cprov
-    >>> pmount_pub.secure_record.removal_comment = 'nhack !'
+    >>> pmount_pub.status = PackagePublishingStatus.DELETED
+    >>> pmount_pub.removed_by = cprov
+    >>> pmount_pub.removal_comment = 'nhack !'
     >>> logout()
     >>> transaction.commit()
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -289,7 +321,7 @@ result will only contain packages SUPERSEDED or DELETED.
     >>> print_archive_package_rows(anon_browser.contents)
     Source            Published    Status        Series   Section  Build
         Status
-    i...(sources.changes) 2007-07-09   Superseded    Warty    Editors
+    i...(changes file) 2007-07-09   Superseded    Warty    Editors
     pmount - 0.1-1    2007-07-09   Deleted       Warty    Editors
 
 The 'Any Status' filter is also available, so the user can search over
@@ -301,7 +333,7 @@ any package ever published in the context PPA.
     Source             Published    Status     Series      Section  Build
         Status
     cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
-    ic...(sources.changes) 2007-07-09   Superseded Warty       Editors
+    ic...(changes file) 2007-07-09   Superseded Warty       Editors
     pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
 
 
@@ -405,7 +437,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    PPA for Celso Providelo : Celso Providelo
+    i386 build of cdrkit 1.0 : PPA for Celso Providelo : Celso Providelo
 
 This feature is also useful from the PPA owner perspective. When Celso
 sees that there was a failure while building 'cdrkit' on i386 he can
@@ -434,4 +466,4 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    PPA for Celso Providelo : Celso Providelo
+    i386 build of cdrkit 1.0 : PPA for Celso Providelo : Celso Providelo

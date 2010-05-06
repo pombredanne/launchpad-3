@@ -8,20 +8,15 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 
-class TestTimelineGraph(TestCaseWithFactory):
+class TestTimelineGraph(WindmillTestCase):
     """Test timeline graph widget."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        super(TestTimelineGraph, self).setUp()
-        self.client = WindmillTestClient('TimelineGraph')
+    suite_name = 'TimelineGraph'
 
     def test_timeline_graph(self):
         """Test timeline graph on /$project/+timeline-graph page."""

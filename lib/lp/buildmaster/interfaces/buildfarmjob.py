@@ -9,8 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
-    'IBuildFarmJobDispatchEstimation',
-    'ISpecificBuildFarmJobClass',
+    'IBuildFarmJobDerived',
     'BuildFarmJobType',
     ]
 
@@ -67,7 +66,7 @@ class IBuildFarmJob(Interface):
         """An appropriate name for this job."""
 
     def getTitle():
-        """A string to identify and describe the job to users return None."""
+        """A string to identify and describe the job to users."""
 
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
@@ -91,12 +90,10 @@ class IBuildFarmJob(Interface):
             "return None."))
 
 
+class IBuildFarmJobDerived(Interface):
+    """Common functionality required by classes delegating IBuildFarmJob.
 
-class ISpecificBuildFarmJobClass(Interface):
-    """Class interface provided by `IBuildFarmJob` classes.
-
-    Used by the `BuildQueue` to find the specific build-farm job objects
-    it needs to dispatch to builders.
+    An implementation of this class must setup the necessary delegation.
     """
 
     def getByJob(job):
@@ -106,51 +103,51 @@ class ISpecificBuildFarmJobClass(Interface):
         has an entry associated with `job`.
         """
 
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide a sub-query to refine the candidate job selection.
 
-class IBuildFarmJobDispatchEstimation(Interface):
-    """Operations needed for job dipatch time estimation."""
+        Return a sub-query to narrow down the list of candidate jobs.
+        The sub-query will become part of an "outer query" and is free to
+        refer to the `BuildQueue` and `Job` tables already utilized in the
+        latter.
 
-    def composePendingJobsQuery(min_score, processor, virtualized):
-        """String SELECT query yielding pending jobs with given minimum score.
+        Example (please see the `BuildPackageJob` implementation for a
+        complete example):
 
-        This will be used for the purpose of job dispatch time estimation
-        for a build job of interest (JOI).
-        In order to estimate the dispatch time for the JOI we need to
-        calculate the sum of the estimated durations of the *pending* jobs
-        ahead of JOI.
+            SELECT TRUE
+            FROM Archive, Build, BuildPackageJob, DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND
+            ..
 
-        Depending on the build farm job type the JOI may or may not be tied
-        to a particular processor type.
-        Binary builds for example are always built for a specific processor
-        whereas "create a source package from recipe" type jobs do not care
-        about processor types or virtualization.
-
-        When implementing this method for processor independent build farm job
-        types (e.g. recipe build) you may safely ignore the `processor` and
-        `virtualized` parameters.
-
-        The SELECT query to be returned needs to select the following data
-
-            1 - BuildQueue.job
-            2 - BuildQueue.lastscore
-            3 - BuildQueue.estimated_duration
-            4 - Processor.id    [optional]
-            5 - virtualized     [optional]
-
-        Please do *not* order the result set since it will be UNIONed and
-        ordered only then.
-
-        Job types that are processor independent or do not care about
-        virtualization should return NULL for the optional data in the result
-        set.
-
-        :param min_score: the pending jobs selected by the returned
-            query should have score >= min_score.
-        :param processor: the type of processor that the jobs are expected
-            to run on.
-        :param virtualized: whether the jobs are expected to run on the
-            `processor` natively or inside a virtual machine.
-        :return: a string SELECT clause that can be used to find
-            the pending jobs of the appropriate type.
+        :param processor: the type of processor that the candidate jobs are
+            expected to run on.
+        :param virtualized: whether the candidate jobs are expected to run on
+            the `processor` natively or inside a virtual machine.
+        :return: a string containing a sub-query that narrows down the list of
+            candidate jobs.
         """
 
+    def postprocessCandidate(job, logger):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+
+        :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
+        """
+
+    def generateSlaveBuildCookie():
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie need not be unique, but should be hard for a
+        compromised slave to guess.
+
+        :return: a hard-to-guess ASCII string that can be reproduced
+            accurately based on this job's properties.
+        """
+
+    def cleanUp():
+        """Job's finished.  Delete its supporting data."""

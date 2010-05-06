@@ -15,7 +15,7 @@ notification they would like to receive.
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
-    ...     IMergeProposalCreatedJobSource)
+    ...     IBranchMergeProposalJobSource)
     >>> from lp.code.model.diff import PreviewDiff
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
@@ -103,8 +103,11 @@ is created.  When those jobs are run, the email is sent from the registrant.
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
-    >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> job.run(_create_preview=False)
+    >>> # Fake the update preview diff as done.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+    >>> job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -153,10 +156,13 @@ in the email.
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch,
-    ...     initial_comment=initial_comment, review_requests=reviewers)
+    ...     description=initial_comment, review_requests=reviewers)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
-    >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> job.run(_create_preview=False)
+    >>> # Fake the update preview diff as done.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> [job] = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+    >>> job.run()
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:

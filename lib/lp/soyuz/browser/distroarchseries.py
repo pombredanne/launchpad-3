@@ -16,8 +16,7 @@ __all__ = [
 from zope.interface import implements, Interface
 
 from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadEditFormView)
@@ -74,14 +73,9 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchBinaryPackages(self.text)
 
 
-class DistroArchSeriesView(BuildRecordsView,
-                           DistroArchSeriesPackageSearchView):
+class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
-
-
-class DistroArchSeriesBuildsView(BuildRecordsView):
-    """View for +builds on a distro arch series."""
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):

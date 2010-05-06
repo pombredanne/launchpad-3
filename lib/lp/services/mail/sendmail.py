@@ -15,18 +15,22 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
+    'append_footer',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
     'raw_sendmail',
-    'validate_message']
+    'validate_message',
+    ]
+
+
+import hashlib
 
 from binascii import b2a_qp
-import sha
-import sets
 from email.Encoders import encode_base64
 from email.Utils import getaddresses, make_msgid, formatdate, formataddr
 from email.Message import Message
@@ -41,10 +45,10 @@ from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.lp import isZopeless
-from canonical.launchpad.helpers import is_ascii_only
-from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
+from canonical.launchpad.helpers import is_ascii_only
+from canonical.lp import isZopeless
+from lp.services.mail.stub import TestMailer
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -80,13 +84,33 @@ def do_paranoid_envelope_to_validation(to_addrs):
     to header.  The to header and envelope_to addresses may vary
     independently, and the to header cannot break Z3.
     """
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
         assert '\n' not in addr, (
             "Address contains carriage returns: %r" % (addr,))
+
+
+def append_footer(main, footer):
+    """Append a footer to an email, following signature conventions.
+
+    If there is no footer, do nothing.
+    If there is already a signature, append an additional footer.
+    If there is no existing signature, append '-- \n' and a footer.
+
+    :param main: The main content, which may have a signature.
+    :param footer: An additional footer to append.
+    :return: a new version of main that includes the footer.
+    """
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))
 
 
 def format_address(name, address):
@@ -122,6 +146,11 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    return format_address(person.displayname, person.preferredemail.email)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -375,7 +404,7 @@ def sendmail(message, to_addrs=None, bulk=True):
     # helps security, but still exposes us to a replay attack; we consider the
     # risk low.
     del message['X-Launchpad-Hash']
-    hash = sha.new(config.mailman.shared_secret)
+    hash = hashlib.sha1(config.mailman.shared_secret)
     hash.update(str(message['message-id']))
     message['X-Launchpad-Hash'] = hash.hexdigest()
 

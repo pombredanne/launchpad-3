@@ -48,13 +48,6 @@ clear to the user that they have marked this bug as affecting them.
    ...         None, 'static'))
    This bug affects you and 1 other person
 
-Next to it, we also see the 'hot bug' icon, to indicate that the user
-has marked the bug as affecting them.
-
-   >>> print find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetoo').img['src']
-   /@@/flame-icon
-
 On second thoughts, the user realises that this bug does not affect
 them, so they click on the edit link once more.
 

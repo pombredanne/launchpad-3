@@ -69,7 +69,7 @@ also sends the email to the list of recipients.
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/main.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
     <BLANKLINE>
     >>> branch.unsubscribe(branch.owner)
 
@@ -268,7 +268,7 @@ unsubscribe link.
     Your team Launchpad Developers is subscribed to branch
     lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
     <BLANKLINE>
     0 1 ... 5999...
 
@@ -288,7 +288,7 @@ Mark's unsubscription link is to his personal branch subscription.
     <BLANKLINE>
     ...
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
     0 1 ... 5999...
 
 And just to be sure, lets create one with 800 lines.
@@ -467,7 +467,7 @@ names just now, we'll pass them through anyway
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/main.
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/main/+edit-subscription
 
 
 The fields that are currently tracked with the delta, and cause
@@ -523,7 +523,7 @@ something like this:
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/firefox/new-name.
     To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription
 
 
 == Unicode in emails ==
@@ -541,21 +541,19 @@ must also handle the unicode.
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
-    >>> print_email_details(notifications.pop())
-    To: Sample Person <test@canonical.com>
-    From: Sample Person <test@canonical.com>
-    Subject: [Branch ~name12/firefox/new-name]
-    Whiteboard changed to:
-    <BLANKLINE>
-    A new ꀀ summary
-    <BLANKLINE>
-    --
-    lp://dev/~name12/firefox/new-name
-    http://code.launchpad.dev/~name12/firefox/new-name
-    <BLANKLINE>
-    You are subscribed to branch lp://dev/~name12/firefox/new-name.
-    To unsubscribe from this branch go to
-    http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription.
+    >>> email = notifications.pop()
+    >>> email.get_payload(decode=True).decode('utf-8').splitlines()
+    [u'Whiteboard changed to:',
+     u'',
+     u'A new \ua000 summary',
+     u'',
+     u'--',
+     u'lp://dev/~name12/firefox/new-name',
+     u'http://code.launchpad.dev/~name12/firefox/new-name',
+     u'',
+     u'You are subscribed to branch lp://dev/~name12/firefox/new-name.',
+     u'To unsubscribe from this branch go to
+     http://code.launchpad.dev/~name12/firefox/new-name/+edit-subscription']
 
 
 == Modifications by users other than the branch owner ==

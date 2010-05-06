@@ -21,12 +21,12 @@ We need to insert some dependent fake data before continuing.
     >>> for pub in ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
     ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
-    >>> transaction.commit()
     >>> logout()
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
-    >>> pubs = webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
+    >>> cprov_srcs_response = pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources')
+    >>> pubs = cprov_srcs_response.jsonBody()
 
     >>> def print_publications(pubs):
     ...     for display_name in sorted(
@@ -150,7 +150,6 @@ Make cprov's PPA packages unsigned:
     >>> for pub in ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
     ...     pub.sourcepackagerelease.dscsigningkey = None
-    >>> transaction.commit()
     >>> logout()
 
 Query the source again:
@@ -181,9 +180,9 @@ A user can request a package to be deleted:
 Anonymous users can't remove packages.
 
     >>> response = webservice.named_post(
-    ...     package, 'requestDeletion', 
+    ...     package, 'requestDeletion',
     ...     removal_comment="No longer needed")
-    >>> print response 
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -194,12 +193,12 @@ The owner of a PPA can delete packages.
     >>> logout()
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> cprov_webservice = webservice_for_person(cprov, 
+    >>> cprov_webservice = webservice_for_person(cprov,
     ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> response = cprov_webservice.named_post(
-    ...     package, 'requestDeletion', 
+    ...     package, 'requestDeletion',
     ...     removal_comment="No longer needed")
-    >>> print response 
+    >>> print response
     HTTP/1.1 200 Ok
     ...
 
@@ -215,30 +214,46 @@ After removal, the package is marked as such:
 Privacy
 =======
 
-When Celso's PPA becomes private ...
+Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> cprov_ppa.buildd_secret = 'boing'
-    >>> cprov_ppa.private = True
-
-    >>> transaction.commit()
-
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     PackagePublishingStatus)
+    >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
+    >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov_private_ppa_db = factory.makeArchive(
+    ...     private=True, owner=cprov_db, name="p3a",
+    ...     distribution=ubuntu_db)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> private_source_pub = test_publisher.getPubBinaries(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     binaryname='privacy-test-bin',
+    ...     archive=cprov_private_ppa_db)
     >>> logout()
+
 
 Only Celso (or anyone who participates on the PPA owner team) has
 access to the PPA publications.
 
-    >>> cprov_srcs_response = webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedSources')
-    >>> print cprov_srcs_response
+    >>> cprov_private_ppa = webservice.get(
+    ...     "/~cprov/+archive/p3a").jsonBody()
+    >>> cprov_srcs_response_private = webservice.named_get(
+    ...     cprov_private_ppa['self_link'], 'getPublishedSources')
+    >>> print cprov_srcs_response_private
     HTTP/1.1 200 Ok
     ...
 
 Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedSources')
+    ...     cprov_private_ppa['self_link'], 'getPublishedSources')
     >>> print response
     HTTP/1.1 401 Unauthorized
     ...
@@ -246,6 +261,7 @@ Any other user attempt would result in a 401 error.
 If the user attempts to access the publication URL directly they will
 also fail in their quest.
 
+    >>> pubs = cprov_srcs_response_private.jsonBody()
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
     >>> print response

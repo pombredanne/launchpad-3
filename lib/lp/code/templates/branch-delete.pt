@@ -24,7 +24,7 @@
 
   <tal:deletelist condition="view/branch_deletion_actions/delete">
     The following items must be <em>deleted</em>:
-    <ul>
+    <ul id="deletion-items">
       <tal:actions repeat="row view/branch_deletion_actions/delete">
         <li>
           <img src="/@@/no" title="Insufficient privileges"

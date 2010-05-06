@@ -104,14 +104,12 @@ class MentoringOfferSet:
             """ % sqlvalues(yearago) + """
             Specification.id = MentoringOffer.specification AND
             (""" + Specification.completeness_clause +")",
-            clauseTables=['Specification'],
-            distinct=True)
+            clauseTables=['Specification'])
         via_bugs = MentoringOffer.select("""
             MentoringOffer.date_created > %s AND
             """ % sqlvalues(yearago) + """
             BugTask.bug = MentoringOffer.bug AND (
             """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask'],
-            distinct=True)
-        return via_specs.union(via_bugs)
+            clauseTables=['BugTask'])
+        return via_specs.union(via_bugs).orderBy("id")
 

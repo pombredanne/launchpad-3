@@ -21,9 +21,8 @@ __all__ = [
 
 import apt_inst
 import apt_pkg
+import hashlib
 import os
-import md5
-import sha
 import subprocess
 import sys
 import time
@@ -35,12 +34,12 @@ from lp.archiveuploader.utils import (
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
     re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import (
@@ -214,8 +213,8 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        digest = md5.md5()
-        sha_cksum = sha.sha()
+        digest = hashlib.md5()
+        sha_cksum = hashlib.sha1()
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
@@ -818,7 +817,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
+            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
             self.logger.debug("Build %s found" % build.id)
             # Ensure gathered binary is related to a FULLYBUILT build
             # record. It will be check in slave-scanner procedure to

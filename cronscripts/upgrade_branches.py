@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -14,7 +14,7 @@ from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
 
 
 class RunUpgradeBranches(JobCronScript):
-    """Run UpdatePreviewDiff jobs."""
+    """Run UpgradeBranchJob jobs."""
 
     config_name = 'upgrade_branches'
     source_interface = IBranchUpgradeJobSource

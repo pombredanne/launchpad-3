@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
         IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
+        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
         BugTaskStatus, UserCannotUnsubscribePerson)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
@@ -279,7 +279,7 @@ class SecurityEmailCommand(EmailCommand):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.security_related = security_related
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 
@@ -496,9 +496,9 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"

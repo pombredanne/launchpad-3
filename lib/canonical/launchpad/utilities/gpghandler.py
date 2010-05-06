@@ -31,8 +31,8 @@ from canonical.config import config
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm, valid_fingerprint)
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, GPGUploadFailure, GPGVerificationError,
-    IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
+    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGUploadFailure,
+    GPGVerificationError, IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
     MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
 from canonical.launchpad.validators.email import valid_email
 
@@ -160,7 +160,14 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, plain, None)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.message)
+                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+                # for python2.5 compatibility. We should remove it when we no
+                # longer need to run on python2.5.
+                if hasattr(e, 'message'):
+                    msg = e.message
+                else:
+                    msg = e.strerror
+                raise GPGVerificationError(msg)
         else:
             # store clearsigned signature
             sig = StringIO(content)
@@ -170,7 +177,14 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, None, plain)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.message)
+                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+                # for python2.5 compatibility. We should remove it when we no
+                # longer need to run on python2.5.
+                if hasattr(e, 'message'):
+                    msg = e.message
+                else:
+                    msg = e.strerror
+                raise GPGVerificationError(msg)
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
@@ -217,8 +231,7 @@ class GPGHandler:
         result = context.import_(newkey)
 
         if len(result.imports) == 0:
-            raise GPGKeyNotFoundError(
-                'No GPG key found with the given content: %s' % content)
+            raise GPGKeyNotFoundError(content)
 
         # Check the status of all imported keys to see if any of them is
         # a secret key.  We can't rely on result.secret_imported here
@@ -375,7 +388,7 @@ class GPGHandler:
 
         # Sign the text.
         try:
-            result = context.sign(plaintext, signature, mode)
+            context.sign(plaintext, signature, mode)
         except gpgme.GpgmeError:
             return None
 
@@ -409,6 +422,15 @@ class GPGHandler:
 
             # Import in the local key ring
             key = self.importPublicKey(pubkey)
+        return key
+
+    def retrieveActiveKey(self, fingerprint):
+        """See `IGPGHandler`."""
+        key = self.retrieveKey(fingerprint)
+        if key.revoked:
+            raise GPGKeyRevoked(key)
+        if key.expired:
+            raise GPGKeyExpired(key)
         return key
 
     def _submitKey(self, content):
@@ -612,7 +634,7 @@ class PymeKey:
         context = gpgme.Context()
         context.armor = True
         keydata = StringIO()
-        context.export(self.fingerprint, keydata)
+        context.export(self.fingerprint.encode('ascii'), keydata)
 
         return keydata.getvalue()
 

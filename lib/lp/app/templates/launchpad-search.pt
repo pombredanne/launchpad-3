@@ -97,11 +97,16 @@
                       Project summary
                   </div>
                   <div>
-                    Registered by <a
-                      tal:replace="structure view/pillar/owner/fmt:link">Foo Bar</a>
+                    Registered
+                    <tal:registrant
+                      define="registrant view/pillar/registrant|nothing"
+                      condition="registrant">
+                      by
+                      <a tal:replace="structure registrant/fmt:link">Foo Bar</a>
+                    </tal:registrant>
                     <tal:XXX condition="nothing">
                       # XXX sinzui 2008-05-27:
-                      # Product and Project still use the wrong name for
+                      # Product and ProjectGroup still use the wrong name for
                       # date_created.
                     </tal:XXX>
                     <span
@@ -152,10 +157,8 @@
             condition="view/pages"
             define="batch view/pages/currentBatch|nothing">
 
-            <div class="upper-batch-nav search-batch">
-              <tal:navigation
-                 replace="structure view/pages/@@+navigation-links-upper"/>
-            </div>
+            <tal:navigation
+               replace="structure view/pages/@@+navigation-links-upper"/>
 
             <ul class="site-matches" tal:condition="batch">
               <li class="pagematch" tal:repeat="page batch">
@@ -172,10 +175,8 @@
               </li>
             </ul>
 
-            <div class="lower-batch-nav search-batch">
-              <tal:navigation
-                 replace="structure view/pages/@@+navigation-links-lower" />
-            </div>
+            <tal:navigation
+               replace="structure view/pages/@@+navigation-links-lower" />
 
             <form tal:replace="structure view/@@+search-form" />
           </tal:batch>

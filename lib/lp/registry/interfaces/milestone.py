@@ -12,7 +12,7 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
 from zope.interface import Interface, Attribute
@@ -21,7 +21,7 @@ from zope.schema import Bool, Choice, Date, Int, TextLine
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -32,10 +32,10 @@ from canonical.launchpad.components.apihelpers import (
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+    call_with, export_as_webservice_entry, export_destructor_operation,
+    export_factory_operation, exported, export_operation_as,
+    export_read_operation, operation_parameters, operation_returns_entry,
+    rename_parameters_as, REQUEST_USER)
 
 
 class MilestoneNameField(ContentNameField):
@@ -70,7 +70,8 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
+class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
+                 IHasOfficialBugTags):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
@@ -163,7 +164,16 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget):
         :returns: `IProductRelease` object.
         """
 
-    @export_write_operation()
+    def closeBugsAndBlueprints(user):
+        """Close completed bugs and blueprints.
+
+        Bugs that are fix committed status are updated to fix released.
+        Blueprints that are in deployment status are updated to implemented
+        status.
+        XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
+        """
+
+    @export_destructor_operation()
     @export_operation_as('delete')
     def destroySelf():
         """Delete this milestone.
@@ -207,7 +217,7 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 

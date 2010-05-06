@@ -9,6 +9,7 @@ __all__ = [
     'CannotUploadToPPA',
     'can_upload_to_archive',
     'check_upload_to_archive',
+    'check_upload_to_pocket',
     'components_valid_for',
     'verify_upload',
     ]
@@ -20,24 +21,21 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
-class CannotUploadToArchive:
+class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
     def __init__(self, **args):
         """Construct a `CannotUploadToArchive`."""
-        self._message = self._fmt % args
-
-    def __str__(self):
-        return self._message
+        Exception.__init__(self, self._fmt % args)
 
 
-class CannotUploadToPocket:
+class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
-        super(CannotUploadToPocket, self).__init__(
+        Exception.__init__(self,
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
 
@@ -72,7 +70,7 @@ class NoRightsForComponent(CannotUploadToArchive):
         "Signer is not permitted to upload to the component '%(component)s'.")
 
     def __init__(self, component):
-        super(NoRightsForComponent, self).__init__(component=component.name)
+        CannotUploadToArchive.__init__(self, component=component.name)
 
 
 class InvalidPocketForPPA(CannotUploadToArchive):
@@ -85,6 +83,15 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
     """Partner archives only support some pockets."""
 
     _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
+
+
+class ArchiveDisabled(CannotUploadToArchive):
+    """Uploading to a disabled archive is not allowed."""
+
+    _fmt = ("%(archive_name)s is disabled.")
+
+    def __init__(self, archive_name):
+        CannotUploadToArchive.__init__(self, archive_name=archive_name)
 
 
 def components_valid_for(archive, person):
@@ -125,20 +132,12 @@ def can_upload_to_archive(person, suitesourcepackage, archive=None):
     return reason is None
 
 
-def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
-                            component, pocket, strict_component=True):
-    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+def check_upload_to_pocket(archive, distroseries, pocket):
+    """Check if uploading to a particular pocket in an archive is possible.
 
-    :param person: An `IPerson` who might be uploading.
-    :param distroseries: The `IDistroSeries` being uploaded to.
-    :param sourcepackagename: The `ISourcePackageName` being uploaded.
-    :param archive: The `IArchive` to upload to. If not provided, defaults
-        to the default archive for the source package. (See
-        `ISourcePackage.get_default_archive`).
-    :param component: The `Component` being uploaded to.
-    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
-        uploaded to.
-    :return: The reason for not being able to upload, None otherwise.
+    :param archive: A `IArchive`
+    :param distroseries: A `IDistroSeries`
+    :param pocket: A `PackagePublishingPocket`
     """
     if archive.purpose == ArchivePurpose.PARTNER:
         if pocket not in (
@@ -156,6 +155,25 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
         if not distroseries.canUploadToPocket(pocket):
             return CannotUploadToPocket(distroseries, pocket)
 
+
+def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
+                            component, pocket, strict_component=True):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+    :param person: An `IPerson` who might be uploading.
+    :param distroseries: The `IDistroSeries` being uploaded to.
+    :param sourcepackagename: The `ISourcePackageName` being uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    :param component: The `Component` being uploaded to.
+    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
+        uploaded to.
+    :return: The reason for not being able to upload, None otherwise.
+    """
+    reason = check_upload_to_pocket(archive, distroseries, pocket)
+    if reason is not None:
+        return reason
     return verify_upload(
         person, sourcepackagename, archive, component, distroseries,
         strict_component)
@@ -190,6 +208,9 @@ def verify_upload(person, sourcepackagename, archive, component,
     :return: CannotUploadToArchive if 'person' cannot upload to the archive,
         None otherwise.
     """
+    if not archive.enabled:
+        return ArchiveDisabled(archive.displayname)
+
     # For PPAs...
     if archive.is_ppa:
         if not archive.canUpload(person):

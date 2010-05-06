@@ -30,6 +30,9 @@
 
       <table class="form">
 
+        <tal:widget define="widget nocall:view/widgets/owner">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
         <tal:show-product condition="not: view/context_is_product">
           <tal:widget define="widget nocall:view/widgets/product">
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
@@ -55,6 +58,20 @@
             </label>
             <table class="importdetails">
               <tal:widget define="widget nocall:view/widgets/git_repo_url">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td>
+            <label>
+              <input tal:replace="structure view/rcs_type_hg" />
+              Mercurial
+            </label>
+            <table class="importdetails">
+              <tal:widget define="widget nocall:view/widgets/hg_repo_url">
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
             </table>
@@ -110,6 +127,8 @@
           }
           // GIT
           updateField(form['field.git_repo_url'], rcs_type == 'GIT');
+          // HG
+          updateField(form['field.hg_repo_url'], rcs_type == 'HG');
           // CVS
           updateField(form['field.cvs_root'], rcs_type == 'CVS');
           updateField(form['field.cvs_module'], rcs_type == 'CVS');

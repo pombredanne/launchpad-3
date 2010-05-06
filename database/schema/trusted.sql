@@ -94,6 +94,28 @@ COMMENT ON FUNCTION replication_lag(integer) IS
 'Returns the lag time of the lpmain replication set to the given node, or NULL if not a replicated installation. The node id parameter can be obtained by calling getlocalnodeid() on the relevant database. This function only returns meaningful results on the lpmain replication set master.';
 
 
+CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+    BEGIN
+        DELETE FROM DatabaseReplicationLag;
+        INSERT INTO DatabaseReplicationLag (node, lag)
+            SELECT st_received, st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl');
+        RETURN TRUE;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN FALSE;
+        WHEN undefined_table THEN
+            RETURN FALSE;
+    END;
+$$;
+
+COMMENT ON FUNCTION update_replication_lag_cache() IS
+'Updates the DatabaseReplicationLag materialized view.';
+
+
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
 LANGUAGE plpgsql STABLE SECURITY DEFINER AS
 $$
@@ -1330,6 +1352,16 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Account (id, openid_identifier)
+    VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
 -- UPDATE triggers
 CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
@@ -1412,6 +1444,19 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
+        UPDATE lp_Account
+        SET id = NEW.id, openid_identifier = NEW.openid_identifier
+        WHERE id = OLD.id;
+    END IF;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
 -- Delete triggers
 CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
@@ -1423,3 +1468,38 @@ END;
 $$;
 
 
+-- Update the (redundant) column bug.latest_patch_uploaded when a
+-- a bug attachment is added or removed or if its type is changed.
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
+RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE bug SET latest_patch_uploaded =
+        (SELECT max(message.datecreated)
+            FROM message, bugattachment
+            WHERE bugattachment.message=message.id AND
+                bugattachment.bug=$1 AND
+                bugattachment.type=1)
+        WHERE bug.id=$1;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(NEW.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(OLD.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;

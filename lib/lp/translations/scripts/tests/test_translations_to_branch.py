@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance test for the translations-export-to-branch script."""
@@ -11,13 +11,19 @@ from textwrap import dedent
 
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
 
 from lp.testing import map_branch_contents, TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 from lp.translations.scripts.translations_to_branch import (
     ExportTranslationsToBranch)
+
+
+class GruesomeException(Exception):
+    """CPU on fire.  Or some other kind of failure, like."""
 
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):
@@ -34,7 +40,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # End-to-end test of the script doing its work.
 
         # Set up a server for hosted branches.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches(direct_database=False)
 
         # Set up a product and translatable series.
         product = self.factory.makeProduct(name='committobranch')
@@ -42,8 +48,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         series = product.getSeries('trunk')
 
         # Set up a translations_branch for the series.
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, product=product)
+        db_branch, tree = self.create_branch_and_tree(product=product)
         removeSecurityProxy(db_branch).last_scanned_id = 'null:'
         product.official_rosetta = True
         series.translations_branch = db_branch
@@ -71,7 +76,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock\n'
             'INFO    Exporting to translations branches.\n'
             'INFO    Exporting Committobranch trunk series.\n'
             'INFO    Processed 1 item(s); 0 failure(s).',
@@ -81,7 +86,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         # The branch now contains a snapshot of the translation.  (Only
         # one file: the Dutch translation we set up earlier).
-        branch_contents = map_branch_contents(db_branch.getPullURL())
+        branch_contents = map_branch_contents(db_branch.getBzrBranch())
         expected_contents = {
             'po/nl.po': """
                 # Dutch translation for .*
@@ -122,6 +127,23 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
 
+    def test_exportToBranches_handles_nonascii_exceptions(self):
+        # There's an exception handler in _exportToBranches that must
+        # cope well with non-ASCII exception strings.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        boom = u'\u2639'
+        exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
+
+        exporter._exportToBranches([self.factory.makeProductSeries()])
+
+        self.assertEqual(1, exporter._exportToBranch.call_count)
+
+        exporter.logger.output_file.seek(0)
+        message = exporter.logger.output_file.read()
+        self.assertTrue(message.startswith("ERROR"))
+        self.assertTrue("GruesomeException" in message)
+
 
 class TestExportToStackedBranch(TestCaseWithFactory):
     """Test workaround for bzr bug 375013."""
@@ -140,11 +162,11 @@ class TestExportToStackedBranch(TestCaseWithFactory):
         self.useBzrBranches()
 
         base_branch, base_tree = self.create_branch_and_tree(
-            'base', name='base', hosted=True)
+            'base', name='base')
         self._setUpBranch(base_branch, base_tree, "Base branch.")
 
         stacked_branch, stacked_tree = self.create_branch_and_tree(
-            'stacked', name='stacked', hosted=True)
+            'stacked', name='stacked')
         stacked_tree.branch.set_stacked_on_url('/' + base_branch.unique_name)
         stacked_branch.stacked_on = base_branch
         self._setUpBranch(stacked_branch, stacked_tree, "Stacked branch.")

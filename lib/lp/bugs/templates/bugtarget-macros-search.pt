@@ -55,6 +55,10 @@
       value="-users_affected_count"
       tal:attributes="selected python:orderby == '-users_affected_count'"
     >by number of users affected</option>
+    <option
+      value="-heat"
+      tal:attributes="selected python:orderby == '-heat'"
+    >by bug heat</option>
   </select>
 </metal:block>
 

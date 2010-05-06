@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0613,R0911
+# pylint: disable-msg=C0103,W0613,R0911,F0401
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
@@ -21,6 +21,7 @@ import urllib
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
+from lazr.uri import URI
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter, getMultiAdapter
@@ -40,28 +41,28 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProject, IDistributionSourcePackage, ISprint, LicenseStatus,
-    NotFoundError)
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.code.interfaces.branch import IBranch
-from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
+    LicenseStatus, NotFoundError)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
-from lp.registry.interfaces.person import IPerson, IPersonSet
+import canonical.launchpad.pagetitles
+from canonical.launchpad.webapp import canonical_url, urlappend
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu, IContextMenu, IFacetMenu, ILaunchBag, INavigationMenu,
     IPrimaryContext, NoCanonicalUrl)
-import canonical.launchpad.pagetitles
-from canonical.launchpad.webapp import canonical_url, urlappend
-from lazr.uri import URI
 from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, LaunchpadView, nearest)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.code.interfaces.branch import IBranch
+from lp.soyuz.interfaces.archive import ArchivePurpose, IPPA
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.registry.interfaces.person import IPerson, IPersonSet
 
 
 SEPARATOR = ' : '
@@ -539,7 +540,8 @@ class ObjectFormatterAPI:
 
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
-        if IPrivacy.providedBy(self._context) and self._context.private:
+        privacy = IPrivacy(self._context, None)
+        if privacy is not None and privacy.private:
             return 'private'
         else:
             return 'public'
@@ -623,7 +625,7 @@ class ObjectImageDisplayAPI:
         context = self._context
         if IProduct.providedBy(context):
             return 'sprite product'
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             return 'sprite project'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -656,7 +658,7 @@ class ObjectImageDisplayAPI:
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -678,7 +680,7 @@ class ObjectImageDisplayAPI:
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
         # using interfaces.
-        if IProject.providedBy(context):
+        if IProjectGroup.providedBy(context):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -759,6 +761,17 @@ class ObjectImageDisplayAPI:
         raise NotImplementedError(
             "Badge display not implemented for this item")
 
+    def boolean(self):
+        """Return an icon representing the context as a boolean value."""
+        if bool(self._context):
+            icon = 'yes'
+        else:
+            icon = 'no'
+        markup = (
+            '<span class="sprite %(icon)s">&nbsp;'
+            '<span class="invisible-link">%(icon)s</span></span>')
+        return markup % dict(icon=icon)
+
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
@@ -778,7 +791,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s" />')
+        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
         '<a href="%s" alt="%s" title="%s" class="%s"></a>')
@@ -828,6 +841,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Return whether the bug is linked to a specification."""
         return self._context.bug.specifications.count() > 0
 
+    def _hasPatch(self):
+        """Return whether the bug has a patch."""
+        return self._context.bug.has_patches
+
+
     def badges(self):
 
         badges = []
@@ -854,6 +872,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 milestone_text , "Linked to %s" % milestone_text,
                 "sprite milestone"))
 
+        if self._hasPatch():
+            badges.append(self.icon_template % (
+                "haspatch", "Has a patch", "sprite haspatch-icon"))
+
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
         return " ".join(badges)
@@ -878,6 +900,10 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     def _hasSpecification(self):
         """See `BugTaskImageDisplayAPI`"""
         return self._context.has_specification
+
+    def _hasPatch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_patch
 
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
@@ -1239,7 +1265,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
 
 
 class PillarFormatterAPI(CustomizableFormatter):
-    """Adapter for IProduct, IDistribution and IProject objects to a
+    """Adapter for IProduct, IDistribution and IProjectGroup objects to a
     formatted string."""
 
     _link_summary_template = '%(displayname)s'
@@ -1257,9 +1283,9 @@ class PillarFormatterAPI(CustomizableFormatter):
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
     def link(self, view_name, rootsite='mainsite'):
-        """The html to show a link to a Product, Project or distribution.
+        """The html to show a link to a Product, ProjectGroup or distribution.
 
-        In the case of Products or Project groups we display the custom
+        In the case of Products or ProjectGroups we display the custom
         icon, if one exists. The default URL for a pillar is to the mainsite.
         """
 
@@ -1323,7 +1349,7 @@ class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
         file_size = NumberFormatterAPI(
             file_.libraryfile.content.filesize).bytes()
         if file_.description is not None:
-            description = file_.description
+            description = cgi.escape(file_.description)
         else:
             description = file_.libraryfile.filename
         link_title = "%s (%s)" % (description, file_size)
@@ -1468,12 +1494,12 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _link_summary_template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(target)s: %(branch)s')
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {'product': self._context.product.displayname,
+        return {'target': self._context.branch.target.displayname,
                 'branch': self._context.branch.bzr_identity,
                }
 
@@ -1486,6 +1512,26 @@ class CodeImportFormatterAPI(CustomizableFormatter):
             self._context.branch, path_only_if_possible=True,
             view_name=view_name)
         return url
+
+
+class BuildBaseFormatterAPI(ObjectFormatterAPI):
+    """Adapter providing fmt support for `IBuildBase` objects."""
+    def _composeArchiveReference(self, archive):
+        if archive.is_ppa:
+            return " [%s/%s]" % (
+                cgi.escape(archive.owner.name), cgi.escape(archive.name))
+        else:
+            return ""
+
+    def link(self, view_name, rootsite=None):
+        build = self._context
+        if not check_permission('launchpad.View', build):
+            return 'private source'
+
+        url = self.url(view_name=view_name, rootsite=rootsite)
+        title = cgi.escape(build.title)
+        archive = self._composeArchiveReference(build.archive)
+        return '<a href="%s">%s</a>%s' % (url, title, archive)
 
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
@@ -1549,6 +1595,16 @@ class QuestionFormatterAPI(CustomizableFormatter):
         return {'id': str(self._context.id), 'title': self._context.title}
 
 
+class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipe objects."""
+
+    _link_summary_template = 'Recipe %(name)s for %(owner)s'
+
+    def _link_summary_values(self):
+        return {'name': self._context.name,
+                'owner': self._context.owner.displayname}
+
+
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
@@ -1576,6 +1632,13 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
+    _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
+
+    final_traversable_names = {
+        'reference': 'reference',
+        }
+    final_traversable_names.update(
+        CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1604,6 +1667,24 @@ class PPAFormatterAPI(CustomizableFormatter):
                 return '<span class="%s">%s</span>' % (css, summary)
             else:
                 return ''
+
+    def reference(self, view_name=None, rootsite=None):
+        """Return the text PPA reference for a PPA."""
+        # XXX: noodles 2010-02-11 bug=336779: This following check
+        # should be replaced with the normal check_permission once
+        # permissions for archive subscribers has been resolved.
+        if self._context.private:
+            request = get_current_browser_request()
+            person = IPerson(request.principal)
+            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
+                person, self._context)
+            if subscriptions.is_empty():
+                return ''
+
+        return self._reference_template % {
+            'owner_name': self._context.owner.name,
+            'ppa_name': self._context.name,
+            }
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -2843,7 +2924,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
-                    address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
+                    address, '<a href="%s" class="%s">%s</a>' % (
                         canonical_url(person), css_sprite, address))
 
         return text
@@ -3099,7 +3180,7 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link',
-        'url': 'url', 
+        'url': 'url',
         'displayname': 'displayname',
     }
 

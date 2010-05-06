@@ -29,7 +29,7 @@ from canonical.launchpad.components.tokens import (
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from canonical.launchpad.interfaces import (
@@ -134,7 +134,8 @@ class OAuthAccessToken(OAuthBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
@@ -210,7 +211,8 @@ class OAuthRequestToken(OAuthBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False, default=None)
+        dbName='project', foreignKey='ProjectGroup', notNull=False,
+        default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
@@ -243,7 +245,7 @@ class OAuthRequestToken(OAuthBase):
         self.permission = permission
         if IProduct.providedBy(context):
             self.product = context
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             self.project = context
         elif IDistribution.providedBy(context):
             self.distribution = context

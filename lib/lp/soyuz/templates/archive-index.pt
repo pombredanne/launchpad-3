@@ -26,7 +26,8 @@
 
     <div class="top-portlet" style="padding-top:0.5em;">
       <p tal:condition="not: context/enabled"
-         style="clear: right;" class="warning message">
+         style="clear: right;" class="warning message"
+         tal:content="view/disabled_warning_message">
         This archive has been disabled.
       </p>
 
@@ -81,24 +82,31 @@
 
       <tal:is-active condition="archive_active">
 
+        <tal:comment replace="nothing">
+          XXX Michael Nelson 2010-02-25 bug=440512: Until we have
+          apt-add-repository backported, we can't simply state one
+          explicit solution here. Until then we just state a general
+          solution with the details in the linked help.
+        </tal:comment>
+
         <p>You can update your system with unsupported packages from
-          this untrusted PPA by adding
-          <strong tal:content="view/ppa_reference">ppa:cprov/ppa</strong>
+          this untrusted PPA by adding <strong
+          tal:content="context/fmt:reference">ppa:cprov/ppa</strong>
           to your system's Software Sources.
-          <span id="pre-karmic-systems-slide-trigger"
-            >Not using Ubuntu 9.10 (karmic)?</span></p>
+          (<a href="/+help/soyuz/ppa-sources-list.html"
+              target="help">Read about installing</a>)
+        </p>
 
         <div id="ppa-install-slide-trigger">
           <div class="widget-header">
-            <p>Technical details about this PPA</p>
+            Technical details about this PPA
           </div>
         </div>
 
         <div class="widget-body">
           <p>This PPA can be added to your system manually by copying
              the lines below and adding them to your system's software
-             sources. (<a href="/+help/soyuz/ppa-sources-list.html"
-                          target="help">Read about installing</a>)</p>
+             sources. </p>
           <tal:entries replace="structure view/sources_list_entries" />
           <dl id="signing-key"
               tal:define="signing_key context/signing_key"
@@ -172,8 +180,6 @@ YUI({
     }
     Y.on('click', toggle_body_visibility,
          '#ppa-install-slide-trigger');
-    Y.on('click', toggle_body_visibility,
-         '#pre-karmic-systems-slide-trigger');
 });
         </script>
       </tal:is-active>
@@ -315,7 +321,7 @@ YUI({
          spurious build failures or binaries with unexpected
          contents.</p>
       <p>You can upload packages to this PPA using:</p>
-      <p><tt>dput <tal:ppa-ref replace="view/ppa_reference"
+      <p><tt>dput <tal:ppa-ref replace="context/fmt:reference"
                     >ppa:cprov/ppa</tal:ppa-ref> &lt;source.changes&gt;</tt>
             (<a href="https://help.launchpad.net/Packaging/PPA/Uploading"
                >Read about uploading</a>)</p>

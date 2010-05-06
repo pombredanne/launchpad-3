@@ -23,18 +23,15 @@ from bzrlib.transport import get_transport
 
 from lp.codehosting.puller.worker import (
     BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
-    PullerWorkerProtocol, StackedOnBranchNotFound,
-    install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
+    PullerWorkerProtocol, install_worker_ui_factory, WORKER_ACTIVITY_NETWORK)
 from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy, BlacklistPolicy, PullerWorkerMixin, WhitelistPolicy)
 from lp.codehosting.vfs.branchfs import (
     BadUrl, BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchPolicy,
-    HostedBranchPolicy, ImportedBranchPolicy, MirroredBranchPolicy)
+    ImportedBranchPolicy, MirroredBranchPolicy)
 from lp.code.enums import BranchType
 from lp.testing import TestCase
-from lp.testing.factory import LaunchpadObjectFactory
-from lazr.uri import URI
-from canonical.testing import reset_logging
+from lp.testing.factory import LaunchpadObjectFactory, ObjectFactory
 
 
 def get_netstrings(line):
@@ -89,13 +86,6 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         policy = worker.branch_mirrorer.policy
         self.assertIsInstance(policy, MirroredBranchPolicy)
         self.assertIs(None, policy.stacked_on_url)
-
-    def testHostedOpener(self):
-        # A PullerWorker for a hosted branch gets a HostedBranchPolicy as
-        # the policy of its branch_mirrorer.
-        worker = self.makePullerWorker(branch_type=BranchType.HOSTED)
-        self.assertIsInstance(
-            worker.branch_mirrorer.policy, HostedBranchPolicy)
 
     def testImportedOpener(self):
         # A PullerWorker for an imported branch gets a ImportedBranchPolicy as
@@ -212,105 +202,51 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             source_branch.repository._format,
             mirrored_branch.repository._format)
 
-    def testRaisesStackedOnBranchNotFoundInitialMirror(self):
-        # If the stacked-on branch cannot be found in the mirrored area on an
-        # initial mirror, then raise StackedOnBranchNotFound. This will ensure
-        # the puller will mirror the stacked branch as soon as the stacked-on
-        # branch has been mirrored.
-        self.make_branch('stacked-on-branch', format='1.6')
-        stacked_branch = self.make_branch('source-branch', format='1.6')
-        stacked_branch.set_stacked_on_url('../stacked-on-branch')
-        # Make a sub-directory so that the relative URL cannot be found.
-        self.get_transport('mirrored-area').ensure_base()
-        # Make an empty directory with the same name as the stacked-on branch
-        # to show that we are checking for more than just directory existence.
-        # See bug 270757.
-        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
-        to_mirror = self.makePullerWorker(
-            stacked_branch.base, self.get_url('mirrored-area/destdir'))
-        self.assertRaises(
-            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
-
-    def testRaisesStackedOnBranchNotFoundRemirror(self):
-        # If the stacked-on branch cannot be found in the mirrored area on an
-        # update, then raise StackedOnBranchNotFound. This will ensure the
-        # puller will mirror the stacked branch as soon as the stacked-on
-        # branch has been mirrored.
-        stacked_branch = self.make_branch('source-branch', format='1.6')
-        # Make a sub-directory so that the relative URL cannot be found.
-        self.get_transport('mirrored-area').ensure_base()
-        # Make an empty directory with the same name as the stacked-on branch
-        # to show that we are checking for more than just directory existence.
-        # See bug 270757.
-        self.get_transport('mirrored-area/stacked-on-branch').ensure_base()
-        to_mirror = self.makePullerWorker(
-            stacked_branch.base, self.get_url('mirrored-area/destdir'))
-        to_mirror.mirrorWithoutChecks()
-        self.make_branch('stacked-on-branch', format='1.6')
-        stacked_branch.set_stacked_on_url('../stacked-on-branch')
-        self.assertRaises(
-            StackedOnBranchNotFound, to_mirror.mirrorWithoutChecks)
-
-    def testDoesntSendStackedInfoUnstackableFormat(self):
-        # Mirroring an unstackable branch sends '' as the stacked-on location
-        # to the master.
-        source_branch = self.make_branch('source-branch')
-        protocol_output = StringIO()
-        to_mirror = self.makePullerWorker(
-            source_branch.base, self.get_url('destdir'),
-            protocol=PullerWorkerProtocol(protocol_output))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), ''],
-            get_netstrings(protocol_output.getvalue()))
-
-    def testDoesntSendStackedInfoNotStacked(self):
-        # Mirroring a non-stacked branch sends '' as the stacked-on location
-        # to the master.
-        source_branch = self.make_branch(
-            'source-branch', format='1.9')
-        protocol_output = StringIO()
-        to_mirror = self.makePullerWorker(
-            source_branch.base, self.get_url('destdir'),
-            protocol=PullerWorkerProtocol(protocol_output))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), ''],
-            get_netstrings(protocol_output.getvalue()))
+    def getStackedOnUrlFromNetStringOutput(self, netstring_output):
+        netstrings = get_netstrings(netstring_output)
+        branchChanged_index = netstrings.index('branchChanged')
+        return netstrings[branchChanged_index + 2]
 
     def testSendsStackedInfo(self):
-        # Mirroring a stacked branch sends the stacked-on location to the
-        # master.
+        # When the puller worker stacks a branch, it reports the stacked on
+        # URL to the master.
         base_branch = self.make_branch('base_branch', format='1.9')
-        stacked_branch = self.make_branch(
-            'stacked-branch', format='1.9')
-        stacked_branch.set_stacked_on_url(base_branch.base)
-        protocol_output = StringIO()
-        to_mirror = self.makePullerWorker(
-            stacked_branch.base, self.get_url('destdir'),
-            protocol=PullerWorkerProtocol(protocol_output))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id),
-             URI(stacked_branch.get_stacked_on_url()).path],
-            get_netstrings(protocol_output.getvalue()))
-
-    def testSendsStackedInfoBasedOnDestinationURL(self):
-        # The stacked-on location sent to the master is the stacked-on
-        # location of the _destination_ branch not the source branch in the
-        # case that they are different.
-        base_branch = self.make_branch('base_branch', format='1.9')
-        stacked_branch = self.make_branch(
-            'stacked-branch', format='1.9')
+        stacked_branch = self.make_branch('stacked-branch', format='1.9')
         protocol_output = StringIO()
         to_mirror = self.makePullerWorker(
             stacked_branch.base, self.get_url('destdir'),
             protocol=PullerWorkerProtocol(protocol_output),
             policy=PrearrangedStackedBranchPolicy(base_branch.base))
-        to_mirror.mirrorWithoutChecks()
-        self.assertEqual(
-            ['setStackedOn', str(to_mirror.branch_id), base_branch.base],
-            get_netstrings(protocol_output.getvalue()))
+        to_mirror.mirror()
+        stacked_on_url = self.getStackedOnUrlFromNetStringOutput(
+            protocol_output.getvalue())
+        self.assertEqual(base_branch.base, stacked_on_url)
+
+    def testDoesntSendStackedInfoUnstackableFormat(self):
+        # Mirroring an unstackable branch sends '' as the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch', format='pack-0.92')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirror()
+        stacked_on_url = self.getStackedOnUrlFromNetStringOutput(
+            protocol_output.getvalue())
+        self.assertEqual('', stacked_on_url)
+
+    def testDoesntSendStackedInfoNotStacked(self):
+        # Mirroring a non-stacked branch sends '' as the stacked-on location
+        # to the master.
+        source_branch = self.make_branch('source-branch', format='1.9')
+        protocol_output = StringIO()
+        to_mirror = self.makePullerWorker(
+            source_branch.base, self.get_url('destdir'),
+            protocol=PullerWorkerProtocol(protocol_output))
+        to_mirror.mirror()
+        stacked_on_url = self.getStackedOnUrlFromNetStringOutput(
+            protocol_output.getvalue())
+        self.assertEqual('', stacked_on_url)
 
 
 class TestBranchMirrorerCheckAndFollowBranchReference(TestCase):
@@ -659,6 +595,7 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         TestCaseInTempDir.setUp(self)
         self.output = StringIO()
         self.protocol = PullerWorkerProtocol(self.output)
+        self.factory = ObjectFactory()
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""
@@ -680,12 +617,13 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.protocol.startMirroring()
         self.assertSentNetstrings(['startMirroring', '0'])
 
-    def test_mirrorSucceeded(self):
-        # Calling 'mirrorSucceeded' sends the revids and 'mirrorSucceeded'.
+    def test_branchChanged(self):
+        # Calling 'branchChanged' sends the arguments.
+        arbitrary_args = [self.factory.getUniqueString() for x in range(6)]
         self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded('rev1', 'rev2')
-        self.assertSentNetstrings(['mirrorSucceeded', '2', 'rev1', 'rev2'])
+        self.protocol.branchChanged(*arbitrary_args)
+        self.assertSentNetstrings(['branchChanged', '6'] + arbitrary_args)
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
@@ -700,17 +638,6 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         # progress.
         self.protocol.progressMade('test')
         self.assertSentNetstrings(['progressMade', '0'])
-
-    def test_setStackedOn(self):
-        # Calling 'setStackedOn' sends the location of the stacked-on branch,
-        # if any.
-        self.protocol.setStackedOn('/~foo/bar/baz')
-        self.assertSentNetstrings(['setStackedOn', '1', '/~foo/bar/baz'])
-
-    def test_mirrorDeferred(self):
-        # Calling 'mirrorDeferred' sends 'mirrorDeferred' as a netstring.
-        self.protocol.mirrorDeferred()
-        self.assertSentNetstrings(['mirrorDeferred', '0'])
 
     def test_log(self):
         # Calling 'log' sends 'log' as a netstring and its arguments, after
@@ -737,13 +664,12 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
-        reset_logging()
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
         server = HttpServer()
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
         # The gc.collect allows the threads behind any HTTP requests to exit.
         self.addCleanup(gc.collect)
         return server

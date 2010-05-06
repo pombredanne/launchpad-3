@@ -62,7 +62,7 @@
     <!-- lazr.batchnavigator hook -->
     <adapter
         factory='.batching.FiniteSequenceAdapter' />
-    
+
     <adapter
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
@@ -216,7 +216,7 @@
         />
 
     <adapter
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
@@ -349,7 +349,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IProject"
+        for="canonical.launchpad.interfaces.IProjectGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
@@ -426,6 +426,13 @@
         />
 
     <adapter
+        for="lp.buildmaster.interfaces.buildbase.IBuildBase"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildBaseFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
@@ -460,6 +467,12 @@
         for="canonical.launchpad.interfaces.IQuestion"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.QuestionFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -733,6 +746,11 @@
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
         />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
 
     <!-- Confirm the database is the correct revision level -->
     <subscriber
@@ -744,12 +762,6 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
-        />
-
-    <!-- Make sure that the config is sane for references debugging. -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <!-- Set the default timeout function. -->
@@ -815,7 +827,6 @@
 
     <class class="canonical.launchpad.webapp.vocabulary.CountableIterator">
       <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
-      <allow attributes="__getslice__"/>
     </class>
 
     <class class="canonical.launchpad.webapp.vocabulary.BatchedCountableIterator">

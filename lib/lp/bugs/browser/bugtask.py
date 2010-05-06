@@ -33,7 +33,9 @@ __all__ = [
     'BugTaskTextView',
     'BugTaskView',
     'BugTasksAndNominationsView',
+    'bugtask_heat_html',
     'BugsBugTaskSearchListingView',
+    'calculate_heat_display',
     'NominationsReviewTableBatchNavigatorView',
     'TextualBugTaskSearchListingView',
     'get_buglisting_search_filter_url',
@@ -49,6 +51,7 @@ import re
 from simplejson import dumps
 import urllib
 from operator import attrgetter, itemgetter
+from math import floor, log
 
 from zope import component
 from zope.app.form import CustomWidgetFactory
@@ -103,8 +106,9 @@ from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus, IBugNominationSet)
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearchDisplay, IBugTask, IBugTaskSearch,
+    BugBranchSearch, BugTagsSearchCombinator, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay,
+    DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY, IBugTask, IBugTaskSearch,
     IBugTaskSet, ICreateQuestionFromBugTaskForm, IDistroBugTask,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
@@ -112,6 +116,7 @@ from lp.bugs.interfaces.bugtask import (
     IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -121,7 +126,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask, validate_distrotask)
@@ -136,7 +141,7 @@ from canonical.launchpad import helpers
 from lp.bugs.browser.bug import BugContextMenu, BugViewMixin, BugTextView
 from lp.bugs.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -480,7 +485,12 @@ class BugTaskNavigation(Navigation):
         # I have chosed to use this simple solution for now.
         #   -- kiko, 2006-07-11
         try:
-            return comments[index]
+            comment = comments[index]
+            if (comment.visible
+                or check_permission('launchpad.Admin', self.context)):
+                return comment
+            else:
+                return None
         except IndexError:
             return None
 
@@ -1075,6 +1085,49 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             title="Bug Description",
             value=description)
 
+    @property
+    def bug_heat_html(self):
+        """HTML representation of the bug heat."""
+        if IDistributionSourcePackage.providedBy(self.context.target):
+            return bugtask_heat_html(
+                self.context, target=self.context.distribution)
+        else:
+            return bugtask_heat_html(self.context)
+
+
+def calculate_heat_display(heat, max_bug_heat):
+    """Calculate the number of heat 'flames' to display."""
+    heat = float(heat)
+    max_bug_heat = float(max_bug_heat)
+    if max_bug_heat == 0:
+        return 0
+    if heat / max_bug_heat < 0.33333:
+        return 0
+    if heat / max_bug_heat < 0.66666 or max_bug_heat < 2:
+        return int(floor((heat / max_bug_heat) * 4))
+    else:
+        heat_index = int(floor((log(heat) / log(max_bug_heat)) * 4))
+        # ensure that we never return a value > 4, even if
+        # max_bug_heat is outdated.
+        return min(heat_index, 4)
+
+
+def bugtask_heat_html(bugtask, target=None):
+    """Render the HTML representing bug heat for a given bugask."""
+    if target is None:
+        target = bugtask.target
+    max_bug_heat = target.max_bug_heat
+    if max_bug_heat is None:
+        max_bug_heat = 5000
+    heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
+    html = (
+        '<span><a href="/+help/bug-heat.html" target="help" class="icon"><img'
+        ' src="/@@/bug-heat-%(ratio)i.png" '
+        'alt="%(ratio)i out of 4 heat flames" title="Heat: %(heat)i" /></a>'
+        '</span>'
+        % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
+    return html
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
@@ -1250,10 +1303,11 @@ class BugTaskEditView(LaunchpadEditFormView):
         # it uses based on the permissions of the user viewing form.
         if 'status' in self.editable_field_names:
             if self.user is None:
-                status_noshow = list(BugTaskStatus.items)
+                status_noshow = set(BugTaskStatus.items)
             else:
-                status_noshow = [BugTaskStatus.UNKNOWN]
-                status_noshow.extend(
+                status_noshow = set((
+                    BugTaskStatus.UNKNOWN, BugTaskStatus.EXPIRED))
+                status_noshow.update(
                     status for status in BugTaskStatus.items
                     if not self.context.canTransitionToStatus(
                         status, self.user))
@@ -1746,6 +1800,12 @@ class BugsInfoMixin:
             status=BugTaskStatus.NEW.title)
 
     @property
+    def inprogress_bugs_url(self):
+        """A URL to a page of inprogress bugs."""
+        return get_buglisting_search_filter_url(
+            status=BugTaskStatus.INPROGRESS.title)
+
+    @property
     def open_bugs_url(self):
         """A URL to a list of open bugs."""
         return canonical_url(self.context, view_name='+bugs')
@@ -1756,6 +1816,13 @@ class BugsInfoMixin:
         return get_buglisting_search_filter_url(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=BugTaskImportance.CRITICAL.title)
+
+    @property
+    def high_bugs_url(self):
+        """A URL to a list of high priority bugs."""
+        return get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            importance=BugTaskImportance.HIGH.title)
 
     @property
     def my_bugs_url(self):
@@ -1826,9 +1893,19 @@ class BugsStatsMixin(BugsInfoMixin):
         return self.context.open_bugtasks.count()
 
     @property
+    def inprogress_bugs_count(self):
+        """A count of in-progress bugs."""
+        return self.context.inprogress_bugtasks.count()
+
+    @property
     def critical_bugs_count(self):
         """A count of critical bugs."""
         return self.context.critical_bugtasks.count()
+
+    @property
+    def high_bugs_count(self):
+        """A count of high priority bugs."""
+        return self.context.high_bugtasks.count()
 
     @property
     def my_bugs_count(self):
@@ -1840,6 +1917,14 @@ class BugsStatsMixin(BugsInfoMixin):
             params.assignee = self.user
             return self.context.searchTasks(params).count()
 
+    @property
+    def bugs_with_patches_count(self):
+        """A count of unresolved bugs with patches."""
+        return self.context.searchTasks(
+            None, user=self.user,
+            status=UNRESOLVED_BUGTASK_STATUSES,
+            omit_duplicates=True, has_patch=True).count()
+
 
 class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
     """Portlet containing available bug listings without stats."""
@@ -1850,7 +1935,8 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 
 def get_buglisting_search_filter_url(
-        assignee=None, importance=None, status=None, status_upstream=None):
+        assignee=None, importance=None, status=None, status_upstream=None,
+        has_patches=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1862,6 +1948,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status', status))
     if status_upstream is not None:
         search_params.append(('field.status_upstream', status_upstream))
+    if has_patches is not None:
+        search_params.append(('field.has_patch', 'on'))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -1927,12 +2015,16 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
-                 has_specification):
+                 has_specification, has_patch, request=None,
+                 target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
+        self.has_patch = has_patch
+        self.request = request
+        self.target_context = target_context
 
     @property
     def last_significant_change_date(self):
@@ -1941,13 +2033,21 @@ class BugTaskListingItem:
                 self.bugtask.date_inprogress or self.bugtask.date_left_new or
                 self.bugtask.datecreated)
 
+    @property
+    def bug_heat_html(self):
+        """Returns the bug heat flames HTML."""
+        return bugtask_heat_html(self.bugtask, target=self.target_context)
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
 
-    def __init__(self, tasks, request, columns_to_show, size):
+    def __init__(self, tasks, request, columns_to_show, size,
+                 target_context=None):
+        self.request = request
+        self.target_context = target_context
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -1959,11 +2059,22 @@ class BugListingBatchNavigator(TableBatchNavigator):
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self.bug_badge_properties[bugtask]
+        if (IMaloneApplication.providedBy(self.target_context) or
+            IPerson.providedBy(self.target_context)):
+            # XXX Tom Berger bug=529846
+            # When we have a specific interface for things that have bug heat
+            # it would be better to use that for the check here instead.
+            target_context = None
+        else:
+            target_context = self.target_context
         return BugTaskListingItem(
             bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
-            badge_property['has_specification'])
+            badge_property['has_specification'],
+            badge_property['has_patch'],
+            request=self.request,
+            target_context=target_context)
 
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
@@ -2074,7 +2185,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 'nominations',
                 'subscribe',
                 )
-        elif IProject.providedBy(bug_target):
+        elif IProjectGroup.providedBy(bug_target):
             return ()
         else:
             return ()
@@ -2106,7 +2217,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     # Only include <link> tags for bug feeds when using this view.
     feed_types = (
         BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
         )
 
     # These widgets are customised so as to keep the presentation of this view
@@ -2183,11 +2293,15 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         if (upstream_context or productseries_context or
             distrosourcepackage_context or sourcepackage_context):
-            return ["id", "summary", "importance", "status"]
+            return ["id", "summary", "importance", "status", "heat"]
         elif distribution_context or distroseries_context:
-            return ["id", "summary", "packagename", "importance", "status"]
+            return [
+                "id", "summary", "packagename", "importance", "status",
+                "heat"]
         elif project_context:
-            return ["id", "summary", "productname", "importance", "status"]
+            return [
+                "id", "summary", "productname", "importance", "status",
+                "heat"]
         else:
             raise AssertionError(
                 "Unrecognized context; don't know which report "
@@ -2287,6 +2401,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             if has_patch:
                 data["attachmenttype"] = BugAttachmentType.PATCH
 
+            has_branches = data.get('has_branches', True)
+            has_no_branches = data.get('has_no_branches', True)
+            if has_branches and not has_no_branches:
+                data['linked_branches'] = BugBranchSearch.BUGS_WITH_BRANCHES
+            elif not has_branches and has_no_branches:
+                data['linked_branches'] = (
+                    BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+            else:
+                data['linked_branches'] = BugBranchSearch.ALL
+
             # Filter appropriately if the user wants to restrict the
             # search to only bugs with no package information.
             has_no_package = data.pop("has_no_package", False)
@@ -2353,7 +2477,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return the batch navigator to be used to batch the bugtasks."""
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
+            size=config.malone.buglist_batch_size,
+            target_context=self.context)
 
     def buildBugTaskSearchParams(self, searchtext=None, extra_params=None):
         """Build the parameters to submit to the `searchTasks` method.
@@ -2464,14 +2589,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-
-        return helpers.shortlist(widget_values, longest_expected=10)
+        return helpers.shortlist(widget_values, longest_expected=11)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
         return self.getWidgetValues(
             vocabulary=BugTaskStatusSearchDisplay,
-            default_values=UNRESOLVED_BUGTASK_STATUSES)
+            default_values=DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY)
 
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
@@ -2547,7 +2671,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Should the upstream status filtering widgets be shown?"""
         return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
-            IProject.providedBy(self.context))
+            IProjectGroup.providedBy(self.context))
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -2678,9 +2802,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     def _projectContext(self):
         """Is this page being viewed in a project context?
 
-        Return the IProject if yes, otherwise return None.
+        Return the IProjectGroup if yes, otherwise return None.
         """
-        return IProject(self.context, None)
+        return IProjectGroup(self.context, None)
 
     def _personContext(self):
         """Is this page being viewed in a person context?
@@ -2716,15 +2840,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
-
-    @property
-    def hot_bugtasks(self):
-        """Return the 10 most recently updated bugtasks for this target."""
-        params = BugTaskSearchParams(
-            orderby="-date_last_updated", omit_dupes=True, user=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        search = self.context.searchTasks(params)
-        return list(search[:10])
 
     @property
     def addquestion_url(self):
@@ -2782,8 +2897,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             if bug_listing_item.review_action_widget is not None]
         self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
 
-    @action('Save changes', name='submit',
-            condition=canApproveNominations)
+    @action('Save changes', name='submit', condition=canApproveNominations)
     def submit_action(self, action, data):
         """Accept/Decline bug nominations."""
         accepted = declined = 0
@@ -2861,7 +2975,7 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
             search_params.setProductSeries(self.context)
         elif IProduct.providedBy(self.context):
             search_params.setProduct(self.context)
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             search_params.setProject(self.context)
         elif (ISourcePackage.providedBy(self.context) or
               IDistributionSourcePackage.providedBy(self.context)):
@@ -3255,7 +3369,8 @@ class BugTaskTableRowView(LaunchpadView):
             # the title as the token for backwards compatibility.
             status_items = [
                 (item.title, item) for item in BugTaskStatus.items
-                if item != BugTaskStatus.UNKNOWN]
+                if item not in (BugTaskStatus.UNKNOWN,
+                                BugTaskStatus.EXPIRED)]
 
             disabled_items = [status for status in BugTaskStatus.items
                 if not self.context.canTransitionToStatus(status, self.user)]
@@ -3362,7 +3477,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     """Search all bug reports."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
+                       "importance", "status", "heat"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
     page_title = 'Search'
@@ -3571,9 +3686,10 @@ class BugTaskExpirableListingView(LaunchpadView):
         """Show the columns that summarise expirable bugs."""
         if (IDistribution.providedBy(self.context)
             or IDistroSeries.providedBy(self.context)):
-            return ['id', 'summary', 'packagename', 'date_last_updated']
+            return [
+                'id', 'summary', 'packagename', 'date_last_updated', 'heat']
         else:
-            return ['id', 'summary', 'date_last_updated']
+            return ['id', 'summary', 'date_last_updated', 'heat']
 
     @property
     def search(self):

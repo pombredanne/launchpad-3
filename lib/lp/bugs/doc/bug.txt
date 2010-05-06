@@ -747,7 +747,7 @@ Changing bug security.
 
     >>> firefox_bug.security_related
     False
-    >>> firefox_bug.security_related = True
+    >>> changed = firefox_bug.setSecurityRelated(True)
 
     >>> bug_security_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["security_related"])
@@ -1242,18 +1242,162 @@ And we can change whether a user is marked as affected or unaffected.
     0
     >>> test_bug.users_affected_count
     3
+    >>> test_bug.markUserAffected(unaffected_user, affected=False)
+    >>> test_bug.isUserAffected(unaffected_user)
+    False
+    >>> test_bug.users_unaffected_count
+    1
+    >>> test_bug.users_affected_count
+    2
 
 We can also get the collection of users affected by a bug.
 
     >>> print '\n'.join(
     ...     sorted(user.name for user in test_bug.users_affected))
-    blaze-bayley
     bruce-dickinson
     paul-dianno
 
     >>> unaffecting_bug = factory.makeBug()
     >>> print list(unaffecting_bug.users_affected)
     [<Person at ...>]
+
+Similarly, we can get the collection of users unaffected by a bug.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in test_bug.users_unaffected))
+    blaze-bayley
+
+If a user is marked as being affected by a bug (either by explicitly
+marking it so, or by being the bug's owner), and then that bug is
+marked as a duplicate of master bug, then the users_affected_count of
+the master bug increases too.
+
+    >>> dupe_affected_user = factory.makePerson(name='sheila-shakespeare')
+    >>> dupe_one = factory.makeBug(owner=dupe_affected_user)
+    >>> dupe_one.duplicateof = test_bug
+    >>> test_bug.users_affected_count_with_dupes
+    3
+
+And the list of users the master bug affects includes that user.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    bruce-dickinson
+    paul-dianno
+    sheila-shakespeare
+
+However, if the user was also marked as being affected by the master
+bug, then the master bug's user_affected_count does *not* increment
+just because she is also affected by the duplicate.
+
+    >>> test_bug.markUserAffected(dupe_affected_user, affected=True)
+    >>> test_bug.users_affected_count_with_dupes
+    3
+
+And the list of users that the master bug affects still includes the
+user, of course.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    bruce-dickinson
+    paul-dianno
+    sheila-shakespeare
+
+If there is another dup of the master bug, filed by someone else, the
+master bug's affected count with dups increases.
+
+    >>> dupe_affected_other_user = factory.makePerson(name='napoleon-bonaparte')
+    >>> dupe_three = factory.makeBug(owner=dupe_affected_other_user)
+    >>> dupe_three.duplicateof = test_bug
+    >>> test_bug.users_affected_count_with_dupes
+    4
+
+If the user claims that two bugs both affect her, then if they are
+both marked as duplicates of the master bugs, the master bug's
+user_affected_count still only increments by 1 for that user.
+
+    >>> dupe_two = factory.makeBug(owner=dupe_affected_user)
+    >>> dupe_two.duplicateof = test_bug
+    >>> test_bug.users_affected_count_with_dupes
+    4
+
+Both duplicates claim to affect just that user:
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_one.users_affected))
+    sheila-shakespeare
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_two.users_affected))
+    sheila-shakespeare
+
+And the list of users that the master bug affects includes the user
+exactly once, of course.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    bruce-dickinson
+    napoleon-bonaparte
+    paul-dianno
+    sheila-shakespeare
+
+If the user marks the master bug as not affecting her, but the master
+bug still has a duplicate that she claims affects her, then that
+duplicate is also marked as not affecting her either.
+
+    >>> dupe_one.users_affected_count
+    1
+    >>> test_bug.markUserAffected(dupe_affected_user, affected=False)
+    >>> dupe_one.users_affected_count
+    0
+
+The master bug's affected count, with or without dups, is reduced by one:
+
+    >>> test_bug.users_affected_count
+    2
+    >>> test_bug.users_affected_count_with_dupes
+    3
+
+The dup user no longer appears as affected by the master bug nor
+either of the dups:
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    bruce-dickinson
+    napoleon-bonaparte
+    paul-dianno
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_one.users_affected))
+    <BLANKLINE>
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_two.users_affected))
+    <BLANKLINE>
+
+Since the user who filed the first two dups had an entry explicitly
+saying she was affected, they now claim that she is unaffected.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_one.users_unaffected))
+    sheila-shakespeare
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_two.users_unaffected))
+    sheila-shakespeare
+
+But she didn't file the third dup, so there was never any explicit
+record saying she was affected by it.  Thus she also does not appear
+as explicitly unaffected, even after marking the master bug as not
+affecting her.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_three.users_unaffected))
+    <BLANKLINE>
+
+However, if a dup was not marked either way for that user, then do
+nothing to the dup when the master is marked as not affecting the
+user.
+
+    >>> print '\n'.join(
+    ...     sorted(user.name for user in dupe_three.users_affected))
+    napoleon-bonaparte
 
 
 Getting the distinct set of Bugs for a set of BugTasks
@@ -1368,7 +1512,7 @@ We can link a HWDB submission to a bug, indicating that the
 submission contains information that could help developers
 fix the bug.
 
-    >>> from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
     >>> submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
     ...     'sample-submission')
     >>> test_bug.linkHWSubmission(submission)
@@ -1493,3 +1637,91 @@ subscriptions always override indirect ones.
 
     >>> new_bug.personIsDirectSubscriber(person)
     True
+
+
+Most recently added patch
+-------------------------
+
+Bug.latest_patch provides the most recently added bug attachment of
+type BugAttachmentType.PATCH; the property Bug.latest_patch_uploaded
+is set to the time when the latest patch was uploaded.
+
+If a bug has no attachments, both properties are None.
+
+    >>> bug = factory.makeBug()
+    >>> print bug.latest_patch
+    None
+    >>> print bug.latest_patch_uploaded
+    None
+
+If we add an attachment that is not a patch, the value of
+latest_patch_uploaded is still None. (Since latest_patch_uploaded
+is updated via a database trigger, we'll commit() the current
+transaction in order to let the trigger run. Even if the new attachment
+does not change anything right now, let's be sure.)
+
+    >>> import transaction
+    >>> attachment_1 = factory.makeBugAttachment(bug)
+
+    >>> transaction.commit()
+    >>> print bug.latest_patch_uploaded
+    None
+
+If we declare the existing attachment to be a patch,
+latest_patch_uploaded is set to the date_created value of the Message
+record for this attachment, and we can access the attachment via
+Bug.latest_patch.
+
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+    >>> attachment_1.type = BugAttachmentType.PATCH
+    >>> transaction.commit()
+    >>> date_message_1_created = bug.attachments[0].message.datecreated
+    >>> print bug.latest_patch == attachment_1
+    True
+    >>> print bug.latest_patch_uploaded == date_message_1_created
+    True
+
+If we add another attachment, this time declared to be a patch
+at creation time, we can access this attachment via Bug.latest_patch,
+and the new value of bug.latest_patch_uploaded will change to the value
+of message.datecreated for this new attachment.
+
+    >>> attachment_2 = factory.makeBugAttachment(bug, is_patch=True)
+    >>> transaction.commit()
+    >>> date_message_2_created = bug.attachments[1].message.datecreated
+    >>> print bug.latest_patch == attachment_2
+    True
+    >>> print bug.latest_patch_uploaded == date_message_2_created
+    True
+
+If we say that attachment_1 is not a patch, the values of
+bug.latest_patch and bug.latest_patch_uploaded does not change.
+
+    >>> attachment_1.type = BugAttachmentType.UNSPECIFIED
+    >>> transaction.commit()
+    >>> print bug.latest_patch == attachment_2
+    True
+    >>> print bug.latest_patch_uploaded == date_message_2_created
+    True
+
+If we declare attachment_1 again to be a patch and if we delete
+attachment_2, bug.latest_patch references again attachment_1, and
+bug.bug.latest_patch_uploaded is its creation time.
+
+    >>> attachment_1.type = BugAttachmentType.PATCH
+    >>> attachment_2.removeFromBug(user=bug.owner)
+    >>> transaction.commit()
+    >>> print bug.latest_patch == attachment_1
+    True
+    >>> print bug.latest_patch_uploaded == date_message_1_created
+    True
+
+If we delete attachment_1 too, bug.latest_patch and
+bug.latest_patch_uploaded are again None.
+
+    >>> attachment_1.removeFromBug(user=bug.owner)
+    >>> transaction.commit()
+    >>> print bug.latest_patch
+    None
+    >>> print bug.latest_patch_uploaded
+    None

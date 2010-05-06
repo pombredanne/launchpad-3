@@ -20,27 +20,23 @@ import apt_pkg
 import os
 import tempfile
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lazr.delegates import delegates
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import (
-    BuildStatus, BuildSetStatus)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadSet)
+    IPackageUpload, IPackageUploadCustom, IPackageUploadSet)
 from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_sourcepublication)
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
+from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,
@@ -79,7 +75,7 @@ def re_upload_file(libraryfile, restricted=False):
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
-    """Update file privacy according the publishing detination
+    """Update file privacy according the publishing destination
 
     :param pub_record: One of a SourcePackagePublishingHistory or
         BinaryPackagePublishingHistory record.
@@ -87,7 +83,9 @@ def update_files_privacy(pub_record):
     :return: a list of re-uploaded `LibraryFileAlias` objects.
     """
     package_files = []
+    archive = None
     if ISourcePackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the package files files if necessary.
         sourcepackagerelease = pub_record.sourcepackagerelease
         package_files.extend(
@@ -101,6 +99,7 @@ def update_files_privacy(pub_record):
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
         # Re-upload the binary files if necessary.
         binarypackagerelease = pub_record.binarypackagerelease
         package_files.extend(
@@ -112,10 +111,15 @@ def update_files_privacy(pub_record):
         package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
         package_files.append((build, 'buildlog'))
+    elif IPackageUploadCustom.providedBy(pub_record):
+        # Re-upload the custom files included
+        package_files.append((pub_record, 'libraryfilealias'))
+        # And set archive to the right attribute for PUCs
+        archive = pub_record.packageupload.archive
     else:
         raise AssertionError(
-            "pub_record is not one of SourcePackagePublishingHistory "
-            "or BinaryPackagePublishingHistory.")
+            "pub_record is not one of SourcePackagePublishingHistory, "
+            "BinaryPackagePublishingHistory or PackageUploadCustom.")
 
     re_uploaded_files = []
     for obj, attr_name in package_files:
@@ -124,11 +128,11 @@ def update_files_privacy(pub_record):
         # not the opposite. We don't have a use-case for privatizing
         # files yet.
         if (old_lfa is None or
-            old_lfa.restricted == pub_record.archive.private or
+            old_lfa.restricted == archive.private or
             old_lfa.restricted == False):
             continue
         new_lfa = re_upload_file(
-            old_lfa, restricted=pub_record.archive.private)
+            old_lfa, restricted=archive.private)
         setattr(obj, attr_name, new_lfa)
         re_uploaded_files.append(new_lfa)
 
@@ -247,10 +251,6 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
-        if (destination_archive_conflicts.count() == 0 and
-            len(inventory_conflicts) == 0):
-            return
-
         # Cache the conflicting publications because they will be iterated
         # more than once.
         destination_archive_conflicts = list(destination_archive_conflicts)
@@ -335,6 +335,23 @@ class CopyChecker:
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
 
+        # Check if files with the same filename already exist in the target
+        destination_source_conflicts = self.archive.getPublishedSources(
+            name=source.sourcepackagerelease.name)
+        file_conflicts = {}
+        for source_pub in destination_source_conflicts:
+            for file_alias in source_pub.sourcepackagerelease.files:
+                library_file = file_alias.libraryfile
+                sha1 = library_file.content.sha1
+                file_conflicts[library_file.filename] = sha1
+        for lf in source.sourcepackagerelease.files:
+            if lf.libraryfile.filename in file_conflicts.keys():
+                sha1 = lf.libraryfile.content.sha1
+                if sha1 != file_conflicts[lf.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % lf.libraryfile.filename)
+
     def checkCopy(self, source, series, pocket):
         """Check if the source can be copied to the given location.
 
@@ -364,6 +381,12 @@ class CopyChecker:
             raise CannotCopy(
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))
+
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()

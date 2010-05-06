@@ -5,17 +5,16 @@ from itertools import count
 
 import unittest
 
-from windmill.authoring import WindmillTestClient, WindmillTestClientException
+from windmill.authoring import WindmillTestClientException
 
 from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 AFFECTS_ME_TOO_XPATH = u"//span[@id='affectsmetoo']"
 DYNAMIC_SPAN_XPATH = AFFECTS_ME_TOO_XPATH + u"/span[@class='dynamic']"
 VALUE_LOCATION_XPATH = DYNAMIC_SPAN_XPATH + u"//span[@class='value']"
 EDIT_ICON_XPATH = DYNAMIC_SPAN_XPATH + u"//img[@class='editicon']"
-FLAME_ICON_XPATH = DYNAMIC_SPAN_XPATH + u"//img[contains(@src, 'flame-icon')]"
 
 OVERLAY_XPATH = u"//div[@id='yui-pretty-overlay-modal']"
 
@@ -40,9 +39,10 @@ def retry(client, attempts=3, delay=2000, initial_delay=1000):
     return decorator
 
 
-class TestMeToo(TestCaseWithFactory):
+class TestMeToo(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Bug "me too" test'
 
     def test_me_too(self):
         """Test the "this bug affects me too" options on bug pages.
@@ -50,7 +50,7 @@ class TestMeToo(TestCaseWithFactory):
         This test ensures that, with Javascript enabled, the "me too"
         status can be edited in-page.
         """
-        client = WindmillTestClient('Bug "me too" test')
+        client = self.client
 
         # Open bug 11 and wait for it to finish loading.
         client.open(
@@ -65,18 +65,11 @@ class TestMeToo(TestCaseWithFactory):
             xpath=VALUE_LOCATION_XPATH,
             validator=u"Does this bug affect you?")
 
-        # A flame icon is available in the page, but not visible owing to
-        # the unseen class.
-        client.asserts.assertElemJS(
-            xpath=FLAME_ICON_XPATH,
-            js="element.getAttribute('class').match(/unseen/) !== null")
-
         # There is an edit icon next to the text which can be clicked to
         # edit the "me too" status. However, we won't click it with
         # Windmill because the widget actually responds to mouse-down, and
         # Windmill seems to do something funny instead.
-        client.mouseDown(xpath=EDIT_ICON_XPATH)
-        client.mouseUp(xpath=EDIT_ICON_XPATH)
+        client.click(xpath=EDIT_ICON_XPATH)
 
         # Wait for the modal dialog to appear.
         client.waits.forElement(id=u'yui-pretty-overlay-modal')
@@ -126,11 +119,6 @@ class TestMeToo(TestCaseWithFactory):
             client.asserts.assertText(
                 xpath=VALUE_LOCATION_XPATH,
                 validator=u"This bug affects you")
-
-        # The flame icon is now visible.
-        client.asserts.assertElemJS(
-            xpath=FLAME_ICON_XPATH,
-            js="element.getAttribute('class').match(/unseen/) === null")
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

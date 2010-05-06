@@ -1,20 +1,14 @@
 = Deactivating user accounts =
 
 Users who don't want to use Launchpad anymore can easily deactivate their
-accounts, so they stop receiving emails from Launchpad and make it impossible
+accounts so they stop receiving emails from Launchpad and make it impossible
 to use their accounts to log in.
-
-    >>> browser.open('http://launchpad.dev/+login')
-    >>> browser.getControl('E-mail', index=0).value = 'test@canonical.com'
-    >>> browser.getControl('Password').value = 'test'
-    >>> browser.getControl('Log In').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'logincontrol'))
-    Sample Person...
 
 Deactivating a user's account will un-assign all their bug tasks. To
 demonstrate this, we'll assign a bug to the user that we're going to
 deactivate.
 
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> edit_bug_url = ("http://bugs.launchpad.dev/debian/sarge/+source/"
     ...     "mozilla-firefox/+bug/3/+editstatus")
     >>> browser.open(edit_bug_url)
@@ -41,25 +35,6 @@ There's a link to the +deactivate-account page in a person's +edit page.
     >>> browser.url
     'http://launchpad.dev/~name12/+deactivate-account'
 
-To deactivate a user's account we require the user to enter his password.
-
-    >>> browser.getControl('Why are you deactivating your account?').value = (
-    ...     "I'm going to become a Budhist monk in Tibet")
-    >>> browser.getControl('Deactivate My Account').click()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    Incorrect password.
-
-    >>> browser.getControl('Password').value = 't'
-    >>> browser.url
-    'http://launchpad.dev/%7Ename12/+deactivate-account'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    There is 1 error.
-    Incorrect password.
-
-    >>> browser.getControl('Password').value = 'test'
     >>> browser.getControl('Deactivate My Account').click()
     >>> browser.url
     'http://launchpad.dev'
@@ -67,16 +42,13 @@ To deactivate a user's account we require the user to enter his password.
     ...     print msg
     Your account has been deactivated.
 
-Sample Person can't log into Launchpad anymore.
+And now the Launchpad page for Sample Person person will clearly say he
+does not use Launchpad.
 
-    >>> browser.open('http://launchpad.dev/+login')
-    >>> browser.getControl('E-mail', index=0).value = 'test@canonical.com'
-    >>> browser.getControl('Password').value = 'test'
-    >>> browser.getControl('Log In').click()
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    The email address belongs to a deactivated account.
-    Use the "Forgotten your password" link to reactivate it.
+    >>> browser.open('http://launchpad.dev/~name12-deactivatedaccount')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'not-lp-user-or-team'))
+    Sample Person does not use Launchpad.
 
 The bugs that were assigned to Sample Person will no longer have an
 assignee.
@@ -88,14 +60,6 @@ assignee.
     ...
     Bug #3
     ...Assigned to unknown...
-
-And now the Launchpad page for that person will clearly say (s)he does not use
-Launchpad.
-
-    >>> browser.open('http://launchpad.dev/~name12-deactivatedaccount')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'not-lp-user-or-team'))
-    Sample Person does not use Launchpad.
 
 Although teams have NOACCOUNT as their account_status, they are teams and so
 it makes no sense to say they don't use Launchpad.

@@ -109,6 +109,12 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+attached_option = Option(
+    'attached',
+    help=("Remain attached, i.e. do not go headless. Implied by --postmortem "
+          "and --file."))
+
+
 def filename_type(filename):
     """An option validator for filenames.
 
@@ -182,6 +188,10 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
     return branches, test_branch
 
 
+
+DEFAULT_TEST_OPTIONS = '--subunit -vvv'
+
+
 class cmd_test(EC2Command):
     """Run the test suite in ec2."""
 
@@ -197,8 +207,8 @@ class cmd_test(EC2Command):
             'email', short_name='e', argname='EMAIL', type=str,
             help=('Email address to which results should be mailed.  '
                   'Defaults to the email address from `bzr whoami`. May be '
-                  'supplied multiple times. The first supplied email address '
-                  'will be used as the From: address.')),
+                  'supplied multiple times. `bzr whoami` will be used as '
+                  'the From: address.')),
         Option(
             'noemail', short_name='n',
             help=('Do not try to email results.')),
@@ -240,11 +250,7 @@ class cmd_test(EC2Command):
                 'consulted; for remote branches "Launchpad PQM '
                 '<launchpad@pqm.canonical.com>" is used by default.')),
         postmortem_option,
-        Option(
-            'headless',
-            help=('After building the instance and test, run the remote '
-                  'tests headless.  Cannot be used with postmortem '
-                  'or file.')),
+        attached_option,
         debug_option,
         Option(
             'open-browser',
@@ -256,10 +262,10 @@ class cmd_test(EC2Command):
 
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE,
-            file=None, email=None, test_options='-vv', noemail=False,
-            submit_pqm_message=None, pqm_public_location=None,
+            file=None, email=None, test_options=DEFAULT_TEST_OPTIONS,
+            noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
-            headless=False, debug=False, open_browser=False,
+            attached=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
         if debug:
             pdb.set_trace()
@@ -267,10 +273,8 @@ class cmd_test(EC2Command):
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
             trunk, branch, test_branch)
-        if ((postmortem or file) and headless):
-            raise BzrCommandError(
-                'Headless mode currently does not support postmortem or file '
-                ' options.')
+        if (postmortem or file):
+            attached = True
         if noemail:
             if email:
                 raise BzrCommandError(
@@ -279,12 +283,13 @@ class cmd_test(EC2Command):
             if email == []:
                 email = True
 
-        if headless and not (email or submit_pqm_message):
+        if not attached and not (email or submit_pqm_message):
             raise BzrCommandError(
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
-        if test_options != '-vv' and submit_pqm_message is not None:
+        if (test_options != DEFAULT_TEST_OPTIONS
+            and submit_pqm_message is not None):
             raise BzrCommandError(
                 "Submitting to PQM with non-default test options isn't "
                 "supported")
@@ -295,15 +300,16 @@ class cmd_test(EC2Command):
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
-            test_options=test_options, headless=headless,
+            test_options=test_options, headless=(not attached),
             branches=branches, pqm_message=submit_pqm_message,
             pqm_public_location=pqm_public_location,
             pqm_submit_location=pqm_submit_location,
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
-            instance=instance, launchpad_login=instance._launchpad_login)
+            instance=instance, launchpad_login=instance._launchpad_login,
+            timeout=480)
 
-        instance.set_up_and_run(postmortem, not headless, runner.run_tests)
+        instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
 
 class cmd_land(EC2Command):
@@ -324,9 +330,7 @@ class cmd_land(EC2Command):
         Option(
             'force',
             help="Land the branch even if the proposal is not approved."),
-        Option(
-            'attached',
-            help="Remain attached, i.e. do not go headless."),
+        attached_option,
         ]
 
     takes_args = ['merge_proposal?']
@@ -336,8 +340,8 @@ class cmd_land(EC2Command):
         """Return the command that would need to be run to submit with ec2."""
         ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
         command = [ec2_path, 'test']
-        if not attached:
-            command.extend(['--headless'])
+        if attached:
+            command.extend(['--attached'])
         command.extend(['--email=%s' % email for email in emails])
         # 'ec2 test' has a bug where you cannot pass full URLs to branches to
         # the -b option. It has special logic for 'launchpad' branches, so we

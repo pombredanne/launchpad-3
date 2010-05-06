@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -22,10 +22,9 @@ from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
     connect_string, ISOLATION_LEVEL_AUTOCOMMIT)
 from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.launchpad.webapp.adapter import _auth_store_tables
 
 import replication.helpers
-from replication.helpers import AUTHDB_SET_ID, LPMAIN_SET_ID
+from replication.helpers import LPMAIN_SET_ID
 
 def main():
     parser = OptionParser(
@@ -77,8 +76,6 @@ def main():
     # Get the connection string for masters.
     lpmain_connection_string = get_master_connection_string(
         source_connection, parser, LPMAIN_SET_ID) or source_connection_string
-    authdb_connection_string = get_master_connection_string(
-        source_connection, parser, AUTHDB_SET_ID) or source_connection_string
 
     # Sanity check the target connection string.
     target_connection_string = ConnectionString(raw_target_connection_string)
@@ -130,31 +127,6 @@ def main():
         log.error("Failed to duplicate database schema.")
         return 1
 
-    # Drop the authdb replication set tables we just restored, as they
-    # will be broken if the authdb master is a seperate database to the
-    # lpmain master.
-    log.debug("Dropping (possibly corrupt) authdb tables.")
-    cur = target_con.cursor()
-    for table_name in _auth_store_tables:
-        cur.execute("DROP TABLE IF EXISTS %s CASCADE" % table_name)
-    target_con.commit()
-
-    # Duplicate the authdb schema.
-    log.info("Duplicating authdb schema from '%s' to '%s'" % (
-        authdb_connection_string, target_connection_string))
-    table_args = ["--table=%s" % table for table in _auth_store_tables]
-    # We need to restore the two cross-replication-set views that where
-    # dropped as a side effect of dropping the auth store tables.
-    table_args.append("--table=ValidPersonCache")
-    table_args.append("--table=ValidPersonOrTeamCache")
-    cmd = "pg_dump --schema-only --no-privileges %s %s | psql -1 -q %s" % (
-        ' '.join(table_args),
-        source_connection_string.asPGCommandLineArgs(),
-        target_connection_string.asPGCommandLineArgs())
-    if subprocess.call(cmd, shell=True) != 0:
-        log.error("Failed to duplicate database schema.")
-        return 1
-
     # Trash the broken Slony tables we just duplicated.
     log.debug("Removing slony cruft.")
     cur = target_con.cursor()
@@ -162,13 +134,31 @@ def main():
     target_con.commit()
     del target_con
 
-    # Get a list of existing set ids.
+    # Get a list of existing set ids that can be subscribed too. This
+    # is all sets where the origin is the master_node. We
+    # don't allow other sets where the master is configured as a
+    # forwarding slave as we have to special case rebuilding the database
+    # schema, and we want to avoid cascading slave configurations anyway
+    # since we are running an antique Slony-I at the moment - keep it
+    # simple!
+    # We order the sets smallest to largest by number of tables.
+    # This should let us subscribe the quickest sets first for more
+    # immediate feedback.
     source_connection.rollback()
     master_node = replication.helpers.get_master_node(source_connection)
     cur = source_connection.cursor()
-    cur.execute(
-        "SELECT set_id FROM _sl.sl_set WHERE set_origin=%d"
-        % master_node.node_id)
+    cur.execute("""
+        SELECT set_id
+        FROM _sl.sl_set, (
+            SELECT tab_set, count(*) AS tab_count
+            FROM _sl.sl_table GROUP BY tab_set
+            ) AS TableCounts
+        WHERE
+            set_origin=%d
+            AND tab_set = set_id
+        ORDER BY tab_count
+        """
+        % (master_node.node_id,))
     set_ids = [set_id for set_id, in cur.fetchall()]
     log.debug("Discovered set ids %s" % repr(list(set_ids)))
 
@@ -200,19 +190,32 @@ def main():
         } on error { echo 'Failed.'; exit 1; }
         """)
 
-    for set_id in set_ids:
+    full_sync = []
+    sync_nicknames = [node.nickname for node in existing_nodes]
+    sync_nicknames.append('new_node');
+    for nickname in sync_nicknames:
+        full_sync.append(dedent("""\
+            echo 'Waiting for %(nickname)s sync.';
+            sync (id=@%(nickname)s);
+            wait for event (
+                origin = @%(nickname)s, confirmed=ALL,
+                wait on = @%(nickname)s, timeout=0);
+            """ % {'nickname': nickname}))
+    full_sync = '\n'.join(full_sync)
+    script += full_sync
 
+    for set_id in set_ids:
         script += dedent("""\
         echo 'Subscribing new node to set %d.';
         subscribe set (
             id=%d, provider=@master_node, receiver=@new_node, forward=yes);
-
-        echo 'Waiting for sync... this might take a while...';
+        echo 'Waiting for subscribe to start processing.';
         sync (id = @master_node);
         wait for event (
-            origin = ALL, confirmed = ALL,
+            origin = @master_node, confirmed = ALL,
             wait on = @master_node, timeout = 0);
         """ % (set_id, set_id))
+        script += full_sync
 
     replication.helpers.execute_slonik(script)
 

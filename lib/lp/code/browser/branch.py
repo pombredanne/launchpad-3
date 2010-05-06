@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
@@ -79,16 +80,19 @@ from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, CodeImportJobState,
-    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
-from lp.code.errors import InvalidBranchMergeProposal
+    BranchLifecycleStatus, BranchType,
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
+    UICreatableBranchType)
+from lp.code.errors import (
+    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState, InvalidBranchMergeProposal)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -180,6 +184,11 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to the `ICodeImport` for the branch."""
+        return self.context.code_import
+
 
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
@@ -188,7 +197,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete', 'create_recipe')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -210,21 +219,18 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    def edit_import(self):
-        text = 'Edit import source or review import'
-        enabled = (
-            self.branch_is_import() and
-            check_permission('launchpad.Edit', self.context.code_import))
-        return Link(
-            '+edit-import', text, icon='edit', enabled=enabled)
-
     @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
+    def create_recipe(self):
+        enabled = config.build_from_branch.enabled
+        text = 'Create source package recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
 
-class BranchContextMenu(ContextMenu):
+
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
 
     usedfor = IBranch
@@ -232,7 +238,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'upgrade_branch']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -298,6 +304,15 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
+
+    def edit_import(self):
+        text = 'Edit import source or review import'
+        enabled = True
+        enabled = (
+            self.context.branch_type == BranchType.IMPORTED and
+            check_permission('launchpad.Edit', self.context.code_import))
+        return Link(
+            '+edit-import', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def upgrade_branch(self):
@@ -423,11 +438,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
+    @property
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return (self.user is not None and
-                self.user.inTeam(self.context.owner) and
-                self.context.branch_type == BranchType.HOSTED)
+        branch = self.context
+        if branch.branch_type != BranchType.HOSTED:
+            return False
+        return check_permission('launchpad.Edit', branch)
 
     def user_can_download(self):
         """Whether the user can download this branch."""
@@ -508,6 +525,15 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
 
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            return "/@@/yes-gray"
+        elif status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
+
     @property
     def is_svn_import(self):
         """True if an imported branch is a SVN import."""
@@ -521,8 +547,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         """True if an imported branch's SVN URL is HTTP or HTTPS."""
         # You should only be calling this if it's an SVN code import
         assert self.context.code_import
-        assert self.context.code_import.svn_branch_url
-        url = self.context.code_import.svn_branch_url
+        url = self.context.code_import.url
+        assert url
         # https starts with http too!
         return url.startswith("http")
 
@@ -594,7 +620,7 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def _setBranchExists(self, existing_branch):
+    def _setBranchExists(self, existing_branch, field_name='name'):
         owner = existing_branch.owner
         if owner == self.user:
             prefix = "You already have"
@@ -604,7 +630,7 @@ class BranchNameValidationMixin:
             "%s a branch for <em>%s</em> called <em>%s</em>."
             % (prefix, existing_branch.target.displayname,
                existing_branch.name))
-        self.setFieldError('name', structured(message))
+        self.setFieldError(field_name, structured(message))
 
 
 class BranchEditSchema(Interface):
@@ -1176,8 +1202,10 @@ class RegisterProposalSchema(Interface):
             ' will not be shown in the diff.)'))
 
     comment = Text(
-        title=_('Initial Comment'), required=False,
-        description=_('Describe your change.'))
+        title=_('Description of the Change'), required=False,
+        description=_('Describe what changes your branch introduces, '
+                      'what bugs it fixes, or what features it implements. '
+                      'Ideally include rationale and how to test.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -1247,7 +1275,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 registrant=registrant, target_branch=target_branch,
                 prerequisite_branch=prerequisite_branch,
                 needs_review=data['needs_review'],
-                initial_comment=data.get('comment'),
+                description=data.get('comment'),
                 review_requests=review_requests,
                 commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
@@ -1296,26 +1324,23 @@ class BranchRequestImportView(LaunchpadFormView):
 
     @action('Import Now', name='request')
     def request_import_action(self, action, data):
-        if self.context.code_import.import_job is None:
+        try:
+            self.context.code_import.requestImport(
+                self.user, error_if_already_requested=True)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
+        except CodeImportNotInReviewedState:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif (self.context.code_import.import_job.state !=
-              CodeImportJobState.PENDING):
-            assert (self.context.code_import.import_job.state ==
-                    CodeImportJobState.RUNNING)
+        except CodeImportAlreadyRunning:
             self.request.response.addNotification(
                 "The import is already running.")
-        elif self.context.code_import.import_job.requesting_user is not None:
-            user = self.context.code_import.import_job.requesting_user
+        except CodeImportAlreadyRequested, e:
+            user = e.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(
                 structured("The import has already been requested by %s." %
                            adapter.link(None)))
-        else:
-            getUtility(ICodeImportJobWorkflow).requestJob(
-                self.context.code_import.import_job, self.user)
-            self.request.response.addNotification(
-                "Import will run as soon as possible.")
 
     @property
     def prefix(self):

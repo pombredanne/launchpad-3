@@ -13,9 +13,6 @@ import transaction
 import unittest
 
 from bzrlib.revision import NULL_REVISION, Revision as BzrRevision
-from bzrlib.transport import (
-    get_transport, register_transport, unregister_transport)
-from bzrlib.transport.chroot import ChrootServer
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
 import pytz
@@ -32,11 +29,8 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
-from lp.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL, schedule_diff_updates,
-    schedule_translation_upload)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -57,44 +51,7 @@ def run_as_db_user(username):
     return _run_with_different_user
 
 
-class FakeTransportServer:
-    """Set up a fake transport at a given URL prefix.
-
-    For testing purposes.
-    """
-
-    def __init__(self, transport, url_prefix='lp-mirrored:///'):
-        """Constructor.
-
-        :param transport: The backing transport to store the data with.
-        :param url_prefix: The URL prefix to access this transport.
-        """
-        self._transport = transport
-        self._url_prefix = url_prefix
-        self._chroot_server = None
-
-    def setUp(self):
-        """Activate the transport URL."""
-        # The scanner tests assume that branches live on a Launchpad virtual
-        # filesystem rooted at 'lp-mirrored:///'. Rather than provide the
-        # entire virtual filesystem here, we fake it by having a chrooted
-        # transport do the work.
-        register_transport(self._url_prefix, self._transportFactory)
-        self._chroot_server = ChrootServer(self._transport)
-        self._chroot_server.setUp()
-
-    def tearDown(self):
-        """Deactivate the transport URL."""
-        self._chroot_server.tearDown()
-        unregister_transport(self._url_prefix, self._transportFactory)
-
-    def _transportFactory(self, url):
-        assert url.startswith(self._url_prefix)
-        url = self._chroot_server.get_url() + url[len(self._url_prefix):]
-        return get_transport(url)
-
-
-class BzrSyncTestCase(TestCaseWithTransport):
+class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
     """Common base for BzrSync test cases."""
 
     layer = LaunchpadZopelessLayer
@@ -102,33 +59,26 @@ class BzrSyncTestCase(TestCaseWithTransport):
     LOG = "Log message"
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        self.factory = LaunchpadObjectFactory()
-        self.makeFixtures()
+        super(BzrSyncTestCase, self).setUp()
+        self.disable_directory_isolation()
+        self.useBzrBranches(direct_database=True)
         self.lp_db_user = config.launchpad.dbuser
+        self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        # The lp-mirrored transport is set up by the branch_scanner module.
-        # Here we set up a fake so that we can test without worrying about
-        # authservers and the like.
-        server = FakeTransportServer(self.get_transport())
-        server.setUp()
-        self.addCleanup(server.tearDown)
+
+    def tearDown(self):
+        super(BzrSyncTestCase, self).tearDown()
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
-        self.db_branch = self.makeDatabaseBranch()
-        self.bzr_tree = self.makeBzrBranchAndTree(self.db_branch)
+        self.db_branch, self.bzr_tree = self.create_branch_and_tree(
+            db_branch=self.makeDatabaseBranch())
         self.bzr_branch = self.bzr_tree.branch
 
     def syncBazaarBranchToDatabase(self, bzr_branch, db_branch):
         """Sync `bzr_branch` into the database as `db_branch`."""
         syncer = self.makeBzrSync(db_branch)
         syncer.syncBranchAndClose(bzr_branch)
-
-    def makeBzrBranchAndTree(self, db_branch, format=None):
-        """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        self.get_transport(db_branch.unique_name).create_prefix()
-        return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
     def makeDatabaseBranch(self, *args, **kwargs):
         """Make an arbitrary branch in the database."""
@@ -250,12 +200,14 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
-        trunk_tree = self.makeBzrBranchAndTree(db_branch)
+        db_branch, trunk_tree = self.create_branch_and_tree(
+            db_branch=db_branch)
         trunk_tree.commit(u'base revision', rev_id=base_rev_id)
 
         # Branch from the base revision.
         new_db_branch = self.makeDatabaseBranch(product=db_branch.product)
-        branch_tree = self.makeBzrBranchAndTree(new_db_branch)
+        new_db_branch, branch_tree = self.create_branch_and_tree(
+            db_branch=new_db_branch)
         branch_tree.pull(trunk_tree.branch)
 
         # Commit to both branches.
@@ -519,7 +471,7 @@ class TestBzrSync(BzrSyncTestCase):
             (branch_revision.revision.revision_id, branch_revision.id)
             for branch_revision in sampledata)
 
-        self.makeBzrBranchAndTree(branch)
+        self.create_branch_and_tree(db_branch=branch)
 
         bzrsync = self.makeBzrSync(branch)
         db_ancestry, db_history, db_branch_revision_map = (
@@ -527,38 +479,6 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(expected_ancestry, set(db_ancestry))
         self.assertEqual(expected_history, list(db_history))
         self.assertEqual(expected_mapping, db_branch_revision_map)
-
-
-class TestScanStackedBranches(BzrSyncTestCase):
-    """Tests for scanning stacked branches."""
-
-    @run_as_db_user(config.launchpad.dbuser)
-    def testStackedBranchBadURL(self):
-        # The scanner will raise an InvalidStackedBranchURL when it tries to
-        # open a branch stacked on a non- lp-mirrored:// schema.
-        db_branch = self.makeDatabaseBranch()
-        stacked_on_branch = self.make_branch('stacked-on', format='1.6')
-        self.assertFalse(stacked_on_branch.base.startswith('lp-mirrored://'))
-        bzr_tree = self.makeBzrBranchAndTree(db_branch, format='1.6')
-        bzr_tree.branch.set_stacked_on_url(stacked_on_branch.base)
-        scanner = self.makeBzrSync(db_branch)
-        self.assertRaises(InvalidStackedBranchURL, scanner.syncBranchAndClose)
-
-    @run_as_db_user(config.launchpad.dbuser)
-    def testStackedBranch(self):
-        # We can scan a stacked branch that's stacked on a branch that has an
-        # lp-mirrored:// URL.
-        db_stacked_on_branch = self.factory.makeAnyBranch()
-        stacked_on_tree = self.makeBzrBranchAndTree(
-            db_stacked_on_branch, format='1.6')
-        db_stacked_branch = self.factory.makeAnyBranch()
-        stacked_tree = self.makeBzrBranchAndTree(
-            db_stacked_branch, format='1.6')
-        stacked_tree.branch.set_stacked_on_url(
-            'lp-mirrored:///%s' % db_stacked_on_branch.unique_name)
-        scanner = self.makeBzrSync(db_stacked_branch)
-        # This does not raise an exception.
-        scanner.syncBranchAndClose()
 
 
 class TestBzrSyncOneRevision(BzrSyncTestCase):
@@ -596,12 +516,6 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 
 class TestBzrTranslationsUploadJob(BzrSyncTestCase):
     """Tests BzrSync support for generating TranslationsUploadJobs."""
-
-    def setUp(self):
-        BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(schedule_translation_upload)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
 
     def _makeProductSeries(self, mode = None):
         """Switch to the Launchpad db user to create and configure a
@@ -653,26 +567,21 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
 class TestUpdatePreviewDiffJob(BzrSyncTestCase):
     """Test the scheduling of jobs to update preview diffs."""
 
-    def setUp(self):
-        """Set up `schedule_diff_updates` to handle tip changes."""
-        BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(schedule_diff_updates)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
-
     @run_as_db_user(config.launchpad.dbuser)
     def test_create_on_new_revision(self):
         """When branch tip changes, a job is created."""
-        revision_id = self.commitRevision()
         bmp = self.factory.makeBranchMergeProposal(
             source_branch=self.db_branch)
+        removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
+        # The creation of a merge proposal has created an update preview diff
+        # job, so we'll mark that one as done.
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.complete()
+        self.assertIs(None, bmp.next_preview_diff_job)
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
-        jobs = list(getUtility(IUpdatePreviewDiffJobSource).iterReady())
-        self.assertEqual(1, len(jobs))
-        self.assertEqual(
-            bmp, removeSecurityProxy(jobs[0]).branch_merge_proposal)
+        self.assertIsNot(None, bmp.next_preview_diff_job)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

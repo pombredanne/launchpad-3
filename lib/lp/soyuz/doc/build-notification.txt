@@ -2,9 +2,10 @@
 Build Notification System
 =========================
 
-IBuild instance implements the 'notify' method which sends a status
-report about the current record to the ISourcePackageRelease.creator
-and the package uploader's preferred email address.
+IBinaryPackageBuild instance implements the 'notify' method which sends
+a status report about the current record to the
+ISourcePackageRelease.creator and the package uploader's preferred email
+address.
 
 We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
@@ -15,9 +16,10 @@ The report is based on the emailtemplate/build-notification.txt.
 All build states are supported by the current implementation, however
 only failures should be reported this time.
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
+  >>> from lp.soyuz.interfaces.binarypackagebuild import (
+  ...     IBinaryPackageBuildSet)
   >>> from lp.testing.mail_helpers import pop_notifications
-  >>> buildset = getUtility(IBuildSet)
+  >>> buildset = getUtility(IBinaryPackageBuildSet)
 
 To avoid consequences of modified sampledata, specially if we add
 more builds for test we are going to pick a specific build record
@@ -414,10 +416,10 @@ in the main archive, the important differences are:
    they are in the team owning the PPA (to avoid spamming the innocent
    when PPA users upload unchanged source packages).
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
   >>> failed_candidate = cprov.archive.getBuildRecords(
   ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 
@@ -486,7 +488,7 @@ we will change the 'failed_candidate' source, setting its
 
 We also make 'Foo Bar' the source signer.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
   >>> gpgkey = getUtility(IGPGKeySet).get(1)
   >>> print gpgkey.owner.name
   name16

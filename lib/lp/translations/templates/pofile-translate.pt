@@ -13,21 +13,14 @@
         color: lightgray;
     }
     </style>
-    <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
 
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
+
       LPS.use('lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
-          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
-          Y.on('domready', Y.lp.pofile.updateNotificationBox);
-          Y.on('domready', function(e) {
-            Y.lp.pofile.setFocus(autofocus_field);
-          });
+        Y.on('domready', Y.lp.pofile.initializePOFile);
       });
+
     </script>
     </div>
     <div metal:fill-slot="main">
@@ -97,7 +90,7 @@
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
           <input type="hidden" name="show" value="all" />
-          <label for="search_box" accesskey="F">Search:</label>
+          <label for="search_box">Search:</label>
           <input id="search_box" type="text" name="search"
                  title="Enter text to search for"
                  tal:attributes="value view/search_text" />
@@ -225,7 +218,6 @@
                   <td style="text-align: right;">
                     <input type="submit"
                            name="submit_translations"
-                           accesskey="S"
                            id="save_and_continue_button"
                            value="Save &amp; Continue"
                     />
@@ -234,6 +226,7 @@
               </tbody>
             </table>
           </form>
+
           <!-- Paging doodads. -->
           <tal:navigation
             replace="structure view/batchnav/@@+navigation-links-lower" />
@@ -242,7 +235,7 @@
         <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
       <metal:pofile-js-footer 
-            use-macro="context/@@+translations-macros/pofile-js-footer" />
+        use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
   </body>
 </html>

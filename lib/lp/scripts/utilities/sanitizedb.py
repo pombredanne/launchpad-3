@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-from storm.locals import Or, Not
+from storm.locals import Or
 import transaction
 from zope.component import getUtility
 
@@ -278,7 +278,7 @@ class SanitizeDb(LaunchpadScript):
 
     def removePrivateHwSubmissions(self):
         """Remove all private hardware submissions."""
-        from canonical.launchpad.database.hwdb import HWSubmission
+        from lp.hardwaredb.model.hwdb import HWSubmission
         count = self.store.find(
             HWSubmission, HWSubmission.private == True).remove()
         self.store.flush()
@@ -334,9 +334,9 @@ class SanitizeDb(LaunchpadScript):
 
     def removeInactiveProjects(self):
         """Remove inactive projects."""
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         count = self.store.find(
-            Project, Project.active == False).remove()
+            ProjectGroup, ProjectGroup.active == False).remove()
         self.store.flush()
         self.logger.info("Removed %d inactive product groups.", count)
 
@@ -529,7 +529,7 @@ class SanitizeDb(LaunchpadScript):
             sql = match.group(0)
 
             # Drop the existing constraint so we can recreate it.
-            drop_sql =  'ALTER TABLE %s DROP CONSTRAINT %s;' % (
+            drop_sql = 'ALTER TABLE %s DROP CONSTRAINT %s;' % (
                 table, constraint)
             restore_sql.append(drop_sql)
             cascade_sql.append(drop_sql)
@@ -604,4 +604,3 @@ class SanitizeDb(LaunchpadScript):
     def _fail(self, error_message):
         self.logger.fatal(error_message)
         sys.exit(1)
-

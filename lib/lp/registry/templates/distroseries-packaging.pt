@@ -15,61 +15,72 @@
           translations efficiently.
         </p>
 
-        <p class="informational message"
-          tal:condition="not: packagings/batch">
-          There are no links between packages in <span
-          tal:replace="context/displayname">Hoary</span> and upstream. By
-          adding information for specific packages, you can help the
-          distribution developers collaborate with upstream.
+        <p>
+          The packages are listed by priority based on the greatest need to
+          forward bugs, sync translations, or specify the latest
+          development branch.
         </p>
 
-        <tal:unlinked_translatables
-         condition="view/show_unlinked_translatables">
-          <div id="unlinked-translatables">
-            <h2>Unlinked translatable packages</h2>
-
-            <ul class="horizontal">
-              <li tal:repeat="sp view/unlinked_translatables">
-                <a class="sprite package-source"
-                  tal:attributes="href sp/fmt:url"
-                  tal:content="sp/sourcepackagename/name">evolution</a>
-              </li>
-            </ul>
-          </div>
-        </tal:unlinked_translatables>
+        <ul id="related-pages" class="horizontal">
+          <li>
+            <a tal:replace="structure context/menu:overview/needs_packaging/fmt:link" />
+          </li>
+          <li>
+            <a tal:replace="structure context/menu:overview/packaging/fmt:link" />
+          </li>
+        </ul>
       </div>
 
-      <tal:known_links condition="packagings/batch">
-        <h2>Upstream links</h2>
+      <div tal:condition="packagings/batch">
+        <h2>All upstream links</h2>
 
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-upper" />
 
-        <table id="packagings" class="listing">
+        <table id="packagings" class="listing" style="compact">
+          <cols>
+            <col />
+            <col />
+            <col style="width: 20em;"/>
+          </cols>
           <thead>
             <tr>
               <th>Source Package</th>
-              <th>Upstream Project Series</th>
+              <th>Upstream Project</th>
+              <th colspan="2">Upstream Contributor Connections</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr tal:repeat="packaging packagings/batch">
-              <td>
-                <a class="sprite package-source"
-                  tal:attributes="href packaging/sourcepackage/fmt:url"
-                  tal:content="packaging/sourcepackagename/name">evolution</a>
-              </td>
-              <td>
-                <a tal:replace="structure packaging/productseries/fmt:link" />
-              </td>
-            </tr>
+            <tal:packaging repeat="packaging packagings/batch">
+              <tr tal:define="series packaging/productseries;
+                              product series/product;
+                              package packaging/sourcepackage;
+                              translations package/getTranslationTemplates;">
+                <td>
+                  <a class="sprite package-source"
+                    tal:attributes="href package/fmt:url"
+                    tal:content="package/name">evolution</a>
+                </td>
+
+                <td>
+                  <div>
+                    <a tal:replace="structure product/fmt:link" />
+                  </div>
+
+                  <div class="narrow"
+                    tal:condition="product/summary"
+                    tal:content="product/summary"/>
+                </td>
+                <td tal:content="structure package/@@+upstream-connections"/>
+              </tr>
+            </tal:packaging>
           </tbody>
         </table>
 
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-lower" />
-      </tal:known_links>
+      </div>
     </div>
   </body>
 </html>

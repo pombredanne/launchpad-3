@@ -8,6 +8,7 @@ __metaclass__ = type
 import logging
 
 import zope.app.publication.interfaces
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import (
     IAuthentication, IPrincipal, IPrincipalSource)
@@ -107,6 +108,10 @@ class IAuthorization(Interface):
 
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
+
+
+class NoReferrerError(Exception):
+    """At attempt was made to post a form without a REFERER header."""
 
 
 class UnsafeFormGetSubmissionError(Exception):
@@ -297,7 +302,7 @@ class NoCanonicalUrl(TypeError):
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
-    project = Attribute('IProject, or None')
+    project = Attribute('IProjectGroup, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
     distroseries = Attribute('IDistroSeries, or None')
@@ -670,6 +675,10 @@ class INotificationResponse(Interface):
         """
 
 
+class IErrorReportEvent(IObjectEvent):
+    """A new error report has been created."""
+
+
 class IErrorReport(Interface):
     id = TextLine(description=u"The name of this error report.")
     type = TextLine(description=u"The type of the exception that occurred.")
@@ -741,9 +750,7 @@ class IPrimaryContext(Interface):
 #
 
 MAIN_STORE = 'main' # The main database.
-AUTH_STORE = 'auth' # The authentication database.
-
-ALL_STORES = frozenset([MAIN_STORE, AUTH_STORE])
+ALL_STORES = frozenset([MAIN_STORE])
 
 DEFAULT_FLAVOR = 'default' # Default flavor for current state.
 MASTER_FLAVOR = 'master' # The master database.
@@ -756,6 +763,20 @@ class IDatabasePolicy(Interface):
     The publisher adapts the request to `IDatabasePolicy` to
     instantiate the policy for the current request.
     """
+    def __enter__():
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will install itself using the IStoreSelector
+        utility.
+        """
+
+    def __exit__(exc_type, exc_value, traceback):
+        """Standard Python context manager interface.
+
+        The IDatabasePolicy will uninstall itself using the IStoreSelector
+        utility.
+        """
+
     def getStore(name, flavor):
         """Retrieve a Store.
 

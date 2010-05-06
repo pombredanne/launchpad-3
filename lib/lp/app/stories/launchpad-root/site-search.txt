@@ -39,15 +39,6 @@ omitted.
     ...
     LookupError
 
-And on the login and registration pages, the global form is also omitted to
-reduce confusion.
-
-    >>> anon_browser.open('http://launchpad.dev/+login')
-    >>> global_search_form = anon_browser.getForm('globalsearch')
-    Traceback (most recent call last):
-    ...
-    LookupError
-
 If by chance someone ends up at /+search with no search parameters, they get
 an explanation of the search function.
 
@@ -161,8 +152,8 @@ as the most relevant match.
     Registered by Sample Person
     on 2004-09-24
 
-Projects can appear too. For example, when the user searches for
-'gnome', the GNOME project is the best match.
+Project groups can appear too. For example, when the user searches for
+'gnome', the GNOME project group is the best match.
 
     >>> search_for('gnome')
     >>> print_search_results()
@@ -182,8 +173,7 @@ The user searches for 'ubuntu' and sees it listed..
     Ubuntu
     Ubuntu is a new approach to Linux Distribution that includes regular
     releases, and a simplified single-CD installation system.
-    Registered by Ubuntu Team
-    on 2006-10-16
+    Registered on 2006-10-16
 
 The user enters the number 1, and he sees a bug and a question in the
 "Exact matches" section.

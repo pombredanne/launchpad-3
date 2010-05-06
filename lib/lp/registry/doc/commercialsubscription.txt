@@ -518,6 +518,14 @@ The license_info_is_empty parameter only accepts True, False, or None.
     ...
     AssertionError...
 
+The full text search will not match strings with dots in their name
+but a clause is included to search specifically for the name.
+
+    >>> new_product = factory.makeProduct(name="abc.com")
+    >>> for product in product_set.forReview(search_text="abc.com"):
+    ...     print product.name
+    abc.com
+
 The use of 'forReview' is limited to users with launchpad.Commercial permission.
 
 Anonymous users cannot access 'forReview'.
@@ -580,11 +588,11 @@ An admin can access 'forReview'.
     python-gnome2-dev
 
 Members of the registry experts celebrity have permission to review
-IProduct and IProject objects and access an IProjectSet.
+IProduct and IProjectGroup objects and access an IProjectGroupSet.
 
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
 
-    >>> project_set = getUtility(IProjectSet)
+    >>> project_set = getUtility(IProjectGroupSet)
     >>> product = factory.makeProduct(name='dog')
     >>> project = factory.makeProject(name='cat')
 

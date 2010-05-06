@@ -16,7 +16,6 @@
         </tal:comment>
         <span class="static">
           <tal:affected condition="affected">
-            <img width="14" height="14" src="/@@/flame-icon" alt="" />
             <tal:statement replace="view/affected_statement" />
           </tal:affected>
           <tal:not-affected condition="not:affected">
@@ -31,7 +30,6 @@
           controls and information in the correct places.
         </tal:comment>
         <span class="dynamic unseen">
-          <img src="/@@/flame-icon" alt=""/>
           <a href="+affectsmetoo" class="js-action"
              ><span class="value" tal:content="view/affected_statement" /></a>
           <a href="+affectsmetoo">

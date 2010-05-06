@@ -16,10 +16,9 @@ import operator
 import datetime
 import calendar
 import pytz
-import sets
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from storm.locals import And, Desc, Join, SQL, Store, Unicode
+from storm.locals import And, Desc, Int, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -34,11 +33,15 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import (
-    BugTargetBase, OfficialBugTagTargetMixin)
+    BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
@@ -170,18 +173,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
-
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
+              HasBugHeatMixin, HasCodeImportsMixin):
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
-        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
+        IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
+        IQuestionTarget)
 
     _table = 'Product'
 
     project = ForeignKey(
-        foreignKey="Project", dbName="project", notNull=False, default=None)
+        foreignKey="ProjectGroup", dbName="project", notNull=False,
+        default=None)
     _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
@@ -232,6 +237,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
+    translation_focus = ForeignKey(
+        dbName='translation_focus', foreignKey='ProductSeries',
+        notNull=False, default=None)
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
@@ -239,14 +247,20 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_answers', notNull=True, default=False)
     official_blueprints = BoolCol(
         dbName='official_blueprints', notNull=True, default=False)
-    official_codehosting = BoolCol(
-        dbName='official_codehosting', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
     remote_product = Unicode(
         name='remote_product', allow_none=True, default=None)
+    max_bug_heat = Int()
+    date_next_suggest_packaging = UtcDateTimeCol(default=None)
+
+    @property
+    def official_codehosting(self):
+        # XXX Need to remove official_codehosting column from Product
+        # table.
+        return self.development_focus.branch is not None
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -260,7 +274,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
-    active = BoolCol(dbName='active', notNull=True, default=True)
     license_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
@@ -276,6 +289,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     _cached_licenses = None
+
+    def _validate_active(self, attr, value):
+        # Validate deactivation.
+        if self.active == True and value == False:
+            if len(self.sourcepackages) > 0:
+                raise AssertionError(
+                    'This project cannot be deactivated since it is '
+                    'linked to source packages.')
+        return value
+
+    active = BoolCol(dbName='active', notNull=True, default=True,
+                     storm_validator=_validate_active)
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
@@ -746,11 +771,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         targetseries = ubuntu.currentseries
         product_series = self.translatable_series
 
-        # First, go with development focus branch
-        if product_series and self.development_focus in product_series:
-            return self.development_focus
-        # Next, go with the latest product series that has templates:
         if product_series:
+            # First, go with translation focus
+            if self.translation_focus in product_series:
+                return self.translation_focus
+            # Next, go with development focus
+            if self.development_focus in product_series:
+                return self.development_focus
+            # Next, go with the latest product series that has templates:
             return product_series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
@@ -1009,6 +1037,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             if include_inactive or series.active or
                series == self.development_focus]
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.branch import Branch
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.id ==
+                SourcePackageRecipeData.sourcepackage_recipe_id,
+            SourcePackageRecipeData.base_branch == Branch.id,
+            Branch.product == self)
+
 
 class ProductSet:
     implements(IProductSet)
@@ -1084,7 +1123,7 @@ class ProductSet:
         if registrant is None:
             registrant = owner
         if licenses is None:
-            licenses = sets.Set()
+            licenses = set()
         product = Product(
             owner=owner, registrant=registrant, name=name,
             displayname=displayname, title=title, project=project,
@@ -1132,8 +1171,10 @@ class ProductSet:
             conditions.append(Product.active == active)
 
         if search_text is not None and search_text.strip() != '':
-            conditions.append(SQL(
-                'Product.fti @@ ftq(%s)' % sqlvalues(search_text)))
+            conditions.append(SQL('''
+                Product.fti @@ ftq(%(text)s) OR
+                Product.name = lower(%(text)s)
+                ''' % sqlvalues(text=search_text)))
 
         def dateToDatetime(date):
             """Convert a datetime.date to a datetime.datetime

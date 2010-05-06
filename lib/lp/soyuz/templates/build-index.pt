@@ -146,8 +146,8 @@
         Missing build dependencies: <em
          tal:content="context/dependencies">x, y, z</em>
       </li>
-      <tal:pending condition="context/buildstate/enumvalue:NEEDSBUILD">
-        <li tal:define="eta context/getEstimatedBuildStartTime;">
+      <tal:pending condition="view/dispatch_time_estimate_available">
+        <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime;">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
             (<span tal:replace="view/buildqueue/lastscore"/>)

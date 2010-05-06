@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductChangeTranslatorsView',
+    'ProductSettingsView',
     'ProductTranslationsMenu',
     'ProductView',
     ]
@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
@@ -37,10 +38,10 @@ class ProductTranslationsMenu(NavigationMenu):
         text = 'Import queue'
         return Link('+imports', text)
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+        text = 'Change permissions'
+        return Link('+settings', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
@@ -61,10 +62,14 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
+class ProductSettingsView(TranslationsMixin, ProductEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
-    field_names = ["translationgroup", "translationpermission"]
+    field_names = [
+            "translationgroup",
+            "translationpermission",
+            "translation_focus",
+            ]
 
     @property
     def cancel_url(self):
@@ -84,7 +89,7 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and 
+        return (self.context.official_rosetta and
                 self.primary_translatable is not None)
 
     @cachedproperty
@@ -112,7 +117,13 @@ class ProductView(LaunchpadView):
 
     @cachedproperty
     def untranslatable_series(self):
-        """Return series which are not yet set up for translations."""
-        all_series = set(self.context.series)
-        translatable = set(self.context.translatable_series)
-        return all_series - translatable
+        """Return series which are not yet set up for translations.
+
+        The list is sorted in alphabetically order and obsolete series
+        are excluded.
+        """
+
+        translatable = self.context.translatable_series
+        return [series for series in self.context.series if (
+            series.status != SeriesStatus.OBSOLETE and
+            series not in translatable)]

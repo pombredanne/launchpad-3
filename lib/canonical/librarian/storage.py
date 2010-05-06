@@ -4,9 +4,8 @@
 __metaclass__ = type
 
 import os
-import md5
-import sha
 import errno
+import hashlib
 import shutil
 import tempfile
 
@@ -89,8 +88,8 @@ class LibraryFileUpload(object):
         tmpfile, tmpfilepath = tempfile.mkstemp(dir=self.storage.incoming)
         self.tmpfile = os.fdopen(tmpfile, 'w')
         self.tmpfilepath = tmpfilepath
-        self.shaDigester = sha.new()
-        self.md5Digester = md5.new()
+        self.shaDigester = hashlib.sha1()
+        self.md5Digester = hashlib.md5()
 
     def append(self, data):
         self.tmpfile.write(data)

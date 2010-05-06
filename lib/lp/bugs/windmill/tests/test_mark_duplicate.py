@@ -8,11 +8,9 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import constants, lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
 MAIN_FORM_ELEMENT = u'//div[@id="duplicate-form-container"]/table'
 FORM_NOT_VISIBLE = (
@@ -24,9 +22,10 @@ CHANGE_BUTTON = (
     '//button[@name="field.actions.change"]')
 
 
-class TestMarkDuplicate(TestCaseWithFactory):
+class TestMarkDuplicate(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = "Bug mark duplicate test"
 
     def test_mark_duplicate_form_overlay(self):
         """Test the mark duplicate action on bug pages.
@@ -35,7 +34,7 @@ class TestMarkDuplicate(TestCaseWithFactory):
         link on a bug page uses the formoverlay to update the duplicateof
         field via the api.
         """
-        client = WindmillTestClient("Bug mark duplicate test")
+        client = self.client
 
         # Open a bug page and wait for it to finish loading
         client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,7 +10,6 @@ import _pythonpath
 
 from itertools import chain
 import os
-import sets
 import sys
 
 import psycopg2
@@ -28,6 +27,9 @@ import replication.helpers
 # sensitive information that interactive sessions don't need.
 SECURE_TABLES = [
     'public.accountpassword',
+    'public.oauthnonce',
+    'public.openidnonce',
+    'public.openidconsumernonce',
     ]
 
 
@@ -288,7 +290,7 @@ def reset_permissions(con, config, options):
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
     # forgotten about.
-    found = sets.Set()
+    found = set()
 
     # Set permissions as per config file
     for username in config.sections():
@@ -380,7 +382,7 @@ def reset_permissions(con, config, options):
 
     # Raise an error if we have database objects lying around that have not
     # had permissions assigned.
-    forgotten = sets.Set()
+    forgotten = set()
     for obj in schema.values():
         if obj not in found:
             forgotten.add(obj)

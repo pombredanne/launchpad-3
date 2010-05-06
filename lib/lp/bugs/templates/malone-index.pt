@@ -69,7 +69,7 @@
       <div class="first yui-u">
         <div class="portlet">
           <h2>Recently reported</h2>
-          <table>
+          <table id="reported-bugs">
             <tbody>
               <tr tal:repeat="bug context/latest_bugs"
                   tal:replace="structure bug/@@+listing-detailed" />

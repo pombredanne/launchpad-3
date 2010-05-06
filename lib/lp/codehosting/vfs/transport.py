@@ -16,7 +16,6 @@ __all__ = [
     'AsyncVirtualTransport',
     'get_chrooted_transport',
     'get_readonly_transport',
-    '_MultiServer',
     'SynchronousAdapter',
     'TranslationError',
     ]
@@ -30,7 +29,8 @@ from bzrlib.transport import (
     unregister_transport)
 
 from twisted.internet import defer
-from canonical.twistedsupport import extract_result, gatherResults
+
+from lp.services.twistedsupport import extract_result, gatherResults
 
 
 class TranslationError(BzrError):
@@ -57,7 +57,7 @@ def get_chrooted_transport(url, mkdir=False):
     if mkdir:
         transport.create_prefix()
     chroot_server = chroot.ChrootServer(transport)
-    chroot_server.setUp()
+    chroot_server.start_server()
     return get_transport(chroot_server.get_url())
 
 
@@ -66,25 +66,6 @@ def get_readonly_transport(transport):
     if transport.base.startswith('readonly+'):
         return transport
     return get_transport('readonly+' + transport.base)
-
-
-class _MultiServer(Server):
-    """Server that wraps around multiple servers."""
-
-    def __init__(self, *servers):
-        self._servers = servers
-
-    def setUp(self):
-        for server in self._servers:
-            server.setUp()
-
-    def destroy(self):
-        for server in reversed(self._servers):
-            server.destroy()
-
-    def tearDown(self):
-        for server in reversed(self._servers):
-            server.tearDown()
 
 
 class AsyncVirtualTransport(Transport):
@@ -383,7 +364,7 @@ class AsyncVirtualServer(Server):
         # safely upcall it.
         # pylint: disable-msg=W0231
         self._scheme = scheme
-        self._is_set_up = False
+        self._is_started = False
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
@@ -412,14 +393,14 @@ class AsyncVirtualServer(Server):
         """Return the URL of this server."""
         return self._scheme
 
-    def setUp(self):
-        """See Server.setUp."""
+    def start_server(self):
+        """See Server.start_server."""
         register_transport(self.get_url(), self._transportFactory)
-        self._is_set_up = True
+        self._is_started = True
 
-    def tearDown(self):
-        """See Server.tearDown."""
-        if not self._is_set_up:
+    def stop_server(self):
+        """See Server.stop_server."""
+        if not self._is_started:
             return
-        self._is_set_up = False
+        self._is_started = False
         unregister_transport(self.get_url(), self._transportFactory)

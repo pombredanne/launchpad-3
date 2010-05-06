@@ -1,4 +1,3 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -36,7 +35,6 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
-from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -45,6 +43,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -61,6 +60,7 @@ from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
@@ -133,7 +133,8 @@ class LanguagePackEncountered(Exception):
 
 
 class PackageUpload(SQLBase):
-    """A Queue item for Lucille."""
+    """A Queue item for the archive uploader."""
+
     implements(IPackageUpload)
 
     _defaultOrder = ['id']
@@ -218,16 +219,76 @@ class PackageUpload(SQLBase):
             except QueueSourceAcceptError, info:
                 raise QueueInconsistentStateError(info)
 
-        for build in self.builds:
-            # as before, but for QueueBuildAcceptError
-            build.verifyBeforeAccept()
+        self._checkForBinariesinDestinationArchive(
+            [queue_build.build for queue_build in self.builds])
+        for queue_build in self.builds:
             try:
-                build.checkComponentAndSection()
+                queue_build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
         self.status = PassthroughStatusValue(PackageUploadStatus.ACCEPTED)
+
+    def _checkForBinariesinDestinationArchive(self, builds):
+        """
+        Check for existing binaries (in destination archive) for all binary
+        uploads to be accepted.
+
+        Before accepting binary uploads we check whether any of the binaries
+        already exists in the destination archive and raise an exception
+        (QueueInconsistentStateError) if this is the case.
+
+        The only way to find pre-existing binaries is to match on binary
+        package file names.
+        """
+        if len(builds) == 0:
+            return
+
+        # Collects the binary file names for all builds.
+        inner_query = """
+            SELECT DISTINCT lfa.filename
+            FROM
+                binarypackagefile bpf, binarypackagerelease bpr,
+                libraryfilealias lfa
+            WHERE
+                bpr.build IN %s
+                AND bpf.binarypackagerelease = bpr.id
+                AND bpf.libraryfile = lfa.id
+        """ % sqlvalues([build.id for build in builds])
+
+        # Check whether any of the binary file names have already been
+        # published in the destination archive.
+        query = """
+            SELECT DISTINCT lfa.filename
+            FROM
+                binarypackagefile bpf, binarypackagepublishinghistory bpph,
+                distroarchseries das, distroseries ds, libraryfilealias lfa
+            WHERE
+                bpph.archive = %s
+                AND bpph.distroarchseries = das.id
+                AND bpph.dateremoved IS NULL
+                AND das.distroseries = ds.id
+                AND ds.distribution = %s
+                AND bpph.binarypackagerelease = bpf.binarypackagerelease
+                AND bpf.libraryfile = lfa.id
+                AND lfa.filename IN (%%s)
+        """ % sqlvalues(self.archive, self.distroseries.distribution)
+        # Inject the inner query.
+        query %= inner_query
+
+        store = Store.of(self)
+        result_set = store.execute(query)
+        known_filenames = [row[0] for row in result_set.get_all()]
+
+        # Do any of the files to be uploaded already exist in the destination
+        # archive?
+        if len(known_filenames) > 0:
+            filename_list = "\n\t%s".join(
+                [filename for filename in known_filenames])
+            raise QueueInconsistentStateError(
+                'The following files are already published in %s:\n%s' % (
+                    self.archive.displayname, filename_list))
 
     def setDone(self):
         """See `IPackageUpload`."""
@@ -337,9 +398,12 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We explicitly allow unsigned uploads here since the .changes file
+        # is pulled from the librarian which are stripped of their
+        # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -370,9 +434,11 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         self.setRejected()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We allow unsigned uploads since they come from the librarian,
+        # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
     @property
@@ -552,6 +618,11 @@ class PackageUpload(SQLBase):
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
+                for custom_file in self.customfiles:
+                    update_files_privacy(custom_file)
+                    debug(logger,
+                          "Re-uploaded custom file %s to librarian" %
+                          custom_file.libraryfilealias.filename)
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
                     pas_verify = BuildDaemonPackagesArchSpecific(
                         config.builddmaster.root, self.distroseries)
@@ -634,11 +705,10 @@ class PackageUpload(SQLBase):
             unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
-        if self.isPPA():
-            # Leaving the PGP signature on a package uploaded to a PPA
-            # leaves the possibility of someone hijacking the notification
-            # and uploading to the Ubuntu archive as the signer.
-            changes_lines = self._stripPgpSignature(changes_lines)
+        # Leaving the PGP signature on a package uploaded
+        # leaves the possibility of someone hijacking the notification
+        # and uploading to any archive as the signer.
+        changes_lines = self._stripPgpSignature(changes_lines)
 
         return changes, changes_lines
 
@@ -1258,7 +1328,12 @@ class PackageUpload(SQLBase):
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
 
-        return self.sources.count() > 0
+        # We override our own archive too, as it is used to create
+        # the SPPH during publish().
+        self.archive = self.distroseries.distribution.getArchiveByComponent(
+            new_component.name)
+
+        return True
 
     def overrideBinaries(self, new_component, new_section, new_priority,
                          allowed_components):
@@ -1290,7 +1365,7 @@ class PackageUpload(SQLBase):
 
 
 class PackageUploadBuild(SQLBase):
-    """A Queue item's related builds (for Lucille)."""
+    """A Queue item's related builds."""
     implements(IPackageUploadBuild)
 
     _defaultOrder = ['id']
@@ -1300,7 +1375,7 @@ class PackageUploadBuild(SQLBase):
         foreignKey='PackageUpload'
         )
 
-    build = ForeignKey(dbName='build', foreignKey='Build')
+    build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
@@ -1334,31 +1409,6 @@ class PackageUploadBuild(SQLBase):
             # At this point (uploads are already processed) sections are
             # guaranteed to exist in the DB. We don't care if sections are
             # not official.
-
-    def verifyBeforeAccept(self):
-        """See `IPackageUploadBuild`."""
-        distribution = self.packageupload.distroseries.distribution
-        known_filenames = []
-        # Check if the uploaded binaries are already published in the archive.
-        for binary_package in self.build.binarypackages:
-            for binary_file in binary_package.files:
-                try:
-                    published_binary = distribution.getFileByName(
-                        binary_file.libraryfile.filename, source=False,
-                        archive=self.packageupload.archive)
-                except NotFoundError:
-                    # Only unknown files are ok.
-                    continue
-
-                known_filenames.append(binary_file.libraryfile.filename)
-
-        # If any of the uploaded files are already present we have a problem.
-        if len(known_filenames) > 0:
-            filename_list = "\n\t%s".join(
-                [filename for filename in known_filenames])
-            raise QueueInconsistentStateError(
-                'The following files are already published in %s:\n%s' % (
-                    self.packageupload.archive.displayname, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -1415,7 +1465,8 @@ class PackageUploadBuild(SQLBase):
 
 
 class PackageUploadSource(SQLBase):
-    """A Queue item's related sourcepackagereleases (for Lucille)."""
+    """A Queue item's related sourcepackagereleases."""
+
     implements(IPackageUploadSource)
 
     _defaultOrder = ['id']
@@ -1510,7 +1561,6 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
-        section = self.sourcepackagerelease.section
 
         if self.packageupload.is_delayed_copy:
             # For a delayed copy the component will not yet have
@@ -1540,11 +1590,12 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        debug(logger, "Publishing source %s/%s to %s/%s" % (
+        debug(logger, "Publishing source %s/%s to %s/%s in the %s archive" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
-            self.packageupload.distroseries.name))
+            self.packageupload.distroseries.name,
+            self.packageupload.archive.name))
 
         return getUtility(IPublishingSet).newSourcePublication(
             archive=self.packageupload.archive,
@@ -1655,9 +1706,11 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         sourcepackagerelease = self.packageupload.sourcepackagerelease
 
-        # Ignore translation coming from PPA.
-        if self.packageupload.isPPA():
-            debug(logger, "Skipping translations since it is a PPA.")
+        # Ignore translations not with main distribution purposes.
+        if self.packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+            debug(logger,
+                  "Skipping translations since its purpose is not "
+                  "in MAIN_ARCHIVE_PURPOSES.")
             return
 
         valid_pockets = (

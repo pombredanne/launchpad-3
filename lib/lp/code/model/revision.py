@@ -40,7 +40,7 @@ from lp.code.interfaces.revision import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -437,7 +437,7 @@ class RevisionSet:
 
     @staticmethod
     def _getPublicRevisionsHelper(obj, day_limit):
-        """Helper method for Products and Projects."""
+        """Helper method for Products and ProjectGroups."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.registry.model.product import Product
@@ -454,12 +454,12 @@ class RevisionSet:
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)
-        elif IProject.providedBy(obj):
+        elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
             conditions = And(conditions, Product.project == obj)
         else:
             raise AssertionError(
-                "obj parameter must be an IProduct or IProject: %r" % obj)
+                "Not an IProduct or IProjectGroup: %r" % obj)
 
         result_set = Store.of(obj).using(*origin).find(
             Revision, conditions)
@@ -472,7 +472,7 @@ class RevisionSet:
         return cls._getPublicRevisionsHelper(product, day_limit)
 
     @classmethod
-    def getPublicRevisionsForProject(cls, project, day_limit=30):
+    def getPublicRevisionsForProjectGroup(cls, project, day_limit=30):
         """See `IRevisionSet`."""
         return cls._getPublicRevisionsHelper(project, day_limit)
 

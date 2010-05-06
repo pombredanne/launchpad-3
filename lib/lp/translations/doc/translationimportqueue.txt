@@ -1043,6 +1043,9 @@ imports.
 An administrator deactivates Firefox, thinking that the project is being
 run in violation of Launchpad policies.
 
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> syncUpdate(firefox)
 
@@ -1461,6 +1464,7 @@ by name).
     debian/woody        Woody
     BLOCKED:
     ubuntu/grumpy       Grumpy
+    NEEDS_INFORMATION:
 
 You can also select by status.
 
@@ -1471,8 +1475,7 @@ You can also select by status.
 
 == cleanUpQueue ==
 
-The queue is cleaned up regularly.  This removes entries that are either
-DELETED or IMPORTED and get too old.
+The queue is cleaned up regularly.
 
 Here we start out with an empty queue.
 
@@ -1487,37 +1490,13 @@ nothing to purge, it returns zero.
     0
 
 
-=== Deleted Entries ===
+=== State and Age ===
 
-The user requests an upload, then marks the request as DELETED.
+Entries can be cleaned up because they have been in a specific state for
+at least a specified period of time.
 
-    >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
-    ...      productseries=evolution_productseries)
-    >>> entry.setStatus(RosettaImportStatus.DELETED, rosetta_experts)
-
-The entry stays on the queue long enough to make it a candidate for
-purging.
-
-    >>> now = datetime.datetime.now(UTC)
-    >>> stale = now - datetime.timedelta(4)
-    >>> entry.date_status_changed = stale
-    >>> flush_database_updates()
-    >>> print_queue_entries(translationimportqueue)
-    evolution   | None        | po/nl.po
-
-The entry is deleted as part of the next cleanup.
-
-    >>> translationimportqueue.cleanUpQueue()
-    1
-
-    >>> print_queue_entries(translationimportqueue)
-
-
-=== Imported Entries ===
-
-The user re-uploads the file after fixing some problem.  This time it is
-imported successfully, ending up in the IMPORTED state.
+For instance, successfully imported entries are cleaned up after a few
+days.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/nl.po', 'hoi', True, rosetta_experts,
@@ -1527,10 +1506,10 @@ imported successfully, ending up in the IMPORTED state.
     >>> print_queue_entries(translationimportqueue)
     evolution   | None        | po/nl.po
 
-This request, too, is deleted when left in this state for longer than a
-few days.
+Such requests are deleted after a few days.
 
-    >>> entry.date_status_changed = stale
+    >>> delta = datetime.timedelta(days=4)
+    >>> entry.date_status_changed = datetime.datetime.now(UTC) - delta
     >>> flush_database_updates()
     >>> translationimportqueue.cleanUpQueue()
     1
@@ -1539,6 +1518,9 @@ few days.
 
 
 === Deactivated Products ===
+
+Another reason for deleting entries is that they belong to products that
+have been deactivated.
 
 A user sets up Jokosher for translation, and uploads a template.
 

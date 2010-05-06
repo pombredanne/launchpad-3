@@ -8,12 +8,11 @@ import socket
 import sys
 import urllib2
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BzrBranchFormat4
 from bzrlib.bzrdir import BzrDir
 from bzrlib import errors
-from bzrlib.plugins.loom.branch import LoomSupport
-from bzrlib.transport import get_transport
-from bzrlib import urlutils
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 from bzrlib.ui import SilentUIFactory
 import bzrlib.ui
 
@@ -24,6 +23,7 @@ from lp.codehosting.bzrutils import identical_formats
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.vfs.branchfs import (
     BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, make_branch_mirrorer)
+from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import BranchType
 from lazr.uri import InvalidURIError
 
@@ -36,7 +36,6 @@ __all__ = [
     'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol',
-    'StackedOnBranchNotFound',
     ]
 
 
@@ -53,10 +52,6 @@ class BranchLoopError(Exception):
     In either case, it's possible for there to be a cycle in these references,
     and this exception is raised when we detect such a cycle.
     """
-
-
-class StackedOnBranchNotFound(Exception):
-    """Couldn't find the stacked-on branch."""
 
 
 def get_canonical_url_for_branch_name(unique_name):
@@ -77,7 +72,7 @@ class PullerWorkerProtocol:
     """The protocol used to communicate with the puller scheduler.
 
     This protocol notifies the scheduler of events such as startMirroring,
-    mirrorSucceeded and mirrorFailed.
+    branchChanged and mirrorFailed.
     """
 
     def __init__(self, output):
@@ -92,19 +87,14 @@ class PullerWorkerProtocol:
         for argument in args:
             self.sendNetstring(str(argument))
 
-    def setStackedOn(self, stacked_on_location):
-        self.sendEvent('setStackedOn', stacked_on_location)
-
     def startMirroring(self):
         self.sendEvent('startMirroring')
 
-    def mirrorDeferred(self):
-        # Called when we want to try mirroring again later without indicating
-        # success or failure.
-        self.sendEvent('mirrorDeferred')
-
-    def mirrorSucceeded(self, revid_before, revid_after):
-        self.sendEvent('mirrorSucceeded', revid_before, revid_after)
+    def branchChanged(self, stacked_on_url, revid_before, revid_after,
+                      control_string, branch_string, repository_string):
+        self.sendEvent(
+            'branchChanged', stacked_on_url, revid_before, revid_after,
+            control_string, branch_string, repository_string)
 
     def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
@@ -227,41 +217,14 @@ class BranchMirrorer(object):
         'source_branch'. Any content already at 'destination_url' will be
         deleted.
 
-        If 'source_branch' is stacked, then the destination branch will be
-        stacked on the same URL, relative to 'destination_url'.
-
         :param source_branch: The Bazaar branch that will be mirrored.
         :param destination_url: The place to make the destination branch. This
             URL must point to a writable location.
         :return: The destination branch.
         """
-        dest_transport = get_transport(destination_url)
-        if dest_transport.has('.'):
-            dest_transport.delete_tree('.')
-        bzrdir = source_branch.bzrdir
-        # We check to see if the stacked on branch exists in the mirrored area
-        # so that we can nicely signal to the scheduler that the pulling of
-        # this branch should be deferred before we even create the branch in
-        # the mirrored area.
-        stacked_on_url = (
-            self.policy.getStackedOnURLForDestinationBranch(
-                source_branch, destination_url))
-        if stacked_on_url is not None:
-            stacked_on_url = urlutils.join(destination_url, stacked_on_url)
-            try:
-                Branch.open(stacked_on_url)
-            except errors.NotBranchError:
-                raise StackedOnBranchNotFound()
-        if isinstance(source_branch, LoomSupport):
-            # Looms suck.
-            revision_id = None
-        else:
-            revision_id = 'null:'
-        self._runWithTransformFallbackLocationHookInstalled(
-            bzrdir.clone_on_transport, dest_transport,
-            revision_id=revision_id)
-        branch = Branch.open(destination_url)
-        return branch
+        return self._runWithTransformFallbackLocationHookInstalled(
+            self.policy.createDestinationBranch, source_branch,
+            destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
         """Open or create the destination branch at 'destination_url'.
@@ -269,9 +232,7 @@ class BranchMirrorer(object):
         :param source_branch: The Bazaar branch that will be mirrored.
         :param destination_url: The place to make the destination branch. This
             URL must point to a writable location.
-        :return: (branch, up_to_date), where 'branch' is the destination
-            branch, and 'up_to_date' is a boolean saying whether the returned
-            branch is up-to-date with the source branch.
+        :return: The opened or created branch.
         """
         try:
             branch = Branch.open(destination_url)
@@ -302,29 +263,26 @@ class BranchMirrorer(object):
                 errors.UnstackableBranchFormat,
                 errors.IncompatibleRepositories):
             stacked_on_url = None
-        except errors.NotBranchError:
-            raise StackedOnBranchNotFound()
         if stacked_on_url is None:
             # We use stacked_on_url == '' to mean "no stacked on location"
             # because XML-RPC doesn't support None.
             stacked_on_url = ''
-        if self.protocol is not None:
-            self.protocol.setStackedOn(stacked_on_url)
         dest_branch.pull(source_branch, overwrite=True)
+        return stacked_on_url
 
     def mirror(self, source_branch, destination_url):
         """Mirror 'source_branch' to 'destination_url'."""
         branch = self.openDestinationBranch(source_branch, destination_url)
+        revid_before = branch.last_revision()
         # If the branch is locked, try to break it. Our special UI factory
         # will allow the breaking of locks that look like they were left
         # over from previous puller worker runs. We will block on other
         # locks and fail if they are not broken before the timeout expires
         # (currently 5 minutes).
-        revid_before = branch.last_revision()
         if branch.get_physical_lock_status():
             branch.break_lock()
-        self.updateBranch(source_branch, branch)
-        return branch, revid_before
+        stacked_on_url = self.updateBranch(source_branch, branch)
+        return branch, revid_before, stacked_on_url
 
 
 class PullerWorker:
@@ -416,15 +374,15 @@ class PullerWorker:
             *before* the mirroring process ran.
         """
         # Avoid circular import
-        from lp.codehosting.vfs import get_puller_server
+        from lp.codehosting.vfs import get_rw_server
 
-        server = get_puller_server()
-        server.setUp()
+        server = get_rw_server()
+        server.start_server()
         try:
             source_branch = self.branch_mirrorer.open(self.source)
             return self.branch_mirrorer.mirror(source_branch, self.dest)
         finally:
-            server.tearDown()
+            server.stop_server()
 
     def mirror(self):
         """Open source and destination branches and pull source into
@@ -432,7 +390,8 @@ class PullerWorker:
         """
         self.protocol.startMirroring()
         try:
-            dest_branch, revid_before = self.mirrorWithoutChecks()
+            dest_branch, revid_before, stacked_on_url = \
+                self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
@@ -495,16 +454,32 @@ class PullerWorker:
         except InvalidURIError, e:
             self._mirrorFailed(e)
 
-        except StackedOnBranchNotFound:
-            self.protocol.mirrorDeferred()
-
         except (KeyboardInterrupt, SystemExit):
             # Do not record OOPS for those exceptions.
             raise
 
         else:
             revid_after = dest_branch.last_revision()
-            self.protocol.mirrorSucceeded(revid_before, revid_after)
+            # XXX: Aaron Bentley 2008-06-13
+            # Bazaar does not provide a public API for learning about
+            # format markers.  Fix this in Bazaar, then here.
+            control_string = dest_branch.bzrdir._format.get_format_string()
+            if dest_branch._format.__class__ is BzrBranchFormat4:
+                branch_string = BranchFormat.BZR_BRANCH_4.title
+            else:
+                branch_string = dest_branch._format.get_format_string()
+            repository_format = dest_branch.repository._format
+            if repository_format.__class__ is RepositoryFormat6:
+                repository_string = RepositoryFormat.BZR_REPOSITORY_6.title
+            elif repository_format.__class__ is RepositoryFormat5:
+                repository_string = RepositoryFormat.BZR_REPOSITORY_5.title
+            elif repository_format.__class__ is RepositoryFormat4:
+                repository_string = RepositoryFormat.BZR_REPOSITORY_4.title
+            else:
+                repository_string = repository_format.get_format_string()
+            self.protocol.branchChanged(
+                stacked_on_url, revid_before, revid_after, control_string,
+                branch_string, repository_string)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest

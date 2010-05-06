@@ -100,13 +100,19 @@ def bugtask_modified(bugtask, event):
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
         BugTaskStatus.INVALID: 'bugrejected',
-        BugTaskStatus.CONFIRMED: 'bugaccepted'}
+        BugTaskStatus.CONFIRMED: 'bugaccepted',
+        BugTaskStatus.TRIAGED: 'bugaccepted',
+        }
 
     if task_delta.status:
         new_status = task_delta.status['new']
         actionname = actionname_status_mapping.get(new_status)
         if actionname is not None:
-            _assign_karma_using_bugtask_context(user, bugtask, actionname)
+            if actionname == 'bugfixed' and bugtask.assignee is not None:
+                _assign_karma_using_bugtask_context(
+                    bugtask.assignee, bugtask, actionname)
+            else:
+                _assign_karma_using_bugtask_context(user, bugtask, actionname)
 
     if task_delta.importance is not None:
         _assign_karma_using_bugtask_context(

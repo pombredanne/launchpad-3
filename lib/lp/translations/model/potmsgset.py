@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -15,6 +15,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from storm.expr import SQL
 from storm.store import EmptyResultSet, Store
 
 from canonical.config import config
@@ -25,6 +26,9 @@ from canonical.launchpad.helpers import shortlist
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
@@ -322,6 +326,9 @@ class POTMsgSet(SQLBase):
 
         A message is used if it's either imported or current, and unused
         otherwise.
+
+        Suggestions are read-only, so these objects come from the slave
+        store.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -385,7 +392,9 @@ class POTMsgSet(SQLBase):
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = TranslationMessage.select('id IN (%s)' % ids_query)
+        result = ISlaveStore(TranslationMessage).find(
+            TranslationMessage,
+            TranslationMessage.id.is_in(SQL(ids_query)))
 
         return shortlist(result, longest_expected=100, hardlimit=2000)
 
@@ -713,14 +722,20 @@ class POTMsgSet(SQLBase):
         is_editor = (force_edition_rights or
                      pofile.canEditTranslations(submitter))
 
-        assert (is_imported or is_editor or
-                pofile.canAddSuggestions(submitter)), (
-                  '%s cannot add translations nor can add suggestions' % (
-                    submitter.displayname))
+        if is_read_only():
+            # This can happen if the request was just in time to slip
+            # past the read-only check before the gate closed.  If it
+            # does, that screws up the privileges checks below since
+            # nobody has translation privileges in read-only mode.
+            raise UnexpectedFormData(
+                "Sorry, Launchpad is in read-only mode right now.")
 
         if is_imported and not is_editor:
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
+
+        assert is_editor or pofile.canAddSuggestions(submitter), (
+            '%s cannot add suggestions here.' % submitter.displayname)
 
         # If not an editor, default to submitting a suggestion only.
         just_a_suggestion = not is_editor
@@ -868,6 +883,24 @@ class POTMsgSet(SQLBase):
         matching_message.sync()
         return matching_message
 
+    def _maybeRaiseTranslationConflict(self, message, lock_timestamp):
+        """Checks if there is a translation conflict for the message.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+        if message.date_reviewed is not None:
+            use_date = message.date_reviewed
+        else:
+            use_date = message.date_created
+        if use_date >= lock_timestamp:
+            raise TranslationConflict(
+                'While you were reviewing these suggestions, somebody '
+                'else changed the actual translation. This is not an '
+                'error but you might want to re-review the strings '
+                'concerned.')
+        else:
+            return
+
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
@@ -878,19 +911,29 @@ class POTMsgSet(SQLBase):
             current = self.updateTranslation(
                 pofile, reviewer, [], False, lock_timestamp)
         else:
-            if current.date_reviewed is not None:
-                use_date = current.date_reviewed
-            else:
-                use_date = current.date_created
-            if use_date >= lock_timestamp:
-                raise TranslationConflict(
-                    'While you were reviewing these suggestions, somebody '
-                    'else changed the actual translation. This is not an '
-                    'error but you might want to re-review the strings '
-                    'concerned.')
-            else:
-                current.reviewer = reviewer
-                current.date_reviewed = lock_timestamp
+            # Check for translation conflicts and update review fields.
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
+            current.reviewer = reviewer
+            current.date_reviewed = lock_timestamp
+
+    def resetCurrentTranslation(self, pofile, lock_timestamp):
+        """See `IPOTMsgSet`."""
+
+        assert(lock_timestamp is not None)
+
+        current = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language)
+
+        if (current is not None):
+            # Check for transltion conflicts and update the required
+            # attributes.
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
+            current.is_current = False
+            # Converge the current translation only if it is diverged and not
+            # imported.
+            if current.potemplate is not None and not current.is_imported:
+                current.potemplate = None
+            pofile.date_changed = UTC_NOW
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""

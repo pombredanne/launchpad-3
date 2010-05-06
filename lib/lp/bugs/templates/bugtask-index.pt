@@ -38,10 +38,10 @@
       </tal:devmode>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
-                  'code.branchmergeproposal.popupdiff', function(Y) {
+                  'lp.code.branchmergeproposal.diff', function(Y) {
             Y.bugs.setup_bugtask_index();
             Y.on('load', function(e) {
-              Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
         });
       </script>
@@ -53,6 +53,7 @@
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
         .bug-branch-summary dd { font-size: 85% }
+        a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
     </metal:block>
 
@@ -73,6 +74,7 @@
       <span
         tal:attributes="title context/bug/datecreated/fmt:datetime"
         tal:content="context/bug/datecreated/fmt:displaydate" />
+      <tal:heat replace="structure view/bug_heat_html" />
     </tal:registering>
 
     <metal:heading fill-slot="heading" tal:define="context_menu context/menu:context">
@@ -183,6 +185,7 @@
                       id="edit-tags-cancel" style="display: none"
                       type="button">Cancel</button>
            </form>
+           <a href="/+help/tag-help.html" target="help" class="icon"><img src="/@@/maybe" alt="help" /></a>
           </div>
           <div id="add-bug-tags"
                tal:attributes="class python: ('tags-container ' +
@@ -191,6 +194,7 @@
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
+            <a href="/+help/tag-help.html" target="help" class="icon"><img src="/@@/maybe" alt="help" /></a>
           </div>
 
         <div class="clearfix"></div>

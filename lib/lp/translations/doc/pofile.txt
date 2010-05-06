@@ -434,7 +434,7 @@ breakage.
     ...     pofile_es, no_priv, [u'foo'], is_imported, lock_timestamp)
     Traceback (most recent call last):
     ...
-    AssertionError: No Privileges Person cannot add translations nor can...
+    AssertionError: No Privileges Person cannot add suggestions here.
 
 
 Now, we get an IPOFile that does not have a translation team assigned.

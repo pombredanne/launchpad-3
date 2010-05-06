@@ -22,13 +22,16 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -54,9 +57,10 @@ from lp.translations.model.customlanguagecode import (
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
-                                HasBranchesMixin, 
+                                HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
-                                HasMergeProposalsMixin):
+                                HasMergeProposalsMixin,
+                                HasBugHeatMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -65,7 +69,8 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
+        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
+        IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -142,6 +147,26 @@ class DistributionSourcePackage(BugTargetBase,
         _get_bug_reporting_guidelines,
         _set_bug_reporting_guidelines)
 
+    def _get_max_bug_heat(self):
+        """See `IHasBugs`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            return None
+        else:
+            return dsp_in_db.max_bug_heat
+
+    def _set_max_bug_heat(self, value):
+        """See `IHasBugs`."""
+        dsp_in_db = self._self_in_database
+        if dsp_in_db is None:
+            dsp_in_db = DistributionSourcePackageInDatabase()
+            dsp_in_db.sourcepackagename = self.sourcepackagename
+            dsp_in_db.distribution = self.distribution
+            Store.of(self.distribution).add(dsp_in_db)
+        dsp_in_db.max_bug_heat = value
+
+    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
+
     @property
     def latest_overall_publication(self):
         """See `IDistributionSourcePackage`."""
@@ -167,7 +192,7 @@ class DistributionSourcePackage(BugTargetBase,
                           PackagePublishingStatus.PUBLISHED,
                           PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease", 
+                          "SourcePackageRelease",
                           "DistroSeries"],
             orderBy=["status",
                      SQLConstant(
@@ -263,6 +288,7 @@ class DistributionSourcePackage(BugTargetBase,
         results = store.find(
             Archive,
             Archive.distribution == self.distribution,
+            Archive._enabled == True,
             Archive.private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
@@ -294,11 +320,18 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def upstream_product(self):
-        for distroseries in self.distribution.series:
-            source_package = distroseries.getSourcePackage(
-                self.sourcepackagename)
-            if source_package.direct_packaging is not None:
-                return source_package.direct_packaging.productseries.product
+        store = Store.of(self.sourcepackagename)
+        condition = And(
+            Packaging.sourcepackagename == self.sourcepackagename,
+            Packaging.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution
+            )
+        result = store.find(Packaging, condition)
+        result.order_by("debversion_sort_key(version) DESC")
+        if result.count() == 0:
+            return None
+        else:
+            return result[0].productseries.product
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
@@ -331,8 +364,6 @@ class DistributionSourcePackage(BugTargetBase,
 
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
-        # Local import of DistroSeries to avoid import loop.
-        from lp.registry.model.distroseries import DistroSeries
         store = Store.of(self.distribution)
         result = store.find(
             (SourcePackageRelease, SourcePackagePublishingHistory),
@@ -474,3 +505,6 @@ class DistributionSourcePackageInDatabase(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     bug_reporting_guidelines = Unicode()
+
+    max_bug_heat = Int()
+

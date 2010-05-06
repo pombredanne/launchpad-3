@@ -11,6 +11,8 @@ import os
 import unittest
 import xmlrpclib
 
+from bzrlib import urlutils
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -19,8 +21,12 @@ from lp.code.enums import BranchType
 from lp.testing import TestCaseWithFactory
 from lazr.uri import URI
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
+from lp.services.xmlrpc import LaunchpadFault
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing import DatabaseFunctionalLayer
+
+
+NON_ASCII_NAME = u'nam\N{LATIN SMALL LETTER E WITH ACUTE}'
 
 
 class TestExpandURL(TestCaseWithFactory):
@@ -54,12 +60,10 @@ class TestExpandURL(TestCaseWithFactory):
         return branch
 
     def assertResolves(self, lp_url_path, unique_name):
-        """Assert that the given lp URL path expands to the unique name of
-        'branch'.
-        """
+        """Assert that `lp_url_path` path expands to `unique_name`."""
         results = self.api.resolve_lp_path(lp_url_path)
         # This improves the error message if results happens to be a fault.
-        if isinstance(results, faults.LaunchpadFault):
+        if isinstance(results, LaunchpadFault):
             raise results
         for url in results['urls']:
             self.assertEqual('/' + unique_name, URI(url).path)
@@ -73,6 +77,7 @@ class TestExpandURL(TestCaseWithFactory):
             % (lp_url_path, fault))
         self.assertEqual(expected_fault.__class__, fault.__class__)
         self.assertEqual(expected_fault.faultString, fault.faultString)
+        return fault
 
     def test_resultDict(self):
         # A given lp url path maps to a single branch available from a number
@@ -110,7 +115,7 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertResolves(
             self.product.name, trunk_series.branch.unique_name)
 
-    def test_productDoesntExist(self):
+    def test_product_doesnt_exist(self):
         # Return a NoSuchProduct fault if the product doesn't exist.
         self.assertFault(
             'doesntexist', faults.NoSuchProduct('doesntexist'))
@@ -121,8 +126,9 @@ class TestExpandURL(TestCaseWithFactory):
         # Resolving lp:///project_group_name' should explain that project
         # groups don't have default branches.
         project_group = self.factory.makeProject()
-        self.assertFault(
+        fault = self.assertFault(
             project_group.name, faults.CannotHaveLinkedBranch(project_group))
+        self.assertIn('project group', fault.faultString)
 
     def test_distro_name(self):
         # Resolving lp:///distro_name' should explain that distributions don't
@@ -141,10 +147,18 @@ class TestExpandURL(TestCaseWithFactory):
     def test_invalid_product_name(self):
         # If we get a string that cannot be a name for a product where we
         # expect the name of a product, we should error appropriately.
-        invalid_name = '+' + self.factory.getUniqueString()
+        invalid_name = '_' + self.factory.getUniqueString()
         self.assertFault(
             invalid_name,
             faults.InvalidProductIdentifier(invalid_name))
+
+    def test_invalid_product_name_non_ascii(self):
+        # lp:<non-ascii-string> returns InvalidProductIdentifier with the name
+        # escaped.
+        invalid_name = '_' + NON_ASCII_NAME
+        self.assertFault(
+            invalid_name,
+            faults.InvalidProductIdentifier(urlutils.escape(invalid_name)))
 
     def test_product_and_series(self):
         # lp:product/series expands to the branch associated with the product
@@ -184,6 +198,14 @@ class TestExpandURL(TestCaseWithFactory):
             '%s/%s' % (self.product.name, "doesntexist"),
             faults.NoSuchProductSeries("doesntexist", self.product))
 
+    def test_no_such_product_series_non_ascii(self):
+        # lp:product/<non-ascii-string> returns NoSuchProductSeries with the
+        # name escaped.
+        self.assertFault(
+            '%s/%s' % (self.product.name, NON_ASCII_NAME),
+            faults.NoSuchProductSeries(
+                urlutils.escape(NON_ASCII_NAME), self.product))
+
     def test_no_such_distro_series(self):
         # Return a NoSuchDistroSeries fault if there is no series of the given
         # name on that distribution.
@@ -191,6 +213,14 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             '%s/doesntexist/whocares' % distro.name,
             faults.NoSuchDistroSeries("doesntexist"))
+
+    def test_no_such_distro_series_non_ascii(self):
+        # lp:distro/<non-ascii-string>/whatever returns NoSuchDistroSeries
+        # with the name escaped.
+        distro = self.factory.makeDistribution()
+        self.assertFault(
+            '%s/%s/whocares' % (distro.name, NON_ASCII_NAME),
+            faults.NoSuchDistroSeries(urlutils.escape(NON_ASCII_NAME)))
 
     def test_no_such_source_package(self):
         # Return a NoSuchSourcePackageName fault if there is no source package
@@ -200,6 +230,16 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             '%s/%s/doesntexist' % (distribution.name, distroseries.name),
             faults.NoSuchSourcePackageName('doesntexist'))
+
+    def test_no_such_source_package_non_ascii(self):
+        # lp:distro/series/<non-ascii-name> returns NoSuchSourcePackageName
+        # with the name escaped.
+        distroseries = self.factory.makeDistroRelease()
+        distribution = distroseries.distribution
+        self.assertFault(
+            '%s/%s/%s' % (
+                distribution.name, distroseries.name, NON_ASCII_NAME),
+            faults.NoSuchSourcePackageName(urlutils.escape(NON_ASCII_NAME)))
 
     def test_no_linked_branch_for_source_package(self):
         # Return a NoLinkedBranch fault if there's no linked branch for the
@@ -234,13 +274,23 @@ class TestExpandURL(TestCaseWithFactory):
             owner.name, self.product.name)
         self.assertResolves(nonexistent_branch, nonexistent_branch)
 
+    def test_no_such_branch_product_non_ascii(self):
+        # A path to a branch that contains non ascii characters will never
+        # find a branch, but it still resolves rather than erroring.
+        owner = self.factory.makePerson()
+        nonexistent_branch = u'~%s/%s/%s' % (
+            owner.name, self.product.name, NON_ASCII_NAME)
+        self.assertResolves(
+            nonexistent_branch, urlutils.escape(nonexistent_branch))
+
     def test_no_such_branch_personal(self):
         # Resolve paths to junk branches.
         # This test added to make sure we don't raise a fault when looking for
         # the '+junk' project, which doesn't actually exist.
         owner = self.factory.makePerson()
         nonexistent_branch = '~%s/+junk/doesntexist' % owner.name
-        self.assertResolves(nonexistent_branch, nonexistent_branch)
+        self.assertResolves(
+            nonexistent_branch, urlutils.escape(nonexistent_branch))
 
     def test_no_such_branch_package(self):
         # Resolve paths to package branches even if there's no branch of that
@@ -268,6 +318,16 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             nonexistent_owner_branch,
             faults.NoSuchPersonWithName('doesntexist'))
+
+    def test_resolve_branch_with_no_such_owner_non_ascii(self):
+        # lp:~<non-ascii-string>/product/name returns NoSuchPersonWithName
+        # with the name escaped.
+        nonexistent_owner_branch = u"~%s/%s/%s" % (
+            NON_ASCII_NAME, self.factory.getUniqueString(),
+            self.factory.getUniqueString())
+        self.assertFault(
+            nonexistent_owner_branch,
+            faults.NoSuchPersonWithName(urlutils.escape(NON_ASCII_NAME)))
 
     def test_too_many_segments(self):
         # If we have more segments than are necessary to refer to a branch,

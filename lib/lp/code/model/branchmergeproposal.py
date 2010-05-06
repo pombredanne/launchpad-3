@@ -114,6 +114,8 @@ class BranchMergeProposal(SQLBase):
     prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
+    description = StringCol(default=None)
+
     whiteboard = StringCol(default=None)
 
     queue_status = EnumCol(
@@ -139,21 +141,18 @@ class BranchMergeProposal(SQLBase):
     def next_preview_diff_job(self):
         # circular dependencies
         from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob, MergeProposalCreatedJob,
-            UpdatePreviewDiffJob)
-        job_classes = [MergeProposalCreatedJob, UpdatePreviewDiffJob]
-        type_classes = dict(
-            (job_class.class_job_type, job_class)
-            for job_class in job_classes)
+            BranchMergeProposalJob, BranchMergeProposalJobFactory,
+            BranchMergeProposalJobType)
         job = Store.of(self).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type.is_in(type_classes.keys()),
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF,
             BranchMergeProposalJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
             ).order_by(Job.scheduled_start, Job.date_created).first()
         if job is not None:
-            return type_classes[job.job_type](job)
+            return BranchMergeProposalJobFactory.create(job)
         else:
             return None
 
@@ -206,17 +205,6 @@ class BranchMergeProposal(SQLBase):
     def target(self):
         """See `IHasBranchTarget`."""
         return self.source_branch.target
-
-    @property
-    def root_comment(self):
-        return CodeReviewComment.selectOne("""
-            CodeReviewMessage.id in (
-                SELECT CodeReviewMessage.id
-                    FROM CodeReviewMessage, Message
-                    WHERE CodeReviewMessage.branch_merge_proposal = %d AND
-                          CodeReviewMessage.message = Message.id
-                    ORDER BY Message.datecreated LIMIT 1)
-            """ % self.id)
 
     root_message_id = StringCol(default=None)
 
@@ -289,10 +277,10 @@ class BranchMergeProposal(SQLBase):
         # aleady.
         for review in self.votes:
             reviewer = review.reviewer
-            if not reviewer.is_team:
-                recipients[reviewer] = RecipientReason.forReviewer(
-                    review, reviewer,
-                    branch_identity_cache=branch_identity_cache)
+            pending = review.comment is None
+            recipients[reviewer] = RecipientReason.forReviewer(
+                self, pending, reviewer,
+                branch_identity_cache=branch_identity_cache)
         # If the registrant of the proposal is getting emails, update the
         # rationale to say that they registered it.  Don't however send them
         # emails if they aren't asking for any.
@@ -340,8 +328,6 @@ class BranchMergeProposal(SQLBase):
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
-        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
             # Other half of the edge case.  If the status is currently queued,
             # we need to dequeue, otherwise we just approve the branch.
@@ -378,6 +364,11 @@ class BranchMergeProposal(SQLBase):
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
+            # Clear out any reviewed or queued values.
+            self.reviewer = None
+            self.reviewed_revision_id = None
+            self.queuer = None
+            self.queued_revision_id = None
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -517,7 +508,7 @@ class BranchMergeProposal(SQLBase):
             registrant=registrant,
             target_branch=self.target_branch,
             prerequisite_branch=self.prerequisite_branch,
-            whiteboard=self.whiteboard,
+            description=self.description,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
@@ -625,7 +616,7 @@ class BranchMergeProposal(SQLBase):
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
-        chunk = MessageChunk(message=message, content=content, sequence=1)
+        MessageChunk(message=message, content=content, sequence=1)
         return self.createCommentFromMessage(
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
