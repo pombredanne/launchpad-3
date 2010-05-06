@@ -1152,7 +1152,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
-                     owner=None):
+                     owner=None, bug_task=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -1160,7 +1160,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        if bug is None:
+        if bug_task is not None:
+            # If someone passes a value for bug *and* a value for
+            # bug_task then the bug value will get clobbered, but that
+            # doesn't matter since the bug should be the one that the
+            # bug task belongs to anyway (unless they're having a crazy
+            # moment, in which case we're saving them from themselves).
+            bug = bug_task.bug
+        elif bug is None:
             bug = self.makeBug()
 
         if owner is None:
@@ -1168,6 +1175,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
+        bug_task.bugwatch = bug_watch
 
         # You need to be an admin to set next_check on a BugWatch.
         def set_next_check(bug_watch):
