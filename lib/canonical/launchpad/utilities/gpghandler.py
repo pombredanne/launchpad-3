@@ -283,7 +283,8 @@ class GPGHandler:
         assert key.exists_in_local_keyring
         return key
 
-    def _generateKeyFingerprint(self, name):
+    def generateKey(self, name):
+        """See `IGPGHandler`."""
         context = gpgme.Context()
 
         # Make sure that gpg-agent doesn't interfere.
@@ -302,20 +303,15 @@ class GPGHandler:
         assert result.primary, 'Secret key generation failed.'
         assert not result.sub, (
             'Only sign-only RSA keys are safe to be generated')
-        return result.fpr
 
-    def generateKey(self, name):
-        """See `IGPGHandler`."""
-        fingerprint = self._generateKeyFingerprint(name)
-
-        secret_keys = list(self.localKeys(fingerprint, secret=True))
+        secret_keys = list(self.localKeys(result.fpr, secret=True))
 
         assert len(secret_keys) == 1, 'Found %d secret GPG keys for %s' % (
-            len(secret_keys), fingerprint)
+            len(secret_keys), result.fpr)
 
         key = secret_keys[0]
 
-        assert key.fingerprint == fingerprint, (
+        assert key.fingerprint == result.fpr, (
             'The key in the local keyring does not match the one generated.')
         assert key.exists_in_local_keyring, (
             'The key does not seem to exist in the local keyring.')
