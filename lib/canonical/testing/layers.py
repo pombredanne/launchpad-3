@@ -1936,8 +1936,9 @@ class BaseWindmillLayer(AppServerLayer):
         # Add a new log handler to capture all of the windmill testrunner
         # output. This overrides windmill's own log handling, which we do not
         # have direct access to.
-        # We'll overwrite the previous log contents to keep the disk usage low,
-        # and because the contents are only meant as an in-situ debugging aid.
+        # We'll overwrite the previous log contents to keep the disk usage
+        # low, and because the contents are only meant as an in-situ debugging
+        # aid.
         filehandler = logging.FileHandler(config.windmill.debug_log, mode='w')
         filehandler.setLevel(logging.NOTSET)
         filehandler.setFormatter(
@@ -1954,9 +1955,9 @@ class BaseWindmillLayer(AppServerLayer):
     @classmethod
     def _configureWindmillStartup(cls):
         """Pass our startup parameters to the windmill server."""
-        # Windmill needs a config file on disk to load its settings from.  There
-        # is no way to directly pass settings to the windmill test driver from
-        # out here.
+        # Windmill needs a config file on disk to load its settings from.
+        # There is no way to directly pass settings to the windmill test
+        # driver from out here.
         config_text = dedent("""\
             START_FIREFOX = True
             TEST_URL = '%s'
