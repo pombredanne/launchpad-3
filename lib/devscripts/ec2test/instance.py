@@ -49,7 +49,7 @@ def get_user_key():
     if len(keys) == 0:
         raise BzrCommandError(
             'You must have an ssh agent running with keys installed that '
-            'will allow the script to rsync to devpad and get your '
+            'will allow the script to access Launchpad and get your '
             'branch.\n')
 
     # XXX mars 2010-05-07 bug=577118
