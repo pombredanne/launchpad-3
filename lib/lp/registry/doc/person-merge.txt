@@ -187,7 +187,7 @@ A merged person gets a -merged suffix on its name.
     u'name12'
 
 The person that has been merged is flagged. We can use this to eliminate
-merged person from lists etc.
+merged persons from lists etc.
 
     >>> results = store.execute(
     ...     "SELECT merged FROM Person WHERE name='marilize-merged'")

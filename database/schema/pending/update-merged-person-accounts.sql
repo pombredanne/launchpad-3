@@ -3,15 +3,15 @@
 
 SET client_min_messages=ERROR;
 
-SELECT 
-    Account.displayname,
-    Account.openid_identifier,
-    'merged-' || Account.openid_identifier
-FROM Account
-    JOIN Person ON Account.id = Person.account
-WHERE
-    Person.merged IS NOT NULL
-;
+--SELECT 
+--    Account.displayname,
+--    Account.openid_identifier,
+--    'merged-' || Account.openid_identifier
+--FROM Account
+--    JOIN Person ON Account.id = Person.account
+--WHERE
+--    Person.merged IS NOT NULL
+--;
 
 -- Change the openid_identifier of merged Persons to prevent the merged
 -- person from being selected during login.
