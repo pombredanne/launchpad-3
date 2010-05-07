@@ -246,7 +246,6 @@
                     requestReview
                     approveBranch
                     rejectBranch
-                    mergeFailed
                     markAsMerged
                     resubmit
                     enqueue
