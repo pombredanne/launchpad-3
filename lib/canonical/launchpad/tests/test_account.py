@@ -8,6 +8,23 @@ from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 
+class TestAccount(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_account_repr_ansii(self):
+        # Verify that ANSI displayname is ascii safe.
+        distro = self.factory.makeAccount(u'\xdc-account')
+        ignore, displayname, status_1, status_2 = repr(distro).rsplit(' ', 3)
+        self.assertEqual("'\\xdc-account'", displayname)
+        self.assertEqual('(Active account)>', '%s %s' % (status_1, status_2))
+
+    def test_account_repr_unicode(self):
+        # Verify that Unicode displayname is ascii safe.
+        distro = self.factory.makeAccount(u'\u0170-account')
+        ignore, displayname, status_1, status_2 = repr(distro).rsplit(' ', 3)
+        self.assertEqual("'\\u0170-account'", displayname)
+
 
 class TestPersonlessAccountPermissions(TestCaseWithFactory):
     """In order for Person-less accounts to see their non-public details and
