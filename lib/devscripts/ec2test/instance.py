@@ -55,7 +55,7 @@ def get_user_key():
     # XXX mars bug=577118
     # Popping the first key off of the stack can create problems if the person
     # has more than one key in their ssh-agent, but alas, we have no good way
-    # to detect the right key to use.
+    # to detect the right key to use.  See bug 577118 for a workaround.
     user_key = agent.get_keys()[0]
     return user_key
 
