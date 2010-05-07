@@ -439,11 +439,12 @@ class TestPerson(TestCaseWithFactory):
         # Verify that ANSI displayname is ascii safe.
         person = self.factory.makePerson(
             name="user", displayname=u'\xdc-tester')
-        ignore, displayname = repr(person).rsplit(' ', 1)
+        ignore, name, displayname = repr(person).rsplit(' ', 2)
+        self.assertEqual('user', name)
         self.assertEqual('(\\xdc-tester)>', displayname)
 
     def test_person_repr_unicode(self):
-        # Verify that unicode displayname is ascii safe.
+        # Verify that Unicode displayname is ascii safe.
         person = self.factory.makePerson(
             name="user", displayname=u'\u0170-tester')
         ignore, displayname = repr(person).rsplit(' ', 1)

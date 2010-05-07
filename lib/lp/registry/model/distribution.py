@@ -185,8 +185,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     max_bug_heat = Int()
 
     def __repr__(self):
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, self.displayname, self.name)
+            self.__class__.__name__, displayname, self.name)
 
     def _init(self, *args, **kw):
         """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
