@@ -51,6 +51,11 @@ def get_user_key():
             'You must have an ssh agent running with keys installed that '
             'will allow the script to rsync to devpad and get your '
             'branch.\n')
+
+    # XXX mars bug=577118
+    # Popping the first key off of the stack can create problems if the person
+    # has more than one key in their ssh-agent, but alas, we have no good way
+    # to detect the right key to use.
     user_key = agent.get_keys()[0]
     return user_key
 
