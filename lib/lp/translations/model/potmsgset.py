@@ -970,7 +970,7 @@ class POTMsgSet(SQLBase):
             return 'diverged'
 
     def _makeTranslationMessage(self, pofile, submitter, translations, origin,
-                                lock_timestamp=None, diverged=False):
+                                diverged=False):
         # XXX: Document.
         """."""
         if diverged:
@@ -996,8 +996,7 @@ class POTMsgSet(SQLBase):
 
     def _setActiveTranslation(self, flag_name, incumbent_message,
                               other_incumbent, pofile, submitter,
-                              translations, origin, lock_timestamp=None,
-                              steal_other_flag=False):
+                              translations, origin, steal_other_flag=False):
         """."""
         switch_flags = {
             'is_current_ubuntu': 'is_current_upstream',
@@ -1067,13 +1066,11 @@ class POTMsgSet(SQLBase):
             elif character == '1':
                 # Create & activate.
                 message = self._makeTranslationMessage(
-                    pofile, submitter, translations, origin,
-                    lock_timestamp=lock_timestamp)
+                    pofile, submitter, translations, origin)
             elif character == '2':
                 # Create, diverge, activate.
                 message = self._makeTranslationMessage(
-                    pofile, submitter, translations, origin,
-                    lock_timestamp=lock_timestamp, diverged=True)
+                    pofile, submitter, translations, origin, diverged=True)
             elif character == '4':
                 # Activate.
                 message = twin
@@ -1082,7 +1079,7 @@ class POTMsgSet(SQLBase):
                 if get_flag(twin):
                     message = self._makeTranslationMessage(
                         pofile, submitter, translations, origin,
-                        lock_timestamp=lock_timestamp, diverged=True)
+                        diverged=True)
                 else:
                     message = twin
             elif character == '7':
@@ -1108,8 +1105,7 @@ class POTMsgSet(SQLBase):
 
         return message
 
-    def setUpstreamTranslation(self, pofile, submitter, translations, origin,
-                               lock_timestamp=None):
+    def setUpstreamTranslation(self, pofile, submitter, translations, origin):
         """See `IPOTMsgSet`."""
         incumbent_message = self.getImportedTranslationMessage(
             pofile.potemplate, pofile.language, variant=pofile.variant)
@@ -1117,11 +1113,9 @@ class POTMsgSet(SQLBase):
             pofile.potemplate, pofile.language, variant=pofile.variant)
         return self._setActiveTranslation(
             'is_current_upstream', incumbent_message, other_incumbent, pofile,
-            submitter, translations, origin, lock_timestamp=lock_timestamp,
-            steal_other_flag=True)
+            submitter, translations, origin, steal_other_flag=True)
 
     def setUbuntuTranslation(self, pofile, submitter, translations, origin,
-                             lock_timestamp=None,
                              with_upstream_privileges=False):
         """See `IPOTMsgSet`."""
         incumbent_message = self.getCurrentTranslationMessage(
@@ -1130,7 +1124,7 @@ class POTMsgSet(SQLBase):
             pofile.potemplate, pofile.language, variant=pofile.variant)
         return self._setActiveTranslation(
             'is_current_ubuntu', incumbent_message, other_incumbent, pofile,
-            submitter, translations, origin, lock_timestamp=lock_timestamp,
+            submitter, translations, origin, 
             steal_other_flag=with_upstream_privileges)
 
     def applySanityFixes(self, text):

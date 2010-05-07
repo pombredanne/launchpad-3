@@ -265,15 +265,13 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
-    def setUpstreamTranslation(pofile, submitter, translations, origin,
-                              lock_timestamp=None):
+    def setUpstreamTranslation(pofile, submitter, translations, origin):
         """Set the message's current upstream translation(s).
 
         XXX: Ensure this matches the model API when the branch is done.
         """
 
     def setUbuntuTranslation(pofile, submitter, translations, origin,
-                             lock_timestamp=None,
                              with_upstream_privileges=False):
         """Set the message's current Ubuntu translation(s).
 
