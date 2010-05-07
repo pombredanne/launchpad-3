@@ -1,5 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities to aid testing archivepublisher."""
 
@@ -8,8 +8,8 @@ __metaclass__ = type
 # Utility functions/classes for testing the archive publisher.
 
 from lp.archivepublisher.tests import datadir
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces import SeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 __all__ = ['FakeLogger']
 
@@ -25,13 +25,13 @@ class FakeDistribution:
     def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
-        self.serieses = []
+        self.series = []
 
     def registerSeries(self, series):
-        self.serieses.append(series)
+        self.series.append(series)
 
     def __getitem__(self, name):
-        for series in self.serieses:
+        for series in self.series:
             if series.name == name:
                 return series
         return None
@@ -44,7 +44,7 @@ class FakeDistroSeries:
         self.distribution = distro
         self.architectures = [FakeDistroArchSeries(self, "i386"),
                               FakeDistroArchSeries(self, "powerpc")]
-        self.status = DistroSeriesStatus.DEVELOPMENT
+        self.status = SeriesStatus.DEVELOPMENT
         self.distribution.registerSeries(self)
 
 
@@ -216,34 +216,6 @@ def _deepCopy(thing):
     return thing # Assume we can't copy it deeply
 
 
-class FakeDownloadClient:
-    """Fake up a FileDownloadClient for the tests"""
-    def __init__(self):
-        pass
-
-    def getFileByAlias(self, alias):
-        """Fake this up by returning data/aliases/alias"""
-        return file("%s/%s" % (datadir("aliases"), alias), "r")
-
-    def getPathForAlias(self, alias):
-        """Fake this up by returning the PATH 'alias/alias/alias'"""
-        return "/%s/%s/%s" % (alias, alias, alias)
-
-
-class FakeUploadClient:
-    """Fake up a FileUploadClient for the tests"""
-    def __init__(self):
-        pass
-
-    def connect(self, host, port):
-        pass
-
-    def addFile(self, name, size, fileobj, contentType, digest):
-        fileid = '1'
-        filealias = '1'
-        return fileid, filealias
-
-
 # NOTE: If you alter the configs here remember to add tests in test_config.py
 fake_ubuntu = FakeDistribution("ubuntu",
                         """
@@ -258,7 +230,7 @@ cacheroot=FOO/cache
 miscroot=FOO/misc
                         """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
 
-fake_ubuntu_serieses = [
+fake_ubuntu_series = [
     FakeDistroSeries("warty",
                       """
 [publishing]

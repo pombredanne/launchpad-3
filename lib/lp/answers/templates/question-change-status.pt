@@ -2,46 +2,26 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
-
-      <div>
-        <img alt="" src="/@@/question" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
-      </div>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 metal:fill-slot="heading">Change question status</h1>
+    <h1 metal:fill-slot="heading" tal:content="structure view/label">
+        Change question status
+    </h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      You can change a question's status while making a comment. 
+      You can change a question's status while making a comment.
       If a mistake was made, e.g. a question was wrongly
       rejected, you can use this page to correct it.
     </p>
   </div>
 </div>
 
-<p metal:fill-slot="help">Select the correct new status for the question.
-  You can find the meaning of each status in the
-  <a href="https://help.launchpad.net/QuestionLifeCycle">Question
-     Life-cycle</a> document.
-</p>
 </body>
 </html>

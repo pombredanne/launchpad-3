@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -9,16 +10,22 @@ __all__ = [
     'TeamBrandingView',
     'TeamContactAddressView',
     'TeamEditView',
+    'TeamHierarchyView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
-    'TeamMapView',
+    'TeamMailingListSubscribersView',
     'TeamMapData',
+    'TeamMapLtdData',
+    'TeamMapView',
+    'TeamMapLtdView',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
 
+
 from urllib import quote
 from datetime import datetime
+import math
 import pytz
 
 from zope.app.form.browser import TextAreaWidget
@@ -28,11 +35,10 @@ from zope.interface import Interface, implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.widgets import (
-    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
+from canonical.widgets import HiddenUserWidget, LaunchpadRadioWidget
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.cachedproperty import cachedproperty
@@ -41,9 +47,11 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -165,9 +173,13 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     """View for editing team details."""
     schema = ITeam
 
-    # teamowner cannot be a HiddenUserWidget or the edit form would change the
-    # owner to the person doing the editing.
-    custom_widget('teamowner', SinglePopupWidget, visible=False)
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit "%s" team' % self.context.displayname
+
+    page_title = label
+
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
@@ -183,6 +195,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # class list.
         self.field_names = list(self.field_names)
         self.field_names.remove('contactemail')
+        self.field_names.remove('teamowner')
         super(TeamEditView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
@@ -198,8 +211,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
             # XXX: BradCrittenden 2009-04-13 bug=360540: Remove the call to
             # abort if it is moved up to updateContextFromData.
             self._abort()
-        else:
-            self.next_url = canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     def setUpWidgets(self):
         """See `LaunchpadViewForm`.
@@ -236,11 +253,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
                     reason = 'has a mailing list'
                 else:
                     reason = 'has a mailing list and a PPA'
-
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 
 
@@ -305,9 +318,15 @@ class TeamContactAddressView(MailingListTeamBaseView):
     """A view for manipulating the team's contact address."""
 
     schema = ITeamContactAddressForm
-    label = "Contact address"
+
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
+
+    @property
+    def label(self):
+        return "%s contact address" % self.context.displayname
+
+    page_title = label
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
@@ -442,7 +461,11 @@ class TeamContactAddressView(MailingListTeamBaseView):
             raise UnexpectedFormData(
                 "Unknown contact_method: %s" % contact_method)
 
-        self.next_url = canonical_url(self.context)
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class TeamMailingListConfigurationView(MailingListTeamBaseView):
@@ -597,6 +620,10 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         processes that would otherwise manifest only as mysterious
         failures and inconsistencies.
         """
+        contact_admin = (
+            'Please '
+            '<a href="https://answers.launchpad.net/launchpad/+faq/197">'
+            'contact a Launchpad administrator</a> for further assistance.')
 
         if (self.mailing_list is None or
             self.mailing_list.status == MailingListStatus.PURGED):
@@ -610,10 +637,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
                      "a few minutes.")
         elif self.mailing_list.status == MailingListStatus.DECLINED:
             return _("The application for this team's mailing list has been "
-                     'declined. Please '
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+                     'declined. ' + contact_admin)
         elif self.mailing_list.status == MailingListStatus.ACTIVE:
             return None
         elif self.mailing_list.status == MailingListStatus.DEACTIVATING:
@@ -621,10 +645,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         elif self.mailing_list.status == MailingListStatus.INACTIVE:
             return _("This team's mailing list has been deactivated.")
         elif self.mailing_list.status == MailingListStatus.FAILED:
-            return _("This team's mailing list could not be created. Please "
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+            return _("This team's mailing list could not be created. " +
+                     contact_admin)
         elif self.mailing_list.status == MailingListStatus.MODIFIED:
             return _("An update to this team's mailing list is pending "
                      "and has not yet taken effect.")
@@ -633,11 +655,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
                      "being applied.")
         elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
             return _("This team's mailing list is in an inconsistent state "
-                     'because a change to its configuration was not applied. '
-                     'Please '
-                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
-                     'contact a Launchpad administrator</a> for further '
-                     'assistance.')
+                     'because a change to its configuration was not '
+                     'applied. ' + contact_admin)
         else:
             raise AssertionError(
                 "Unknown mailing list status: %s" % self.mailing_list.status)
@@ -704,6 +723,45 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
              not requester.inTeam(celebrities.mailing_list_experts))):
             return False
         return self.getListInState(*PURGE_STATES) is not None
+
+
+class TeamMailingListSubscribersView(LaunchpadView):
+    """The list of people subscribed to a team's mailing list."""
+
+    max_columns = 4
+
+    @property
+    def label(self):
+        return ('Mailing list subscribers for the %s team' %
+                self.context.displayname)
+
+    @cachedproperty
+    def subscribers(self):
+        return BatchNavigator(
+            self.context.mailing_list.getSubscribers(), self.request)
+
+    def renderTable(self):
+        html = ['<table style="max-width: 80em">']
+        items = self.subscribers.currentBatch()
+        assert len(items) > 0, (
+            "Don't call this method if there are no subscribers to show.")
+        # When there are more than 10 items, we use multiple columns, but
+        # never more columns than self.max_columns.
+        columns = int(math.ceil(len(items) / 10.0))
+        columns = min(columns, self.max_columns)
+        rows = int(math.ceil(len(items) / float(columns)))
+        for i in range(0, rows):
+            html.append('<tr>')
+            for j in range(0, columns):
+                index = i + (j * rows)
+                if index >= len(items):
+                    break
+                subscriber_link = PersonFormatterAPI(items[index]).link(None)
+                html.append(
+                    '<td style="width: 20em">%s</td>' % subscriber_link)
+            html.append('</tr>')
+        html.append('</table>')
+        return '\n'.join(html)
 
 
 class TeamMailingListModerationView(MailingListTeamBaseView):
@@ -778,8 +836,10 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
 
 class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     """View for adding a new team."""
+
+    page_title = 'Register a new team in Launchpad'
+    label = page_title
     schema = ITeamCreation
-    label = ''
 
     custom_widget('teamowner', HiddenUserWidget)
     custom_widget(
@@ -796,7 +856,7 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         super(TeamAddView, self).setUpFields()
         self.conditionallyOmitVisibility()
 
-    @action('Create', name='create')
+    @action('Create Team', name='create')
     def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
@@ -841,7 +901,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         return None
 
 
-
 class ProposedTeamMembersEditView(LaunchpadFormView):
     schema = Interface
     label = 'Proposed team members'
@@ -855,7 +914,10 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
                 status = TeamMembershipStatus.APPROVED
             elif action == "decline":
                 status = TeamMembershipStatus.DECLINED
-            elif action == "hold":
+            else:
+                # The action is "hold" or no action was specified for this
+                # person, which could happen if the set of proposed members
+                # changed while the form was being processed.
                 continue
 
             self.context.setMembershipData(
@@ -863,8 +925,14 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
                 comment=self.request.form.get('comment'))
 
     @property
+    def page_title(self):
+        return 'Proposed members of %s' % self.context.displayname
+
+    @property
     def next_url(self):
         return '%s/+members' % canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class TeamBrandingView(BrandingChangeView):
@@ -888,6 +956,14 @@ class TeamMemberAddView(LaunchpadFormView):
     schema = ITeamMember
     label = "Select the new member"
 
+    @property
+    def page_title(self):
+        return 'Add members to %s' % self.context.displayname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def validate(self, data):
         """Verify new member.
 
@@ -902,8 +978,8 @@ class TeamMemberAddView(LaunchpadFormView):
                           " members.")
             elif newmember in self.context.activemembers:
                 error = _("%s (%s) is already a member of %s." % (
-                    newmember.browsername, newmember.name,
-                    self.context.browsername))
+                    newmember.displayname, newmember.name,
+                    self.context.displayname))
 
         if error:
             self.setFieldError("newmember", error)
@@ -917,9 +993,11 @@ class TeamMemberAddView(LaunchpadFormView):
         assert newmember != self.context, (
             "Can't add team to itself: %s" % newmember)
 
-        self.context.addMember(newmember, reviewer=self.user,
-                               status=TeamMembershipStatus.APPROVED)
-        if newmember.isTeam():
+        changed, new_status = self.context.addMember(
+            newmember, reviewer=self.user,
+            status=TeamMembershipStatus.APPROVED)
+
+        if new_status == TeamMembershipStatus.INVITED:
             msg = "%s has been invited to join this team." % (
                   newmember.unique_displayname)
         else:
@@ -935,16 +1013,11 @@ class TeamMapView(LaunchpadView):
     known locations.
     """
 
-    def __init__(self, context, request):
-        """Accept the 'preview' parameter to limit mapped participants."""
-        super(TeamMapView, self).__init__(context, request)
-        if 'preview' in self.request.form:
-            self.limit = 24
-        else:
-            self.limit = None
+    label = "Team member locations"
+    limit = None
 
     def initialize(self):
-        # Tell our main-template to include Google's gmap2 javascript so that
+        # Tell our base-layout to include Google's gmap2 javascript so that
         # we can render the map.
         if self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
@@ -989,7 +1062,7 @@ class TeamMapView(LaunchpadView):
     def bounds(self):
         """A dictionary with the bounds and center of the map, or None"""
         if self.has_mapped_participants:
-            return self.context.getMappedParticipantsBounds()
+            return self.context.getMappedParticipantsBounds(self.limit)
         return None
 
     @property
@@ -1030,3 +1103,44 @@ class TeamMapData(TeamMapView):
             'content-type', 'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class TeamMapLtdMixin:
+    """A mixin for team views with limited participants."""
+    limit = 24
+
+
+class TeamMapLtdView(TeamMapLtdMixin, TeamMapView):
+    """Team map view with limited participants."""
+
+
+class TeamMapLtdData(TeamMapLtdMixin, TeamMapData):
+    """An XML dump of the locations of limited number of team members."""
+
+
+class TeamHierarchyView(LaunchpadView):
+    """View for ~team/+teamhierarchy page."""
+
+    @property
+    def label(self):
+        return 'Team relationships for ' + self.context.displayname
+
+    @property
+    def has_sub_teams(self):
+        return self.context.sub_teams.count() > 0
+
+    @property
+    def has_super_teams(self):
+        return self.context.super_teams.count() > 0
+
+    @property
+    def has_only_super_teams(self):
+        return self.has_super_teams and not self.has_sub_teams
+
+    @property
+    def has_only_sub_teams(self):
+        return not self.has_super_teams and self.has_sub_teams
+
+    @property
+    def has_relationships(self):
+        return self.has_sub_teams or self.has_super_teams

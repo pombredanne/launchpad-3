@@ -1,9 +1,12 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """List all team members: name, preferred email address."""
 
 __metaclass__ = type
 __all__ = ['process_team']
+
+import re
 
 from zope.component import getUtility
 
@@ -12,15 +15,27 @@ from lp.registry.interfaces.ssh import SSHKeyType
 
 
 OUTPUT_TEMPLATES = {
-   'simple': '%(name)s, %(email)s',
-   'email': '%(email)s',
-   'full': '%(teamname)s|%(id)s|%(name)s|%(email)s|%(displayname)s|%(ubuntite)s',
-   'sshkeys': '%(name)s: %(sshkey)s',
-   }
+    'simple': '%(name)s, %(email)s',
+    'email': '%(email)s',
+    'full': '%(teamname)s|%(id)s|%(name)s|%(email)s|'
+            '%(displayname)s|%(ubuntite)s',
+    'sshkeys': '%(name)s: %(sshkey)s',
+    }
 
 
 class NoSuchTeamError(Exception):
     """Used if non-existent team name is specified."""
+
+
+bad_ssh_pattern = re.compile('[\r\n\f]')
+
+
+def make_sshkey_params(member, type_name, key):
+    sshkey = "%s %s %s" % (
+        type_name,
+        bad_ssh_pattern.sub('', key.keytext),
+        bad_ssh_pattern.sub('', key.comment).strip())
+    return dict(name=member.name, sshkey=sshkey)
 
 
 def process_team(teamname, display_option='simple'):
@@ -53,11 +68,7 @@ def process_team(teamname, display_option='simple'):
                     type_name = 'ssh-rsa'
                 else:
                     type_name = 'Unknown key type'
-                params = dict(
-                    name=member.name,
-                    sshkey="%s %s %s" % (type_name, key.keytext, 
-                        key.comment.strip())
-                    )
+                params = make_sshkey_params(member, type_name, key)
                 output.append(template % params)
         # Ubuntite
         ubuntite = "no"
@@ -73,7 +84,7 @@ def process_team(teamname, display_option='simple'):
             id=member.id,
             displayname=member.displayname.encode("ascii", "replace"),
             ubuntite=ubuntite,
-            sshkey=sshkey
+            sshkey=sshkey,
             )
         output.append(template % params)
     # If we're only looking at email, remove --none-- entries
@@ -85,4 +96,3 @@ def process_team(teamname, display_option='simple'):
     if display_option == 'sshkeys':
         output = [line for line in output if line[-8:] != '--none--']
     return sorted(output)
-

@@ -1,0 +1,100 @@
+====================
+Team hierarchy views
+====================
+
+Team hierarchies are displayed via the ~team/+teamhierarchy page.  By default,
+brand new teams have no relationships at all.
+
+    >>> team = factory.makeTeam(displayname='Brand New Team')
+    >>> view = create_initialized_view(team, '+teamhierarchy')
+    >>> print view.label
+    Team relationships for Brand New Team
+
+    >>> view.has_relationships
+    False
+    >>> view.has_sub_teams
+    False
+    >>> view.has_super_teams
+    False
+    >>> view.has_only_sub_teams
+    False
+    >>> view.has_only_super_teams
+    False
+
+
+Only sub-teams
+==============
+
+Guadamen is related to some other teams.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+
+    >>> guadamen = person_set.getByName('guadamen')
+    >>> view = create_initialized_view(guadamen, '+teamhierarchy')
+    >>> print view.label
+    Team relationships for GuadaMen
+    >>> view.has_relationships
+    True
+
+Guadamen has sub-teams...
+
+    >>> view.has_sub_teams
+    True
+
+...but no super teams.
+
+    >>> view.has_super_teams
+    False
+
+In other words, Guadamen has only sub-teams.
+
+    >>> view.has_only_super_teams
+    False
+
+    >>> view.has_only_sub_teams
+    True
+
+
+Only super-teams
+================
+
+The Warty Gnome Team has only super-teams.
+
+    >>> warty = person_set.getByName('warty-gnome')
+    >>> view = create_initialized_view(warty, '+teamhierarchy')
+    >>> print view.label
+    Team relationships for Warty Gnome Team
+
+    >>> view.has_super_teams
+    True
+    >>> view.has_sub_teams
+    False
+    >>> view.has_only_super_teams
+    True
+    >>> view.has_only_sub_teams
+    False
+    >>> view.has_relationships
+    True
+
+
+Both super-teams and sub-teams
+==============================
+
+The Ubuntu Team has both sub-teams and super-teams.
+
+    >>> ubuntu = person_set.getByName('ubuntu-team')
+    >>> view = create_initialized_view(ubuntu, '+teamhierarchy')
+    >>> print view.label
+    Team relationships for Ubuntu Team
+
+    >>> view.has_super_teams
+    True
+    >>> view.has_sub_teams
+    True
+    >>> view.has_only_super_teams
+    False
+    >>> view.has_only_sub_teams
+    False
+    >>> view.has_relationships
+    True

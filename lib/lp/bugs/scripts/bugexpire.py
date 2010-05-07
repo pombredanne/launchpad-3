@@ -1,4 +1,5 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BugTask expiration rules."""
 
@@ -26,7 +27,7 @@ from canonical.launchpad.webapp.interaction import (
 
 class BugJanitor:
     """Expire Incomplete BugTasks that are older than a configurable period.
-    
+
     The BugTask must be unassigned, and the project it is associated with
     must use Malone for bug tracking.
     """
@@ -79,7 +80,7 @@ class BugJanitor:
                 bugtask_before_modification = Snapshot(
                     bugtask, providing=providedBy(bugtask))
                 bugtask.transitionToStatus(
-                    BugTaskStatus.INVALID, self.janitor)
+                    BugTaskStatus.EXPIRED, self.janitor)
                 content = message_template % (
                     bugtask.bugtargetdisplayname, self.days_before_expiration)
                 bugtask.bug.newMessage(
@@ -104,7 +105,7 @@ class BugJanitor:
 
     def _login(self):
         """Setup an interaction as the bug janitor.
-        
+
         The role of bug janitor is usually played by bug_watch_updater.
         """
         auth_utility = getUtility(IPlacelessAuthUtility)

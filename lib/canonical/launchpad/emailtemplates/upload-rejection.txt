@@ -2,6 +2,7 @@ Rejected:
 %(SUMMARY)s
 
 %(CHANGESFILE)s
+
 %(DATE)s%(CHANGEDBY)s%(MAINTAINER)s%(SIGNER)s%(ORIGIN)s
 
 ===

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This is a bin/withlist script for testing that Mailman's site list exists.
 # It works by side effect; on success it exits with a return code of 99, which

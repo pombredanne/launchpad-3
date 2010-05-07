@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Components related to IBugTarget."""
@@ -7,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
+    'HasBugHeatMixin',
     'OfficialBugTag',
     'OfficialBugTagTargetMixin',
     ]
@@ -23,7 +26,13 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
     BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
@@ -42,13 +51,20 @@ class HasBugsBase:
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
-                    affected_user=None,
+                    affected_user=None, affects_me=False,
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None):
+                    sourcepackagename=None, has_no_package=None,
+                    hardware_bus=None, hardware_vendor_id=None,
+                    hardware_product_id=None, hardware_driver_name=None,
+                    hardware_driver_package_name=None,
+                    hardware_owner_is_bug_reporter=None,
+                    hardware_owner_is_affected_by_bug=False,
+                    hardware_owner_is_subscribed_to_bug=False,
+                    hardware_is_linked_to_bug=False, linked_branches=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -110,6 +126,17 @@ class HasBugsBase:
         return self.searchTasks(open_tasks_query)
 
     @property
+    def high_bugtasks(self):
+        """See `IHasBugs`."""
+        high_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            importance=BugTaskImportance.HIGH,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(high_tasks_query)
+
+    @property
     def critical_bugtasks(self):
         """See `IHasBugs`."""
         critical_tasks_query = BugTaskSearchParams(
@@ -124,7 +151,8 @@ class HasBugsBase:
     def inprogress_bugtasks(self):
         """See `IHasBugs`."""
         inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
+            user=getUtility(ILaunchBag).user,
+            status=BugTaskStatus.INPROGRESS,
             omit_dupes=True)
 
         return self.searchTasks(inprogress_tasks_query)
@@ -147,13 +175,23 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
+    @property
+    def has_bugtasks(self):
+        """See `IHasBugs`."""
+        # Check efficiently if any bugtasks exist. We should avoid
+        # expensive calls like all_bugtasks.count(). all_bugtasks
+        # returns a storm.SQLObjectResultSet instance, and this
+        # class does not provide methods like is_empty(). But we can
+        # indirectly call SQLObjectResultSet._result_set.is_empty()
+        # by converting all_bugtasks into a boolean object.
+        return bool(self.all_bugtasks)
+
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
         if statuses is None:
             statuses = BugTaskStatus.items
         statuses = list(statuses)
 
-        from_tables = ['BugTask', 'Bug']
         count_column = """
             COUNT (CASE WHEN BugTask.status = %s
                         THEN BugTask.id ELSE NULL END)"""
@@ -175,53 +213,103 @@ class HasBugsBase:
         return dict(zip(statuses, counts))
 
 
-
 class BugTargetBase(HasBugsBase):
     """Standard functionality for IBugTargets.
 
     All IBugTargets should inherit from this class.
     """
-    def getMostCommonBugs(self, user, limit=10):
-        """See canonical.launchpad.interfaces.IBugTarget."""
-        constraints = []
-        bug_privacy_clause = get_bug_privacy_filter(user)
-        if bug_privacy_clause:
-            constraints.append(bug_privacy_clause)
-        constraints.append(self._getBugTaskContextWhereClause())
-        c = cursor()
-        c.execute("""
-        SELECT duplicateof, COUNT(duplicateof)
-        FROM Bug
-        WHERE duplicateof IN (
-            SELECT DISTINCT(Bug.id)
-            FROM Bug, BugTask
-            WHERE BugTask.bug = Bug.id AND
-            %s)
-        GROUP BY duplicateof
-        ORDER BY COUNT(duplicateof) DESC
-        LIMIT %d
-        """ % ("AND\n".join(constraints), limit))
 
-        common_bug_ids = [
-            str(bug_id) for (bug_id, dupe_count) in c.fetchall()]
 
-        if not common_bug_ids:
-            return []
-        # import this database class here, in order to avoid
-        # circular dependencies.
-        from lp.bugs.model.bug import Bug
-        return list(
-            Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+class HasBugHeatMixin:
+    """Standard functionality for objects implementing IHasBugHeat."""
+
+    def setMaxBugHeat(self, heat):
+        """See `IHasBugHeat`."""
+        if (IDistribution.providedBy(self)
+            or IProduct.providedBy(self)
+            or IProjectGroup.providedBy(self)
+            or IDistributionSourcePackage.providedBy(self)):
+            # Only objects that don't delegate have a setter.
+            self.max_bug_heat = heat
+        else:
+            raise NotImplementedError
+
+    def recalculateMaxBugHeat(self):
+        """See `IHasBugHeat`."""
+        if IProductSeries.providedBy(self):
+            return self.product.recalculateMaxBugHeat()
+        if IDistroSeries.providedBy(self):
+            return self.distribution.recalculateMaxBugHeat()
+        if ISourcePackage.providedBy(self):
+            # Should only happen for nominations, so we can safely skip
+            # recalculating max_heat.
+            return
+
+        if IDistribution.providedBy(self):
+            sql = ["""SELECT Bug.heat
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
+                      FROM Bug, Bugtask, DistroSeries
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.distroseries = DistroSeries.id
+                      AND DistroSeries.distribution = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
+        elif IProduct.providedBy(self):
+            sql = ["""SELECT Bug.heat
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self),
+                   """SELECT Bug.heat
+                      FROM Bug, Bugtask, ProductSeries
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries = ProductSeries.id
+                      AND ProductSeries.product = %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
+        elif IProjectGroup.providedBy(self):
+            sql = ["""SELECT MAX(heat)
+                      FROM Bug, Bugtask, Product
+                      WHERE Bugtask.bug = Bug.id AND
+                      Bugtask.product = Product.id AND
+                      Product.project =  %s""" % sqlvalues(self)]
+        elif IDistributionSourcePackage.providedBy(self):
+            sql = ["""SELECT MAX(heat)
+                      FROM Bug, Bugtask
+                      WHERE Bugtask.bug = Bug.id AND
+                      Bugtask.distribution = %s AND
+                      Bugtask.sourcepackagename = %s""" % sqlvalues(
+                 self.distribution, self.sourcepackagename)]
+        else:
+            raise NotImplementedError
+
+        results = [0]
+        for query in sql:
+            cur = cursor()
+            cur.execute(query)
+            record = cur.fetchone()
+            if record is not None:
+                results.append(record[0])
+            cur.close()
+        self.setMaxBugHeat(max(results))
+
+        # If the product is part of a project group we calculate the maximum
+        # heat for the project group too.
+        if IProduct.providedBy(self) and self.project is not None:
+            self.project.recalculateMaxBugHeat()
+
 
 
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
     This class is inteneded to be used as a mixin for the classes
-    Distribution, Product and Project, which can define official
+    Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
-    Using this call in Project requires a fix of bug 341203, see
+    Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
     """
 

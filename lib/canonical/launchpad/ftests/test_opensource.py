@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Run the standalone tests in an opensource package.
 
@@ -15,6 +16,7 @@ __metaclass__ = type
 __all__ = ['test_suite']
 
 
+import logging
 import os
 import unittest
 
@@ -43,7 +45,8 @@ def add_testable_opensource_package(suite, package):
     for filename in sorted(doctest_files):
         path = doctest_files[filename]
         doctest = LayeredDocFileSuite(
-            path, package=package, layer=AppServerLayer)
+            path, package=package, layer=AppServerLayer,
+            stdout_logging_level=logging.WARNING)
         suite.addTest(doctest)
 
 

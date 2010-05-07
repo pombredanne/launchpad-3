@@ -3,7 +3,7 @@
 IRC IDs are associated with a person and must be created through the
 IIrcIDSet utility.
 
-    >>> from canonical.launchpad.interfaces.launchpad import IHasOwner
+    >>> from lp.registry.interfaces.role import IHasOwner
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.irc import IIrcID, IIrcIDSet
 

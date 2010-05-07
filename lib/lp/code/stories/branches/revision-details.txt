@@ -19,7 +19,6 @@ There is a heading for the recent revisions.
     >>> user_browser.open(branch_url)
     >>> print_tag_with_id(user_browser.contents, 'recent-revisions')
     Recent revisions
-    ...
     1. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt; ...
     Testing the email address in revisions
     email Bob (bob@example.com) for details.
@@ -31,7 +30,6 @@ revision author and the commit message.
     >>> anon_browser.open(branch_url)
     >>> print_tag_with_id(anon_browser.contents, 'recent-revisions')
     Recent revisions
-    ...
     1. By Eric the Viking &lt;email address hidden&gt; ...
     Testing the email address in revisions
     email Bob (&lt;email address hidden&gt;) for details.

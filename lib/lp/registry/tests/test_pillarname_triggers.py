@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that the PillarName materialized view is being maintained correctly.
 """
@@ -149,7 +150,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 """, dict(name=name))
             return cur.fetchone()[0] == 1
 
-        # Inserting a new Project will populate PillarName
+        # Inserting a new ProjectGroup will populate PillarName
         cur.execute("""
             INSERT INTO Project (
                 name, owner, registrant, displayname, title, summary, description
@@ -161,7 +162,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
             """)
         self.failUnless(is_in_sync('whatever'))
 
-        # Updating the Project.name will propogate changes to PillarName
+        # Updating the ProjectGroup.name will propogate changes to PillarName
         cur.execute("""
             UPDATE Project SET name='whatever2' where name='whatever'
             """)
@@ -174,7 +175,8 @@ class PillarNameTriggersTestCase(unittest.TestCase):
             """)
         self.failUnless(is_in_sync('whatever2'))
 
-        # Deleting a Project removes the corresponding entry in PillarName
+        # Deleting a ProjectGroup removes the corresponding entry in
+        # PillarName.
         cur.execute("DELETE FROM Project WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
         self.failUnlessEqual(cur.fetchone()[0], 0)

@@ -1,0 +1,47 @@
+#!${buildout:executable} -S
+
+import os
+import sys
+
+# Initialize our paths.
+${python-relative-path-setup}
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
+
+from lp.services.spriteutils import SpriteUtil
+
+command_options = ('create-image', 'create-css')
+
+def usage():
+    return " Usage: %s %s" % (sys.argv[0], '|'.join(command_options))
+
+if len(sys.argv) != 2:
+    print >> sys.stderr, "Expected a single argument."
+    print >> sys.stderr, usage()
+    sys.exit(1)
+else:
+    command = sys.argv[1]
+    if command not in command_options:
+        print >> sys.stderr, "Unknown argument: %s" % command
+        print >> sys.stderr, usage()
+        sys.exit(2)
+
+icing = ${buildout:directory/lib/canonical/launchpad/icing|path-repr}
+combined_image_file = os.path.join(icing, 'icon-sprites')
+positioning_file = os.path.join(icing, 'icon-sprites.positioning')
+css_template_file = os.path.join(icing, 'style-3-0.css.in')
+css_file = os.path.join(icing, 'build/style-3-0.css')
+
+sprite_util = SpriteUtil(
+    css_template_file, 'icon-sprites',
+    url_prefix_substitutions={'/@@/': '../images/'})
+
+if command == 'create-image':
+    sprite_util.combineImages(icing)
+    sprite_util.savePNG(combined_image_file)
+    sprite_util.savePositioning(positioning_file)
+elif command == 'create-css':
+    sprite_util.loadPositioning(positioning_file)
+    # The icing/icon-sprites file is relative to the css file
+    # in the icing/build/ directory.
+    sprite_util.saveConvertedCSS(css_file, '../icon-sprites')

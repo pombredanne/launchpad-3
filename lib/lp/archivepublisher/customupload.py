@@ -1,4 +1,5 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
 
@@ -50,6 +51,33 @@ class CustomUploadBadUmask(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
+class CustomUploadTarballInvalidFileType(CustomUploadError):
+    """A file of type other than regular or symlink was found."""
+    def __init__(self, tarfile_path, file_name):
+        message = ("Tarfile %s has file %s which is not a regular file, "
+                   "directory or a symlink" % (tarfile_path, file_name))
+        CustomUploadError.__init__(self, message)
+
+
+class CustomUploadTarballBadSymLink(CustomUploadError):
+    """A symlink was found whose target points outside the immediate tree."""
+    def __init__(self, tarfile_path, symlink_name, target):
+        message = "Tarfile %s has a symlink %s whose target %s is illegal" % (
+            tarfile_path, symlink_name, target)
+        CustomUploadError.__init__(self, message)
+
+
+class CustomUploadTarballBadFile(CustomUploadError):
+    """A file was found which resolves outside the immediate tree.
+    
+    This can happen if someone embeds ../file in the tar, for example.
+    """
+    def __init__(self, tarfile_path, file_name):
+        message = "Tarfile %s has a file %s which is illegal" % (
+            tarfile_path, file_name)
+        CustomUploadError.__init__(self, message)
+
+
 class CustomUpload:
     """Base class for custom upload handlers"""
 
@@ -74,12 +102,68 @@ class CustomUpload:
         finally:
             self.cleanup()
 
+    def verifyBeforeExtracting(self, tar):
+        """Verify the tarball before extracting it.
+
+        Extracting tarballs from untrusted sources is extremely dangerous
+        as it's trivial to overwrite any part of the filesystem that the
+        user running this process has access to.
+
+        Here, we make sure that the file will extract to somewhere under
+        the tmp dir, that the file is a directory, regular file or a symlink
+        only, and that symlinks only resolve to stuff under the tmp dir.
+        """
+        for member in tar.getmembers():
+            # member is a TarInfo object.
+
+            if not (member.isreg() or member.issym() or member.isdir()):
+                raise CustomUploadTarballInvalidFileType(
+                    self.tarfile_path, member.name)
+
+            # Append os.sep to stop attacks like /var/tmp/../tmpBOGUS
+            # This is unlikely since someone would need to guess what
+            # mkdtemp returned, but still ...
+            tmpdir_with_sep = self.tmpdir + os.sep
+
+            member_path = os.path.join(self.tmpdir, member.name)
+            member_realpath = os.path.realpath(member_path)
+
+            # The path can either be the tmpdir (without a trailing
+            # separator) or have the tmpdir plus a trailing separator
+            # as a prefix.
+            if (member_realpath != self.tmpdir and
+                not member_realpath.startswith(tmpdir_with_sep)):
+                raise CustomUploadTarballBadFile(
+                    self.tarfile_path, member.name)
+
+            if member.issym():
+                # This is a bit tricky.  We need to take the dirname of
+                # the link's name which is where the link's target is
+                # relative to, and prepend the extraction directory to
+                # get an absolute path for the link target.
+                rel_link_file_location = os.path.dirname(member.name)
+                abs_link_file_location = os.path.join(
+                    self.tmpdir, rel_link_file_location)
+                target_path = os.path.join(
+                    abs_link_file_location, member.linkname)
+                target_realpath = os.path.realpath(target_path)
+
+                # The same rules apply here as for member_realpath
+                # above.
+                if (target_realpath != self.tmpdir and
+                    not target_realpath.startswith(tmpdir_with_sep)):
+                    raise CustomUploadTarballBadSymLink(
+                        self.tarfile_path, member.name, member.linkname)
+
+        return True
+
     def extract(self):
         """Extract the custom upload to a temporary directory."""
         assert self.tmpdir is None, "Have already extracted tarfile"
         self.tmpdir = tempfile.mkdtemp(prefix='customupload_')
         try:
             tar = tarfile.open(self.tarfile_path)
+            self.verifyBeforeExtracting(tar)
             tar.ignore_zeros = True
             try:
                 for tarinfo in tar:

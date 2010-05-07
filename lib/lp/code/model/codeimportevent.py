@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes related to and including CodeImportEvent."""
@@ -254,13 +256,14 @@ class CodeImportEventSet:
 
     def _iterSourceDetails(self, code_import):
         """Yield key-value tuples describing the source of the import."""
-        if code_import.rcs_type == RevisionControlSystems.SVN:
-            yield 'SVN_BRANCH_URL', code_import.svn_branch_url
+        if code_import.rcs_type in (RevisionControlSystems.SVN,
+                                    RevisionControlSystems.BZR_SVN,
+                                    RevisionControlSystems.GIT,
+                                    RevisionControlSystems.HG):
+            yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root
             yield 'CVS_MODULE', code_import.cvs_module
-        elif code_import.rcs_type == RevisionControlSystems.GIT:
-            yield 'GIT_REPO_URL', code_import.git_repo_url
         else:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Publisher of objects as web pages.
 
 """
@@ -12,6 +14,7 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
+    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -35,8 +38,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
@@ -44,6 +46,10 @@ from canonical.launchpad.webapp.interfaces import (
     NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
+
+
+# HTTP Status code constants - define as appropriate.
+HTTP_MOVED_PERMANENTLY = 301
 
 
 class DecoratorAdvisor:
@@ -224,7 +230,6 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
-    - striped_class<-- a tr class for an alternating row background
     """
 
     def __init__(self, context, request):
@@ -272,19 +277,6 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
-
-    @cachedproperty
-    def striped_class(self):
-        """Return a generator which yields alternating CSS classes.
-
-        This is to be used for HTML tables in which the row colors should be
-        alternated.
-        """
-        def bg_stripe_generator():
-            while True:
-                yield 'white'
-                yield 'shaded'
-        return bg_stripe_generator()
 
     def _getErrorMessage(self):
         """Property getter for `error_message`."""
@@ -418,7 +410,7 @@ class CanonicalAbsoluteURL:
 
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
-    view_name=None):
+    view_name=None, force_local_path=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -443,6 +435,7 @@ def canonical_url(
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
         rather than the default view.
+    :param force_local_path: Strip off the site no matter what.
     :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
@@ -461,6 +454,21 @@ def canonical_url(
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
         if current_request is not None:
+            if WebServiceLayer.providedBy(current_request):
+                from canonical.launchpad.webapp.publication import (
+                    LaunchpadBrowserPublication)
+                from canonical.launchpad.webapp.servers import (
+                    LaunchpadBrowserRequest)
+                current_request = LaunchpadBrowserRequest(
+                    current_request.bodyStream.getCacheStream(),
+                    dict(current_request.environment))
+                current_request.setPublication(
+                    LaunchpadBrowserPublication(None))
+                current_request.setVirtualHostRoot(names=[])
+                main_root_url = current_request.getRootURL(
+                    'mainsite')
+                current_request._app_server = main_root_url.rstrip('/')
+
             request = current_request
 
     if view_name is not None:
@@ -482,17 +490,18 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    if request is None and rootsite is not None:
+    if request is None:
+        if rootsite is None:
+            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
-    elif request is None:
-        root_url = allvhosts.configs['mainsite'].rooturl
     else:
         root_url = request.getRootURL(rootsite)
 
     path = u'/'.join(reversed(urlparts))
-    if (path_only_if_possible and
-        request is not None and
-        root_url.startswith(request.getApplicationURL())
+    if ((path_only_if_possible and
+         request is not None and
+         root_url.startswith(request.getApplicationURL()))
+        or force_local_path
         ):
         return unicode('/' + path)
     return unicode(root_url + path)
@@ -520,13 +529,17 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:
@@ -670,10 +683,6 @@ class Navigation:
         # this request.
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
-
-        # store the current context object in the request's
-        # traversed_objects list:
-        request.traversed_objects.append(self.context)
 
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals

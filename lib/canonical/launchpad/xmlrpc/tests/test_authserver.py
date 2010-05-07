@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
 
@@ -15,6 +16,7 @@ from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+
 class GetUserAndSSHKeysTests(TestCaseWithFactory):
     """Tests for the implementation of `IAuthServer.getUserAndSSHKeys`.
     """
@@ -27,17 +29,10 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
         self.authserver = AuthServerAPIView(
             private_root.authserver, TestRequest())
 
-    def assertFaultEqual(self, expected_fault, observed_fault):
-        """Assert that `expected_fault` equals `observed_fault`."""
-        self.assertIsInstance(observed_fault, faults.LaunchpadFault)
-        self.assertEqual(expected_fault.faultCode, observed_fault.faultCode)
-        self.assertEqual(
-            expected_fault.faultString, observed_fault.faultString)
-
     def test_user_not_found(self):
         # getUserAndSSHKeys returns the NoSuchPersonWithName fault if there is
         # no Person of the given name.
-        self.assertFaultEqual(
+        self.assertEqual(
             faults.NoSuchPersonWithName('no-one'),
             self.authserver.getUserAndSSHKeys('no-one'))
 

@@ -1,12 +1,14 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
-
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test CodeReviewComment emailing functionality."""
 
 
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -17,7 +19,7 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     CodeReviewVote)
 from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -47,6 +49,12 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment.branch_merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             notification_level)
+        # Email is not sent on construction, so fake a root message id on the
+        # merge proposal.
+        login_person(comment.branch_merge_proposal.registrant)
+        comment.branch_merge_proposal.root_message_id = 'fake-id'
+        # Log our test user back in.
+        login('test@canonical.com')
         return comment, subscriber
 
     def makeMailer(self, body=None, as_reply=False, vote=None, vote_tag=None):
@@ -209,11 +217,87 @@ class TestCodeReviewComment(TestCaseWithFactory):
         message = getUtility(IMessageSet).fromEmail(msg.as_string())
         bmp = self.factory.makeBranchMergeProposal()
         comment = bmp.createCommentFromMessage(message, None, None, msg)
-        mailer = CodeReviewCommentMailer.forCreation(comment, msg)
+        # We need to make sure the Librarian is up-to-date, so we commit.
+        transaction.commit()
+        mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
-        first, diff, image = msg.get_payload()
-        self.assertEqual([diff], mailer.attachments)
+        [outgoing_attachment] = mailer.attachments
+        self.assertEqual('inc.diff', outgoing_attachment[1])
+        self.assertEqual('text/x-diff', outgoing_attachment[2])
+        # The attachments are attached to the outgoing message.
+        person = bmp.target_branch.owner
+        message = mailer.generateEmail(
+            person.preferredemail.email, person).makeMessage()
+        self.assertTrue(message.is_multipart())
+        attachment = message.get_payload()[1]
+        self.assertEqual('inc.diff', attachment.get_filename())
+        self.assertEqual('text/x-diff', attachment['content-type'])
 
+    def makeCommentAndParticipants(self):
+        """Create a merge proposal and comment.
+
+        Proposal registered by "Proposer" and comment added by "Commenter".
+        """
+        proposer = self.factory.makePerson(
+            email='proposer@email.com', displayname='Proposer')
+        bmp = self.factory.makeBranchMergeProposal(registrant=proposer)
+        commenter = self.factory.makePerson(
+            email='commenter@email.com', displayname='Commenter')
+        bmp.source_branch.subscribe(commenter,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        comment = bmp.createComment(commenter, 'hello')
+        return comment
+
+    def test_getToAddresses_no_parent(self):
+        """To address for a comment with no parent should be the proposer."""
+        comment = self.makeCommentAndParticipants()
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        to = mailer._getToAddresses(
+            comment.message.owner, 'comment@gmail.com')
+        self.assertEqual(['Proposer <proposer@email.com>'], to)
+        to = mailer._getToAddresses(
+            comment.branch_merge_proposal.registrant, 'propose@gmail.com')
+        self.assertEqual(['Proposer <propose@gmail.com>'], to)
+
+    def test_generateEmail_addresses(self):
+        """The to_addrs but not envelope_to should follow getToAddress.
+
+        We provide false to addresses to make filters happier, but this
+        should not affect the actual recipient list.
+        """
+        comment = self.makeCommentAndParticipants()
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        ctrl = mailer.generateEmail('commenter@email.com',
+                                    comment.message.owner)
+        self.assertEqual(['Proposer <proposer@email.com>'], ctrl.to_addrs)
+        self.assertEqual(['commenter@email.com'], ctrl.envelope_to)
+
+    def test_getToAddresses_with_parent(self):
+        """To address for a reply should be the parent comment author."""
+        comment = self.makeCommentAndParticipants()
+        second_commenter = self.factory.makePerson(
+            email='commenter2@email.com', displayname='Commenter2')
+        reply = comment.branch_merge_proposal.createComment(
+            second_commenter, 'hello2', parent=comment)
+        mailer = CodeReviewCommentMailer.forCreation(reply)
+        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        self.assertEqual(['Commenter <commenter@email.com>'], to)
+        to = mailer._getToAddresses(
+            comment.message.owner, 'comment@gmail.com')
+        self.assertEqual(['Commenter <comment@gmail.com>'], to)
+
+    def test_getToAddresses_with_hidden_address(self):
+        """Don't show address if Person.hide_email_addresses."""
+        comment = self.makeCommentAndParticipants()
+        removeSecurityProxy(comment.message.owner).hide_email_addresses = True
+        second_commenter = self.factory.makePerson(
+            email='commenter2@email.com', displayname='Commenter2')
+        reply = comment.branch_merge_proposal.createComment(
+            second_commenter, 'hello2', parent=comment)
+        mailer = CodeReviewCommentMailer.forCreation(reply)
+        to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
+        self.assertEqual([mailer.merge_proposal.address], to)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OpenIDStore implementation for the SSO server's OpenID provider."""
 
@@ -129,7 +130,7 @@ class BaseStormOpenIDStore(OpenIDStore):
             return False
 
         server_url = server_url.decode('UTF-8')
-        salt = server_url.decode('ASCII')
+        salt = salt.decode('ASCII')
 
         store = IMasterStore(self.Nonce)
         old_nonce = store.get(self.Nonce, (server_url, timestamp, salt))

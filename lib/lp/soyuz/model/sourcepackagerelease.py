@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -14,9 +16,10 @@ import pytz
 from StringIO import StringIO
 import re
 
-from storm.store import Store
-from storm.expr import Join
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+from storm.expr import Join
+from storm.locals import Int, Reference
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -31,28 +34,26 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.archiveuploader.utils import determine_source_file_type
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import (
+    SourcePackageType, SourcePackageUrgency)
+from lp.soyuz.interfaces.archive import IArchiveSet, MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.packagediff import (
+    PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lp.soyuz.model.build import Build
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadSource)
 from lp.soyuz.scripts.queue import QueueActionError
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.sourcepackage import (
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -99,18 +100,23 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
+    changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     build_conflicts = StringCol(dbName='build_conflicts')
     build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format', schema=SourcePackageFormat,
-        default=SourcePackageFormat.DPKG, notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageType,
+        default=SourcePackageType.DPKG, notNull=True)
     upload_distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='upload_distroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
+
+    source_package_recipe_build_id = Int(name='sourcepackage_recipe_build')
+    source_package_recipe_build = Reference(
+        source_package_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
@@ -138,7 +144,7 @@ class SourcePackageRelease(SQLBase):
         # when copy-package works for copying packages across archives,
         # a build may well have a different archive to the corresponding
         # sourcepackagerelease.
-        return Build.select("""
+        return BinaryPackageBuild.select("""
             sourcepackagerelease = %s AND
             archive.id = build.archive AND
             archive.purpose IN %s
@@ -264,33 +270,20 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def published_archives(self):
-        """See `ISourcePacakgeRelease`."""
+        """See `ISourcePackageRelease`."""
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
-        determined_filetype = None
-        if file.filename.endswith(".dsc"):
-            determined_filetype = SourcePackageFileType.DSC
-        elif file.filename.endswith(".orig.tar.gz"):
-            determined_filetype = SourcePackageFileType.ORIG
-        elif file.filename.endswith(".diff.gz"):
-            determined_filetype = SourcePackageFileType.DIFF
-        elif file.filename.endswith(".tar.gz"):
-            determined_filetype = SourcePackageFileType.TARBALL
+        return SourcePackageReleaseFile(
+            sourcepackagerelease=self,
+            filetype=determine_source_file_type(file.filename),
+            libraryfile=file)
 
-        return SourcePackageReleaseFile(sourcepackagerelease=self,
-                                        filetype=determined_filetype,
-                                        libraryfile=file)
-
-    def _getPackageSize(self):
-        """Get the size total (in KB) of files comprising this package.
-
-        Please note: empty packages (i.e. ones with no files or with
-        files that are all empty) have a size of zero.
-        """
+    def getPackageSize(self):
+        """See ISourcePackageRelease."""
         size_query = """
             SELECT
                 SUM(LibraryFileContent.filesize)/1024.0
@@ -334,60 +327,12 @@ class SourcePackageRelease(SQLBase):
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
-        # Always include the primary archive when looking for
-        # past build times (just in case that none can be found
-        # in a PPA or copy archive).
-        archives = [archive.id]
-        if archive.purpose != ArchivePurpose.PRIMARY:
-            archives.append(distroarchseries.main_archive.id)
-
-        # Look for all sourcepackagerelease instances that match the name.
-        matching_sprs = SourcePackageRelease.select("""
-            SourcePackageName.name = %s AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id
-            """ % sqlvalues(self.name),
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
-
-        # Get the (successfully built) build records for this package.
-        completed_builds = Build.select("""
-            sourcepackagerelease IN %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            buildstate = %s
-            """ % sqlvalues([spr.id for spr in matching_sprs],
-                            distroarchseries, archives,
-                            BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'])
-
-        if completed_builds:
-            # Historic build data exists, use the most recent value.
-            most_recent_build = completed_builds[0]
-            estimated_build_duration = most_recent_build.buildduration
-        else:
-            # Estimate the build duration based on package size if no
-            # historic build data exists.
-
-            # Get the package size in KB.
-            package_size = self._getPackageSize()
-
-            if package_size > 0:
-                # Analysis of previous build data shows that a build rate
-                # of 6 KB/second is realistic. Furthermore we have to add
-                # another minute for generic build overhead.
-                estimate = int(package_size/6.0/60 + 1)
-            else:
-                # No historic build times and no package size available,
-                # assume a build time of 5 minutes.
-                estimate = 5
-            estimated_build_duration = datetime.timedelta(minutes=estimate)
-
-        return Build(distroarchseries=distroarchseries,
+        return BinaryPackageBuild(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
                      processor=processor,
                      buildstate=status,
                      datecreated=datecreated,
                      pocket=pocket,
-                     estimated_build_duration=estimated_build_duration,
                      archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
@@ -411,7 +356,7 @@ class SourcePackageRelease(SQLBase):
         """ % sqlvalues(self, distroarchseries.architecturetag,
                         distroarchseries, archive)
 
-        select_results = Build.select(
+        select_results = BinaryPackageBuild.select(
             query, clauseTables=clauseTables, distinct=True,
             orderBy='-Build.id')
 
@@ -495,7 +440,7 @@ class SourcePackageRelease(SQLBase):
         # across all possible locations.
         query = " AND ".join(queries)
 
-        return Build.selectFirst(query, orderBy=['-datecreated'])
+        return BinaryPackageBuild.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
@@ -528,6 +473,11 @@ class SourcePackageRelease(SQLBase):
     def package_upload(self):
         """See `ISourcepackageRelease`."""
         store = Store.of(self)
+        # The join on 'changesfile' is not only used only for
+        # pre-fetching the corresponding library file, so callsites
+        # don't have to issue an extra query. It is also important
+        # for excluding delayed-copies, because they might match
+        # the publication context but will not contain as changesfile.
         origin = [
             PackageUploadSource,
             Join(PackageUpload,
@@ -540,7 +490,6 @@ class SourcePackageRelease(SQLBase):
         results = store.using(*origin).find(
             (PackageUpload, LibraryFileAlias, LibraryFileContent),
             PackageUploadSource.sourcepackagerelease == self,
-            PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.archive == self.upload_archive,
             PackageUpload.distroseries == self.upload_distroseries)
 
@@ -570,12 +519,9 @@ class SourcePackageRelease(SQLBase):
         return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
-        importer=None):
+                               importer=None):
         """See ISourcePackageRelease."""
-        client = getUtility(ILibrarianClient)
-
-        tarball_file = client.getFileByAlias(tarball_alias.id)
-        tarball = tarball_file.read()
+        tarball = tarball_alias.read()
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts
@@ -602,6 +548,14 @@ class SourcePackageRelease(SQLBase):
                 "%s was already requested by %s"
                 % (candidate.title, candidate.requester.displayname))
 
+        if self.sourcepackagename.name == 'udev':
+            # XXX 2009-11-23 Julian bug=314436
+            # Currently diff output for udev will fill disks.  It's
+            # disabled until diffutils is fixed in that bug.
+            status = PackageDiffStatus.FAILED
+        else:
+            status = PackageDiffStatus.PENDING
+
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
-            requester=requester)
+            requester=requester, status=status)

@@ -1,9 +1,13 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
+
+from __future__ import with_statement
 
 import logging
 import os
@@ -26,9 +30,10 @@ from canonical.launchpad.testing.systemdocs import (
 from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
-from canonical.testing import (
+from canonical.testing.layers import (
     AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -165,11 +170,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
 
-def hwdbDeviceTablesSetup(test):
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
-
-
 def updateRemoteProductSetup(test):
     """Setup to use the 'updateremoteproduct' db user."""
     setUp(test)
@@ -191,10 +191,6 @@ special = {
     'autodecorate.txt':
         LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
 
-    'remove-upstream-translations-script.txt': LayeredDocFileSuite(
-            '../doc/remove-upstream-translations-script.txt',
-            setUp=setGlobs, stdout_logging=False, layer=None
-            ),
 
     # And this test want minimal environment too.
     'package-relationship.txt': LayeredDocFileSuite(
@@ -211,10 +207,6 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport-queue.txt': LayeredDocFileSuite(
-            '../doc/poexport-queue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
     'message.txt': LayeredDocFileSuite(
             '../doc/message.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -222,18 +214,6 @@ special = {
     'close-account.txt': LayeredDocFileSuite(
             '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
             layer=LaunchpadZopelessLayer
-            ),
-    'translationimportqueue.txt': LayeredDocFileSuite(
-            '../doc/translationimportqueue.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'pofile-pages.txt': LayeredDocFileSuite(
-            '../doc/pofile-pages.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'rosetta-karma.txt': LayeredDocFileSuite(
-            '../doc/rosetta-karma.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
     'launchpadform.txt': LayeredDocFileSuite(
             '../doc/launchpadform.txt',
@@ -255,19 +235,6 @@ special = {
             setUp=test_notifications.setUp,
             tearDown=test_notifications.tearDown,
             stdout_logging=False, layer=None
-            ),
-    'translationmessage-destroy.txt': LayeredDocFileSuite(
-            '../doc/translationmessage-destroy.txt',
-            layer=LaunchpadZopelessLayer
-            ),
-    'translationsoverview.txt': LayeredDocFileSuite(
-            '../doc/translationsoverview.txt',
-            layer=LaunchpadZopelessLayer
-            ),
-    'hwdb-device-tables.txt': LayeredDocFileSuite(
-            '../doc/hwdb-device-tables.txt',
-            setUp=hwdbDeviceTablesSetup, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer,
             ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
@@ -298,6 +265,17 @@ special = {
             setUp=updateRemoteProductSetup,
             tearDown=updateRemoteProductTeardown,
             layer=LaunchpadZopelessLayer
+            ),
+    'canonical_url.txt': LayeredDocFileSuite(
+            '../doc/canonical_url.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            layer=FunctionalLayer,
+            ),
+    'google-searchservice.txt': LayeredDocFileSuite(
+            '../doc/google-searchservice.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=GoogleLaunchpadFunctionalLayer,
             ),
     }
 
@@ -415,6 +393,8 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
+            # 'icky way of running doctests with __future__ imports
+            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

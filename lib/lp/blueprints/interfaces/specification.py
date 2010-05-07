@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Specification interfaces."""
@@ -37,11 +39,12 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -196,7 +199,7 @@ class SpecificationLifecycleStatus(DBEnumeratedType):
 class SpecificationPriority(DBEnumeratedType):
     """The Priority with a Specification must be implemented.
 
-    This enum is used to prioritise work.
+    This enum is used to prioritize work.
     """
 
     NOTFORUS = DBItem(0, """
@@ -215,7 +218,7 @@ class SpecificationPriority(DBEnumeratedType):
         Undefined
 
         This feature has recently been proposed and has not yet been
-        evaluated and prioritised by the project leaders.
+        evaluated and prioritized by the project leaders.
         """)
 
     LOW = DBItem(10, """
@@ -510,7 +513,7 @@ class SpecNameField(ContentNameField):
             # set corresponds to multiple specification namespaces, we
             # return None.
             return None
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             # The context is a project group. Since a project group
             # corresponds to multiple specification namespaces, we
             # return None.
@@ -641,7 +644,7 @@ class INewSpecificationTarget(Interface):
 
 
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
-    ICanBeMentored):
+    ICanBeMentored, IHasLinkedBranches):
     """A Specification."""
 
     export_as_webservice_entry()
@@ -750,7 +753,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-    branch_links = Attribute('The entries that link the branches to the spec')
+    linked_branches = Attribute(
+        'The entries that link the branches to the spec.')
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
@@ -875,20 +879,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    @call_with(registrant=REQUEST_USER)
-    @operation_parameters(
-        branch=Reference(schema=IBranch))
-    @operation_returns_entry(Interface) # Really IBugBranch
-    @export_write_operation()
-    def linkBranch(branch, registrant):
-        """Link the given branch to this specification.
-
-        :param branch: The branch to link to this specification.
-        :param registrant: The user making the link.
-        :param summary: Free form text which can be used to describe
-            implementation details.
-        """
-
 
 # Interfaces for containers
 class ISpecificationSet(IHasSpecifications):
@@ -902,6 +892,16 @@ class ISpecificationSet(IHasSpecifications):
 
     specification_count = Attribute(
         "The total number of blueprints in Launchpad")
+
+    def getStatusCountsForProductSeries(product_series):
+        """Return the status counts for blueprints in a series.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
+        """
 
     def __iter__():
         """Iterate over all specifications."""

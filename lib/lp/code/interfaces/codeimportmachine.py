@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Code import machine interfaces."""
@@ -45,7 +47,7 @@ class ICodeImportMachine(Interface):
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
-    def shouldLookForJob():
+    def shouldLookForJob(worker_limit):
         """Should we look for a job to run on this machine?
 
         There are three reasons we might not look for a job:

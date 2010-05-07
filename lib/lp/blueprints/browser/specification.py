@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
 
@@ -12,6 +13,7 @@ __all__ = [
     'NewSpecificationFromProjectView',
     'NewSpecificationFromRootView',
     'NewSpecificationFromSprintView',
+    'SpecificationActionMenu',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -28,6 +30,7 @@ __all__ = [
     'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
+    'SpecificationSubscriptionView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
@@ -45,6 +48,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
+from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -68,18 +72,19 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, action, canonical_url, enabled_with_permission,
+    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
+    Navigation, action, canonical_url,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.browser.mentoringoffer import CanBeMentoredView
+from canonical.launchpad.webapp.menu import (
+    ContextMenu, enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
 
 class NewSpecificationView(LaunchpadFormView):
     """An abstract view for creating a new specification."""
 
+    page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
 
     @action(_('Register Blueprint'), name='register')
@@ -108,6 +113,10 @@ class NewSpecificationView(LaunchpadFormView):
             spec.linkSprint(sprint, self.user)
         # Set the default value for the next URL.
         self._next_url = canonical_url(spec)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def transform(self, data):
         """Transforms the given form data.
@@ -142,6 +151,7 @@ class NewSpecificationFromTargetView(NewSpecificationView):
 
     The context must correspond to a unique specification target.
     """
+
     schema = Fields(INewSpecification,
                     INewSpecificationSprint)
 
@@ -194,6 +204,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
+
     def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)
@@ -262,7 +273,32 @@ class SpecificationNavigation(Navigation):
         return self.context.getSprintSpecification(name)
 
 
-class SpecificationContextMenu(ContextMenu):
+class SpecificationEditLinksMixin:
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def supersede(self):
+        text = 'Mark superseded'
+        return Link('+supersede', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Re-target blueprint'
+        return Link('+retarget', text, icon='edit')
+
+
+class SpecificationActionMenu(NavigationMenu, SpecificationEditLinksMixin):
+
+    usedfor = ISpecification
+    facet = 'specifications'
+    links = ('edit', 'supersede', 'retarget')
+
+
+class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
@@ -270,15 +306,9 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'linkbranch',
-             'offermentoring', 'retractmentoring',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Edit title and summary'
-        return Link('+edit', text, icon='edit')
 
     def givefeedback(self):
         text = 'Give feedback'
@@ -296,7 +326,7 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change people'
         return Link('+people', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def priority(self):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
@@ -325,24 +355,6 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change status'
         return Link('+status', text, icon='edit')
 
-    @enabled_with_permission('launchpad.AnyPerson')
-    def offermentoring(self):
-        text = 'Offer mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = self.context.canMentor(user)
-        return Link('+mentor', text, icon='add', enabled=enabled)
-
-    def retractmentoring(self):
-        text = 'Retract mentorship'
-        user = getUtility(ILaunchBag).user
-        # We should really only allow people to retract mentoring if the
-        # spec's open and the user's already a mentor.
-        if user and not self.context.is_complete:
-            enabled = self.context.isMentor(user)
-        else:
-            enabled = False
-        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
-
     def subscribeanother(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
@@ -362,16 +374,12 @@ class SpecificationContextMenu(ContextMenu):
             icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
-    @enabled_with_permission('launchpad.Edit')
-    def supersede(self):
-        text = 'Mark superseded'
-        return Link('+supersede', text, icon='edit')
-
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
         text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def unlinkbug(self):
         text = 'Unlink a bug'
         enabled = bool(self.context.bugs)
@@ -399,11 +407,6 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Propose for sprint'
         return Link('+linksprint', text, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
-    def retarget(self):
-        text = 'Re-target blueprint'
-        return Link('+retarget', text, icon='edit')
-
     @enabled_with_permission('launchpad.AnyPerson')
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -411,13 +414,14 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        if self.context.branch_links.count() > 0:
+        if self.context.linked_branches.count() > 0:
             text = 'Link to another branch'
         else:
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
-class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
+
+class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     __used_for__ = ISpecification
@@ -440,8 +444,8 @@ class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
         return self.context.dependencies or self.context.blocked_specs
 
     @cachedproperty
-    def branch_links(self):
-        return [branch_link for branch_link in self.context.branch_links
+    def linked_branches(self):
+        return [branch_link for branch_link in self.context.linked_branches
                 if check_permission('launchpad.View', branch_link.branch)]
 
     @cachedproperty
@@ -454,6 +458,14 @@ class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
 
     __used_for__ = ISpecification
+
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def page_title(self):
+        return self.label
 
     def initialize(self):
         # The review that the user requested on this spec, if any.
@@ -471,18 +483,29 @@ class SpecificationView(SpecificationSimpleView):
             essential = request.form.get('essential') == 'yes'
             if sub is not None:
                 self.context.subscribe(self.user, self.user, essential)
-                self.notices.append("You have subscribed to this spec.")
+                self.notices.append(
+                    "You have subscribed to this blueprint.")
             elif upd is not None:
                 self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this spec.")
+                self.notices.append(
+                    "You have unsubscribed from this blueprint.")
 
         if self.feedbackrequests:
-            msg = "You have %d feedback request(s) on this specification."
+            msg = "You have %d feedback request(s) on this blueprint."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
+
+
+class SpecificationSubscriptionView(SpecificationView):
+
+    @property
+    def label(self):
+        if self.subscription is not None:
+            return "Modify subscription"
+        return "Subscribe to blueprint"
 
 
 class SpecificationEditView(LaunchpadEditFormView):
@@ -502,7 +525,7 @@ class SpecificationEditView(LaunchpadEditFormView):
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
+                'blueprint is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
 
 
@@ -564,6 +587,10 @@ class SpecificationGoalProposeView(LaunchpadEditFormView):
             self.context, data['distroseries'], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
     label = 'Target to a product series'
@@ -576,6 +603,10 @@ class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
             self.context, data['productseries'], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 def propose_goal_with_automatic_approval(specification, series, user):
     """Proposes the given specification as a goal for the given series. If
@@ -587,27 +618,33 @@ def propose_goal_with_automatic_approval(specification, series, user):
         specification.acceptBy(user)
 
 
-class SpecificationGoalDecideView(LaunchpadView):
+class SpecificationGoalDecideView(LaunchpadFormView):
     """View used to allow the drivers of a series to accept
     or decline the spec as a goal for that series. Typically they would use
     the multi-select goalset view on their series, but it's also
     useful for them to have this one-at-a-time view on the spec itself.
     """
 
-    def initialize(self):
-        accept = self.request.form.get('accept')
-        decline = self.request.form.get('decline')
-        cancel = self.request.form.get('cancel')
-        decided = False
-        if accept is not None:
-            self.context.acceptBy(self.user)
-            decided = True
-        elif decline is not None:
-            self.context.declineBy(self.user)
-            decided = True
-        if decided or cancel is not None:
-            self.request.response.redirect(
-                canonical_url(self.context))
+    schema = Interface
+    field_names = []
+
+    @property
+    def label(self):
+        return _("Accept as %s series goal?") % self.context.goal.name
+
+    @action(_('Accept'), name='accept')
+    def accept_action(self, action, data):
+        self.context.acceptBy(self.user)
+
+    @action(_('Decline'), name='decline')
+    def decline_action(self, action, data):
+        self.context.declineBy(self.user)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class SpecificationRetargetingView(LaunchpadFormView):
@@ -652,13 +689,17 @@ class SpecificationRetargetingView(LaunchpadFormView):
         elif IDistribution.providedBy(target):
             distribution = target
         else:
-            raise AssertionError, 'Unknown target'
+            raise AssertionError('Unknown target.')
         self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
 
     @property
     def next_url(self):
         return self._nextURL
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SupersededByWidget(DropdownWidget):
@@ -702,8 +743,8 @@ class SpecificationSupersedingView(LaunchpadFormView):
                 vocabulary=SimpleVocabulary(terms),
                 required=False,
                 description=_(
-                    "The specification which supersedes this one. Note "
-                    "that selecting a specification here and pressing "
+                    "The blueprint which supersedes this one. Note "
+                    "that selecting a blueprint here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
             render_context=self.render_context)
@@ -728,6 +769,10 @@ class SpecificationSupersedingView(LaunchpadFormView):
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SpecGraph:
@@ -919,6 +964,10 @@ class SpecificationSprintAddView(LaunchpadFormView):
         self.context.linkSprint(data["sprint"], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecGraphNode:
     """Node in the spec dependency graph.
@@ -1029,7 +1078,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
         graph = SpecGraph()
-        root = graph.newNode(self.context, root=True)
+        graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
         return graph
@@ -1156,17 +1205,19 @@ class SpecificationLinkBranchView(LaunchpadFormView):
         self.context.linkBranch(branch=data['branch'],
                                 registrant=self.user)
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the blueprint page."""
-
     @property
     def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
         return canonical_url(self.context)
 
 
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
+
+    label = 'Blueprints'
 
     @safe_action
     @action('Find blueprints', name="search")

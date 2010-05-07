@@ -137,7 +137,7 @@ links are in the portlet "Filters"; its content is served in a separate
 request, issued by regular browsers via Javascript.
 
     >>> browser.open(
-    ...     "http://launchpad.dev/ubuntu/+bugtarget-portlet-bugfilters-content")
+    ...     "http://launchpad.dev/ubuntu/+bugtarget-portlet-bugfilters-info")
     >>> browser.getLink("New").click()
 
 The result set is filtered to show only New bugs.
@@ -189,7 +189,7 @@ it'll say so.
 == Bug Badge Decoration ==
 
 We display bug badges for associated branches, mentorship,
-specifications etc.
+specifications, patches, etc.
 
     >>> def names_and_branches(contents):
     ...     table = find_tag_by_id(contents, 'buglisting')
@@ -216,9 +216,58 @@ For instance, these are the badges on the firefox bug listing:
 Milestones are also presented as badges on bugs, and linked to the
 relevant listings:
 
-    >>> browser.open('http://bugs.launchpad.dev/debian/sarge/+source/mozilla-firefox')
+    >>> browser.open(
+    ...     'http://bugs.launchpad.dev/debian/sarge/+source/mozilla-firefox')
     >>> milestone = find_tags_by_class(browser.contents, 'sprite milestone')
     >>> print milestone[0]
-    <a href="http://bugs.launchpad.dev/debian/+milestone/3.1" alt="milestone 3.1" 
+    <a href="http://launchpad.dev/debian/+milestone/3.1" alt="milestone 3.1"
     title="Linked to milestone 3.1" class="sprite milestone"></a>
+
+
+Patches also appear as badges in bug listings.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IMessageSet, IPersonSet)
+    >>> from zope.component import getUtility
+    >>> from StringIO import StringIO
+    >>> import transaction
+    >>> login("foo.bar@canonical.com")
+    >>> foobar = getUtility(IPersonSet).getByName("name16")
+    >>> message = getUtility(IMessageSet).fromText(
+    ...    subject="test subject",
+    ...    content="a comment for the attachment",
+    ...    owner=foobar)
+    >>> bugset = getUtility(IBugSet)
+    >>> bug_one = bugset.get(1)
+    >>> bug_one.addAttachment(
+    ...     owner=foobar,
+    ...     data=StringIO("file data"),
+    ...     filename="foo.bar",
+    ...     description="this fixes the bug",
+    ...     comment=message,
+    ...     is_patch=True)
+    <BugAttachment at ...>
+    >>> transaction.commit()
+    >>> logout()
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bugs')
+    >>> names_and_branches(browser.contents)
+    /firefox/+bug/5
+      Badge: branch
+    /firefox/+bug/4
+      Badge: branch
+    /firefox/+bug/1
+      Badge: blueprint
+      Badge: haspatch
+
+
+== Bug heat in listings ==
+
+Bug listings display the bug heat in the last column. Heat is displayed as four flame
+images, marked here as '-'.
+
+    >>> user_browser.open("http://launchpad.dev/firefox/+bugs?field.searchtext=install&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all")
+    >>> print_bugtasks(user_browser.contents, show_heat=True)
+    5 Firefox install instructions should be complete Critical New ----
+    1 Firefox does not support SVG Low New ----
 

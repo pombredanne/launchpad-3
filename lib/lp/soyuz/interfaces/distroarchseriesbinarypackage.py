@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Binary package in a distroarchseries interfaces."""
@@ -12,7 +14,8 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from lp.registry.interfaces.product import IDistributionSourcePackage
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
 from lazr.restful.fields import Reference
 
 class IDistroArchSeriesBinaryPackage(Interface):

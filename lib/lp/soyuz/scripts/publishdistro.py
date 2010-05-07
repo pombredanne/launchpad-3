@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Publisher script functions."""
 
 __all__ = [
@@ -14,7 +16,7 @@ from lp.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ArchivePurpose, ArchiveStatus, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
 from lp.services.scripts.base import LaunchpadScriptFailure
@@ -67,6 +69,11 @@ def add_options(parser):
                       dest="partner", metavar="PARTNER", default=False,
                       help="Run only over the partner archive.")
 
+    parser.add_option("--copy-archive", action="store_true",
+                      dest="copy_archive", metavar="COPYARCHIVE",
+                      default=False,
+                      help="Run only over the copy archives.")
+
     parser.add_option(
         "--primary-debug", action="store_true", default=False,
         dest="primary_debug", metavar="PRIMARYDEBUG",
@@ -101,12 +108,13 @@ def run_publisher(options, txn, log=None):
 
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
-        options.primary_debug)
+        options.primary_debug, options.copy_archive)
+
     num_exclusive = [flag for flag in exclusive_options if flag]
     if len(num_exclusive) > 1:
         raise LaunchpadScriptFailure(
-            "Can only specify one of partner, ppa, private-ppa and "
-            "primary-debug.")
+            "Can only specify one of partner, ppa, private-ppa, copy-archive"
+            " and primary-debug.")
 
     log.debug("  Distribution: %s" % options.distribution)
     log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
@@ -159,11 +167,22 @@ def run_publisher(options, txn, log=None):
             raise LaunchpadScriptFailure(
                 "Could not find DEBUG archive for %s" % distribution.name)
         archives = [debug_archive]
+    elif options.copy_archive:
+        archives = getUtility(IArchiveSet).getArchivesForDistribution(
+            distribution, purposes=[ArchivePurpose.COPY])
+        # XXX 2010-02-24 Julian bug=246200
+        # Fix this to use bool when Storm fixes __nonzero__ on sqlobj
+        # result sets.
+        if archives.count() == 0:
+            raise LaunchpadScriptFailure("Could not find any COPY archives")
     else:
         archives = [distribution.main_archive]
 
-    # Consider only archives that have their "to be published" flag turned on.
-    archives = [archive for archive in archives if archive.publish]
+    # Consider only archives that have their "to be published" flag turned on
+    # or are pending deletion.
+    archives = [
+        archive for archive in archives 
+        if archive.publish or archive.status == ArchiveStatus.DELETING]
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
@@ -175,24 +194,34 @@ def run_publisher(options, txn, log=None):
         else:
             log.info("Processing %s" % archive.archive_url)
             publisher = getPublisher(archive, allowed_suites, log)
-
-        try_and_commit("publishing", publisher.A_publish,
-                       options.careful or options.careful_publishing)
-        # Flag dirty pockets for any outstanding deletions.
-        publisher.A2_markPocketsWithDeletionsDirty()
-        try_and_commit("dominating", publisher.B_dominate,
-                       options.careful or options.careful_domination)
-
-        # The primary archive uses apt-ftparchive to generate the indexes,
-        # everything else uses the newer internal LP code.
-        if archive.purpose == ArchivePurpose.PRIMARY:
-            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                           options.careful or options.careful_apt)
+        
+        # Do we need to delete the archive or publish it?
+        if archive.status == ArchiveStatus.DELETING:
+            if archive.purpose == ArchivePurpose.PPA:
+                try_and_commit("deleting archive", publisher.deleteArchive)
+            else:
+                # Other types of archives do not currently support deletion.
+                log.warning(
+                    "Deletion of %s skipped: operation not supported on %s"
+                    % archive.displayname)
         else:
-            try_and_commit("building indexes", publisher.C_writeIndexes,
-                           options.careful or options.careful_apt)
+            try_and_commit("publishing", publisher.A_publish,
+                           options.careful or options.careful_publishing)
+            # Flag dirty pockets for any outstanding deletions.
+            publisher.A2_markPocketsWithDeletionsDirty()
+            try_and_commit("dominating", publisher.B_dominate,
+                           options.careful or options.careful_domination)
 
-        try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                       options.careful or options.careful_apt)
+            # The primary and copy archives use apt-ftparchive to generate the
+            # indexes, everything else uses the newer internal LP code.
+            if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+                try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+                               options.careful or options.careful_apt)
+            else:
+                try_and_commit("building indexes", publisher.C_writeIndexes,
+                               options.careful or options.careful_apt)
+
+            try_and_commit("doing release files", publisher.D_writeReleaseFiles,
+                           options.careful or options.careful_apt)
 
     log.debug("Ciao")

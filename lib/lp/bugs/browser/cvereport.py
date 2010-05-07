@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views to generate CVE reports (as in distro and distroseries/+cve pages)."""
 
@@ -76,7 +77,8 @@ class CVEReportView(LaunchpadView):
                 bugtask,
                 has_mentoring_offer=badges['has_mentoring_offer'],
                 has_bug_branch=badges['has_branch'],
-                has_specification=badges['has_specification'])
+                has_specification=badges['has_specification'],
+                has_patch=badges['has_patch'])
             if not bugtaskcves.has_key(bugtask.bug.id):
                 bugtaskcves[bugtask.bug.id] = BugTaskCve()
             bugtaskcves[bugtask.bug.id].bugtasks.append(bugtask)

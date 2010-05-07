@@ -26,7 +26,7 @@
           <tal:pending condition="not: diff/date_fulfilled">
              <tal:pending-diff replace="diff/title">
                1.0 (in Ubuntu) to 1.1
-             </tal:pending-diff>
+             </tal:pending-diff> (pending)
           </tal:pending>
           <tal:fulfilled condition="diff/date_fulfilled">
              <a tal:attributes="href diff/diff_content/http_url"

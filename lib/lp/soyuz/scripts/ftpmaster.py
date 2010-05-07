@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """FTPMaster utilities."""
 
 __metaclass__ = type
@@ -19,7 +21,7 @@ __all__ = [
 
 import apt_pkg
 import commands
-import md5
+import hashlib
 import os
 import stat
 import sys
@@ -34,13 +36,17 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.archiveuploader.utils import (
+    determine_source_file_type)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from lp.soyuz.scripts.ftpmasterbase import (
@@ -145,20 +151,20 @@ class ArchiveCruftChecker:
         if not os.path.exists(filename):
             raise TagFileNotFound("File does not exist: %s" % filename)
 
-        unused_fd, temp_filename = tempfile.mkstemp()
+        temp_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
         if result != 0:
             raise ArchiveCruftCheckerError(
                 "Gunzip invocation failed!\n%s" % output)
 
-        temp_fd = open(temp_filename)
+        temp_file = os.fdopen(temp_fd)
         # XXX cprov 2006-05-15: maybe we need some sort of data integrity
         # check at this point, and maybe keep the uncrompressed file
         # for debug purposes, let's see how it behaves in real conditions.
-        parsed_contents = apt_pkg.ParseTagFile(temp_fd)
+        parsed_contents = apt_pkg.ParseTagFile(temp_file)
 
-        return temp_fd, temp_filename, parsed_contents
+        return temp_file, temp_filename, parsed_contents
 
     def processSources(self):
         """Process archive sources index.
@@ -800,11 +806,13 @@ class ChrootManager:
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
 
+
 class SyncSourceError(Exception):
     """Raised when an critical error occurs inside SyncSource.
 
     The entire procedure should be aborted in order to avoid unknown problems.
     """
+
 
 class SyncSource:
     """Sync Source procedure helper class.
@@ -815,25 +823,27 @@ class SyncSource:
     'aptMD5Sum' is provided as a classmethod during the integration time.
     """
 
-    def __init__(self, files, origin, debug, downloader):
+    def __init__(self, files, origin, logger, downloader, todistro):
         """Store local context.
 
         files: a dictionary where the keys are the filename and the
                value another dictionary with the file informations.
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
-        debug: a debug function, 'debug(message)'
+        logger: a logger
         downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        todistro: target distribution object
         """
         self.files = files
         self.origin = origin
-        self.debug = debug
+        self.logger = logger
         self.downloader = downloader
+        self.todistro = todistro
 
     @classmethod
     def generateMD5Sum(self, filename):
         file_handle = open(filename)
-        md5sum = md5.md5(file_handle.read()).hexdigest()
+        md5sum = hashlib.md5(file_handle.read()).hexdigest()
         file_handle.close()
         return md5sum
 
@@ -844,19 +854,14 @@ class SyncSource:
         Return the fetched filename if it was present in Librarian or None
         if it wasn't.
         """
-        # XXX cprov 2007-01-10 bug=78683: Looking for files within ubuntu
-        # only. It doesn't affect the usual sync-source procedure. However
-        # it needs to be revisited for derivation, we probably need
-        # to pass the target distribution in order to make proper lookups.
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            libraryfilealias = ubuntu.getFileByName(
+            libraryfilealias = self.todistro.getFileByName(
                 filename, source=True, binary=False)
         except NotFoundError:
             return None
 
-        self.debug(
-            "\t%s: already in distro - downloading from librarian" %
+        self.logger.info(
+            "%s: already in distro - downloading from librarian" %
             filename)
 
         output_file = open(filename, 'w')
@@ -868,23 +873,23 @@ class SyncSource:
         """Try to fetch files from Librarian.
 
         It raises SyncSourceError if anything else then an
-        'orig.tar.gz' was found in Librarian.
-        Return a boolean indicating whether or not the 'orig.tar.gz' is
-        required in the upload.
+        orig tarball was found in Librarian.
+        Return the names of the files retrieved from the librarian.
         """
-        orig_filename = None
+        retrieved = []
         for filename in self.files.keys():
             if not self.fetchFileFromLibrarian(filename):
                 continue
+            file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if filename.endswith("orig.tar.gz"):
-                orig_filename = filename
-            else:
+            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
+                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
                 raise SyncSourceError(
-                    'Oops, only orig.tar.gz can be retrieved from librarian')
+                    'Oops, only orig tarball can be retrieved from librarian.')
+            retrieved.append(filename)
 
-        return orig_filename
+        return retrieved
 
     def fetchSyncFiles(self):
         """Fetch files from the original sync source.
@@ -893,21 +898,19 @@ class SyncSource:
         """
         dsc_filename = None
         for filename in self.files.keys():
+            file_type = determine_source_file_type(filename)
+            if file_type == SourcePackageFileType.DSC:
+                dsc_filename = filename
             if os.path.exists(filename):
+                self.logger.info("  - <%s: cached>" % (filename))
                 continue
-            self.debug(
+            self.logger.info(
                 "  - <%s: downloading from %s>" %
                 (filename, self.origin["url"]))
             download_f = ("%s%s" % (self.origin["url"],
                                     self.files[filename]["remote filename"]))
             sys.stdout.flush()
             self.downloader(download_f, filename)
-            # only set the dsc_filename if the DSC was really downloaded.
-            # this loop usually includes the other files for the upload,
-            # DIFF and ORIG.
-            if filename.endswith(".dsc"):
-                dsc_filename = filename
-
         return dsc_filename
 
     def checkDownloadedFiles(self):
@@ -1043,7 +1046,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
         # multiple series with the desired status?
-        for series in self.location.distribution.serieses:
+        for series in self.location.distribution.series:
             if series.status == status:
                 return series
         raise NotFoundError(
@@ -1061,7 +1064,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         try:
-            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
+            series = self.getSeriesByStatus(SeriesStatus.CURRENT)
         except NotFoundError, err:
             raise LaunchpadScriptFailure(err)
 
@@ -1084,8 +1087,8 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         series = None
-        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
-                         DistroSeriesStatus.FROZEN)
+        wanted_status = (SeriesStatus.DEVELOPMENT,
+                         SeriesStatus.FROZEN)
         for status in wanted_status:
             try:
                 series = self.getSeriesByStatus(status)
@@ -1115,8 +1118,8 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         supported_series = []
-        unsupported_status = (DistroSeriesStatus.EXPERIMENTAL,
-                              DistroSeriesStatus.OBSOLETE)
+        unsupported_status = (SeriesStatus.EXPERIMENTAL,
+                              SeriesStatus.OBSOLETE)
         for distroseries in self.location.distribution:
             if distroseries.status not in unsupported_status:
                 supported_series.append(distroseries.name)
@@ -1265,10 +1268,10 @@ class PackageRemover(SoyuzScript):
 
         removals = []
         for removable in removables:
-            removed = removable.requestDeletion(
+            removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
-            removals.append(removed)
+            removals.append(removable)
 
         if len(removals) == 1:
             self.logger.info(
@@ -1358,7 +1361,7 @@ class ObsoleteDistroseries(SoyuzScript):
                 "and which is not the most recent distroseries.")
 
         # Is the distroseries in an obsolete state?  Bail out now if not.
-        if distroseries.status != DistroSeriesStatus.OBSOLETE:
+        if distroseries.status != SeriesStatus.OBSOLETE:
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 

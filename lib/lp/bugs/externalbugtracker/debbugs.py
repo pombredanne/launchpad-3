@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Debbugs ExternalBugTracker utility."""
 
@@ -21,17 +22,19 @@ import pytz
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.webapp import urlsplit
+
+from lp.bugs.externalbugtracker import (
+    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError,
+    ExternalBugTracker, InvalidBugId, UnknownRemoteStatusError)
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE)
-from canonical.launchpad.mail import simple_sendmail
 from lp.bugs.scripts import debbugs
-from canonical.launchpad.webapp import urlsplit
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -49,15 +52,23 @@ class DebBugs(ExternalBugTracker):
     implements(
         ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
 
-    sync_comments = config.checkwatches.sync_debbugs_comments
-
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
+    # Because we keep a local copy of debbugs, we remove the batch_size
+    # limit so that all debbugs watches that need checking will be
+    # checked each time checkwatches runs.
+    batch_size = BATCH_SIZE_UNLIMITED
+
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)
+        # debbugs syncing can be enabled/disabled separately.
+        self.sync_comments = (
+            self.sync_comments and
+            config.checkwatches.sync_debbugs_comments)
+
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -215,9 +226,9 @@ class DebBugs(ExternalBugTracker):
         debian_bug = self._findBug(remote_bug)
         return debian_bug.subject, debian_bug.description
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
-        debian_bug = self._findBug(bug_watch.remotebug)
+        debian_bug = self._findBug(remote_bug_id)
         self._loadLog(debian_bug)
 
         comment_ids = []
@@ -238,16 +249,16 @@ class DebBugs(ExternalBugTracker):
 
         return comment_ids
 
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         # This method does nothing since DebBugs bugs are stored locally
         # and their comments don't need to be pre-fetched. It exists
-        # purely to ensure that BugWatchUpdater doesn't choke on it.
+        # purely to ensure that CheckwatchesMaster doesn't choke on it.
         pass
 
-    def getPosterForComment(self, bug_watch, comment_id):
+    def getPosterForComment(self, remote_bug_id, comment_id):
         """See `ISupportsCommentImport`."""
-        debian_bug = self._findBug(bug_watch.remotebug)
+        debian_bug = self._findBug(remote_bug_id)
         self._loadLog(debian_bug)
 
         for comment in debian_bug.comments:
@@ -298,9 +309,9 @@ class DebBugs(ExternalBugTracker):
 
         return msg_date
 
-    def getMessageForComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
-        debian_bug = self._findBug(bug_watch.remotebug)
+        debian_bug = self._findBug(remote_bug_id)
         self._loadLog(debian_bug)
 
         for comment in debian_bug.comments:
@@ -313,6 +324,7 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
+    @ensure_no_transaction
     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
         """Push a comment to the remote DebBugs instance.
 

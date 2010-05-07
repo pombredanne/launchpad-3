@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -32,15 +33,15 @@ from lp.registry.interfaces.productrelease import (
 
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
+from canonical.lazr.utils import smartquote
 from lp.registry.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, stepthrough)
-from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
-from lp.registry.browser import RegistryDeleteViewMixin
+from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
 
 
 class ProductReleaseNavigation(Navigation):
@@ -59,32 +60,28 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
+    links = ('edit', 'add_file', 'download', 'delete')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
+        text = 'Change release details'
         summary = "Edit this release"
         return Link('+edit', text, summary=summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete release'
+        summary = "Delete release"
+        return Link('+delete', text, summary=summary, icon='remove')
 
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
         text = 'Add download file'
         return Link('+adddownloadfile', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
-
     def download(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    def view_milestone(self):
-        text = 'View milestone'
-        url = canonical_url(self.context.milestone)
-        return Link(url, text)
 
 
 class ProductReleaseAddViewBase(LaunchpadFormView):
@@ -121,18 +118,16 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
             milestone.active = False
             milestone_link = '<a href="%s">%s milestone</a>' % (
                 canonical_url(milestone), cgi.escape(milestone.name))
-            self.request.response.addWarningNotification(structured(
-                _("The %s for this project release was deactivated "
-                  "so that bugs and blueprints cannot be associated with "
-                  "this release." % milestone_link)))
-        self.next_url = canonical_url(newrelease.milestone.productseries)
+        self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
     def label(self):
         """The form label."""
-        return 'Create a new release for %s' % (
-            self.context.product.displayname)
+        return smartquote('Create a new release for %s' %
+                          self.context.product.displayname)
+
+    page_title = label
 
     @property
     def cancel_url(self):
@@ -170,7 +165,8 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
         self._createRelease(self.context, data)
 
 
-class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
+class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
+                                      MilestoneOverlayMixin):
     """Create a product release from an existing or new milestone.
 
     Also, deactivate the milestone it is attached to.
@@ -184,7 +180,7 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
 
     def initialize(self):
         # The dynamically loaded milestone form needs this javascript
-        # enabled in the main-template.pt.
+        # enabled in the base-layout.
         self.request.needs_datepicker_iframe = True
         super(ProductReleaseFromSeriesAddView, self).initialize()
 
@@ -206,15 +202,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase):
                 __name__='milestone_for_release',
                 vocabulary=SimpleVocabulary(terms)))
         self.form_fields = milestone_field + self.form_fields
-
-    @property
-    def milestone_form_uri(self):
-        """URI for form displayed by the formoverlay widget."""
-        return canonical_url(self.context) + '/+addmilestone/++form++'
-
-    @property
-    def series_api_uri(self):
-        return canonical_url(self.context, path_only_if_possible=True)
 
     @action(_('Create release'), name='create')
     def createRelease(self, action, data):
@@ -239,7 +226,9 @@ class ProductReleaseEditView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Edit %s release details' % self.context.title
+        return smartquote('Edit %s release details' % self.context.title)
+
+    page_title = label
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -289,7 +278,9 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Add a download file to %s' % self.context.title
+        return smartquote('Add a download file to %s' % self.context.title)
+
+    page_title = label
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -361,9 +352,11 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s' % self.context.title
+        return smartquote('Delete %s' % self.context.title)
 
-    @action('Delete this Release', name='delete')
+    page_title = label
+
+    @action('Delete Release', name='delete')
     def delete_action(self, action, data):
         series = self.context.productseries
         version = self.context.version
@@ -375,4 +368,3 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-

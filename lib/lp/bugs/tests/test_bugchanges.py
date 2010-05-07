@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
 
@@ -17,7 +18,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -370,7 +371,7 @@ class TestBugChanges(unittest.TestCase):
         # Linking a branch to a bug adds both to the activity log and
         # sends an e-mail notification.
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch linked',
@@ -394,7 +395,7 @@ class TestBugChanges(unittest.TestCase):
         self.failUnless(self.bug.is_complete)
         self.saveOldChanges()
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         expected_activity = {
             'person': self.user,
             'whatchanged': 'branch linked',
@@ -407,16 +408,16 @@ class TestBugChanges(unittest.TestCase):
         # Linking a *private* branch to a bug adds *nothing* to the
         # activity log and does *not* send an e-mail notification.
         branch = self.factory.makeBranch(private=True)
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.assertRecordedChange()
 
     def test_unlink_branch(self):
         # Unlinking a branch from a bug adds both to the activity log and
         # sends an e-mail notification.
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
-        self.bug.removeBranch(branch, self.user)
+        self.bug.unlinkBranch(branch, self.user)
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',
@@ -439,9 +440,9 @@ class TestBugChanges(unittest.TestCase):
                 BugTaskStatus.FIXRELEASED, user=self.user)
         self.failUnless(self.bug.is_complete)
         branch = self.factory.makeBranch()
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
-        self.bug.removeBranch(branch, self.user)
+        self.bug.unlinkBranch(branch, self.user)
         expected_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',
@@ -454,9 +455,9 @@ class TestBugChanges(unittest.TestCase):
         # Unlinking a *private* branch from a bug adds *nothing* to
         # the activity log and does *not* send an e-mail notification.
         branch = self.factory.makeBranch(private=True)
-        self.bug.addBranch(branch, self.user)
+        self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
-        self.bug.removeBranch(branch, self.user)
+        self.bug.unlinkBranch(branch, self.user)
         self.assertRecordedChange()
 
     def test_make_private(self):
@@ -561,7 +562,7 @@ class TestBugChanges(unittest.TestCase):
     def test_mark_as_security_vulnerability(self):
         # Marking a bug as a security vulnerability adds to the bug's
         # activity log and sends a notification.
-        self.bug.security_related = False
+        self.bug.setSecurityRelated(False)
         self.changeAttribute(self.bug, 'security_related', True)
 
         security_change_activity = {
@@ -585,7 +586,7 @@ class TestBugChanges(unittest.TestCase):
     def test_unmark_as_security_vulnerability(self):
         # Unmarking a bug as a security vulnerability adds to the
         # bug's activity log and sends a notification.
-        self.bug.security_related = True
+        self.bug.setSecurityRelated(True)
         self.changeAttribute(self.bug, 'security_related', False)
 
         security_change_activity = {
@@ -690,6 +691,7 @@ class TestBugChanges(unittest.TestCase):
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user)
         self.saveOldChanges()
+        download_url = attachment.libraryfile.http_url
         attachment.removeFromBug(user=self.user)
 
         attachment_removed_activity = {
@@ -697,13 +699,13 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'attachment removed',
             'newvalue': None,
             'oldvalue': '%s %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title, download_url),
             }
 
         attachment_removed_notification = {
             'person': self.user,
             'text': '** Attachment removed: "%s"\n   %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title, download_url),
             }
 
         self.assertRecordedChange(
@@ -1208,38 +1210,6 @@ class TestBugChanges(unittest.TestCase):
 
         self.assertRecordedChange(expected_activity=expected_activity)
 
-    def test_series_nominated_and_approved(self):
-        # When adding a nomination that is approved automatically, it's
-        # like adding a new bug task for the series directly.
-        product = self.factory.makeProduct(owner=self.user)
-        product.driver = self.user
-        series = self.factory.makeProductSeries(product=product)
-        self.bug.addTask(self.user, product)
-        self.saveOldChanges()
-
-        nomination = self.bug.addNomination(self.user, series)
-        self.assertTrue(nomination.isApproved())
-
-        expected_activity = {
-            'person': self.user,
-            'newvalue': series.bugtargetname,
-            'whatchanged': 'bug task added',
-            'newvalue': series.bugtargetname,
-            }
-
-        task_added_notification = {
-            'person': self.user,
-            'text': (
-                '** Also affects: %s\n'
-                '   Importance: Undecided\n'
-                '       Status: New' % (
-                    series.bugtargetname)),
-            }
-
-        self.assertRecordedChange(
-            expected_activity=expected_activity,
-            expected_notification=task_added_notification)
-
     def test_nomination_approved(self):
         # When a nomination is approved, it's like adding a new bug
         # task for the series directly.
@@ -1278,6 +1248,14 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
+        # Save the people that are notified about the bug before it's
+        # made a duplicate, so that we don't get extra people by
+        # mistake. Only the people subscribed to the bug that gets marked
+        # as a duplicate are notified. People who are subscribed to the
+        # master bug aren't, to avoid them getting spammed with
+        # unimportant bug notifications.
+        duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
@@ -1291,6 +1269,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': ("** This bug has been marked a duplicate of bug %d\n"
                      "   %s" % (self.bug.id, self.bug.title)),
+            'recipients': duplicate_bug_recipients,
             }
 
         self.assertRecordedChange(
@@ -1302,6 +1281,8 @@ class TestBugChanges(unittest.TestCase):
         # When a bug is unmarked as a duplicate, activity is recorded
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
+        duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
         duplicate_bug.duplicateof = self.bug
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
@@ -1317,6 +1298,7 @@ class TestBugChanges(unittest.TestCase):
             'person': self.user,
             'text': ("** This bug is no longer a duplicate of bug %d\n"
                      "   %s" % (self.bug.id, self.bug.title)),
+            'recipients': duplicate_bug_recipients,
             }
 
         self.assertRecordedChange(
@@ -1330,6 +1312,8 @@ class TestBugChanges(unittest.TestCase):
         # notification is sent.
         bug_one = self.factory.makeBug()
         bug_two = self.factory.makeBug()
+        bug_recipients = self.bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
         self.bug.duplicateof = bug_one
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
@@ -1348,6 +1332,7 @@ class TestBugChanges(unittest.TestCase):
                      "** This bug has been marked a duplicate of bug %d\n"
                      "   %s" % (bug_one.id, bug_one.title,
                                 bug_two.id, bug_two.title)),
+            'recipients': bug_recipients,
             }
 
         self.assertRecordedChange(

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
 
@@ -19,8 +20,8 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from lp.soyuz.model.archiveauthtoken import (
-    ArchiveAuthToken, IArchiveAuthTokenSet)
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 from lp.registry.model.teammembership import TeamParticipation
@@ -67,7 +68,7 @@ class ArchiveSubscriber(Storm):
     @property
     def displayname(self):
         """See `IArchiveSubscriber`."""
-        return "%s's subscription to %s" % (
+        return "%s's access to %s" % (
             self.subscriber.displayname, self.archive.displayname)
 
     def cancel(self, cancelled_by):

@@ -6,16 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Actions that give people karma</h1>
-    </metal:heading>
+<body>
+
+<metal:heading fill-slot="heading">
+  <h1 tal:content="view/page_title" />
+</metal:heading>
+
 
 <div metal:fill-slot="main">
-
 
   <table class="listing sortable" id="karmas">
     <thead>

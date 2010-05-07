@@ -1,4 +1,5 @@
--- Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 CREATE OR REPLACE FUNCTION assert_patch_applied(
     major integer, minor integer, patch integer) RETURNS boolean
@@ -67,7 +68,70 @@ $$
 $$;
 
 COMMENT ON FUNCTION replication_lag() IS
-'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+'Returns the worst lag time in our cluster, or NULL if not a replicated installation. Only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION replication_lag(node_id integer) RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl')
+                AND st_received = node_id;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag(integer) IS
+'Returns the lag time of the lpmain replication set to the given node, or NULL if not a replicated installation. The node id parameter can be obtained by calling getlocalnodeid() on the relevant database. This function only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+    BEGIN
+        DELETE FROM DatabaseReplicationLag;
+        INSERT INTO DatabaseReplicationLag (node, lag)
+            SELECT st_received, st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl');
+        RETURN TRUE;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN FALSE;
+        WHEN undefined_table THEN
+            RETURN FALSE;
+    END;
+$$;
+
+COMMENT ON FUNCTION update_replication_lag_cache() IS
+'Updates the DatabaseReplicationLag materialized view.';
+
+
+CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_node_id integer;
+    BEGIN
+        SELECT INTO v_node_id _sl.getlocalnodeid('_sl');
+        RETURN v_node_id;
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION getlocalnodeid() IS
+'Return the replication node id for this node, or NULL if not a replicated installation.';
 
 
 CREATE OR REPLACE FUNCTION activity()
@@ -210,15 +274,17 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number a
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    from urlparse import urlparse
+    from urlparse import urlparse, uses_netloc
+    # Extend list of schemes that specify netloc. We can drop sftp
+    # with Python 2.5 in the DB.
+    if 'git' not in uses_netloc:
+        uses_netloc.insert(0, 'sftp')
+        uses_netloc.insert(0, 'bzr')
+        uses_netloc.insert(0, 'bzr+ssh')
+        uses_netloc.insert(0, 'ssh') # Mercurial
+        uses_netloc.insert(0, 'git')
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    # urlparse in the stdlib does not correctly parse the netloc from
-    # sftp and bzr+ssh schemes, so we have to manually check those
-    if scheme in ("sftp", "bzr+ssh"):
-        return 1
-    if not (scheme and netloc):
-        return 0
-    return 1
+    return bool(scheme and netloc)
 $$;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
@@ -408,13 +474,13 @@ BEGIN
 
     IF v_trash_old THEN
         -- Was this somebody's most-recently-changed message?
+        -- If so, delete the entry for that change.
         DELETE FROM POFileTranslator
         WHERE latest_message = OLD.id;
-
         IF FOUND THEN
-            -- Delete old records.
-
-            -- Insert a past record if there is one.
+            -- We deleted the entry for somebody's latest contribution.
+            -- Find that person's latest remaining contribution and
+            -- create a new record for that.
             INSERT INTO POFileTranslator (
                 person, pofile, latest_message, date_last_touched
                 )
@@ -426,25 +492,24 @@ BEGIN
                          new_latest_message.date_reviewed)
               FROM POFile
               JOIN TranslationTemplateItem AS old_template_item
-                ON (OLD.potmsgset =
-                     old_template_item.potmsgset) AND
-                   (old_template_item.potemplate = pofile.potemplate) AND
-                   (pofile.language
-                     IS NOT DISTINCT FROM OLD.language) AND
-                   (pofile.variant
-                     IS NOT DISTINCT FROM OLD.variant)
+                ON OLD.potmsgset = old_template_item.potmsgset AND
+                   old_template_item.potemplate = pofile.potemplate AND
+                   pofile.language = OLD.language AND
+                   pofile.variant IS NOT DISTINCT FROM OLD.variant
               JOIN TranslationTemplateItem AS new_template_item
                 ON (old_template_item.potemplate =
                      new_template_item.potemplate)
               JOIN TranslationMessage AS new_latest_message
-                ON (new_latest_message.potmsgset =
-                     new_template_item.potmsgset) AND
-                   (new_latest_message.language
-                     IS NOT DISTINCT FROM OLD.language AND
-                   (new_latest_message.variant)
-                     IS NOT DISTINCT FROM OLD.variant)
+                ON new_latest_message.potmsgset =
+                       new_template_item.potmsgset AND
+                   new_latest_message.language = OLD.language AND
+                   new_latest_message.variant IS NOT DISTINCT FROM OLD.variant
+              LEFT OUTER JOIN POfileTranslator AS ExistingEntry
+                ON ExistingEntry.person = OLD.submitter AND
+                   ExistingEntry.pofile = POFile.id
               WHERE
-                new_latest_message.submitter=OLD.submitter
+                new_latest_message.submitter = OLD.submitter AND
+                ExistingEntry IS NULL
               ORDER BY new_latest_message.submitter, pofile.id,
                        new_latest_message.date_created DESC,
                        new_latest_message.id DESC;
@@ -988,7 +1053,22 @@ BEGIN
     DECLARE
         parent_name text;
         child_name text;
+        parent_distroseries text;
+        child_distroseries text;
     BEGIN
+        -- Make sure that the package sets being associated here belong
+        -- to the same distro series.
+        IF (SELECT parent.distroseries != child.distroseries
+            FROM packageset parent, packageset child
+            WHERE parent.id = NEW.parent AND child.id = NEW.child)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            SELECT ds.name INTO parent_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.parent AND ps.distroseries = ds.id;
+            SELECT ds.name INTO child_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.child AND ps.distroseries = ds.id;
+            RAISE EXCEPTION 'Package sets % and % belong to different distro series (to % and % respectively) and thus cannot be associated.', child_name, parent_name, child_distroseries, parent_distroseries;
+        END IF;
+
         IF EXISTS(
             SELECT * FROM flatpackagesetinclusion
             WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)
@@ -1240,3 +1320,186 @@ $$;
 COMMENT ON FUNCTION mv_branch_distribution_update() IS
 'Maintain Branch name cache when Distribution is modified.';
 
+
+-- Mirror tables for the login service.
+-- We maintain a duplicate of a few tables which are replicated
+-- in a seperate replication set.
+-- Insert triggers
+CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_TeamParticipation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_PersonLocation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Person SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    INSERT INTO lp_Account (id, openid_identifier)
+    VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- UPDATE triggers
+CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_TeamParticipation
+    SET id = NEW.id,
+        team = NEW.team,
+        person = NEW.person
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_PersonLocation
+    SET id = NEW.id,
+        date_created = NEW.date_created,
+        person = NEW.person,
+        latitude = NEW.latitude,
+        longitude = NEW.longitude,
+        time_zone = NEW.time_zone,
+        last_modified_by = NEW.last_modified_by,
+        date_last_modified = NEW.date_last_modified,
+        visible = NEW.visible,
+        locked = NEW.locked
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE lp_Person
+    SET id = NEW.id,
+        displayname = NEW.displayname,
+        teamowner = NEW.teamowner,
+        teamdescription = NEW.teamdescription,
+        name = NEW.name,
+        language = NEW.language,
+        fti = NEW.fti,
+        defaultmembershipperiod = NEW.defaultmembershipperiod,
+        defaultrenewalperiod = NEW.defaultrenewalperiod,
+        subscriptionpolicy = NEW.subscriptionpolicy,
+        merged = NEW.merged,
+        datecreated = NEW.datecreated,
+        addressline1 = NEW.addressline1,
+        addressline2 = NEW.addressline2,
+        organization = NEW.organization,
+        city = NEW.city,
+        province = NEW.province,
+        country = NEW.country,
+        postcode = NEW.postcode,
+        phone = NEW.phone,
+        homepage_content = NEW.homepage_content,
+        icon = NEW.icon,
+        mugshot = NEW.mugshot,
+        hide_email_addresses = NEW.hide_email_addresses,
+        creation_rationale = NEW.creation_rationale,
+        creation_comment = NEW.creation_comment,
+        registrant = NEW.registrant,
+        logo = NEW.logo,
+        renewal_policy = NEW.renewal_policy,
+        personal_standing = NEW.personal_standing,
+        personal_standing_reason = NEW.personal_standing_reason,
+        mail_resumption_date = NEW.mail_resumption_date,
+        mailing_list_auto_subscribe_policy 
+            = NEW.mailing_list_auto_subscribe_policy,
+        mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
+        visibility = NEW.visibility,
+        verbose_bugnotifications = NEW.verbose_bugnotifications,
+        account = NEW.account
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
+        UPDATE lp_Account
+        SET id = NEW.id, openid_identifier = NEW.openid_identifier
+        WHERE id = OLD.id;
+    END IF;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- Delete triggers
+CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
+SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+
+-- Update the (redundant) column bug.latest_patch_uploaded when a
+-- a bug attachment is added or removed or if its type is changed.
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
+RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    UPDATE bug SET latest_patch_uploaded =
+        (SELECT max(message.datecreated)
+            FROM message, bugattachment
+            WHERE bugattachment.message=message.id AND
+                bugattachment.bug=$1 AND
+                bugattachment.type=1)
+        WHERE bug.id=$1;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(NEW.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
+RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(OLD.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;

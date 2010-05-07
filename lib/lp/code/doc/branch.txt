@@ -116,9 +116,9 @@ the branch, whereas the owner is the current owner of the branch.
     >>> print new_branch.owner.name
     registrant
 
-A user can create a branch where the owner is either themselves,
-or a team that they are a member of.  The registrant is not writable,
-whereas the owner is.
+A user can create a branch where the owner is either themselves, or a team
+that they are a member of.  Neither the owner nor the registrant are writable,
+but the owner can be set using the `setOwner` method.
 
     >>> login('admin@canonical.com')
     >>> new_branch.registrant = factory.makePerson()
@@ -126,7 +126,8 @@ whereas the owner is.
       ...
     ForbiddenAttribute: ('registrant', <Branch ...>)
 
-    >>> new_branch.owner = factory.makePerson(name='new-owner')
+    >>> team = factory.makeTeam(name='new-owner', owner=new_branch.owner)
+    >>> new_branch.setOwner(new_owner=team, user=new_branch.owner)
     >>> print new_branch.registrant.name
     registrant
     >>> print new_branch.owner.name
@@ -425,14 +426,14 @@ the history.
     >>> list(junk.latest_revisions(3)) == three_latest
     True
 
-Branch.revisions_since gives all the BranchRevisions for revisions comitted
-since a given timestamp. It may give suprising results if some committers had a
+Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
+since a given timestamp. It may give surprising results if some committers had a
 skewed clock.
 
     >>> from datetime import datetime
     >>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
     >>> two_latest = list(junk.revision_history)[:2]
-    >>> list(junk.revisions_since(timestamp)) == two_latest
+    >>> list(junk.getRevisionsSince(timestamp)) == two_latest
     True
 
 
@@ -600,6 +601,8 @@ The current references to the branch table are shown here.
     productseries.branch
     productseries.translations_branch
     seriessourcepackagebranch.branch
+    sourcepackagerecipedata.base_branch
+    sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
 
 (Unfortunately, references can form a cycle-- note that codereviewcomments

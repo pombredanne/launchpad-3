@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper class and functions for the import-debian-bugs.py script."""
 
@@ -11,7 +12,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log
 from lp.bugs.externalbugtracker import get_external_bugtracker
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.bugs.scripts.checkwatches import BugWatchUpdater
+from lp.bugs.scripts.checkwatches import CheckwatchesMaster
 
 
 def import_debian_bugs(bugs_to_import):
@@ -19,7 +20,7 @@ def import_debian_bugs(bugs_to_import):
     debbugs = getUtility(ILaunchpadCelebrities).debbugs
     txn = ZopelessTransactionManager._installed
     external_debbugs = get_external_bugtracker(debbugs)
-    bug_watch_updater = BugWatchUpdater(txn, log)
+    bug_watch_updater = CheckwatchesMaster(txn, log)
     debian = getUtility(ILaunchpadCelebrities).debian
     for debian_bug in bugs_to_import:
         existing_bug_ids = [

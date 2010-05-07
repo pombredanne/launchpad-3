@@ -1,4 +1,6 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """BranchJob interfaces."""
@@ -11,9 +13,15 @@ __all__ = [
     'IBranchJob',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
+    'IBranchScanJob',
+    'IBranchScanJobSource',
     'IBranchUpgradeJob',
+    'IBranchUpgradeJobSource',
+    'IReclaimBranchSpaceJob',
+    'IReclaimBranchSpaceJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
+    'IRevisionsAddedJob',
     'IRevisionsAddedJobSource',
     'IRosettaUploadJob',
     'IRosettaUploadJobSource',
@@ -25,8 +33,7 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from lp.services.job.interfaces.job import IJob
-
+from lp.services.job.interfaces.job import IJob, IRunnableJob, IJobSource
 
 
 class IBranchJob(Interface):
@@ -69,14 +76,23 @@ class IBranchDiffJobSource(Interface):
         """
 
 
-class IBranchUpgradeJob(Interface):
+class IBranchScanJob(IRunnableJob):
+    """ A job to scan branches."""
+
+
+class IBranchScanJobSource(IJobSource):
+
+    def create(branch):
+        """Scan a branch for new revisions.
+
+        :param branch: The database branch to upgrade.
+        """
+
+class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
-    def run():
-        """Upgrade the branch to the format specified."""
 
-
-class IBranchUpgradeJobSource(Interface):
+class IBranchUpgradeJobSource(IJobSource):
 
     def create(branch):
         """Upgrade a branch to a more current format.
@@ -85,7 +101,7 @@ class IBranchUpgradeJobSource(Interface):
         """
 
 
-class IRevisionMailJob(Interface):
+class IRevisionMailJob(IRunnableJob):
     """A Job to send email a revision change in a branch."""
 
     revno = Int(title=u'The revno to send mail about.')
@@ -98,9 +114,6 @@ class IRevisionMailJob(Interface):
 
     subject = Text(title=u'The subject of the email to send.')
 
-    def run():
-        """Send the mail as specified by this job."""
-
 
 class IRevisionMailJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
@@ -112,11 +125,8 @@ class IRevisionMailJobSource(Interface):
         """Iterate through ready IRevisionMailJobs."""
 
 
-class IRevisionsAddedJob(Interface):
+class IRevisionsAddedJob(IRunnableJob):
     """A Job to send emails about revisions added to a branch."""
-
-    def run():
-        """Send the mails as specified by this job."""
 
 
 class IRevisionsAddedJobSource(Interface):
@@ -129,7 +139,7 @@ class IRevisionsAddedJobSource(Interface):
         """Iterate through ready IRevisionsAddedJobSource."""
 
 
-class IRosettaUploadJob(Interface):
+class IRosettaUploadJob(IRunnableJob):
     """A job to upload translation files to Rosetta."""
 
     from_revision_id = TextLine(
@@ -161,16 +171,32 @@ class IRosettaUploadJobSource(Interface):
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
 
+    def findUnfinishedJobs(branch, since=None):
+        """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
 
-class IReclaimBranchSpaceJob(Interface):
+        :param branch: Branch to find unfinished jobs for.
+        :param since: Optional cutoff date: ignore jobs older than this.
+        :return: Any jobs for `branch` (and newer than `since`, if
+            given) whose status is neither "complete" nor "failed."
+        """
+
+    def providesTranslationFiles(branch):
+        """Is anyone importing translation files from this branch?
+
+        This is used to check if any product series is related to the branch
+        in order to decide if a job needs to be created.
+
+        :param branch: The `IBranch` that is being scanned.
+        :return: Boolean.
+        """
+
+
+class IReclaimBranchSpaceJob(IRunnableJob):
     """A job to delete a branch from disk after its been deleted from the db.
     """
 
     branch_id = Int(
         title=_('The id of the now-deleted branch.'))
-
-    def run():
-        """Delete the branch from the filesystem."""
 
 
 class IReclaimBranchSpaceJobSource(Interface):
@@ -183,4 +209,3 @@ class IReclaimBranchSpaceJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IReclaimBranchSpaceJobs."""
-

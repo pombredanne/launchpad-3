@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Package file interfaces."""
@@ -12,7 +14,7 @@ __all__ = [
     'ISourcePackageReleaseFileSet',
     ]
 
-from zope.schema import Int
+from zope.schema import Bool, Int
 from zope.interface import Interface
 from canonical.launchpad import _
 
@@ -64,6 +66,11 @@ class ISourcePackageReleaseFile(Interface):
 
     filetype = Int(
             title=_('The type of this file'), required=True, readonly=False,
+            )
+
+    is_orig = Bool(
+            title=_('Whether this file is an original tarball'),
+            required=True, readonly=False,
             )
 
 

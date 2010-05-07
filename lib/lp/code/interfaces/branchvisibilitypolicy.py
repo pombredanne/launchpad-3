@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """BranchVisibilityPolicy interfaces."""
@@ -59,7 +61,7 @@ class IHasBranchVisibilityPolicy(Interface):
 
         Products that don't have any explicitly defined team policies, use
         the team policies defined for the project if the product has an
-        associated project.  Projects can't have inherited policies.
+        associated project.  ProjectGroups can't have inherited policies.
         """
 
     def setBranchVisibilityTeamPolicy(team, rule):

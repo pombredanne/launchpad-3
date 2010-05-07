@@ -18,7 +18,7 @@ somebody are subject to expiration.
 
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
-    >>> from canonical.launchpad.database import Question
+    >>> from lp.answers.model.question import Question
     >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
@@ -132,7 +132,7 @@ somebody are subject to expiration.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-expire-questions.lock
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
     INFO    Found 5 questions to expire.

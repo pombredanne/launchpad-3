@@ -1,11 +1,13 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImportMachines."""
 
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportMachineSetBreadcrumbBuilder',
+    'CodeImportMachineBreadcrumb',
+    'CodeImportMachineSetBreadcrumb',
     'CodeImportMachineSetNavigation',
     'CodeImportMachineSetView',
     'CodeImportMachineView',
@@ -25,8 +27,16 @@ from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from canonical.launchpad.webapp import (
     action, canonical_url, Navigation, LaunchpadFormView,
     LaunchpadView)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lazr.delegates import delegates
+
+
+class CodeImportMachineBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the machines hostname."""
+
+    @property
+    def text(self):
+        return self.context.hostname
 
 
 class CodeImportMachineSetNavigation(Navigation):
@@ -38,7 +48,7 @@ class CodeImportMachineSetNavigation(Navigation):
         return self.context.getByHostname(hostname)
 
 
-class CodeImportMachineSetBreadcrumbBuilder(BreadcrumbBuilder):
+class CodeImportMachineSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ICodeImportMachineSet`."""
     text = u'Machines'
 

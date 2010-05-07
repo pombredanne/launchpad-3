@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Functions related to sending bug notifications."""
@@ -9,8 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
+from canonical.launchpad.helpers import emailPeople, get_email_template
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
@@ -39,8 +40,8 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for address in get_contact_email_addresses(recipient.person):
-                recipients[address] = recipient
+            for email_person in emailPeople(recipient.person):
+                recipients[email_person] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
@@ -106,25 +107,39 @@ def construct_email_notifications(bug_notifications):
         if (is_initial_import_notification or
             (bug_message is not None and bug_message.bugwatch is not None)):
             recipients = dict(
-                (address, recipient)
-                for address, recipient in recipients.items()
+                (email_person, recipient)
+                for email_person, recipient in recipients.items()
                 if recipient.person.inTeam(comment_syncing_team))
     bug_notification_builder = BugNotificationBuilder(bug)
-    for address, recipient in recipients.items():
+    sorted_recipients = sorted(
+        recipients.items(), key=lambda t: t[0].preferredemail.email)
+    for email_person, recipient in sorted_recipients:
+        address = str(email_person.preferredemail.email)
         reason = recipient.reason_body
         rationale = recipient.reason_header
+
+        # XXX deryck 2009-11-17 Bug #484319
+        # This should be refactored to add a link inside the
+        # code where we build `reason`.  However, this will
+        # require some extra work, and this small change now
+        # will ease pain for a lot of unhappy users.
+        if 'direct subscriber' in reason and 'member of' not in reason:
+            unsubscribe_notice = ('To unsubscribe from this bug, go to:\n'
+                '%s/+subscribe' % canonical_url(bug.bugtasks[0]))
+        else:
+            unsubscribe_notice = ''
 
         body_data = {
             'content': mail_wrapper.format(content),
             'bug_title': bug.title,
             'bug_url': canonical_url(bug),
+            'unsubscribe_notice': unsubscribe_notice,
             'notification_rationale': mail_wrapper.format(reason)}
 
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
         # footer.
-        person = recipient.person
-        if person.verbose_bugnotifications:
+        if email_person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
 

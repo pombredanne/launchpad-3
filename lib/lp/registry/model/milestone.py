@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Milestone model classes."""
 
@@ -26,15 +28,13 @@ from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet)
+    BugTaskSearchParams, BugTaskStatus, IBugTaskSet)
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.registry.interfaces.milestone import (
-    IHasMilestones, IMilestone, IMilestoneSet, IProjectMilestone)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+    IHasMilestones, IMilestone, IMilestoneSet, IProjectGroupMilestone)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -91,7 +91,7 @@ class HasMilestonesMixin:
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
-    implements(IHasBugs, IMilestone, IStructuralSubscriptionTarget)
+    implements(IHasBugs, IMilestone)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -157,7 +157,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
     @property
     def title(self):
         """See IMilestone."""
-        if self.code_name is None:
+        if not self.code_name:
+            # XXX sinzui 2009-07-16 bug=400477: code_name may be None or ''.
             return self.displayname
         return ('%s "%s"') % (self.displayname, self.code_name)
 
@@ -175,18 +176,29 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         if self.product_release is not None:
             raise AssertionError(
-                'A milestone can only have one Productrelease.')
-        return ProductRelease(
+                'A milestone can only have one ProductRelease.')
+        release = ProductRelease(
             owner=owner,
             changelog=changelog,
             release_notes=release_notes,
             datereleased=datereleased,
             milestone=self)
+        return release
+
+    def closeBugsAndBlueprints(self, user):
+        """See `IMilestone`."""
+        for bugtask in self.open_bugtasks:
+            if bugtask.status == BugTaskStatus.FIXCOMMITTED:
+                bugtask.bug.setStatus(
+                    bugtask.target, BugTaskStatus.FIXRELEASED, user)
 
     def destroySelf(self):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
+        assert len(self.getSubscriptions()) == 0, (
+            "You cannot delete a milestone which has structural "
+            "subscriptions.")
         assert bugtasks.count() == 0, (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
@@ -237,6 +249,7 @@ class MilestoneSet:
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         return Milestone.selectBy(active=True, orderBy='id')
 
+
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
 
@@ -249,7 +262,7 @@ class ProjectMilestone(HasBugsBase):
     the `dateexpected` values of the product milestones.
     """
 
-    implements(IProjectMilestone)
+    implements(IProjectGroupMilestone)
 
     def __init__(self, target, name, dateexpected, active):
         self.name = name
@@ -301,3 +314,6 @@ class ProjectMilestone(HasBugsBase):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
 
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        return False

@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bulk copying of publishing history data."""
@@ -43,6 +45,6 @@ class IPackageCloner(Interface):
             details of the source packages that are fresher or new in the
             origin archive will be logged.
         :return: a 2-tuple (fresher, new) where each element is a sequence
-            of `SecureSourcePackagePublishingHistory` keys of packages
+            of `SourcePackagePublishingHistory` keys of packages
             that are fresher and new in the origin archive respectively.
         """

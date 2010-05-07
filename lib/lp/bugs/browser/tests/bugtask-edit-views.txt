@@ -126,8 +126,7 @@ directly, let's add a grumpy task first.
     >>> ubuntu_grumpy = ubuntu.getSeries('grumpy')
     >>> nomination = bug_two.addNomination(
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
-    >>> nomination.isApproved()
-    True
+    >>> nomination.approve(getUtility(ILaunchBag).user)
     >>> transaction.commit()
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
@@ -276,7 +275,7 @@ a display widget.
 
 The distribution owner gets an edit widget for the distribution task.
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
     >>> request = LaunchpadTestRequest()
     >>> ubuntu_task = getUtility(IBugTaskSet).get(17)

@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """PPA report tool
 
 Generate several reports about the PPA repositories.
@@ -85,7 +87,7 @@ class PPAReportScript(LaunchpadScript):
         clauses = [
             Archive.distribution == distribution,
             Archive.purpose == ArchivePurpose.PPA,
-            Archive.enabled == True,
+            Archive._enabled == True,
             ]
 
         owner_name = self.options.archive_owner_name

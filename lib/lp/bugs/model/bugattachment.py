@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -17,6 +19,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachment, IBugAttachmentSet)
+
+
 class BugAttachment(SQLBase):
     """A bug attachment."""
 
@@ -37,10 +41,24 @@ class BugAttachment(SQLBase):
     message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
 
+    @property
+    def is_patch(self):
+        """See IBugAttachment."""
+        return self.type == BugAttachmentType.PATCH
+
     def removeFromBug(self, user):
         """See IBugAttachment."""
         notify(ObjectDeletedEvent(self, user))
         self.destroySelf()
+
+    def destroySelf(self):
+        """See IBugAttachment."""
+        # Delete the reference to the LibraryFileContent record right now,
+        # in order to avoid problems with not deleted files as described
+        # in bug 387188.
+        self.libraryfile.content = None
+        super(BugAttachment, self).destroySelf()
+
 
 class BugAttachmentSet:
     """A set for bug attachments."""

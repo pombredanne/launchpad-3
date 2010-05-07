@@ -1,22 +1,26 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
-SHHH=${PY} utilities/shhh.py
-STARTSCRIPT=runlaunchpad.py
+SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
-CONFFILE=configs/${LPCONFIG}/launchpad.conf
+
+JSFLAGS=
+ICING=lib/canonical/launchpad/icing
+LP_BUILT_JS_ROOT=${ICING}/build
+LAZR_BUILT_JS_ROOT=lazr-js/build
 
 MINS_TO_SHUTDOWN=15
 
@@ -24,12 +28,23 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 BZR_VERSION_INFO = bzr-version-info.py
 
-WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
-API_INDEX = lib/canonical/launchpad/apidoc/index.html
+APIDOC_DIR = lib/canonical/launchpad/apidoc
+WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+API_INDEX = $(APIDOC_DIR)/index.html
 
-EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
-				$(shell $(HERE)/utilities/yui-deps.py) \
-				lib/canonical/launchpad/icing/lazr/build/lazr.js
+# Do not add bin/buildout to this list.
+# It is impossible to get buildout to tell us all the files it would
+# build, since each egg's setup.py doesn't tell us that information.
+BUILDOUT_BIN = \
+    $(PY) bin/apiindex bin/combine-css bin/fl-build-report \
+    bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
+    bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
+    bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
+    bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
+    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
+    bin/lp-windmill bin/retest bin/run bin/sprite-util \
+    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
+    bin/twistd bin/update-download-cache bin/windmill
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -44,19 +59,13 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(WADL_FILE): $(BZR_VERSION_INFO)
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
-
-$(API_INDEX): $(WADL_FILE)
-	bin/apiindex $(WADL_FILE) > $@
+$(API_INDEX): $(BZR_VERSION_INFO)
+	mkdir -p $(APIDOC_DIR).tmp
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
+	mv $(APIDOC_DIR).tmp/* $(APIDOC_DIR)
+	rmdir $(APIDOC_DIR).tmp
 
 apidoc: compile $(API_INDEX)
-
-check_loggerhead_on_merge:
-	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
-	# depends on it (yet).
-	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
@@ -66,17 +75,34 @@ check_merge: $(PY)
 check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-# This can be removed once we move to zc.buildout and we have versioned
-# dependencies, but for now we run both Launchpad and all other
-# dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: build check
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+check_config: build
+	bin/test -m canonical.config.tests -vvt test_config
 
-check: build
+check_schema: build
+	${PY} utilities/check-db-revision.py
+
+# Clean before running the test suite, since the build might fail depending
+# what source changes happened. (e.g. apidoc depends on interfaces)
+check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
+
+jscheck: build
+	# Run all JavaScript integration tests.  The test runner takes care of
+	# setting up the test environment.
+	@echo
+	@echo "Running the JavaScript integration test suite"
+	@echo
+	bin/test $(VERBOSITY) --layer=WindmillLayer
+
+jscheck_functest: build
+    # Run the old functest Windmill integration tests.  The test runner
+    # takes care of setting up the test environment.
+	@echo
+	@echo "Running Windmill funtest integration test suite"
+	@echo
+	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -100,34 +126,76 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc
+build: compile apidoc jsbuild css_combine
+
+css_combine: sprite_css bin/combine-css
+	${SHHH} bin/combine-css
+
+sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
+
+${LP_BUILT_JS_ROOT}/style-3-0.css: bin/sprite-util ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
+	${SHHH} bin/sprite-util create-css
+
+sprite_image:
+	${SHHH} bin/sprite-util create-image
+
+jsbuild_lazr: bin/jsbuild
+	# We absolutely do not want to include the lazr.testing module and its
+	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
+	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ -c $(LAZR_BUILT_JS_ROOT)/yui
+
+jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
+	${SHHH} bin/jsbuild \
+		$(JSFLAGS) \
+		-n launchpad \
+		-s lib/canonical/launchpad/javascript \
+		-b $(LP_BUILT_JS_ROOT) \
+		$(shell $(HERE)/utilities/yui-deps.py) \
+		$(shell $(HERE)/utilities/lp-deps.py) \
+		lib/canonical/launchpad/icing/lazr/build/lazr.js
+	${SHHH} bin/jssize
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
 download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
 	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
+endif
+
+buildonce_eggs: $(PY)
+	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
-	$(PYTHON) bootstrap.py
+	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
+		--setup-source=ez_setup.py \
+		--download-base=download-cache/dist --eggs=eggs
 
-$(PY): bin/buildout versions.cfg
-	./bin/buildout configuration:instance_name=${LPCONFIG}
+# This builds bin/py and all the other bin files except bin/buildout.
+# Remove the target before calling buildout to ensure that buildout
+# updates the timestamp.
+$(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(RM) $@
+	$(SHHH) PYTHONPATH= ./bin/buildout \
+                configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
-compile: $(PY)
+compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
-	${SHHH} sourcecode/lazr-js/tools/build.py \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
+	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -141,66 +209,80 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-run: inplace stop
-	$(RM) thread*.request
-	bin/run -r librarian,google-webservice -C $(CONFFILE)
+merge-proposal-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-start-gdb: inplace stop support_files
+run: check_schema inplace stop
 	$(RM) thread*.request
-	nohup gdb -x run.gdb --args bin/run \
-		-r librarian,google-webservice -C $(CONFFILE) \
+	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
+
+start-gdb: check_schema inplace stop support_files
+	$(RM) thread*.request
+	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
+		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: inplace stop hosted_branches
+run_all: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice \
-		 -C $(CONFFILE)
+	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
+	    -i $(LPCONFIG)
 
 run_codebrowse: build
-	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
 
 start_codebrowse: build
-	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
 
 stop_codebrowse:
-	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+	$(PY) scripts/stop-loggerhead.py
+
+run_codehosting: check_schema inplace stop hosted_branches
+	$(RM) thread*.request
+	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
+
+
+start_librarian: build
+	bin/start_librarian
+
+stop_librarian:
+	bin/killservice librarian
 
 pull_branches: support_files
-	# Mirror the hosted branches in the development upload area to the
-	# mirrored area.
-	$(PY) cronscripts/supermirror-pull.py upload
+	$(PY) cronscripts/supermirror-pull.py
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/branch-scanner.py
+	$(PY) cronscripts/scan_branches.py
 
-sync_branches: pull_branches scan_branches
+sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
-support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
+support_files: $(API_INDEX) $(BZR_VERSION_INFO)
+
+# Intended for use on developer machines
+start: inplace stop support_files initscript-start
 
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
-# will not work as expected.
-start: inplace stop support_files
-	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
-
-# This is a stripped down version of the "start" target for use on
-# production servers - removes running 'make build' because we already
-# run this as part of our initscripts, so not needed here. Likewise we
-# don't want to run 'make stop' because it takes unnecessary time
-# even if the service is already stopped, and bzr_version_info is not
-# needed either because it's run as part of 'make build'.
+# will not work as expected. For use on production servers, where
+# we know we don't need the extra steps in a full "make start"
+# because of how the code is deployed/built.
 initscript-start:
-	nohup bin/run -C $(CONFFILE) > ${LPCONFIG}-nohup.out 2>&1 &
+	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
+
+# Intended for use on developer machines
+stop: build initscript-stop
 
 # Kill launchpad last - other services will probably shutdown with it,
-# so killing them after is a race condition.
-stop: build
-	bin/killservice librarian buildsequencer launchpad mailman
+# so killing them after is a race condition. For use on production
+# servers, where we know we don't need the extra steps in a full
+# "make stop" because of how the code is deployed/built.
+initscript-stop:
+	bin/killservice librarian launchpad mailman
 
 shutdown: scheduleoutage stop
 	$(RM) +maintenancetime.txt
@@ -211,40 +293,53 @@ scheduleoutage:
 	echo Sleeping ${MINS_TO_SHUTDOWN} mins
 	sleep ${MINS_TO_SHUTDOWN}m
 
-harness:
+harness: bin/harness
 	bin/harness
 
-iharness:
+iharness: bin/iharness
 	bin/iharness
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean:
+clean_js:
+	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+
+clean: clean_js
 	$(MAKE) -C sourcecode/pygettextpo clean
-	find . -type f \( \
-	    -name '*.o' -o -name '*.so' -o -name '*.la' -o \
+	# XXX gary 2009-11-16 bug 483782
+	# The pygettextpo Makefile should have this next line in it for its make
+	# clean, and then we should remove this line.
+	$(RM) sourcecode/pygpgme/gpgme/*.so
+	if test -f sourcecode/mailman/Makefile; then \
+		$(MAKE) -C sourcecode/mailman clean; \
+	fi
+	find . -path ./eggs -prune -false -o \
+		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
-	$(RM) $(WADL_FILE) $(API_INDEX)
+	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
+	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
+	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
 			  /var/tmp/fatsam.appserver \
-			  /var/tmp/launchpad_mailqueue \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \
@@ -252,6 +347,11 @@ clean:
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
 			  /var/tmp/zeca
+	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
+	# instances.
+	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
+
 
 realclean: clean
 	$(RM) TAGS tags
@@ -276,6 +376,8 @@ potemplates: launchpad.pot
 launchpad.pot:
 	bin/i18nextract.py
 
+# Called by the rocketfuel-setup script. You probably don't want to run this
+# on its own.
 install: reload-apache
 
 copy-certificates:
@@ -287,15 +389,14 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 reload
-
-static:
-	$(PY) scripts/make-static.py
+	/etc/init.d/apache2 restart
 
 TAGS: compile
 	# emacs tags
@@ -309,8 +410,37 @@ ID: compile
 	# idutils ID file
 	bin/tags -i
 
+lp.sfood:
+	# Generate import dependency graph
+	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts -I lib/contrib \
+	-I lib/canonical/not-used lib/canonical lib/lp 2>/dev/null | grep -v contrib/ \
+	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
+	| grep -v schoolbell > lp.sfood.tmp
+	mv lp.sfood.tmp lp.sfood
+
+
+lp-clustered.sfood: lp.sfood lp-sfood-packages
+	# Cluster the import dependency graph
+	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
+	mv lp-clustered.sfood.tmp lp-clustered.sfood
+
+
+lp-clustered.dot: lp-clustered.sfood
+	# Build the visual graph
+	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
+	mv lp-clustered.dot.tmp lp-clustered.dot
+
+
+lp-clustered.svg: lp-clustered.dot
+	# Render to svg
+	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
+	mv lp-clustered.svg.tmp lp-clustered.svg
+
+
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman
+	reload-apache hosted_branches check_db_merge check_mailman check_config\
+	jsbuild jsbuild_lazr clean_js buildonce_eggs \
+	sprite_css sprite_image css_combine compile check_schema

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The implementation of the Notification Rec."""
 
@@ -15,7 +16,8 @@ from zope.interface import implements
 
 from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.interfaces import (
-    INotificationRecipientSet, IPerson, UnknownRecipientError)
+    INotificationRecipientSet, UnknownRecipientError)
+from lp.registry.interfaces.person import IPerson
 
 
 class NotificationRecipientSet:

@@ -1,4 +1,5 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -22,8 +23,9 @@ from zope.component import getUtility
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
+from canonical.launchpad.webapp.interaction import (
+    ANONYMOUS, setupInteractionByEmail)
 from canonical.lp import initZopeless
-from lp.testing import ANONYMOUS
 
 
 LOCK_PATH = "/var/lock/"
@@ -91,7 +93,7 @@ class LaunchpadScript:
     lockfilepath = None
     loglevel = logging.INFO
 
-    def __init__(self, name, dbuser=None, test_args=None):
+    def __init__(self, name=None, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -103,7 +105,11 @@ class LaunchpadScript:
         Specify test_args when you want to override sys.argv.  This is
         useful in test scripts.
         """
-        self.name = name
+        if name is None:
+            self.name = self.__class__.__name__.lower()
+        else:
+            self.name = name
+
         self.dbuser = dbuser
 
         # The construction of the option parser is a bit roundabout, but
@@ -123,6 +129,7 @@ class LaunchpadScript:
         self.logger = scripts.logger(self.options, name)
 
         self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
+
     #
     # Hooks that we expect users to redefine.
     #
@@ -153,18 +160,7 @@ class LaunchpadScript:
 
     def login(self, user):
         """Super-convenience method that avoids the import."""
-        # This import is actually quite expensive, and causes us to
-        # import circularly in pathological cases.
-        # XXX gary 20-Oct-2008 bug 285808
-        # The wisdom of using a test fixture for production should be
-        # reconsidered.
-        from canonical.launchpad.ftests import login
-        # The Participation is used to specify that we do not want a
-        # LaunchpadTestRequest, which ftests normally use.  shipit scripts,
-        # in particular, need to be careful, because of code in
-        # canonical_url.
-        from canonical.launchpad.webapp.interaction import Participation
-        login(user, Participation())
+        setupInteractionByEmail(user)
 
     #
     # Locking and running methods. Users only call these explicitly if

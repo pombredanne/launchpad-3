@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -11,6 +13,7 @@ from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.worlddata.interfaces.country import (
     ICountry, ICountrySet, IContinent)
 
@@ -55,6 +58,17 @@ class CountrySet:
         for row in Country.select():
             yield row
 
+    def getByName(self, name):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country, name=name).one()
+
+    def getByCode(self, code):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country, iso3166code2=code).one()
+
+    def getCountries(self):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country).order_by(Country.iso3166code2)
 
 class Continent(SQLBase):
     """See IContinent."""

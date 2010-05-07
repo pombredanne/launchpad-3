@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Code to talk to the database about what the worker script is doing."""
@@ -8,30 +10,23 @@ __all__ = []
 
 
 import os
-import sys
 import tempfile
 
-from twisted.internet import defer, reactor, task
+from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
-from twisted.python.util import mergeFunctionMetadata
+from twisted.web import xmlrpc
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import begin, commit, rollback
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interaction import Participation
-from canonical.launchpad.webapp import canonical_url
-from canonical.twistedsupport import defer_to_thread
-from canonical.twistedsupport.loggingsupport import (
-    log_oops_from_failure)
-from canonical.twistedsupport.processmonitor import (
-    ProcessMonitorProtocolWithTimeout)
+from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
+from canonical.librarian.interfaces import IFileUploadClient
 from lp.code.enums import CodeImportResultStatus
-from lp.code.interfaces.codeimportjob import (
-    ICodeImportJobSet, ICodeImportJobWorkflow)
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
-from lp.testing import login, logout, ANONYMOUS
+from lp.codehosting.codeimport.worker import CodeImportWorkerExitCode
+from lp.services.twistedsupport.loggingsupport import (
+    log_oops_from_failure)
+from lp.services.twistedsupport.processmonitor import (
+    ProcessMonitorProtocolWithTimeout)
 
 
 class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
@@ -107,49 +102,6 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
         self._looping_call.stop()
 
 
-def read_only_transaction(function):
-    """Wrap 'function' in a transaction and Zope session.
-
-    The transaction is always aborted."""
-    def transacted(*args, **kwargs):
-        begin()
-        # XXX gary 20-Oct-2008 bug 285808
-        # We should reconsider using a ftest helper for production code. For
-        # now, we explicitly keep the code from using a test request by using
-        # a basic participation.
-        login(ANONYMOUS, Participation())
-        try:
-            return function(*args, **kwargs)
-        finally:
-            logout()
-            rollback()
-    return mergeFunctionMetadata(function, transacted)
-
-
-def writing_transaction(function):
-    """Wrap 'function' in a transaction and Zope session.
-
-    The transaction is committed if 'function' returns normally and
-    aborted if it raises an exception."""
-    def transacted(*args, **kwargs):
-        begin()
-        # XXX gary 20-Oct-2008 bug 285808
-        # We should reconsider using a ftest helper for production code. For
-        # now, we explicitly keep the code from using a test request by using
-        # a basic participation.
-        login(ANONYMOUS, Participation())
-        try:
-            ret = function(*args, **kwargs)
-        except:
-            logout()
-            rollback()
-            raise
-        logout()
-        commit()
-        return ret
-    return mergeFunctionMetadata(function, transacted)
-
-
 class ExitQuietly(Exception):
     """Raised to indicate that we should abort and exit without fuss.
 
@@ -169,117 +121,105 @@ class CodeImportWorkerMonitor:
     path_to_script = os.path.join(
         config.root, 'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id, logger):
+    def __init__(self, job_id, logger, codeimport_endpoint):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
         :param logger: A `Logger` object.
         """
-        self._logger = logger
         self._job_id = job_id
+        self._logger = logger
+        self.codeimport_endpoint = codeimport_endpoint
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
-        self._source_details = None
-        self._code_import_id = None
         self._branch_url = None
+        self._log_file_name = 'no-name-set.txt'
 
     def _logOopsFromFailure(self, failure):
         request = log_oops_from_failure(
-            failure, code_import_job_id=self._job_id,
-            code_import_id=self._code_import_id, URL=self._branch_url)
+            failure, code_import_job_id=self._job_id, URL=self._branch_url)
         self._logger.info(
             "Logged OOPS id %s: %s: %s",
             request.oopsid, failure.type.__name__, failure.value)
 
-    def getJob(self):
-        """Fetch the `CodeImportJob` object we are working on from the DB.
-
-        Only call this from defer_to_thread-ed methods!
-
-        :raises ExitQuietly: if the job is not found.
-        """
-        job = getUtility(ICodeImportJobSet).getById(self._job_id)
-        if job is None:
-            self._logger.info(
-                "Job %d not found, exiting quietly.", self._job_id)
+    def _trap_nosuchcodeimportjob(self, failure):
+        failure.trap(xmlrpc.Fault)
+        if failure.value.faultCode == NoSuchCodeImportJob.error_code:
             self._call_finish_job = False
             raise ExitQuietly
         else:
-            return job
+            raise failure.value
 
-    @defer_to_thread
-    @read_only_transaction
-    def getSourceDetails(self):
-        """Get a `CodeImportSourceDetails` for the job we are working on."""
-        code_import = self.getJob().code_import
-        source_details = CodeImportSourceDetails.fromCodeImport(code_import)
-        self._logger.info(
-            'Found source details: %s', source_details.asArguments())
-        self._branch_url = canonical_url(code_import.branch)
-        self._code_import_id = code_import.id
-        return source_details
+    def getWorkerArguments(self):
+        """Get arguments for the worker for the import we are working on.
 
-    @defer_to_thread
-    @writing_transaction
+        This also sets the _branch_url and _log_file_name attributes for use
+        in the _logOopsFromFailure and finishJob methods respectively.
+        """
+        deferred = self.codeimport_endpoint.callRemote(
+            'getImportDataForJobID', self._job_id)
+        def _processResult(result):
+            code_import_arguments, branch_url, log_file_name = result
+            self._branch_url = branch_url
+            self._log_file_name = log_file_name
+            self._logger.info(
+                'Found source details: %s', code_import_arguments)
+            return code_import_arguments
+        return deferred.addCallbacks(_processResult, self._trap_nosuchcodeimportjob)
+
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
         self._logger.debug("Updating heartbeat.")
-        getUtility(ICodeImportJobWorkflow).updateHeartbeat(
-            self.getJob(), tail)
+        deferred = self.codeimport_endpoint.callRemote(
+            'updateHeartbeat', self._job_id, tail)
+        return deferred.addErrback(self._trap_nosuchcodeimportjob)
 
     def _createLibrarianFileAlias(self, name, size, file, contentType):
-        """Call `ILibraryFileAliasSet.create` with the given parameters.
+        """Call `IFileUploadClient.remoteAddFile` with the given parameters.
 
-        This is a separate method that exists only to be patched in
-        tests.
+        This is a separate method that exists only to be patched in tests.
         """
-        return getUtility(ILibraryFileAliasSet).create(
+        # This blocks, but never mind: nothing else is going on in the process
+        # by this point.  We could dispatch to a thread if we felt like it, or
+        # even come up with an asynchronous implementation of the librarian
+        # protocol (it's not very complicated).
+        return getUtility(IFileUploadClient).remoteAddFile(
             name, size, file, contentType)
 
-    @defer_to_thread
-    @writing_transaction
     def finishJob(self, status):
-        """Call the finishJob method for the job we are working on.
+        """Call the finishJobID method for the job we are working on.
 
-        This method uploads the log file to the librarian first.  If this
-        fails, we still try to call finishJob, but return the librarian's
-        failure if finishJob succeeded (if finishJob fails, that exception
-        'wins').
+        This method uploads the log file to the librarian first.
         """
-        job = self.getJob()
         log_file_size = self._log_file.tell()
-        librarian_failure = None
         if log_file_size > 0:
             self._log_file.seek(0)
-            branch = job.code_import.branch
-            log_file_name = '%s-%s-log.txt' % (
-                branch.product.name, branch.name)
             try:
-                log_file_alias = self._createLibrarianFileAlias(
-                    log_file_name, log_file_size, self._log_file,
+                log_file_alias_url = self._createLibrarianFileAlias(
+                    self._log_file_name, log_file_size, self._log_file,
                     'text/plain')
                 self._logger.info(
-                    "Uploaded logs to librarian %s.", log_file_alias.getURL())
+                    "Uploaded logs to librarian %s.", log_file_alias_url)
             except:
                 self._logger.error("Upload to librarian failed.")
                 self._logOopsFromFailure(failure.Failure())
-                log_file_alias = None
+                log_file_alias_url = ''
         else:
-            log_file_alias = None
-        getUtility(ICodeImportJobWorkflow).finishJob(
-            job, status, log_file_alias)
+            log_file_alias_url = ''
+        return self.codeimport_endpoint.callRemote(
+            'finishJobID', self._job_id, status.name, log_file_alias_url
+            ).addErrback(self._trap_nosuchcodeimportjob)
 
     def _makeProcessProtocol(self, deferred):
         """Make an `CodeImportWorkerMonitorProtocol` for a subprocess."""
         return CodeImportWorkerMonitorProtocol(deferred, self, self._log_file)
 
-    def _launchProcess(self, source_details):
+    def _launchProcess(self, worker_arguments):
         """Launch the code-import-worker.py child process."""
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
         interpreter = '%s/bin/py' % config.root
-        command = [interpreter, self.path_to_script]
-        command.extend(source_details.asArguments())
+        command = [interpreter, self.path_to_script] + worker_arguments
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
@@ -288,7 +228,7 @@ class CodeImportWorkerMonitor:
 
     def run(self):
         """Perform the import."""
-        return self.getSourceDetails().addCallback(
+        return self.getWorkerArguments().addCallback(
             self._launchProcess).addBoth(
             self.callFinishJob).addErrback(
             self._silenceQuietExit)
@@ -298,16 +238,33 @@ class CodeImportWorkerMonitor:
         failure.trap(ExitQuietly)
         return None
 
+    def _reasonToStatus(self, reason):
+        """Translate the 'reason' for process exit into a result status.
+
+        Different exit codes are presumed by Twisted to be errors, but are
+        different kinds of success for us.
+        """
+        if isinstance(reason, failure.Failure):
+            if reason.check(error.ProcessTerminated):
+                if reason.value.exitCode == \
+                       CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
+                    return CodeImportResultStatus.SUCCESS_NOCHANGE
+                elif reason.value.exitCode == \
+                       CodeImportWorkerExitCode.SUCCESS_PARTIAL:
+                    return CodeImportResultStatus.SUCCESS_PARTIAL
+            return CodeImportResultStatus.FAILURE
+        else:
+            return CodeImportResultStatus.SUCCESS
+
     def callFinishJob(self, reason):
         """Call finishJob() with the appropriate status."""
         if not self._call_finish_job:
             return reason
-        if isinstance(reason, failure.Failure):
+        status = self._reasonToStatus(reason)
+        if status == CodeImportResultStatus.FAILURE:
             self._log_file.write("Import failed:\n")
             reason.printTraceback(self._log_file)
             self._logOopsFromFailure(reason)
-            status = CodeImportResultStatus.FAILURE
         else:
             self._logger.info('Import succeeded.')
-            status = CodeImportResultStatus.SUCCESS
         return self.finishJob(status)

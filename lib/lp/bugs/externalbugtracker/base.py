@@ -1,9 +1,11 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
 
 __metaclass__ = type
 __all__ = [
+    'BATCH_SIZE_UNLIMITED',
     'BugNotFound',
     'BugTrackerAuthenticationError',
     'BugTrackerConnectError',
@@ -28,13 +30,18 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.bugs.adapters import treelookup
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
-    IExternalBugTracker)
+    IExternalBugTracker, ISupportsBackLinking, ISupportsCommentImport,
+    ISupportsCommentPushing)
 
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
+
+# To signify that all bug watches should be checked in a single run.
+BATCH_SIZE_UNLIMITED = 0
 
 
 #
@@ -130,14 +137,19 @@ class ExternalBugTracker:
 
     implements(IExternalBugTracker)
 
-    batch_size = 100
+    batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold
     comment_template = 'default_remotecomment_template.txt'
-    sync_comments = config.checkwatches.sync_comments
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
+        self.sync_comments = (
+            config.checkwatches.sync_comments and (
+                ISupportsCommentPushing.providedBy(self) or
+                ISupportsCommentImport.providedBy(self) or
+                ISupportsBackLinking.providedBy(self)))
 
+    @ensure_no_transaction
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 

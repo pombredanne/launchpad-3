@@ -1,35 +1,51 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+from __future__ import with_statement
+
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
 
-import cgi
 import urllib
+
 from datetime import datetime, timedelta
 
-from zope.component import getUtility
-from zope.session.interfaces import ISession, IClientIdManager
-from zope.event import notify
+from BeautifulSoup import UnicodeDammit
+
+from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+from openid.extensions import sreg
+from openid.fetchers import setDefaultFetcher, Urllib2Fetcher
+
+import transaction
+
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.component import getUtility, getSiteManager
+from zope.event import notify
+from zope.interface import Interface
+from zope.publisher.browser import BrowserPage
+from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.security.proxy import removeSecurityProxy
+from zope.session.interfaces import ISession, IClientIdManager
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, PersonCreationRationale)
-from canonical.launchpad.interfaces.validation import valid_password
-from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
+from lp.registry.interfaces.person import IPerson, PersonCreationRationale
+from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
+    CookieAuthLoggedInEvent, ILaunchpadApplication, IPlacelessAuthUtility,
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class UnauthorizedView(SystemErrorView):
@@ -42,15 +58,13 @@ class UnauthorizedView(SystemErrorView):
     read_only_page = ViewPageTemplateFile(
         '../templates/launchpad-readonlyfailure.pt')
 
-    notification_message = _('To continue, you must log in to Launchpad.')
-
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
         # security policy when write permissions are requested. We need
         # to render the read-only failure screen so the user knows their
         # request failed for operational reasons rather than a genuine
         # permission problem.
-        if config.launchpad.read_only:
+        if is_read_only():
             # Our context is an Unauthorized exception, which acts like
             # a tuple containing (object, attribute_requested, permission).
             lp_permission = getUtility(ILaunchpadPermission, self.context[2])
@@ -91,8 +105,6 @@ class UnauthorizedView(SystemErrorView):
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(
-                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
@@ -109,14 +121,14 @@ class UnauthorizedView(SystemErrorView):
         return urlappend(current_url, '+login' + query_string)
 
 
-class BasicLoginPage:
+class BasicLoginPage(BrowserPage):
 
     def isSameHost(self, url):
         """Returns True if the url appears to be from the same host as we are.
         """
         return url.startswith(self.request.getApplicationURL())
 
-    def login(self):
+    def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             self.request.principal.__parent__.unauthorized(
                 self.request.principal.id, self.request)
@@ -129,257 +141,283 @@ class BasicLoginPage:
         return ''
 
 
-class RestrictedLoginInfo:
-    """On a team-restricted launchpad server, show who may access the server.
-
-    Otherwise, show that this is an unrestricted server.
-    """
-
-    def isTeamRestrictedServer(self):
-        return bool(config.launchpad.restrict_to_team)
-
-    def getAllowedTeamURL(self):
-        return 'https://launchpad.net/people/%s' % (
-            config.launchpad.restrict_to_team)
-
-    def getAllowedTeamDescription(self):
-        return getUtility(IPersonSet).getByName(
-            config.launchpad.restrict_to_team).title
+def register_basiclogin(event):
+    # The +basiclogin page should only be enabled for development and tests,
+    # but we can't rely on config.devmode because it's turned off for
+    # AppServerLayer tests, so we (ab)use the config switch for the test
+    # OpenID provider, which has similar requirements.
+    if config.launchpad.enable_test_openid_provider:
+        getSiteManager().registerAdapter(
+            BasicLoginPage,
+            required=(ILaunchpadApplication, IHTTPApplicationRequest),
+            provided=Interface,
+            name='+basiclogin')
 
 
-class LoginOrRegister:
-    """Merges the former CookieLoginPage and JoinLaunchpadView classes
-    to allow the two forms to appear on a single page.
+# The Python OpenID package uses pycurl by default, but pycurl chokes on
+# self-signed certificates (like the ones we use when developing), so we
+# change the default to urllib2 here.  That's also a good thing because it
+# ensures we test the same thing that we run on production.
+setDefaultFetcher(Urllib2Fetcher())
 
-    This page is a self-posting form.  Actually, there are two forms
-    on the page.  The first time this page is loaded, when there's been
-    no POST of its form, we want to preserve any query parameters, and put
-    them into hidden inputs.
-    """
 
-    # Names used in the template's HTML form.
-    form_prefix = 'loginpage_'
-    submit_login = form_prefix + 'submit_login'
-    submit_registration = form_prefix + 'submit_registration'
-    input_email = form_prefix + 'email'
-    input_password = form_prefix + 'password'
+class OpenIDLogin(LaunchpadView):
+    """A view which initiates the OpenID handshake with our provider."""
+    _openid_session_ns = 'OPENID'
 
-    # Instance variables that represent the state of the form.
-    login_error = None
-    registration_error = None
-    submitted = False
-    email = None
+    def _getConsumer(self):
+        session = ISession(self.request)[self._openid_session_ns]
+        openid_store = getUtility(IOpenIDConsumerStore)
+        return Consumer(session, openid_store)
 
-    def process_restricted_form(self):
-        """Entry-point for the team-restricted login page.
+    def render(self):
+        if self.account is not None:
+            return AlreadyLoggedInView(self.context, self.request)()
 
-        If we're not running in team-restricted mode, then redirect to a
-        regular login page.  Otherwise, process_form as usual.
-        """
-        if config.launchpad.restrict_to_team:
-            self.process_form()
-        else:
-            self.request.response.redirect('/+login',
-                                           temporary_if_possible=True)
+        # Allow unauthenticated users to have sessions for the OpenID
+        # handshake to work.
+        allowUnauthenticatedSession(self.request)
+        consumer = self._getConsumer()
+        openid_vhost = config.launchpad.openid_provider_vhost
+        self.openid_request = consumer.begin(
+            allvhosts.configs[openid_vhost].rooturl)
+        self.openid_request.addExtension(
+            sreg.SRegRequest(optional=['email', 'fullname']))
 
-    def process_form(self):
-        """Determines whether this is the login form or the register
-        form, and delegates to the appropriate function.
-        """
-        if self.request.method != "POST":
-            return
+        assert not self.openid_request.shouldSendRedirect(), (
+            "Our fixed OpenID server should not need us to redirect.")
+        # Once the user authenticates with the OpenID provider they will be
+        # sent to the /+openid-callback page, where we log them in, but
+        # once that's done they must be sent back to the URL they were when
+        # they started the login process (i.e. the current URL without the
+        # '+login' bit). To do that we encode that URL as a query arg in the
+        # return_to URL passed to the OpenID Provider
+        starting_url = urllib.urlencode(
+            [('starting_url', self.starting_url.encode('utf-8'))])
+        trust_root = allvhosts.configs['mainsite'].rooturl
+        return_to = urlappend(trust_root, '+openid-callback')
+        return_to = "%s?%s" % (return_to, starting_url)
+        form_html = self.openid_request.htmlMarkup(trust_root, return_to)
 
-        self.submitted = True
-        if self.request.form.get(self.submit_login):
-            self.process_login_form()
-        elif self.request.form.get(self.submit_registration):
-            self.process_registration_form()
+        # The consumer.begin() call above will insert rows into the 
+        # OpenIDAssociations table, but since this will be a GET request, the
+        # transaction would be rolled back, so we need an explicit commit
+        # here.
+        transaction.commit()
 
-    def getRedirectionURL(self):
-        """Return the URL we should redirect the user to, after finishing a
-        registration or password reset process.
+        return form_html
 
-        IOW, the current URL without the "/+login" bit.
-        """
-        return self.request.getURL(1)
-
-    def process_login_form(self):
-        """Process the form data.
-
-        If there is an error, assign a string containing a description
-        of the error to self.login_error for presentation to the user.
-        """
-        email = self.request.form.get(self.input_email)
-        password = self.request.form.get(self.input_password)
-        if not email or not password:
-            self.login_error = _("Enter your email address and password.")
-            return
-
-        # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
-        # LaunchpadFormView, that way we could take advantage of Zope's widget
-        # validation, instead of checking manually for password validity.
-        if not valid_password(password):
-            self.login_error = _(
-                "The password provided contains non-ASCII characters.")
-            return
-
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
-        if principal is None or not principal.validate(password):
-            self.login_error = "The email address and password do not match."
-        elif principal.person is None:
-            logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
-            self.redirectMinusLogin()
-        elif principal.person.account_status == AccountStatus.DEACTIVATED:
-            self.login_error = _(
-                'The email address belongs to a deactivated account. '
-                'Use the "Forgotten your password" link to reactivate it.')
-        elif principal.person.account_status == AccountStatus.SUSPENDED:
-            email_link = (
-                'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
-            self.login_error = _(
-                'The email address belongs to a suspended account. '
-                'Contact a <a href="%s">Launchpad admin</a> '
-                'about this issue.' % email_link)
-        else:
-            person = getUtility(IPersonSet).getByEmail(email)
-            if person.preferredemail is None:
-                self.login_error = _(
-                    "The email address '%s', which you're trying to use to "
-                    "login has not yet been validated to use in Launchpad. "
-                    "We sent an email to that address with instructions on "
-                    "how to confirm that it belongs to you. As soon as we "
-                    "have that confirmation you'll be able to log into "
-                    "Launchpad."
-                    ) % email
-                token = getUtility(ILoginTokenSet).new(
-                    person, email, email, LoginTokenType.VALIDATEEMAIL)
-                token.sendEmailValidationRequest()
-                return
-            if person.is_valid_person:
-                logInPrincipal(self.request, principal, email)
-                self.redirectMinusLogin()
-            else:
-                # Normally invalid accounts will have a NULL password
-                # so this will be rarely seen, if ever. An account with no
-                # valid email addresses might end up in this situation,
-                # such as having them flagged as OLD by a email bounce
-                # processor or manual changes by the DBA.
-                self.login_error = "This account cannot be used."
-
-    def process_registration_form(self):
-        """A user has asked to join launchpad.
-
-        Check if everything is ok with the email address and send an email
-        with a link to the user complete the registration process.
-        """
-        request = self.request
-        # For some reason, redirection_url can sometimes be a list, and
-        # sometimes a string.  See OOPS-68D508, where redirection_url has
-        # the following value:
-        # [u'https://launchpad.net/.../it/+translate/+login', u'']
-        redirection_url = request.form.get('redirection_url')
-        if isinstance(redirection_url, list):
-            # Remove blank entries.
-            redirection_url_list = [url for url in redirection_url if url]
-            # XXX Guilherme Salgado 2006-09-27:
-            # Shouldn't this be an UnexpectedFormData?
-            assert len(redirection_url_list) == 1, redirection_url_list
-            redirection_url = redirection_url_list[0]
-
-        self.email = request.form.get(self.input_email).strip()
-        if not valid_email(self.email):
-            self.registration_error = (
-                "The email address you provided isn't valid. "
-                "Please verify it and try again.")
-            return
-
-        registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
-        if registered_email is not None:
-            person = registered_email.person
-            if person is not None:
-                if person.is_valid_person:
-                    self.registration_error = (
-                        "Sorry, someone with the address %s already has a "
-                        "Launchpad account. If this is you and you've "
-                        "forgotten your password, Launchpad can "
-                        '<a href="/+forgottenpassword">reset it for you.</a>'
-                        % cgi.escape(self.email))
-                    return
-                else:
-                    # This is an unvalidated profile; let's move on with the
-                    # registration process as if we had never seen it.
-                    pass
-            else:
-                account = registered_email.account
-                assert IPerson(account, None) is None, (
-                    "This email address should be linked to the person who "
-                    "owns it.")
-                self.registration_error = (
-                    'The email address %s is already registered in the '
-                    'Launchpad Login Service (used by the Ubuntu shop and '
-                    'other OpenID sites). Please use the same email and '
-                    'password to log into Launchpad.'
-                    % cgi.escape(self.email))
-                return
-
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            requester=None, requesteremail=None, email=self.email,
-            tokentype=LoginTokenType.NEWACCOUNT,
-            redirection_url=redirection_url)
-        token.sendNewUserEmail()
-
-    def login_success(self):
-        return (self.submitted and
-                self.request.form.get(self.submit_login) and
-                not self.login_error)
-
-    def registration_success(self):
-        return (self.submitted and
-                self.request.form.get(self.submit_registration) and
-                not self.registration_error)
-
-    def redirectMinusLogin(self):
-        """Redirect to the URL with the '/+login' removed from the end.
-
-        Also, take into account the preserved query from the URL.
-        """
-        target = self.request.URL[-1]
-        query_string = urllib.urlencode(
-            list(self.iter_form_items()), doseq=True)
+    @property
+    def starting_url(self):
+        starting_url = self.request.getURL(1)
+        query_string = "&".join([arg for arg in self.form_args])
         if query_string:
-            target = '%s?%s' % (target, query_string)
-        self.request.response.redirect(target, temporary_if_possible=True)
+            starting_url += "?%s" % query_string
+        return starting_url
 
-    def iter_form_items(self):
-        """Iterate over keys and single values, excluding stuff we don't
-        want such as '-C' and things starting with self.form_prefix.
+    @property
+    def form_args(self):
+        """Iterate over form args, yielding 'key=value' strings for them.
+
+        Exclude things such as 'loggingout' and starting with 'openid.', which
+        we don't want.
         """
         for name, value in self.request.form.items():
-            # XXX SteveAlexander 2005-04-11: Exclude '-C' because this is
-            #     left in from sys.argv in Zope3 using python's
-            #     cgi.FieldStorage to process requests.
-            if name == '-C' or name == 'loggingout':
-                continue
-            if name.startswith(self.form_prefix):
+            if name == 'loggingout' or name.startswith('openid.'):
                 continue
             if isinstance(value, list):
                 value_list = value
             else:
                 value_list = [value]
             for value_list_item in value_list:
-                yield (name, value_list_item)
+                # Thanks to apport (https://launchpad.net/bugs/61171), we need
+                # to do this here.
+                value_list_item = UnicodeDammit(value_list_item).markup
+                yield "%s=%s" % (name, value_list_item)
 
-    def preserve_query(self):
-        """Return zero or more hidden inputs that preserve the URL's query."""
-        L = []
-        for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' % (
-                name, cgi.escape(value, quote=True)
-                ))
 
-        return '\n'.join(L)
+class OpenIDCallbackView(OpenIDLogin):
+    """The OpenID callback page for logging into Launchpad.
+
+    This is the page the OpenID provider will send the user's browser to,
+    after the user has authenticated on the provider.
+    """
+
+    suspended_account_template = ViewPageTemplateFile(
+        '../templates/login-suspended-account.pt')
+
+    def initialize(self):
+        self.openid_response = self._getConsumer().complete(
+            self.request.form, self.request.getURL())
+
+    def login(self, account):
+        loginsource = getUtility(IPlacelessLoginSource)
+        # We don't have a logged in principal, so we must remove the security
+        # proxy of the account's preferred email.
+        email = removeSecurityProxy(account.preferredemail).email
+        logInPrincipal(
+            self.request, loginsource.getPrincipalByLogin(email), email)
+
+    @cachedproperty
+    def sreg_response(self):
+        return sreg.SRegResponse.fromSuccessResponse(self.openid_response)
+
+    def _getEmailAddressAndFullName(self):
+        # Here we assume the OP sent us the user's email address and
+        # full name in the response. Note we can only do that because
+        # we used a fixed OP (login.launchpad.net) that includes the
+        # user's email address and full name in the response when
+        # asked to.  Once we start using other OPs we won't be able to
+        # make this assumption here as they might not include what we
+        # want in the response.
+        assert self.sreg_response is not None, (
+            "OP didn't include an sreg extension in the response.")
+        email_address = self.sreg_response.get('email')
+        full_name = self.sreg_response.get('fullname')
+        assert email_address is not None and full_name is not None, (
+            "No email address or full name found in sreg response")
+        return email_address, full_name
+
+    def _createAccount(self, openid_identifier, email_address, full_name):
+        account, email = getUtility(IAccountSet).createAccountAndEmail(
+            email_address, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            full_name, password=None, openid_identifier=openid_identifier)
+        return account
+
+    def processPositiveAssertion(self):
+        """Process an OpenID response containing a positive assertion.
+
+        We'll get the account with the given OpenID identifier (creating one 
+        if it doesn't already exist) and act according to the account's state:
+          - If the account is suspended, we stop and render an error page;
+          - If the account is deactivated, we reactivate it and proceed;
+          - If the account is active, we just proceed.
+
+        After that we ensure there's an IPerson associated with the account
+        and login using that account.
+
+        We also update the 'last_write' key in the session if we've done any
+        DB writes, to ensure subsequent requests use the master DB and see
+        the changes we just did.
+        """
+        identifier = self.openid_response.identity_url.split('/')[-1]
+        should_update_last_write = False
+        email_set = getUtility(IEmailAddressSet)
+        # Force the use of the master database to make sure a lagged slave
+        # doesn't fool us into creating a Person/Account when one already
+        # exists.
+        with MasterDatabasePolicy():
+            try:
+                account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                    identifier)
+            except LookupError:
+                # The two lines below are duplicated a few more lines down,
+                # but to avoid this duplication we'd have to refactor most of
+                # our tests to provide an SREG response, which would be rather
+                # painful.
+                email_address, full_name = self._getEmailAddressAndFullName()
+                email = email_set.getByEmail(email_address)
+                if email is None:
+                    # We got an OpenID response containing a positive
+                    # assertion, but we don't have an account for the
+                    # identifier or for the email address.  We'll create one.
+                    account = self._createAccount(
+                        identifier, email_address, full_name)
+                else:
+                    account = email.account
+                    assert account is not None, (
+                        "This email address should have an associated "
+                        "account.")
+                    removeSecurityProxy(account).openid_identifier = (
+                        identifier)
+                should_update_last_write = True
+
+            if account.status == AccountStatus.SUSPENDED:
+                return self.suspended_account_template()
+            elif account.status in [AccountStatus.DEACTIVATED,
+                                    AccountStatus.NOACCOUNT]:
+                comment = 'Reactivated by the user'
+                password = '' # Needed just to please reactivate() below.
+                email_address, dummy = self._getEmailAddressAndFullName()
+                email = email_set.getByEmail(email_address)
+                if email is None:
+                    email = email_set.new(email_address, account=account)
+                removeSecurityProxy(account).reactivate(
+                    comment, password, removeSecurityProxy(email))
+            else:
+                # Account is active, so nothing to do.
+                pass
+            if IPerson(account, None) is None:
+                removeSecurityProxy(account).createPerson(
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+                should_update_last_write = True
+            self.login(account)
+
+        if should_update_last_write:
+            # This is a GET request but we changed the database, so update
+            # session_data['last_write'] to make sure further requests use
+            # the master DB and thus see the changes we've just made.
+            session_data = ISession(self.request)['lp.dbpolicy']
+            session_data['last_write'] = datetime.utcnow()
+        self._redirect()
+        # No need to return anything as we redirect above.
+        return None
+
+    def render(self):
+        if self.openid_response.status == SUCCESS:
+            return self.processPositiveAssertion()
+
+        if self.account is not None:
+            # The authentication failed (or was canceled), but the user is
+            # already logged in, so we just add a notification message and
+            # redirect.
+            self.request.response.addNoticeNotification(
+                _(u'Your authentication failed but you were already '
+                   'logged into Launchpad.'))
+            self._redirect()
+            # No need to return anything as we redirect above.
+            return None
+        else:
+            return OpenIDLoginErrorView(
+                self.context, self.request, self.openid_response)()
+
+    def __call__(self):
+        retval = super(OpenIDCallbackView, self).__call__()
+        # The consumer.complete() call in initialize() will create entries in
+        # OpenIDConsumerNonce to prevent replay attacks, but since this will
+        # be a GET request, the transaction would be rolled back, so we need
+        # an explicit commit here.
+        transaction.commit()
+        return retval
+
+    def _redirect(self):
+        target = self.request.form.get('starting_url')
+        if target is None:
+            target = self.getApplicationURL()
+        self.request.response.redirect(target, temporary_if_possible=True)
+
+
+class OpenIDLoginErrorView(LaunchpadView):
+
+    page_title = 'Error logging in'
+    template = ViewPageTemplateFile("../templates/login-error.pt")
+
+    def __init__(self, context, request, openid_response):
+        super(OpenIDLoginErrorView, self).__init__(context, request)
+        assert self.account is None, (
+            "Don't try to render this page when the user is logged in.")
+        if openid_response.status == CANCEL:
+            self.login_error = "User cancelled"
+        elif openid_response.status == FAILURE:
+            self.login_error = openid_response.message
+        else:
+            self.login_error = "Unknown error: %s" % openid_response
+
+
+class AlreadyLoggedInView(LaunchpadView):
+
+    page_title = 'Already logged in'
+    template = ViewPageTemplateFile("../templates/login-already.pt")
 
 
 def logInPrincipal(request, principal, email):
@@ -392,24 +430,6 @@ def logInPrincipal(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-
-
-def logInPrincipalAndMaybeCreatePerson(request, principal, email):
-    """Log the principal in, creating a Person if necessary.
-
-    If the given principal has no associated person, we create a new
-    person, fetch a new principal and set it in the request.
-
-    Password validation must be done in callsites.
-    """
-    logInPrincipal(request, principal, email)
-    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
-        person = principal.account.createPerson(
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
-            principal.id)
-        assert ILaunchpadPrincipal.providedBy(new_principal)
-        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
@@ -488,41 +508,6 @@ class CookieLogoutPage:
         target = '%s/?loggingout=1' % self.request.URL[-1]
         self.request.response.redirect(target)
         return ''
-
-
-class ForgottenPasswordPage:
-
-    errortext = None
-    submitted = False
-
-    def process_form(self):
-        request = self.request
-        if request.method != "POST":
-            return
-
-        email = request.form.get("email").strip()
-        person = getUtility(IPersonSet).getByEmail(email)
-        if person is None:
-            self.errortext = ("Your account details have not been found. "
-                              "Please check your subscription email "
-                              "address and try again.")
-            return
-
-        if person.isTeam():
-            self.errortext = ("The email address <strong>%s</strong> "
-                              "belongs to a team, and teams cannot log in to "
-                              "Launchpad." % email)
-            return
-
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
-        token.sendPasswordResetEmail()
-        self.submitted = True
-        return
-
-    def success(self):
-        return self.submitted and not self.errortext
 
 
 class FeedsUnauthorizedView(UnauthorizedView):

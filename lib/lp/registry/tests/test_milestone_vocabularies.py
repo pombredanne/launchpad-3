@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the milestone vocabularies."""
 
@@ -11,7 +12,7 @@ from zope.component import getUtility
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.project import IProjectSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -48,7 +49,7 @@ class TestMilestoneVocabulary(TestCase):
 
     def testProjectMilestoneVocabulary(self):
         """Test of MilestoneVocabulary for a project."""
-        mozilla = getUtility(IProjectSet).getByName('mozilla')
+        mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
         vocabulary = MilestoneVocabulary(mozilla)
         self.assertEqual(
             [term.title for term in vocabulary], [u'Mozilla Firefox 1.0'])

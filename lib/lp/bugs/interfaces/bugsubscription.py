@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Bug subscription interfaces."""
@@ -10,7 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int
+from zope.schema import Int, Datetime
 from canonical.launchpad import _
 from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.bugs.interfaces.bug import IBug
@@ -29,10 +31,11 @@ class IBugSubscription(Interface):
     person = exported(ParticipatingPersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address. You can only subscribe someone who has a Launchpad "
-        "account.")))
+        "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    date_created = exported(
+        Datetime(title=_('Date subscribed'), required=True, readonly=True))
     subscribed_by = exported(ParticipatingPersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
@@ -44,4 +47,4 @@ class IBugSubscription(Interface):
     @call_with(user=REQUEST_USER)
     @export_read_operation()
     def canBeUnsubscribedByUser(user):
-        """Can the user unsubscribe the subscriber form the bug?"""
+        """Can the user unsubscribe the subscriber from the bug?"""

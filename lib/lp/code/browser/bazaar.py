@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View support classes for the bazaar application."""
 
@@ -20,13 +21,15 @@ from canonical.config import config
 from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects)
 
+from lp.code.enums import CodeImportReviewStatus
 from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, LaunchpadView, Link)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link)
 
 
 class BazaarBranchesMenu(ApplicationMenu):
@@ -59,7 +62,8 @@ class BazaarApplicationView(LaunchpadView):
 
     @property
     def import_count(self):
-        return getUtility(ICodeImportSet).getActiveImports().count()
+        return getUtility(ICodeImportSet).search(
+            review_status=CodeImportReviewStatus.REVIEWED).count()
 
     @property
     def bzr_version(self):
@@ -146,6 +150,17 @@ class ProductInfo:
             commit = (
                 "last commit %d days old" % self.elapsed_since_commit.days)
         return "%s, %s" % (size, commit)
+
+
+class BazaarProjectsRedirect(LaunchpadView):
+    """Redirect the user to /projects on the code rootsite."""
+
+    def initialize(self):
+        # Redirect to the caller to the new location.
+        product_set = getUtility(IProductSet)
+        redirect_url = canonical_url(product_set, rootsite="code")
+        # Moved permanently.
+        self.request.response.redirect(redirect_url, status=301)
 
 
 class BazaarProductView:

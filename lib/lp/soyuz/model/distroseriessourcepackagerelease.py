@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes to represent source package releases in a distribution series."""
@@ -56,9 +58,8 @@ class DistroSeriesSourcePackageRelease:
     @property
     def title(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        return '%s %s (source) in %s %s' % (
-            self.name, self.version, self.distribution.name,
-            self.distroseries.name)
+        return '"%s" %s source package in %s' % (
+            self.name, self.version, self.distroseries.title)
 
     @property
     def version(self):

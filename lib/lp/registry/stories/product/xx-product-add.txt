@@ -7,12 +7,12 @@ from the Launchpad home page or the projects home page.
     >>> user_browser.open('http://launchpad.dev')
     >>> user_browser.getLink('Create a new project').click()
     >>> print user_browser.title
-    Register a project in Launchpad
+    Register a project in Launchpad...
 
     >>> user_browser.open('http://launchpad.dev/projects')
     >>> user_browser.getLink('Register a project').click()
     >>> print user_browser.title
-    Register a project in Launchpad
+    Register a project in Launchpad...
 
 The page includes both a direct link and a button to order Ubuntu CDs.
 
@@ -42,10 +42,7 @@ forgetting to enter a title or summary.
     There are 3 errors.
     URL:
     http://launchpad.net/
-    Invalid name 'aard vark'. Names must start with a letter or
-    number and be lowercase. The characters +,
-    - and . are also allowed after the
-    first character.
+    Invalid name 'aard vark'. Names must be at least two characters ...
     At least one lowercase letter or number, followed by letters, numbers,
     dots, hyphens or pluses. Keep this name short; it is used in URLs as
     shown above.
@@ -54,7 +51,7 @@ forgetting to enter a title or summary.
     The project title. Should be just a few words.
     Summary:
     Required input is missing.
-    The summary should be a single short paragraph.
+    A short paragraph to introduce the project's work.
 
 Realizing her mistake, Sample Person fills out the project's basic information
 correctly this time.
@@ -70,7 +67,7 @@ The project is not yet created; instead, the project basics are successfully
 validated and the second step of the process is entered.
 
     >>> print user_browser.title
-    Register a project in Launchpad
+    Register a project in Launchpad...
 
 
 Completing the registration
@@ -90,7 +87,7 @@ summary.  She can also add a longer description.
     >>> user_browser.getControl('Title').value = 'Aardvark Central Command'
     >>> user_browser.getControl('Summary').value = (
     ...     'Control pesky aardvarkian fnords')
-    ... user_browser.getControl('Description').value = (
+    >>> user_browser.getControl('Description').value = (
     ...     'The desktop aardvark is an ornery thing.')
 
 Before a project can be created though, a license for it must be selected.
@@ -109,6 +106,17 @@ This time, Sample Person remembers to select a license.
     >>> print user_browser.title
     Aardvark Central Command in Launchpad
 
+Let's ensure the summary and description are presented.
+
+    >>> summary = find_tags_by_class(user_browser.contents,
+    ...                              'summary', only_first=True)
+    >>> print extract_text(summary)
+    Control pesky aardvarkian fnords
+    >>> desc = find_tags_by_class(user_browser.contents,
+    ...                           'description', only_first=True)
+    >>> print extract_text(desc)
+    The desktop aardvark is an ornery thing.
+
 
 Search results
 --------------
@@ -119,7 +127,7 @@ Firefox.
     >>> user_browser.open('http://launchpad.dev')
     >>> user_browser.getLink('Create a new project').click()
     >>> print user_browser.title
-    Register a project in Launchpad
+    Register a project in Launchpad...
 
     >>> user_browser.getControl('Name').value = 'Snowdog'
     >>> user_browser.getControl('URL').value = 'snowdog'
@@ -148,6 +156,7 @@ location at /projects/+new.
 
     >>> user_browser.open('http://launchpad.dev/projects/+new-guided')
     >>> print user_browser.title
-    Register a project in Launchpad
+    Register a project in Launchpad...
+
     >>> print user_browser.url
     http://launchpad.dev/projects/+new

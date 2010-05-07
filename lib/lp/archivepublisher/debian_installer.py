@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of debian installer tarballs."""
 
@@ -10,13 +11,10 @@ __metaclass__ = type
 __all__ = ['process_debian_installer']
 
 import os
-import tarfile
-import stat
 import shutil
 
 from lp.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from lp.archivepublisher.debversion import Version as make_version
 
 
 class DebianInstallerAlreadyExists(CustomUploadError):

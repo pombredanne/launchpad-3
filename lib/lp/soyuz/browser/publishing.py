@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for Soyuz publishing records."""
 
@@ -17,7 +18,7 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, IBinaryPackagePublishingHistory,

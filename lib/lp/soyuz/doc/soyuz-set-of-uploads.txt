@@ -39,7 +39,7 @@ errors, we need:
   4. A changes file that enumerates all the files in the upload, with
      correct md5 sum and file sizes.
   5. Actual files uploaded that match the ones described in the changes file.
- 
+
  If (1) is not available, the upload silently fails.
  If (2) is not available, the upload silently fails.
  If (3) or (4) is not available, the upload is rejected immediately with
@@ -69,7 +69,7 @@ Import public keyring into current LPDB.
 Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
-  >>> from canonical.launchpad.database import Distribution
+  >>> from lp.registry.model.distribution import Distribution
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -159,7 +159,7 @@ And we need a way to process the accepted queue
 
   >>> def process_accepted(distro):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     for series in distribution.serieses:
+  ...     for series in distribution.series:
   ...         items = series.getQueueItems(
   ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:
@@ -210,16 +210,14 @@ given upload into the published state, so here's a very simplistic publisher
   ...                       'Distribution'])
   ...     published_one = False
   ...     for src in srcs_to_publish:
-  ...         sec_src = src.secure_record
-  ...         sec_src.status = PPS.PUBLISHED
-  ...         sec_src.datepublished = UTC_NOW
-  ...         syncUpdate(sec_src)
+  ...         src.status = PPS.PUBLISHED
+  ...         src.datepublished = UTC_NOW
+  ...         syncUpdate(src)
   ...         published_one = True
   ...     for bin in bins_to_publish:
-  ...         sec_bin = bin.secure_record
-  ...         sec_bin.status = PPS.PUBLISHED
-  ...         sec_bin.datepublished = UTC_NOW
-  ...         syncUpdate(sec_bin)
+  ...         bin.status = PPS.PUBLISHED
+  ...         bin.datepublished = UTC_NOW
+  ...         syncUpdate(bin)
   ...         published_one = True
   ...     return published_one
 
@@ -502,8 +500,8 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
-  >>> breezy.status = DistroSeriesStatus.CURRENT
+  >>> from canonical.launchpad.interfaces import SeriesStatus
+  >>> breezy.status = SeriesStatus.CURRENT
   >>> LaunchpadZopelessLayer.txn.commit()
 
 Since we are using 'sync' policy in the following tests the packages
@@ -599,7 +597,7 @@ we expect.
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:
 
-  >>> breezy.status = DistroSeriesStatus.EXPERIMENTAL
+  >>> breezy.status = SeriesStatus.EXPERIMENTAL
   >>> breezy.syncUpdate()
 
 
@@ -622,14 +620,15 @@ eg ubuntu/warty.
 
 Check there's a SourcePackageRelease with no build.
 
-  >>> from canonical.launchpad.database import (
-  ...     SourcePackageRelease, SourcePackageName, Build)
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
-  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.registry.model.sourcepackagename import SourcePackageName
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+  >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
   >>> spn = SourcePackageName.selectOneBy(name="baz")
   >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   >>> spr_id = spr.id
-  >>> builds = Build.selectBy(sourcepackagereleaseID=spr_id)
+  >>> builds = BinaryPackageBuild.selectBy(sourcepackagereleaseID=spr_id)
   >>> len(list(builds))
   0
 
@@ -643,7 +642,7 @@ buildd-queuebuilder having run inbetween the source and binary uploads.
 
 Check build created
 
-  >>> len(list(Build.selectBy(sourcepackagereleaseID=spr_id)))
+  >>> len(list(BinaryPackageBuild.selectBy(sourcepackagereleaseID=spr_id)))
   1
 
 Upload the i386 binary:
@@ -657,7 +656,8 @@ Should still just have one build, and it should now be FULLYBUILT.
   >>> from canonical.database.sqlbase import clear_current_connection_cache
   >>> clear_current_connection_cache()
 
-  >>> builds = list(Build.selectBy(sourcepackagereleaseID=spr_id))
+  >>> builds = list(BinaryPackageBuild.selectBy(
+  ...     sourcepackagereleaseID=spr_id))
   >>> len(builds)
   1
   >>> builds[0].buildstate == BuildStatus.FULLYBUILT

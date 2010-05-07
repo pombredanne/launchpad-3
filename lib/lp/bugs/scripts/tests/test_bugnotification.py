@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for construction bug notification emails for sending."""
 
 __metaclass__ = type
@@ -15,9 +17,8 @@ from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.database import BugTask
 from canonical.launchpad.helpers import get_contact_email_addresses
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.interfaces.message import IMessageSet
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.mailnotification import BugNotificationRecipients

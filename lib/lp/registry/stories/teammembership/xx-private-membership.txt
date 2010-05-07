@@ -30,14 +30,12 @@ A team member should be able to view the +members page.
 
 == Team Page ==
 
-The page states that the team is private.
+The page indicates that the team is private.
 
     >>> browser.open('http://launchpad.dev/~myteam')
     >>> privacy_info = find_tag_by_id(browser.contents, 'privacy')
-    >>> print privacy_info['class']
-    aside private
     >>> print extract_text(privacy_info)
-    This team is private
+    Team membership is viewable by team members
 
 A team member will be able to see these parts of the team page.
 
@@ -45,12 +43,12 @@ A team member will be able to see these parts of the team page.
     <...<a href=".../~member" class="sprite person">Gold Member</a>...
 
 
-    >>> find_tag_by_id(browser.contents, 'recently-applied')
+    >>> find_tag_by_id(browser.contents, 'recently-proposed')
     <...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    This team has: 2 active members, 1 proposed members ...
+    2 active members, 1 proposed member...
 
 
 == Team Participation ==
@@ -68,6 +66,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
 
     >>> user_browser.open('http://launchpad.dev/~owner/+assignedbugs')
@@ -76,6 +75,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
 
     >>> user_browser.open('http://launchpad.dev/~owner/+teamhierarchy')
@@ -83,6 +83,7 @@ overview page or the +assignedbugs page because it has a private membership.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
+    HWDB Team
     Other Team
 
 A member of a team with private membership (MyTeam) can see that team
@@ -93,6 +94,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'Other Team']
     [u'My Team']
 
@@ -102,6 +104,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
+    [u'HWDB Team']
     [u'My Team']
     [u'Other Team']
 
@@ -110,6 +113,7 @@ on other members' overview or +assignedbugs pages.
     >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print extract_text(a_tag)
+    HWDB Team
     My Team
     Other Team
 
@@ -174,7 +178,7 @@ members should be able to see their team's icon in this list.
 First, we will add a custom icon to two teams.
 
     >>> from canonical.launchpad.ftests import set_branding
-    >>> admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> admin_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> admin_browser.open('http://launchpad.dev/~myteam/+branding')
     >>> set_branding(admin_browser)
     >>> admin_browser.getControl('Change Branding').click()
@@ -219,23 +223,6 @@ MyTeam as an option in the +answer-contact form.
     &nbsp;Other Team
 
 
-== Restrict Mentorship ==
-
-To prevent leaking information about a team's private membership,
-no user can select that team when offering mentorship for a bug
-or a blueprint.
-
-Even the owner of the team with private membership should not see
-MyTeam as an option in the +mentor form.
-
-    >>> owner_browser.open(
-    ...     'http://answers.launchpad.dev/firefox/+bug/1/+mentor')
-    >>> team_select = find_tag_by_id(owner_browser.contents, 'field.team')
-    >>> for option in team_select.findAll('option'):
-    ...     print option['value']
-    otherteam
-
-
 == Preventing Private Team Information Leakage ==
 
 To prevent leaking information about a team's private membership,
@@ -247,7 +234,8 @@ no user can add that team as a member of a public team.
     >>> admin_browser.url
     'http://launchpad.dev/%7Esimple-team/+addmember'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...There is 1 error...
+    ...A private team is not allowed.']
 
 Anonymous users cannot even know that the private membership team even
 exists.
@@ -269,9 +257,9 @@ When this connection is made and members of the private team view the public
 team's home page, they see the private team show up in the "Subteam of"
 section.
 
-    >>> admin_browser.open('http://launchpad.dev/~myteam/+addmember')
-    >>> admin_browser.getControl('New member').value = 'guadamen'
-    >>> admin_browser.getControl('Add Member').click()
+    >>> owner_browser.open('http://launchpad.dev/~myteam/+addmember')
+    >>> owner_browser.getControl('New member').value = 'guadamen'
+    >>> owner_browser.getControl('Add Member').click()
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~guadamen/+invitation/myteam')
     >>> admin_browser.getControl('Accept').click()
@@ -314,11 +302,11 @@ no user can subscribe that team to a bug.
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> admin_browser.getControl('Person').value = 'myteam'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Subscribe user').click()
     >>> admin_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...A private-membership team is not allowed...
 
 
 == Restrict Subscribing to Blueprints ==
@@ -333,7 +321,7 @@ no user can subscribe that team to a blueprint.
     >>> admin_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/canvas/+addsubscriber'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...A private team is not allowed...
 
 
 == Restrict Appointing a Translator ==
@@ -345,21 +333,22 @@ no user can specify that team as a translator.
     ...                    '/+groups/testing-translation-team/+appoint')
     >>> admin_browser.getControl('Language').value = ['de']
     >>> admin_browser.getControl('Translator').value = 'myteam'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Appoint').click()
     >>> admin_browser.url
     'http://translations.launchpad.dev/+groups/testing-translation-team/+appoint'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...A private team is not allowed...
 
 
-== Restrict Project Owner ==
+== Restrict Project Group Owner ==
 
 To prevent leaking information about a team's private membership,
 no user can set that team as the owner/maintainer of a project.
 
     >>> admin_browser.open('http://launchpad.dev/mozilla/+reassign')
+    >>> admin_browser.getControl(name='field.existing').value = ['existing']
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change maintainer').click()
+    >>> admin_browser.getControl('Change').click()
     >>> admin_browser.url
     'http://launchpad.dev/mozilla/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
@@ -377,7 +366,7 @@ no user can set that team as the maintainer of a product.
     >>> admin_browser.url
     'http://launchpad.dev/jokosher/+edit-people'
     >>> get_feedback_messages(admin_browser.contents)
-    [u'There is 1 error.', u'Constraint not satisfied']
+    [...A private-membership team is not allowed...
 
 
 == Restrict Product Bug Supervisor ==
@@ -401,7 +390,7 @@ no user can set that team as the registrant of a distribution.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
-    >>> admin_browser.getControl('Change owner').click()
+    >>> admin_browser.getControl('Change').click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
@@ -427,7 +416,7 @@ no user can set that team as the bug supervisor of a distribution.
 A team cannot have its visibility set to private-membership unless the
 subscription policy is also set to restricted.
 
-    >>> admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> admin_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
     >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
     ...     'OPEN']
@@ -474,45 +463,3 @@ restricted, if the visibility is private-membership.
     ...     print message
     There is 1 error.
     Private teams must have a Restricted subscription policy.
-
-A team cannot have its visibility set to private-membership if it is connected
-to other objects which might allow users to infer the membership.
-
-First, subscribe the team to a bug.
-
-    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
-    >>> admin_browser.getControl('Visibility').value = [
-    ...     'PUBLIC']
-    >>> admin_browser.getControl('Save').click()
-    >>> admin_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/+addsubscriber')
-    >>> admin_browser.getControl('Person').value = 'otherteam'
-    >>> admin_browser.getControl('Add').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    Other Team team has been subscribed to this bug.
-
-Second, ask a question.
-
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/firefox/+answer-contact')
-    >>> owner_browser.getControl("Other Team").selected = True
-    >>> owner_browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(owner_browser.contents):
-    ...     print message
-    English was added to Other Team's preferred languages.
-    Other Team has been added as an answer contact for Mozilla Firefox.
-
-Finally, change the visibility to Private Membership which will fail.
-
-    >>> admin_browser.open('http://launchpad.dev/~otherteam/+edit')
-    >>> admin_browser.getControl(name='field.subscriptionpolicy').value = [
-    ...     'RESTRICTED']
-    >>> admin_browser.getControl('Visibility').value = [
-    ...     'PRIVATE_MEMBERSHIP']
-    >>> admin_browser.getControl('Save').click()
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
-    There is 1 error.
-    This team cannot be converted to Private Membership since it is
-    referenced by a bugsubscription and an answercontact.

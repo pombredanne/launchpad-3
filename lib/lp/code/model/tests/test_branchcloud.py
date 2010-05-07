@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for IBranchCloud provider."""
 
@@ -54,9 +55,10 @@ class TestBranchCloud(TestCaseWithFactory):
             date_generator = time_counter(start_date, delta)
         branch = self.factory.makeProductBranch(
             product=product, branch_type=branch_type, private=private)
-        self.factory.makeRevisionsForBranch(
-            removeSecurityProxy(branch), count=revision_count,
-            date_generator=date_generator)
+        if branch_type != BranchType.REMOTE:
+            self.factory.makeRevisionsForBranch(
+                removeSecurityProxy(branch), count=revision_count,
+                date_generator=date_generator)
         return branch
 
     def test_empty_with_no_branches(self):

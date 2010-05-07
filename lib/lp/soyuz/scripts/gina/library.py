@@ -1,15 +1,19 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Library access methods to gina."""
 
 __metaclass__ = type
 
+
+import hashlib
 import os
-import sha
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+
+
 def _libType(fname):
     if fname.endswith(".dsc"):
         return "text/x-debian-source-package"
@@ -40,7 +44,7 @@ def getLibraryAlias(root, filename):
 def checkLibraryForFile(path, filename):
     fullpath = os.path.join(path, filename)
     assert os.path.exists(fullpath)
-    digester = sha.sha()
+    digester = hashlib.sha1()
     openfile = open(fullpath, "r")
     for chunk in iter(lambda: openfile.read(1024*4), ''):
         digester.update(chunk)

@@ -1,4 +1,4 @@
-#!${buildout:executable}
+#!${buildout:executable} -S
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -14,9 +14,20 @@
 ##############################################################################
 """Test script
 """
-import sys, os, time, logging, warnings, re
 
-BUILD_DIR = '${buildout:directory}'
+# NOTE: This is a generated file.  The original is in
+# buildout-templates/bin/test.in
+
+import logging, os, re, sys, time, warnings
+
+# Initialize our paths.
+${python-relative-path-setup}
+import sys
+sys.path.insert(0, ${scripts:parts-directory|path-repr})
+import site
+
+BUILD_DIR = ${buildout:directory|path-repr}
+CUSTOM_SITE_DIR = ${scripts:parts-directory|path-repr}
 
 if os.getsid(0) == os.getsid(os.getppid()):
     # We need to become the process group leader so test_on_merge.py
@@ -30,17 +41,16 @@ if os.getsid(0) == os.getsid(os.getppid()):
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
-# (No longer actually required, as PQM does this)
+# (This is no longer actually required, as PQM does this.)
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
-# Enable Storm's C extensions
-os.environ['STORM_CEXTENSIONS'] = '1'
+# Storm's C extensions should already be enabled from lp_sitecustomize.py,
+# which our custom sitecustomize.py ran.
+assert os.environ['STORM_CEXTENSIONS'] == '1'
 
-sys.path[0:0] = [${string-paths}]
-
-# Set PYTHONPATH environment variable for spawned processes
-os.environ['PYTHONPATH'] = ':'.join(sys.path)
+# Make sure our site.py is the one that subprocesses use.
+os.environ['PYTHONPATH'] = CUSTOM_SITE_DIR
 
 # Set a flag if this is the main testrunner process
 if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
@@ -62,15 +72,11 @@ def exit_with_atexit_handlers(*ignored):
     sys.exit(-1 * signal.SIGTERM)
 signal.signal(signal.SIGTERM, exit_with_atexit_handlers)
 
-# Ensure overrides are generated
-sys.path.insert(0, BUILD_DIR)
-from configs import generate_overrides
-generate_overrides()
-del sys.path[0]
 
 # Tell canonical.config to use the testrunner config instance.
 from canonical.config import config
 config.setInstance('testrunner')
+config.generate_overrides()
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
@@ -92,14 +98,28 @@ except KeyError:
 # need to be silenced should have an accompanied Bug reference.
 #
 warnings.filterwarnings(
-    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
+    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh',
     )
 warnings.filterwarnings(
     'ignore', 'twisted.python.plugin', DeprecationWarning,
     )
 warnings.filterwarnings(
-    'ignore', 'bzrlib.*was deprecated', DeprecationWarning
-)
+    'ignore', 'zope.testing.doctest', DeprecationWarning,
+    )
+warnings.filterwarnings(
+    'ignore', 'bzrlib.*was deprecated', DeprecationWarning,
+    )
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
+# We cannot narrow this warnings filter to just twisted because
+# warnings.warn_explicit() sees this import as coming from importfascist, not
+# from twisted.  It makes no sense to put module='importfascist' here though
+# because /everything/ gets imported through it.  So, sad as it is, until
+# twisted doesn't produce warnings under Python 2.6, just ignore all these
+# deprecations.
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
 # The next one is caused by a lamosity in python-openid.  The following change
 # to openid/server/server.py would make the warning filter unnecessary:
 # 978c974,974
@@ -136,15 +156,15 @@ from canonical.ftests import pgsql
 pgsql.installFakeConnect()
 
 from zope.testing import testrunner
+from zope.testing.testrunner import options
 
-defaults = [
+defaults = {
     # Find tests in the tests and ftests directories
-    '--tests-pattern=^f?tests$',
-    '--test-path=${buildout:directory}/lib',
-    '--package=canonical',
-    '--package=lp',
-    '--layer=!MailmanLayer',
-    ]
+    'tests_pattern': '^f?tests$',
+    'test_path': [${buildout:directory/lib|path-repr}],
+    'package': ['canonical', 'lp', 'devscripts'],
+    'layer': ['!(MailmanLayer)'],
+    }
 
 # Monkey-patch os.listdir to randomise the results
 original_listdir = os.listdir
@@ -165,13 +185,7 @@ def listdir(path):
 os.listdir = listdir
 
 
-from canonical.testing.customresult import (
-    filter_tests,
-    list_tests,
-    patch_find_tests,
-    patch_zope_testresult,
-    )
-from subunit import TestProtocolClient
+from canonical.testing.customresult import filter_tests, patch_find_tests
 
 
 if __name__ == '__main__':
@@ -192,24 +206,29 @@ if __name__ == '__main__':
 
     def load_list(option, opt_str, list_name, parser):
         patch_find_tests(filter_tests(list_name))
-    testrunner.parser.add_option(
+    options.parser.add_option(
         '--load-list', type=str, action='callback', callback=load_list)
 
-    def list_test_option(option, opt, value, parser):
-        patch_find_tests(list_tests)
-    testrunner.parser.add_option(
-        '--list', action='callback', callback=list_test_option)
-
-    def use_subunit(option, opt, value, parser):
-        patch_zope_testresult(TestProtocolClient(sys.stdout))
-    testrunner.parser.add_option(
-        '--subunit', action='callback', callback=use_subunit)
-
-    options = testrunner.get_options(args=args, defaults=defaults)
+    # tests_pattern is a regexp, so the parsed value is hard to compare
+    # with the default value in the loop below.
+    options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
+    local_options = options.get_options(args=args)
+    # Set our default options, if the options aren't specified.
+    for name, value in defaults.items():
+        parsed_option = getattr(local_options, name)
+        if ((parsed_option == []) or
+            (parsed_option == options.parser.defaults.get(name))):
+            # The option probably wasn't specified on the command line,
+            # let's replace it with our default value. It could be that
+            # the real default (as specified in
+            # zope.testing.testrunner.options) was specified, and we
+            # shouldn't replace it with our default, but it's such and
+            # edge case, so we don't have to care about it.
+            options.parser.defaults[name] = value
 
     # Turn on Layer profiling if requested.
     from canonical.testing import profiled
-    if options.verbose >= 3 and main_process:
+    if local_options.verbose >= 3 and main_process:
         profiled.setup_profiling()
 
     # The working directory change is just so that the test script
@@ -218,14 +237,14 @@ if __name__ == '__main__':
     # e.g. run the test that you are currently editing.
     try:
         there = os.getcwd()
-        os.chdir('${buildout:directory}')
-        result = testrunner.run(defaults)
+        os.chdir(BUILD_DIR)
+        result = testrunner.run([])
     finally:
         os.chdir(there)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
 
     # Print Layer profiling report if requested.
-    if main_process and options.verbose >= 3:
+    if main_process and local_options.verbose >= 3:
         profiled.report_profile_stats()
     sys.exit(result)

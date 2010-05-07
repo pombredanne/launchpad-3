@@ -9,18 +9,17 @@ Get the current counts of stuff in the database:
 
     >>> from canonical.launchpad.database import (
     ...     SourcePackageRelease,
-    ...     SecureSourcePackagePublishingHistory,
-    ...     SecureBinaryPackagePublishingHistory,
-    ...     Person,
-    ...     TeamParticipation,
-    ...     WikiName,
+    ...     SourcePackagePublishingHistory,
+    ...     BinaryPackagePublishingHistory,
     ...     EmailAddress,
     ...     BinaryPackageRelease,
-    ...     Build)
-    >>> from canonical.launchpad.interfaces import (
+    ...     BinaryPackageBuild)
+    >>> from lp.registry.model.person import Person, WikiName
+    >>> from lp.registry.model.teammembership import TeamParticipation
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
-    >>> SSPPH = SecureSourcePackagePublishingHistory
-    >>> SBPPH = SecureBinaryPackagePublishingHistory
+    >>> SSPPH = SourcePackagePublishingHistory
+    >>> SBPPH = BinaryPackagePublishingHistory
 
     >>> orig_spr_count = SourcePackageRelease.select().count()
     >>> orig_sspph_count = SSPPH.select().count()
@@ -29,7 +28,7 @@ Get the current counts of stuff in the database:
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
-    >>> orig_build_count = Build.select().count()
+    >>> orig_build_count = BinaryPackageBuild.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
     >>> orig_sspph_main_count = SSPPH.selectBy(
     ...     componentID=1, pocket=PackagePublishingPocket.RELEASE).count()
@@ -64,6 +63,8 @@ packages successfully (at least partially):
 
    * archive-copier, a source package which generates one udeb
      in debian-installer. Its maintainer has a name which contains a ","
+   * archive-copier, again, with a different version number to see that
+     both versions get correctly imported.
    * db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy, but its source
      package's section and its binary package's priority were changed in
@@ -188,11 +189,11 @@ We should have more source packages in the database:
     16
     >>> count = SourcePackageRelease.select().count()
     >>> count - orig_spr_count
-    16
+    17
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
-    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")
@@ -318,13 +319,13 @@ successfully processed.
       util-linux (again, poor thing)
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    19
+    21
 
     >>> print SSPPH.selectBy(
     ...     componentID=1,
     ...     pocket=PackagePublishingPocket.RELEASE).count() - \
     ...     orig_sspph_main_count
-    19
+    21
 
 === Testing Binary Package Results ===
 
@@ -337,7 +338,7 @@ python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
     >>> SBPPH.select().count() - orig_sbpph_count
     46
@@ -420,7 +421,7 @@ We check that the binary package publishing override facility works:
     >>> n = BinaryPackageName.selectOneBy(name="libdb1-compat")
     >>> db1 = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
     ...         version="2.1.3-7")
-    >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
+    >>> for pub in BinaryPackagePublishingHistory.selectBy(
     ...     binarypackagereleaseID=db1.id, orderBy='distroarchseries'):
     ...     print "%s %s %s" % (
     ...         pub.distroarchseries.distroseries.name, pub.priority,
@@ -442,31 +443,11 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
-    12
+    13
     >>> print TeamParticipation.select().count() - orig_tp_count
-    12
+    13
     >>> print EmailAddress.select().count() - orig_email_count
-    12
-
-The ensure_person function, defined in gina/handlers.py is used by gina to
-create Person entries when necessary. It also sets the creation_rationale
-and creation_comment of the created Person entry.
-
-    >>> from lp.soyuz.scripts.gina.handlers import ensure_person
-    >>> transaction.commit()
-    >>> person = ensure_person(
-    ...     'Display Name', 'bar@foo.com', 'firefox', 'Ubuntu Breezy')
-    >>> person.is_valid_person  # Not valid because it lacks a preferred email
-    False
-    >>> person.creation_rationale.name
-    'SOURCEPACKAGEIMPORT'
-    >>> person.creation_comment
-    u'when the firefox package was imported into Ubuntu Breezy'
-
-Now we remove the newly created person so it doesn't interfere in the rest of
-the test.
-
-    >>> transaction.abort()
+    13
 
 
 === Re-run Gina ===
@@ -536,16 +517,16 @@ Nothing should happen to most of our data -- no counts should have
 changed, etc.
 
     >>> SourcePackageRelease.select().count() - orig_spr_count
-    16
+    17
     >>> print Person.select().count() - orig_person_count
-    12
+    13
     >>> print TeamParticipation.select().count() - orig_tp_count
-    12
+    13
     >>> print EmailAddress.select().count() - orig_email_count
-    12
+    13
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
 
 But the overrides do generate extra publishing entries:
@@ -553,7 +534,7 @@ But the overrides do generate extra publishing entries:
     >>> SBPPH.select().count() - orig_sbpph_count
     47
     >>> print SSPPH.select().count() - orig_sspph_count
-    21
+    23
 
 Check that the overrides we did were correctly issued. We can't use selectOneBy
 because, of course, there may be multiple rows published for that package --
@@ -628,7 +609,7 @@ There will now be a number of publishings in the partner archive:
 
     >>> source_difference = partner_source_set_after - partner_source_set
     >>> len(source_difference)
-    11
+    12
 
     >>> binary_difference = partner_binary_set_after - partner_binary_set
     >>> len(binary_difference)
@@ -679,7 +660,7 @@ specified in the testing configuration.
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 
     # Only the distro owner and admins can create a new series.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> lenny = debian.newSeries(
     ...     "lenny", "lenny", "Lenny",
     ...     "---", "!!!", "8.06",
@@ -721,7 +702,7 @@ targetted distroseries, 'lenny'.
 
     >>> lenny_sources = SSPPH.select("distroseries = %s" % sqlvalues(lenny))
     >>> lenny_sources.count()
-    11
+    12
 
     >>> print set([pub.status.name for pub in lenny_sources])
     set(['PENDING'])
@@ -749,7 +730,7 @@ batch.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
     >>> print proc.stderr.read()
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-gina.lock
     ...
     INFO    === Processing debian/lenny/release ===
     ...

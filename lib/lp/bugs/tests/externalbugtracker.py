@@ -1,5 +1,7 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0231
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0231,E0702,W0108
 
 """Helper classes for testing ExternalSystem."""
 
@@ -15,15 +17,15 @@ import xmlrpclib
 from StringIO import StringIO
 from datetime import datetime, timedelta
 from httplib import HTTPMessage
-from urllib2 import BaseHandler, HTTPError, Request
+from urllib2 import BaseHandler, Request
 
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
-    ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
+    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError, Bugzilla,
+    DebBugs, ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac)
 from lp.bugs.externalbugtracker.trac import (
     FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
@@ -40,7 +42,6 @@ from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.bugs.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -63,7 +64,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
         index += 1
     name += '-%d' % index
-    bugtracker = BugTracker(
+    BugTracker(
         name=name,
         title='%s *TESTING*' % (bugtracker_type.title,),
         bugtrackertype=bugtracker_type,
@@ -149,6 +150,8 @@ class TestExternalBugTracker(ExternalBugTracker):
     Implements all the methods required of an `IExternalBugTracker`
     implementation, though it doesn't actually do anything.
     """
+
+    batch_size = BATCH_SIZE_UNLIMITED
 
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)
@@ -280,7 +283,6 @@ class TestBugzilla(Bugzilla):
             buglist_xml = read_test_file(self.buglist_file)
             bug_ids = str(form[self.bug_id_form_element]).split(',')
             bug_li_items = []
-            status_tag = None
             for bug_id in bug_ids:
                 bug_id = int(bug_id)
                 if bug_id not in self.bugzilla_bugs:
@@ -377,6 +379,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'priority': 'P1',
             'product': 'Marvin',
             'resolution': 'FIXED',
+            'see_also': [],
             'severity': 'normal',
             'status': 'RESOLVED',
             'summary': "That bloody robot still exists.",
@@ -392,6 +395,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'priority': 'P1',
             'product': 'HeartOfGold',
             'resolution': '',
+            'see_also': [],
             'severity': 'high',
             'status': 'NEW',
             'summary': 'Collect unknown persons in docking bay 2.',
@@ -467,8 +471,15 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get(
-            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
+
+        assert len(cookies) < 2, (
+            "There should only be cookies for one domain.")
+
+        if len(cookies) == 1:
+            [(domain, domain_cookies)] = cookies.items()
+            return domain_cookies.get('', {}).get('Bugzilla_logincookie')
+        else:
+            return None
 
     @property
     def has_valid_auth_cookie(self):
@@ -516,15 +527,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         if local_datetime is None:
             local_datetime = datetime(2008, 5, 1, 1, 1, 1)
 
-        # We return xmlrpc dateTimes rather than doubles since that's
-        # what BugZilla will return.
-        local_time = xmlrpclib.DateTime(local_datetime.timetuple())
+        utc_offset_delta = timedelta(seconds=self.utc_offset)
+        utc_date_time = local_datetime - utc_offset_delta
 
-        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
-        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
-            'local_time': local_time,
-            'utc_time': utc_time,
+            'local_time': local_datetime,
+            'utc_time': utc_date_time,
             'tz_name': self.timezone,
             }
 
@@ -555,20 +563,21 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def login(self, arguments):
         token_text = arguments['token']
-
         self._handleLoginToken(token_text)
+        self._setAuthCookie()
 
+        # We always return the same user ID.
+        # This has to be listified because xmlrpclib tries to expand
+        # sequences of length 1.
+        return [{'user_id': 42}]
+
+    def _setAuthCookie(self):
         # Generate some random cookies to use.
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
         self.setCookie('Bugzilla_login=%s;' % random_cookie_1)
         self.setCookie('Bugzilla_logincookie=%s;' % random_cookie_2)
-
-        # We always return the same user ID.
-        # This has to be listified because xmlrpclib tries to expand
-        # sequences of length 1.
-        return [{'user_id': 42}]
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""
@@ -579,7 +588,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             "One of ('ids', 'products') should be specified")
 
         bugs_to_return = []
-        bugs = dict(self.bugs)
 
         # We enforce permissiveness, since we'll always call this method
         # with permissive=True in the Real World.
@@ -587,14 +595,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert permissive, "get_bugs() must be called with permissive=True"
 
         # If a changed_since argument is specified, marshall it into a
-        # datetime so that we can use it for comparisons.
-        # XXX 2008-08-05 gmb (bug 254999):
-        #     We can remove these lines once we upgrade to python 2.5.
+        # datetime so that we can use it for comparisons. Even though
+        # xmlrpclib in Python 2.5 groks datetime, by the time this
+        # method is called xmlrpclib has already converted all
+        # datetimes to xmlrpclib.DateTime.
         changed_since = arguments.get('changed_since')
         if changed_since is not None:
-            changed_since_timetuple = time.strptime(
-                str(changed_since), '%Y%m%dT%H:%M:%S')
-            changed_since = datetime(*changed_since_timetuple[:6])
+            changed_since = datetime.strptime(
+                changed_since.value, '%Y%m%dT%H:%M:%S')
 
         # If we have some products but no bug_ids we just get all the
         # bug IDs for those products and stuff them in the bug_ids list
@@ -630,14 +638,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict['product'] not in products):
                 continue
 
-            # Update the DateTime fields of the bug dict so that they
-            # look like ones that would be sent over XML-RPC.
-            for time_field in ('creation_time', 'last_change_time'):
-                datetime_value = bug_dict[time_field]
-                timestamp = time.mktime(datetime_value.timetuple())
-                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
-                bug_dict[time_field] = xmlrpc_datetime
-
             bugs_to_return.append(bug_dict)
 
         # "Why are you returning a list here?" I hear you cry. Well,
@@ -645,6 +645,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # sequences of length 1. When you return a dict, that line
         # explodes in your face. Annoying? Insane? You bet.
         return [{'bugs': bugs_to_return}]
+
+    def _copy_comment(self, comment, fields_to_return=None):
+        # Copy wanted fields.
+        return dict(
+            (key, value) for (key, value) in comment.iteritems()
+            if fields_to_return is None or key in fields_to_return)
 
     def comments(self, arguments):
         """Return comments for a given set of bugs."""
@@ -657,17 +663,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         fields_to_return = arguments.get('include_fields')
         comments_by_bug_id = {}
 
-        def copy_comment(comment):
-            # Copy wanted fields.
-            comment = dict(
-                (key, value) for (key, value) in comment.iteritems()
-                if fields_to_return is None or key in fields_to_return)
-            # Replace the time field with an XML-RPC DateTime.
-            if 'time' in comment:
-                comment['time'] = xmlrpclib.DateTime(
-                    comment['time'].timetuple())
-            return comment
-
         for bug_id in bug_ids:
             comments_for_bug = self.bug_comments[bug_id].values()
 
@@ -676,7 +671,8 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             # dict can have a value but no type; hence Python defaults
             # to treating them as strings).
             comments_by_bug_id[str(bug_id)] = [
-                copy_comment(comment) for comment in comments_for_bug
+                self._copy_comment(comment, fields_to_return)
+                for comment in comments_for_bug
                 if comment_ids is None or comment['id'] in comment_ids]
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
@@ -687,7 +683,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert 'id' in arguments, (
             "Bug.add_comment() must always be called with an id parameter.")
         assert 'comment' in arguments, (
-            "Bug.add_comment() must always be called with an comment "
+            "Bug.add_comment() must always be called with a comment "
             "parameter.")
 
         bug_id = arguments['id']
@@ -747,6 +743,304 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         # expand sequences of length 1, which will fail horribly when
         # the sequence is in fact a dict.
         return [{'launchpad_id': old_launchpad_id}]
+
+
+class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
+    """A test implementation of the Bugzilla 3.4 XML-RPC API."""
+
+    # Map namespaces onto method names.
+    methods = {
+        'Bug': [
+            'add_comment',
+            'comments',
+            'get',
+            'search',
+            'update_see_also',
+            ],
+        'Bugzilla': [
+            'time',
+            'version',
+            ],
+        'Test': ['login_required'],
+        'User': ['login'],
+        }
+
+    # Methods that require authentication.
+    auth_required_methods = [
+        'add_comment',
+        'login_required',
+        ]
+
+    # The list of users that can log in.
+    users = [
+        {'login': 'foo.bar@canonical.com', 'password': 'test'},
+        ]
+
+    # A list of comments on bugs.
+    bug_comments = {
+        1: {
+            1: {'author': 'trillian',
+                'bug_id': 1,
+                'id': 1,
+                'is_private': False,
+                'text': "I'd really appreciate it if Marvin would "
+                        "enjoy life a bit.",
+                'time': datetime(2008, 6, 16, 12, 44, 29),
+                },
+            2: {'author': 'marvin',
+                'bug_id': 1,
+                'id': 3,
+                'is_private': False,
+                'text': "Life? Don't talk to me about life.",
+                'time': datetime(2008, 6, 16, 13, 22, 29),
+                },
+            },
+        2: {
+            1: {'author': 'trillian',
+                'bug_id': 2,
+                'id': 2,
+                'is_private': False,
+                'text': "Bring the passengers to the bridge please Marvin.",
+                'time': datetime(2008, 6, 16, 13, 8, 8),
+                },
+             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+                'bug_id': 2,
+                'id': 4,
+                'is_private': False,
+                'text': "I appear to have become a perfectly safe penguin.",
+                'time': datetime(2008, 6, 17, 20, 28, 40),
+                },
+            },
+        }
+
+    def version(self):
+        """Return the version of Bugzilla being used."""
+        # This is to work around the old "xmlrpclib tries to expand
+        # sequences of length 1" problem (see above).
+        return [{'version': '3.4.1+'}]
+
+    def login(self, arguments):
+        login = arguments['login']
+        password = arguments['password']
+
+        # Clear the old login cookie for the sake of being thorough.
+        self.expireCookie(self.auth_cookie)
+
+        for user in self.users:
+            if user['login'] == login and user['password'] == password:
+                self._setAuthCookie()
+                return [{'id': self.users.index(user)}]
+            else:
+                raise xmlrpclib.Fault(
+                    300,
+                    "The username or password you entered is not valid.")
+
+    def time(self):
+        """Return a dict of the local time and associated data."""
+        # We cheat slightly by calling the superclass to get the time
+        # data. We do this the old fashioned way because XML-RPC
+        # Transports don't support new-style classes.
+        time_dict = TestBugzillaXMLRPCTransport.time(self)
+        offset_hours = (self.utc_offset / 60) / 60
+        offset_string = '+%02d00' % offset_hours
+
+        return {
+            'db_time': time_dict['local_time'],
+            'tz_name': time_dict['tz_name'],
+            'tz_offset': offset_string,
+            'tz_short_name': time_dict['tz_name'],
+            'web_time': time_dict['local_time'],
+            'web_time_utc': time_dict['utc_time'],
+            }
+
+    def get(self, arguments):
+        """Return a list of bug dicts for a given set of bug ids."""
+        # This method is actually just a synonym for get_bugs().
+        return self.get_bugs(arguments)
+
+    def search(self, arguments):
+        """Return a list of bug dicts that match search criteria."""
+        assert 'permissive' not in arguments, (
+            "You can't pass 'permissive' to Bug.search()")
+
+        search_args = {'permissive': True}
+
+        # Convert the search arguments into something that get_bugs()
+        # understands. This may seem like a hack, but since we're only
+        # trying to simulate the way Bugzilla behaves it doesn't really
+        # matter that we just pass the buck to get_bugs().
+        if arguments.get('last_change_time') is not None:
+            search_args['changed_since'] = arguments['last_change_time']
+
+        if arguments.get('id') is not None:
+            search_args['ids'] = arguments['id']
+        else:
+            search_args['ids'] = [
+                bug_id for bug_id in self.bugs]
+
+        if arguments.get('product') is not None:
+            product_list = arguments['product']
+            assert isinstance(product_list, list), (
+                "product parameter must be a list.")
+
+            search_args['products'] = product_list
+
+        return self.get_bugs(search_args)
+
+    def comments(self, arguments):
+        """Return comments for a given set of bugs."""
+        # Turn the arguments into something that
+        # TestBugzillaXMLRPCTransport.comments() will understand and
+        # then pass the buck.
+        comments_args = dict(arguments)
+        fields_to_return = arguments.get('include_fields')
+        if arguments.get('ids') is not None:
+            # We nuke the 'ids' argument because it means something
+            # different when passed to TestBugzillaXMLRPCTransport.comments.
+            del comments_args['ids']
+            comments_args['bug_ids'] = arguments['ids']
+            [returned_dict] = TestBugzillaXMLRPCTransport.comments(
+                self, comments_args)
+
+            # We need to move the comments for each bug in to a
+            # 'comments' dict.
+            bugs_dict = returned_dict['bugs']
+            bug_comments_dict = {}
+            for bug_id, comment_list in bugs_dict.items():
+                bug_comments_dict[bug_id] = {'comments': comment_list}
+
+            return_dict = {'bugs': bug_comments_dict}
+        else:
+            return_dict = {'bugs': {}}
+
+        if arguments.get('comment_ids') is not None:
+            # We need to return all the comments listed.
+            comments_to_return = {}
+            for bug_id, comments in self.bug_comments.items():
+                for comment_number, comment in comments.items():
+                    if comment['id'] in arguments['comment_ids']:
+                        comments_to_return[comment['id']] = (
+                            self._copy_comment(comment, fields_to_return))
+
+            return_dict['comments'] = comments_to_return
+
+        # Stop xmlrpclib:1387 from throwing a wobbler at having a
+        # length-1 dict to deal with.
+        return [return_dict]
+
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'bug_id': bug_id,
+            'id': comment_id,
+            'is_private': False,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'id': comment_id}]
+
+    def update_see_also(self, arguments):
+        """Update the see_also references for a bug."""
+        assert 'ids' in arguments, (
+            "You must specify a set of IDs with which to work.")
+        assert ('add' in arguments or 'remove' in arguments), (
+            "You must specify a list of links to add or remove.")
+
+        changes = {}
+
+        for bug_id in arguments['ids']:
+            bug_id = int(bug_id)
+
+            # If the bug ID doesn't exist, raise a Fault.
+            if bug_id not in self.bugs:
+                raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+            see_also_list = self.bugs[bug_id].get('see_also', [])
+
+            # Remove any items first. That way, if they're also in the
+            # 'add' section they'll get re-added.
+            for url in arguments.get('remove', []):
+                if url not in see_also_list:
+                    continue
+
+                if changes.get(bug_id) is None:
+                    changes[bug_id] = {}
+
+                if changes[bug_id].get('see_also') is None:
+                    changes[bug_id]['see_also'] = {}
+
+                if changes[bug_id]['see_also'].get('removed') is None:
+                    changes[bug_id]['see_also']['removed'] = []
+
+                see_also_list.remove(url)
+                changes[bug_id]['see_also']['removed'].append(url)
+
+            # Add any items to the list.
+            for url in arguments.get('add', []):
+                if url in see_also_list:
+                    # Ignore existing urls.
+                    continue
+
+                if ('launchpad' not in url and
+                    'show_bug.cgi' not in url):
+                    raise xmlrpclib.Fault(
+                        112, "Bug URL %s is invalid." % url)
+
+                if changes.get(bug_id) is None:
+                    changes[bug_id] = {}
+
+                if changes[bug_id].get('see_also') is None:
+                    changes[bug_id]['see_also'] = {}
+
+                if changes[bug_id]['see_also'].get('added') is None:
+                    changes[bug_id]['see_also']['added'] = []
+
+                see_also_list.append(url)
+                changes[bug_id]['see_also']['added'].append(url)
+
+            # Replace the bug's existing see_also list.
+            self.bugs[bug_id]['see_also'] = see_also_list
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'changes': changes}]
 
 
 class TestMantis(Mantis):
@@ -1297,41 +1591,46 @@ class Urlib2TransportTestInfo:
 class Urlib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
 
+    def __init__(self):
+        self.redirect_url = None
+        self.raise_error = None
+        self.accessed_urls = []
+
+    def setRedirect(self, new_url):
+        """The next call of default_open() will redirect to `url`."""
+        self.redirect_url = new_url
+
+    def setError(self, error, url):
+        """Raise `error` when `url` is accessed."""
+        self.raise_error = error
+        self.raise_url = url
+
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
 
         The response body is an XMLRPC response. In addition we set the
         info of the response to contain a cookie.
         """
-        assert (
-            isinstance(req, Request),
+        assert isinstance(req, Request), (
             'Expected a urllib2.Request, got %s' % req)
 
-        if 'testError' in req.data:
-            raise HTTPError(
-                req.get_full_url(), 500, 'Internal Error', {}, None)
-
-        elif ('testRedirect' in req.data and
-              'redirected' not in req.get_full_url()):
-            # Big hack to make calls to testRedirect act as though a 302
-            # has been received. Note the slightly cheaty check for
-            # 'redirected' in the URL. This is to stop urllib2 from
-            # whinging about infinite loops.
-            redirect_url = urlappend(
-                req.get_full_url(), 'redirected')
-
+        self.accessed_urls.append(req.get_full_url())
+        if (self.raise_error is not None and
+              req.get_full_url() == self.raise_url):
+            error = self.raise_error
+            self.raise_error = None
+            raise error
+        elif self.redirect_url is not None:
             headers = HTTPMessage(StringIO())
-            headers['location'] = redirect_url
-
+            headers['location'] = self.redirect_url
             response = StringIO()
             response.info = lambda: headers
             response.geturl = lambda: req.get_full_url()
             response.code = 302
             response.msg = 'Moved'
+            self.redirect_url = None
             response = self.parent.error(
-                'http', req, response, 302, 'Moved',
-                headers)
-
+                'http', req, response, 302, 'Moved', headers)
         else:
             xmlrpc_response = xmlrpclib.dumps(
                 (req.get_full_url(),), methodresponse=True)

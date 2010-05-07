@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A set of functions related to the ability to parse the XML CVE database,
 extract details of known CVE entries, and ensure that all of the known
@@ -6,11 +7,14 @@ CVE's are fully registered in Launchpad."""
 
 __metaclass__ = type
 
-import cElementTree
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 import urllib2
 import gzip
 import StringIO
-import timing
+import time
 
 from zope.component import getUtility
 from zope.event import notify
@@ -216,12 +220,13 @@ class CVEUpdater(LaunchpadCronScript):
         else:
             raise LaunchpadScriptFailure('No CVE database file or URL given.')
 
-        # start analysing the data
-        timing.start()
+        # Start analysing the data.
+        start_time = time.time()
         self.logger.info("Processing CVE XML...")
         self.processCVEXML(cve_db)
-        timing.finish()
-        self.logger.info('%d seconds to update database.' % timing.seconds())
+        finish_time = time.time()
+        self.logger.info('%d seconds to update database.'
+                % (finish_time - start_time))
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.

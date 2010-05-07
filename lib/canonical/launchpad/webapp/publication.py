@@ -1,14 +1,15 @@
-# (c) Canonical Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'LoginRoot',
-    'LaunchpadBrowserPublication'
+    'LaunchpadBrowserPublication',
     ]
 
-
-import gc
 import os
+import re
+import sys
 import thread
 import threading
 import traceback
@@ -16,27 +17,27 @@ import urllib
 
 from cProfile import Profile
 from datetime import datetime
-from time import strftime
 
 import tickcount
 import transaction
 
 from psycopg2.extensions import TransactionRollbackError
+from storm.database import STATE_DISCONNECTED
 from storm.exceptions import DisconnectionError, IntegrityError
 from storm.zope.interfaces import IZStorm
 
+from zc.zservertracelog.interfaces import ITraceLog
 import zope.app.publication.browser
-
 from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
-from zope.component.interfaces import ComponentLookupError
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
-from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.interfaces.browser import (
+    IDefaultSkin, IBrowserRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -44,23 +45,23 @@ from zope.security.management import newInteraction
 import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
 
-from canonical.config import config
-from canonical.mem import (
-    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
-    resident)
+from canonical.config import config, dbconfig
+from canonical.mem import memory, resident
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
+from canonical.launchpad.readonly import is_read_only
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
-    IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
-    OffsiteFormPostError, IStoreSelector, MASTER_FLAVOR)
-from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
+    IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
+    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, SLAVE_FLAVOR)
+from canonical.launchpad.webapp.dbpolicy import (
+    DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.signon.layers import IdLayer, OpenIDLayer
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -165,9 +166,29 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
+        db_policy = IDatabasePolicy(request)
+        if not isinstance(db_policy, DatabaseBlockedPolicy):
+            # Database access is not blocked, so make sure our stores point to
+            # the appropriate databases, according to the mode we're on.
+            main_master_store = getUtility(IStoreSelector).get(
+                MAIN_STORE, MASTER_FLAVOR)
+            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
+            # through private attributes to get to the store's database.
+            dsn = main_master_store._connection._database.dsn_without_user
+            if dsn.strip() != dbconfig.main_master.strip():
+                # Remove the stores from zstorm to force them to be
+                # re-created, thus using the correct databases for the mode
+                # we're on right now.
+                main_slave_store = getUtility(IStoreSelector).get(
+                    MAIN_STORE, SLAVE_FLAVOR)
+                zstorm = getUtility(IZStorm)
+                for store in [main_master_store, main_slave_store]:
+                    zstorm.remove(store)
+                    store.close()
+
         # Now we are logged in, install the correct IDatabasePolicy for
         # this request.
-        getUtility(IStoreSelector).push(IDatabasePolicy(request))
+        getUtility(IStoreSelector).push(db_policy)
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -181,23 +202,21 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+        self.maybeNotifyReadOnlyMode(request)
 
-        # If we are running in read-only mode, notify the user
-        # provided they aren't using the SSO server.
-        if config.launchpad.read_only and not (
-            OpenIDLayer.providedBy(request) or IdLayer.providedBy(request)):
-            try:
-                INotificationResponse(request).addWarningNotification(
+    def maybeNotifyReadOnlyMode(self, request):
+        """Hook to notify about read-only mode."""
+        if is_read_only():
+            notification_response = INotificationResponse(request, None)
+            if notification_response is not None:
+                notification_response.addWarningNotification(
                     structured("""
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
-                        changes.</i> Please see the <a
-                        href="http://blog.launchpad.net/maintenance">Launchpad
-                        Blog</a> for details.
+                        changes.</i> You can find more information on the
+                        <a href="http://identi.ca/launchpadstatus">Launchpad
+                        system status</a> page.
                         """))
-            except ComponentLookupError:
-                pass
-
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
@@ -291,21 +310,56 @@ class LaunchpadBrowserPublication(
 
         The OffsiteFormPostError exception is raised if the following
         holds true:
-          1. the request method is POST
-          2. the HTTP referer header is not empty
-          3. the host portion of the referrer is not a registered vhost
+          1. the request method is POST *AND*
+          2. a. the HTTP referer header is empty *OR*
+             b. the host portion of the referrer is not a registered vhost
         """
         if request.method != 'POST':
             return
         # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our OpenID endpoint.  Ideally we'd
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
         # have a better way of marking this URL as allowing offsite
         # form posts.
         if request['PATH_INFO'] == '/+openid':
             return
+        if (IOAuthSignedRequest.providedBy(request)
+            or not IBrowserRequest.providedBy(request)
+            or request['PATH_INFO']  in (
+                '/+storeblob', '/+request-token', '/+access-token',
+                '/+hwdb/+submit')):
+            # We only want to check for the referrer header if we are
+            # in the middle of a request initiated by a web browser. A
+            # request to the web service (which is necessarily
+            # OAuth-signed) or a request that does not implement
+            # IBrowserRequest (such as an XML-RPC request) can do
+            # without a Referer.
+            #
+            # XXX gary 2010-03-09 bug=535122,538097
+            # The one-off exceptions are necessary because existing
+            # non-browser applications make requests to these URLs
+            # without providing a Referer. Apport makes POST requests
+            # to +storeblob without providing a Referer (bug 538097),
+            # and launchpadlib used to make POST requests to
+            # +request-token and +access-token without providing a
+            # Referer.
+            #
+            # XXX Abel Deuring 2010-04-09 bug=550973
+            # The HWDB client "checkbox" accesses /+hwdb/+submit without
+            # a referer. This will change in the version in Ubuntu 10.04,
+            # but Launchpad should support HWDB submissions from older
+            # Ubuntu versions during their support period.
+            #
+            # We'll have to keep an application's one-off exception
+            # until the application has been changed to send a
+            # Referer, and until we have no legacy versions of that
+            # application to support. For instance, we can't get rid
+            # of the apport exception until after Lucid's end-of-life
+            # date. We should be able to get rid of the launchpadlib
+            # exception after Karmic's end-of-life date.
+            return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            return
+            raise NoReferrerError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
@@ -428,11 +482,25 @@ class LaunchpadBrowserPublication(
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication """
+        # In some cases we seem to be called more than once for a given
+        # traversed object, so we need to be careful here and only append an
+        # object the first time we see it.
+        if ob not in request.traversed_objects:
+            request.traversed_objects.append(ob)
         notify(BeforeTraverseEvent(ob, request))
 
     def afterTraversal(self, request, ob):
-        """ We don't want to call _maybePlacefullyAuthenticate as does
-        zopepublication."""
+        """See zope.publisher.interfaces.IPublication.
+
+        This hook does not invoke our parent's afterTraversal hook
+        in zopepublication.py because we don't want to call
+        _maybePlacefullyAuthenticate.
+        """
+        # Log the URL including vhost information to the ZServer tracelog.
+        tracelog = ITraceLog(request, None)
+        if tracelog is not None:
+            tracelog.log(request.getURL())
+
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
             'beforeTraversal(), was not found.')
@@ -476,6 +544,11 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
+        # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
+        # We need to do this before we re-raise the exception as a Retry.
+        if isinstance(exc_info[1], DisconnectionError):
+            getUtility(IErrorReportingUtility).handling(exc_info, request)
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -510,7 +583,7 @@ class LaunchpadBrowserPublication(
 
             return False
 
-        # Reraise Retry exceptions ourselves rather than invoke
+        # Re-raise Retry exceptions ourselves rather than invoke
         # our superclass handleException method, as it will log OOPS
         # reports etc. This would be incorrect, as transaction retry
         # is a normal part of operation.
@@ -545,6 +618,7 @@ class LaunchpadBrowserPublication(
         We must restart the request timer.  Otherwise we can get OOPS errors
         from our exception views inappropriately.
         """
+        # pylint: disable-msg=E1002
         super(LaunchpadBrowserPublication,
               self).beginErrorHandlingTransaction(request, ob, note)
         # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to
@@ -566,9 +640,6 @@ class LaunchpadBrowserPublication(
         self.endProfilingHook(request)
 
         da.clear_request_started()
-
-        if config.debug.references:
-            self.debugReferencesLeak(request)
 
         # Maintain operational statistics.
         if getattr(request, '_wants_retry', False):
@@ -592,14 +663,33 @@ class LaunchpadBrowserPublication(
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
-                OpStats.stats[str(status)[0] + 'XXs'] += 1
+                status_group = str(status)[0] + 'XXs'
+                OpStats.stats[status_group] += 1
 
-        # Reset all Storm stores when not running the test suite. We could
-        # reset them when running the test suite but that'd make writing tests
-        # a much more painful task. We still reset the slave stores though
-        # to minimize stale cache issues.
+                # Increment counter for 5XXs_b.
+                if is_browser(request) and status_group == '5XXs':
+                    OpStats.stats['5XXs_b'] += 1
+
+        # Make sure our databases are in a sane state for the next request.
         thread_name = threading.currentThread().getName()
         for name, store in getUtility(IZStorm).iterstores():
+            try:
+                assert store._connection._state != STATE_DISCONNECTED, (
+                    "Bug #504291: Store left in a disconnected state.")
+            except AssertionError:
+                # The Store is in a disconnected state. This should
+                # not happen, as store.rollback() should have been called
+                # by now. Log an OOPS so we know about this. This
+                # is Bug #504291 happening.
+                getUtility(IErrorReportingUtility).handling(
+                    sys.exc_info(), request)
+                # Repair things so the server can remain operational.
+                store.rollback()
+            # Reset all Storm stores when not running the test suite.
+            # We could reset them when running the test suite but
+            # that'd make writing tests a much more painful task. We
+            # still reset the slave stores though to minimize stale
+            # cache issues.
             if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
@@ -659,99 +749,9 @@ class LaunchpadBrowserPublication(
                 vss_start, rss_start, vss_end, rss_end))
             log.close()
 
-    def debugReferencesLeak(self, request):
-        """See what kind of references are increasing.
-
-        This logs the current RSS and references count by types in a
-        scoreboard file. If that file exists, we compare the current stats
-        with the previous one and logs the increase along the current page id.
-
-        Note that this only provides reliable results when only one thread is
-        processing requests.
-        """
-        gc.collect()
-        current_rss = resident()
-        current_garbage_count = len(gc.garbage)
-        # Convert type to string, because that's what we get when reading
-        # the old scoreboard.
-        current_refs = [
-            (count, str(ref_type)) for count, ref_type in mostRefs(n=0)]
-        # Add G as prefix to types on the garbage list.
-        current_garbage = [
-            (count, 'G%s' % str(ref_type))
-            for count, ref_type in countsByType(gc.garbage, n=0)]
-        scoreboard_path = config.debug.references_scoreboard_file
-
-        # Read in previous scoreboard if it exists.
-        if os.path.exists(scoreboard_path):
-            scoreboard = open(scoreboard_path, 'r')
-            try:
-                stats = scoreboard.readline().split()
-                prev_rss = int(stats[0].strip())
-                prev_garbage_count = int(stats[1].strip())
-                prev_refs = readCounts(scoreboard, '=== GARBAGE ===\n')
-                prev_garbage = readCounts(scoreboard)
-            finally:
-                scoreboard.close()
-            mem_leak = current_rss - prev_rss
-            garbage_leak = current_garbage_count - prev_garbage_count
-            delta_refs = list(deltaCounts(prev_refs, current_refs))
-            delta_refs.extend(deltaCounts(prev_garbage, current_garbage))
-            self.logReferencesLeak(request, mem_leak, delta_refs)
-
-        # Save the current scoreboard.
-        scoreboard = open(scoreboard_path, 'w')
-        try:
-            scoreboard.write("%d %d\n" % (current_rss, current_garbage_count))
-            printCounts(current_refs, scoreboard)
-            scoreboard.write('=== GARBAGE ===\n')
-            printCounts(current_garbage, scoreboard)
-        finally:
-            scoreboard.close()
-
-    def logReferencesLeak(self, request, mem_leak, delta_refs):
-        """Log the time, pageid, increase in RSS and increase in references.
-        """
-        log = open(config.debug.references_leak_log, 'a')
-        try:
-            pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-            # It can happen that the pageid is ''?!?
-            if pageid == '':
-                pageid = 'Unknown'
-            leak_in_mb = float(mem_leak) / (1024*1024)
-            formatted_delta = "; ".join(
-                "%s=%d" % (ref_type, count)
-                for count, ref_type in delta_refs)
-            log.write('%s %s %.2fMb %s\n' % (
-                strftime('%Y-%m-%d:%H:%M:%S'),
-                pageid,
-                leak_in_mb,
-                formatted_delta))
-        finally:
-            log.close()
-
 
 class InvalidThreadsConfiguration(Exception):
     """Exception thrown when the number of threads isn't set correctly."""
-
-
-def debug_references_startup_check(event):
-    """Event handler for IProcessStartingEvent.
-
-    If debug/references is set to True, we make sure that the number of
-    threads is configured to 1. We also delete any previous scoreboard file.
-    """
-    if not config.debug.references:
-        return
-
-    if config.threads != 1:
-        raise InvalidThreadsConfiguration(
-            "Number of threads should be one when debugging references.")
-
-    # Remove any previous scoreboard, the content is meaningless once
-    # the server is restarted.
-    if os.path.exists(config.debug.references_scoreboard_file):
-        os.remove(config.debug.references_scoreboard_file)
 
 
 class DefaultPrimaryContext:
@@ -761,3 +761,30 @@ class DefaultPrimaryContext:
 
     def __init__(self, context):
         self.context = context
+
+
+_browser_re = re.compile(r"""(?x)^(
+    Mozilla |
+    Opera |
+    Lynx |
+    Links |
+    w3m
+    )""")
+
+def is_browser(request):
+    """Return True if we believe the request was from a browser.
+
+    There will be false positives and false negatives, as we can
+    only tell this from the User-Agent: header and this cannot be
+    trusted.
+
+    Almost all web browsers provide a User-Agent: header starting
+    with 'Mozilla'. This is good enough for our uses. We also
+    add a few other common matches as well for good measure.
+    We could massage one of the user-agent databases that are
+    available into a usable, but we would gain little.
+    """
+    user_agent = request.getHeader('User-Agent')
+    return (
+        user_agent is not None
+        and _browser_re.search(user_agent) is not None)

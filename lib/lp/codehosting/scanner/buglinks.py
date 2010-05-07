@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugs support for the scanner."""
 
@@ -10,11 +11,10 @@ __all__ = [
 import urlparse
 
 from bzrlib.errors import InvalidBugStatus
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 
-from lp.codehosting.scanner import events
 from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, ILaunchpadCelebrities, NotFoundError)
+    IBugSet, ILaunchpadCelebrities, NotFoundError)
 
 
 class BugBranchLinker:
@@ -83,12 +83,11 @@ class BugBranchLinker:
             except NotFoundError:
                 pass
             else:
-                bug.addBranch(
+                bug.linkBranch(
                     branch=self.db_branch,
                     registrant=getUtility(ILaunchpadCelebrities).janitor)
 
 
-@adapter(events.NewRevision)
 def got_new_revision(new_revision):
     if new_revision.isMainline():
         linker = BugBranchLinker(new_revision.db_branch)

@@ -3,49 +3,40 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-subscribers" />
-    </metal:portlets>
+<div metal:fill-slot="side">
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+</div>
 
 <div metal:fill-slot="main">
 
-      <div tal:content="structure context/fmt:link" />
-
-  <tal:subscribed condition="view/subscription">
-
-    <h1>Modify subscription</h1>
+  <div class="top-portlet" tal:condition="view/subscription">
 
     <p>
       Choose &#8220;Unsubscribe&#8221; to remove your subscription to this
       blueprint, or &#8220;Cancel&#8221; to return to the blueprint page.
     </p>
 
-  </tal:subscribed>
+  </div>
 
-  <tal:not_subscribed condition="not: view/subscription">
-
-    <h1>Subscribe to blueprint</h1>
+  <div class="top-portlet" tal:condition="not: view/subscription">
 
     <p>
       Choose &#8220;Subscribe&#8221; to subscribe to this blueprint,
       or &#8220;Cancel&#8221; to return to the blueprint page.
     </p>
-  
-  </tal:not_subscribed>
+
+  </div>
 
     <form action="." method="POST">
 
       <div class="field">
- 
+
         <tal:subscribed condition="view/subscription">
           <input type="checkbox" id="essential" name="essential"
                  value="yes" checked="yes"
@@ -69,9 +60,9 @@
           this feature when you are attending sprints or meetings with this
           feature on the agenda.
         </p>
-         
+
       </div>
-  
+
       <div class="actions">
         <input tal:condition="not: view/subscription"
                type="submit"

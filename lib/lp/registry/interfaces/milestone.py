@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Milestone interfaces."""
@@ -10,26 +12,30 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
 from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Description, NoneableDescription, NoneableTextLine)
+    ContentNameField, NoneableDescription, NoneableTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.components.apihelpers import (
+    patch_plain_parameter_type)
 
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+    call_with, export_as_webservice_entry, export_destructor_operation,
+    export_factory_operation, exported, export_operation_as,
+    export_read_operation, operation_parameters, operation_returns_entry,
+    rename_parameters_as, REQUEST_USER)
 
 
 class MilestoneNameField(ContentNameField):
@@ -54,7 +60,7 @@ class MilestoneNameField(ContentNameField):
         elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 'Editing a milestone in an unexpected context: %r'
                 % self.context)
         if milestone is not None:
@@ -64,7 +70,8 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs):
+class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
+                 IHasOfficialBugTags):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
@@ -157,7 +164,16 @@ class IMilestone(IHasBugs):
         :returns: `IProductRelease` object.
         """
 
-    @export_write_operation()
+    def closeBugsAndBlueprints(user):
+        """Close completed bugs and blueprints.
+
+        Bugs that are fix committed status are updated to fix released.
+        Blueprints that are in deployment status are updated to implemented
+        status.
+        XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
+        """
+
+    @export_destructor_operation()
     @export_operation_as('delete')
     def destroySelf():
         """Delete this milestone.
@@ -168,6 +184,8 @@ class IMilestone(IHasBugs):
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
+patch_plain_parameter_type(
+    IBugTask, 'transitionToMilestone', 'new_milestone', IMilestone)
 
 
 class IMilestoneSet(Interface):
@@ -199,7 +217,7 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 

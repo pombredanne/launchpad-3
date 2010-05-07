@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """OpenPGP key interfaces."""
@@ -22,7 +24,8 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
+from lazr.restful.declarations import export_as_webservice_entry, exported
 
 
 def valid_fingerprint(fingerprint):
@@ -87,14 +90,19 @@ class GPGKeyAlgorithm(DBEnumeratedType):
 
 class IGPGKey(IHasOwner):
     """OpenPGP support"""
+
+    export_as_webservice_entry('gpg_key')
+
     id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
-    keyid = TextLine(title=_("OpenPGP key ID"), required=True,
-            constraint=valid_keyid)
-    fingerprint = TextLine(title=_("User Fingerprint"), required=True,
-            constraint=valid_fingerprint)
+    keyid = exported(
+        TextLine(title=_("OpenPGP key ID"), required=True,
+                 constraint=valid_keyid, readonly=True))
+    fingerprint = exported(
+        TextLine(title=_("User Fingerprint"), required=True,
+                 constraint=valid_fingerprint, readonly=True))
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
     keyserverURL = Attribute(
@@ -111,6 +119,13 @@ class IGPGKeySet(Interface):
     def new(ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
+
+    def activate(requester, key, can_encrypt):
+        """Activate 'key' for 'requester'.
+
+        :return: A tuple of (IGPGKey, new), where 'new' is False if we have
+            reactivated an existing key.
+        """
 
     def get(key_id, default=None):
         """Return the GPGKey object for the given id.
@@ -131,4 +146,3 @@ class IGPGKeySet(Interface):
 
     def getGPGKeysForPeople(self, people):
         """Return OpenPGP keys for a set of people."""
-

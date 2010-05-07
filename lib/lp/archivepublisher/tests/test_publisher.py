@@ -1,5 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for publisher class."""
 
 __metaclass__ = type
@@ -19,24 +20,22 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.publishing import (
-    Publisher, getPublisher, sha256)
+from lp.archivepublisher.publishing import Publisher, getPublisher
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
+    ArchivePurpose, ArchiveStatus, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
-from lp.testing import get_lsb_information
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from canonical.zeca.ftests.harness import ZecaTestSetup
 
@@ -94,6 +93,32 @@ class TestPublisher(TestPublisherBase):
         foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
+    def testDeletingPPA(self):
+        """Test deleting a PPA"""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = getPublisher(test_archive, None, self.logger)
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+            publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        publisher.deleteArchive()
+        root_dir = os.path.join(
+            publisher._config.distroroot, test_archive.owner.name,
+            test_archive.name)
+        self.assertFalse(os.path.exists(root_dir))
+        self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
+        self.assertEqual(test_archive.publish, False)
+
+        # Trying to delete it again won't fail, in the corner case where
+        # some admin manually deleted the repo.
+        publisher.deleteArchive()
+
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
         archive = self.ubuntutest.getArchiveByComponent('partner')
@@ -103,8 +128,7 @@ class TestPublisher(TestPublisherBase):
             pub_config.poolroot, pub_config.temproot, self.logger)
         publisher = Publisher(
             self.logger, pub_config, disk_pool, archive)
-        pub_source = self.getPubSource(archive=archive,
-            filecontent="I am partner")
+        self.getPubSource(archive=archive, filecontent="I am partner")
 
         publisher.A_publish(False)
 
@@ -136,13 +160,13 @@ class TestPublisher(TestPublisherBase):
         distroseries is always allowed, so check for that here.
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
-        self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
+        self.ubuntutest['breezy-autotest'].status = SeriesStatus.CURRENT
         pub_config = getPubConfig(archive)
         pub_config.setupArchiveDirs()
         disk_pool = DiskPool(
             pub_config.poolroot, pub_config.temproot, self.logger)
         publisher = Publisher(self.logger, pub_config, disk_pool, archive)
-        pub_source = self.getPubSource(
+        self.getPubSource(
             archive=archive, filecontent="I am partner",
             status=PackagePublishingStatus.PENDING)
 
@@ -200,7 +224,7 @@ class TestPublisher(TestPublisherBase):
                              PackagePublishingPocket.UPDATES)])
 
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         pub_source = self.getPubSource(
             filecontent='foo',
@@ -229,8 +253,7 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(
-            status=PackagePublishingStatus.PUBLISHED)
+        self.getPubSource(status=PackagePublishingStatus.PUBLISHED)
 
         # a new non-careful publisher won't find anything to publish, thus
         # no pockets will be *dirtied*.
@@ -250,7 +273,7 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(
+        self.getPubSource(
             filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -279,7 +302,7 @@ class TestPublisher(TestPublisherBase):
             owner=ubuntu_team, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -289,7 +312,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
 
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_path = "%s/main/f/foo/foo_1.dsc" % self.pool_dir
         self.assertEqual(os.path.exists(foo_path), False)
 
     def testPublishingWorksForOtherArchives(self):
@@ -308,7 +331,7 @@ class TestPublisher(TestPublisherBase):
             test_archive)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc",
+            sourcename="foo", filename="foo_1.dsc",
             filecontent='I am supposed to be a embargoed archive',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
@@ -321,7 +344,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % test_pool_dir
+        foo_path = "%s/main/f/foo/foo_1.dsc" % test_pool_dir
         self.assertEqual(
             open(foo_path).read().strip(),
             'I am supposed to be a embargoed archive',)
@@ -393,18 +416,18 @@ class TestPublisher(TestPublisherBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         spiv = person_set.getByName('spiv')
-        spiv_archive = archive_set.new(
+        archive_set.new(
             owner=spiv, distribution=ubuntu, purpose=ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.new(
+        archive_set.new(
             owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
-        pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+        self.getPubSource(
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=spiv.archive)
 
-        pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+        self.getPubSource(
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
 
         self.assertEqual(4, ubuntu.getAllPPAs().count())
@@ -464,9 +487,9 @@ class TestPublisher(TestPublisherBase):
         # Pending source and binary publications.
         # The binary description explores index formatting properties.
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
-        pub_bin = self.getPubBinaries(
+        self.getPubBinaries(
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
                         "space but not trailing.  \n    It does nothing, "
@@ -477,7 +500,7 @@ class TestPublisher(TestPublisherBase):
         ignored_source = self.getPubSource(
             status=PackagePublishingStatus.DELETED,
             archive=cprov.archive)
-        pub_udeb = self.getPubBinaries(
+        self.getPubBinaries(
             pub_source=ignored_source, binaryname='bingo',
             description='nice udeb', format=BinaryPackageFormat.UDEB)[0]
 
@@ -506,7 +529,7 @@ class TestPublisher(TestPublisherBase):
              'Format: 1.0',
              'Directory: pool/main/f/foo',
              'Files:',
-             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo.dsc',
+             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
              ''],
             index_contents)
 
@@ -608,27 +631,27 @@ class TestPublisher(TestPublisherBase):
         # waiting to be deleted, each in different pockets.  The deleted
         # source in the release pocket should not be processed.  We'll
         # also have a binary waiting to be deleted.
-        published_source = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED)
 
-        deleted_source_in_release_pocket = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.DELETED)
 
-        removed_source = self.getPubSource(
+        self.getPubSource(
             scheduleddeletiondate=UTC_NOW,
             dateremoved=UTC_NOW,
             pocket=PackagePublishingPocket.UPDATES,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_source = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_binary = self.getPubBinaries(
+        self.getPubBinaries(
             pocket=PackagePublishingPocket.BACKPORTS,
-            status=PackagePublishingStatus.DELETED)[0]
+            status=PackagePublishingStatus.DELETED)
 
         # Run the deletion detection.
         publisher.A2_markPocketsWithDeletionsDirty()
@@ -644,7 +667,7 @@ class TestPublisher(TestPublisherBase):
         # If the distroseries is CURRENT, then the release pocket is not
         # marked as dirty.
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         publisher.dirty_pockets = set()
         publisher.A2_markPocketsWithDeletionsDirty()
@@ -680,19 +703,19 @@ class TestPublisher(TestPublisherBase):
 
         # Create pending deletions in RELEASE, BACKPORTS, SECURITY and
         # UPDATES pockets.
-        deleted_source = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_binary = self.getPubBinaries(
+        self.getPubBinaries(
             pocket=PackagePublishingPocket.BACKPORTS,
             status=PackagePublishingStatus.DELETED)[0]
 
-        allowed_source_deletion = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.DELETED)
 
-        allowed_binary_deletion = self.getPubBinaries(
+        self.getPubBinaries(
             pocket=PackagePublishingPocket.UPDATES,
             status=PackagePublishingStatus.DELETED)[0]
 
@@ -744,70 +767,6 @@ class TestPublisher(TestPublisherBase):
                 self.assertReleaseFileRequested(
                     publisher, 'breezy-autotest', component, dist)
 
-    def testAptSHA256(self):
-        """Test issues with python-apt in Ubuntu/hardy.
-
-        This test only runs on Ubuntu/hardy systems.
-
-        The version of python-apt in Ubuntu/hardy has problems with
-        contents containing '\0' character.
-
-        The documented workaround for it is passing the original
-        file-descriptor to apt_pkg.sha256sum(), instead of its contents.
-
-        The python-apt version in Ubuntu/Intrepid has a fix for this issue,
-        but it already has many other features that makes a backport
-        practically unfeasible. That's mainly why this 'bug' is documented
-        as a LP test, the current code was modified to cope with it.
-
-        Once the issue with python-apt is gone, either by having a backport
-        available in hardy or a production upgrade, this test will fail. At
-        that point we will be able to revert the affected code and remove
-        this test, restoring the balance of the force.
-
-        See https://bugs.edge.launchpad.net/soyuz/+bug/243630 and
-        https://bugs.edge.launchpad.net/soyuz/+bug/269014.
-        """
-        # XXX cprov 20090218 bug-279248: when hardy's apt gets fixed by a
-        # SRU, this test will fail in PQM/Buildbot. Then we should change
-        # the actual code for passing file descriptors instead of text to
-        # apt (it will perform better this way) and obviously remove this
-        # test.
-
-        # Skip this test if it's not being run on Ubuntu/hardy.
-        lsb_info = get_lsb_information()
-        if (lsb_info.get('ID') != 'Ubuntu' or
-            lsb_info.get('CODENAME') != 'hardy'):
-            return
-
-        def _getSHA256(content):
-            """Return checksums for the given content.
-
-            Return a tuple containing the checksum corresponding to the
-            given content (as string) and a file containing the same string.
-            """
-            # Write the given content in a tempfile.
-            test_filepath = tempfile.mktemp()
-            test_file = open(test_filepath, 'w')
-            test_file.write(content)
-            test_file.close()
-            # Generate the checksums for the two sources.
-            text = sha256(content).hexdigest()
-            file = sha256(open(test_filepath)).hexdigest()
-            # Remove the tempfile.
-            os.unlink(test_filepath)
-            return text, file
-
-        # Apt does the right thing for ordinary strings, both, file and text
-        # checksums are identical.
-        text, file = _getSHA256("foobar")
-        self.assertEqual(text, file)
-
-        # On the other hand, there is a mismatch for strings containing '\0'
-        text, file = _getSHA256("foo\0bar")
-        self.assertNotEqual(
-            text, file, "Python-apt no longer creates bad SHA256 sums.")
-
     def _getReleaseFileOrigin(self, contents):
         origin_header = 'Origin: '
         [origin_line] = [
@@ -826,7 +785,7 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(filecontent='Hello world')
+        self.getPubSource(filecontent='Hello world')
 
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
@@ -875,6 +834,9 @@ class TestPublisher(TestPublisherBase):
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
 
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1], 'Label: ubuntutest')
+
         # Primary archive architecture Release files 'Origin' contain
         # the distribution displayname.
         arch_release_file = os.path.join(
@@ -904,11 +866,11 @@ class TestPublisher(TestPublisherBase):
         """
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov.archive.displayname = u'PPA for Celso Provid\xe8lo'
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
-        pub_source = self.getPubSource(
-            filecontent='Hello world', archive=cprov.archive)
+        self.getPubSource(filecontent='Hello world', archive=cprov.archive)
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -936,8 +898,8 @@ class TestPublisher(TestPublisherBase):
         release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
-            (' f8351af2392a90cb0b62f0feba49fa42              '
-             '116 main/source/Release'))
+            (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
+            '130 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
         bz2_sources_md5_line = release_contents[md5_header_index + 16]
@@ -957,8 +919,8 @@ class TestPublisher(TestPublisherBase):
         release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
-            (' b080b75dcfc245825d5872bb644afe00f2661fa3              '
-             '116 main/source/Release'))
+            (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
+             '130 main/source/Release'))
         # See above.
         bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
@@ -977,13 +939,17 @@ class TestPublisher(TestPublisherBase):
         release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
-            (' 8186d7a342c728179da7ce5d045e0a009c4c04cf3f146036d614d29'
-             '6fa8c4359              116 main/source/Release'))
+            (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
+             '1e2c505aa              130 main/source/Release'))
         # See above.
         bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
         gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
+
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1],
+            'Label: PPA for Celso Provid\xc3\xa8lo')
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(
@@ -1007,8 +973,7 @@ class TestPublisher(TestPublisherBase):
         allowed_suites = []
         archive_publisher = getPublisher(
             named_ppa, allowed_suites, self.logger)
-        pub_source = self.getPubSource(
-            filecontent='Hello world', archive=named_ppa)
+        self.getPubSource(filecontent='Hello world', archive=named_ppa)
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -1117,7 +1082,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         Publish files in pool, generate archive indexes and release files.
         """
         self.setupPublisher(archive)
-        pub_source = self.getPubSource(archive=archive)
+        self.getPubSource(archive=archive)
 
         self.archive_publisher.A_publish(False)
         transaction.commit()

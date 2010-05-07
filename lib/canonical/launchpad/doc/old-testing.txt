@@ -176,7 +176,7 @@ You can select the user you connect as:
 
 >>> setup = LaunchpadZopelessTestSetup(dbuser=config.librarian.dbuser)
 >>> setup.setUp()
->>> from canonical.launchpad.database import SourcePackageName
+>>> from lp.registry.model.sourcepackagename import SourcePackageName
 >>> SourcePackageName.get(1).name
 Traceback (most recent call last):
 ...
@@ -196,8 +196,8 @@ environment.
 
 You have full access to the SQLBase objects
 
->>> sabdfl = Person.byName('sabdfl')
->>> sabdfl.displayname
+>>> mark = Person.byName('mark')
+>>> mark.displayname
 u'Mark Shuttleworth'
 
 You also have access to the Zope3 component architecture, as registered

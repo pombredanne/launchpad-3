@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
@@ -10,6 +12,8 @@ __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
     'IHasBugs',
+    'IHasBugHeat',
+    'IHasOfficialBugTags',
     'IOfficialBugTag',
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
@@ -17,13 +21,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import List, Object, Text
+from zope.schema import Bool, Choice, List, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
 from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
-from lp.registry.interfaces.person import IPerson
+    BugBranchSearch, BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
+from lazr.enum import DBEnumeratedType
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
@@ -46,6 +50,8 @@ class IHasBugs(Interface):
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
+    high_bugtasks = Attribute(
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
@@ -53,11 +59,8 @@ class IHasBugs(Interface):
         "A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute(
         "A list of all BugTasks ever reported for this target.")
-    official_bug_tags = exported(List(
-        title=_("Official Bug Tags"),
-        description=_("The list of bug tags defined as official."),
-        value_type=Tag(),
-        readonly=True))
+    has_bugtasks = Attribute(
+        "True if a BugTask has ever been reported for this target.")
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(
@@ -68,13 +71,13 @@ class IHasBugs(Interface):
         search_text=copy_field(IBugTaskSearch['searchtext']),
         status=copy_field(IBugTaskSearch['status']),
         importance=copy_field(IBugTaskSearch['importance']),
-        assignee=Reference(schema=IPerson),
-        bug_reporter=Reference(schema=IPerson),
-        bug_supervisor=Reference(schema=IPerson),
-        bug_commenter=Reference(schema=IPerson),
-        bug_subscriber=Reference(schema=IPerson),
-        owner=Reference(schema=IPerson),
-        affected_user=Reference(schema=IPerson),
+        assignee=Reference(schema=Interface),
+        bug_reporter=Reference(schema=Interface),
+        bug_supervisor=Reference(schema=Interface),
+        bug_commenter=Reference(schema=Interface),
+        bug_subscriber=Reference(schema=Interface),
+        owner=Reference(schema=Interface),
+        affected_user=Reference(schema=Interface),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
@@ -87,7 +90,80 @@ class IHasBugs(Interface):
         milestone=copy_field(IBugTaskSearch['milestone']),
         component=copy_field(IBugTaskSearch['component']),
         nominated_for=Reference(schema=Interface),
-        has_no_package=copy_field(IBugTaskSearch['has_no_package']))
+        has_no_package=copy_field(IBugTaskSearch['has_no_package']),
+        hardware_bus=Choice(
+            title=u'The bus of a hardware device related to a bug',
+            # The vocabulary should be HWBus; this is fixed in
+            # _schema_circular_imports to avoid circular imports.
+            vocabulary=DBEnumeratedType, required=False),
+        hardware_vendor_id=TextLine(
+            title=(
+                u"The vendor ID of a hardware device related to a bug."),
+            description=(
+                u"Allowed values of the vendor ID depend on the bus of the "
+                "device.\n\n"
+                "Vendor IDs of PCI, PCCard and USB devices are hexadecimal "
+                "string representations of 16 bit integers in the format "
+                "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
+                "where a digit is one of the characters 0..9, a..f. The "
+                "characters A..F are not allowed.\n\n"
+                "SCSI vendor IDs are strings with exactly 8 characters. "
+                "Shorter names are right-padded with space (0x20) characters."
+                "\n\n"
+                "IDs for other buses may be arbitrary strings."),
+            required=False),
+        hardware_product_id=TextLine(
+            title=(
+                u"The product ID of a hardware device related to a bug."),
+            description=(
+                u"Allowed values of the product ID depend on the bus of the "
+                "device.\n\n"
+                "Product IDs of PCI, PCCard and USB devices are hexadecimal "
+                "string representations of 16 bit integers in the format "
+                "'0x01ab': The prefix '0x', followed by exactly 4 digits; "
+                "where a digit is one of the characters 0..9, a..f. The "
+                "characters A..F are not allowed.\n\n"
+                "SCSI product IDs are strings with exactly 16 characters. "
+                "Shorter names are right-padded with space (0x20) characters."
+                "\n\n"
+                "IDs for other buses may be arbitrary strings."),
+            required=False),
+        hardware_driver_name=TextLine(
+            title=(
+                u"The driver controlling a hardware device related to a "
+                "bug."),
+            required=False),
+        hardware_driver_package_name=TextLine(
+            title=(
+                u"The package of the driver which controls a hardware "
+                "device related to a bug."),
+            required=False),
+        hardware_owner_is_bug_reporter=Bool(
+            title=(
+                u"Search for bugs reported by people who own the given "
+                "device or who use the given hardware driver."),
+            required=False),
+        hardware_owner_is_affected_by_bug=Bool(
+            title=(
+                u"Search for bugs where people affected by a bug own the "
+                "given device or use the given hardware driver."),
+            required=False),
+        hardware_owner_is_subscribed_to_bug=Bool(
+            title=(
+                u"Search for bugs where a bug subscriber owns the "
+                "given device or uses the given hardware driver."),
+            required=False),
+        hardware_is_linked_to_bug=Bool(
+            title=(
+                u"Search for bugs which are linked to hardware reports "
+                "wich contain the given device or whcih contain a device"
+                "contolled by the given driver."),
+            required=False),
+        linked_branches=Choice(
+            title=(
+                u"Search for bugs that are linked to branches or for bugs"
+                "that are not linked to branches."),
+            vocabulary=BugBranchSearch, required=False))
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
     def searchTasks(search_params, user=None,
@@ -101,7 +177,14 @@ class IHasBugs(Interface):
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None):
+                    sourcepackagename=None, has_no_package=None,
+                    hardware_bus=None, hardware_vendor_id=None,
+                    hardware_product_id=None, hardware_driver_name=None,
+                    hardware_driver_package_name=None,
+                    hardware_owner_is_bug_reporter=None,
+                    hardware_owner_is_affected_by_bug=False,
+                    hardware_owner_is_subscribed_to_bug=False,
+                    hardware_is_linked_to_bug=False, linked_branches=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -110,18 +193,14 @@ class IHasBugs(Interface):
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
-        """
 
-    def getUsedBugTags():
-        """Return the tags used by the context as a sorted list of strings."""
-
-    def getUsedBugTagsWithOpenCounts(user):
-        """Return name and bug count of tags having open bugs.
-
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
+        In order to search bugs that are related to a given hardware
+        device, you must specify the bus, the vendor ID, the product
+        ID of the device and set at least one of
+        hardware_owner_is_bug_reporter,
+        hardware_owner_is_affected_by_bug,
+        hardware_owner_is_subscribed_to_bug,
+        hardware_is_linked_to_bug to True.
         """
 
     def getBugCounts(user, statuses=None):
@@ -158,13 +237,6 @@ class IBugTarget(IHasBugs):
             required=False,
             max_length=50000))
 
-    def getMostCommonBugs(user, limit=10):
-        """Return the list of most commonly-reported bugs.
-
-        This is the list of bugs that have the most dupes, ordered from
-        most to least duped.
-        """
-
     def createBug(bug_params):
         """Create a new bug on this target.
 
@@ -177,6 +249,19 @@ class IBugTarget(IHasBugs):
 IBugTask['target'].schema = IBugTarget
 IBugTask['transitionToTarget'].getTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['target'].schema = IBugTarget
+
+
+class IHasBugHeat(Interface):
+    """An entity which has bug heat."""
+
+    max_bug_heat = Attribute(
+        "The current highest bug heat value for this entity.")
+
+    def setMaxBugHeat(heat):
+        """Set the max_bug_heat for this context."""
+
+    def recalculateMaxBugHeat():
+        """Recalculate and set the max_bug_heat for this context."""
 
 
 class BugDistroSeriesTargetDetails:
@@ -199,13 +284,33 @@ class BugDistroSeriesTargetDetails:
         self.status = status
 
 
-class IOfficialBugTagTargetPublic(Interface):
-    """Public attributes for `IOfficialBugTagTarget`."""
+class IHasOfficialBugTags(Interface):
+    """An entity that exposes a set of official bug tags."""
 
     official_bug_tags = exported(List(
         title=_("Official Bug Tags"),
         description=_("The list of bug tags defined as official."),
-        value_type=Tag()))
+        value_type=Tag(),
+        readonly=True))
+
+    def getUsedBugTags():
+        """Return the tags used by the context as a sorted list of strings."""
+
+    def getUsedBugTagsWithOpenCounts(user):
+        """Return name and bug count of tags having open bugs.
+
+        It returns a list of tuples contining the tag name, and the
+        number of open bugs having that tag. Only the bugs that the user
+        has permission to see are counted, and only tags having open
+        bugs will be returned.
+        """
+
+
+class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
+    """Public attributes for `IOfficialBugTagTarget`."""
+
+    official_bug_tags = copy_field(
+        IHasOfficialBugTags['official_bug_tags'], readonly=False)
 
 
 class IOfficialBugTagTargetRestricted(Interface):

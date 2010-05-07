@@ -55,6 +55,26 @@ constructor:
     <h1 id="bug-title">...
         ...class="yui-editable_text-trigger sprite edit"...
 
+The initial_value_override parameter is passed as a JSON-serialized value.
+
+    >>> widget = TextLineEditorWidget(
+    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
+    ...     id="bug-title", title="Edit this summary",
+    ...     initial_value_override='This bug has no title')
+    >>> print widget()
+    <h1 id="bug-title">...
+        ...initial_value_override: "This bug has no title"...
+
+When the value isn't supplied it defaults to None, which is serialized as a
+Javascript null.
+
+    >>> widget = TextLineEditorWidget(
+    ...     bug, 'title', canonical_url(bug.bugtasks[0], view_name='+edit'),
+    ...     id="bug-title", title="Edit this summary")
+    >>> print widget()
+    <h1 id="bug-title">...
+        ...initial_value_override: null...
+
 
 InlineEditPickerWidget
 ----------------------

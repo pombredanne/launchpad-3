@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test security uploads use-cases."""
 
@@ -12,10 +13,11 @@ from zope.component import getUtility
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.soyuz.model.build import Build
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingPocket, PackageUploadStatus)
+    IDistributionSet, PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
@@ -65,13 +67,13 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         6. Clean log messages.
         7. Commit transaction, so the upload source can be seen.
         """
-        TestUploadProcessorBase.setUp(self)
+        super(TestStagedBinaryUploadBase, self).setUp()
         self.options.context = self.policy
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
-        self.builds_before_upload = Build.select().count()
+        self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
         self.log.lines = []
@@ -79,7 +81,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
 
     def assertBuildsCreated(self, amount):
         """Assert that a given 'amount' of build records was created."""
-        builds_count = Build.select().count()
+        builds_count = BinaryPackageBuild.select().count()
         self.assertEqual(
             self.builds_before_upload + amount, builds_count)
 
@@ -162,7 +164,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
 
     def setUp(self):
         """Setup base class and create the required new distroarchseries."""
-        TestStagedBinaryUploadBase.setUp(self)
+        super(TestStagedSecurityUploads, self).setUp()
         distribution = getUtility(IDistributionSet).getByName(
             self.distribution_name)
         distroseries = distribution[self.distroseries.name]

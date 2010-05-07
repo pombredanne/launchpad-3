@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SpecificationDependency."""
 
@@ -7,12 +8,12 @@ __metaclass__ = type
 __all__ = [
     'SpecificationDependencyAddView',
     'SpecificationDependencyRemoveView',
+    'SpecificationDependencyTreeView',
     ]
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView)
-from canonical.widgets.popup import SinglePopupWidget
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency, ISpecificationDependencyRemoval)
 
@@ -24,7 +25,6 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     schema = ISpecificationDependency
     field_names = ['dependency']
     label = _('Depends On')
-    custom_widget('dependency', SinglePopupWidget)
 
     def setUpFields(self):
         """Override the setup to define own fields."""
@@ -63,6 +63,10 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationDependencyRemoveView(LaunchpadFormView):
     schema = ISpecificationDependencyRemoval
@@ -74,3 +78,15 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
     def continue_action(self, action, data):
         self.context.removeDependency(data['dependency'])
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class SpecificationDependencyTreeView(LaunchpadView):
+    label = "Blueprint dependency tree"
+
+    @property
+    def page_title(self):
+        return self.label

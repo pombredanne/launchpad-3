@@ -1,4 +1,5 @@
-# (c) Canonical Software Ltd. 2004-2007, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,12 +8,11 @@ import inspect
 import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.configuration.config
-from zope.app.component.metaconfigure import (
-    handler, PublicPermission, utility, view)
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
 from zope.component import getUtility
-from zope.component.zcml import adapter
+from zope.component.security import PublicPermission
+from zope.component.zcml import adapter, handler, utility, view
 from zope.configuration.fields import (
     GlobalInterface, GlobalObject, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
@@ -75,6 +75,8 @@ class ISecuredUtilityDirective(Interface):
 
     component = GlobalObject(title=u'component', required=False)
 
+    name = TextLine(title=u"Name", required=False)
+
 
 class PermissionCollectingContext:
 
@@ -97,7 +99,8 @@ class PermissionCollectingContext:
 
 class SecuredUtilityDirective:
 
-    def __init__(self, _context, provides, class_=None, component=None):
+    def __init__(self, _context, provides, class_=None, component=None,
+                 name=''):
         if class_ is not None:
             assert component is None, "Both class and component specified"
             self.component = class_()
@@ -107,6 +110,7 @@ class SecuredUtilityDirective:
             self.component = component
         self._context = _context
         self.provides = provides
+        self.name = name
         self.permission_collector = PermissionCollectingContext()
         self.contentdirective = ClassDirective(
             self.permission_collector, class_)
@@ -127,7 +131,8 @@ class SecuredUtilityDirective:
             self.permission_collector.set_permissions
             )
         component = ProxyFactory(self.component, checker=checker)
-        utility(self._context, self.provides, component=component)
+        utility(self._context, self.provides, component=component,
+                name=self.name)
         return ()
 
 
@@ -466,12 +471,13 @@ class IPagesDirective(
 
 
 class pages(original_pages):
+    """Override the browser:pages directive to set a facet on it."""
 
-    def __init__(self, _context, for_, permission,
+    def __init__(self, _context, permission, for_,
         layer=IDefaultBrowserLayer, class_=None,
         allowed_interface=None, allowed_attributes=None,
         facet=None):
-        original_pages.__init__(self, _context, for_, permission,
+        original_pages.__init__(self, _context, permission, for_,
             layer=layer, class_=class_,
             allowed_interface=allowed_interface,
             allowed_attributes=allowed_attributes)
@@ -531,8 +537,8 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
         discriminator = ('view', for_, name, IBrowserRequest, layer),
         callable = handler,
         args = (
-            'provideAdapter',
-            (for_, layer), Interface, name, renamed_factory, _context.info))
+            'registerAdapter',
+            renamed_factory, (for_, layer), Interface, name, _context.info))
 
 
 class IEditFormDirective(

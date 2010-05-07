@@ -1,4 +1,4 @@
-= Filing bugs on Projects =
+= Filing bugs on ProjectGroups =
 
 Even though it's not possible to file bugs against projects directly,
 it's still possible to file a bug from a project's main page.
@@ -6,9 +6,9 @@ it's still possible to file a bug from a project's main page.
     >>> user_browser.open('http://launchpad.dev/gnome')
     >>> user_browser.getLink(url='+filebug').click()
     >>> user_browser.url
-    'http://launchpad.dev/gnome/+filebug'
+    'http://bugs.launchpad.dev/gnome/+filebug'
 
-The Project filebug page is like a Product's filebug page, except that
+The ProjectGroup filebug page is like a Product's filebug page, except that
 it also asks for a Product. Only Products that are using Bugs are
 shown in the list of options.
 
@@ -37,27 +37,6 @@ page.
     'Bug #... in Evolution: ...Evolution crashes...'
 
 
-== Advanced filebug page ==
-
-From the Project filebug page it's possible to go to the advanced
-filebug page.
-
-    >>> user_browser.open('http://launchpad.dev/gnome')
-    >>> user_browser.getLink(url='+filebug').click()
-    >>> user_browser.getLink('Advanced reporting options').click()
-    >>> user_browser.url
-    'http://launchpad.dev/gnome/+filebug-advanced'
-
-    >>> user_browser.getControl('Project').value = ['evolution']
-    >>> user_browser.getControl('Summary').value = 'Evolution crashes lots'
-    >>> user_browser.getControl('Further information').value = 'Crash.'
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/evolution/+bug/...'
-    >>> user_browser.title
-    'Bug #... in Evolution: ...Evolution crashes...'
-
-
 == Subscribing to a similar bug ==
 
 If our bug is described by one of the suggested similar bugs, we can
@@ -76,13 +55,11 @@ bugs we filed recently.
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #... Evolution crashes
     New (0 comments) last updated ...
-    #... Evolution crashes lots
-    New (0 comments) last updated ...
 
 This one matches, so we subscribe.
 
     >>> user_browser.getControl(
-    ...     "Yes, this is the bug I'm trying to report", index=1).click()
+    ...     "Yes, this is the bug I'm trying to report").click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/evolution/+bug/...
@@ -128,7 +105,7 @@ the user to the bug page.
     'Bug #... in Evolution: ...Faznambutron dumps core...'
 
 
-== Empty Projects ==
+== Empty ProjectGroups ==
 
 It isn't possible to file a bug against an empty project. However, we give the
 user some feedback in this regard. We need to create a new project first.
@@ -167,25 +144,29 @@ message:
     >>> for message in find_tags_by_class(admin_browser.contents,
     ...     'warning message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group. <br />
-    You need to <a href="+newproduct">register another project that is
-    part of Test Group</a> or associate an existing project with it.
+    There are no projects registered for Test Group. <br /> You need
+    to <a href="/test-group/+newproduct">register another project that
+    is part of Test Group</a> or associate an existing project with
+    it.
 
 
-== Projects With no Products Using Launchpad Bugs ==
+== ProjectGroups With no Products Using Launchpad Bugs ==
 
 If we add a new product to our test project (specifically one that doesn't use
 Launchpad for bug tracking) information about that product will also be
 displayed.
 
     >>> admin_browser.open('http://launchpad.dev/test-group/+newproduct')
-    >>> admin_browser.getControl('Name:', index=0).value = 'testy'
-    >>> admin_browser.getControl('Display Name:').value = 'Testy Product'
-    >>> admin_browser.getControl('Title:').value = 'A Product for Testing'
-    >>> admin_browser.getControl('Summary:').value = 'Used for testing'
+    >>> admin_browser.getControl(name='field.name', index=0).value = 'testy'
+    >>> admin_browser.getControl(name='field.displayname').value = 'Testy Product'
+    >>> admin_browser.getControl(name='field.title').value = 'A Product for Testing'
+    >>> admin_browser.getControl(name='field.summary').value = 'Used for testing'
+    >>> admin_browser.getControl('Continue').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/test-group/+newproduct
+
     >>> admin_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> admin_browser.getControl(name='field.license_info').value = 'foo'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Complete Registration').click()
     >>> admin_browser.url
     'http://launchpad.dev/testy'
 
@@ -224,7 +205,19 @@ The user will also be presented with a link to the product's overview page:
 If we set up an external bug tracker for Testy Product, this will be reflected
 in the Test Group's filebug page.
 
-    >>> admin_browser.open('http://launchpad.dev/testy/+edit')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
+    >>> logout()
+
+    >>> admin_browser.open('http://launchpad.dev/testy/+configure-bugtracker')
     >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
     ...     name='field.bugtracker.bugtracker').value = ['3']
@@ -249,7 +242,7 @@ And on the filebug page...
 Finally, we add Testy Product to a source package:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl(name='ubuntupkg').value = 'thunderbird'
+    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
     >>> admin_browser.getControl('Update').click()
 
 And this is also shown on the filebug page:
@@ -279,13 +272,16 @@ If we add a second product to the project, this too will be shown on the
 filebug page:
 
     >>> admin_browser.open('http://launchpad.dev/test-group/+newproduct')
-    >>> admin_browser.getControl('Name:', index=0).value = 'second-test'
-    >>> admin_browser.getControl('Display Name:').value = 'Another product'
-    >>> admin_browser.getControl('Title:').value = 'For Testing'
-    >>> admin_browser.getControl('Summary:').value = 'Used for testing'
+    >>> admin_browser.getControl(name='field.name', index=0).value = 'second-test'
+    >>> admin_browser.getControl(name='field.displayname').value = 'Another product'
+    >>> admin_browser.getControl(name='field.title').value = 'For Testing'
+    >>> admin_browser.getControl(name='field.summary').value = 'Used for testing'
+    >>> admin_browser.getControl('Continue').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/test-group/+newproduct
+
     >>> admin_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
-    >>> admin_browser.getControl(name='field.license_info').value = 'foo'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Complete Registration').click()
     >>> admin_browser.url
     'http://launchpad.dev/second-test'
 

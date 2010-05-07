@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugMessage-related browser view classes."""
 
@@ -11,17 +12,26 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
+from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.webapp import action, canonical_url
 from canonical.launchpad.webapp import LaunchpadFormView
 
 
-class BugMessageAddFormView(LaunchpadFormView):
+class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
     """Browser view class for adding a bug comment/attachment."""
 
     schema = IBugMessageAddForm
     initial_focus_widget = None
+
+    @property
+    def label(self):
+        return 'Add a comment or attachment to bug #%d' % self.context.bug.id
+
+    @property
+    def page_title(self):
+        return self.label
 
     @property
     def initial_values(self):
@@ -45,7 +55,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 self.addError("Either a comment or attachment "
                               "must be provided.")
 
-    @action(u"Save Changes", name='save')
+    @action(u"Post Comment", name='save')
     def save_action(self, action, data):
         """Add the comment and/or attachment."""
 
@@ -79,6 +89,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 self.request.response.addNotification(
                     "Thank you for your comment.")
 
+        self.next_url = canonical_url(self.context)
         if file_:
 
             # Slashes in filenames cause problems, convert them to dashes
@@ -93,15 +104,32 @@ class BugMessageAddFormView(LaunchpadFormView):
                 file_description = filename
 
             # Process the attachment.
-            bug.addAttachment(
+            # If the patch flag is not consistent with the result of
+            # the guess made in attachmentTypeConsistentWithContentType(),
+            # we use the guessed type and lead the user to a page
+            # where he can override the flag value, if Launchpad's
+            # guess is wrong.
+            patch_flag_consistent = (
+                self.attachmentTypeConsistentWithContentType(
+                    data['patch'], filename, data['filecontent']))
+            if not patch_flag_consistent:
+                guessed_type = self.guessContentType(
+                    filename, data['filecontent'])
+                is_patch = guessed_type == 'text/x-diff'
+            else:
+                is_patch = data['patch']
+            attachment = bug.addAttachment(
                 owner=self.user, data=StringIO(data['filecontent']),
                 filename=filename, description=file_description,
-                comment=message, is_patch=data['patch'])
+                comment=message, is_patch=is_patch)
+
+            if not patch_flag_consistent:
+                self.next_url = self.nextUrlForInconsistentPatchFlags(
+                    attachment)
 
             self.request.response.addNotification(
                 "Attachment %s added to bug." % filename)
 
-        self.next_url = canonical_url(self.context)
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""

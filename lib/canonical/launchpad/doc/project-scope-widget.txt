@@ -14,7 +14,7 @@ selected.
 
     >>> empty_request = LaunchpadTestRequest()
     >>> scope_field = Choice(
-    ...     __name__='scope', vocabulary='Project', required=False)
+    ...     __name__='scope', vocabulary='ProjectGroup', required=False)
     >>> scope_field = scope_field.bind(object())
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary, empty_request)
@@ -92,26 +92,17 @@ by getInputValue().
 
     >>> form = {'field.scope': 'project',
     ...         'field.scope.target': 'mozilla'}
-    >>> from canonical.launchpad.interfaces import IProject
+    >>> from canonical.launchpad.interfaces import IProjectGroup
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary,
     ...     LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
     >>> selected_scope = widget.getInputValue()
-    >>> IProject.providedBy(selected_scope)
+    >>> IProjectGroup.providedBy(selected_scope)
     True
     >>> selected_scope.name
     u'mozilla'
-
-The project is actually selected using a contained widget associated
-with the field's vocabulary. In this case, it is a SinglePopupWidget
-which offers a link to Choose the proper project:
-
-    >>> widget.target_widget
-    <...SinglePopupWidget...>
-    >>> print widget.target_widget.popupHref()
-    javascript:popup_window('@@popup-window?vocabulary=Project...
 
 If an non-existant distribution name is provided, a widget error is
 raised:
@@ -169,10 +160,11 @@ In order to initialize the widget with a value, setRenderedValue() is
 used. Passing a product to it will select the 'One project' radio
 button, as well as displaying the product name in the project widget.
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
     >>> widget = ProjectScopeWidget(
     ...     scope_field, scope_field.vocabulary, empty_request)
-    >>> widget.setRenderedValue(getUtility(IProjectSet).getByName('mozilla'))
+    >>> projectgroups = getUtility(IProjectGroupSet)
+    >>> widget.setRenderedValue(projectgroups.getByName('mozilla'))
     >>> print widget()
     <label>
       <input class="radioType" id="field.scope.option.all"

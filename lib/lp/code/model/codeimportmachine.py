@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to CodeImportMachine."""
@@ -49,7 +51,7 @@ class CodeImportMachine(SQLBase):
         'CodeImportEvent', joinColumn='machine',
         orderBy=['-date_created', '-id'])
 
-    def shouldLookForJob(self):
+    def shouldLookForJob(self, worker_limit):
         """See `ICodeImportMachine`."""
         job_count = self.current_jobs.count()
 
@@ -62,8 +64,7 @@ class CodeImportMachine(SQLBase):
                     CodeImportMachineOfflineReason.QUIESCED)
             return False
         elif self.state == CodeImportMachineState.ONLINE:
-            max_jobs = config.codeimportdispatcher.max_jobs_per_machine
-            return job_count < max_jobs
+            return job_count < worker_limit
         else:
             raise AssertionError(
                 "Unknown machine state %r??" % self.state)

@@ -3,12 +3,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
 <body>
 
 <div metal:fill-slot="main">
@@ -20,11 +16,11 @@
         <tbody>
           <tr>
             <th>Source branch:</th>
-            <td tal:content="structure context/source_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
+            <td tal:content="structure context/source_branch/fmt:link">lp:~foo/bar/baz</td>
           </tr>
           <tr>
             <th>Target branch:</th>
-            <td tal:content="structure context/target_branch/fmt:bzr-link">lp:bar</td>
+            <td tal:content="structure context/target_branch/fmt:link">lp:bar</td>
           </tr>
         </tbody>
       </table>
@@ -36,7 +32,6 @@
   </div>
 
 </div>
-<tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 
 </body>
 </html>

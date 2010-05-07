@@ -1,4 +1,6 @@
-= Re-activating mailing lists =
+===========================
+Re-activating mailing lists
+===========================
 
 A team administrator may re-activate a previously deactivated mailing list
 without the need for approval from a Launchpad administrator.  When the

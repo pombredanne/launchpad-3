@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -14,6 +16,7 @@ __all__ = [
     'NullBugTask',
     'bugtask_sort_key',
     'get_bug_privacy_filter',
+    'get_related_bugtasks_search_params',
     'search_value_to_where_condition']
 
 
@@ -24,7 +27,7 @@ from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
-from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, SQL
+from storm.expr import And, Alias, AutoTables, In, Join, LeftJoin, Or, SQL
 from storm.sqlobject import SQLObjectResultSet
 from storm.zope.interfaces import IResultSet, ISQLObjectResultSet
 
@@ -40,23 +43,30 @@ from lazr.enum import DBItem
 from canonical.config import config
 
 from canonical.database.sqlbase import (
-    block_implicit_flushes, cursor, SQLBase, sqlvalues, quote, quote_like)
+    SQLBase, block_implicit_flushes, convert_storm_clause_to_string, cursor,
+    quote, quote_like, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.interfaces.lpstorm import IStore
+
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
-    BUG_SUPERVISOR_BUGTASK_STATUSES, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearch, ConjoinedBugTaskEditError, IBugTask,
-    IBugTaskDelta, IBugTaskSet, IDistroBugTask, IDistroSeriesBugTask,
-    INullBugTask, IProductSeriesBugTask, IUpstreamBugTask, IllegalTarget,
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugBranchSearch, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
+    IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus)
+from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -64,11 +74,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.milestone import IProjectMilestone
+from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.product import IProduct, IProductSet
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import (
@@ -76,7 +86,8 @@ from lp.registry.interfaces.sourcepackagename import (
 from canonical.launchpad.searchbuilder import (
     all, any, greater_than, NULL, not_equals)
 from lp.registry.interfaces.person import (
-    validate_person_not_private_membership, validate_public_person)
+    IPerson, validate_person_not_private_membership,
+    validate_public_person)
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
@@ -131,6 +142,48 @@ def bugtask_sort_key(bugtask):
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
         distroseries_name, sourcepackage_name)
+
+def get_related_bugtasks_search_params(user, context, **kwargs):
+    """Returns a list of `BugTaskSearchParams` which can be used to
+    search for all tasks related to a user given by `context`.
+
+    Which tasks are related to a user?
+      * the user has to be either assignee or owner of this tasks
+        OR
+      * the user has to be subscriber or commenter to the underlying bug
+        OR
+      * the user is reporter of the underlying bug, but this condition
+        is automatically fulfilled by the first one as each new bug
+        always get one task owned by the bug reporter
+    """
+    assert IPerson.providedBy(context), "Context argument needs to be IPerson"
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
+    search_params = []
+    for key in relevant_fields:
+        # all these parameter default to None
+        user_param = kwargs.get(key)
+        if user_param is None or user_param == context:
+            # we are only creating a `BugTaskSearchParams` object if
+            # the field is None or equal to the context
+            arguments = kwargs.copy()
+            arguments[key] = context
+            if key == 'owner':
+                # Specify both owner and bug_reporter to try to
+                # prevent the same bug (but different tasks)
+                # being displayed.
+                # see `PersonRelatedBugTaskSearchListingView.searchUnbatched`
+                arguments['bug_reporter'] = context
+            search_params.append(
+                BugTaskSearchParams.fromSearchForm(user, **arguments))
+    if len(search_params) == 0:
+        # unable to search for related tasks to user_context because user
+        # modified the query in an invalid way by overwriting all user
+        # related parameters
+        raise IllegalRelatedBugTasksParams(
+            ('Cannot search for related tasks to \'%s\', at least one '
+             'of these parameter has to be empty: %s'
+                %(context.name, ", ".join(relevant_fields))))
+    return search_params
 
 
 class BugTaskDelta:
@@ -521,6 +574,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
+    @property
+    def task_age(self):
+        """See `IBugTask`."""
+        return self.age.seconds
+
     # Several other classes need to generate lists of bug tasks, and
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
@@ -720,6 +778,14 @@ class BugTask(SQLBase, BugTaskMixin):
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
 
+    def transitionToMilestone(self, new_milestone, user):
+        """See `IBugTask`."""
+        if not self.userCanEditMilestone(user):
+            raise UserCannotEditBugTaskMilestone(
+                "User does not have sufficient permissions "
+                "to edit the bug task milestone.")
+        else:
+            self.milestone = new_milestone
 
     def transitionToImportance(self, new_importance, user):
         """See `IBugTask`."""
@@ -744,10 +810,12 @@ class BugTask(SQLBase, BugTaskMixin):
         if (user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
             user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id):
+            user.id == celebrities.bug_importer.id or
+            user.id == celebrities.janitor.id):
             return True
         else:
-            return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
+            return (self.status is not BugTaskStatus.WONTFIX and
+                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
@@ -903,6 +971,9 @@ class BugTask(SQLBase, BugTaskMixin):
         enforced implicitly by the code in
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
+
+        target_before_change = self.target
+
         if (self.milestone is not None and
             self.milestone.target != target):
             # If the milestone for this bugtask is set, we
@@ -919,12 +990,19 @@ class BugTask(SQLBase, BugTaskMixin):
                     "to another project.")
         else:
             if (IDistributionSourcePackage.providedBy(target) and
-                target.distribution == self.target.distribution):
+                (target.distribution == self.target or
+                 target.distribution == self.target.distribution)):
                 self.sourcepackagename = target.sourcepackagename
             else:
                 raise IllegalTarget(
                     "Distribution bug tasks may only be re-targeted "
                     "to a package in the same distribution.")
+
+        # After the target has changed, we need to recalculate the maximum bug
+        # heat for the new and old targets.
+        if self.target != target_before_change:
+            target_before_change.recalculateMaxBugHeat()
+            self.target.recalculateMaxBugHeat()
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -936,7 +1014,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
             return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
@@ -1143,6 +1220,88 @@ def get_bug_privacy_filter(user):
                      """ % sqlvalues(personid=user.id)
 
 
+def build_tag_set_query(joiner, tags):
+    """Return an SQL snippet to find bugs matching the given tags.
+
+    The tags are sorted so that testing the generated queries is
+    easier and more reliable.
+
+    :param joiner: The SQL set term used to join the individual tag
+        clauses, typically "INTERSECT" or "UNION".
+    :param tags: An iterable of valid tag names (not prefixed minus
+        signs, not wildcards).
+    """
+    joiner = " %s " % joiner
+    return joiner.join(
+        "SELECT bug FROM BugTag WHERE tag = %s" % quote(tag)
+        for tag in sorted(tags))
+
+
+def build_tag_search_clause(tags_spec):
+    """Return a tag search clause.
+
+    :param tags_spec: An instance of `any` or `all` containing tag
+        "specifications". A tag specification is a valid tag name
+        optionally prefixed by a minus sign (denoting "not"), or an
+        asterisk (denoting "any tag"), again optionally prefixed by a
+        minus sign (and thus denoting "not any tag").
+    """
+    tags = set(tags_spec.query_values)
+    wildcards = [tag for tag in tags if tag in ('*', '-*')]
+    tags.difference_update(wildcards)
+    include = [tag for tag in tags if not tag.startswith('-')]
+    exclude = [tag[1:] for tag in tags if tag.startswith('-')]
+
+    # Should we search for all specified tags or any of them?
+    find_all = zope_isinstance(tags_spec, all)
+
+    if find_all:
+        # How to combine an include clause and an exclude clause when
+        # both are generated.
+        combine_with = 'AND'
+        # The set of bugs that have *all* of the tags requested for
+        # *inclusion*.
+        include_clause = build_tag_set_query("INTERSECT", include)
+        # The set of bugs that have *any* of the tags requested for
+        # *exclusion*.
+        exclude_clause = build_tag_set_query("UNION", exclude)
+    else:
+        # How to combine an include clause and an exclude clause when
+        # both are generated.
+        combine_with = 'OR'
+        # The set of bugs that have *any* of the tags requested for
+        # inclusion.
+        include_clause = build_tag_set_query("UNION", include)
+        # The set of bugs that have *all* of the tags requested for
+        # exclusion.
+        exclude_clause = build_tag_set_query("INTERSECT", exclude)
+
+    # Search for the *presence* of any tag.
+    if '*' in wildcards:
+        # Only clobber the clause if not searching for all tags.
+        if len(include_clause) == 0 or not find_all:
+            include_clause = "SELECT bug FROM BugTag"
+
+    # Search for the *absence* of any tag.
+    if '-*' in wildcards:
+        # Only clobber the clause if searching for all tags.
+        if len(exclude_clause) == 0 or find_all:
+            exclude_clause = "SELECT bug FROM BugTag"
+
+    # Combine the include and exclude sets.
+    if len(include_clause) > 0 and len(exclude_clause) > 0:
+        return "(BugTask.bug IN (%s) %s BugTask.bug NOT IN (%s))" % (
+            include_clause, combine_with, exclude_clause)
+    elif len(include_clause) > 0:
+        return "BugTask.bug IN (%s)" % include_clause
+    elif len(exclude_clause) > 0:
+        return "BugTask.bug NOT IN (%s)" % exclude_clause
+    else:
+        # This means that there were no tags (wildcard or specific) to
+        # search for (which is allowed, even if it's a bit weird).
+        return None
+
+
 class BugTaskSet:
     """See `IBugTaskSet`."""
     implements(IBugTaskSet)
@@ -1162,6 +1321,8 @@ class BugTaskSet:
         "number_of_duplicates": "Bug.number_of_duplicates",
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
+        "heat": "Bug.heat",
+        "latest_patch_uploaded": "Bug.latest_patch_uploaded",
         }
 
     _open_resolved_upstream = """
@@ -1209,32 +1370,38 @@ class BugTaskSet:
 
     def getBugTaskBadgeProperties(self, bugtasks):
         """See `IBugTaskSet`."""
-        # Need to import Bug locally, to avoid circular imports.
+        # Import locally to avoid circular imports.
+        from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
-        bugtask_ids = [bugtask.id for bugtask in bugtasks]
-        bugs_with_mentoring_offers = list(Bug.select(
-            """id IN (SELECT MentoringOffer.bug
-                      FROM MentoringOffer, BugTask
-                      WHERE MentoringOffer.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_specifications = list(Bug.select(
-            """id IN (SELECT SpecificationBug.bug
-                      FROM SpecificationBug, BugTask
-                      WHERE SpecificationBug.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
-        bugs_with_branches = list(Bug.select(
-            """id IN (SELECT BugBranch.bug
-                      FROM BugBranch, BugTask
-                      WHERE BugBranch.bug = BugTask.bug
-                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        from lp.bugs.model.bugbranch import BugBranch
+        from lp.registry.model.mentoringoffer import MentoringOffer
+
+        bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
+        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
+                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
+        bug_ids_with_specifications = set(IStore(SpecificationBug).find(
+                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+        bug_ids_with_branches = set(IStore(BugBranch).find(
+                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+
+        # Cache all bugs at once to avoid one query per bugtask. We
+        # could rely on the Storm cache, but this is explicit.
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+
         badge_properties = {}
         for bugtask in bugtasks:
+            bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
                 'has_mentoring_offer':
-                    bugtask.bug in bugs_with_mentoring_offers,
-                'has_specification': bugtask.bug in bugs_with_specifications,
-                'has_branch': bugtask.bug in bugs_with_branches,
+                    bug.id in bug_ids_with_mentoring_offers,
+                'has_specification':
+                    bug.id in bug_ids_with_specifications,
+                'has_branch':
+                    bug.id in bug_ids_with_branches,
+                'has_patch':
+                    bug.latest_patch_uploaded is not None,
                 }
+
         return badge_properties
 
     def getMultiple(self, task_ids):
@@ -1369,7 +1536,7 @@ class BugTaskSet:
             extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
-            if IProjectMilestone.providedBy(params.milestone):
+            if IProjectGroupMilestone.providedBy(params.milestone):
                 where_cond = """
                     IN (SELECT Milestone.id
                         FROM Milestone, Product
@@ -1406,15 +1573,18 @@ class BugTaskSet:
                                  "(SELECT DISTINCT bug FROM BugCve)")
 
         if params.attachmenttype is not None:
-            attachment_clause = (
-                "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
-            if isinstance(params.attachmenttype, any):
-                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
-                    sqlvalues(*params.attachmenttype.query_values))
+            if params.attachmenttype == BugAttachmentType.PATCH:
+                extra_clauses.append("Bug.latest_patch_uploaded IS NOT NULL")
             else:
-                where_cond = "BugAttachment.type = %s" % sqlvalues(
-                    params.attachmenttype)
-            extra_clauses.append(attachment_clause % where_cond)
+                attachment_clause = (
+                    "Bug.id IN (SELECT bug from BugAttachment WHERE %s)")
+                if isinstance(params.attachmenttype, any):
+                    where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                        sqlvalues(*params.attachmenttype.query_values))
+                else:
+                    where_cond = "BugAttachment.type = %s" % sqlvalues(
+                        params.attachmenttype)
+                extra_clauses.append(attachment_clause % where_cond)
 
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))
@@ -1467,76 +1637,9 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
-            tags = set(params.tag.query_values)
-            tags_wildcards = [tag for tag in tags if tag in ('*', '-*')]
-            tags.difference_update(tags_wildcards)
-            tags_include = [tag for tag in tags if not tag.startswith('-')]
-            tags_exclude = [tag[1:] for tag in tags if tag.startswith('-')]
-            tags_clauses = []
-
-            # Search for the *presence* of any tag.
-            if '*' in tags_wildcards:
-                tags_clauses.append(
-                    "BugTag.bug = BugTask.bug")
-                clauseTables.append('BugTag')
-
-            # Search for the *absence* of any tag.
-            if '-*' in tags_wildcards:
-                tags_clauses.append(
-                    "BugTask.bug NOT IN ("
-                    "    SELECT BugTag.bug FROM BugTag)")
-
-            def tags_set_query(joiner, tags):
-                # Return an SQL snippet that identifies a set of bugs
-                # based on tags.
-                joiner = " %s " % joiner
-                return "(%s)" % joiner.join(
-                    "SELECT BugTag.bug FROM BugTag"
-                    " WHERE BugTag.tag = %s" % quote(tag)
-                    for tag in tags)
-
-            if zope_isinstance(params.tag, all):
-                tags_combinator = ' AND '
-                # The set of bugs that have *all* of the tags
-                # requested for *inclusion*.
-                tags_include_clause = tags_set_query(
-                    "INTERSECT", tags_include)
-                # The set of bugs that have *any* of the tags
-                # requested for *exclusion*.
-                tags_exclude_clause = tags_set_query(
-                    "UNION", tags_exclude)
-            else:
-                tags_combinator = ' OR '
-                # The set of bugs that have *any* of the tags
-                # requested for inclusion.
-                tags_include_clause = tags_set_query(
-                    "UNION", tags_include)
-                # The set of bugs that have *all* of the tags
-                # requested for exclusion.
-                tags_exclude_clause = tags_set_query(
-                    "INTERSECT", tags_exclude)
-
-            # Combine the include and exclude sets.
-            if len(tags_include) > 0 and len(tags_exclude) > 0:
-                tags_clauses.append(
-                    "BugTask.bug IN (%s EXCEPT %s)" % (
-                        tags_include_clause, tags_exclude_clause))
-            elif len(tags_include) > 0:
-                tags_clauses.append(
-                    "BugTask.bug IN %s" % tags_include_clause)
-            elif len(tags_exclude) > 0:
-                tags_clauses.append(
-                    "BugTask.bug NOT IN %s" % tags_exclude_clause)
-            else:
-                # This means that the query was only wildcards, or
-                # nothing at all (which is allowed, even if it's a
-                # bit weird).
-                pass
-
-            # Add any generated tag clauses to the main query.
-            if len(tags_clauses) > 0:
-                extra_clauses.append(
-                    '(%s)' % tags_combinator.join(tags_clauses))
+            tag_clause = build_tag_search_clause(params.tag)
+            if tag_clause is not None:
+                extra_clauses.append(tag_clause)
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
@@ -1589,6 +1692,8 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affects_me:
+            params.affected_user = params.user
         if params.affected_user:
             affected_user_clause = """
             BugTask.id IN (
@@ -1622,6 +1727,25 @@ class BugTaskSet:
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
+
+        hw_clause = self._buildHardwareRelatedClause(params)
+        if hw_clause is not None:
+            extra_clauses.append(hw_clause)
+
+        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+            extra_clauses.append(
+                """EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+            extra_clauses.append(
+                """NOT EXISTS (
+                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                """)
+        else:
+            # If no branch specific search restriction is specified,
+            # we don't need to add any clause.
+            pass
 
         orderby_arg = self._processOrderBy(params)
 
@@ -1781,6 +1905,80 @@ class BugTaskSet:
 
         return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
+    def _buildHardwareRelatedClause(self, params):
+        """Hardware related SQL expressions and tables for bugtask searches.
+
+        :return: (tables, clauses) where clauses is a list of SQL expressions
+            which limit a bugtask search to bugs related to a device or
+            driver specified in search_params. If search_params contains no
+            hardware related data, empty lists are returned.
+        :param params: A `BugTaskSearchParams` instance.
+
+        Device related WHERE clauses are returned if
+        params.hardware_bus, params.hardware_vendor_id,
+        params.hardware_product_id are all not None.
+        """
+        # Avoid cyclic imports.
+        from lp.hardwaredb.model.hwdb import (
+            HWSubmission, HWSubmissionBug, HWSubmissionDevice,
+            _userCanAccessSubmissionStormClause,
+            make_submission_device_statistics_clause)
+        from lp.bugs.model.bug import Bug, BugAffectsPerson
+
+        bus = params.hardware_bus
+        vendor_id = params.hardware_vendor_id
+        product_id = params.hardware_product_id
+        driver_name = params.hardware_driver_name
+        package_name = params.hardware_driver_package_name
+
+        if (bus is not None and vendor_id is not None and
+            product_id is not None):
+            tables, clauses = make_submission_device_statistics_clause(
+                bus, vendor_id, product_id, driver_name, package_name, False)
+        elif driver_name is not None or package_name is not None:
+            tables, clauses = make_submission_device_statistics_clause(
+                None, None, None, driver_name, package_name, False)
+        else:
+            return None
+
+        tables.append(HWSubmission)
+        tables.append(Bug)
+        clauses.append(HWSubmissionDevice.submission == HWSubmission.id)
+        bug_link_clauses = []
+        if params.hardware_owner_is_bug_reporter:
+            bug_link_clauses.append(
+                HWSubmission.ownerID == Bug.ownerID)
+        if params.hardware_owner_is_affected_by_bug:
+            bug_link_clauses.append(
+                And(BugAffectsPerson.personID == HWSubmission.ownerID,
+                    BugAffectsPerson.bug == Bug.id,
+                    BugAffectsPerson.affected))
+            tables.append(BugAffectsPerson)
+        if params.hardware_owner_is_subscribed_to_bug:
+            bug_link_clauses.append(
+                And(BugSubscription.personID == HWSubmission.ownerID,
+                    BugSubscription.bugID == Bug.id))
+            tables.append(BugSubscription)
+        if params.hardware_is_linked_to_bug:
+            bug_link_clauses.append(
+                And(HWSubmissionBug.bugID == Bug.id,
+                    HWSubmissionBug.submissionID == HWSubmission.id))
+            tables.append(HWSubmissionBug)
+
+        if len(bug_link_clauses) == 0:
+            return None
+
+        clauses.append(Or(*bug_link_clauses))
+        clauses.append(_userCanAccessSubmissionStormClause(params.user))
+
+        tables = [convert_storm_clause_to_string(table) for table in tables]
+        clauses = ['(%s)' % convert_storm_clause_to_string(clause)
+                   for clause in clauses]
+        clause = 'Bug.id IN (SELECT DISTINCT Bug.id from %s WHERE %s)' % (
+            ', '.join(tables), ' AND '.join(clauses))
+        return clause
+
+
     def search(self, params, *args):
         """See `IBugTaskSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -1805,8 +2003,9 @@ class BugTaskSet:
                            AutoTables(SQL("1=1"), clauseTables)))
 
         # Build up the joins
-        from canonical.launchpad.database import (
-            Bug, Product, SourcePackageName)
+        from lp.bugs.model.bug import Bug
+        from lp.registry.model.product import Product
+        from lp.registry.model.sourcepackagename import SourcePackageName
         joins = Alias(result._get_select(), "BugTask")
         joins = Join(joins, Bug, BugTask.bug == Bug.id)
         joins = LeftJoin(joins, Product, BugTask.product == Product.id)
@@ -1909,6 +2108,44 @@ class BugTaskSet:
 
         return bugtask
 
+    def getStatusCountsForProductSeries(self, user, product_series):
+        """See `IBugTaskSet`."""
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter != "":
+            bug_privacy_filter = 'AND ' + bug_privacy_filter
+        cur = cursor()
+
+        # The union is actually much faster than a LEFT JOIN with the
+        # Milestone table, since postgres optimizes it to perform index
+        # scans instead of sequential scans on the BugTask table.
+        query = """
+            SELECT status, count(*)
+            FROM (
+                SELECT BugTask.status
+                FROM BugTask
+                    JOIN Bug ON BugTask.bug = Bug.id
+                WHERE
+                    BugTask.productseries = %(series)s
+                    %(privacy)s
+
+                UNION ALL
+
+                SELECT BugTask.status
+                FROM BugTask
+                    JOIN Bug ON BugTask.bug = Bug.id
+                    JOIN Milestone ON BugTask.milestone = Milestone.id
+                WHERE
+                    BugTask.productseries IS NULL
+                    AND Milestone.productseries = %(series)s
+                    %(privacy)s
+                ) AS subquery
+            GROUP BY status
+            """ % dict(series=quote(product_series),
+                       privacy=bug_privacy_filter)
+
+        cur.execute(query)
+        return cur.fetchall()
+
     def findExpirableBugTasks(self, min_days_old, user,
                               bug=None, target=None):
         """See `IBugTaskSet`.
@@ -2009,7 +2246,7 @@ class BugTaskSet:
             be either a Distribution, DistroSeries, Product, or ProductSeries.
             If target is None, the clause joins BugTask to all the supported
             BugTarget tables.
-        :raises NotImplementedError: If the target is an IProject,
+        :raises NotImplementedError: If the target is an IProjectGroup,
             ISourcePackage, or an IDistributionSourcePackage.
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
@@ -2063,7 +2300,7 @@ class BugTaskSet:
             target_clause = "target.product_pillar = %s" % sqlvalues(target)
         elif IProductSeries.providedBy(target):
             target_clause = "BugTask.productseries = %s" % sqlvalues(target)
-        elif (IProject.providedBy(target)
+        elif (IProjectGroup.providedBy(target)
               or ISourcePackage.providedBy(target)
               or IDistributionSourcePackage.providedBy(target)):
             raise NotImplementedError(
@@ -2231,6 +2468,9 @@ class BugTaskSet:
             sum_template % (
                 'BugTask.status %s' % search_value_to_where_condition(
                     BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+            sum_template % (
+                'BugTask.importance %s' % search_value_to_where_condition(
+                    BugTaskImportance.HIGH), 'open_high_bugs'),
             ]
 
         conditions = [
@@ -2259,7 +2499,8 @@ class BugTaskSet:
         counts = []
         for (distro_id, spn_id, open_bugs,
              open_critical_bugs, open_unassigned_bugs,
-             open_inprogress_bugs) in shortlist(cur.fetchall()):
+             open_inprogress_bugs,
+             open_high_bugs) in shortlist(cur.fetchall()):
             distribution = distribution_set.get(distro_id)
             sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
@@ -2274,6 +2515,7 @@ class BugTaskSet:
                 open_critical=open_critical_bugs,
                 open_unassigned=open_unassigned_bugs,
                 open_inprogress=open_inprogress_bugs,
+                open_high=open_high_bugs,
                 )
             counts.append(package_counts)
 
@@ -2287,7 +2529,7 @@ class BugTaskSet:
             package_counts = dict(
                 package=distribution.getSourcePackage(sourcepackagename),
                 open=0, open_critical=0, open_unassigned=0,
-                open_inprogress=0)
+                open_inprogress=0, open_high=0)
             counts.append(package_counts)
 
         return counts

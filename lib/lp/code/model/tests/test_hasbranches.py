@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for classes that implement IHasBranches."""
 
@@ -27,7 +28,7 @@ class TestIHasBranches(TestCaseWithFactory):
         self.assertProvides(person, IHasBranches)
 
     def test_project_implements_hasbranches(self):
-        # Projects should implement IHasBranches.
+        # ProjectGroups should implement IHasBranches.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasBranches)
 

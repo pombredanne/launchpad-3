@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 
 """Browser views related to archive subscriptions."""
@@ -7,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveSubscribersView',
+    'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
     'traverse_archive_subscription_for_subscriber'
     ]
@@ -19,20 +22,21 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import implements
+from zope.interface import Interface, implements
+from zope.schema import Date, Text
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad import _
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from lp.soyuz.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthTokenSet)
 from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IArchiveSubscriberUI,
-    IPersonalArchiveSubscription)
+    IArchiveSubscriberSet, IPersonalArchiveSubscription)
 from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
-from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import (
     canonical_url, LaunchpadView)
 from canonical.widgets import DateWidget
@@ -60,8 +64,13 @@ class PersonalArchiveSubscription:
     @property
     def displayname(self):
         """See `IPersonalArchiveSubscription`."""
-        return "%s's subscription to %s" % (
-            self.subscriber.displayname, self.archive.displayname)
+        return "Access to %s" % self.archive.displayname
+
+    @property
+    def title(self):
+        """Required for default headings in templates."""
+        return self.displayname
+
 
 def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
     """Return the subscription for a subscriber to an archive."""
@@ -77,6 +86,28 @@ def traverse_archive_subscription_for_subscriber(subscriber, archive_id):
         return PersonalArchiveSubscription(subscriber, archive)
 
 
+class IArchiveSubscriberUI(Interface):
+    """A custom interface for user interaction with archive subscriptions.
+
+    IArchiveSubscriber uses a datetime field for date_expires, whereas
+    we simply want to use a date field when users create or edit new
+    subscriptions.
+    """
+    subscriber = ParticipatingPersonChoice(
+        title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
+        description=_("The person or team to grant access."))
+
+    date_expires = Date(
+        title=_("Date of Expiration"), required=False,
+        description=_("The date when the access will expire. "
+                      "Leave this blank for access that should "
+                      "never expire."))
+
+    description = Text(
+        title=_("Description"), required=False,
+        description=_("Optional notes about this access."))
+
+
 class ArchiveSubscribersView(LaunchpadFormView):
     """A view for listing and creating archive subscribers."""
 
@@ -87,13 +118,18 @@ class ArchiveSubscribersView(LaunchpadFormView):
     custom_widget('subscriber', PersonPickerWidget,
         header="Select the subscriber")
 
+    @property
+    def label(self):
+        """Return a label for the view's main heading."""
+        return "Manage access to " + self.context.title
+
     def initialize(self):
         """Ensure that we are dealing with a private archive."""
         # If this archive is not private, then we should not be
         # managing the subscribers.
         if not self.context.private:
-            self.request.response.addNotification(structured(
-                "Only private archives can have subscribers."))
+            self.request.response.addNotification(
+                "Only private archives can have subscribers.")
             self.request.response.redirect(
                 canonical_url(self.context))
             return
@@ -157,9 +193,22 @@ class ArchiveSubscribersView(LaunchpadFormView):
             description=data['description'],
             date_expires=date_expires)
 
-        notification = "You have subscribed %s to %s." % (
-            data['subscriber'].displayname, self.context.displayname)
-        self.request.response.addNotification(structured(notification))
+        subscriber_individuals = data['subscriber'].displayname
+        if data['subscriber'].is_team:
+            subscriber_individuals = "Members of " + subscriber_individuals
+
+        notification = (
+            "You have granted access for %(subscriber)s to install "
+            "software from %(archive)s. "
+            "%(subscriber_individuals)s will be notified of the access "
+            " via email."
+            ) % {
+                'subscriber': data['subscriber'].displayname,
+                'archive': self.context.displayname,
+                'subscriber_individuals': subscriber_individuals,
+                }
+
+        self.request.response.addNotification(notification)
 
         # Just ensure a redirect happens (back to ourselves).
         self.next_url = str(self.request.URL)
@@ -172,6 +221,11 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
     field_names = ['date_expires', 'description']
     custom_widget('description', TextWidget, displayWidth=40)
     custom_widget('date_expires', CustomWidgetFactory(DateWidget))
+
+    @property
+    def label(self):
+        """Return a label for the view's main heading."""
+        return "Edit " + self.context.displayname
 
     def validate_update_subscription(self, action, data):
         """Ensure that the date of expiry is not in the past."""
@@ -200,19 +254,19 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
         self.updateContextFromData(data)
 
-        notification = "The subscription for %s has been updated." % (
+        notification = "The access for %s has been updated." % (
             self.context.subscriber.displayname)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
 
-    @action(u'Cancel subscription', name='cancel')
+    @action(u'Revoke access', name='cancel')
     def cancel_subscription(self, action, data):
         """Cancel the context subscription."""
         self.context.cancel(self.user)
 
-        notification = "You have cancelled %s's subscription to %s." % (
+        notification = "You have revoked %s's access to %s." % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
 
     @property
     def next_url(self):
@@ -228,6 +282,8 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 class PersonArchiveSubscriptionsView(LaunchpadView):
     """A view for displaying a persons archive subscriptions."""
 
+    label = "Private PPA access"
+
     @cachedproperty
     def subscriptions_with_tokens(self):
         """Return all the persons archive subscriptions with the token
@@ -241,12 +297,26 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             self.context)
 
         # Turn the result set into a list of dicts so it can be easily
-        # accessed in TAL:
-        return [
-            dict(subscription=PersonalArchiveSubscription(self.context,
-                                                          subscr.archive),
-                 token=token)
-            for subscr, token in subs_with_tokens]
+        # accessed in TAL. Note that we need to ensure that only one
+        # PersonalArchiveSubscription is included for each archive,
+        # as the person might have participation in multiple
+        # subscriptions (via different teams).
+        unique_archives = set()
+        personal_subscription_tokens = []
+        for subscription, token in subs_with_tokens:
+            if subscription.archive in unique_archives:
+                continue
+
+            unique_archives.add(subscription.archive)
+
+            personal_subscription = PersonalArchiveSubscription(
+                self.context, subscription.archive)
+            personal_subscription_tokens.append({
+                'subscription': personal_subscription,
+                'token': token
+                })
+
+        return personal_subscription_tokens
 
 
 class PersonArchiveSubscriptionView(LaunchpadView):
@@ -257,6 +327,11 @@ class PersonArchiveSubscriptionView(LaunchpadView):
     tokens.
     """
 
+    @property
+    def label(self):
+        """Return the label for the view's main heading."""
+        return self.context.title
+
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
@@ -265,13 +340,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         # active token, then create a token, provided a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
-            token = self.context.archive.newAuthToken(self.context.subscriber)
-
-            self.request.response.addNotification(structured(
-                "You have confirmed your subscription to the archive %s. "
-                "Before you can install software from the archive you need "
-                "to follow the instructions below to update your custom "
-                " \"sources.list\"." % self.context.archive.displayname))
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.redirect(self.request.getURL())
 
@@ -281,13 +350,13 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         elif self.request.form.get('regenerate') and self.active_token:
             self.active_token.deactivate()
 
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
-            self.request.response.addNotification(structured(
+            self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "
-                "for your subscription to the archive %s. Please follow "
+                "for your access to the archive %s. Please follow "
                 "the instructions below to update your custom "
-                "\"sources.list\"." % self.context.archive.displayname))
+                "\"sources.list\"." % self.context.archive.displayname)
 
             self.request.response.redirect(self.request.getURL())
 
@@ -297,7 +366,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         if self.active_token is None:
             return None
 
-        comment = "Personal subscription of %s to %s" % (
+        comment = "Personal access of %s to %s" % (
             self.context.subscriber.displayname,
             self.context.archive.displayname)
 

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import datetime
 import unittest
@@ -12,13 +13,11 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, IAccountSet)
-from lp.registry.interfaces.person import IPerson
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility)
-from canonical.launchpad.webapp.login import (
-    logInPrincipal, logInPrincipalAndMaybeCreatePerson, logoutPerson)
+from canonical.launchpad.webapp.login import logInPrincipal, logoutPerson
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -38,7 +37,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         person = self.factory.makePerson('foo.bar@example.com')
         self.failIfEqual(person.id, person.account.id)
         self.principal = LaunchpadPrincipal(
-            person.account.id, person.browsername,
+            person.account.id, person.displayname,
             person.displayname, person)
 
     def test_logging_in_and_logging_out(self):
@@ -135,23 +134,6 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
             self.request)
         self.failUnless(ILaunchpadPrincipal.providedBy(principal))
         self.failUnless(principal.person is None)
-
-    def test_logInPrincipalAndMaybeCreatePerson(self):
-        # logInPrincipalAndMaybeCreatePerson() will log the given principal in
-        # and create a Person entry associated with it if one doesn't exist
-        # already.
-        logInPrincipalAndMaybeCreatePerson(
-            self.request, self.principal, 'foo@example.com')
-
-        # This is so that the authenticate() call below uses cookie auth.
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
-
-        principal = getUtility(IPlacelessAuthUtility).authenticate(
-            self.request)
-        self.failUnless(ILaunchpadPrincipal.providedBy(principal))
-        person = IPerson(principal.account)
-        self.failUnless(IPerson.providedBy(person))
 
 
 def test_suite():

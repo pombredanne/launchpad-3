@@ -1,4 +1,6 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Revision interfaces."""
@@ -177,10 +179,10 @@ class IRevisionSet(Interface):
             with the most recent revision_date first.
         """
 
-    def getPublicRevisionsForProject(project, day_limit=30):
-        """Get the public revisions for the project specified.
+    def getPublicRevisionsForProjectGroup(projectgroup, day_limit=30):
+        """Get the public revisions for the project group specified.
 
-        :param project: A valid `Project`.
+        :param projectgroup: A valid `ProjectGroup`.
         :param day_limit: Defines a time boundary for the revision_date, where
             (now - day_limit) < revision_date <= now.
         :return: ResultSet containing all revisions that are in a public

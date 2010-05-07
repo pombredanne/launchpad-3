@@ -8,7 +8,7 @@ policy does not exist for a product, it uses the policy defined by its
 project (if it exists).
 
 The information is saved in the database table BranchVisibilityPolicy.
-This table effectively creates tuples of (Project or Product, Team,
+This table effectively creates tuples of (ProjectGroup or Product, Team,
 Policy).  Since there is no team that is used to define everyone, the
 non-specifying of a team means *everyone*.
 
@@ -38,15 +38,15 @@ There are currently four visibility policies:
 
 The interface IHasBranchVisibilityPolicy is used to define the public
 interface for modifying the branch visibility policy items.  Both
-IProject and IProduct inherit from this interface as both projects and
+IProjectGroup and IProduct inherit from this interface as both projects and
 products can set branch visibility policies.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.code.interfaces.branchvisibilitypolicy import (
     ...     IHasBranchVisibilityPolicy)
-    >>> project_set = getUtility(IProjectSet)
+    >>> project_set = getUtility(IProjectGroupSet)
     >>> mozilla = project_set.getByName('mozilla')
     >>> IHasBranchVisibilityPolicy.providedBy(mozilla)
     True
@@ -316,7 +316,7 @@ and are subscribed to by the Ubuntu Gnome Team.
     ...     name="testing-2", owner=stevea, product=evolution)
     >>> branch.private
     True
-    >>> for name in sorted([subscriber.browsername for subscriber
+    >>> for name in sorted([subscriber.displayname for subscriber
     ...                     in branch.subscribers]):
     ...     print name
     Steve Alexander

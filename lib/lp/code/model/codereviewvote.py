@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """CodeReviewVoteReference database class."""
 
@@ -14,6 +15,8 @@ from zope.schema import Int
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.errors import (
+    ClaimReviewFailed, ReviewNotPending, UserHasExistingReview)
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 
 
@@ -35,3 +38,59 @@ class CodeReviewVoteReference(SQLBase):
     review_type = StringCol(default=None)
     comment = ForeignKey(
         dbName='vote_message', foreignKey='CodeReviewComment', default=None)
+
+    @property
+    def is_pending(self):
+        """See `ICodeReviewVote`"""
+        # Reviews are pending if there is no associated comment.
+        return self.comment is None
+
+    def _validatePending(self):
+        """Raise if the review is not pending."""
+        if not self.is_pending:
+            raise ReviewNotPending('The review is not pending.')
+
+    def _validateNoReviewForUser(self, user):
+        """Make sure there isn't an existing review for the user."""
+        bmp = self.branch_merge_proposal
+        existing_review = bmp.getUsersVoteReference(user)
+        if existing_review is not None:
+            if existing_review.is_pending:
+                error_str = '%s has already been asked to review this'
+            else:
+                error_str = '%s has already reviewed this'
+            raise UserHasExistingReview(error_str % user.unique_displayname)
+
+    def validateClaimReview(self, claimant):
+        """See `ICodeReviewVote`"""
+        self._validatePending()
+        if not self.reviewer.is_team:
+            raise ClaimReviewFailed('Cannot claim non-team reviews.')
+        if not claimant.inTeam(self.reviewer):
+            raise ClaimReviewFailed(
+                '%s is not a member of %s' %
+                (claimant.unique_displayname,
+                 self.reviewer.unique_displayname))
+        self._validateNoReviewForUser(claimant)
+
+    def claimReview(self, claimant):
+        """See `ICodeReviewVote`"""
+        self.validateClaimReview(claimant)
+        self.reviewer = claimant
+
+    def validateReasignReview(self, reviewer):
+        """See `ICodeReviewVote`"""
+        self._validatePending()
+        if not reviewer.is_team:
+            self._validateNoReviewForUser(reviewer)
+
+    def reassignReview(self, reviewer):
+        """See `ICodeReviewVote`"""
+        self.validateReasignReview(reviewer)
+        self.reviewer = reviewer
+
+    def delete(self):
+        """See `ICodeReviewVote`"""
+        if not self.is_pending:
+            raise ReviewNotPending('The review is not pending.')
+        self.destroySelf()

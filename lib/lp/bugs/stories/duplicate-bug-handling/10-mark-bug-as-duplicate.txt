@@ -27,6 +27,7 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ... -----------------------------17976867087135254391306687757--
   ... """)
   HTTP/1.1 303 See Other
+  ...
   Content-Length: 0
   ...
   Location: http://.../debian/+source/mozilla-firefox/+bug/2

@@ -2,20 +2,13 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master">
+  metal:use-macro="view/macro:page/main_only">
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
-      <div tal:content="structure context/fmt:link" />
+  <div tal:content="structure context/fmt:link" />
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:heading fill-slot="heading">
@@ -38,4 +31,3 @@
 </div>
 </body>
 </html>
-

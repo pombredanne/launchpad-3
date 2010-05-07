@@ -1,18 +1,25 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Policy management for the upload handler."""
 
 __metaclass__ = type
 
-__all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
+__all__ = [
+    "findPolicyByName",
+    "findPolicyByOptions",
+    "UploadPolicyError",
+    ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -84,6 +91,10 @@ class AbstractUploadPolicy:
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
 
+    def getUploader(self, changes):
+        """Get the person who is doing the uploading."""
+        return changes.signer
+
     def setOptions(self, options):
         """Store the options for later."""
         self.options = options
@@ -128,29 +139,6 @@ class AbstractUploadPolicy:
                 # Buildd binary uploads (resulting from successful builds)
                 # to copy archives may go into *any* pocket.
                 return
-        if upload.is_ppa:
-            if self.pocket != PackagePublishingPocket.RELEASE:
-                upload.reject(
-                    "PPA uploads must be for the RELEASE pocket.")
-        elif (self.archive.purpose == ArchivePurpose.PARTNER and
-              self.pocket != PackagePublishingPocket.RELEASE and
-              self.pocket != PackagePublishingPocket.PROPOSED):
-            # Partner uploads can only go to the release or proposed
-            # pockets.
-            upload.reject(
-                "Partner uploads must be for the RELEASE or PROPOSED pocket.")
-        else:
-            # Uploads to the partner archive are allowed in any distroseries
-            # state.
-            # XXX julian 2005-05-29 bug=117557:
-            # This is a greasy hack until bug #117557 is fixed.
-            if (self.distroseries and
-                self.archive.purpose != ArchivePurpose.PARTNER and
-                not self.distroseries.canUploadToPocket(self.pocket)):
-                upload.reject(
-                    "Not permitted to upload to the %s pocket in a "
-                    "series in the '%s' state." % (
-                    self.pocket.name, self.distroseries.status.name))
 
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
@@ -189,6 +177,8 @@ class AbstractUploadPolicy:
     @classmethod
     def _registerPolicy(cls, policy_type):
         """Register the given policy type as belonging to its given name."""
+        # XXX: JonathanLange 2010-01-15 bug=510892: This shouldn't instantiate
+        # policy types. They should instead have names as class variables.
         policy_name = policy_type().name
         cls.policies[policy_name] = policy_type
 
@@ -210,6 +200,7 @@ class AbstractUploadPolicy:
 findPolicyByName = AbstractUploadPolicy.findPolicyByName
 findPolicyByOptions = AbstractUploadPolicy.findPolicyByOptions
 
+
 class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
 
@@ -223,11 +214,12 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
-    def checkSignerIsUbuntero(self, upload):
-        """Reject the upload if the upload signer is not an 'ubuntero'."""
-        if not upload.changes.signer.is_ubuntero:
+    def checkSignerIsUbuntuCodeOfConductSignee(self, upload):
+        """Reject the upload if not signed by an Ubuntu CoC signer."""
+        if not upload.changes.signer.is_ubuntu_coc_signer:
             upload.reject(
-                "PPA uploads must be signed by an 'ubuntero'.")
+                'PPA uploads must be signed by an Ubuntu '
+                'Code of Conduct signer.')
 
     def checkSignerIsBetaTester(self, upload):
         """Reject the upload if the upload signer is not a 'beta-tester'.
@@ -284,16 +276,17 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
-        If the upload is target to any PPA it checks if the signer is
-        'ubuntero' and if it is member of 'launchpad-beta-tests'.
+        If the upload is targeted to any PPA, checks if the signer is an
+        Ubuntu Code of Conduct signer, and if so is a member of
+        'launchpad-beta-tests'.
         """
         if upload.is_ppa:
             # XXX cprov 2007-06-13: checks for PPA uploads are not yet
-            # established. We may decide for only one of the checks.
-            # Either in a specific team or having a ubuntero (or similar
+            # established. We may decide for only one of the checks.  Either
+            # in a specific team or having an Ubuntu CoC signer (or similar
             # flag). This code will be revisited before releasing PPA
             # publicly.
-            self.checkSignerIsUbuntero(upload)
+            self.checkSignerIsUbuntuCodeOfConductSignee(upload)
             #self.checkSignerIsBetaTester(upload)
             self.checkArchiveSizeQuota(upload)
         else:
@@ -314,7 +307,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distroseries.status !=
-                DistroSeriesStatus.FROZEN):
+                SeriesStatus.FROZEN):
                 return True
         return False
 
@@ -326,7 +319,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     def __init__(self):
-        AbstractUploadPolicy.__init__(self)
+        super(BuildDaemonUploadPolicy, self).__init__()
         self.name = 'buildd'
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
@@ -352,6 +345,28 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
 
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
+
+
+class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
+    """Policy for uploading the results of a source package recipe build."""
+
+    def __init__(self):
+        super(SourcePackageRecipeUploadPolicy, self).__init__()
+        # XXX: JonathanLange 2010-01-15 bug=510894: This has to be exactly the
+        # same string as the one in SourcePackageRecipeBuild.policy_name.
+        # Factor out a shared constant.
+        self.name = 'recipe'
+        self.can_upload_source = True
+        self.can_upload_binaries = False
+
+    def getUploader(self, changes):
+        """Return the person doing the upload."""
+        build_id = int(getattr(self.options, 'buildid'))
+        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+        return sprb.requester
+
+
+AbstractUploadPolicy._registerPolicy(SourcePackageRecipeUploadPolicy)
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
@@ -391,6 +406,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """Nothing, let it go."""
         pass
+
+    def rejectPPAUploads(self, upload):
+        """We allow PPA uploads."""
+        return False
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 

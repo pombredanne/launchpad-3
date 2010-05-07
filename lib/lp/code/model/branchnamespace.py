@@ -1,11 +1,11 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
 
 __metaclass__ = type
 __all__ = [
     'BranchNamespaceSet',
-    'get_namespace',
     'PackageNamespace',
     'PersonalNamespace',
     'ProductNamespace',
@@ -15,6 +15,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
@@ -40,14 +41,14 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, NoSuchProduct)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet, NoSuchSourcePackageName)
+from lp.services.utils import iter_split
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from lp.code.xmlrpc.codehosting import iter_split
 
 
 class _BaseNamespace:
@@ -137,7 +138,7 @@ class _BaseNamespace:
 
         if not self.checkCreationPolicy(registrant):
             raise BranchCreationForbidden(
-                "You cannot create branches in %r" % self.name)
+                'You cannot create branches in "%s"' % self.name)
 
     def validateBranchName(self, name):
         """See `IBranchNamespace`."""
@@ -158,6 +159,25 @@ class _BaseNamespace:
             name = branch.name
         self.validateBranchName(name)
         self.validateRegistrant(mover)
+
+    def moveBranch(self, branch, mover, new_name=None,
+                   rename_if_necessary=False):
+        """See `IBranchNamespace`."""
+        # Check to see if the branch is already in this namespace.
+        old_namespace = branch.namespace
+        if self.name == old_namespace.name:
+            return
+        if new_name is None:
+            new_name = branch.name
+        if rename_if_necessary:
+            new_name = self.findUnusedName(new_name)
+        self.validateMove(branch, mover, new_name)
+        # Remove the security proxy of the branch as the owner and target
+        # attributes are readonly through the interface.
+        naked_branch = removeSecurityProxy(branch)
+        naked_branch.owner = self.owner
+        self.target._retargetBranch(naked_branch)
+        naked_branch.name = new_name
 
     def createBranchWithPrefix(self, branch_type, prefix, registrant,
                                url=None):
@@ -545,7 +565,7 @@ class BranchNamespaceSet:
             return None
         pillar = self._findOrRaise(
             NoSuchProduct, pillar_name, getUtility(IPillarNameSet).getByName)
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             raise NoSuchProduct(pillar_name)
         return pillar
 

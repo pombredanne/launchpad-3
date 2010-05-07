@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the doctests and pagetests.
 """
@@ -6,9 +8,7 @@ Run the doctests and pagetests.
 import logging
 import os
 import transaction
-import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
@@ -16,7 +16,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer)
 
 from lp.registry.tests import mailinglists_helper
-from lp.services.testing import build_test_suite
+from lp.services.testing import build_doctest_suite, build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -27,6 +27,7 @@ def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
     tearDown(test)
+
 
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
@@ -133,6 +134,18 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'product.txt': LayeredDocFileSuite(
+        '../doc/product.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    'private-team-roles.txt': LayeredDocFileSuite(
+        '../doc/private-team-roles.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'productrelease.txt': LayeredDocFileSuite(
         '../doc/productrelease.txt',
         setUp=setUp,
@@ -162,8 +175,17 @@ special = {
         '../doc/sourcepackage.txt',
         layer=LaunchpadFunctionalLayer,
         setUp=setUp, tearDown=tearDown),
+    'distribution-sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/distribution-sourcepackage.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 
 def test_suite():
-    return build_test_suite(here, special)
+    suite = build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    launchpadlib_path = os.path.join(os.path.pardir,  'doc', 'launchpadlib')
+    lplib_suite = build_doctest_suite(here, launchpadlib_path,
+                                      layer=DatabaseFunctionalLayer)
+    suite.addTest(lplib_suite)
+    return suite

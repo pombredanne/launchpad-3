@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
 
@@ -10,13 +11,16 @@ import time
 import unittest
 
 from pytz import UTC
-from storm.expr import Min
+from storm.expr import Min, SQL
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.codeimportresult import CodeImportResult
 from canonical.config import config
+from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -25,14 +29,21 @@ from lp.code.enums import CodeImportResultStatus
 from lp.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.scripts.garbo import (
     DailyDatabaseGarbageCollector, HourlyDatabaseGarbageCollector,
-    OpenIDAssociationPruner, OpenIDConsumerAssociationPruner)
+    OpenIDConsumerAssociationPruner)
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
-from lp.registry.interfaces.person import PersonCreationRationale
+from lp.bugs.model.bugnotification import (
+    BugNotification, BugNotificationRecipient)
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
+from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.model.person import Person
+from lp.services.job.model.job import Job
 
 
 class TestGarboScript(TestCase):
@@ -64,19 +75,22 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self, maximum_chunk_size=2):
+    def runDaily(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
-        collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
+        return collector
 
-    def runHourly(self, maximum_chunk_size=2):
+    def runHourly(self, maximum_chunk_size=2, test_args=()):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
-        collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
+        return collector
 
     def test_OAuthNoncePruner(self):
         now = datetime.utcnow().replace(tzinfo=UTC)
@@ -206,12 +220,12 @@ class TestGarbo(TestCaseWithFactory):
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
 
-    def test_OpenIDAssociationPruner(self, pruner=OpenIDAssociationPruner):
-        store_name = pruner.store_name
+    def test_OpenIDConsumerAssociationPruner(self):
+        pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(store_name, MASTER_FLAVOR)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -234,7 +248,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        store = store_selector.get(store_name, MASTER_FLAVOR)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -249,9 +263,6 @@ class TestGarbo(TestCaseWithFactory):
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
-
-    def test_OpenIDConsumerAssociationPruner(self):
-        self.test_OpenIDAssociationPruner(OpenIDConsumerAssociationPruner)
 
     def test_RevisionAuthorEmailLinker(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -282,7 +293,6 @@ class TestGarbo(TestCaseWithFactory):
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
         self.assertEqual(rev2.revision_author.person, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -291,7 +301,6 @@ class TestGarbo(TestCaseWithFactory):
         # Creating a person for an existing account creates a linkage.
         person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
         self.assertEqual(rev3.revision_author.person, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -329,7 +338,6 @@ class TestGarbo(TestCaseWithFactory):
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
         self.assertEqual(sub2.owner, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -338,32 +346,185 @@ class TestGarbo(TestCaseWithFactory):
         # Creating a person for an existing account creates a linkage.
         person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
         self.assertEqual(sub3.owner, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub3.owner, person3)
 
-    def test_MailingListSubscriptionPruner(self):
+    def test_PersonPruner(self):
+        personset = getUtility(IPersonSet)
+        # Switch the DB user because the garbo_daily user isn't allowed to
+        # create person entries.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        team, mailing_list = self.factory.makeTeamAndMailingList(
-            'mlist-team', 'mlist-owner')
-        person = self.factory.makePerson(email='preferred@example.org')
-        email = self.factory.makeEmail('secondary@example.org', person)
-        transaction.commit()
-        mailing_list.subscribe(person, email)
+
+        # Create two new person entries, both not linked to anything. One of
+        # them will have the present day as its date created, and so will not
+        # be deleted, whereas the other will have a creation date far in the
+        # past, so it will be deleted.
+        person = self.factory.makePerson(name='test-unlinked-person-new')
+        person_old = self.factory.makePerson(name='test-unlinked-person-old')
+        removeSecurityProxy(person_old).datecreated = datetime(
+            2008, 01, 01, tzinfo=UTC)
+
+        # Normally, the garbage collector will do nothing because the
+        # PersonPruner is experimental
+        self.runDaily()
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-old'), None)
+
+        # When we run the garbage collector with experimental jobs turned
+        # on, the old unlinked Person is removed.
+        self.runDaily(test_args=['--experimental'])
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_BugNotificationPruner(self):
+        # Create some sample data
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        notification = BugNotification(
+            messageID=1,
+            bugID=1,
+            is_comment=True,
+            date_emailed=None)
+        recipient = BugNotificationRecipient(
+            bug_notification=notification,
+            personID=1,
+            reason_header='Whatever',
+            reason_body='Whatever')
+        # We don't create an entry exactly 30 days old to avoid
+        # races in the test.
+        for delta in range(-45, -14, 2):
+            message = Message(rfc822msgid=str(delta))
+            notification = BugNotification(
+                message=message,
+                bugID=1,
+                is_comment=True,
+                date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
+            recipient = BugNotificationRecipient(
+                bug_notification=notification,
+                personID=1,
+                reason_header='Whatever',
+                reason_body='Whatever')
+
+        store = IMasterStore(BugNotification)
+
+        # Ensure we are at a known starting point.
+        num_unsent = store.find(
+            BugNotification,
+            BugNotification.date_emailed == None).count()
+        num_old = store.find(
+            BugNotification,
+            BugNotification.date_emailed < THIRTY_DAYS_AGO).count()
+        num_new = store.find(
+            BugNotification,
+            BugNotification.date_emailed > THIRTY_DAYS_AGO).count()
+
+        self.assertEqual(num_unsent, 1)
+        self.assertEqual(num_old, 8)
+        self.assertEqual(num_new, 8)
+
+        # Run the garbage collector.
+        self.runDaily()
+
+        # We should have 9 BugNotifications left.
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed == None).count(),
+            num_unsent)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed > THIRTY_DAYS_AGO).count(),
+            num_new)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
+            0)
+
+    def test_BranchJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch = self.factory.makeAnyBranch()
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        Store.of(db_branch).flush()
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+        job_id = branch_job.job.id
+
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                1)
+
+        collector = self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                0)
+
+    def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+        job_id = branch_job.job.id
+
+        db_branch2 = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        branch_job2 = BranchUpgradeJob.create(db_branch2)
+        job_id_newer = branch_job2.job.id
+
+        collector = self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                BranchJob).count(),
+            1)
+
+    def test_ObsoleteBugAttachmentDeleter(self):
+        # Bug attachments without a LibraryFileContent record are removed.
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        bug = self.factory.makeBug()
+        attachment = self.factory.makeBugAttachment(bug=bug)
         transaction.commit()
 
-        # User remains subscribed if we run the garbage collector.
+        # Bug attachments that have a LibraryFileContent record are
+        # not deleted.
+        self.assertIsNot(attachment.libraryfile.content, None)
         self.runDaily()
-        self.assertNotEqual(mailing_list.getSubscription(person), None)
+        self.assertEqual(bug.attachments.count(), 1)
 
-        # If we remove the email address that was subscribed, the
-        # garbage collector removes the subscription.
-        Store.of(email).remove(email)
+        # But once we delete the LfC record, the attachment is deleted
+        # in the next daily garbo run.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        removeSecurityProxy(attachment.libraryfile).content = None
         transaction.commit()
         self.runDaily()
-        self.assertEqual(mailing_list.getSubscription(person), None)
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(bug.attachments.count(), 0)
+
 
 
 def test_suite():

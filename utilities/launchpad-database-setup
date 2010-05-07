@@ -1,35 +1,44 @@
 #!/bin/sh
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 if [ -n "$1" ]; then
     USER=$1
     echo "Creating Launchpad database for $USER"
 else
-    echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
-    echo "If you really want that, run it with a username as "
-    echo "an argument"
+    echo "usage: launchpad-database-setup DEVELOPER_USER"
+    echo "THIS SCRIPT WILL DESTROY ALL POSTGRESQL DATA for the given user"
+    echo "If you really want that, run it with the username of your "
+    echo "local developer account."
     exit 1
 fi
 
 # This attempts to automate instructions provided on
-# https://launchpad.canonical.com/DatabaseSetup which are intended for
+# https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-if [ -e /etc/init.d/postgresql-8.3 ]; then
-  pgversion=8.3
-  echo "Using PostGRES 8.3"
-elif [ -e /etc/init.d/postgresql-8.2]; then
-  pgversion=8.2
-  echo "Using PostGRES 8.2"
-else
-  echo "Unable to determine your PostGRES version."
+for pgversion in 8.4 8.3 8.2
+do
+  if [ -e /etc/init.d/postgresql-$pgversion ]
+  then
+    break
+  fi
+done
+
+if [ -z "$pgversion" ]
+then
+  echo "Unable to determine your postgres version."
   exit 1
 fi
+
+echo "Using postgres $pgversion"
 
 # Make sure that we have the correct version running on port 5432
 sudo grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
 if [ $? -ne 0 ]; then
   echo "Please check /etc/postgresql/$pgversion/main/postgresql.conf and"
-  echo "ensure PostGRES is running on port 5432."
+  echo "ensure postgres is running on port 5432."
 fi;
 
 sudo /etc/init.d/postgresql-$pgversion stop
@@ -75,12 +84,20 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 search_path='$user,public,ts2'
 add_missing_from=false
 #enable_seqscan=false
-log_statement='all'
+log_statement='none'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
+
+EOF
+
+if [ "$pgversion" = 8.2 -o "$pgversion" = 8.3 ]
+then
+  sudo grep -q '^[[:space:]]*max_fsm_relations' /etc/postgresql/$pgversion/main/postgresql.conf || \
+  sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 max_fsm_relations=2000
 
 EOF
+fi
 
 sudo /etc/init.d/postgresql-$pgversion start
 

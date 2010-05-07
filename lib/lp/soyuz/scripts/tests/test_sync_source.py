@@ -1,5 +1,7 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-"""ChrootManager facilities tests."""
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""SyncSource facilities tests."""
 
 __metaclass__ = type
 
@@ -10,11 +12,15 @@ import sys
 import tempfile
 from unittest import TestCase, TestLoader
 
-from lp.archiveuploader.tagfiles import parse_tagfile
+from zope.component import getUtility
+
 from canonical.config import config
+from canonical.launchpad.scripts import BufferLogger
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
+from lp.archiveuploader.tagfiles import parse_tagfile
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (
     SyncSource, SyncSourceError)
 
@@ -35,7 +41,7 @@ class TestSyncSource(TestCase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
-        self.messages = []
+        self.logger = BufferLogger()
         self.downloads = []
 
     def tearDown(self):
@@ -52,9 +58,9 @@ class TestSyncSource(TestCase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
-    def local_debug(self, message):
-        """Store debug messages for future inspection."""
-        self.messages.append(message)
+    def get_messages(self):
+        """Retrieve the messages sent using the logger."""
+        return self.logger.buffer.getvalue().splitlines()
 
     def local_downloader(self, url, filename):
         """Store download requests for future inspections."""
@@ -70,8 +76,9 @@ class TestSyncSource(TestCase):
         them later.
         """
         sync_source = SyncSource(
-            files=files, origin=origin, debug=self.local_debug,
-            downloader=self.local_downloader)
+            files=files, origin=origin, logger=self.logger,
+            downloader=self.local_downloader,
+            todistro=getUtility(IDistributionSet)['ubuntu'])
         return sync_source
 
     def testInstantiate(self):
@@ -84,8 +91,8 @@ class TestSyncSource(TestCase):
         self.assertEqual(sync_source.files, files)
         self.assertEqual(sync_source.origin, origin)
 
-        sync_source.debug('opa')
-        self.assertEqual(self.messages, ['opa'])
+        sync_source.logger.debug('opa')
+        self.assertEqual(self.get_messages(), ['DEBUG: opa'])
 
         sync_source.downloader('somewhere', 'foo')
         self.assertEqual(self.downloads, [('somewhere', 'foo')])
@@ -157,26 +164,26 @@ class TestSyncSource(TestCase):
         test_file is skipped.
         """
         files = {
-            'foo.diff.gz': {'remote filename': 'xxx'},
-            'foo.dsc': {'remote filename': 'yyy'},
-            'foo.orig.gz': {'remote filename': 'zzz'},
+            'foo_0.1.diff.gz': {'remote filename': 'xxx'},
+            'foo_0.1.dsc': {'remote filename': 'yyy'},
+            'foo_0.1.orig.gz': {'remote filename': 'zzz'},
             }
         origin = {'url': 'http://somewhere/'}
 
         sync_source = self._getSyncSource(files, origin)
 
-        test_file = open('foo.diff.gz', 'w')
+        test_file = open('foo_0.1.diff.gz', 'w')
         test_file.write('nahhh')
         test_file.close()
 
         dsc_filename = sync_source.fetchSyncFiles()
 
-        self.assertEqual(dsc_filename, 'foo.dsc')
+        self.assertEqual(dsc_filename, 'foo_0.1.dsc')
 
         self.assertEqual(
             self.downloads,
-            [('http://somewhere/yyy', 'foo.dsc'),
-             ('http://somewhere/zzz', 'foo.orig.gz')])
+            [('http://somewhere/zzz', 'foo_0.1.orig.gz'),
+             ('http://somewhere/yyy', 'foo_0.1.dsc')])
 
         for filename in files.keys():
             self.assertTrue(os.path.exists(filename))
@@ -194,13 +201,13 @@ class TestSyncSource(TestCase):
         origin = {}
         sync_source = self._getSyncSource(files, origin)
 
-        orig_filename = sync_source.fetchLibrarianFiles()
+        librarian_files = sync_source.fetchLibrarianFiles()
 
-        self.assertEqual(orig_filename, 'netapplet_1.0.0.orig.tar.gz')
+        self.assertEqual(librarian_files, ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(self._listFiles(), ['netapplet_1.0.0.orig.tar.gz'])
         self.assertEqual(
-            self.messages,
-            ['\tnetapplet_1.0.0.orig.tar.gz: already in distro '
+            self.get_messages(),
+            ['INFO: netapplet_1.0.0.orig.tar.gz: already in distro '
              '- downloading from librarian'])
 
     def testFetchLibrarianFilesGotDuplicatedDSC(self):
@@ -222,8 +229,8 @@ class TestSyncSource(TestCase):
             sync_source.fetchLibrarianFiles)
 
         self.assertEqual(
-            self.messages,
-            ['\tfoobar-1.0.dsc: already in distro '
+            self.get_messages(),
+            ['INFO: foobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
         self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
 
@@ -259,7 +266,7 @@ class TestSyncSourceScript(TestCase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def testSyncSourceRun(self):
+    def testSyncSourceRunV1(self):
         """Try a simple sync-source.py run.
 
         It will run in a special tree prepared to cope with sync-source
@@ -286,15 +293,17 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             err.splitlines(),
             ['W: Could not find blacklist file on '
-                  '/srv/launchpad.net/dak/sync-blacklist.txt'])
+             '/srv/launchpad.net/dak/sync-blacklist.txt',
+             'INFO      - <bar_1.0-1.diff.gz: cached>',
+             'INFO      - <bar_1.0.orig.tar.gz: cached>',
+             'INFO      - <bar_1.0-1.dsc: cached>',
+             ])
         self.assertEqual(
             out.splitlines(),
             ['Getting binaries for hoary...',
-             '[Updating] bar (0 [Ubuntu] < 1.0-1 [Debian])',
+             '[Updating] bar (None [Ubuntu] < 1.0-1 [Debian])',
              ' * Trying to add bar...',
-             '  - <bar_1.0-1.diff.gz: cached>',
-             '  - <bar_1.0.orig.tar.gz: cached>',
-             '  - <bar_1.0-1.dsc: cached>'])
+             ])
 
         expected_changesfile = 'bar_1.0-1_source.changes'
         self.assertTrue(
@@ -323,6 +332,76 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             parsed_changes['maintainer'],
             'Launchpad team <launchpad@lists.canonical.com>')
+        self.assertEqual(
+            parsed_changes['changed-by'],
+            'Celso Providelo <celso.providelo@canonical.com>')
+
+        os.unlink(expected_changesfile)
+
+    def testSyncSourceRunV3(self):
+        """Try a simple sync-source.py run with a version 3 source format 
+        package.
+
+        It will run in a special tree prepared to cope with sync-source
+        requirements (see `setUp`). It contains a usable archive index
+        named as '$distribution_$suite_$component_Sources' and the
+        'etherwake' source files.
+
+        Check that:
+         * return code is ZERO,
+         * check standard error and standard output,
+         * check if the expected changesfile was generated,
+         * parse and inspect the changesfile using the archiveuploader
+           component (the same approach adopted by Soyuz).
+         * delete the changesfile.
+        """
+        returncode, out, err = self.runSyncSource(
+            extra_args=['-b', 'cprov', '-D', 'debian', '-C', 'main',
+                        '-S', 'incoming', 'sample1'])
+
+        self.assertEqual(
+            0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
+            % (returncode, out, err))
+
+        self.assertEqual(
+            err.splitlines(),
+            ['W: Could not find blacklist file on '
+             '/srv/launchpad.net/dak/sync-blacklist.txt', 
+             'INFO      - <sample1_1.0.orig-component3.tar.gz: cached>',
+             'INFO      - <sample1_1.0-1.dsc: cached>',
+             'INFO      - <sample1_1.0-1.debian.tar.gz: cached>',
+             'INFO      - <sample1_1.0.orig-component1.tar.bz2: cached>',
+             'INFO      - <sample1_1.0.orig-component2.tar.lzma: cached>',
+             'INFO      - <sample1_1.0.orig.tar.gz: cached>'])
+        self.assertEqual(
+            out.splitlines(),
+            ['Getting binaries for hoary...',
+             '[Updating] sample1 (None [Ubuntu] < 1.0-1 [Debian])',
+             ' * Trying to add sample1...',
+             ])
+
+        expected_changesfile = 'sample1_1.0-1_source.changes'
+        self.assertTrue(
+            os.path.exists(expected_changesfile),
+            "Couldn't find %s." % expected_changesfile)
+
+        # Parse the generated unsigned changesfile.
+        parsed_changes = parse_tagfile(
+            expected_changesfile, allow_unsigned=True)
+
+        # It refers to the right source/version.
+        self.assertEqual(parsed_changes['source'], 'sample1')
+        self.assertEqual(parsed_changes['version'], '1.0-1')
+
+        # It includes the correct 'origin' and 'target' information.
+        self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
+        self.assertEqual(parsed_changes['distribution'], 'hoary')
+
+        # And finally, 'maintainer' role was preserved and 'changed-by'
+        # role was assigned as specified in the sync-source command-line.
+        self.assertEqual(
+            parsed_changes['maintainer'],
+            'Raphael Hertzog <hertzog@debian.org>')
         self.assertEqual(
             parsed_changes['changed-by'],
             'Celso Providelo <celso.providelo@canonical.com>')

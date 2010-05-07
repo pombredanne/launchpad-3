@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations for bug changes."""
 
@@ -8,6 +9,7 @@ __all__ = [
     'BranchUnlinkedFromBug',
     'BugConvertedToQuestion',
     'BugDescriptionChange',
+    'BugDuplicateChange',
     'BugTagsChange',
     'BugTaskAdded',
     'BugTaskAssigneeChange',
@@ -521,11 +523,21 @@ class BugAttachmentChange(AttributeChange):
 
     def getBugNotification(self):
         if self.old_value is None:
-            message = '** Attachment added: "%s"\n   %s' % (
-                self.new_value.title, self.new_value.libraryfile.http_url)
+            if self.new_value.is_patch:
+                attachment_str = 'Patch'
+            else:
+                attachment_str = 'Attachment'
+            message = '** %s added: "%s"\n   %s' % (
+                attachment_str, self.new_value.title,
+                self.new_value.libraryfile.http_url)
         else:
-            message = '** Attachment removed: "%s"\n   %s' % (
-                self.old_value.title, self.old_value.libraryfile.http_url)
+            if self.old_value.is_patch:
+                attachment_str = 'Patch'
+            else:
+                attachment_str = 'Attachment'
+            message = '** %s removed: "%s"\n   %s' % (
+                attachment_str, self.old_value.title,
+                self.old_value.libraryfile.http_url)
 
         return {'text': message}
 

@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of dist-upgrader tarballs."""
 
@@ -7,9 +8,6 @@ __metaclass__ = type
 __all__ = ['process_dist_upgrader']
 
 import os
-import tarfile
-import stat
-import shutil
 
 from lp.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)

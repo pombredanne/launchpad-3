@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """SSH key interfaces."""
@@ -14,6 +16,7 @@ __all__ = [
 from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.declarations import (export_as_webservice_entry, exported)
 
 from canonical.launchpad import _
 
@@ -40,14 +43,18 @@ class SSHKeyType(DBEnumeratedType):
 
 class ISSHKey(Interface):
     """SSH public key"""
+
+    export_as_webservice_entry('ssh_key')
+
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
     personID = Int(title=_('Owner ID'), required=True, readonly=True)
-    keytype = Choice(title=_("Key type"), required=True,
-                     vocabulary=SSHKeyType)
-    keytext = TextLine(title=_("Key text"), required=True)
-    comment = TextLine(title=_("Comment describing this key"),
-                       required=True)
+    keytype = exported(Choice(title=_("Key type"), required=True,
+                     vocabulary=SSHKeyType, readonly=True))
+    keytext = exported(TextLine(title=_("Key text"), required=True,
+                       readonly=True))
+    comment = exported(TextLine(title=_("Comment describing this key"),
+                       required=True, readonly=True))
 
     def destroySelf():
         """Remove this SSHKey from the database."""

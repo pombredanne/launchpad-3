@@ -1,7 +1,9 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for bug-related doctests and pagetests."""
 
+import re
 import textwrap
 
 from datetime import datetime, timedelta
@@ -15,7 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
-    extract_text, find_tag_by_id, find_main_content, find_tags_by_class)
+    extract_text, find_tag_by_id, find_main_content, find_tags_by_class,
+    print_table)
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -32,12 +35,16 @@ def print_direct_subscribers(bug_page):
     print_subscribers(bug_page, 'subscribers-direct')
 
 
-def print_indirect_subscribers(bug_page):
-    """Print the indirect subscribers listed in a portlet."""
-    print 'From duplicates:'
-    print_subscribers(bug_page, 'subscribers-from-duplicates')
+def print_also_notified(bug_page):
+    """Print the structural subscribers listed in a portlet."""
     print 'Also notified:'
     print_subscribers(bug_page, 'subscribers-indirect')
+
+
+def print_subscribers_from_duplicates(bug_page):
+    """Print the subscribers from duplicates listed in a portlet."""
+    print 'From duplicates:'
+    print_subscribers(bug_page, 'subscribers-from-duplicates')
 
 
 def print_subscribers(bug_page, subscriber_list_id):
@@ -89,21 +96,6 @@ def print_remote_bugtasks(content):
                 print target, extract_text(span.findNext('a'))
 
 
-def print_bugs_table(content, table_id):
-    """Print the bugs table with the given ID.
-
-    The table is assumed to consist of rows of bugs whose first column
-    is a bug ID, and whose second column is a bug title.
-    """
-    bugs_table = find_tag_by_id(content, table_id)
-
-    for tr in bugs_table("tr"):
-        if not tr.td:
-            continue
-        bug_id, bug_title = tr("td", limit=2)
-        print bug_id.string, bug_title.a.string
-
-
 def print_bugs_list(content, list_id):
     """Print the bugs list with the given ID.
 
@@ -118,18 +110,30 @@ def print_bugs_list(content, list_id):
         print extract_text(node)
 
 
-def print_bugtasks(text):
+def print_bugtasks(text, show_heat=None):
     """Print all the bugtasks in the text."""
-    print '\n'.join(extract_bugtasks(text))
+    print '\n'.join(extract_bugtasks(text, show_heat=show_heat))
 
 
-def extract_bugtasks(text):
+def extract_bugtasks(text, show_heat=None):
     """Extracts a list of strings for all the bugtasks in the text."""
     main_content = find_main_content(text)
     table = main_content.find('table', {'id': 'buglisting'})
     if table is None:
         return []
-    return [extract_text(tr) for tr in table('tr') if tr.td is not None]
+    rows = []
+    for tr in table('tr'):
+        if tr.td is not None:
+            row_text = extract_text(tr)
+            if show_heat:
+                for img in tr.findAll('img'):
+                    mo = re.search('^/@@/bug-heat-([0-4]).png$', img['src'])
+                    if mo:
+                        flames = int(mo.group(1))
+                        heat_text = flames * '*' + (4 - flames) * '-'
+                        row_text += '\n' + heat_text
+            rows.append(row_text)
+    return rows
 
 
 def create_task_from_strings(bug, owner, product, watchurl=None):
@@ -204,7 +208,7 @@ def create_old_bug(
         bugtask.transitionToAssignee(assignee)
     bugtask.milestone = milestone
     if external_bugtracker is not None:
-        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person, 
+        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person,
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
@@ -274,3 +278,46 @@ def print_upstream_linking_form(browser):
         if text_field is not None:
             text_control = browser.getControl(name=text_field.get('name'))
             print '    [%s]' % text_control.value.ljust(10)
+
+
+def print_bugfilters_portlet_unfilled(browser, target):
+    """Print the raw, unfilled contents of the bugfilters portlet.
+
+    This is the contents before any actual data has been fetched.
+    (The portlet is normally populated with data by a separate
+    javascript call, to avoid delaying the overall page load.  Use
+    print_bugfilters_portlet_filled() to test the populated portlet.)
+
+    :param browser  browser from which to extract the content.
+    :param target   entity from whose bugs page to fetch the portlet
+                    (e.g., http://bugs.launchpad.dev/TARGET/...)
+    """
+    browser.open(
+        'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
+    table = BeautifulSoup(browser.contents).find('table', 'bug-links')
+    tbody_info, tbody_links = table('tbody')
+    print_table(tbody_info)
+    for link in tbody_links('a'):
+        text = extract_text(link)
+        if len(text) > 0:
+            print "%s\n  --> %s" % (text, link['href'])
+
+
+def print_bugfilters_portlet_filled(browser, target):
+    """Print the filled-in contents of the bugfilters portlet.
+
+    This is the contents after the actual data has been fetched.
+    (The portlet is normally populated with data by a separate
+    javascript call, to avoid delaying the overall page load.  Use
+    print_bugfilters_portlet_unfilled() to test the unpopulated
+    portlet.)
+
+    :param browser  browser from which to extract the content.
+    :param target   entity from whose bugs page to fetch the portlet
+                    (e.g., http://bugs.launchpad.dev/TARGET/...)
+    """
+    browser.open(
+        'http://bugs.launchpad.dev'
+        '/%s/+bugtarget-portlet-bugfilters-stats' % target)
+    table = BeautifulSoup('<table>%s</table>' % browser.contents)
+    print_table(table)

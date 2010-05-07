@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the process-accepted.py script."""
 
@@ -7,7 +8,10 @@ __all__ = [
     'close_bugs',
     'close_bugs_for_queue_item',
     'close_bugs_for_sourcepublication',
+    'ProcessAccepted',
     ]
+
+import sys
 
 from zope.component import getUtility
 
@@ -15,10 +19,17 @@ from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.queue import IPackageUploadSet, PackageUploadStatus
+
+from lp.services.scripts.base import LaunchpadScript
+
+
 def get_bugs_from_changes_file(changes_file):
     """Parse the changes file and return a list of bugs referenced by it.
 
@@ -53,6 +64,7 @@ def close_bugs(queue_ids):
         queue_item = getUtility(IPackageUploadSet).get(queue_id)
         close_bugs_for_queue_item(queue_item)
 
+
 def can_close_bugs(target):
     """Whether or not bugs should be closed in the given target.
 
@@ -72,6 +84,7 @@ def can_close_bugs(target):
         return False
 
     return True
+
 
 def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     """Close bugs for a given queue item.
@@ -95,11 +108,16 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
         return
 
     if changesfile_object is None:
-        changesfile_object = queue_item.changesfile
+        if queue_item.is_delayed_copy:
+            sourcepackagerelease = queue_item.sources[0].sourcepackagerelease
+            changesfile_object = sourcepackagerelease.upload_changesfile
+        else:
+            changesfile_object = queue_item.changesfile
 
     for source_queue_item in queue_item.sources:
         close_bugs_for_sourcepackagerelease(
             source_queue_item.sourcepackagerelease, changesfile_object)
+
 
 def close_bugs_for_sourcepublication(source_publication):
     """Close bugs for a given sourcepublication.
@@ -119,6 +137,7 @@ def close_bugs_for_sourcepublication(source_publication):
 
     close_bugs_for_sourcepackagerelease(
         sourcepackagerelease, changesfile_object)
+
 
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
     """Close bugs for a given source.
@@ -149,3 +168,113 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
                 owner=janitor,
                 subject=bug.followup_subject(),
                 content=content)
+
+
+class ProcessAccepted(LaunchpadScript):
+    """Queue/Accepted processor.
+
+    Given a distribution to run on, obtains all the queue items for the
+    distribution and then gets on and deals with any accepted items, preparing
+    them for publishing as appropriate.
+    """
+
+    def add_my_options(self):
+        """Command line options for this script."""
+        self.parser.add_option(
+            "-n", "--dry-run", action="store_true",
+            dest="dryrun", metavar="DRY_RUN", default=False,
+            help="Whether to treat this as a dry-run or not.")
+
+        self.parser.add_option(
+            "--ppa", action="store_true",
+            dest="ppa", metavar="PPA", default=False,
+            help="Run only over PPA archives.")
+
+        self.parser.add_option(
+            "--copy-archives", action="store_true",
+            dest="copy_archives", metavar="COPY_ARCHIVES",
+            default=False, help="Run only over COPY archives.")
+
+    @property
+    def lockfilename(self):
+        """Override LaunchpadScript's lock file name."""
+        return "/var/lock/launchpad-upload-queue.lock"
+
+    def main(self):
+        """Entry point for a LaunchpadScript."""
+        if len(self.args) != 1:
+            self.logger.error(
+                "Need to be given exactly one non-option argument. "
+                "Namely the distribution to process.")
+            return 1
+
+        if self.options.ppa and self.options.copy_archives:
+            self.logger.error(
+                "Specify only one of copy archives or ppa archives.")
+            return 1
+
+        distro_name = self.args[0]
+
+        processed_queue_ids = []
+        try:
+            self.logger.debug("Finding distribution %s." % distro_name)
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+
+            # target_archives is a tuple of (archive, description).
+            if self.options.ppa:
+                target_archives = [
+                    (archive, archive.archive_url)
+                    for archive in distribution.getPendingAcceptancePPAs()]
+            elif self.options.copy_archives:
+                copy_archives = getUtility(
+                    IArchiveSet).getArchivesForDistribution(
+                        distribution, purposes=[ArchivePurpose.COPY])
+                target_archives = [
+                    (archive, archive.displayname)
+                    for archive in copy_archives]
+            else:
+                target_archives = [
+                    (archive, archive.purpose.title)
+                    for archive in distribution.all_distro_archives]
+
+            for archive, description in target_archives:
+                for distroseries in distribution.series:
+
+                    self.logger.debug("Processing queue for %s %s" % (
+                        distroseries.name, description))
+
+                    queue_items = distroseries.getQueueItems(
+                        PackageUploadStatus.ACCEPTED, archive=archive)
+                    for queue_item in queue_items:
+                        try:
+                            queue_item.realiseUpload(self.logger)
+                        except Exception:
+                            message = "Failure processing queue_item %d" % (
+                                queue_item.id)
+                            properties = [('error-explanation', message)]
+                            request = ScriptRequest(properties)
+                            error_utility = ErrorReportingUtility()
+                            error_utility.raising(sys.exc_info(), request)
+                            self.logger.error('%s (%s)' % (message,
+                                request.oopsid))
+                        else:
+                            processed_queue_ids.append(queue_item.id)
+
+            if not self.options.dryrun:
+                self.txn.commit()
+            else:
+                self.logger.debug("Dry Run mode.")
+
+            if not self.options.ppa and not self.options.copy_archives:
+                self.logger.debug("Closing bugs.")
+                close_bugs(processed_queue_ids)
+
+            if not self.options.dryrun:
+                self.txn.commit()
+
+        finally:
+            self.logger.debug("Rolling back any remaining transactions.")
+            self.txn.abort()
+
+        return 0
+

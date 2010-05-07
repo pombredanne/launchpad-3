@@ -1,18 +1,18 @@
 = Bug Reporting Guidelines =
 
 Guidelines can be set at the Distribution, DistributionSourcePackage,
-Project or Product level to help users file good bug reports, direct
+ProjectGroup or Product level to help users file good bug reports, direct
 them to FAQs, and so forth.
 
     >>> login('foo.bar@canonical.com')
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProjectSet, IProductSet)
+    ...     IDistributionSet, IProjectGroupSet, IProductSet)
 
     >>> distribution = getUtility(IDistributionSet).getByName('ubuntu')
     >>> distribution_source_package = (
     ...     distribution.getSourcePackage('alsa-utils'))
-    >>> project = getUtility(IProjectSet).getByName('mozilla')
+    >>> project = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> product = getUtility(IProductSet).getByName('firefox')
 
     >>> settable_contexts = [

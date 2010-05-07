@@ -1,11 +1,13 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0401
 
 """__init__ module for the externalbugtracker package."""
 
 __metaclass__ = type
 __all__ = [
-    'get_external_bugtracker',
+    'BATCH_SIZE_UNLIMITED',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
@@ -28,6 +30,7 @@ __all__ = [
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
+    'get_external_bugtracker',
     ]
 
 from lp.bugs.externalbugtracker.base import *
@@ -39,6 +42,8 @@ from lp.bugs.externalbugtracker.sourceforge import *
 from lp.bugs.externalbugtracker.rt import *
 from lp.bugs.externalbugtracker.trac import *
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+
+
 BUG_TRACKER_CLASSES = {
     BugTrackerType.BUGZILLA: Bugzilla,
     BugTrackerType.DEBBUGS: DebBugs,

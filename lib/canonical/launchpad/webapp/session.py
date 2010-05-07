@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Support for browser-cookie sessions."""
 
 __metaclass__ = type
@@ -9,8 +11,9 @@ from zope.session.http import CookieClientIdManager
 
 from storm.zope.interfaces import IZStorm
 
+from lazr.uri import URI
+
 from canonical.config import config
-from canonical.launchpad.webapp.url import urlparse
 
 
 SECONDS = 1
@@ -97,22 +100,19 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
-        # XXX: SteveAlexander, 2007-04-01.
-        #      This is on the codepath where anon users get a session cookie
-        #      set unnecessarily.
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)
-        protocol, request_domain = urlparse(request.getURL())[:2]
+        uri = URI(request.getURL())
 
         # Set secure flag on cookie.
-        if protocol != 'http':
+        if uri.scheme != 'http':
             cookie['secure'] = True
         else:
             cookie['secure'] = False
 
         # Set domain attribute on cookie if vhosting requires it.
-        cookie_domain = get_cookie_domain(request_domain)
+        cookie_domain = get_cookie_domain(uri.host)
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 

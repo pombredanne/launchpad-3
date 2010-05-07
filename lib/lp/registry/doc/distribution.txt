@@ -17,7 +17,8 @@ The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistribution, IDistributionSet)
-    >>> from canonical.launchpad.interfaces import IHasTranslationImports
+    >>> from lp.translations.interfaces.translationimportqueue import (
+    ...     IHasTranslationImports)
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -25,6 +26,12 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> ubuntu = distroset.get(1)
     >>> print ubuntu.name
     ubuntu
+
+The distribution has a useful string representation containing its display
+name in quotes and its name in parentheses.
+
+    >>> ubuntu
+    <Distribution 'Ubuntu' (ubuntu)>
 
 Or, to grab one by name, use either getByName() or __getitem__().  They both
 can be used to look up distributions by their aliases too.
@@ -100,10 +107,29 @@ Or by version:
 
 You can list development distroseriess:
 
-    >>> devdists = ubuntu.getDevelopmentSerieses()
+    >>> devdists = ubuntu.getDevelopmentSeries()
     >>> for devdist in devdists:
     ...     print devdist.name
     hoary
+
+You can list the series for a distribution,
+
+    >>> for series in ubuntu.series:
+    ...     print series.name
+    breezy-autotest
+    grumpy
+    hoary
+    warty
+
+as well as the distribution architecture series for a distribution:
+
+    >>> for architecture in ubuntu.architectures:
+    ...     print architecture.displayname
+    Ubuntu Breezy Badger Autotest i386
+    Ubuntu Hoary hppa
+    Ubuntu Hoary i386
+    Ubuntu Warty hppa
+    Ubuntu Warty i386
 
 You can use the has_published_binaries property to find out if the
 distribution has any binaries on disk.  This is useful when searching for
@@ -176,6 +202,35 @@ of the results from searchSourcePackageCaches():
     DistributionSourcePackage: foobar
     DistributionSourcePackage: commercialpackage
 
+searchSourcePackages() also has a has_packaging parameter that
+it just passes on to searchSourcePackageCaches(), and it restricts
+the results based on whether the source package has an entry
+in the Packaging table linking it to an upstream project.
+
+    >>> packages = ubuntu.searchSourcePackages('a', has_packaging=True)
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: mozilla-firefox
+    DistributionSourcePackage: netapplet
+    DistributionSourcePackage: alsa-utils
+    >>> packages = ubuntu.searchSourcePackages('a', has_packaging=False)
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: foobar
+    DistributionSourcePackage: commercialpackage
+
+searchSourcePackages() also has a publishing_distroseries parameter that
+it just passes on to searchSourcePackageCaches(), and it restricts the
+results based on whether the source package has an entry in the
+SourcePackagePublishingHistory table for the given distroseries.
+
+    >>> packages = ubuntu.searchSourcePackages(
+    ...     'a', publishing_distroseries=ubuntu.currentseries)
+    >>> for dsp in packages:
+    ...     print "%s: %s" % (dsp.__class__.__name__, dsp.name)
+    DistributionSourcePackage: netapplet
+    DistributionSourcePackage: alsa-utils
+
 
 === Searching for binary packages ===
 
@@ -206,7 +261,7 @@ Loosening to substring matches gives another result:
 
     >>> results = ubuntu.searchBinaryPackages("mozilla", exact_match=False)
     >>> print results[0]
-    <security proxied lp.registry.model.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+    <...DistributionSourcePackageCache instance ...
 
     >>> print [result.name for result in results]
     [u'mozilla-firefox']
@@ -230,7 +285,7 @@ We can do an FTI search:
 
     >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
     >>> print results[0]
-    <security proxied lp.registry.model.distributionsourcepackagecache.DistributionSourcePackageCache instance ...
+    <...DistributionSourcePackageCache instance ...
 
     >>> print [result.name for result in fti_results]
     [u'mozilla-firefox']
@@ -371,7 +426,7 @@ Gentoo only uses Malone
 
 Launchpad admins and the distro owner can set these fields.
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian.official_blueprints = True
     >>> debian.official_blueprints
@@ -479,7 +534,7 @@ We can filter for specifications that contain specific text:
 We can get only valid specs (those that are not obsolete or superseded):
 
  >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
- >>> login('mark@hbd.com')
+ >>> login('mark@example.com')
  >>> for spec in kubuntu.specifications():
  ...     # Do this here, otherwise, the change will be flush before
  ...     # updateLifecycleStatus() acts and an IntegrityError will be
@@ -514,7 +569,7 @@ Milestones for distros can only be created by distro owners or admins.
     Traceback (most recent call last):
     ...
     Unauthorized: (<DistroSeries at ...>, 'newMilestone', 'launchpad.Edit')
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> debian_milestone = woody.newMilestone(
     ...     name='woody-rc1', dateexpected=datetime(2028, 10, 1))
 

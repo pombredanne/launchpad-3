@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -9,8 +10,13 @@ import shutil
 import tempfile
 import unittest
 
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
+
+from lp.services.scripts.interfaces.scriptactivity import (
+    IScriptActivitySet)
 
 
 class TestProcessUpload(unittest.TestCase):
@@ -46,9 +52,21 @@ class TestProcessUpload(unittest.TestCase):
 
         Observe it creating the required directory tree for a given
         empty queue_location.
+
+        It should also generate some scriptactivity.
         """
+        # No scriptactivity should exist before it's run.
+        activity = getUtility(
+            IScriptActivitySet).getLastActivity('process-upload')
+        self.assertTrue(activity is None,  "'activity' should be None")
+
         returncode, out, err = self.runProcessUpload()
         self.assertEqual(0, returncode)
+
+        # There should now be some scriptactivity.
+        activity = getUtility(
+            IScriptActivitySet).getLastActivity('process-upload')
+        self.assertFalse(activity is None, "'activity' should not be None")
 
         # directory tree in place.
         for directory in ['incoming', 'accepted', 'rejected', 'failed']:
@@ -75,7 +93,7 @@ class TestProcessUpload(unittest.TestCase):
         # proper log message
         self.assertEqual(1, returncode)
         self.assertEqual(
-            ['INFO    creating lockfile',
+            ['INFO    Creating lockfile: /var/lock/process-upload-insecure.lock',
              'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
              ], err.splitlines())
 

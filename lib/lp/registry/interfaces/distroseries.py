@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
@@ -6,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSeriesStatus',
     'IDistroSeries',
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
@@ -14,99 +15,42 @@ __all__ = [
     'NoSuchDistroSeries',
     ]
 
-from zope.schema import Bool, Datetime, Choice, Object, TextLine
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import Bool, Datetime, Choice, Object, TextLine
 
-from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Summary, Title)
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.languagepack import ILanguagePack
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers)
-from lp.registry.interfaces.milestone import IHasMilestones
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-
-from canonical.launchpad import _
-
-from lazr.restful.fields import Reference
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_entry, webservice_error)
+    export_factory_operation, export_read_operation, exported,
+    operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, rename_parameters_as, webservice_error)
+from lazr.restful.fields import Reference, ReferenceChoice
 
+from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    ContentNameField, Description, PublicPersonChoice, Title,
+    UniqueField)
+from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.version import sane_version
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 
-# XXX: salgado, 2008-06-02: We should use a more generic name here as this
-# enum is used in ProductSeries.status as well.
-class DistroSeriesStatus(DBEnumeratedType):
-    """Distro/Product Series Status
-
-    A Distro or Product series (warty, hoary, 1.4 for example) changes state
-    throughout its development. This schema describes the level of
-    development of the series.
-    """
-
-    EXPERIMENTAL = DBItem(1, """
-        Experimental
-
-        This series contains code that is far from active release planning or
-        management.
-
-        In the case of Ubuntu, series that are beyond the current
-        "development" release will be marked as "experimental". We create
-        those so that people have a place to upload code which is expected to
-        be part of that distant future release, but which we do not want to
-        interfere with the current development release.
-        """)
-
-    DEVELOPMENT = DBItem(2, """
-        Active Development
-
-        The series that is under active development.
-        """)
-
-    FROZEN = DBItem(3, """
-        Pre-release Freeze
-
-        When a series is near to release the administrators will freeze it,
-        which typically means all changes require significant review before
-        being accepted.
-        """)
-
-    CURRENT = DBItem(4, """
-        Current Stable Release
-
-        This is the latest stable release. Normally there will only
-        be one of these for a given distribution.
-        """)
-
-    SUPPORTED = DBItem(5, """
-        Supported
-
-        This series is still supported, but it is no longer the current stable
-        release.
-        """)
-
-    OBSOLETE = DBItem(6, """
-        Obsolete
-
-        This series is no longer supported, it is considered obsolete and
-        should not be used on production systems.
-        """)
-
-    FUTURE = DBItem(7, """
-        Future
-
-        This is a future series of this product/distro in which the developers
-        haven't started working yet.
-        """)
+from lp.blueprints.interfaces.specificationtarget import (
+    ISpecificationGoal)
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget, IHasBugs, IHasOfficialBugTags)
+from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.languagepack import ILanguagePack
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -130,16 +74,75 @@ class DistroSeriesNameField(ContentNameField):
             return None
 
 
+class DistroSeriesVersionField(UniqueField):
+    """A class to ensure `IDistroSeries` has unique versions."""
+    errormessage = _(
+        "%s is already in use by another version in this distribution.")
+    attribute = 'version'
+
+    @property
+    def _content_iface(self):
+        return IDistroSeries
+
+    @property
+    def _distribution(self):
+        if self._content_iface.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
+
+    def _getByName(self, version):
+        """Return the `IDistroSeries` for the specified distribution version.
+
+        The distribution is the context's distribution (which may
+        the context itself); A version is unique to a distribution.
+        """
+        found_series = None
+        for series in getUtility(IDistroSeriesSet).findByVersion(version):
+            if (series.distribution == self._distribution
+                and series != self.context):
+                # A version is unique to a distribution, but a distroseries
+                # may edit itself.
+                found_series = series
+                break
+        return found_series
+
+    def _getByAttribute(self, version):
+        """Return the content object with the given attribute."""
+        return self._getByName(version)
+
+    def _validate(self, version):
+        """See `UniqueField`."""
+        super(DistroSeriesVersionField, self)._validate(version)
+        if not sane_version(version):
+            raise LaunchpadValidationError(
+                "%s is not a valid version" % version)
+        # Avoid circular import hell.
+        from lp.archivepublisher.debversion import Version, VersionError
+        try:
+            # XXX sinzui 2009-07-25 bug=404613: DistributionMirror and buildd
+            # have stricter version rules than the schema. The version must
+            # be a debversion.
+            Version(version)
+        except VersionError, error:
+            raise LaunchpadValidationError(
+                "'%s': %s" % (version, error[0]))
+
+
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
 
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
     def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
 
 
-class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                          IBugTarget, ISpecificationGoal, IHasMilestones,
-                          IHasBuildRecords):
+class IDistroSeriesPublic(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    IHasBuildRecords):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -162,12 +165,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_(
                 "The title of this series. It should be distinctive "
                 "and designed to look good at the top of a page.")))
-    summary = exported(
-        Summary(title=_("Summary"), required=True,
-            description=_(
-                "A brief summary of the highlights of this release. "
-                "It should be no longer than a single paragraph, up "
-                "to 200 words.")))
     description = exported(
         Description(title=_("Description"), required=True,
             description=_("A detailed description of this series, with "
@@ -175,7 +172,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                           "availability of security updates and any other "
                           "relevant information.")))
     version = exported(
-        TextLine(
+        DistroSeriesVersionField(
             title=_("Version"), required=True,
             description=_("The version string for this series.")))
     distribution = exported(
@@ -183,6 +180,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
+    named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     upload_components = Attribute("The series components that can be "
@@ -191,27 +189,27 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     status = exported(
         Choice(
             title=_("Status"), required=True,
-            vocabulary=DistroSeriesStatus))
+            vocabulary=SeriesStatus))
     datereleased = exported(
         Datetime(title=_("Date released")))
     parent_series = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
-            required=True,
+            required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'))
     owner = exported(
         PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Driver"),
             description=_(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted to this series of the "
                 "distribution."),
-            required=False, vocabulary='ValidPersonOrTeam'))
+            required=False, vocabulary='ValidPersonOrTeam', schema=IPerson))
     changeslist = exported(
         TextLine(
             title=_("E-mail changes to"), required=True,
@@ -224,7 +222,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         title=_("Defer translation imports"),
         description=_("Suspends any translation imports for this series"),
         default=True,
-        required=True
+        required=True,
         )
     binarycount = Attribute("Binary Packages Counter")
 
@@ -233,14 +231,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
-    drivers = Attribute(
-        'A list of the people or teams who are drivers for this series. '
-        'This list is made up of any drivers or owners from this '
-        'DistroSeries, and the Distribution to which it belong.')
-    bug_supervisor = Attribute(
-        'Currently just a reference to the Distribution bug supervisor.')
-    security_contact = Attribute(
-        'Currently just a reference to the Distribution security contact.')
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
@@ -259,33 +249,33 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     language_pack_base = Choice(
         title=_('Language pack base'), required=False,
         description=_('''
-            Language pack export with the export of all translations available
-            for this `IDistroSeries` when it was generated. Next delta exports
-            will be generated based on this one.
+            Language pack with the export of all translations
+            available for this distribution series when it was generated. The
+            subsequent update exports will be generated based on this one.
             '''), vocabulary='FilteredFullLanguagePack')
 
     language_pack_delta = Choice(
-        title=_('Language pack delta'), required=False,
+        title=_('Language pack update'), required=False,
         description=_('''
-            Language pack export with the export of all translation updates
-            available for this `IDistroSeries` since language_pack_base was
-            generated.
+            Language pack with the export of all translation updates
+            available for this distribution series since the language pack
+            base was generated.
             '''), vocabulary='FilteredDeltaLanguagePack')
 
     language_pack_proposed = Choice(
         title=_('Proposed language pack update'), required=False,
         description=_('''
-            Base or delta language pack export that is being tested and
-            proposed to be used as the new language_pack_base or
-            language_pack_delta for this `IDistroSeries`.
+            Base or update language pack export that is being tested and
+            proposed to be used as the new language pack base or
+            language pack update for this distribution series.
             '''), vocabulary='FilteredLanguagePack')
 
     language_pack_full_export_requested = Bool(
         title=_('Request a full language pack export'), required=True,
         description=_('''
             Whether next language pack generation will be a full export. This
-            is useful when delta packages are too big and want to merge all
-            those changes in the base package.
+            information is useful when update packs are too big and want to
+            merge all those changes in the base pack.
             '''))
 
     last_full_language_pack_exported = Object(
@@ -307,7 +297,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         "All language packs associated with this distribution series.")
 
     # other properties
-    previous_serieses = Attribute("Previous series from the same "
+    previous_series = Attribute("Previous series from the same "
         "distribution.")
 
     main_archive = exported(
@@ -320,14 +310,6 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             title=_("Supported"),
             description=_(
                 "Whether or not this series is currently supported.")))
-
-    active = exported(
-        Bool(
-            title=_("Active"),
-            description=_(
-                "Whether or not this series is stable and supported, or "
-                "under current development. This excludes series which "
-                "are experimental or obsolete.")))
 
     def isUnstable():
         """Whether or not a distroseries is unstable.
@@ -378,6 +360,14 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         given architecturetag.
         """
 
+    def getDistroArchSeriesByProcessor(processor):
+        """Return the distroarchseries for this distroseries with the
+        given architecturetag from a `IProcessor`.
+
+        :param processor: An `IProcessor`
+        :return: An `IDistroArchSeries` or None when none was found.
+        """
+
     @operation_parameters(
         archtag=TextLine(
             title=_("The architecture tag"), required=True))
@@ -405,7 +395,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return a source package in this distro series by name.
 
         The name given may be a string or an ISourcePackageName-providing
-        object.
+        object. The source package may not be published in the distro series.
         """
 
     def getTranslatableSourcePackages():
@@ -413,15 +403,72 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         that can be translated.
         """
 
-    def checkTranslationsViewable():
-        """Raise `TranslationUnavailable` if translations are hidden.
+    def getPrioritizedUnlinkedSourcePackages():
+        """Return a list of package summaries that need packaging links.
 
-        Checks the `hide_all_translations` flag.  If it is set, these
-        translations are not to be shown to the public.  In that case an
-        appropriate message is composed based on the series' `status`,
-        and a `TranslationUnavailable` exception is raised.
+        A summary is a dict of package (`ISourcePackage`), total_bugs,
+        and total_messages (translatable messages).
+        """
 
-        Simply returns if translations are not hidden.
+    def getPrioritizedlPackagings():
+        """Return a list of packagings that need more upstream information."""
+
+    def getMostRecentlyLinkedPackagings():
+        """Return a list of packagings that are the most recently linked.
+
+        At most five packages are returned of those most recently linked to an
+        upstream.
+        """
+
+    @operation_parameters(
+        created_since_date=Datetime(
+            title=_("Created Since Timestamp"),
+            description=_(
+                "Return items that are more recent than this timestamp."),
+            required=False),
+        status=Choice(
+            # Really PackageUploadCustomFormat, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            title=_("Package Upload Status"),
+            description=_("Return only items that have this status."),
+            required=False),
+        archive=Reference(
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
+            title=_("Archive"),
+            description=_("Return only items for this archive."),
+            required=False),
+        pocket=Choice(
+            # Really PackagePublishingPocket, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            title=_("Pocket"),
+            description=_("Return only items targeted to this pocket"),
+            required=False),
+        custom_type=Choice(
+            # Really PackageUploadCustomFormat, patched in
+            # _schema_circular_imports.py
+            vocabulary=DBEnumeratedType,
+            title=_("Custom Type"),
+            description=_("Return only items with custom files of this "
+                          "type."),
+            required=False),
+        )
+    # Really IPackageUpload, patched in _schema_circular_imports.py
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPackageUploads(created_since_date, status, archive, pocket,
+                          custom_type):
+        """Get package upload records for this distribution series.
+
+        :param created_since_date: If specified, only returns items uploaded
+            since the timestamp supplied.
+        :param status: Filter results by this `PackageUploadStatus`
+        :param archive: Filter results for this `IArchive`
+        :param pocket: Filter results by this `PackagePublishingPocket`
+        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :return: A result set containing `IPackageUpload`
         """
 
     def getUnlinkedTranslatableSourcePackages():
@@ -432,7 +479,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def getBinaryPackage(name):
         """Return a DistroSeriesBinaryPackage for this name.
 
-        The name given may be an IBinaryPackageName or a string.
+        The name given may be an IBinaryPackageName or a string.  The
+        binary package may not be published in the distro series.
         """
 
     def getSourcePackageRelease(sourcepackagerelease):
@@ -521,9 +569,11 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
-        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        build_conflicts, build_conflicts_indep, dateuploaded=None):
+        changelog, changelog_entry, dsc, dscsigningkey, section,
+        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
+        dsc_binaries, archive, copyright, build_conflicts,
+        build_conflicts_indep, dateuploaded=None,
+        source_package_recipe_build=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -542,7 +592,8 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
          :param dscsigningkey: IGPGKey used to sign the DSC file
          :param dsc: string, original content of the dsc file
          :param copyright: string, the original debian/copyright content
-         :param changelog: string, changelog extracted from the changesfile
+         :param changelog: LFA ID of the debian/changelog file in librarian
+         :param changelog_entry: string, changelog extracted from the changesfile
          :param architecturehintlist: string, DSC architectures
          :param builddepends: string, DSC build dependencies
          :param builddependsindep: string, DSC architecture independent build
@@ -556,6 +607,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
          :param dsc_binaries:  string, DSC binaries field
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
+         :param source_package_recipe_build: optional SourcePackageRecipeBuild
          :return: the just creates `SourcePackageRelease`
         """
 
@@ -612,14 +664,19 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Delete any records that are no longer applicable.
 
         Consider all binarypackages marked as REMOVED.
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
         """
 
     def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
-        Consider all binary package names published in this distro series.
+        Consider all binary package names published in this distro series
+        and entirely skips updates for disabled archives
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;
@@ -721,8 +778,15 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         :return: A string.
         """
 
+    def isSourcePackageFormatPermitted(format):
+        """Check if the specified source format is allowed in this series.
 
-class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic):
+        :param format: The SourcePackageFormat to check.
+        """
+
+
+class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
+                    IStructuralSubscriptionTarget):
     """A series of an operating system distribution."""
     export_as_webservice_entry()
 

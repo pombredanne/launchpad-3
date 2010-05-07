@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -14,7 +16,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Join, Not, Select
+from storm.expr import And, Asc, Desc, Exists, Join, Not, Or, Select
 from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
 from storm.store import Store
 from zope.component import getUtility
@@ -24,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
@@ -38,7 +40,7 @@ from lp.code.interfaces.revision import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -84,10 +86,7 @@ class Revision(SQLBase):
         """See `IRevision`."""
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
-        if (author is not None and branch.product is not None):
-            # No karma for junk branches as we need a product to link
-            # against.
-            karma = author.assignKarma('revisionadded', branch.product)
+        if author is not None:
             # Backdate the karma to the time the revision was created.  If the
             # revision_date on the revision is in future (for whatever weird
             # reason) we will use the date_created from the revision (which
@@ -95,9 +94,14 @@ class Revision(SQLBase):
             # events is both wrong, as the revision has been created (and it
             # is lying), and a problem with the way the Launchpad code
             # currently does its karma degradation over time.
+            karma_date = min(self.revision_date, self.date_created)
+            karma = branch.target.assignKarma(
+                author, 'revisionadded', karma_date)
             if karma is not None:
-                karma.datecreated = min(self.revision_date, self.date_created)
                 self.karma_allocated = True
+            return karma
+        else:
+            return None
 
     def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""
@@ -112,9 +116,15 @@ class Revision(SQLBase):
         if not allow_private:
             query = And(query, Not(Branch.private))
         if not allow_junk:
-            # XXX: Tim Penhey 2008-08-20, bug 244768
-            # Using Not(column == None) rather than column != None.
-            query = And(query, Not(Branch.product == None))
+            query = And(
+                query,
+                # Not-junk branches are either associated with a product
+                # or with a source package.
+                Or(
+                    (Branch.product != None),
+                    And(
+                        Branch.sourcepackagename != None, 
+                        Branch.distroseries != None)))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
             result_set.order_by(Asc(BranchRevision.sequence))
@@ -210,20 +220,20 @@ class RevisionSet:
         return author
 
     def new(self, revision_id, log_body, revision_date, revision_author,
-            parent_ids, properties):
+            parent_ids, properties, _date_created=None):
         """See IRevisionSet.new()"""
         if properties is None:
             properties = {}
-        # create a RevisionAuthor if necessary:
-        try:
-            author = RevisionAuthor.byName(revision_author)
-        except SQLObjectNotFound:
-            author = self._createRevisionAuthor(revision_author)
+        if _date_created is None:
+            _date_created = UTC_NOW
+        author = self.acquireRevisionAuthor(revision_author)
 
-        revision = Revision(revision_id=revision_id,
-                            log_body=log_body,
-                            revision_date=revision_date,
-                            revision_author=author)
+        revision = Revision(
+            revision_id=revision_id,
+            log_body=log_body,
+            revision_date=revision_date,
+            revision_author=author,
+            date_created=_date_created)
         # Don't create future revisions.
         if revision.revision_date > revision.date_created:
             revision.revision_date = revision.date_created
@@ -241,6 +251,23 @@ class RevisionSet:
             RevisionProperty(revision=revision, name=name, value=value)
 
         return revision
+
+    def acquireRevisionAuthor(self, name):
+        """Find or create the RevisionAuthor with the specified name.
+
+        Name may be any arbitrary string, but if it is an email-id, and
+        its email address is a verified email address, it will be
+        automatically linked to the corresponding Person.
+
+        Email-ids come in two major forms:
+            "Foo Bar" <foo@bar.com>
+            foo@bar.com (Foo Bar)
+        """
+        # create a RevisionAuthor if necessary:
+        try:
+            return RevisionAuthor.byName(name)
+        except SQLObjectNotFound:
+            return self._createRevisionAuthor(name)
 
     def _timestampToDatetime(self, timestamp):
         """Convert the given timestamp to a datetime object.
@@ -360,9 +387,6 @@ class RevisionSet:
         from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        # XXX: Tim Penhey 2008-08-12, bug 244768
-        # Using Not(column == None) rather than column != None.
         return store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
@@ -372,7 +396,8 @@ class RevisionSet:
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
                            BranchRevision.branch == Branch.id,
-                           Not(Branch.product == None)),
+                           Or(Branch.product != None,
+                              Branch.distroseries != None)),
                        (Branch, BranchRevision))))
 
     @staticmethod
@@ -412,7 +437,7 @@ class RevisionSet:
 
     @staticmethod
     def _getPublicRevisionsHelper(obj, day_limit):
-        """Helper method for Products and Projects."""
+        """Helper method for Products and ProjectGroups."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.registry.model.product import Product
@@ -429,12 +454,12 @@ class RevisionSet:
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)
-        elif IProject.providedBy(obj):
+        elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
             conditions = And(conditions, Product.project == obj)
         else:
             raise AssertionError(
-                "obj parameter must be an IProduct or IProject: %r" % obj)
+                "Not an IProduct or IProjectGroup: %r" % obj)
 
         result_set = Store.of(obj).using(*origin).find(
             Revision, conditions)
@@ -447,7 +472,7 @@ class RevisionSet:
         return cls._getPublicRevisionsHelper(product, day_limit)
 
     @classmethod
-    def getPublicRevisionsForProject(cls, project, day_limit=30):
+    def getPublicRevisionsForProjectGroup(cls, project, day_limit=30):
         """See `IRevisionSet`."""
         return cls._getPublicRevisionsHelper(project, day_limit)
 

@@ -75,7 +75,7 @@ we copy an arbitrary source into it.
 
 Disabled PPAs are excluded from the 'PendingSigningKey' pool:
 
-    >>> no_priv.archive.enabled = False
+    >>> no_priv.archive.disable()
 
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
     ...     print ppa.displayname
@@ -84,25 +84,25 @@ Disabled PPAs are excluded from the 'PendingSigningKey' pool:
 
 Indeed, Marks's PPA does not have a defined 'signing_key'.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> print sabdfl.archive.signing_key
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> print mark.archive.signing_key
     None
 
-    >>> print sabdfl.archive.signing_key_fingerprint
+    >>> print mark.archive.signing_key_fingerprint
     None
 
 We will select the only available IGPGKey from the sampledata.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> [a_key] = foo_bar.gpgkeys
+    >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
     1024D/12345678
 
 And use it as the Mark's PPA signing key.
 
-    >>> sabdfl.archive.signing_key = a_key
+    >>> mark.archive.signing_key = a_key
 
-    >>> print sabdfl.archive.signing_key_fingerprint
+    >>> print mark.archive.signing_key_fingerprint
     ABCDEF0123456789ABCDDCBA0000111112345678
 
 It will exclude Mark's PPA from the 'PendingSigningKey' pool as well.
@@ -229,8 +229,8 @@ The generated key UID follows "Launchpad %(ppa.displayname)s" format.
     ...    signing_key.fingerprint)
 
     >>> [uid] = retrieved_key.uids
-    >>> print uid.name
-    Launchpad PPA for Celso áéíóú Providelo
+    >>> uid.name
+    u'Launchpad PPA for Celso \xe1\xe9\xed\xf3\xfa Providelo'
 
 The secret key is securily stored in the designed configuration
 path. So only the IGPGHandler itself can access it.

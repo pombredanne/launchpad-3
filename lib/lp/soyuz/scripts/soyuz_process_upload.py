@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Upload processor for Soyuz."""
 
@@ -9,10 +10,10 @@ import os
 
 from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 
 
-class ProcessUpload(LaunchpadScript):
+class ProcessUpload(LaunchpadCronScript):
     """`LaunchpadScript` wrapper for `UploadProcessor`."""
 
     def add_my_options(self):

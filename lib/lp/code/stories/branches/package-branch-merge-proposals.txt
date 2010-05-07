@@ -20,6 +20,3 @@ branches.
     >>> browser.getControl(
     ...     name="field.target_branch.target_branch").value = b2_name
     >>> browser.getControl('Propose Merge').click()
-
-    >>> print browser.title
-    Proposal to merge lp://dev/...

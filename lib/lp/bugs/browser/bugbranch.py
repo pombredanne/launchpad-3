@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes for BugBranch-related objects."""
 
@@ -8,21 +9,26 @@ __all__ = [
     'BugBranchAddView',
     'BugBranchDeleteView',
     'BugBranchPrimaryContext',
+    'BugBranchView',
     ]
 
-from zope.event import notify
-from zope.interface import implements
+from zope.component import adapts, getMultiAdapter
+from zope.interface import implements, Interface
 
-from lazr.lifecycle.event import ObjectDeletedEvent
+from lazr.restful.interfaces import IWebServiceClientRequest
+
+from canonical.cachedproperty import cachedproperty
+from canonical.lazr.utils import smartquote
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-
-from canonical.widgets.link import LinkWidget
+from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch)
+from lp.code.enums import BranchLifecycleStatus
 
 
 class BugBranchPrimaryContext:
@@ -47,7 +53,7 @@ class BugBranchAddView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         branch = data['branch']
-        self.context.bug.addBranch(
+        self.context.bug.linkBranch(
             branch=branch, registrant=self.user)
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
@@ -56,6 +62,10 @@ class BugBranchAddView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    @property
+    def label(self):
+        return 'Add a branch to bug #%i' % self.context.bug.id
 
     cancel_url = next_url
 
@@ -77,7 +87,27 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
     @action('Delete', name='delete')
     def delete_action(self, action, data):
-        self.context.bug.removeBranch(self.context.branch, self.user)
+        self.context.bug.unlinkBranch(self.context.branch, self.user)
+
+    label = 'Remove bug branch link'
+
+
+class BugBranchView(LaunchpadView):
+    """Simple view to cache related branch information."""
+
+    __used_for__ = IBugBranch
+
+    @cachedproperty
+    def merge_proposals(self):
+        """Return a list of active proposals for the branch."""
+        branch = self.context.branch
+        return latest_proposals_for_each_branch(branch.landing_targets)
+
+    @property
+    def show_branch_status(self):
+        """Show the branch status if merged and there are no proposals."""
+        return (len(self.merge_proposals) == 0 and
+                self.context.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -91,27 +121,38 @@ class BranchLinkToBugView(LaunchpadFormView):
     field_names = ['bug']
 
     @property
+    def label(self):
+        return "Link to a bug report"
+
+    @property
+    def page_title(self):
+        return smartquote(
+            'Link branch "%s" to a bug report' % self.context.displayname)
+
+    @property
     def next_url(self):
         return canonical_url(self.context)
+
+    cancel_url = next_url
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         bug = data['bug']
-        bug_branch = bug.addBranch(
+        bug_branch = bug.linkBranch(
             branch=self.context, registrant=self.user)
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the branch page."""
 
-    def validate(self, data):
-        """Make sure that this bug isn't already linked to the branch."""
-        if 'bug' not in data:
-            return
+class BugBranchXHTMLRepresentation:
+    adapts(IBugBranch, IWebServiceClientRequest)
+    implements(Interface)
 
-        link_bug = data['bug']
-        for bug in self.context.related_bugs:
-            if bug == link_bug:
-                self.setFieldError(
-                    'bug',
-                    'Bug #%s is already linked to this branch' % bug.id)
+    def __init__(self, branch, request):
+        self.branch = branch
+        self.request = request
+
+    def __call__(self):
+        """Render `BugBranch` as XHTML using the webservice."""
+        branch_view = getMultiAdapter(
+            (self.branch, self.request), name="+bug-branch")
+        return branch_view()
+

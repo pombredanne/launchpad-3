@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """CVE interfaces."""
@@ -21,6 +23,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, exported)
+from lazr.restful.fields import CollectionField, Reference
 
 class CveStatus(DBEnumeratedType):
     """The Status of this item in the CVE Database.
@@ -86,6 +89,11 @@ class ICve(Interface):
     datemodified = exported(
         Datetime(title=_('Date Modified'), required=True, readonly=False),
         exported_as='date_modified')
+    bugs = exported(
+        CollectionField(
+            title=_('Bugs related to this CVE entry.'),
+            readonly=True,
+            value_type=Reference(schema=Interface))) # Redefined in bug.py
 
     # other attributes
     url = exported(

@@ -17,11 +17,11 @@ In order to prepare the tests below some initialization is required.
     >>> commit()
 
 Let's modify the current ACL rules for ubuntu, moving the upload
-rights to all components from 'ubuntu-team' to 'sabdfl':
+rights to all components from 'ubuntu-team' to 'mark':
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.database import ArchivePermission
-    >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
+    >>> new_uploader = getUtility(IPersonSet).getByName('mark')
     >>> for permission in ArchivePermission.select():
     ...     permission.person = new_uploader
     ...     permission.syncUpdate()
@@ -71,11 +71,16 @@ in order to facilitate uploads.
 name16 does not have any package set based upload permissions for 'bar'
 at present.
 
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> ubuntu_archive = ubuntu.main_archive
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('bar', name16))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'bar', name16))
 
-Now put in place a package set, add 'bar' to it and define a permission
-for the former.
+
+Let's first add an empty package set, grant 'name16' an archive permission
+to it and see whether that changes things.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -86,7 +91,44 @@ for the former.
     ...     for datum in sort_by_id(iterable):
     ...          print('%3d -> %s' % (datum.id, datum.name))
 
+Here goes the empty package set.
+
     >>> ps_set = getUtility(IPackagesetSet)
+    >>> empty_ps = ps_set.new(
+    ...     u'empty-pkg-set', u'Empty package set.', name16)
+    >>> commit()
+
+And here's name16's upload permission for it.
+
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, name16, empty_ps)
+
+There are still no package sets that include 'bar'.
+
+    >>> print_permission(
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'bar', name16))
+
+Let's retry the upload.
+
+    >>> bar_failed = NascentUpload(
+    ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+    ...     insecure_policy, mock_logger_quiet)
+
+    >>> bar_failed.process()
+    >>> bar_failed.is_rejected
+    True
+    >>> print bar_failed.rejection_message
+    The signer of this package is lacking the upload rights for the source
+    package, component or package set in question.
+
+The error message above makes it clear that the uploader does have *some*
+permissions defined but these are not sufficient for the source package at
+hand.
+
+Next put in place a package set, add 'bar' to it and define a permission
+for the former.
+
     >>> foo_ps = ps_set.new(
     ...     u'foo-pkg-set', u'Packages that require special care.', name16)
     >>> commit()
@@ -99,23 +141,25 @@ Now 'bar' is included by the 'foo' package set.
     >>> print_data(
     ...     ps_set.setsIncludingSource('bar',
     ...     direct_inclusion=True))
-      1 -> foo-pkg-set
+      2 -> foo-pkg-set
 
 name16 has no package set based upload privileges for 'bar' yet.
 
-    >>> ap_set.isSourceUploadAllowed('bar', name16)
+    >>> ap_set.isSourceUploadAllowed(ubuntu_archive, 'bar', name16)
     False
 
 Now we define a permission for name16 to upload to the 'foo' package set.
 
-    >>> ignore_this = ap_set.newPackagesetUploader(name16, foo_ps)
+    >>> ignore_this = ap_set.newPackagesetUploader(
+    ...     ubuntu_archive, name16, foo_ps)
     >>> print_permission(
-    ...     ap_set.packagesetsForSourceUploader('bar', name16))
+    ...     ap_set.packagesetsForSourceUploader(
+    ...         ubuntu_archive, 'bar', name16))
           name16:   foo-pkg-set ->               UPLOAD (implicit)
 
 And, voila, name16 has a package set based upload authorization for 'bar'.
 
-    >>> ap_set.isSourceUploadAllowed('bar', name16)
+    >>> ap_set.isSourceUploadAllowed(ubuntu_archive, 'bar', name16)
     True
 
 With the authorization above the upload should work again.

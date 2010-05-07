@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An XML bug importer
 
@@ -22,7 +23,7 @@ import os
 import time
 
 try:
-    import xml.elementtree.cElementTree as ET
+    import xml.etree.cElementTree as ET
 except ImportError:
     import cElementTree as ET
 
@@ -40,7 +41,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.bugs.interfaces.bugattachment import BugAttachmentType, IBugAttachmentSet
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import IBugWatchSet, NoBugTrackerFound
@@ -49,7 +51,7 @@ from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.bugs.scripts.bugexport import BUGS_XMLNS
 
 
-logger = logging.getLogger('lp.bugs.scripts.bugimport')
+DEFAULT_LOGGER = logging.getLogger('lp.bugs.scripts.bugimport')
 
 UTC = pytz.timezone('UTC')
 
@@ -114,13 +116,18 @@ class BugImporter:
     """Import bugs into Launchpad"""
 
     def __init__(self, product, bugs_filename, cache_filename,
-                 verify_users=False):
+                 verify_users=False, logger=None):
         self.product = product
         self.bugs_filename = bugs_filename
         self.cache_filename = cache_filename
         self.verify_users = verify_users
         self.person_id_cache = {}
         self.bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+
+        if logger is None:
+            self.logger = DEFAULT_LOGGER
+        else:
+            self.logger = logger
 
         # A mapping of old bug IDs to new Launchpad Bug IDs
         self.bug_id_map = {}
@@ -149,28 +156,54 @@ class BugImporter:
         if not displayname:
             displayname = None
 
+        person_set = getUtility(IPersonSet)
+
         launchpad_id = self.person_id_cache.get(email)
         if launchpad_id is not None:
-            person = getUtility(IPersonSet).get(launchpad_id)
+            person = person_set.get(launchpad_id)
             if person is not None and person.merged is not None:
                 person = None
         else:
             person = None
 
         if person is None:
-            person = getUtility(IPersonSet).getByEmail(email)
-            if person is None:
-                logger.debug('creating person for %s' % email)
-                # has the short name been taken?
-                if name is not None:
-                    person = getUtility(IPersonSet).getByName(name)
-                    if person is not None:
-                        name = None
-                person, address = getUtility(IPersonSet).createPersonAndEmail(
-                    email=email, name=name, displayname=displayname,
+            address = getUtility(IEmailAddressSet).getByEmail(email)
+            if address is None:
+                self.logger.debug('creating person for %s' % email)
+                # Has the short name been taken?
+                if name is not None and (
+                    person_set.getByName(name) is not None):
+                    # The short name is already taken, so we'll pass
+                    # None to createPersonAndEmail(), which will take
+                    # care of creating a unique one.
+                    name = None
+                person, address = (
+                    person_set.createPersonAndEmail(
+                        email=email, name=name, displayname=displayname,
+                        rationale=PersonCreationRationale.BUGIMPORT,
+                        comment=('when importing bugs for %s' %
+                                 self.product.displayname)))
+            elif address.personID is None:
+                # The user has an Account and and EmailAddress linked
+                # to that account.
+                assert address.accountID is not None, (
+                    "Email address not linked to an Account: %s " % email)
+                self.logger.debug(
+                    'creating person from account for %s' % email)
+                if name is not None and (
+                    person_set.getByName(name) is not None):
+                    # The short name is already taken, so we'll pass
+                    # None to createPerson(), which will take care of
+                    # creating a unique one.
+                    name = None
+                person = address.account.createPerson(
                     rationale=PersonCreationRationale.BUGIMPORT,
-                    comment='when importing bugs for %s'
-                            % self.product.displayname)
+                    name=name, comment=('when importing bugs for %s' %
+                                        self.product.displayname))
+            else:
+                # EmailAddress and Person are in different stores.
+                person = person_set.get(address.personID)
+
             self.person_id_cache[email] = person.id
 
         # if we are auto-verifying new accounts, make sure the person
@@ -242,8 +275,8 @@ class BugImporter:
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
-                logger.exception('Could not import bug #%s',
-                                 bugnode.get('id'))
+                self.logger.exception(
+                    'Could not import bug #%s', bugnode.get('id'))
                 ztm.abort()
             else:
                 ztm.commit()
@@ -252,7 +285,8 @@ class BugImporter:
         assert not self.haveImportedBug(bugnode), (
             'the bug has already been imported')
         bug_id = int(bugnode.get('id'))
-        logger.info('Handling bug %d', bug_id)
+
+        self.logger.info('Handling bug %d', bug_id)
 
         comments = get_all(bugnode, 'comment')
 
@@ -279,7 +313,7 @@ class BugImporter:
         # correctly after creation.
         bug.setPrivate(private, owner)
         bugtask = bug.bugtasks[0]
-        logger.info('Creating Launchpad bug #%d', bug.id)
+        self.logger.info('Creating Launchpad bug #%d', bug.id)
 
         # Remaining setup for first comment
         self.createAttachments(bug, msg, commentnode)
@@ -294,7 +328,7 @@ class BugImporter:
 
         # set up bug
         bug.setPrivate(get_value(bugnode, 'private') == 'True', owner)
-        bug.security_related = (
+        bug.setSecurityRelated(
             get_value(bugnode, 'security_related') == 'True')
         bug.name = get_value(bugnode, 'nickname')
         description = get_value(bugnode, 'description')
@@ -320,7 +354,8 @@ class BugImporter:
                 bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
                     watchnode.get('href'))
             except NoBugTrackerFound, exc:
-                logger.debug('Registering bug tracker for %s', exc.base_url)
+                self.logger.debug(
+                    'Registering bug tracker for %s', exc.base_url)
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     exc.base_url, self.bug_importer, exc.bugtracker_type)
                 remotebug = exc.remote_bug
@@ -428,8 +463,9 @@ class BugImporter:
         if bug_id in self.pending_duplicates:
             for other_bug_id in self.pending_duplicates[bug_id]:
                 other_bug = getUtility(IBugSet).get(other_bug_id)
-                logger.info('Marking bug %d as duplicate of bug %d',
-                            other_bug.id, bug.id)
+                self.logger.info(
+                    'Marking bug %d as duplicate of bug %d',
+                    other_bug.id, bug.id)
                 other_bug.duplicateof = bug
             del self.pending_duplicates[bug_id]
         # Process this bug as a duplicate
@@ -439,8 +475,9 @@ class BugImporter:
             if duplicateof in self.bug_id_map:
                 other_bug = getUtility(IBugSet).get(
                     self.bug_id_map[duplicateof])
-                logger.info('Marking bug %d as duplicate of bug %d',
-                            bug.id, other_bug.id)
+                self.logger.info(
+                    'Marking bug %d as duplicate of bug %d',
+                    bug.id, other_bug.id)
                 bug.duplicateof = other_bug
             else:
                 self.pending_duplicates.setdefault(

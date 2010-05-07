@@ -11,12 +11,13 @@
     <div class="portletBody">
 
       <ul>
-        <li class="question" tal:repeat="question questions">
+        <li class="question-row" tal:repeat="question questions">
           <tal:description
             define="global description question/description/fmt:obfuscate-email/fmt:shorten/100" />
           <a tal:attributes="href question/fmt:url;
                              title description"
-             tal:content="string:#${question/id} ${question/title}"># Title</a>
+             tal:content="string:#${question/id} ${question/title}"
+             class="sprite question"># Title</a>
         </li>
       </ul>
 

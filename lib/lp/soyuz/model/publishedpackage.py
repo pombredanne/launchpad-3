@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -51,7 +53,7 @@ class PublishedPackage(SQLBase):
     binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
-    build = ForeignKey(foreignKey='Build', dbName='build')
+    build = ForeignKey(foreignKey='BinaryPackageBuild', dbName='build')
     datebuilt = UtcDateTimeCol(immutable=True)
     sourcepackagerelease = ForeignKey(dbName="sourcepackagerelease",
                                       foreignKey="SourcePackageRelease",

@@ -1,32 +1,50 @@
-<tal:root
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  omit-tag="">
-
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
+      <ul>
+        <li>If the code is already in a Bazaar branch registered with Launchpad,
+          specify it here:
+          <div metal:use-macro="context/@@launchpad_form/form" />
+        </li>
 
-<body>
+        <li>
+          <p>
+            Otherwise, if the code is in a Bazaar branch not yet on Launchpad
+            you can either:
+          </p>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
+          <ul class="bulleted" style="margin-bottom: 0;">
+            <li>
+              Have the branch mirrored from a remote location by
+               <a tal:attributes="href context/product/menu:overview/branch_add/fmt:url">
+              registering a mirrored branch</a>
+            </li>
+            <li id="ssh-key-directions">
+              Push the branch directly to Launchpad, e.g. with:<br />
+              <tt><strong>
+                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk
+              </strong></tt>
+              <tal:no-keys condition="not:view/user/sshkeys">
+                <br/>To authenticate with the Launchpad branch upload service,
+                you need to
+                <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+                  register a SSH key</a>.
+              </tal:no-keys>
+            </li>
+          </ul>
+        </li>
 
-<div metal:fill-slot="main">
-
-  <div metal:use-macro="context/@@launchpad_form/form">
-
-    <h1 metal:fill-slot="heading">Link an existing branch to this series</h1>
-
-  </div>
-
-</div>
-</body>
+        <li>
+          If the code is in git, CVS or Subversion you can
+          <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
+        </li>
+      </ul>
+    </div>
+  </body>
 </html>
-</tal:root>

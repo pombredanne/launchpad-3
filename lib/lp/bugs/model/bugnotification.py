@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Bug notifications."""
@@ -23,6 +25,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification, IBugNotificationRecipient, IBugNotificationSet)
+
+
 class BugNotification(SQLBase):
     """A textual representation about a bug change."""
     implements(IBugNotification)
@@ -80,6 +84,8 @@ class BugNotificationSet:
 
     def addNotification(self, bug, is_comment, message, recipients):
         """See `IBugNotificationSet`."""
+        if not recipients:
+            return
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
             message=message, date_emailed=None)

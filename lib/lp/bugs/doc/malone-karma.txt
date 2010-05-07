@@ -9,7 +9,7 @@ documentation cleaner:
 Setup an event listener to help ensure karma is assigned when it should.
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
@@ -79,6 +79,24 @@ Mark a bug task as fixed:
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugfixed, distribution=debian
 
+Mark a bug task as fixed when it is assigned awards the karma to the assignee:
+
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
+
+    >>> ufo_product = factory.makeProduct(name='ufo')
+    >>> assignee = factory.makePerson(name='assignee')
+    >>> assigned_bugtask = factory.makeBugTask(bug=bug, target=ufo_product)
+    >>> assigned_bugtask.transitionToAssignee(assignee)
+    >>> old_bugtask = Snapshot(assigned_bugtask, providing=IUpstreamBugTask)
+    >>> assigned_bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    >>> notify(ObjectModifiedEvent(assigned_bugtask, old_bugtask, ['status']))
+    Karma added: action=bugfixed, product=ufo
+
+    >>> for karma in assignee.latestKarma():
+    ...     print karma.action.name
+    bugfixed
+
 Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
@@ -87,13 +105,24 @@ Reject a bug task:
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 
-Accept a bug task:
+User accept a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
+
+Driver accept a bug task:
+
+    >>> login_person(bugtask.target.owner)
+    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)
+    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    Karma added: action=bugaccepted, distribution=debian
+
+    >>> login('admin@canonical.com')
 
 Change a bug task's importance:
 
@@ -183,6 +212,7 @@ Mark a bug as a duplicate:
     >>> notify(ObjectModifiedEvent(bug, old_bug, ['duplicateof']))
     Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, product=evolution
+    Karma added: action=bugmarkedasduplicate, product=ufo
     Karma added: action=bugmarkedasduplicate, distribution=debian
     Karma added: action=bugmarkedasduplicate, distribution=debian
 
@@ -194,6 +224,7 @@ Adding a comment generates a karma event, but gives no points:
     >>> notify(ObjectCreatedEvent(comment))
     Karma added: action=bugcommentadded, product=evolution
     Karma added: action=bugcommentadded, product=evolution
+    Karma added: action=bugcommentadded, product=ufo
     Karma added: action=bugcommentadded, distribution=debian
     Karma added: action=bugcommentadded, distribution=debian
 
@@ -201,7 +232,7 @@ Now, let's check that we've covered all of Launchpad's bug-related karma
 actions, except for updating the obsolete "summary", "priority", and "Web
 links":
 
-    >>> from canonical.launchpad.database import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> bugs_category = KarmaCategory.byName('bugs')
     >>> bugs_karma_actions = bugs_category.karmaactions
     >>> summary_change = getUtility(

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,E0602
 
 """Bug task interfaces."""
@@ -7,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
@@ -14,6 +17,7 @@ __all__ = [
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
+    'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
@@ -24,6 +28,7 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
     'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
@@ -35,6 +40,7 @@ __all__ = [
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
+    'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
@@ -57,7 +63,6 @@ from lp.bugs.interfaces.bugwatch import (
 from lp.soyuz.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -166,6 +171,12 @@ class BugTaskStatus(DBEnumeratedType):
         fixing, or it might not be fixed in this release.
         """)
 
+    EXPIRED = DBItem(19, """
+        Expired
+
+        This bug is expired. There was no activity since a longer time.
+        """)
+
     CONFIRMED = DBItem(20, """
         Confirmed
 
@@ -223,7 +234,7 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
+        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
         'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
@@ -269,6 +280,20 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
 
 
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
+
+    The possible values to search for bugs having branches attached
+    or not having branches attched.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
 # XXX: Brad Bollenbach 2005-12-02 bugs=5320:
 # In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
 # semantics of our current reports would break if it were added to the
@@ -287,10 +312,12 @@ UNRESOLVED_BUGTASK_STATUSES = (
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
-    BugTaskStatus.WONTFIX)
+    BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED)
 
 BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED,
     BugTaskStatus.TRIAGED)
 
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
@@ -301,6 +328,11 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.TRIAGED,
     BugTaskStatusSearch.INPROGRESS,
     BugTaskStatusSearch.FIXCOMMITTED)
+
+DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
+    BugTaskStatusSearchDisplay.items.mapping[item.value]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES
+    ]
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
@@ -323,9 +355,26 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
+
+class UserCannotEditBugTaskMilestone(Unauthorized):
+    """User not permitted to change milestone.
+
+    Raised when a user tries to transition to a milestone who doesn't have
+    the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
+
+
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwrite all relevant parameters
+    in a search for related bug tasks"""
+    webservice_error(400) #Bad request.
+
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
@@ -349,6 +398,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
+        readonly=True,
         vocabulary='Milestone',
         schema=Interface)) # IMilestone
 
@@ -419,7 +469,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Fix Committed or Fix Released."),
+                               "either Won't Fix, Invalid or Fix Released."),
                  readonly=True,
                  required=False))
     date_left_new = exported(
@@ -456,8 +506,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
+    task_age = Int(title=_("Age of the bug task"),
+            description=_("The age of this task in seconds, a delta between "
+                         "now and the date the bug task was created."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+        Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
         readonly=True,
@@ -545,6 +598,18 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         no longer useful.
         """
 
+    @mutator_for(milestone)
+    @rename_parameters_as(new_milestone='milestone')
+    @operation_parameters(new_milestone=copy_field(milestone))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def transitionToMilestone(new_milestone, user):
+        """Set the BugTask milestone.
+
+        Set the bugtask milestone, making sure that the user is
+        authorised to do so.
+        """
+
     @mutator_for(importance)
     @rename_parameters_as(new_importance='importance')
     @operation_parameters(new_importance=copy_field(importance))
@@ -608,6 +673,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         value is set to None, date_assigned is also set to None.
         """
 
+    @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
     @export_write_operation()
@@ -761,6 +827,14 @@ class IBugTaskSearchBase(Interface):
     subscriber = Choice(
         title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
         required=False)
+    affects_me = Bool(
+        title=_('Show only bugs affecting me'), required=False)
+    has_branches = Bool(
+        title=_('Show bugs with linked branches'), required=False,
+        default=True)
+    has_no_branches = Bool(
+        title=_('Show bugs without linked branches'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -791,6 +865,11 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
@@ -810,7 +889,7 @@ class IFrontPageBugTaskSearch(IBugTaskSearchBase):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
-        vocabulary="DistributionOrProductOrProject")
+        vocabulary="DistributionOrProductOrProjectGroup")
 
 
 class IBugTaskDelta(Interface):
@@ -922,7 +1001,7 @@ class BugTaskSearchParams:
 
     For a more thorough treatment, check out:
 
-        lib/canonical/launchpad/doc/bugtask.txt
+        lib/lp/bugs/doc/bugtask-search.txt
     """
 
     product = None
@@ -939,8 +1018,17 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None):
+                 bug_commenter=None, omit_targeted=False, date_closed=None,
+                 affected_user=None, affects_me=False, hardware_bus=None,
+                 hardware_vendor_id=None, hardware_product_id=None,
+                 hardware_driver_name=None, hardware_driver_package_name=None,
+                 hardware_owner_is_bug_reporter=None,
+                 hardware_owner_is_affected_by_bug=False,
+                 hardware_owner_is_subscribed_to_bug=False,
+                 hardware_is_linked_to_bug=False,
+                 linked_branches=None
+                 ):
+
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -970,6 +1058,19 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
+        self.affects_me = affects_me
+        self.hardware_bus = hardware_bus
+        self.hardware_vendor_id = hardware_vendor_id
+        self.hardware_product_id = hardware_product_id
+        self.hardware_driver_name = hardware_driver_name
+        self.hardware_driver_package_name = hardware_driver_package_name
+        self.hardware_owner_is_bug_reporter = hardware_owner_is_bug_reporter
+        self.hardware_owner_is_affected_by_bug = (
+            hardware_owner_is_affected_by_bug)
+        self.hardware_owner_is_subscribed_to_bug = (
+            hardware_owner_is_subscribed_to_bug)
+        self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
+        self.linked_branches = linked_branches
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1028,13 +1129,21 @@ class BugTaskSearchParams:
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       affected_user=None, has_patch=None, has_cve=None,
+                       affected_user=None, affects_me=False,
+                       has_patch=None, has_cve=None,
                        distribution=None, tags=None,
                        tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
                        status_upstream=None, milestone_assignment=None,
                        milestone=None, component=None, nominated_for=None,
-                       sourcepackagename=None, has_no_package=None):
+                       sourcepackagename=None, has_no_package=None,
+                       hardware_bus=None, hardware_vendor_id=None,
+                       hardware_product_id=None, hardware_driver_name=None,
+                       hardware_driver_package_name=None,
+                       hardware_owner_is_bug_reporter=None,
+                       hardware_owner_is_affected_by_bug=False,
+                       hardware_owner_is_subscribed_to_bug=False,
+                       hardware_is_linked_to_bug=False, linked_branches=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1086,6 +1195,22 @@ class BugTaskSearchParams:
         if has_no_package:
             search_params.sourcepackagename = NULL
         search_params.nominated_for = nominated_for
+
+        search_params.hardware_bus = hardware_bus
+        search_params.hardware_vendor_id = hardware_vendor_id
+        search_params.hardware_product_id = hardware_product_id
+        search_params.hardware_driver_name = hardware_driver_name
+        search_params.hardware_driver_package_name = (
+            hardware_driver_package_name)
+        search_params.hardware_owner_is_bug_reporter = (
+            hardware_owner_is_bug_reporter)
+        search_params.hardware_owner_is_affected_by_bug = (
+            hardware_owner_is_affected_by_bug)
+        search_params.hardware_owner_is_subscribed_to_bug = (
+            hardware_owner_is_subscribed_to_bug)
+        search_params.hardware_is_linked_to_bug = (
+            hardware_is_linked_to_bug)
+        search_params.linked_branches=linked_branches
 
         return search_params
 
@@ -1160,6 +1285,16 @@ class IBugTaskSet(Interface):
 
         :param search_results: A result set yielding BugTask objects,
             typically the result of calling `BugTaskSet.search()`.
+        """
+
+    def getStatusCountsForProductSeries(user, product_series):
+        """Returns status counts for a product series' bugs.
+
+        Both the nominated and scheduled blueprints are included
+        in the count.
+
+        :param product_series: ProductSeries object.
+        :return: A list of tuples containing (status_id, count).
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,

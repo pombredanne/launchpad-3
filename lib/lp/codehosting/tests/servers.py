@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server used in codehosting acceptance tests."""
 
@@ -125,14 +126,14 @@ class SSHCodeHostingServer(Server):
         transport = get_transport(self.get_url()).clone(path)
         return transport
 
-    def setUp(self):
+    def start_server(self):
         self._real_home, self._fake_home = self.setUpFakeHome()
 
-    def tearDown(self):
+    def stop_server(self):
         os.environ['HOME'] = self._real_home
         shutil.rmtree(self._fake_home)
 
     def get_url(self, user=None):
         if user is None:
             user = 'testuser'
-        return '%s://%s@localhost:22222/' % (self._schema, user)
+        return '%s://%s@bazaar.launchpad.dev:22222/' % (self._schema, user)

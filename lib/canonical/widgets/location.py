@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0702
 
 __metaclass__ = type
@@ -55,7 +57,7 @@ class LocationWidget(BrowserWidget, InputWidget):
     def __init__(self, context, request):
         # This widget makes use of javascript for googlemaps and
         # json-handling, so we flag that in the request so that our
-        # main-template includes the necessary javascript files.
+        # base-layout includes the necessary javascript files.
         request.needs_json = True
         request.needs_gmap2 = True
         super(LocationWidget, self).__init__(context, request)

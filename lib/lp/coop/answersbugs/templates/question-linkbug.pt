@@ -2,33 +2,14 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-      <div>
-        <img alt="" src="/@@/question" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
-      </div>
-
   <div metal:use-macro="context/@@launchpad_form/form">
-
-    <h1 metal:fill-slot="heading">Link question to a bug report</h1>
 
     <div metal:fill-slot="extra_info">
       <p>Enter the number or nickname of the Launchpad bug report
@@ -45,18 +26,6 @@
   </div>
 </div>
 
-<metal:help fill-slot="help">
-  <p>You can link a bug to a question. You should do this, if the problem
-    described in the question is related
-    to a bug already filed. The link to the bug report will appear on the
-    question page, and a link to the question will appear on
-    the target bug page.
-  </p>
-  <p>You need to know the bug number that you want to link to. You will
-    probably want to use the search page to locate the bug, if you don't
-    know its ID.
-  </p>
-</metal:help>
 </body>
 </html>
 

@@ -62,6 +62,17 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
     >>> ubuntu_firefox_bugs.count() > 0
     True
 
+== Person bugs ==
+
+To get all related tasks to a person call searchTasks() on the person
+object:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> user = getUtility(IPersonSet).getByName('name16')
+    >>> user_bugs = user.searchTasks(None, user=None)
+    >>> user_bugs.count() > 0
+    True
+
 == Dupes and Conjoined tasks ==
 
 You can set flags to omit duplicates:
@@ -588,7 +599,7 @@ Searching for bugs with any of the tags returns both of them.
     >>> def search_tasks_and_print_bugs(user=None, **args):
     ...     params = BugTaskSearchParams(user=user, **args)
     ...     tasks = firefox.searchTasks(params)
-    ...     bugs = set(task.bug for task in tasks)
+    ...     bugs = (task.bug for task in tasks)
     ...     bugs = sorted(bugs, key=attrgetter('id'))
     ...     for bug in bugs:
     ...         print "%s [%s]" % (bug.title, ", ".join(bug.tags))
@@ -668,6 +679,18 @@ all bugs with tags, but without test-tag-1:
     Reflow problems with complex page layouts [layout-test]
     Firefox install instructions should be complete [doc]
 
+The following is very similar; it finds all bugs with tags, *or*
+without test-tag-1:
+
+    >>> search_tasks_and_print_bugs(tag=any('*', '-test-tag-1'))
+    Firefox does not support SVG []
+    Reflow problems with complex page layouts [layout-test]
+    Firefox install instructions should be complete [doc]
+    Firefox crashes when Save As dialog for a nonexistent window is closed []
+    Some bug []
+    test bug a [test-tag-1, test-tag-2]
+    test bug b [test-tag-1]
+
 The following finds all untagged bugs and bugs with the doc tag.
 
     >>> search_tasks_and_print_bugs(tag=any('-*', 'doc'))
@@ -686,7 +709,7 @@ closed after a certain date.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.launchpad.searchbuilder import greater_than
-    >>> product = factory.makeProductNoCommit()
+    >>> product = factory.makeProduct()
     >>> utc_now = datetime(2008, 9, 4, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
     >>> not_closed_bug = factory.makeBug(product=product, title="Not closed")
     >>> bug_closed_a_day_ago = factory.makeBug(
@@ -716,7 +739,7 @@ It's possible to search for bugs with an attachment of a certain type.
     >>> from canonical.launchpad.interfaces import (
     ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     ...     IMessageSet)
-    >>> product = factory.makeProductNoCommit()
+    >>> product = factory.makeProduct()
     >>> patch_bug = factory.makeBug(
     ...     product=product)
     >>> filecontent = 'Some diff data'
@@ -773,6 +796,211 @@ We can search for bugs which a user marked as affecting them.
     >>> for task in affecting_tasks:
     ...     print task.bug.title
     A bug affecting a user
+
+
+== Searching for bugs related to hardware ==
+
+We can search for bugs which are related to a given hardware device or
+a given driver.
+
+We can search for bugs whose reporters own a given device. A device
+must be specified by a bus as enumerated by HWBus, a vendor ID and a
+product ID. If we search for bugs related to the PCI device (0x10de,
+0x0455), which appears in a HWDB submission from Sample Person, bugs
+reported by him will be returned.
+
+    >>> from lp.hardwaredb.interfaces.hwdb import HWBus
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    1 Sample Person
+    2 Sample Person
+
+If one of the parameters bus, vendor ID or prodct ID is missing,
+the query is not limited to any devices. In other words, we get
+the same result as if we would not have specified any hardware
+related parameters.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_owner_is_bug_reporter=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    1 Sample Person
+    9 Foo Bar
+    10 Foo Bar
+    2 Sample Person
+    19 No Privileges Person
+
+Similary, we can search for device drivers appearing in HWDB submissions
+of a bug reporter.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_driver_name='ehci_hcd',
+    ...     hardware_owner_is_bug_reporter=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    1 Sample Person
+    2 Sample Person
+
+We can additionally specify a packge name.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_driver_name='ehci_hcd',
+    ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
+    ...     hardware_owner_is_bug_reporter=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    1 Sample Person
+    2 Sample Person
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_driver_name='ehci_hcd',
+    ...     hardware_driver_package_name='linux-image',
+    ...     hardware_owner_is_bug_reporter=True)
+    >>> ubuntu.searchTasks(search_params).count()
+    0
+
+If we specify a driver and a device, we'll get those bugs whose owners
+use the given device together with the given driver.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_driver_name='ehci_hcd',
+    ...     hardware_owner_is_bug_reporter=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    1 Sample Person
+    2 Sample Person
+
+The PCI device (0x10de, 0x0455) is not controlled in any HWDB submission
+by the sd driver, so we'll get an empty result set for this query.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_driver_name='sd',
+    ...     hardware_owner_is_bug_reporter=True)
+    >>> firefox.searchTasks(search_params).count()
+    0
+
+We can also search for device owners which are subscribed to a bug.
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455',
+    ...     hardware_owner_is_subscribed_to_bug=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.isSubscribed(sample_person)
+    1 True
+    9 True
+
+And we can search for device owners who are affected by a bug.
+
+    >>> bug_ten = getUtility(IBugSet).get(10)
+    >>> bug_ten.markUserAffected(sample_person, affected=True)
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455',
+    ...     hardware_owner_is_affected_by_bug=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id, bugtask.bug.isUserAffected(sample_person)
+    10 True
+
+Finally, we can search for who bugs which are directly linked to
+a HWDB submission, where the submission contains the given device or
+driver.
+
+    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
+    >>> hw_submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+    ...     'sample-submission')
+    >>> bug_19 = getUtility(IBugSet).get(19)
+    >>> bug_19.linkHWSubmission(hw_submission)
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id
+    19
+
+If a device appears in a private submission, related bugs are shown
+only if the user running the request is the owner of the submission
+or an admin.
+
+    >>> naked_hw_submission = removeSecurityProxy(hw_submission)
+    >>> naked_hw_submission.private = True
+    >>> search_params = BugTaskSearchParams(
+    ...     user=sample_person, hardware_bus=HWBus.PCI,
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x0455',
+    ...     hardware_is_linked_to_bug=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id
+    19
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=foo_bar, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
+    >>> for bugtask in ubuntu.searchTasks(search_params):
+    ...     print bugtask.bug.id
+    19
+
+Other users cannot see that a bug is related to a device from a
+private submission.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=no_priv, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
+    >>> ubuntu.searchTasks(search_params).count()
+    0
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
+    ...     hardware_product_id='0x0455', hardware_is_linked_to_bug=True)
+    >>> ubuntu.searchTasks(search_params).count()
+    0
+
+== Searching for bugs affecting me ==
+
+The user searching for bugs can search for bugs affecting him.
+
+We search for bugs affecting foo_bar, then check that all the results
+return True for isUserAffected(foo_bar).
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=foo_bar, affects_me=True)
+    >>> print reduce(
+    ...     lambda x, y: x and y,
+    ...     [task.bug.isUserAffected(foo_bar)
+    ...      for task in firefox.searchTasks(search_params)])
+    True
+
+
+== Searching for bugs linked to branches ==
+
+We can search for bugs having branches linked to them.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    4 2
+    5 1
+
+Similary, we can search for bugs that do not have any linked branches.
+
+    >>> from lp.bugs.interfaces.bugtask import BugBranchSearch
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id, task.bug.linked_branches.count()
+    1 0
+    6 0
+    18 0
+    20 0
+    21 0
 
 
 == Ordering search results ==
@@ -842,6 +1070,69 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
     19 Bug to be fixed in trunk [1 comments]
+
+
+=== Ordering by bug heat ===
+
+Another way of sorting searches is by bug heat.
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='id', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for task in ubuntu_tasks:
+    ...     task.bug.setHeat(task.bug.id)
+    >>> transaction.commit()
+    >>> params = BugTaskSearchParams(
+    ...     orderby='-heat', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     bug = bugtask.bug
+    ...     print '%s %s [heat: %s]' % (
+    ...     bug.id, bug.title, bug.heat)
+    19 Bug to be fixed in trunk [heat: 19]
+    10 another test bug [heat: 10]
+    9 Thunderbird crashes [heat: 9]
+    2 Blackhole Trash folder [heat: 2]
+    1 Firefox does not support SVG [heat: 1]
+
+
+=== Ordering by patch age ===
+
+We can also sort search results by the creation time of the youngest
+patch attached to a bug.
+
+Since we have at present no bugs with patches, we use effectively
+the default sort order, by bug task ID (which is implicitly added as
+a "second level" sort order to ensure reliable sorting).
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='latest_patch_uploaded', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
+
+If we add a patch attachment to bug 2 and bug 10, they are listed first.
+
+    >>> patch_attachment_bug_2 = factory.makeBugAttachment(
+    ...     bug=bug_two, is_patch=True)
+    >>> transaction.commit()
+    >>> patch_attachment_bug_10 = factory.makeBugAttachment(
+    ...     bug=bug_ten, is_patch=True)
+    >>> params = BugTaskSearchParams(
+    ...     orderby='latest_patch_uploaded', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    26 2 Ubuntu Blackhole Trash folder
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    41 19 cdrkit (Ubuntu) Bug to be fixed in trunk
 
 
 == Searching using a flat interface ==

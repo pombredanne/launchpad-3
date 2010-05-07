@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -34,6 +35,8 @@ class FiniteSequenceAdapter:
 class UpperBatchNavigationView(LaunchpadView):
     """Only render navigation links if there is a batch."""
 
+    css_class = "upper-batch-nav"
+
     def render(self):
         if self.context.currentBatch():
             return LaunchpadView.render(self)
@@ -42,6 +45,8 @@ class UpperBatchNavigationView(LaunchpadView):
 
 class LowerBatchNavigationView(UpperBatchNavigationView):
     """Only render bottom navigation links if there are multiple batches."""
+
+    css_class = "lower-batch-nav"
 
     def render(self):
         if (self.context.currentBatch() and
@@ -61,6 +66,16 @@ class BatchNavigator(lazr.batchnavigator.BatchNavigator):
     def max_batch_size(self):
         return config.launchpad.max_batch_size
 
+    @property
+    def has_multiple_pages(self):
+        """Whether the total size is greater than the batch size.
+
+        When true, it means that the batch should be rendered on multiple
+        pages, and a navigation heading should be included above and below the
+        table.
+        """
+        return self.batch.total() > self.batch.size
+
 
 class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
@@ -74,4 +89,3 @@ class TableBatchNavigator(BatchNavigator):
         if columns_to_show:
             for column_to_show in columns_to_show:
                 self.show_column[column_to_show] = True
-

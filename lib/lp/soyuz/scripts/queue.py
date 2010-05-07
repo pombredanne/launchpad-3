@@ -1,4 +1,6 @@
-# Copyright Canonical Limited 2006-2007
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0231
 """Ftpmaster queue tool libraries."""
 
@@ -7,7 +9,6 @@
 # as Launchpad contains lots of queues.
 
 __metaclass__ = type
-
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
@@ -15,11 +16,12 @@ __all__ = [
     'name_queue_map'
     ]
 
+
 import errno
+import hashlib
 import pytz
 
 from datetime import datetime
-from sha import sha
 
 from zope.component import getUtility
 
@@ -114,7 +116,7 @@ class QueueAction:
 
         # Avoid circular imports.
         from lp.registry.interfaces.distribution import IDistributionSet
-        from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+        from lp.registry.interfaces.pocket import PackagePublishingPocket
 
         distroset = getUtility(IDistributionSet)
         try:
@@ -243,7 +245,7 @@ class QueueAction:
         version = queue_item.displayversion
         age = DurationFormatterAPI(
             datetime.now(pytz.timezone('UTC')) -
-            queue_item.datecreated).approximateduration()
+            queue_item.date_created).approximateduration()
 
         # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
         # are necessary simply to keep the format legaxy.
@@ -418,7 +420,7 @@ class QueueActionFetch(QueueAction):
                     libfile.close()
                 else:
                     # Check sha against existing file (bug #67014)
-                    existing_sha = sha()
+                    existing_sha = hashlib.sha1()
                     for chunk in filechunks(existing_file):
                         existing_sha.update(chunk)
                     existing_file.close()
@@ -565,11 +567,15 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # There's usually only one item in queue_item.sources.
-            for source in queue_item.sources:
-                source.sourcepackagerelease.override(component=component,
-                                                     section=section)
-                self.displayInfo(queue_item)
+            # We delegate to the queue_item itself to override any/all
+            # of its sources.
+            if queue_item.contains_source:
+                queue_item.overrideSource(
+                    component, section, [
+                        component,
+                        queue_item.sourcepackagerelease.component
+                        ])
+            self.displayInfo(queue_item)
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""

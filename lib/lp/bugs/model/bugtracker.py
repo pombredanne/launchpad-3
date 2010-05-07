@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -8,7 +10,8 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
-from datetime import datetime, timedelta
+
+from datetime import datetime
 from itertools import chain
 from pytz import timezone
 # splittype is not formally documented, but is in urllib.__all__, is
@@ -23,30 +26,33 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Or
+from storm.expr import Count, Desc, Not
 from storm.locals import Bool
 from storm.store import Store
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, flush_database_updates
-
-from lp.bugs.model.bugtrackerperson import BugTrackerPerson
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, sqlvalues)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import sanitize_name
+from canonical.launchpad.webapp.interfaces import NotFoundError
+
+from lazr.uri import URI
+
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
+    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
 from lp.bugs.interfaces.bugtrackerperson import (
     BugTrackerPersonAlreadyExists)
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
+from lp.bugs.model.bugtrackerperson import BugTrackerPerson
 from lp.bugs.model.bugwatch import BugWatch
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
-    IBugTrackerSet, SINGLE_PRODUCT_BUGTRACKERTYPES)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name
-from lazr.uri import URI
+from lp.registry.interfaces.person import validate_public_person
 
 
 def normalise_leading_slashes(rest):
@@ -163,18 +169,19 @@ class BugTracker(SQLBase):
     contactdetails = StringCol(notNull=False)
     has_lp_plugin = BoolCol(notNull=False, default=False)
     projects = SQLMultipleJoin(
-        'Project', joinColumn='bugtracker', orderBy='name')
+        'ProjectGroup', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
         'Product', joinColumn='bugtracker', orderBy='name')
-    watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
-                              orderBy='-datecreated', prejoins=['bug'])
+    watches = SQLMultipleJoin(
+        'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
+        prejoins=['bug'])
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
         BugTrackerType.GOOGLE_CODE: (
-            "%(base_url)s/entry?summary=%(summary)s&amp;"
+            "%(base_url)s/entry?summary=%(summary)s&"
             "comment=%(description)s"),
         BugTrackerType.MANTIS: (
             "%(base_url)s/bug_report_advanced_page.php"
@@ -222,6 +229,16 @@ class BugTracker(SQLBase):
         }
 
     @property
+    def _custom_filing_url_patterns(self):
+        """Return a dict of bugtracker-specific bugfiling URL patterns."""
+        gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
+        return {
+            gnome_bugzilla: (
+                "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
+                "&short_desc=%(summary)s&comment=%(description)s"),
+            }
+
+    @property
     def latestwatches(self):
         """See `IBugTracker`."""
         return self.watches[:10]
@@ -249,8 +266,15 @@ class BugTracker(SQLBase):
             # quote() doesn't blow up later on.
             remote_product = ''
 
-        bug_filing_pattern = self._filing_url_patterns.get(
-            self.bugtrackertype, None)
+        if self in self._custom_filing_url_patterns:
+            # Some bugtrackers are customised to accept different
+            # querystring parameters from the default. We special-case
+            # these.
+            bug_filing_pattern = self._custom_filing_url_patterns[self]
+        else:
+            bug_filing_pattern = self._filing_url_patterns.get(
+                self.bugtrackertype, None)
+
         bug_search_pattern = self._search_url_patterns.get(
             self.bugtrackertype, None)
 
@@ -326,37 +350,31 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
-    def getBugWatchesNeedingUpdate(self, hours_since_last_check):
-        """See `IBugTracker`.
-
-        :return: The UNION of the bug watches that need checking and
-            those with unpushed comments.
-        """
-        lastchecked_cutoff = (
-            datetime.now(timezone('UTC')) -
-            timedelta(hours=hours_since_last_check))
-
-        lastchecked_clause = Or(
-            BugWatch.lastchecked < lastchecked_cutoff,
-            BugWatch.lastchecked == None)
-
-        store = Store.of(self)
-
-        bug_watches_needing_checking = store.find(
+    @property
+    def watches_ready_to_check(self):
+        return Store.of(self).find(
             BugWatch,
             BugWatch.bugtracker == self,
-            lastchecked_clause)
+            Not(BugWatch.next_check == None),
+            BugWatch.next_check <= datetime.now(timezone('UTC')))
 
-        bug_watches_with_unpushed_comments = store.find(
+    @property
+    def watches_with_unpushed_comments(self):
+        return Store.of(self).find(
             BugWatch,
             BugWatch.bugtracker == self,
             BugMessage.bugwatch == BugWatch.id,
-            BugMessage.remote_comment_id == None)
+            BugMessage.remote_comment_id == None).config(distinct=True)
 
-        results = bug_watches_needing_checking.union(
-            bug_watches_with_unpushed_comments.config(distinct=True))
+    @property
+    def watches_needing_update(self):
+        """All watches needing some sort of update.
 
-        return results
+        :return: The union of `watches_ready_to_check` and
+            `watches_with_unpushed_comments`.
+        """
+        return self.watches_ready_to_check.union(
+            self.watches_with_unpushed_comments)
 
     # Join to return a list of BugTrackerAliases relating to this
     # BugTracker.
@@ -464,6 +482,16 @@ class BugTracker(SQLBase):
 
         return person
 
+    def resetWatches(self, now=None):
+        """See `IBugTracker`."""
+        if now is None:
+            now = datetime.now(timezone('UTC'))
+
+        store = Store.of(self)
+        store.execute(
+            "UPDATE BugWatch SET next_check = %s WHERE bugtracker = %s" %
+            sqlvalues(now, self))
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTracker's,
@@ -553,14 +581,20 @@ class BugTrackerSet:
         return bugtracker
 
     @property
-    def bugtracker_count(self):
-        return BugTracker.select().count()
+    def count(self):
+        return IStore(self.table).find(self.table).count()
+
+    @property
+    def names(self):
+        return IStore(self.table).find(self.table).values(self.table.name)
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        result = shortlist(self.search(), longest_expected=20)
-        result.sort(key=lambda bugtracker: -bugtracker.watches.count())
-        if limit and limit > 0:
+        store = IStore(self.table)
+        result = store.find(self.table, self.table.id == BugWatch.bugtrackerID)
+        result = result.group_by(self.table)
+        result = result.order_by(Desc(Count(BugWatch)))
+        if limit is not None:
             return result[:limit]
         else:
             return result
@@ -568,11 +602,11 @@ class BugTrackerSet:
     def getPillarsForBugtrackers(self, bugtrackers):
         """See `IBugTrackerSet`."""
         from lp.registry.model.product import Product
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         ids = [str(b.id) for b in bugtrackers]
         products = Product.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")
-        projects = Project.select(
+        projects = ProjectGroup.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")
         ret = {}
         for product in products:
@@ -600,4 +634,3 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
-

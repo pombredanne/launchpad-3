@@ -88,7 +88,7 @@ Now, lets test all of that for DistroSeriess too!
     >>> krunch = kubuntu.getSeries('krunch')
 
     # Only owners, experts, or admins can create a milestone.
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2
@@ -116,10 +116,10 @@ zope.exceptions.NotFoundError:
     NotFoundError: 'Milestone with ID -1 does not exist'
 
 
-== Project Milestones ==
+== ProjectGroup Milestones ==
 
-The database associates milestones only with products and distroserieses.
-The interface IProjectMilestone provides a virtual view of milestones
+The database associates milestones only with products and distroseries.
+The interface IProjectGroupMilestone provides a virtual view of milestones
 that are related to a project by collecting all milestones that are
 associated with products that belong to a project.
 
@@ -131,8 +131,8 @@ project.all_milestones returns all milestones for this project. No product
 belonging to the Gnome project has any milestones, hence Gnome itself has
 neither any milestones.
 
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> gnome = getUtility(IProjectGroupSet)['gnome']
     >>> for product in gnome.products:
     ...     print '%s %s' % (
     ...         product.name,
@@ -221,6 +221,10 @@ A project milestone is not shown for active milestones from inactive products.
 
     >>> print [milestone.name for milestone in gnome.milestones]
     [u'1.1.']
+
+    # Unlink the source packages so the project can be deactivated.
+    >>> from lp.testing import unlink_source_packages
+    >>> unlink_source_packages(netapplet)
     >>> netapplet.active = False
     >>> syncUpdate(netapplet)
     >>> print [milestone.name for milestone in gnome.milestones]
@@ -383,6 +387,40 @@ a product.
     >>> print fizzy_milestone.productseries.name
     2.0
 
+The driver for a milestone's target cannot change a milestone, but the driver
+of the series_target is a release manager can can make changes.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> driver = factory.makePerson(name='driver')
+    >>> fizzy_milestone.target.driver = driver
+
+    >>> release_manager = factory.makePerson(name='release-manager')
+    >>> fizzy_milestone.series_target.driver = release_manager
+
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    False
+
+    >>> login_person(release_manager)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    True
+
+# XXX sinzui 2009-07-18 bug=40978: There are milestones in the database
+# that are missing their series_target. The project owner can edit the
+# milestone to fix the issue. It is not possible in this scenario for the
+# milestone to have a driver.
+
+    >>> login_person(upstream_firefox.owner)
+
+Hack the milestone to put it in an invalid state.
+    >>> fizzy_milestone.productseries = None
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    True
+    >>> login_person(driver)
+    >>> check_permission('launchpad.Edit', fizzy_milestone)
+    False
+
 The distroseries attribute can be edited if the milestone belongs to
 a distribution.
 
@@ -462,3 +500,52 @@ If specifications are targeted to the milestone, it cannot be deleted.
     ...
     AssertionError: You cannot delete a milestone which has specifications
                     targeted to it.
+
+If a milestone has a structural subscription, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.14')
+    >>> subscription = milestone.addSubscription(owner, owner)
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has structural
+                    subscriptions.
+
+
+Closing milestone targeted bugs
+-------------------------------
+
+When a milestone with bug tasks creates a release, those bug tasks in fix
+committed status are updated to fix released. An ObjectModifiedEvent
+event is signaled for each changed bug task.
+
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTask
+
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+
+    >>> milestone = ff_onedotzero.newMilestone('kia')
+    >>> fixed_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> fixed_bugtask.transitionToMilestone(milestone, owner)
+    >>> fixed_bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, owner)
+    >>> triaged_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> triaged_bugtask.transitionToMilestone(milestone, owner)
+    >>> triaged_bugtask.transitionToStatus(BugTaskStatus.TRIAGED, owner)
+    >>> release = milestone.createProductRelease(owner, datetime.now(UTC))
+    >>> bugtask_event_listener = TestEventListener(
+    ...     IBugTask, IObjectModifiedEvent, print_event)
+
+    >>> milestone.closeBugsAndBlueprints(owner)
+    Received ObjectModifiedEvent on BugTask
+
+    >>> fixed_bugtask.status
+    <DBItem BugTaskStatus.FIXRELEASED, (30) Fix Released>
+
+    >>> triaged_bugtask.status
+    <DBItem BugTaskStatus.TRIAGED, (21) Triaged>
+
+    >>> bugtask_event_listener.unregister()

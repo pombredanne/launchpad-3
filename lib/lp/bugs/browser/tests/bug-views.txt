@@ -259,6 +259,32 @@ and see how the returned link changes.
     http://.../bugs/2
     ...
 
+
+== Bug Attachments ==
+
+We show bug attachments in two lists: patches and non-patch attachments.
+Sequences of patch and non-patch attachments are provided by the
+properties `patches` and `regular_attachments` of the class BugView.
+
+    >>> from lp.bugs.browser.bug import BugView
+    >>> login('foo.bar@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> bug_seven = bugset.get(7)
+    >>> attachment_1 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='attachment 1', is_patch=False)
+    >>> attachment_2 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='attachment 2', is_patch=False)
+    >>> patch_1 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='patch 1', is_patch=True)
+    >>> patch_2 = factory.makeBugAttachment(
+    ...     bug=bug_seven, description='patch 2', is_patch=True)
+    >>> view = BugView(bug_seven, request)
+    >>> [attachment.title for attachment in view.regular_attachments]
+    [u'attachment 1', u'attachment 2']
+    >>> [patch.title for patch in view.patches]
+    [u'patch 1', u'patch 2']
+
+
 == Bug Navigation ==
 
 The +subscribe link has different text depending on if the user is
@@ -615,8 +641,8 @@ the user can confirm that he wants to add the tag.
     False
     >>> for message in bug_edit.view.notifications:
     ...     print message
-    The tag "new-tag" hasn't yet been used by Mozilla Firefox before.
-    Is this a new tag?...<input ...Yes, define new tag...>
+    The tag "new-tag" hasn't been used by Mozilla Firefox before. 
+    <input ...Create the new tag...>
 
     >>> bug_edit.wasRedirected()
     False
@@ -629,7 +655,7 @@ can edit the tag and submit the form again.
     >>> [action.label for action in bug_edit.view.actions]
     ['Change']
 
-If we click on the 'Yes, define new tag' button, we'll get redirected to
+If we click on the 'Create the new tag' button, we'll get redirected to
 the bug page, and the bug will have the new tag.
 
     >>> bug_edit.submit('confirm_tag', edit_values)
@@ -710,7 +736,7 @@ The same is true for people not in the comment syncing team.
 People in the team get to see the comments.
 
     >>> login('foo.bar@canonical.com')
-    >>> syncing_team.addMember(no_priv, no_priv)
+    >>> ignored = syncing_team.addMember(no_priv, no_priv)
 
     >>> login('no-priv@canonical.com')
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
