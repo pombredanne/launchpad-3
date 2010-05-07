@@ -3520,10 +3520,11 @@ class PersonSet:
         # Change the merged Account's OpenID identifier so that it cannot be
         # used to lookup the merged Person; Launchpad will instead select the
         # remaining Person based on the email address.
-        if not to_person.isTeam():
+        if from_person.account is not None:
             account = IMasterObject(from_person.account)
             # This works because dashes do not occur in SSO identifiers.
-            merge_identifier = 'merged-%s' % account.openid_identifier
+            merge_identifier = 'merged-%s' % removeSecurityProxy(
+                account).openid_identifier
             removeSecurityProxy(account).openid_identifier = merge_identifier
 
         # Inform the user of the merge changes.
