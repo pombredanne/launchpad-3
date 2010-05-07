@@ -1531,7 +1531,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
-            subscription = self.addBugSubscription(bug_supervisor, user)
+            self.addBugSubscription(bug_supervisor, user)
 
     def userCanEdit(self, user):
         """See `IDistribution`."""
@@ -1635,6 +1635,6 @@ class DistributionSet:
             mugshot=mugshot,
             logo=logo,
             icon=icon)
-        archive = getUtility(IArchiveSet).new(distribution=distro,
+        getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
