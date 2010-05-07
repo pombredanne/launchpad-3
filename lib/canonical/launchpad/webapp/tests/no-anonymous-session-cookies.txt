@@ -1,5 +1,5 @@
 We will verify that we do not put session cookies in anonymous requests. This
-is important for cacheing anonymous requests in front of Zope, such as with
+is important for caching anonymous requests in front of Zope, such as with
 Squid.  Note that we are checking whether the browser has a session cookie
 set, not whether the server has sent a "set-cookie" header.
 
@@ -50,7 +50,23 @@ minute time interval (set in canonical.launchpad.webapp.login and enforced
 with an assert in canonical.launchpad.webapp.session) is intended to be fudge
 time for browsers with bad system clocks.
 
-    >>> browser.getControl('Log Out').click()
+    >>> from urllib2 import HTTPError
+    >>> url = None
+    >>> try:
+    ...     browser.getControl('Log Out').click()
+    ... except HTTPError:
+    ...     url = browser.url
+
+    >>> # The logout attempts to redirect to logout of Loggerhead, which is not
+    >>> # running, hence the HTTPError.  See canonical.launchpad.tests.test_login.
+    >>> # TestLoginAndLogout.test_CookieLogoutPage
+    >>> print url
+    https://bazaar.launchpad.dev/+logout?next_to=http%3A%2F%2Ftestopenid.dev%3A8085%2F%2Blogout
+
+After ensuring the browser has not left the launchpad.dev domain, the
+single cookie is shown to have the ten minute expiration.
+
+    >>> browser.open('http://launchpad.dev:8085')
     >>> len(browser.cookies)
     1
     >>> expires = browser.cookies.getinfo('launchpad_tests')['expires']
