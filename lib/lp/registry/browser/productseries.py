@@ -13,6 +13,7 @@ __all__ = [
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
+    'ProductSeriesInvolvedMenu',
     'ProductSeriesInvolvementView',
     'ProductSeriesLinkBranchView',
     'ProductSeriesLinkBranchFromCodeView',
@@ -181,11 +182,18 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     links = [
         'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
 
+    @property
+    def view(self):
+        return self.context
+
+    @property
+    def pillar(self):
+        return self.view.context.product
+
     def submit_code(self):
-        product = self.context.context.product
         target = canonical_url(
-            product, view_name='+addbranch', rootsite='code')
-        enabled = product.official_codehosting
+            self.pillar, view_name='+addbranch', rootsite='code')
+        enabled = self.view.official_codehosting
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
@@ -476,15 +484,13 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         field = form.Fields(choice, render_context=self.render_context)
         self.form_fields = self.form_fields.omit(choice.__name__) + field
 
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`.
-
-        Set the current `ISourcePackageName` as the default value.
-        """
-        super(ProductSeriesUbuntuPackagingView, self).setUpWidgets()
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
         if self.default_sourcepackagename is not None:
-            widget = self.widgets.get('sourcepackagename')
-            widget.setRenderedValue(self.default_sourcepackagename)
+            return {'sourcepackagename': self.default_sourcepackagename}
+        else:
+            return {}
 
     @property
     def default_distroseries(self):
@@ -496,10 +502,14 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         return self.context.getPackagingInDistribution(
             self.default_distroseries.distribution)
 
+    def _getSubmittedSeries(self, data):
+        """Return the submitted or default series."""
+        return data.get('distroseries', self.default_distroseries)
+
     def validate(self, data):
         productseries = self.context
         sourcepackagename = data.get('sourcepackagename', None)
-        distroseries = data.get('distroseries', self.default_distroseries)
+        distroseries = self._getSubmittedSeries(data)
 
         if sourcepackagename == self.default_sourcepackagename:
             # The data has not changed, so nothing else needs to be done.
@@ -549,12 +559,14 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
     def continue_action(self, action, data):
         # set the packaging record for this productseries in the current
         # ubuntu series. if none exists, one will be created
+        distroseries = self._getSubmittedSeries(data)
         sourcepackagename = data['sourcepackagename']
-        if self.default_sourcepackagename == sourcepackagename:
+        if getUtility(IPackagingUtil).packagingEntryExists(
+            sourcepackagename, distroseries, productseries=self.context):
             # There is no change.
             return
         self.context.setPackaging(
-            self.default_distroseries, sourcepackagename, self.user)
+            distroseries, sourcepackagename, self.user)
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -800,12 +812,15 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
     custom_widget('branch_type', LaunchpadRadioWidget)
-    initial_values = {
-        'rcs_type': RevisionControlSystemsExtended.BZR,
-        'branch_type': LINK_LP_BZR,
-        }
 
     errors_in_action = False
+
+    @property
+    def initial_values(self):
+        return dict(
+            rcs_type=RevisionControlSystemsExtended.BZR,
+            branch_type=LINK_LP_BZR,
+            branch_location=self.context.branch)
 
     @property
     def next_url(self):
@@ -1022,7 +1037,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
                     if branch is None:
-                        self.errors_in_action = True
                         return
 
                     self.context.branch = branch
@@ -1053,6 +1067,10 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         self._setBranchExists(e.existing_branch,
                                               'branch_name')
                         self.errors_in_action = True
+                        # Abort transaction. This is normally handled
+                        # by LaunchpadFormView, but we are already in
+                        # the success handler.
+                        self._abort()
                         return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
@@ -1082,6 +1100,11 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch, 'branch_name')
+        if branch is None:
+            self.errors_in_action = True
+            # Abort transaction. This is normally handled by
+            # LaunchpadFormView, but we are already in the success handler.
+            self._abort()
         return branch
 
 

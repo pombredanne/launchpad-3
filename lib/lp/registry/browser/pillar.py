@@ -38,30 +38,34 @@ class InvolvedMenu(NavigationMenu):
         'report_bug', 'ask_question', 'help_translate', 'submit_code',
         'register_blueprint']
 
+    @property
+    def pillar(self):
+        return self.context
+
     def report_bug(self):
         return Link(
             '+filebug', 'Report a bug', site='bugs', icon='bugs',
-            enabled=self.context.official_malone)
+            enabled=self.pillar.official_malone)
 
     def ask_question(self):
         return Link(
             '+addquestion', 'Ask a question', site='answers', icon='answers',
-            enabled=self.context.official_answers)
+            enabled=self.pillar.official_answers)
 
     def help_translate(self):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
-            enabled=self.context.official_rosetta)
+            enabled=self.pillar.official_rosetta)
 
     def submit_code(self):
         return Link(
             '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=self.context.official_codehosting)
+            enabled=self.pillar.official_codehosting)
 
     def register_blueprint(self):
         return Link(
             '+addspec', 'Register a blueprint', site='blueprints',
-            icon='blueprints', enabled=self.context.official_blueprints)
+            icon='blueprints', enabled=self.pillar.official_blueprints)
 
 
 class PillarView(LaunchpadView):
@@ -82,7 +86,7 @@ class PillarView(LaunchpadView):
         if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
-            # Projectgroups do not support submit code, override the
+            # Project groups do not support submit code, override the
             # default.
             self.official_codehosting = False
         else:

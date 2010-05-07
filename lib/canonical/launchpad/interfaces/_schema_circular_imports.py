@@ -16,11 +16,13 @@ __all__ = []
 
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
     patch_entry_return_type, patch_collection_property,
-    patch_collection_return_type, patch_plain_parameter_type,
-    patch_choice_parameter_type, patch_reference_property)
+    patch_collection_return_type, patch_list_parameter_type,
+    patch_plain_parameter_type, patch_choice_parameter_type,
+    patch_reference_property)
 
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
@@ -46,6 +48,8 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
@@ -184,6 +188,13 @@ ISourcePackage['setBranch'].queryTaggedValue(
 ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
+
+# IPerson
+patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
+patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
+                          Reference(schema=IDistroSeries))
+
+patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 

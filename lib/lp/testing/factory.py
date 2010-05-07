@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=F0401
+
 """Testing infrastructure for the Launchpad application.
 
 This module should not have any actual tests.
@@ -22,11 +24,8 @@ from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
-from textwrap import dedent
 
 import pytz
-from storm.store import Store
-import transaction
 
 from twisted.python.util import mergeFunctionMetadata
 
@@ -39,9 +38,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces import IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
 from canonical.launchpad.interfaces.emailaddress import (
@@ -85,7 +83,8 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -291,12 +290,6 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
-    # Used for makeBuilderRecipe.
-    MINIMAL_RECIPE_TEXT = dedent(u'''\
-        # bzr-builder format 0.2 deb-version 1.0
-        %s
-        ''')
-
     def doAsUser(self, user, factory_method, **factory_args):
         """Perform a factory method while temporarily logged in as a user.
 
@@ -407,10 +400,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.PREFERRED:
-            person.validateAndEnsurePreferredEmail(email)
             account = IMasterStore(Account).get(
                 Account, person.accountID)
             account.status = AccountStatus.ACTIVE
+            person.validateAndEnsurePreferredEmail(email)
 
         removeSecurityProxy(email).status = email_address_status
 
@@ -455,6 +448,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
             name=variable_name, displayname=full_name)
         if set_preferred_email:
+            # setPreferredEmail no longer activates the account
+            # automatically.
+            account = IMasterStore(Account).get(Account, person.accountID)
+            account.activate(
+                "Activated by factory.makePersonByName",
+                password='foo',
+                preferred_email=email)
             person.setPreferredEmail(email)
 
         if not use_default_autosubscribe_policy:
@@ -645,7 +645,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        official_rosetta=None):
+        official_rosetta=None, bug_supervisor=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -676,6 +676,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             product.official_malone = official_malone
         if official_rosetta is not None:
             removeSecurityProxy(product).official_rosetta = official_rosetta
+        if bug_supervisor is not None:
+            naked_product = removeSecurityProxy(product)
+            naked_product.bug_supervisor = bug_supervisor
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -698,7 +701,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProject(self, name=None, displayname=None, title=None,
                     homepageurl=None, summary=None, owner=None,
                     description=None):
-        """Create and return a new, arbitrary Project."""
+        """Create and return a new, arbitrary ProjectGroup."""
         if owner is None:
             owner = self.makePerson()
         if name is None:
@@ -860,13 +863,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         """
         if branch is None:
             branch = self.makeBranch(product=product)
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
-        # Likewise, we might not have permission to set the branch of the
-        # development focus series.
+        # We just remove the security proxies to be able to change the objects
+        # here.
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         naked_series = removeSecurityProxy(product.development_focus)
         naked_series.branch = branch
         return branch
@@ -878,11 +878,10 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param branch: The branch that should be the default stacked-on
             branch.
         """
-        # 'branch' might be private, so we remove the security proxy to get at
-        # the methods.
-        naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
-        naked_branch.mirrorComplete('rev1')
+        # We just remove the security proxies to be able to change the branch
+        # here.
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,
@@ -955,7 +954,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         elif set_state == BranchMergeProposalStatus.MERGED:
             unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            unsafe_proposal.mergeFailed(proposal.target_branch.owner)
+            unsafe_proposal.setStatus(set_state, proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
             unsafe_proposal.commit_message = self.getUniqueString(
                 'commit message')
@@ -1058,6 +1057,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch.createBranchRevision(sequence, revision)
             parent = revision
             parent_ids = [parent.revision_id]
+        branch.startMirroring()
+        removeSecurityProxy(branch).branchChanged(
+            '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
     def makeBranchRevision(self, branch, revision_id, sequence=None):
@@ -1362,7 +1364,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makePackageCodeImport(self, sourcepackage=None, **kwargs):
         """Make a code import targetting a sourcepackage."""
         if sourcepackage is None:
-           sourcepackage = self.makeSourcePackage()
+            sourcepackage = self.makeSourcePackage()
         target = IBranchTarget(sourcepackage)
         return self.makeCodeImport(target=target, **kwargs)
 
@@ -1634,7 +1636,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
-            made with makeDistribution().
+            made with makeDistribution() for non-PPAs and ubuntu for PPAs.
         :param owner: Supper IPerson, defaults to a new one made with
             makePerson().
         :param name: Name of the archive, defaults to a random string.
@@ -1644,16 +1646,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         :param virtualized: Whether the archive is virtualized.
         :param description: A description of the archive.
         """
-        if distribution is None:
-            distribution = self.makeDistribution()
-        if owner is None:
-            owner = self.makePerson()
         if purpose is None:
             purpose = ArchivePurpose.PPA
+        if distribution is None:
+            # See bug #568769
+            if purpose == ArchivePurpose.PPA:
+                distribution = getUtility(ILaunchpadCelebrities).ubuntu
+            else:
+                distribution = self.makeDistribution()
+        if owner is None:
+            owner = self.makePerson()
         if name is None:
-            try:
-                name = default_name_by_purpose[purpose]
-            except KeyError:
+            if purpose != ArchivePurpose.PPA:
+                name = default_name_by_purpose.get(purpose)
+            if name is None:
                 name = self.getUniqueString()
 
         # Making a distribution makes an archive, and there can be only one
@@ -1668,8 +1674,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description)
 
         if private:
-            archive.private = True
-            archive.buildd_secret = "sekrit"
+            naked_archive = removeSecurityProxy(archive)
+            naked_archive.private = True
+            naked_archive.buildd_secret = "sekrit"
 
         return archive
 
@@ -1712,7 +1719,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             branches = (self.makeAnyBranch(),)
         base_branch = branches[0]
         other_branches = branches[1:]
-        text = self.MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
         for i, branch in enumerate(other_branches):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
         parser = RecipeParser(text)
@@ -1720,7 +1727,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, description=None, *branches):
+                                name=None, description=None, branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1738,9 +1745,11 @@ class LaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
-        return getUtility(ISourcePackageRecipeSource).new(
+        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, [distroseries], sourcepackagename, name,
             recipe, description)
+        IStore(source_package_recipe).flush()
+        return source_package_recipe
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
@@ -2281,8 +2290,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         md = MergeDirective2.from_objects(
             source_branch.repository, source_branch.last_revision(),
             public_branch=source_branch.get_public_branch(),
-            target_branch=target_branch.warehouse_url,
-            local_target_branch=target_branch.warehouse_url, time=0,
+            target_branch=target_branch.getInternalBzrUrl(),
+            local_target_branch=target_branch.getInternalBzrUrl(), time=0,
             timezone=0)
         email = None
         if sender is not None:

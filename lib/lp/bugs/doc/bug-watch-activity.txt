@@ -50,11 +50,14 @@ is written to the database.
     >>> activity.activity_date
     datetime.datetime...
 
+The BugWatchActivity's result will be BugWatchActivityStatus.SYNC_SUCCEEDED.
+
+    >>> print activity.result.title
+    Synchronisation succeeded
+
 The other fields on the BugWatchActivity record, which aren't required,
 will all be None.
 
-    >>> print activity.result
-    None
     >>> print activity.message
     None
     >>> print activity.oops_id
@@ -68,12 +71,12 @@ Whenever an update is made to a BugWatch that update is recorded as a
 BugWatchActivity entry.
 
 We can demonstrate this by passing our bug watch to
-BugWatchUpdater.updateBugWatches().
+CheckwatchesMaster.updateBugWatches().
 
     >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
-    >>> updater = BugWatchUpdater(transaction, QuietFakeLogger())
+    >>> updater = CheckwatchesMaster(transaction, QuietFakeLogger())
     >>> updater.updateBugWatches(
     ...     TestExternalBugTracker('http://example.com'), [bug_watch])
 
@@ -83,12 +86,13 @@ property.
     >>> print bug_watch.activity.count()
     2
 
-The most recent activity entry will have a result of None since it was
+The most recent activity entry will have a result of
+BugWatchActivityStatus.SYNC_SUCCEEDED since it was
 successful.
 
     >>> most_recent_activity = bug_watch.activity.first()
-    >>> print most_recent_activity.result
-    None
+    >>> print most_recent_activity.result.title
+    Synchronisation succeeded
 
 Its message will also be empty
 
@@ -128,7 +132,7 @@ The OOPS ID for the error will also have been recorded.
     >>> print most_recent_activity.oops_id
     OOPS...
 
-The BugWatchUpdater also adds BugWatchActivity entries when errors occur
+The CheckwatchesMaster also adds BugWatchActivity entries when errors occur
 that don't have an entry in the BugWatchActivityStatus DB Enum.
 
     >>> broken_bugtracker.get_remote_status_error = Exception

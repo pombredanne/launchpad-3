@@ -8,6 +8,14 @@ confirm that the changes are actually being made by the API calls."""
 __metaclass__ = type
 __all__ = []
 
+import warnings
+
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
+
 from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_SERIALIZABLE
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless

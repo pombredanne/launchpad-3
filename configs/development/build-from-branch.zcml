@@ -19,13 +19,13 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeView"
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
             name="+request-builds"
             template="../../lib/lp/code/templates/sourcepackagerecipe-request-builds.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
@@ -37,11 +37,70 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeBuildView"
             name="+index"
             template="../../lib/lp/code/templates/sourcepackagerecipe-index.pt"
-            permission="zope.Public"/>
+            permission="launchpad.View"/>
         <browser:menus
-            classes="SourcePackageRecipeContextMenu"
+            classes="
+                SourcePackageRecipeNavigationMenu
+                SourcePackageRecipeContextMenu"
             module="lp.code.browser.sourcepackagerecipe"/>
 
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
+            permission="zope.Public"
+            facet="branches"
+            name="+new-recipe"
+            template="../../lib/lp/app/templates/generic-edit.pt"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
+            permission="zope.Public"
+            facet="branches"
+            name="+edit"
+            template="../../lib/lp/app/templates/generic-edit.pt"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeDeleteView"
+            permission="zope.Public"
+            facet="branches"
+            name="+delete"
+            template="../../lib/lp/app/templates/generic-edit.pt"/>
+
+
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            class="lp.code.browser.sourcepackagerecipelisting.BranchRecipeListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+recipes"
+            template="../../lib/lp/code/templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.product.IProduct"
+            class="lp.code.browser.sourcepackagerecipelisting.ProductRecipeListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+recipes"
+            template="../../lib/lp/code/templates/sourcepackagerecipe-listing.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            class="lp.code.browser.sourcepackagerecipelisting.PersonRecipeListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+recipes"
+            template="../../lib/lp/code/templates/sourcepackagerecipe-listing.pt"/>
+
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            name="+hierarchy"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeHierarchy"
+            template="../../lib/lp/app/templates/launchpad-hierarchy.pt"
+            permission="zope.Public"/>
+
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
+            permission="zope.Public"/>
     </facet>
   <securedutility
     name="BuildableDistroSeries"
