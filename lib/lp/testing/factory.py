@@ -954,7 +954,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         elif set_state == BranchMergeProposalStatus.MERGED:
             unsafe_proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
-            unsafe_proposal.mergeFailed(proposal.target_branch.owner)
+            unsafe_proposal.setStatus(set_state, proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
             unsafe_proposal.commit_message = self.getUniqueString(
                 'commit message')
