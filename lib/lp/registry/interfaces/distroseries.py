@@ -25,7 +25,7 @@ from lazr.restful.declarations import (
     export_factory_operation, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference
+from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -43,6 +43,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IHasBugs, IHasOfficialBugTags)
 from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -50,7 +51,6 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.languagepack import ILanguagePack
-
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -193,23 +193,23 @@ class IDistroSeriesPublic(
     datereleased = exported(
         Datetime(title=_("Date released")))
     parent_series = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
-            required=True,
+            required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'))
     owner = exported(
         PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(
-        Choice(
+        ReferenceChoice(
             title=_("Driver"),
             description=_(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted to this series of the "
                 "distribution."),
-            required=False, vocabulary='ValidPersonOrTeam'))
+            required=False, vocabulary='ValidPersonOrTeam', schema=IPerson))
     changeslist = exported(
         TextLine(
             title=_("E-mail changes to"), required=True,
@@ -249,33 +249,33 @@ class IDistroSeriesPublic(
     language_pack_base = Choice(
         title=_('Language pack base'), required=False,
         description=_('''
-            Language pack export with the export of all translations available
-            for this `IDistroSeries` when it was generated. Next delta exports
-            will be generated based on this one.
+            Language pack with the export of all translations
+            available for this distribution series when it was generated. The
+            subsequent update exports will be generated based on this one.
             '''), vocabulary='FilteredFullLanguagePack')
 
     language_pack_delta = Choice(
-        title=_('Language pack delta'), required=False,
+        title=_('Language pack update'), required=False,
         description=_('''
-            Language pack export with the export of all translation updates
-            available for this `IDistroSeries` since language_pack_base was
-            generated.
+            Language pack with the export of all translation updates
+            available for this distribution series since the language pack
+            base was generated.
             '''), vocabulary='FilteredDeltaLanguagePack')
 
     language_pack_proposed = Choice(
         title=_('Proposed language pack update'), required=False,
         description=_('''
-            Base or delta language pack export that is being tested and
-            proposed to be used as the new language_pack_base or
-            language_pack_delta for this `IDistroSeries`.
+            Base or update language pack export that is being tested and
+            proposed to be used as the new language pack base or
+            language pack update for this distribution series.
             '''), vocabulary='FilteredLanguagePack')
 
     language_pack_full_export_requested = Bool(
         title=_('Request a full language pack export'), required=True,
         description=_('''
             Whether next language pack generation will be a full export. This
-            is useful when delta packages are too big and want to merge all
-            those changes in the base package.
+            information is useful when update packs are too big and want to
+            merge all those changes in the base pack.
             '''))
 
     last_full_language_pack_exported = Object(

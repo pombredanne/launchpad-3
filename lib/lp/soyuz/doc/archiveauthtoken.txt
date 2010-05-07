@@ -12,7 +12,7 @@ First we create a private PPA for Joe.
     >>> login("admin@canonical.com")
     >>> joe = factory.makePerson(name="joe", displayname="Joe Smith")
     >>> joe_private_ppa = factory.makeArchive(
-    ...     owner=joe, private=True)
+    ...     owner=joe, private=True, name='ppa')
     >>> logout()
 
 == Creating new tokens ==

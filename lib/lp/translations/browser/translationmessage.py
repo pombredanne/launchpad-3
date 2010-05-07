@@ -426,6 +426,16 @@ class BaseTranslationView(LaunchpadView):
                 lock_timestamp=self.lock_timestamp,
                 force_suggestion=force_suggestion,
                 force_diverged=force_diverge)
+
+            # If suggestions were forced and user has the rights to do it,
+            # reset the current translation.
+            empty_suggestions = self._areSuggestionsEmpty(translations)
+            if (force_suggestion and
+                self.user_is_official_translator and
+                empty_suggestions):
+                potmsgset.resetCurrentTranslation(
+                    self.pofile, self.lock_timestamp)
+
         except TranslationConflict:
             return (
                 u'Somebody else changed this translation since you started.'
@@ -439,6 +449,13 @@ class BaseTranslationView(LaunchpadView):
         else:
             self._observeTranslationUpdate(potmsgset)
             return None
+
+    def _areSuggestionsEmpty(self, suggestions):
+        """Return true if all suggestions are empty strings or None."""
+        for index in suggestions:
+            if (suggestions[index] is not None and suggestions[index] != ""):
+                return False
+        return True
 
     def _prepareView(self, view_class, current_translation_message, error):
         """Collect data and build a TranslationMessageView for display."""
@@ -1425,8 +1442,12 @@ class CurrentTranslationMessageView(LaunchpadView):
         return 'View all details of this message'
 
     @property
+    def zoom_link_id(self):
+        return "zoom-%s" % self.context.id
+
+    @property
     def zoom_icon(self):
-        return '/@@/zoom-in'
+        return 'zoom-in'
 
     @property
     def max_entries(self):
@@ -1457,6 +1478,8 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
 
     See `TranslationMessagePageView`.
     """
+    zoom_link_id = 'zoom-out'
+
     @property
     def zoom_url(self):
         # We are viewing this class directly from an ITranslationMessage, we
@@ -1472,7 +1495,7 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
 
     @property
     def zoom_icon(self):
-        return '/@@/zoom-out'
+        return 'zoom-out'
 
     @property
     def max_entries(self):

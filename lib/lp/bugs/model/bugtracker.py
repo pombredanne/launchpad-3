@@ -10,7 +10,8 @@ __all__ = [
     'BugTrackerAliasSet',
     'BugTrackerSet']
 
-from datetime import datetime, timedelta
+
+from datetime import datetime
 from itertools import chain
 from pytz import timezone
 # splittype is not formally documented, but is in urllib.__all__, is
@@ -25,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
-from storm.expr import Not, Or
+from storm.expr import Count, Desc, Not
 from storm.locals import Bool
 from storm.store import Store
 
@@ -34,6 +35,7 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -167,7 +169,7 @@ class BugTracker(SQLBase):
     contactdetails = StringCol(notNull=False)
     has_lp_plugin = BoolCol(notNull=False, default=False)
     projects = SQLMultipleJoin(
-        'Project', joinColumn='bugtracker', orderBy='name')
+        'ProjectGroup', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
         'Product', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin(
@@ -348,30 +350,31 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
-    def getBugWatchesNeedingUpdate(self):
-        """See `IBugTracker`.
-
-        :return: The UNION of the bug watches that need checking and
-            those with unpushed comments.
-        """
-        store = Store.of(self)
-
-        bug_watches_needing_checking = store.find(
+    @property
+    def watches_ready_to_check(self):
+        return Store.of(self).find(
             BugWatch,
             BugWatch.bugtracker == self,
             Not(BugWatch.next_check == None),
             BugWatch.next_check <= datetime.now(timezone('UTC')))
 
-        bug_watches_with_unpushed_comments = store.find(
+    @property
+    def watches_with_unpushed_comments(self):
+        return Store.of(self).find(
             BugWatch,
             BugWatch.bugtracker == self,
             BugMessage.bugwatch == BugWatch.id,
-            BugMessage.remote_comment_id == None)
+            BugMessage.remote_comment_id == None).config(distinct=True)
 
-        results = bug_watches_needing_checking.union(
-            bug_watches_with_unpushed_comments.config(distinct=True))
+    @property
+    def watches_needing_update(self):
+        """All watches needing some sort of update.
 
-        return results
+        :return: The union of `watches_ready_to_check` and
+            `watches_with_unpushed_comments`.
+        """
+        return self.watches_ready_to_check.union(
+            self.watches_with_unpushed_comments)
 
     # Join to return a list of BugTrackerAliases relating to this
     # BugTracker.
@@ -578,14 +581,20 @@ class BugTrackerSet:
         return bugtracker
 
     @property
-    def bugtracker_count(self):
-        return BugTracker.select().count()
+    def count(self):
+        return IStore(self.table).find(self.table).count()
+
+    @property
+    def names(self):
+        return IStore(self.table).find(self.table).values(self.table.name)
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        result = shortlist(self.search(), longest_expected=20)
-        result.sort(key=lambda bugtracker: -bugtracker.watches.count())
-        if limit and limit > 0:
+        store = IStore(self.table)
+        result = store.find(self.table, self.table.id == BugWatch.bugtrackerID)
+        result = result.group_by(self.table)
+        result = result.order_by(Desc(Count(BugWatch)))
+        if limit is not None:
             return result[:limit]
         else:
             return result
@@ -593,11 +602,11 @@ class BugTrackerSet:
     def getPillarsForBugtrackers(self, bugtrackers):
         """See `IBugTrackerSet`."""
         from lp.registry.model.product import Product
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         ids = [str(b.id) for b in bugtrackers]
         products = Product.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")
-        projects = Project.select(
+        projects = ProjectGroup.select(
             "bugtracker in (%s)" % ",".join(ids), orderBy="name")
         ret = {}
         for product in products:
@@ -625,4 +634,3 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
-

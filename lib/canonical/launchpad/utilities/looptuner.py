@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-__all__ = ['DBLoopTuner', 'LoopTuner']
+__all__ = [
+    'DBLoopTuner',
+    'LoopTuner',
+    'TunableLoop',
+    ]
 
 
 from datetime import timedelta
@@ -11,6 +15,7 @@ import time
 
 import transaction
 from zope.component import getUtility
+from zope.interface import implements
 
 import canonical.launchpad.scripts
 from canonical.launchpad.webapp.interfaces import (
@@ -89,17 +94,21 @@ class LoopTuner:
         else:
             self.log = log
 
+    def _isTimedOut(self, extra_seconds=0):
+        """Return True if the task will be timed out in extra_seconds."""
+        return self.abort_time is not None and (
+            self._time() + extra_seconds >= self.start_time + self.abort_time)
+
     def run(self):
         """Run the loop to completion."""
         chunk_size = self.minimum_chunk_size
         iteration = 0
         total_size = 0
-        start_time = self._time()
-        last_clock = start_time
+        self.start_time = self._time()
+        last_clock = self.start_time
         while not self.operation.isDone():
 
-            if (self.abort_time is not None
-                and last_clock >= start_time + self.abort_time):
+            if self._isTimedOut():
                 self.log.warn(
                     "Task aborted after %d seconds." % self.abort_time)
                 break
@@ -132,7 +141,7 @@ class LoopTuner:
             chunk_size = min(chunk_size, self.maximum_chunk_size)
             iteration += 1
 
-        total_time = last_clock - start_time
+        total_time = last_clock - self.start_time
         average_size = total_size/max(1, iteration)
         average_speed = total_size/max(1, total_time)
         self.log.debug(
@@ -156,7 +165,7 @@ class LoopTuner:
         if self.cooldown_time is None or self.cooldown_time <= 0.0:
             return bedtime
         else:
-            time.sleep(self.cooldown_time)
+            self._sleep(self.cooldown_time)
             return self._time()
 
     def _time(self):
@@ -166,6 +175,15 @@ class LoopTuner:
         actually waiting.
         """
         return time.time()
+
+    def _sleep(self, seconds):
+        """Sleep.
+
+        If the sleep interval would put us over the tasks timeout,
+        do nothing.
+        """
+        if not self._isTimedOut(seconds):
+            time.sleep(seconds)
 
 
 def timedelta_to_seconds(td):
@@ -203,7 +221,7 @@ class DBLoopTuner(LoopTuner):
         """When database replication lag is high, block until it drops."""
         # Lag is most meaningful on the master.
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        while True:
+        while not self._isTimedOut():
             lag = store.execute("SELECT replication_lag()").get_one()[0]
             if lag is None:
                 lag = timedelta(seconds=0)
@@ -220,7 +238,7 @@ class DBLoopTuner(LoopTuner):
                 % time_to_sleep)
 
             transaction.abort() # Don't become a long running transaction!
-            time.sleep(time_to_sleep)
+            self._sleep(time_to_sleep)
 
     def _blockForLongRunningTransactions(self):
         """If there are long running transactions, block to avoid making
@@ -228,7 +246,8 @@ class DBLoopTuner(LoopTuner):
         if self.long_running_transaction is None:
             return
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        while True:
+        msg_counter = 0
+        while not self._isTimedOut():
             results = list(store.execute("""
                 SELECT
                     CURRENT_TIMESTAMP - xact_start,
@@ -242,13 +261,18 @@ class DBLoopTuner(LoopTuner):
                 """ % self.long_running_transaction).get_all())
             if not results:
                 break
-            for runtime, procpid, usename, datname, query in results:
-                self.log.info(
-                    "Blocked on %s old xact %s@%s/%d - %s."
-                    % (runtime, usename, datname, procpid, query))
-            self.log.info("Sleeping for 5 minutes.")
+
+            # Check for long running transactions every 30 seconds, but
+            # only report every 10 minutes to avoid log spam.
+            msg_counter += 1
+            if msg_counter % 20 == 1:
+                for runtime, procpid, usename, datname, query in results:
+                    self.log.info(
+                        "Blocked on %s old xact %s@%s/%d - %s."
+                        % (runtime, usename, datname, procpid, query))
+                self.log.info("Sleeping for up to 10 minutes.")
             transaction.abort() # Don't become a long running transaction!
-            time.sleep(5*60)
+            self._sleep(30)
 
     def _coolDown(self, bedtime):
         """As per LoopTuner._coolDown, except we always wait until there
@@ -258,7 +282,30 @@ class DBLoopTuner(LoopTuner):
         self._blockWhenLagged()
         if self.cooldown_time is not None and self.cooldown_time > 0.0:
             remaining_nap = self._time() - bedtime + self.cooldown_time
-            if remaining_nap > 0.0:
+            if remaining_nap > 0.0 and not self._is_timed_out(remaining_nap):
                 time.sleep(remaining_nap)
         return self._time()
 
+
+class TunableLoop:
+    """A base implementation of `ITunableLoop`."""
+    implements(ITunableLoop)
+
+    goal_seconds = 4
+    minimum_chunk_size = 1
+    maximum_chunk_size = None # Override
+    cooldown_time = 0
+
+    def __init__(self, log, abort_time=None):
+        self.log = log
+        self.abort_time = abort_time
+
+    def run(self):
+        assert self.maximum_chunk_size is not None, (
+            "Did not override maximum_chunk_size.")
+        DBLoopTuner(
+            self, self.goal_seconds,
+            minimum_chunk_size = self.minimum_chunk_size,
+            maximum_chunk_size = self.maximum_chunk_size,
+            cooldown_time = self.cooldown_time,
+            abort_time = self.abort_time).run()

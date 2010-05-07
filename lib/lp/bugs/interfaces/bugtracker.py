@@ -250,6 +250,13 @@ class IBugTracker(Interface):
             title=_('Updates for this bug tracker are enabled'),
             required=True, default=True))
 
+    watches_ready_to_check = Attribute(
+        "The set of bug watches that are scheduled to be checked.")
+    watches_with_unpushed_comments = Attribute(
+        "The set of bug watches that have unpushed comments.")
+    watches_needing_update = Attribute(
+        "The set of bug watches that need updating.")
+
     def getBugFilingAndSearchLinks(remote_product, summary=None,
                                    description=None):
         """Return the bug filing and search links for the tracker.
@@ -272,13 +279,6 @@ class IBugTracker(Interface):
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
-
-    def getBugWatchesNeedingUpdate():
-        """Get the bug watches needing to be updated.
-
-        All bug watches with a next_check time in the past are
-        considered to be needing an update.
-        """
 
     def getLinkedPersonByName(name):
         """Return the `IBugTrackerPerson` for a given name on a bugtracker.
@@ -336,7 +336,9 @@ class IBugTrackerSet(Interface):
 
     title = Attribute('Title')
 
-    bugtracker_count = Attribute("The number of registered bug trackers.")
+    count = Attribute("The number of registered bug trackers.")
+
+    names = Attribute("The names of all registered bug trackers.")
 
     def get(bugtracker_id, default=None):
         """Get a BugTracker by its id.
@@ -376,7 +378,7 @@ class IBugTrackerSet(Interface):
     @call_with(owner=REQUEST_USER)
     @rename_parameters_as(
         baseurl='base_url', bugtrackertype='bug_tracker_type',
-        contactdetails='contat_details')
+        contactdetails='contact_details')
     @export_factory_operation(
         IBugTracker,
         ['baseurl', 'bugtrackertype', 'title', 'summary',

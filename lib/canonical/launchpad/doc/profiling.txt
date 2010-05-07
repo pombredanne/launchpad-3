@@ -40,7 +40,7 @@ that takes care of profiling (among other things).
     # We need to close the default interaction.
     >>> logout()
 
-    >>> http = HTTPCaller(host='launchpad.dev')
+    >>> http = HTTPCaller()
     >>> response = http('GET / HTTP/1.0')
     >>> profile_count = len(PageTestLayer.profiler.getstats())
     >>> profile_count > 0

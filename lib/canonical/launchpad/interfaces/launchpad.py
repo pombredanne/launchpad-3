@@ -292,9 +292,7 @@ class IPrivateApplication(ILaunchpadApplication):
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
-    branch_puller = Attribute("""Branch puller end point.""")
-
-    branchfilesystem = Attribute("""The branch filesystem end point.""")
+    codehosting = Attribute("""Codehosting end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
@@ -534,7 +532,7 @@ class IAppFrontPageSearchForm(Interface):
     search_text = TextLine(title=_('Search text'), required=False)
 
     scope = Choice(title=_('Search scope'), required=False,
-                   vocabulary='DistributionOrProductOrProject')
+                   vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class ILaunchpadSearch(Interface):

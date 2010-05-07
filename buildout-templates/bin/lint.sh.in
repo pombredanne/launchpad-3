@@ -6,7 +6,9 @@
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 
-utilitiesdir=`dirname $0`/../utilities
+${shell-relative-path-setup}
+
+utilitiesdir=${buildout:directory/utilities|shell-path}
 [ -z "$utilitiesdir" ] && utilitiesdir=.
 
 # Fail if any of the required tools are not installed.
@@ -56,9 +58,15 @@ if [ -z "$1" ]; then
             # This is a loom, lint changes relative to the lower thread.
             rev_option="-r thread:"
         else
-            # Lint changes relative to the parent.
-            rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-            rev_option="-r $rev"
+            if test "$(bzr pipes | sed -n -e "/^\\*/q;p" | wc -l)" -gt 0 ; then
+                # This is a pipeline with at least one pipe before the current,
+                # lint changes relative to the previous pipe
+                rev_option="-r ancestor::prev"
+            else
+                # Lint changes relative to the parent.
+                rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+                rev_option="-r $rev"
+            fi
         fi
     elif [ $diff_status -eq 1 ] ; then
         # Uncommitted changes in the tree, lint those changes.
@@ -147,7 +155,7 @@ echo_sampledata_changes () {
     echo "        cp $4 $1"
     echo "    Run make schema again to update the test/dev database."
 }
-    
+
 if [ -n "$sql_diff" -o -n "$sql_dev_diff" -o -n "$karma_bombs" ]; then
     echo ""
     echo ""
@@ -155,7 +163,7 @@ if [ -n "$sql_diff" -o -n "$sql_dev_diff" -o -n "$karma_bombs" ]; then
     echo ""
 fi
 
-# 
+#
 if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo "$current_sql"
 fi
@@ -273,7 +281,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 extra_path="/usr/share/pyshared:/usr/share/pycentral/pylint/site-packages"
-export PYTHONPATH="${os-paths}:$extra_path:$PYTHONPATH"
+export PYTHONPATH=${scripts:parts-directory|shell-path}:"$extra_path":"$PYTHONPATH"
 pylint="${buildout:executable} -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:

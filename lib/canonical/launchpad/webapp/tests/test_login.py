@@ -107,13 +107,16 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def _createViewWithResponse(
-            self, account, response_status=SUCCESS, response_msg=''):
+            self, account, response_status=SUCCESS, response_msg='',
+            view_class=StubbedOpenIDCallbackView):
         openid_response = FakeOpenIDResponse(
             ITestOpenIDPersistentIdentity(account).openid_identity_url,
             status=response_status, message=response_msg)
-        return self._createAndRenderView(openid_response)
+        return self._createAndRenderView(
+            openid_response, view_class=view_class)
 
-    def _createAndRenderView(self, response):
+    def _createAndRenderView(self, response,
+                             view_class=StubbedOpenIDCallbackView):
         request = LaunchpadTestRequest(
             form={'starting_url': 'http://launchpad.dev/after-login'},
             environ={'PATH_INFO': '/'})
@@ -122,7 +125,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # setup a newInteraction() using our request.
         logout()
         newInteraction(request)
-        view = StubbedOpenIDCallbackView(object(), request)
+        view = view_class(object(), request)
         view.initialize()
         view.openid_response = response
         # Monkey-patch getByOpenIDIdentifier() to make sure the view uses the
@@ -196,19 +199,83 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # stuff. 
         self.assertLastWriteIsSet(view.request)
 
+    def test_unseen_identity_with_registered_email(self):
+        # When we get a positive assertion about an identity URL we've never
+        # seen but whose email address is already registered, we just change
+        # the identity URL that's associated with the existing email address.
+        identifier = '4w7kmzU'
+        email = 'test@example.com'
+        account = self.factory.makeAccount(
+            'Test account', email=email, status=AccountStatus.DEACTIVATED)
+        account_set = getUtility(IAccountSet)
+        self.assertRaises(
+            LookupError, account_set.getByOpenIDIdentifier, identifier)
+        openid_response = FakeOpenIDResponse(
+            'http://testopenid.dev/+id/%s' % identifier, status=SUCCESS,
+            email=email, full_name='Foo User')
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createAndRenderView(openid_response)
+        self.assertTrue(view.login_called)
+
+        # The existing account's openid_identifier was updated, the account
+        # was reactivated and its preferred email was set, but its display
+        # name was not changed.
+        self.assertEquals(identifier, account.openid_identifier)
+        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEquals(
+            email, removeSecurityProxy(account.preferredemail).email)
+        person = IPerson(account, None)
+        self.assertIsNot(None, person)
+        self.assertEquals('Test account', person.displayname)
+
+        # We also update the last_write flag in the session, to make sure
+        # further requests use the master DB and thus see the newly created
+        # stuff. 
+        self.assertLastWriteIsSet(view.request)
+
     def test_deactivated_account(self):
         # The user has the account's password and is trying to login, so we'll
         # just re-activate their account.
+        email = 'foo@example.com'
         account = self.factory.makeAccount(
-            'Test account', status=AccountStatus.DEACTIVATED)
+            'Test account', email=email, status=AccountStatus.DEACTIVATED)
         self.assertIs(None, IPerson(account, None))
-        view, html = self._createViewWithResponse(account)
+        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_response = FakeOpenIDResponse(
+            'http://testopenid.dev/+id/%s' % openid_identifier,
+            status=SUCCESS, email=email, full_name=account.displayname)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createAndRenderView(openid_response)
         self.assertIsNot(None, IPerson(account, None))
         self.assertTrue(view.login_called)
         response = view.request.response
         self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
         self.assertEquals(view.request.form['starting_url'],
                           response.getHeader('Location'))
+        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEquals(email, account.preferredemail.email)
+        # We also update the last_write flag in the session, to make sure
+        # further requests use the master DB and thus see the newly created
+        # stuff. 
+        self.assertLastWriteIsSet(view.request)
+
+    def test_never_used_account(self):
+        # The account was created by one of our scripts but was never
+        # activated, so we just activate it.
+        email = 'foo@example.com'
+        account = self.factory.makeAccount(
+            'Test account', email=email, status=AccountStatus.NOACCOUNT)
+        self.assertIs(None, IPerson(account, None))
+        openid_identifier = removeSecurityProxy(account).openid_identifier
+        openid_response = FakeOpenIDResponse(
+            'http://testopenid.dev/+id/%s' % openid_identifier,
+            status=SUCCESS, email=email, full_name=account.displayname)
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createAndRenderView(openid_response)
+        self.assertIsNot(None, IPerson(account, None))
+        self.assertTrue(view.login_called)
+        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEquals(email, account.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
         # stuff. 
@@ -234,6 +301,28 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('Your login was unsuccessful', main_content)
+
+    def test_negative_openid_assertion_when_user_already_logged_in(self):
+        # The OpenID provider responded with a negative assertion, but the
+        # user already has a valid cookie, so we add a notification message to
+        # the response and redirect to the starting_url specified in the
+        # OpenID response.
+        test_account = self.factory.makeAccount('Test account')
+        class StubbedOpenIDCallbackViewLoggedIn(StubbedOpenIDCallbackView):
+            account = test_account
+        view, html = self._createViewWithResponse(
+            test_account, response_status=FAILURE,
+            response_msg='Server denied check_authentication',
+            view_class=StubbedOpenIDCallbackViewLoggedIn)
+        self.assertFalse(view.login_called)
+        response = view.request.response
+        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
+        self.assertEquals(view.request.form['starting_url'],
+                          response.getHeader('Location'))
+        notification_msg = view.request.response.notifications[0].message
+        expected_msg = ('Your authentication failed but you were already '
+                        'logged into Launchpad')
+        self.assertIn(expected_msg, notification_msg)
 
     def test_IAccountSet_getByOpenIDIdentifier_monkey_patched(self):
         with IAccountSet_getByOpenIDIdentifier_monkey_patched():

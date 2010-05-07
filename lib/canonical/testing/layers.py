@@ -256,9 +256,10 @@ class BaseLayer:
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
-        # layer is being run in a subprocess.
+        # layer is being run in a subprocess. No need to be polite
+        # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
-            kill_by_pidfile(MemcachedLayer.getPidFile())
+            kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
             LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
@@ -891,6 +892,11 @@ def wsgi_application(environ, start_response):
     if environ.pop('HTTP_X_ZOPE_HANDLE_ERRORS', 'True') == 'False':
         environ['wsgi.handleErrors'] = False
     handle_errors = environ.get('wsgi.handleErrors', True)
+
+    # Make sure the request method is something Launchpad will
+    # recognize. httplib2 usually takes care of this, but we've
+    # bypassed that code in our test environment.
+    environ['REQUEST_METHOD'] = environ['REQUEST_METHOD'].upper()
     # Now we do the proper dance to get the desired request.  This is an
     # almalgam of code from zope.app.testing.functional.HTTPCaller and
     # zope.publisher.paste.Application.
@@ -1496,6 +1502,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     @classmethod
     @profiled
     def startStory(cls):
+        MemcachedLayer.testSetUp()
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
         LaunchpadLayer.resetSessionDb()
@@ -1507,6 +1514,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
         PageTestLayer.resetBetweenTests(True)
         LibrarianLayer.testTearDown()
         DatabaseLayer.testTearDown()
+        MemcachedLayer.testTearDown()
 
     @classmethod
     @profiled

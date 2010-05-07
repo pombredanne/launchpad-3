@@ -8,8 +8,12 @@ __all__ = [
     'RecipeBuildBehavior',
     ]
 
-from zope.component import adapts, getUtility
+import traceback
+
+from zope.component import adapts
 from zope.interface import implements
+
+from canonical.config import config
 
 from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -18,8 +22,7 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildSource)
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+    ISourcePackageRecipeBuildJob)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
@@ -51,7 +54,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info("startBuild(%s)", self.display_name)
 
-    def _extraBuildArgs(self, distroarchseries):
+    def _extraBuildArgs(self, distroarchseries, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
@@ -71,6 +74,28 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             self.build.sourcepackagename.name)
         args['archives'] = get_sources_list_for_building(self.build,
             distroarchseries, self.build.sourcepackagename.name)
+
+        # config.builddmaster.bzr_builder_sources_list can contain a
+        # sources.list entry for an archive that will contain a
+        # bzr-builder package that needs to be used to build this
+        # recipe.
+        try:
+            extra_archive = config.builddmaster.bzr_builder_sources_list
+        except AttributeError:
+            extra_archive = None
+
+        if extra_archive is not None:
+            try:
+                sources_line = extra_archive % (
+                    {'series': self.build.distroseries.name})
+                args['archives'].append(sources_line)
+            except StandardError:
+                # Someone messed up the config, don't add it.
+                logger.error(
+                    "Exception processing bzr_builder_sources_list:\n%s"
+                    % traceback.format_exc())
+
+        args['distroseries_name'] = self.build.distroseries.name
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
@@ -96,13 +121,14 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         # results so we know we are referring to the right database object in
         # subsequent runs.
         buildid = "%s-%s" % (self.build.id, build_queue_id)
+        cookie = self.buildfarmjob.generateSlaveBuildCookie()
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs(distroarchseries)
+        args = self._extraBuildArgs(distroarchseries, logger)
         status, info = self._builder.slave.build(
-            buildid, "sourcepackagerecipe", chroot_sha1, {}, args)
+            cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
@@ -140,40 +166,19 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
 
-    def slaveStatus(self, raw_slave_status):
-        """Parse and return the binary build specific status info.
+    def updateSlaveStatus(self, raw_slave_status, status):
+        """Parse the recipe build specific status info into the status dict.
 
         This includes:
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
         * filemap => dictionary or None
         * dependencies => string or None
         """
-        builder_status = raw_slave_status[0]
-        extra_info = {}
-        if builder_status == 'BuilderStatus.WAITING':
-            extra_info['build_status'] = raw_slave_status[1]
-            extra_info['build_id'] = raw_slave_status[2]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if extra_info['build_status'] in build_status_with_files:
-                extra_info['filemap'] = raw_slave_status[3]
-                extra_info['dependencies'] = raw_slave_status[4]
-        else:
-            extra_info['build_id'] = raw_slave_status[1]
-            if builder_status == 'BuilderStatus.BUILDING':
-                extra_info['logtail'] = raw_slave_status[2]
-
-        return extra_info
-
-    def getVerifiedBuild(self, raw_id):
-        """See `IBuildFarmJobBehavior`."""
-        # This type of job has a build that is of type BuildBase but not
-        # actually a Build.
-        return self._helpVerifyBuildIDComponent(
-            raw_id, SourcePackageRecipeBuild,
-            getUtility(ISourcePackageRecipeBuildSource).getById)
+        build_status_with_files = (
+            'BuildStatus.OK',
+            'BuildStatus.PACKAGEFAIL',
+            'BuildStatus.DEPFAIL',
+            )
+        if (status['builder_status'] == 'BuilderStatus.WAITING' and
+            status['build_status'] in build_status_with_files):
+            status['filemap'] = raw_slave_status[3]
+            status['dependencies'] = raw_slave_status[4]

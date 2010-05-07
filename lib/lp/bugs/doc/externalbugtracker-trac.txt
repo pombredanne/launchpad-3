@@ -295,10 +295,12 @@ Collect the Example.com watches:
 
 And have a Trac instance process them:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> trac = TestTrac(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
     INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
@@ -369,7 +371,7 @@ updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate().count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get

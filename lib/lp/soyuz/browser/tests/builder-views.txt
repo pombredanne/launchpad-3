@@ -2,7 +2,8 @@
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
-    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
@@ -176,7 +177,7 @@ is widely available:
     >>> print frog.builderok
     True
 
-    >>> build_set = getUtility(IBuildSet)
+    >>> build_set = getUtility(IBinaryPackageBuildSet)
     >>> build = build_set.getByQueueEntry(frog.currentjob)
     >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE

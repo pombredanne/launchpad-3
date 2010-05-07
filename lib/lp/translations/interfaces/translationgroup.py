@@ -28,12 +28,12 @@ from lazr.enum import DBEnumeratedType, DBItem
 class TranslationPermission(DBEnumeratedType):
     """Translation Permission System
 
-    Projects, products and distributions can all have content that needs to
-    be translated. In this case, Launchpad Translations allows them to decide
-    how open they want that translation process to be. At one extreme, anybody
-    can add or edit any translation, without review. At the other, only the
-    designated translator for that group in that language can add or edit its
-    translation files. This schema enumerates the options.
+    Projects groups, products and distributions can all have content that
+    needs to be translated. In this case, Launchpad Translations allows them
+    to decide how open they want that translation process to be. At one
+    extreme, anybody can add or edit any translation, without review. At the
+    other, only the designated translator for that group in that language can
+    add or edit its translation files. This schema enumerates the options.
     """
 
     OPEN = DBItem(1, """

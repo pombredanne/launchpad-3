@@ -8,6 +8,8 @@ __metaclass__ = type
 __all__ = [
     'Builder',
     'BuilderSet',
+    'rescueBuilderIfLost',
+    'updateBuilderStatus',
     ]
 
 import httplib
@@ -40,11 +42,11 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
-    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
+    CannotResumeHost, CorruptBuildCookie, IBuilder, IBuilderSet,
+    ProtocolVersionMismatch)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -53,9 +55,8 @@ from lp.services.job.interfaces.job import JobStatus
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 
 
@@ -152,6 +153,71 @@ class BuilderSlave(xmlrpclib.ServerProxy):
                 self, buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
+
+
+# This is a separate function since MockBuilder needs to use it too.
+# Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
+def rescueBuilderIfLost(builder, logger=None):
+    """See `IBuilder`."""
+    status_sentence = builder.slaveStatusSentence()
+
+    # 'ident_position' dict relates the position of the job identifier
+    # token in the sentence received from status(), according the
+    # two status we care about. See see lib/canonical/buildd/slave.py
+    # for further information about sentence format.
+    ident_position = {
+        'BuilderStatus.BUILDING': 1,
+        'BuilderStatus.WAITING': 2
+        }
+
+    # Isolate the BuilderStatus string, always the first token in
+    # see lib/canonical/buildd/slave.py and
+    # IBuilder.slaveStatusSentence().
+    status = status_sentence[0]
+
+    # If slave is not building nor waiting, it's not in need of rescuing.
+    if status not in ident_position.keys():
+        return
+
+    slave_build_id = status_sentence[ident_position[status]]
+
+    try:
+        builder.verifySlaveBuildCookie(slave_build_id)
+    except CorruptBuildCookie, reason:
+        if status == 'BuilderStatus.WAITING':
+            builder.cleanSlave()
+        else:
+            builder.requestAbort()
+        if logger:
+            logger.warn(
+                "Builder '%s' rescued from '%s': '%s'" %
+                (builder.name, slave_build_id, reason))
+
+
+def updateBuilderStatus(builder, logger=None):
+    """See `IBuilder`."""
+    if logger:
+        logger.debug('Checking %s' % builder.name)
+
+    try:
+        builder.checkSlaveAlive()
+        builder.checkSlaveArchitecture()
+        builder.rescueIfLost(logger)
+    # Catch only known exceptions.
+    # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+    # disturbing in this context. We should spend sometime sanitizing the
+    # exceptions raised in the Builder API since we already started the
+    # main refactoring of this area.
+    except (ValueError, TypeError, xmlrpclib.Fault,
+            BuildDaemonError), reason:
+        builder.failBuilder(str(reason))
+        if logger:
+            logger.warn(
+                "%s (%s) marked as failed due to: %s",
+                builder.name, builder.url, builder.failnotes, exc_info=True)
+    except socket.error, reason:
+        error_message = str(reason)
+        builder.handleTimeout(logger, error_message)
 
 
 class Builder(SQLBase):
@@ -251,6 +317,14 @@ class Builder(SQLBase):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
             raise BuildDaemonError("Failed to echo OK")
+
+    def rescueIfLost(self, logger=None):
+        """See `IBuilder`."""
+        rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        """See `IBuilder`."""
+        updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
@@ -354,7 +428,7 @@ class Builder(SQLBase):
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
             self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):
@@ -363,17 +437,27 @@ class Builder(SQLBase):
         status_sentence = self.slave.status()
 
         status = {'builder_status': status_sentence[0]}
-        status.update(
-            self.current_build_behavior.slaveStatus(status_sentence))
+
+        # Extract detailed status and log information if present.
+        # Although build_id is also easily extractable here, there is no
+        # valid reason for anything to use it, so we exclude it.
+        if status['builder_status'] == 'BuilderStatus.WAITING':
+            status['build_status'] = status_sentence[1]
+        else:
+            if status['builder_status'] == 'BuilderStatus.BUILDING':
+                status['logtail'] = status_sentence[2]
+
+        self.current_build_behavior.updateSlaveStatus(status_sentence, status)
         return status
 
     def slaveStatusSentence(self):
         """See IBuilder."""
         return self.slave.status()
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuilder`."""
-        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+        return self.current_build_behavior.verifySlaveBuildCookie(
+            slave_build_id)
 
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
@@ -580,12 +664,12 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            active=True, virtualized=False, vm_host=None):
+            active=True, virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=True)
+                       builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -611,7 +695,7 @@ class BuilderSet(object):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
@@ -619,7 +703,7 @@ class BuilderSet(object):
         store = Store.of(processor)
         origin = (
             Archive,
-            Build,
+            BinaryPackageBuild,
             BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
@@ -628,11 +712,11 @@ class BuilderSet(object):
         queue = store.using(*origin).find(
             BuildQueue,
             BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == Build.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            Build.archive == Archive.id,
+            BuildPackageJob.build == BinaryPackageBuild.id,
+            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            Build.buildstate == BuildStatus.NEEDSBUILD,
+            BinaryPackageBuild.buildstate == BuildStatus.NEEDSBUILD,
             Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,
@@ -644,19 +728,37 @@ class BuilderSet(object):
         """See IBuilderSet."""
         logger.debug("Slave Scan Process Initiated.")
 
-        buildMaster = BuilddMaster(logger, txn)
-
         logger.debug("Setting Builders.")
-        # Put every distroarchseries we can find into the build master.
-        for archseries in getUtility(IDistroArchSeriesSet):
-            buildMaster.addDistroArchSeries(archseries)
-            buildMaster.setupBuilders(archseries)
+        self.checkBuilders(logger, txn)
 
         logger.debug("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve
         # builds where they are completed
-        buildMaster.scanActiveBuilders()
-        return buildMaster
+        self.scanActiveBuilders(logger, txn)
+
+    def checkBuilders(self, logger, txn):
+        """See `IBuilderSet`."""
+        for builder in self:
+            # XXX Robert Collins 2007-05-23 bug=31546: builders that are not
+            # 'ok' are not worth rechecking here for some currently
+            # undocumented reason. This also relates to bug #30633.
+            if builder.builderok:
+                builder.updateStatus(logger)
+
+        txn.commit()
+
+    def scanActiveBuilders(self, logger, txn):
+        """See `IBuilderSet`."""
+
+        queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
+
+        logger.debug(
+            "scanActiveBuilders() found %d active build(s) to check"
+            % queueItems.count())
+
+        for job in queueItems:
+            job.builder.updateBuild(job)
+            txn.commit()
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""

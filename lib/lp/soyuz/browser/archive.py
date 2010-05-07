@@ -10,6 +10,7 @@ __all__ = [
     'ArchiveActivateView',
     'ArchiveBadges',
     'ArchiveBuildsView',
+    'ArchiveDeleteView',
     'ArchiveEditDependenciesView',
     'ArchiveEditView',
     'ArchiveIndexActionsMenu',
@@ -21,6 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
+    'make_archive_vocabulary',
     'traverse_distro_archive',
     'traverse_named_ppa',
     ]
@@ -58,13 +60,14 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.adapters.archivesourcepublication import (
     ArchiveSourcePublications)
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy, IArchive, IArchiveEditDependenciesForm,
-    IArchiveSet, IPPAActivateForm, NoSuchPPA)
+    ArchivePurpose, ArchiveStatus, CannotCopy, IArchive,
+    IArchiveEditDependenciesForm, IArchiveSet, IPPAActivateForm, NoSuchPPA)
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.build import BuildSetStatus, IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    BuildSetStatus, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.series import SeriesStatus
@@ -192,7 +195,7 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         except ValueError:
             return None
         try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
 
@@ -402,15 +405,24 @@ class ArchiveMenuMixin:
         # This link should only be available for private archives:
         view = self.context
         archive = view.context
-        if not archive.private:
+        if not archive.private or not archive.is_active:
             link.enabled = False
-
         return link
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        view = self.context
+        return Link(
+            '+edit', text, icon='edit', enabled=view.context.is_active)
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete_ppa(self):
+        text = 'Delete PPA'
+        view = self.context
+        return Link(
+            '+delete', text, icon='trash-icon',
+            enabled=view.context.is_active)
 
     def builds(self):
         text = 'View all builds'
@@ -442,6 +454,9 @@ class ArchiveMenuMixin:
         # archives without any sources.
         if self.context.is_copy or not self.context.has_sources:
             link.enabled = False
+        view = self.context
+        if not view.context.is_active:
+            link.enabled = False
         return link
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -458,7 +473,10 @@ class ArchiveMenuMixin:
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
         text = 'Edit PPA dependencies'
-        return Link('+edit-dependencies', text, icon='edit')
+        view = self.context
+        return Link(
+            '+edit-dependencies', text, icon='edit',
+            enabled=view.context.is_active)
 
 
 class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
@@ -466,9 +484,9 @@ class ArchiveNavigationMenu(NavigationMenu, ArchiveMenuMixin):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'builds', 'builds_building', 'builds_pending',
-             'builds_successful', 'edit', 'edit_dependencies', 'packages',
-             'ppa']
+    links = ['admin', 'builds', 'builds_building',
+             'builds_pending', 'builds_successful',
+             'packages', 'ppa']
 
 
 class IArchiveIndexActionsMenu(Interface):
@@ -479,8 +497,8 @@ class ArchiveIndexActionsMenu(NavigationMenu, ArchiveMenuMixin):
     """Archive index navigation menu."""
     usedfor = IArchiveIndexActionsMenu
     facet = 'overview'
-    links = ['admin', 'edit', 'edit_dependencies', 'manage_subscribers',
-             'packages']
+    links = ['admin', 'edit', 'edit_dependencies',
+             'manage_subscribers', 'packages', 'delete_ppa']
 
 
 class IArchivePackagesActionMenu(Interface):
@@ -576,7 +594,7 @@ class ArchiveViewBase(LaunchpadView):
         if self.context.is_ppa:
             return 'PPA'
         else:
-            return 'Archive'
+            return 'archive'
 
     @cachedproperty
     def build_counters(self):
@@ -618,6 +636,19 @@ class ArchiveViewBase(LaunchpadView):
         copy_requests = getUtility(
             IPackageCopyRequestSet).getByTargetArchive(self.context)
         return list(copy_requests)
+
+
+    @property
+    def disabled_warning_message(self):
+        """Return an appropriate message if the archive is disabled."""
+        if self.context.enabled:
+            return None
+
+        if self.context.status in (
+            ArchiveStatus.DELETED, ArchiveStatus.DELETING):
+            return "This %s has been deleted." % self.archive_label
+        else:
+            return "This %s has been disabled." % self.archive_label
 
 
 class ArchiveSeriesVocabularyFactory:
@@ -1141,6 +1172,15 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+def make_archive_vocabulary(archives):
+    terms = []
+    for archive in archives:
+        token = '%s/%s' % (archive.owner.name, archive.name)
+        label = '%s (%s)' % (archive.displayname, token)
+        terms.append(SimpleTerm(archive, token, label))
+    return SimpleVocabulary(terms)
+
+
 class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
     """Archive package copying view class.
 
@@ -1200,27 +1240,15 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
-        terms = []
-        required = True
-
-        for ppa in self.ppas_for_user:
-            # Do not include the context PPA in the dropdown widget
-            # and make this field not required. This way we can safely
-            # default to the context PPA when copying.
-            if self.can_copy_to_context_ppa and self.context == ppa:
-                required = False
-                continue
-            token = '%s/%s' % (ppa.owner.name, ppa.name)
-            terms.append(
-                SimpleTerm(ppa, token, '%s (%s)' % (ppa.displayname, token)))
-
+        # Do not include the context PPA in the dropdown widget.
+        ppas = [ppa for ppa in self.ppas_for_user if self.context != ppa]
         return form.Fields(
             Choice(__name__='destination_archive',
                    title=_('Destination PPA'),
-                   vocabulary=SimpleVocabulary(terms),
+                   vocabulary=make_archive_vocabulary(ppas),
                    description=_("Select the destination PPA."),
                    missing_value=self.context,
-                   required=required))
+                   required=not self.can_copy_to_context_ppa))
 
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""
@@ -1917,3 +1945,44 @@ class ArchiveAdminView(BaseArchiveEditView):
         :rtype: bool
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
+
+
+class ArchiveDeleteView(LaunchpadFormView):
+    """View class for deleting `IArchive`s"""
+
+    schema = Interface
+
+    @property
+    def page_title(self):
+        return smartquote('Delete "%s"' % self.context.displayname)
+
+    @property
+    def label(self):
+        return self.page_title
+
+    @property
+    def can_be_deleted(self):
+        return self.context.status not in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED)
+
+    @property
+    def waiting_for_deletion(self):
+        return self.context.status == ArchiveStatus.DELETING
+
+    @property
+    def next_url(self):
+        # We redirect back to the PPA owner's profile page on a
+        # successful action.
+        return canonical_url(self.context.owner)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action(_("Permanently delete PPA"), name="delete_ppa")
+    def action_delete_ppa(self, action, data):
+        self.context.delete(self.user)
+        self.request.response.addInfoNotification(
+            "Deletion of '%s' has been requested and the repository will be "
+            "removed shortly." % self.context.title)
+
