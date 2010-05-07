@@ -119,12 +119,15 @@ def get_translation_domain(dirname):
     translation domain the build environment provides. The domain is usually
     defined in the GETTEXT_PACKAGE variable in one of the build files. Another
     variant is DOMAIN in the Makevars file. This function goes through the
-    ordered list of these possible locations, the order having been copied
-    from intltool-update, and tries to find a valid value.
+    ordered list of these possible locations, top to bottom, and tries to
+    find a valid value. Since the same variable name may be defined in
+    multiple files (usually configure.ac and Makefile.in.in), it needs to
+    keep trying with the next file, until it finds the most specific
+    definition.
 
     If the found value contains a substitution, either autoconf style (@...@)
-    or make style ($(...)), the search is continued in the same file and down
-    the list of files, now searching for the substitution. Multiple
+    or make style ($(...)), the search is continued in the same file and back
+    up the list of files, now searching for the substitution. Multiple
     substitutions or multi-level substitutions are not supported.
     """
     locations = [
@@ -226,9 +229,7 @@ class ConfigFile(object):
         result = pattern.search(self.content)
         if result is None:
             return None
-        return [
-            param.strip()
-            for param in result.group(1).strip().split(',')]
+        return [param.strip() for param in result.group(1).split(',')]
 
 
 class Substitution(object):
