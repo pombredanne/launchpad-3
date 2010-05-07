@@ -966,8 +966,7 @@ class POTMsgSet(SQLBase):
         elif message.potemplate is None:
             return 'shared'
         else:
-            assert message.poteplate is not None, (
-                "Confused message state.")
+            assert message.poteplate is not None, "Confused message state."
             return 'diverged'
 
     def _makeTranslationMessage(self, pofile, submitter, translations, origin,
