@@ -242,7 +242,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         msg = self.factory.makeEmailMessage(
             body='This is the body of the email.',
             attachments=[('inc.diff', 'text/x-diff', 'This is a diff.')],
-            encode_attachments = True)
+            encode_attachments=True)
         comment = self.makeComment(msg)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         person = comment.branch_merge_proposal.target_branch.owner
