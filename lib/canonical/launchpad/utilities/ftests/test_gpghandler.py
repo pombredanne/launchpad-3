@@ -114,6 +114,11 @@ class TestImportKeyRing(unittest.TestCase):
         [key] = filtered_keys
         self.assertEqual(key.fingerprint, target_fpr)
 
+    def test_non_ascii_filter(self):
+        """localKeys should not error if passed non-ascii unicode strings."""
+        filtered_keys = self.gpg_handler.localKeys(u'non-ascii \u8463')
+        self.failUnlessRaises(StopIteration, filtered_keys.next)
+
     def testTestkeyrings(self):
         """Do we have the expected test keyring files"""
         self.assertEqual(len(list(keys_for_tests.test_keyrings())), 1)
