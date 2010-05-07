@@ -8,7 +8,9 @@ __all__ = ['POTMsgSet']
 
 import datetime
 import logging
+from operator import attrgetter
 import pytz
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -232,7 +234,7 @@ class POTMsgSet(SQLBase):
                                    current=True):
         """Get a translation message which is either used in
         Launchpad (current=True) or in an import (current=False).
-        
+
         Prefers a diverged message if present.
         """
         # Change the is_current_ubuntu and is_current_upstream conditions
@@ -522,13 +524,17 @@ class POTMsgSet(SQLBase):
                 potranslations[pluralform] = None
         return potranslations
 
-    def _findTranslationMessage(self, pofile, potranslations, pluralforms):
-        """Find a message for this `pofile`.
+    def _findTranslationMessage(self, pofile, potranslations,
+                                prefer_shared=True):
+        """Find a matching message in this `pofile`.
 
-        The returned message matches exactly the given `translations` strings
-        comparing only `pluralforms` of them.
+        The returned message matches exactly the given `translations`
+        strings (except plural forms not supported by `pofile`, which
+        are ignored).
+
         :param potranslations: A list of translation strings.
-        :param pluralforms: The number of pluralforms to compare.
+        :param prefer_shared: Whether to prefer a shared match over a
+            diverged one.
         """
         clauses = ['potmsgset = %s' % sqlvalues(self),
                    'language = %s' % sqlvalues(pofile.language),
@@ -539,7 +545,7 @@ class POTMsgSet(SQLBase):
         else:
             clauses.append('variant = %s' % sqlvalues(pofile.variant))
 
-        for pluralform in range(pluralforms):
+        for pluralform in range(pofile.plural_forms):
             if potranslations[pluralform] is None:
                 clauses.append('msgstr%s IS NULL' % sqlvalues(pluralform))
             else:
@@ -547,10 +553,15 @@ class POTMsgSet(SQLBase):
                     sqlvalues(pluralform, potranslations[pluralform])))
 
         remaining_plural_forms = range(
-            pluralforms, TranslationConstants.MAX_PLURAL_FORMS)
+            pofile.plural_forms, TranslationConstants.MAX_PLURAL_FORMS)
 
-        # Prefer shared messages over diverged ones.
-        order = ['potemplate NULLS FIRST']
+        # Prefer either shared or diverged messages, depending on
+        # arguments.
+        if prefer_shared:
+            order = ['potemplate NULLS FIRST']
+        else:
+            order = ['potemplate NULLS LAST']
+
         # Normally at most one message should match.  But if there is
         # more than one, prefer the one that adds the fewest extraneous
         # plural forms.
@@ -565,8 +576,8 @@ class POTMsgSet(SQLBase):
             if len(matches) > 1:
                 logging.warn(
                     "Translation for POTMsgSet %s into %s "
-                    "matches %s existing translations." % sqlvalues(
-                        self, pofile.language.code, len(matches)))
+                    "matches %s existing translations.",
+                        self.id, pofile.language.code, len(matches))
             return matches[0]
         else:
             return None
@@ -799,7 +810,7 @@ class POTMsgSet(SQLBase):
         # of translations.  None if there is no such message and needs to be
         # created.
         matching_message = self._findTranslationMessage(
-            pofile, potranslations, pofile.plural_forms)
+            pofile, potranslations)
 
         match_is_upstream = (
             matching_message is not None and
@@ -897,7 +908,7 @@ class POTMsgSet(SQLBase):
         potranslations = self._findPOTranslations(new_translations)
 
         existing_message = self._findTranslationMessage(
-            pofile, potranslations, pofile.plural_forms)
+            pofile, potranslations)
         if existing_message is not None:
             return existing_message
 
@@ -941,6 +952,187 @@ class POTMsgSet(SQLBase):
             else:
                 current.reviewer = reviewer
                 current.date_reviewed = lock_timestamp
+
+    def _nameMessageStatus(self, message, get_other_flag):
+        """Figure out the decision-matrix status of a message.
+
+        This is used in navigating the decision matrix in
+        `_setActiveTranslation`.
+        """
+        if message is None:
+            return 'none'
+        elif message.potemplate is None and get_other_flag(message):
+            return 'other_shared'
+        elif message.potemplate is None:
+            return 'shared'
+        else:
+            assert message.poteplate is not None, (
+                "Confused message state.")
+            return 'diverged'
+
+    def _makeTranslationMessage(self, pofile, submitter, translations, origin,
+                                lock_timestamp=None, diverged=False):
+        # XXX: Document.
+        """."""
+        if diverged:
+            potemplate = pofile.potemplate
+        else:
+            potemplate = None
+
+        translation_args = dict(
+            ('msgstr%d' % form, translation)
+            for form, translation in translations.iteritems()
+            )
+
+        return TranslationMessage(
+            potmsgset=self,
+            potemplate=potemplate,
+            pofile=pofile,
+            language=pofile.language,
+            variant=pofile.variant,
+            origin=origin,
+            submitter=submitter,
+            validation_status=TranslationValidationStatus.OK,
+            **translation_args)
+
+    def _setActiveTranslation(self, flag_name, incumbent_message,
+                              other_incumbent, pofile, submitter,
+                              translations, origin, lock_timestamp=None,
+                              steal_other_flag=False):
+        """."""
+        switch_flags = {
+            'is_current_ubuntu': 'is_current_upstream',
+            'is_current_upstream': 'is_current_ubuntu',
+        }
+        assert switch_flags[switch_flags[flag_name]] == flag_name, (
+            "Flags handling is broken.")
+
+        twin = self._findTranslationMessage(
+            pofile, translations, prefer_shared=False)
+
+        get_flag = attrgetter(flag_name)
+        get_other_flag = attrgetter(switch_flags[flag_name])
+
+        decision_matrix = {
+            'incumbent_none': {
+                'twin_none': 'Z1+',
+                'twin_shared': 'Z4+',
+                'twin_diverged': 'Z7+',
+                'twin_other_shared': 'Z4+',
+            },
+            'incumbent_shared': {
+                'twin_none': 'B1',
+                'twin_shared': 'B4',
+                'twin_diverged': 'B7',
+                'twin_other_shared': 'B4',
+            },
+            'incumbent_diverged': {
+                'twin_none': 'A2',
+                'twin_shared': 'A5',
+                'twin_diverged': 'A4',
+                'twin_other_shared': 'A5',
+            },
+            'incumbent_other_shared': {
+                'twin_none': 'B1+',
+                'twin_shared': 'B4+',
+                'twin_diverged': 'B7+',
+                'twin_other_shared': '',
+            },
+        }
+
+        incumbent_state = "incumbent_%s" % self._nameMessageStatus(
+            incumbent_message, get_other_flag)
+        twin_state = "twin_%s" % self._nameMessageStatus(twin, get_other_flag)
+
+        decisions = decision_matrix[incumbent_state][twin_state]
+        assert re.match('[ABZ]?[12457]?\+?$', decisions), (
+            "Bad decision string.")
+
+        for character in decisions:
+            if character == 'A':
+                # Deactivate & converge.
+                # XXX: Split off a C case for
+                # twin_shared/twin_other_shared?
+                if twin is not None and twin.potemplate is None:
+                    incumbent_message.delete()
+                else:
+                    setattr(incumbent_message, flag_name, False)
+                    incumbent_message.potemplate = False
+            elif character == 'B':
+                # Deactivate.
+                setattr(incumbent_message, flag_name, False)
+            elif character == 'Z':
+                # There is no incumbent message, so do nothing to it.
+                assert incumbent_message is None, (
+                    "Incorrect Z in decision matrix.")
+            elif character == '1':
+                # Create & activate.
+                message = self._makeTranslationMessage(
+                    pofile, submitter, translations, origin,
+                    lock_timestamp=lock_timestamp)
+            elif character == '2':
+                # Create, diverge, activate.
+                message = self._makeTranslationMessage(
+                    pofile, submitter, translations, origin,
+                    lock_timestamp=lock_timestamp, diverged=True)
+            elif character == '4':
+                # Activate.
+                message = twin
+            elif character == '5':
+                # If other is not active, fork a diverged message.
+                if get_flag(twin):
+                    message = self._makeTranslationMessage(
+                        pofile, submitter, translations, origin,
+                        lock_timestamp=lock_timestamp, diverged=True)
+                else:
+                    message = twin
+            elif character == '7':
+                # Converge & activate.
+                message = twin
+                # XXX: Deal with clashes when converging!
+                message.potemplate = None
+            elif character == '+':
+                if steal_other_flag:
+                    other_flag_name = switch_flags[flag_name]
+                    if other_incumbent is not None:
+                        # Steal the other incumbent's flag.
+                        setattr(other_incumbent, other_flag_name, False)
+                    setattr(message, other_flag_name, True)
+            else:
+                raise AssertionError(
+                    "Bad character in decision string: %s" % character)
+
+        if decisions == '':
+            message = twin
+
+        setattr(message, flag_name, True)
+
+        return message
+
+    def setUpstreamTranslation(self, pofile, submitter, translations, origin,
+                               lock_timestamp=None):
+        """See `IPOTMsgSet`."""
+        incumbent_message = self.getImportedTranslationMessage(
+            pofile.potemplate, pofile.language, variant=pofile.variant)
+        other_incumbent = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language, variant=pofile.variant)
+        return self._setActiveTranslation(
+            'is_current_upstream', incumbent_message, other_incumbent, pofile,
+            submitter, translations, origin, lock_timestamp=lock_timestamp,
+            steal_other_flag=True)
+
+    def setUbuntuTranslation(self, pofile, submitter, translations, origin,
+                             lock_timestamp=None,
+                             with_upstream_privileges=False):
+        """See `IPOTMsgSet`."""
+        incumbent_message = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language, variant=pofile.variant)
+        other_incumbent = self.getImportedTranslationMessage(
+            pofile.potemplate, pofile.language, variant=pofile.variant)
+        return self._setActiveTranslation(
+            'is_current_ubuntu', incumbent_message, other_incumbent, pofile,
+            submitter, translations, origin, lock_timestamp=lock_timestamp,
+            steal_other_flag=with_upstream_privileges)
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
@@ -1112,7 +1304,7 @@ class POTMsgSet(SQLBase):
         # The credits message has a fixed "translator."
         translator = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        message = self.updateTranslation(
+        self.updateTranslation(
             pofile, translator, [credits_message_str],
             is_current_upstream=False, allow_credits=True,
             force_shared=True, force_edition_rights=True,

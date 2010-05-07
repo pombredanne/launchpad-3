@@ -214,6 +214,10 @@ class IPOTMsgSet(Interface):
                           force_edition_rights=False, allow_credits=False):
         """Update or create a translation message using `new_translations`.
 
+        This method is Launchpad Translations's sliderule: it does
+        everything, nobody fully understands it all, and we intend to
+        replace it with a range of less flexible tools.
+
         :param pofile: a `POFile` to add `new_translations` to.
         :param submitter: author of the translations.
         :param new_translations: a dictionary of plural forms, with the
@@ -259,6 +263,21 @@ class IPOTMsgSet(Interface):
             want to update.
 
         If a translation conflict is detected, TranslationConflict is raised.
+        """
+
+    def setUpstreamTranslation(pofile, submitter, translations, origin,
+                              lock_timestamp=None):
+        """Set the message's current upstream translation(s).
+
+        XXX: Ensure this matches the model API when the branch is done.
+        """
+
+    def setUbuntuTranslation(pofile, submitter, translations, origin,
+                             lock_timestamp=None,
+                             with_upstream_privileges=False):
+        """Set the message's current Ubuntu translation(s).
+
+        XXX: Ensure this matches the model API when the branch is done.
         """
 
     def applySanityFixes(unicode_text):

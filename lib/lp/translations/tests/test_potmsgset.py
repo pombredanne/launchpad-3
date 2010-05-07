@@ -1484,5 +1484,70 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         self.assertEqual([], karma_listener.karma_events)
 
 
+class TestSetUpstreamTranslation(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
+
+    def _makePOFileAndPOTMsgSet(self):
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        return pofile, potmsgset
+
+    def _makeTranslations(self, potmsgset, forms=1):
+        return removeSecurityProxy(potmsgset)._findPOTranslations([
+            self.factory.getUniqueString()
+            for counter in xrange(forms)
+            ])
+
+    def test_baseline(self):
+        # setUpstreamTranslation sets the current upstream translation
+        # for a message.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+        origin = RosettaTranslationOrigin.SCM
+
+        message = potmsgset.setUpstreamTranslation(
+            pofile, pofile.potemplate.owner, translations, origin)
+
+        self.assertEqual(
+            message,
+            potmsgset.getCurrentTranslationMessage(
+                pofile.potemplate, pofile.language))
+        self.assertEqual(origin, message.origin)
+
+    def test_identical(self):
+        # Setting the same message twice leaves the original as-is.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+
+        first_message = potmsgset.setUpstreamTranslation(
+            pofile, pofile.potemplate.owner, translations,
+            RosettaTranslationOrigin.ROSETTAWEB)
+        second_message = potmsgset.setUpstreamTranslation(
+            pofile, self.factory.makePerson(), translations, 
+            RosettaTranslationOrigin.SCM)
+
+        self.assertEqual(first_message, second_message)
+        message = first_message
+        self.assertEqual(pofile.potemplate.owner, message.submitter)
+        self.assertEqual(RosettaTranslationOrigin.ROSETTAWEB, message.origin)
+
+    def test_also_sets_initial_ubuntu(self):
+        # Setting an upstream translation also initializes the Ubuntu
+        # translation.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+        origin = RosettaTranslationOrigin.ROSETTAWEB
+
+        message = potmsgset.setUpstreamTranslation(
+            pofile, pofile.potemplate.owner, translations, origin)
+
+        self.assertEqual(
+            message,
+            potmsgset.getImportedTranslationMessage(
+                pofile.potemplate, pofile.language))
+
+    # XXX: Verify that nothing ever produces a diverged suggestion.
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
