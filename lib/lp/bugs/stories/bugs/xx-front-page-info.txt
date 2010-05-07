@@ -100,7 +100,7 @@ and we see a message "no hot bugs" instead of the bug listing.
     >>> bug_list = find_tag_by_id(
     ...     anon_browser.contents, 'no-bugs-filed')
     >>> print extract_text(bug_list)
-    There are currently no hot bugs filed against Project Uses Malone.
+    There are currently no open bugs filed against Project Uses Malone.
 
 But since the project has a bug, the search box is still visible.
 

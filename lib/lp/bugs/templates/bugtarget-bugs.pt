@@ -34,8 +34,9 @@
         </ul>
       </div>
       <div class="portlet">
-        <dl tal:define="bug_supervisor context/bug_supervisor">
-          <dt id="bug-supervisor">Bug supervisor:</dt>
+        <dl tal:define="bug_supervisor context/bug_supervisor"
+            id="bug-supervisor">
+          <dt>Bug supervisor:</dt>
           <dd>
             <tal:none condition="not:bug_supervisor">None set</tal:none>
             <a tal:condition="bug_supervisor"
