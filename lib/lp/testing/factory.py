@@ -2242,7 +2242,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return DistributionSourcePackage(distribution, sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
-                         attachments=None):
+                         attachments=None, encode_attachments=False):
         """Make an email message with possible attachments.
 
         :param attachments: Should be an interable of tuples containing
@@ -2272,6 +2272,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 attachment['Content-Type'] = content_type
                 attachment['Content-Disposition'] = (
                     'attachment; filename="%s"' % filename)
+                if encode_attachments:
+                    encode_base64(attachment)
                 msg.attach(attachment)
         return msg
 

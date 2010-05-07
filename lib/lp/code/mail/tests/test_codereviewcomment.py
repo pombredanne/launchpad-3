@@ -205,6 +205,15 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(ctrl.body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
+    def makeComment(self, email_message):
+        message = getUtility(IMessageSet).fromEmail(email_message.as_string())
+        bmp = self.factory.makeBranchMergeProposal()
+        comment = bmp.createCommentFromMessage(
+            message, None, None, email_message)
+        # We need to make sure the Librarian is up-to-date, so we commit.
+        transaction.commit()
+        return comment
+
     def test_mailer_attachments(self):
         # Ensure that the attachments are attached.
         # Only attachments that we would show in the web ui are attached,
@@ -214,24 +223,35 @@ class TestCodeReviewComment(TestCaseWithFactory):
             attachments=[
                 ('inc.diff', 'text/x-diff', 'This is a diff.'),
                 ('pic.jpg', 'image/jpeg', 'Binary data')])
-        message = getUtility(IMessageSet).fromEmail(msg.as_string())
-        bmp = self.factory.makeBranchMergeProposal()
-        comment = bmp.createCommentFromMessage(message, None, None, msg)
-        # We need to make sure the Librarian is up-to-date, so we commit.
-        transaction.commit()
+        comment = self.makeComment(msg)
         mailer = CodeReviewCommentMailer.forCreation(comment)
         # The attachments of the mailer should have only the diff.
         [outgoing_attachment] = mailer.attachments
         self.assertEqual('inc.diff', outgoing_attachment[1])
         self.assertEqual('text/x-diff', outgoing_attachment[2])
         # The attachments are attached to the outgoing message.
-        person = bmp.target_branch.owner
+        person = comment.branch_merge_proposal.target_branch.owner
         message = mailer.generateEmail(
             person.preferredemail.email, person).makeMessage()
         self.assertTrue(message.is_multipart())
         attachment = message.get_payload()[1]
         self.assertEqual('inc.diff', attachment.get_filename())
         self.assertEqual('text/x-diff', attachment['content-type'])
+
+    def test_encoded_attachments(self):
+        msg = self.factory.makeEmailMessage(
+            body='This is the body of the email.',
+            attachments=[('inc.diff', 'text/x-diff', 'This is a diff.')],
+            encode_attachments = True)
+        comment = self.makeComment(msg)
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        person = comment.branch_merge_proposal.target_branch.owner
+        message = mailer.generateEmail(
+            person.preferredemail.email, person).makeMessage()
+        attachment = message.get_payload()[1]
+        self.assertEqual(
+            'This is a diff.', attachment.get_payload(decode=True))
+
 
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.
