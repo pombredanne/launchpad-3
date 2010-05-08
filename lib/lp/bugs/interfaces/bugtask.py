@@ -808,7 +808,7 @@ class IBugTaskSearchBase(Interface):
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
-        title=_('Show only bugs with patches.'), required=False,
+        title=_('Show only bugs with patches available.'), required=False,
         default=False)
     has_no_package = Bool(
         title=_('Exclude bugs with packages specified'),
