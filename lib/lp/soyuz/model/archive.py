@@ -1681,6 +1681,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             Archive.private = FALSE AND
+            Archive.enabled = TRUE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
         """ % sqlvalues(distribution, ArchivePurpose.PPA)
