@@ -61,8 +61,9 @@ class CodeReviewCommentMailer(BMPMailer):
                 else:
                     content_type = part['content-type']
                 if (filename, content_type) in include_attachments:
+                    payload = part.get_payload(decode=True)
                     self.attachments.append(
-                        (part.get_payload(), filename, content_type))
+                        (payload, filename, content_type))
         self._generateBodyBits()
 
     @classmethod
