@@ -1433,7 +1433,8 @@ class Archive(SQLBase):
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
         self.status = ArchiveStatus.DELETING
-        self.disable()
+        if self.enabled:
+            self.disable()
 
 
 class ArchiveSet:

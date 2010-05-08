@@ -209,9 +209,9 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-mpcreationjobs:
-	# Handle merge proposal creations.
-	$(PY) cronscripts/mpcreationjobs.py
+merge-proposal-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
 	$(RM) thread*.request
@@ -229,13 +229,13 @@ run_all: check_schema inplace stop hosted_branches
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
-	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
 
 start_codebrowse: build
-	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
 
 stop_codebrowse:
-	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
@@ -255,8 +255,7 @@ scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/scan_branches.py
 
-
-sync_branches: pull_branches scan_branches mpcreationjobs
+sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh

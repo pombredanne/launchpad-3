@@ -107,13 +107,13 @@ class TestSFTPAdapter(TrialTestCase):
         TrialTestCase.setUp(self)
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branchfs_endpoint = XMLRPCWrapper(
-            frontend.getFilesystemEndpoint())
+        self.codehosting_endpoint = XMLRPCWrapper(
+            frontend.getCodehostingEndpoint())
 
     def makeCodehostingAvatar(self):
         user = self.factory.makePerson()
         user_dict = dict(id=user.id, name=user.name)
-        return CodehostingAvatar(user_dict, self.branchfs_endpoint)
+        return CodehostingAvatar(user_dict, self.codehosting_endpoint)
 
     def test_canAdaptToSFTPServer(self):
         avatar = self.makeCodehostingAvatar()

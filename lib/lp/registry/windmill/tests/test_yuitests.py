@@ -17,5 +17,5 @@ class RegistryYUIUnitTestCase(YUIUnitTestCase):
 
 
 def test_suite():
-    app_testing_path = 'canonical/launchpad/javascript/registry/tests'
+    app_testing_path = 'lp/registry/javascript/tests'
     return build_yui_unittest_suite(app_testing_path, RegistryYUIUnitTestCase)

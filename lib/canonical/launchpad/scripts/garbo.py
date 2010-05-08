@@ -26,9 +26,7 @@ from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import (
-    DBLoopTuner, TunableLoop)
+from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
@@ -42,7 +40,6 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
-from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
@@ -346,150 +343,6 @@ class HWSubmissionEmailLinker(TunableLoop):
         transaction.commit()
 
 
-class MailingListSubscriptionPruner(TunableLoop):
-    """Prune `MailingListSubscription`s pointing at deleted email addresses.
-
-    Users subscribe to mailing lists with one of their verified email
-    addresses.  When they remove an address, the mailing list
-    subscription should go away too.
-    """
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(MailingListSubscriptionPruner, self).__init__(log, abort_time)
-        self.subscription_store = IMasterStore(MailingListSubscription)
-        self.email_store = IMasterStore(EmailAddress)
-
-        (self.min_subscription_id,
-         self.max_subscription_id) = self.subscription_store.find(
-            (Min(MailingListSubscription.id),
-             Max(MailingListSubscription.id))).one()
-
-        self.next_subscription_id = self.min_subscription_id
-
-    def isDone(self):
-        return (self.min_subscription_id is None or
-                self.next_subscription_id > self.max_subscription_id)
-
-    def __call__(self, chunk_size):
-        result = self.subscription_store.find(
-            MailingListSubscription,
-            MailingListSubscription.id >= self.next_subscription_id,
-            MailingListSubscription.id < (self.next_subscription_id +
-                                          chunk_size))
-        used_ids = set(result.values(MailingListSubscription.email_addressID))
-        existing_ids = set(self.email_store.find(
-                EmailAddress.id, EmailAddress.id.is_in(used_ids)))
-        deleted_ids = used_ids - existing_ids
-
-        self.subscription_store.find(
-            MailingListSubscription,
-            MailingListSubscription.id >= self.next_subscription_id,
-            MailingListSubscription.id < (self.next_subscription_id +
-                                          chunk_size),
-            MailingListSubscription.email_addressID.is_in(deleted_ids)
-            ).remove()
-
-        self.next_subscription_id += chunk_size
-        transaction.commit()
-
-
-class PersonEmailAddressLinkChecker(TunableLoop):
-    """Report invalid references between the authdb and main replication sets.
-
-    We can't use referential integrity to ensure references remain valid,
-    so we have to check regularly for any bugs that creep into our code.
-
-    We don't repair links yet, but could add this feature. I'd
-    rather track down the source of problems and fix problems there
-    and avoid automatic repair, which might be dangerous. In particular,
-    replication lag introduces a number of race conditions that would
-    need to be addressed.
-    """
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(PersonEmailAddressLinkChecker, self).__init__(log, abort_time)
-
-        self.person_store = IMasterStore(Person)
-        self.email_store = IMasterStore(EmailAddress)
-
-        # This query detects invalid links between Person and EmailAddress.
-        # The first part detects difference in opionion about what Account
-        # is linked to. The second part detects EmailAddresses linked to
-        # non existent Person records.
-        query = """
-            SELECT Person.id, EmailAddress.id
-            FROM EmailAddress, Person
-            WHERE EmailAddress.person = Person.id
-                AND Person.account IS DISTINCT FROM EmailAddress.account
-            UNION
-            SELECT NULL, EmailAddress.id
-            FROM EmailAddress LEFT OUTER JOIN Person
-                ON EmailAddress.person = Person.id
-            WHERE EmailAddress.person IS NOT NULL
-                AND Person.id IS NULL
-            """
-        # We need to issue this query twice, waiting between calls
-        # for all pending database changes to replicate. The known
-        # bad set are the entries common in both results.
-        bad_links_1 = set(self.person_store.execute(query))
-        transaction.abort()
-
-        self.blockForReplication()
-
-        bad_links_2 = set(self.person_store.execute(query))
-        transaction.abort()
-
-        self.bad_links = bad_links_1.intersection(bad_links_2)
-
-    def blockForReplication(self):
-        start = time.time()
-        while True:
-            lag = self.person_store.execute(
-                "SELECT COALESCE(EXTRACT(EPOCH FROM replication_lag()), 0);"
-                ).get_one()[0]
-            if lag < (time.time() - start):
-                return
-            # Guestimate on how long we should wait for. We cap
-            # it as several hours of lag can clear in an instant
-            # in some cases.
-            naptime = min(300, lag)
-            self.log.debug(
-                "Waiting for replication. Lagged %s secs. Napping %s secs."
-                % (lag, naptime))
-            time.sleep(naptime)
-
-    def isDone(self):
-        return not self.bad_links
-
-    def __call__(self, chunksize):
-        for counter in range(0, int(chunksize)):
-            if not self.bad_links:
-                return
-            person_id, emailaddress_id = self.bad_links.pop()
-            if person_id is None:
-                person = None
-            else:
-                person = self.person_store.get(Person, person_id)
-            emailaddress = self.email_store.get(EmailAddress, emailaddress_id)
-            self.report(person, emailaddress)
-            # We don't repair... yet.
-            # self.repair(person, emailaddress)
-        transaction.abort()
-
-    def report(self, person, emailaddress):
-        if person is None:
-            self.log.error(
-                "Corruption - '%s' is linked to a non-existant Person."
-                % emailaddress.email)
-        else:
-            self.log.error(
-                "Corruption - '%s' and '%s' reference different Accounts."
-                % (emailaddress.email, person.name))
-
-
 class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
@@ -662,7 +515,7 @@ class BranchJobPruner(TunableLoop):
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._ids_to_remove()[:chunk_size])
-        num_removed = self.job_store.find(
+        self.job_store.find(
             BranchJob,
             In(BranchJob.id, ids_to_remove)).remove()
         transaction.commit()
@@ -918,8 +771,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportResultPruner,
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
-        MailingListSubscriptionPruner,
-        PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
         BugWatchActivityPruner,
