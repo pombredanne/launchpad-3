@@ -777,7 +777,8 @@ class IBugTaskSearchBase(Interface):
     searchtext = TextLine(title=_("Bug ID or search text."), required=False)
     status = List(
         title=_('Status'),
-        description=_('Show only bugs with the given status value or list of values.'),
+        description=_('Show only bugs with the given status value '
+                      'or list of values.'),
         value_type=Choice(
             title=_('Status'),
             vocabulary=BugTaskStatusSearch,
@@ -786,7 +787,8 @@ class IBugTaskSearchBase(Interface):
         required=False)
     importance = List(
         title=_('Importance'),
-        description=_('Show only bugs with the given importance or list of importances.'),
+        description=_('Show only bugs with the given importance'
+                      'or list of importances.'),
         value_type=IBugTask['importance'],
         required=False)
     assignee = Choice(
@@ -806,7 +808,7 @@ class IBugTaskSearchBase(Interface):
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
-        title=_('Show only bugs with patch attachments.'), required=False,
+        title=_('Show only bugs with patches.'), required=False,
         default=False)
     has_no_package = Bool(
         title=_('Exclude bugs with packages specified'),
@@ -819,19 +821,24 @@ class IBugTaskSearchBase(Interface):
         value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'),
-        description=_('Distribution package archive grouping.  E.g. main, universe, multiverse'),
+        description=_('Distribution package archive grouping. '
+                      'E.g. main, universe, multiverse'),
         value_type=IComponent['name'], required=False)
     tag = List(title=_("Tag"), value_type=SearchTag(), required=False)
     status_upstream = List(
         title=_('Status upstream'),
-        description=_('Indicates the status of any remote watches associated with the bug.  Possible values include: pending_bugwatch, hide_upstream, resolved_upstream, and open_upstream.'),
+        description=_('Indicates the status of any remote watches '
+                      'associated with the bug.  Possible values '
+                      'include: pending_bugwatch, hide_upstream, '
+                      'resolved_upstream, and open_upstream.'),
         value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_supervisor = Choice(
         title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
-        description=_('Show only bugs in packages this team or person is subscribed to.'),
+        description=_('Show only bugs in packages this person or team '
+                      'is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
@@ -839,7 +846,8 @@ class IBugTaskSearchBase(Interface):
         required=False)
     subscriber = Choice(
         title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
-        description=_('Show only bugs this person or team is directly subscribed to.'),
+        description=_('Show only bugs this person or team '
+                      'is directly subscribed to.'),
         required=False)
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
@@ -861,7 +869,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     one value can be selected.)
     """
     tag = List(
-        title=_("Tags"), description=_("String or list of strings for tags to search.  To exclude, prepend a '-', e.g. '-unwantedtag'"),
+        title=_("Tags"),
+        description=_("String or list of strings for tags to search. "
+                      "To exclude, prepend a '-', e.g. '-unwantedtag'"),
         value_type=SearchTag(), required=False)
     tags_combinator = Choice(
         title=_("Tags combination"),
