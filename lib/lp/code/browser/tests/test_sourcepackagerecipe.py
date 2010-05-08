@@ -7,9 +7,8 @@
 __metaclass__ = type
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from textwrap import dedent
-import re
 
 from pytz import utc
 from zope.security.proxy import removeSecurityProxy
@@ -17,13 +16,14 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tags_by_class)
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeView, SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
-from lp.testing import ANONYMOUS, BrowserTestCase, login, TestCaseWithFactory
+from lp.testing import ANONYMOUS, BrowserTestCase, login
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -34,6 +34,7 @@ class TestCaseForRecipe(BrowserTestCase):
         super(TestCaseForRecipe, self).setUp()
         self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
+        self.user = self.chef
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
         self.squirrel = self.factory.makeDistroSeries(
@@ -49,15 +50,9 @@ class TestCaseForRecipe(BrowserTestCase):
             description=u'This recipe builds a foo for disto bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch])
 
-    def getRecipeBrowser(self, recipe, view_name=None):
-        """Return a browser for the specified recipe, opened as Chef."""
-        login(ANONYMOUS)
-        url = canonical_url(recipe, view_name=view_name)
-        return self.getUserBrowser(url, self.chef)
-
     def getMainText(self, recipe, view_name=None):
         """Return the main text of a recipe page, as seen by Chef."""
-        browser = self.getRecipeBrowser(recipe, view_name)
+        browser = self.getViewBrowser(recipe, view_name)
         return extract_text(find_main_content(browser.contents))
 
 
@@ -217,11 +212,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             # bzr-builder format 0.2 deb-version 1.0
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
-    def assertContainsRe(self, regex, text):
-        """Assert that the text contains the specified regex."""
-        pattern = re.compile(regex, re.S)
-        self.assertTrue(pattern.search(text), text)
-
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
@@ -321,7 +311,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
         recipe = self.makeRecipe()
-        browser = self.getRecipeBrowser(recipe, '+request-builds')
+        browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
         build_distros = [
@@ -332,22 +322,43 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
 
 
-class TestSourcePackageRecipeBuildView(TestCaseWithFactory):
+class TestSourcePackageRecipeBuildView(BrowserTestCase):
     """Test behaviour of SourcePackageReciptBuildView."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        """Provide useful defaults."""
+        super(TestSourcePackageRecipeBuildView, self).setUp()
+        self.user = self.factory.makePerson(
+            displayname='Owner', name='build-owner', password='test')
+
+    def makeBuild(self, buildstate=None):
+        """Make a build suitabe for testing."""
+        archive = self.factory.makeArchive(name='build',
+            owner=self.user)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.user, name=u'my-recipe', sourcepackagename='mypackage')
+        distro_series = self.factory.makeDistroSeries(
+            name='squirrel', distribution=archive.distribution)
+        build = self.factory.makeSourcePackageRecipeBuild(
+            requester=self.user, archive=archive, recipe=recipe,
+            distroseries=distro_series)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeBuilder()
+        return build
+
+    def makeBuildView(self):
+        """Return a view of a build suitable for testing."""
+        return SourcePackageRecipeBuildView(self.makeBuild(), None)
 
     def test_estimate(self):
         """Time should be estimated until the job is completed."""
-        build = self.factory.makeSourcePackageRecipeBuild()
-        queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=build)
-        self.factory.makeBuilder()
-        view = SourcePackageRecipeBuildView(build, None)
+        view = self.makeBuildView()
         self.assertTrue(view.estimate)
-        queue_entry.job.start()
+        view.context.buildqueue_record.job.start()
         self.assertTrue(view.estimate)
-        removeSecurityProxy(build).datebuilt = datetime.now(utc)
+        removeSecurityProxy(view.context).datebuilt = datetime.now(utc)
         self.assertFalse(view.estimate)
 
     def test_eta(self):
@@ -374,6 +385,136 @@ class TestSourcePackageRecipeBuildView(TestCaseWithFactory):
         self.assertEqual(
             queue_entry.job.date_started + queue_entry.estimated_duration,
             view.eta)
+
+    def getBuildBrowser(self, build, view_name=None):
+        """Return a browser for the specified build, opened as owner."""
+        login(ANONYMOUS)
+        url = canonical_url(build, view_name=view_name)
+        return self.getUserBrowser(url, self.build_owner)
+
+    def test_render_index(self):
+        """Test the basic index page."""
+        main_text = self.getMainText(self.makeBuild(), '+index')
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Branches
+            my-recipe
+            Build status
+            Needs building
+            Start in .*
+            Estimated finish in .*
+            Build details
+            Recipe:        Recipe my-recipe for Owner
+            Archive:       PPA named build for Owner
+            Series:        Squirrel
+            Pocket:        Release
+            Binary builds: None""", main_text)
+
+    def test_render_index_completed(self):
+        """Test the index page of a completed build."""
+        release = self.makeBuildAndRelease()
+        self.makeBinaryBuild(release, 'itanic')
+        naked_build = removeSecurityProxy(release.source_package_recipe_build)
+        naked_build.buildstate = BuildStatus.FULLYBUILT
+        naked_build.buildduration = timedelta(minutes=1)
+        naked_build.datebuilt = datetime(2009, 1, 1, tzinfo=utc)
+        naked_build.buildqueue_record.destroySelf()
+        naked_build.buildlog = self.factory.makeLibraryFileAlias(
+            content='buildlog')
+        naked_build.upload_log = self.factory.makeLibraryFileAlias(
+            content='upload_log')
+        main_text = self.getMainText(
+            release.source_package_recipe_build, '+index')
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Branches
+            my-recipe
+            Build status
+            Successfully built
+            Started on .*
+            Finished on .*
+            \(took 1 minute, 0.0 seconds\)
+            buildlog \(8 bytes\)
+            uploadlog \(10 bytes\)
+            Build details
+            Recipe:        Recipe my-recipe for Owner
+            Archive:       PPA named build for Owner
+            Series:        Squirrel
+            Pocket:        Release
+            Result:        mypackage in ubuntu 3.14
+            Binary builds:
+            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE""",
+            main_text)
+
+    def makeBuildAndRelease(self):
+        """Make a build and release suitable for testing."""
+        build = self.makeBuild()
+        return self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build, version='3.14')
+
+    def test_render_sourcepackage_release(self):
+        """SourcePackageReleases are shown if set."""
+        release = self.makeBuildAndRelease()
+        main_text = self.getMainText(
+            release.source_package_recipe_build, '+index')
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Result: mypackage in ubuntu 3.14""", main_text)
+
+    def makeBinaryBuild(self, release, architecturetag):
+        """Make a binary build with specified release and architecturetag."""
+        distroarchseries = self.factory.makeDistroArchSeries(
+            architecturetag=architecturetag,
+            distroseries=release.upload_distroseries,
+            processorfamily=self.factory.makeProcessorFamily())
+        return self.factory.makeBinaryPackageBuild(
+            source_package_release=release, distroarchseries=distroarchseries)
+
+    def test_render_binary_builds(self):
+        """BinaryBuilds for this source build are shown if they exist."""
+        release = self.makeBuildAndRelease()
+        self.makeBinaryBuild(release, 'itanic')
+        self.makeBinaryBuild(release, 'x87-64')
+        main_text = self.getMainText(
+            release.source_package_recipe_build, '+index')
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Binary builds:
+            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
+            x87-64 build of mypackage 3.14 in ubuntu squirrel RELEASE$""",
+            main_text)
+
+    def test_logtail(self):
+        """Logtail is shown for BUILDING builds."""
+        build = self.makeBuild()
+        build.buildqueue_record.logtail = 'Logs have no tails!'
+        build.buildqueue_record.builder = self.factory.makeBuilder()
+        main_text = self.getMainText(build, '+index')
+        self.assertNotIn('Logs have no tails!', main_text)
+        removeSecurityProxy(build).buildstate = BuildStatus.BUILDING
+        main_text = self.getMainText(build, '+index')
+        self.assertIn('Logs have no tails!', main_text)
+        removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+        self.assertIn('Logs have no tails!', main_text)
+
+    def getMainText(self, build, view_name=None):
+        """"Return the main text of a view's web page."""
+        browser = self.getViewBrowser(build, '+index')
+        return extract_text(find_main_content(browser.contents))
+
+    def test_buildlog(self):
+        """A link to the build log is shown if available."""
+        build = self.makeBuild()
+        removeSecurityProxy(build).buildlog = (
+            self.factory.makeLibraryFileAlias())
+        browser = self.getViewBrowser(build)
+        link = browser.getLink('buildlog')
+        self.assertEqual(build.build_log_url, link.url)
+
+    def test_uploadlog(self):
+        """A link to the upload log is shown if available."""
+        build = self.makeBuild()
+        removeSecurityProxy(build).upload_log = (
+            self.factory.makeLibraryFileAlias())
+        browser = self.getViewBrowser(build)
+        link = browser.getLink('uploadlog')
+        self.assertEqual(build.upload_log_url, link.url)
 
 
 class TestSourcePackageRecipeDeleteView(TestCaseForRecipe):

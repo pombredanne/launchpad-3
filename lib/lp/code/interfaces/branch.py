@@ -596,12 +596,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
 
     stacked_on = Attribute('Stacked-on branch')
 
-    warehouse_url = Attribute(
-        "URL for accessing the branch by ID. "
-        "This is for in-datacentre services only and allows such services to "
-        "be unaffected during branch renames. "
-        "See doc/bazaar for more information about the branch warehouse.")
-
     # Bug attributes
     bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
@@ -817,13 +811,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
 
     def getStackedBranches():
         """The branches that are stacked on this one."""
-
-    def getStackedBranchesWithIncompleteMirrors():
-        """Branches that are stacked on this one but aren't done mirroring.
-
-        In particular, these are branches that have started mirroring but have
-        not yet succeeded. Failed branches are included.
-        """
 
     merge_queue = Attribute(
         "The queue that contains the QUEUED proposals for this branch.")
@@ -1083,6 +1070,24 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getInternalBzrUrl():
+        """Get the internal URL for this branch.
+
+        It's generally better to use `getBzrBranch` to open the branch
+        directly, as that method is safe against the branch unexpectedly being
+        a branch reference or stacked on something mischievous.
+        """
+
+    def getBzrBranch():
+        """Return the BzrBranch for this database Branch.
+
+        You can only call this if a server returned by `get_ro_server` or
+        `get_rw_server` is running.
+
+        :raise lp.codehosting.bzrutils.UnsafeUrlSeen: If the branch is stacked
+            on or a reference to an unacceptable URL.
+        """
+
     def getPullURL():
         """Return the URL used to pull the branch into the mirror area."""
 
@@ -1095,10 +1100,20 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
     def startMirroring():
         """Signal that this branch is being mirrored."""
 
-    def mirrorComplete(last_revision_id):
-        """Signal that a mirror attempt has completed successfully.
+    def branchChanged(stacked_on_url, last_revision_id, control_format,
+                      branch_format, repository_format):
+        """Record that a branch has been changed.
 
-        :param last_revision_id: The revision ID of the tip of the mirrored
+        This method records the stacked on branch tip revision id and format
+        or the branch and creates a scan job if the tip revision id has
+        changed.
+
+        :param stacked_on_url: The unique name of the branch this branch is
+            stacked on, or '' if this branch is not stacked.
+        :param last_revision_id: The tip revision ID of the branch.
+        :param control_format: The entry from ControlFormat for the branch.
+        :param branch_format: The entry from BranchFormat for the branch.
+        :param repository_format: The entry from RepositoryFormat for the
             branch.
         """
 

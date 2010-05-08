@@ -348,7 +348,7 @@ queueing the branch is not a reviewer, an exception is raised.
 Anyone that has rights to edit the merge proposal can say that the
 merge failed.
 
-    >>> proposal.mergeFailed(merger=sample_person)
+    >>> proposal.setStatus(BranchMergeProposalStatus.MERGE_FAILED)
     >>> print proposal.queue_status.title
     Code failed to merge
 
