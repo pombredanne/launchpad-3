@@ -2161,32 +2161,22 @@ class BugTaskSearchListingMenu(NavigationMenu):
                 'bugsupervisor',
                 'securitycontact',
                 'cve',
-                'subscribe',
                 )
         elif IDistroSeries.providedBy(bug_target):
             return (
                 'cve',
                 'nominations',
-                'subscribe',
-                )
-        elif IDistributionSourcePackage.providedBy(bug_target):
-            return (
-                'subscribe',
                 )
         elif IProduct.providedBy(bug_target):
             return (
                 'bugsupervisor',
                 'securitycontact',
                 'cve',
-                'subscribe'
                 )
         elif IProductSeries.providedBy(bug_target):
             return (
                 'nominations',
-                'subscribe',
                 )
-        elif IProjectGroup.providedBy(bug_target):
-            return ()
         else:
             return ()
 
