@@ -198,6 +198,10 @@ class TestPersonEditView(TestCaseWithFactory):
         self._publishPPAPackage()
         self.view.initialize()
         self.assertTrue(self.view.form_fields['name'].for_display)
+        self.assertEqual(
+            self.view.widgets['name'].hint,
+            "This user has an active PPA with packages published and "
+            "may not be renamed.")
 
     def test_can_rename_with_deleted_PPA(self):
         # Delete a PPA and test that the person can be renamed.
