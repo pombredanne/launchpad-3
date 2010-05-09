@@ -46,12 +46,13 @@ read and accepted the conditions. The is also an optional 'description'
 text-area.
 
 There is also a message, near the form actions, in which the user is
-warned about the fact the activating this PPA will block renaming of
-the context launchpad user.
+warned about the fact that if the user has any PPAs with published
+packages then they will not be able to rename their account.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Sample Person
+    If you have any PPAs with published packages, you will not be able to
+    rename ... until those PPAs are deleted.
     ...
 
 'PPA name' and 'Displayname' are required fields.  For the first activated
@@ -196,7 +197,8 @@ will block renaming of the context team.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Landscape Developers
+    If you have any PPAs with published packages, you will not be able to
+    rename ... until those PPAs are deleted.
     ...
 
 That understood, the PPA gets activated.
@@ -565,15 +567,6 @@ all his PPAs.
     PPA contents description: (Optional)
       A short description of this PPA. URLs are allowed and will be rendered
       as links.
-
-Note that, differently than the time when the first PPA was activated,
-this time there is no warning about the fact that the context renaming
-will be blocked. We assumed that, at this point, this is already a
-known aspect.
-
-    >>> print extract_text(
-    ...     first_tag_by_class(cprov_browser.contents, 'actions'))
-    or Cancel
 
 The 'PPA name' field is not pre-filled and if Celso does not fill it then
 an error is raised.
