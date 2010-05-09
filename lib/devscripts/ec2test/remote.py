@@ -190,6 +190,9 @@ class BaseTestRunner:
                     conn.send_email(self.pqm_message)
                     summary_file.write(
                         '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+
+            summary_file.write(
+                '\n(See the attached file for the complete log)\n')
         except:
             summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
             traceback.print_exc(file=summary_file)
@@ -259,8 +262,7 @@ class BaseTestRunner:
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
         result = SummaryResult(summary_file)
-        subunit_server = subunit.TestProtocolServer(
-            result, FlagFallStream(summary_file, 'Running tests.'))
+        subunit_server = subunit.TestProtocolServer(result, summary_file)
         for line in input_stream:
             subunit_server.lineReceived(line)
             out_file.write(line)
