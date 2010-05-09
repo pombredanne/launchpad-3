@@ -246,7 +246,7 @@ class TestSubscription(TestCaseWithFactory):
 
     def test_got_new_revision_subscribed(self):
         """got_new_revision is subscribed to NewRevision."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         bug = self.factory.makeBug()
         self.layer.txn.commit()

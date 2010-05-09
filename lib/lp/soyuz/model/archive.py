@@ -1433,7 +1433,8 @@ class Archive(SQLBase):
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
         self.status = ArchiveStatus.DELETING
-        self.disable()
+        if self.enabled:
+            self.disable()
 
 
 class ArchiveSet:
@@ -1680,6 +1681,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             Archive.private = FALSE AND
+            Archive.enabled = TRUE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
         """ % sqlvalues(distribution, ArchivePurpose.PPA)

@@ -623,6 +623,7 @@ COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad adm
 COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has been approved by an administrator.';
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
+COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -1343,6 +1344,8 @@ COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit 
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
 COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
+
+COMMENT ON COLUMN SourcePackageREcipe.daily_build_archive IS 'The archive to build into for daily builds.';
 
 -- SourcePackageRecipeDistroSeries
 

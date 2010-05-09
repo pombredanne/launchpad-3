@@ -123,7 +123,7 @@ is updated by the foaf-update-karma-cache.py cronscript.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-karma-update.lock
     INFO    Updating Launchpad karma caches
     INFO    Step A: Calculating individual KarmaCache entries
     INFO    Scaling bugs by a factor of 2.6667 (capped to 2.0000)

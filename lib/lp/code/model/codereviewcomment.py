@@ -21,6 +21,7 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.services.mail.signedmessage import signed_message_from_string
 
 
 def quote_text_as_email(text, width=80):
@@ -120,3 +121,10 @@ class CodeReviewComment(SQLBase):
     @property
     def as_quoted_email(self):
         return quote_text_as_email(self.message_body)
+
+    def getOriginalEmail(self):
+        """See `ICodeReviewComment`."""
+        if self.message.raw is None:
+            return None
+        return signed_message_from_string(self.message.raw.read())
+
