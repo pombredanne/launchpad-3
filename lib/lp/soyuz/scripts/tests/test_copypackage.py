@@ -51,7 +51,6 @@ from lp.soyuz.scripts.packagecopier import (
     re_upload_file, UnembargoSecurityPackage, update_files_privacy)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakemethod import FakeMethod
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -2501,7 +2500,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
             section='misc')
 
         checker = CopyChecker(warty.main_archive, include_binaries=False)
-        checker.getPublishedSources = FakeMethod(result=None)
         self.assertIs(
             None,
             checker.checkCopy(proposed_source, warty,
@@ -2620,9 +2618,6 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test1_tar = test_publisher.addMockFile(
             orig_tarball, filecontent='aaabbbccc')
         test1_source.sourcepackagerelease.addFile(test1_tar)
-        # And set test1 source tarball to be expire
-        naked_test1 = removeSecurityProxy(test1_tar)
-        naked_test1.content = None
         test2_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-2',
             distroseries=warty, archive=src_ppa,
@@ -2634,6 +2629,12 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test2_source.sourcepackagerelease.addFile(test2_tar)
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
+        # And set test1 source tarball to be expired
+        self.layer.switchDbUser('librarian')
+        naked_test1 = removeSecurityProxy(test1_tar)
+        naked_test1.content = None
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
 
         checker = CopyChecker(dest_ppa, include_binaries=False)
         self.assertIs(
