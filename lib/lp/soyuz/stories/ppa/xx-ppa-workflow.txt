@@ -165,7 +165,8 @@ more information about the feature in bug #87326.
     Display Name:
     ...
     Name: name12
-    This user has a PPA and may not be renamed.
+    This user has an active PPA with packages published and may not be
+    renamed.
     ...
 
 
