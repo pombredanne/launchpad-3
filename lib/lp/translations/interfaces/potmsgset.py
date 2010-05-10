@@ -265,18 +265,19 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
-    def setUpstreamTranslation(pofile, submitter, translations, origin):
-        """Set the message's current upstream translation(s).
+    def setCurrentTranslation(pofile, submitter, translations, origin,
+                              translation_side, share_with_other_side=False):
+        """Set the message's translation in Ubuntu, or upstream, or both.
 
-        XXX: Ensure this matches the model API when the branch is done.
+        :param pofile:
+        :param submitter:
+        :param translations:
+        :param origin:
+        :param translation_side: a `TranslationSide` value.
+        :param share_with_other_side:
         """
-
-    def setUbuntuTranslation(pofile, submitter, translations, origin,
-                             with_upstream_privileges=False):
-        """Set the message's current Ubuntu translation(s).
-
-        XXX: Ensure this matches the model API when the branch is done.
-        """
+        # XXX: Check signature before completing branch.
+        # XXX: Update docstring.
 
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' or None after doing some sanitization.
