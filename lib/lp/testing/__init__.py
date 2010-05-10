@@ -57,7 +57,6 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 
@@ -555,6 +554,10 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+    def setUp(self):
+        """Provide useful defaults."""
+        super(BrowserTestCase, self).setUp()
+        self.user = self.factory.makePerson(password='test')
 
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
@@ -565,6 +568,11 @@ class BrowserTestCase(TestCaseWithFactory):
             normalise_whitespace(regular_expression_txt), re.S)
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
+
+    def getViewBrowser(self, context, view_name=None):
+        login(ANONYMOUS)
+        url = canonical_url(context, view_name=view_name)
+        return self.getUserBrowser(url, self.user)
 
 
 class WindmillTestCase(TestCaseWithFactory):

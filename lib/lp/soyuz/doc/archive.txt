@@ -1786,6 +1786,17 @@ they are essentially another source publication in this context.
     iceweasel 1.0 in breezy-autotest PUBLISHED mark
     pmount 0.1-1 in warty PUBLISHED cprov
 
+Publications in disabled archives are also excluded, since normal users
+can't see them.
+
+    >>> login("admin@canonical.com")
+    >>> cprov_cdrkit.archive.disable()
+    >>> print_latest_uploads()
+    cdrkit 1.0 in hoary PENDING mark
+    iceweasel 1.0 in hoary PENDING mark
+    iceweasel 1.0 in breezy-autotest PUBLISHED mark
+    >>> cprov_cdrkit.archive.enable()
+
 'getMostActivePPAsForDistribution' returns a list of dictionaries
 containing up to 5 PPAs with the highest number of publications in the
 last 7 days. Each dictionary contains the following keys:
