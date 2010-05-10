@@ -153,7 +153,8 @@ class Archive(SQLBase):
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     status = EnumCol(
-        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus,
+        default=ArchiveStatus.ACTIVE)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -270,6 +271,11 @@ class Archive(SQLBase):
     def is_main(self):
         """See `IArchive`."""
         return self.purpose in MAIN_ARCHIVE_PURPOSES
+
+    @property
+    def is_active(self):
+        """See `IArchive`."""
+        return self.status == ArchiveStatus.ACTIVE
 
     @property
     def series_with_sources(self):
@@ -1512,6 +1518,27 @@ class Archive(SQLBase):
         self._enabled = False
         self._setBuildStatuses(JobStatus.SUSPENDED)
 
+    def delete(self, deleted_by):
+        """See `IArchive`."""
+        assert self.status not in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
+            "This archive is already deleted.")
+
+        # Set all the publications to DELETED.
+        statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        sources = list(self.getPublishedSources(status=statuses))
+        getUtility(IPublishingSet).requestDeletion(
+            sources, removed_by=deleted_by,
+            removal_comment="Removed when deleting archive")
+
+        # Mark the archive's status as DELETING so the repository can be
+        # removed by the publisher.
+        self.status = ArchiveStatus.DELETING
+        if self.enabled:
+            self.disable()
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1637,8 +1664,7 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, distribution=distribution, name=name,
-                purpose=ArchivePurpose.PPA)
+                owner=owner, name=name, purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
                     "Person '%s' already has a PPA named '%s'." %
@@ -1758,6 +1784,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             Archive.private = FALSE AND
+            Archive.enabled = TRUE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
         """ % sqlvalues(distribution, ArchivePurpose.PPA)

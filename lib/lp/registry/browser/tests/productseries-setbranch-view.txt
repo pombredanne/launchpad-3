@@ -113,6 +113,10 @@ When creating a new branch the branch name and owner must be specified.
     ...     }
 
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> print view.errors_in_action
+    False
+    >>> print view.next_url
+    http://launchpad.dev/chevy/camaro
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -120,6 +124,26 @@ When creating a new branch the branch name and owner must be specified.
     New branch created and linked to the series.
     >>> print series.branch.name
     camaro-branch
+
+Using a branch name that already exists results in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'create-new',
+    ...     'field.branch_name': 'camaro-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.actions.update': 'Update',
+    ...     }
+
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>camaro-branch</em>.
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
 
 
 Import a branch hosted elsewhere
@@ -362,6 +386,10 @@ Using a branch name that already exists results in an error.
     >>> for error in view.errors:
     ...     print error
     You already have a branch for <em>Chevy</em> called <em>chevette-branch</em>.
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
@@ -381,5 +409,9 @@ error if a duplicate name is used.
     >>> for error in view.errors:
     ...     print error
     You already have a branch for <em>Chevy</em> called <em>blazer-branch</em>.
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
     >>> for notification in view.request.response.notifications:
     ...     print notification.message

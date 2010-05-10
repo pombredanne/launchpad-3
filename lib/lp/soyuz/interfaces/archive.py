@@ -303,6 +303,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
+    is_active = Bool(
+        title=_("True if the archive is in the active state"),
+        required=False, readonly=True)
+
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
@@ -1267,6 +1271,19 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
+
+    def delete(deleted_by):
+        """Delete this archive.
+
+        :param deleted_by: The `IPerson` requesting the deletion.
+
+        The ArchiveStatus will be set to DELETING and any published
+        packages will be marked as DELETED by deleted_by.
+
+        The publisher is responsible for deleting the repository area
+        when it sees the status change and sets it to DELETED once
+        processed.
+        """
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

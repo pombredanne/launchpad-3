@@ -27,6 +27,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
+from lp.bugs.model.bugwatch import get_bug_watch_ids
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 
@@ -403,6 +404,42 @@ class TestBugWatch(TestCaseWithFactory):
         bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
         self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
 
+    def test_get_bug_watch_ids(self):
+        # get_bug_watch_ids() yields the IDs for the given bug
+        # watches.
+        bug_watches = [self.factory.makeBugWatch()]
+        self.failUnlessEqual(
+            [bug_watch.id for bug_watch in bug_watches],
+            list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_iterator(self):
+        # get_bug_watch_ids() can also accept an iterator.
+        bug_watches = [self.factory.makeBugWatch()]
+        self.failUnlessEqual(
+            [bug_watch.id for bug_watch in bug_watches],
+            list(get_bug_watch_ids(iter(bug_watches))))
+
+    def test_get_bug_watch_ids_with_id_list(self):
+        # If something resembling an ID is found, get_bug_watch_ids()
+        # yields it unaltered.
+        bug_watches = [1, 2, 3]
+        self.failUnlessEqual(
+            bug_watches, list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_mixed_list(self):
+        # get_bug_watch_ids() does the right thing when the given
+        # objects are a mix of bug watches and IDs.
+        bug_watch = self.factory.makeBugWatch()
+        bug_watches = [1234, bug_watch]
+        self.failUnlessEqual(
+            [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
+
+    def test_get_bug_watch_ids_with_others_in_list(self):
+        # get_bug_watch_ids() asserts that all arguments are bug
+        # watches or resemble IDs.
+        self.assertRaises(
+            AssertionError, list, get_bug_watch_ids(['fred']))
+
 
 class TestBugWatchSet(TestCaseWithFactory):
     """Tests for the bugwatch updating system."""
@@ -476,26 +513,6 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         getUtility(IBugWatchSet).bulkSetError(self.bug_watches, error)
         self._checkStatusOfBugWatches(False, True, error)
 
-    def test_bulkSetError_with_id_list(self):
-        # The ids of bug watches to update can be passed in.
-        getUtility(IBugWatchSet).bulkSetError(
-            [bug_watch.id for bug_watch in self.bug_watches])
-        self._checkStatusOfBugWatches(False, True, None)
-
-    def test_bulkSetError_with_mixed_list(self):
-        # The list passed in can contain a mix of bug watches and
-        # their ids.
-        getUtility(IBugWatchSet).bulkSetError(
-            [bug_watch.id for bug_watch in self.bug_watches[::2]] +
-            [bug_watch for bug_watch in self.bug_watches[1::2]])
-        self._checkStatusOfBugWatches(False, True, None)
-
-    def test_bulkSetError_with_iterator(self):
-        # Any iterator can be passed in.
-        getUtility(IBugWatchSet).bulkSetError(
-            (bug_watch for bug_watch in self.bug_watches))
-        self._checkStatusOfBugWatches(False, True, None)
-
     def _checkActivityForBugWatches(self, result, message, oops_id):
         for bug_watch in self.bug_watches:
             latest_activity = bug_watch.activity.first()
@@ -507,7 +524,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # Called with only bug watches, bulkAddActivity() adds
         # successful activity records for the given bug watches.
         getUtility(IBugWatchSet).bulkAddActivity(self.bug_watches)
-        self._checkActivityForBugWatches(None, None, None)
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
 
     def test_bulkAddActivity_with_error(self):
         # Called with additional error information, bulkAddActivity()
@@ -522,7 +540,8 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         # The ids of bug watches can be passed in.
         getUtility(IBugWatchSet).bulkAddActivity(
             [bug_watch.id for bug_watch in self.bug_watches])
-        self._checkActivityForBugWatches(None, None, None)
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
 
     def test_bulkAddActivity_with_mixed_list(self):
         # The list passed in can contain a mix of bug watches and
@@ -530,13 +549,15 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
         getUtility(IBugWatchSet).bulkAddActivity(
             [bug_watch.id for bug_watch in self.bug_watches[::2]] +
             [bug_watch for bug_watch in self.bug_watches[1::2]])
-        self._checkActivityForBugWatches(None, None, None)
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
 
     def test_bulkAddActivity_with_iterator(self):
         # Any iterator can be passed in.
         getUtility(IBugWatchSet).bulkAddActivity(
             (bug_watch for bug_watch in self.bug_watches))
-        self._checkActivityForBugWatches(None, None, None)
+        self._checkActivityForBugWatches(
+            BugWatchActivityStatus.SYNC_SUCCEEDED, None, None)
 
 
 class TestBugWatchBugTasks(TestCaseWithFactory):

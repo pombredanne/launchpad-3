@@ -142,7 +142,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def test_queue_tip_changed_email_jobs_subscribed(self):
         """A queue_tip_changed_email_jobs is run when TipChanged emitted."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         db_branch.subscribe(
             db_branch.registrant,
@@ -155,7 +155,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def test_send_removed_revision_emails_subscribed(self):
         """send_removed_revision_emails run when RevisionsRemoved emitted."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         db_branch.subscribe(
             db_branch.registrant,

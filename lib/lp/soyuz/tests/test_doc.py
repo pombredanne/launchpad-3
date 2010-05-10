@@ -139,15 +139,12 @@ special = {
         layer=LaunchpadZopelessLayer,
         stdout_logging_level=logging.WARNING
         ),
-    # XXX Michael Nelson 2010-04-01 bug=553259
-    # Disabling the buildd-slave.txt test until the
-    # timing issue is sorted (see bug).
-    # 'buildd-slave.txt': LayeredDocFileSuite(
-    #     '../doc/buildd-slave.txt',
-    #     setUp=setUp, tearDown=tearDown,
-    #     layer=LaunchpadZopelessLayer,
-    #     stdout_logging_level=logging.WARNING
-    #     ),
+    'buildd-slave.txt': LayeredDocFileSuite(
+        '../doc/buildd-slave.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer,
+        stdout_logging_level=logging.WARNING
+        ),
     'buildd-scoring.txt': LayeredDocFileSuite(
         '../doc/buildd-scoring.txt',
         setUp=builddmasterSetUp,

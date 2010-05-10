@@ -480,7 +480,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.latest_patch_uploaded is not None
 
-    def subscribe(self, person, subscribed_by, send_notifications=False):
+    def subscribe(self, person, subscribed_by, suppress_notify=True):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
@@ -490,13 +490,14 @@ class Bug(SQLBase):
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
 
-        if send_notifications is True:
-            notify(ObjectCreatedEvent(sub, user=subscribed_by))
-
         getUtility(ICalculateBugHeatJobSource).create(self)
 
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
+
+        if suppress_notify is False:
+            notify(ObjectCreatedEvent(sub, user=subscribed_by))
+
         return sub
 
     def unsubscribe(self, person, unsubscribed_by):

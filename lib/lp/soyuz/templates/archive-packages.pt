@@ -104,7 +104,8 @@ tr#package-counters p{
              tal:content="structure view/@@+global-actions" />
 
         <p tal:condition="not: context/enabled"
-           style="clear: right;" class="warning message">
+           style="clear: right;" class="warning message"
+           tal:content="view/disabled_warning_message">
           This archive has been disabled.
         </p>
 

@@ -14,17 +14,28 @@ __all__ = [
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+from zope.interface import Interface
+
+from lazr.restful.declarations import (
+    REQUEST_USER, call_with, exported, export_write_operation,
+    mutator_for, operation_parameters)
+from lazr.restful.interface import copy_field
 
 
-class IHasBugSupervisor(IStructuralSubscriptionTarget):
+class IHasBugSupervisor(Interface):
 
-    bug_supervisor = PublicPersonChoice(
+    bug_supervisor = exported(PublicPersonChoice(
         title=_("Bug Supervisor"),
         description=_(
             "The person or team responsible for bug management."),
-        required=False, vocabulary='ValidPersonOrTeam')
+        required=False, vocabulary='ValidPersonOrTeam', readonly=True))
 
-    def setBugSupervisor(self, bug_supervisor, user):
+    @mutator_for(bug_supervisor)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug_supervisor=copy_field(bug_supervisor))
+    @export_write_operation()
+    def setBugSupervisor(bug_supervisor, user):
         """Set the bug contact and create a bug subscription."""
+
+
