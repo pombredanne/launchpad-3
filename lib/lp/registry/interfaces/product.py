@@ -38,6 +38,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
@@ -725,9 +726,10 @@ class IProductPublic(
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic, IRootContext,
-               IStructuralSubscriptionTarget):
+class IProduct(
+    IHasBugSupervisor, IProductEditRestricted, 
+    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
