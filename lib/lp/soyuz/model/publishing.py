@@ -869,7 +869,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
-        spr = bpr.build.sourcepackagerelease
+        spr = bpr.build.source_package_release
 
         # binaries have only one file, the DEB
         bin_file = bpr.files[0]
