@@ -251,6 +251,8 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
+        # If there are no conflicts with the same version, we can skip the
+        # rest of the checks, but we still want to check conflicting files
         if (destination_archive_conflicts.count() == 0 and
             len(inventory_conflicts) == 0):
             self._checkConflictingFiles(source)
