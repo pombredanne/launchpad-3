@@ -934,11 +934,11 @@ class IArchiveView(IHasBuildRecords):
     def getPackageDownloadCount(bpr, day, country):
         """Get the `IBinaryPackageDownloadCount` with the given key."""
 
-    def getFilesAndSha1s(spph):
+    def getFilesAndSha1s(source_files):
         """Return a dictionary with the filenames and the SHA1s for each
         source file.
 
-        :param spph: A `ISourcePackagePublishingHistory`
+        :param source_files: An array of filenames to return SHA1s of
         :return: A dictionary of filenames and sha1s.
         """
 

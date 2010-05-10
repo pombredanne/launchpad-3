@@ -347,7 +347,10 @@ class CopyChecker:
         # do not conflict.
         if source.archive.id == self.archive.id:
             return None
-        destination_sha1s = self.archive.getFilesAndSha1s(source)
+        source_files = [
+            sprf.libraryfile.filename for sprf in 
+            source.sourcepackagerelease.files]
+        destination_sha1s = self.archive.getFilesAndSha1s(source_files)
         for lf in source.sourcepackagerelease.files:
             if lf.libraryfile.filename in destination_sha1s:
                 sha1 = lf.libraryfile.content.sha1
