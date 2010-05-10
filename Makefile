@@ -437,10 +437,14 @@ lp-clustered.svg: lp-clustered.dot
 	mv lp-clustered.svg.tmp lp-clustered.svg
 
 
+pydoctor:
+	pydoctor --make-html --html-output=apidocs --add-package=lib/lp \
+		--add-package=lib/canonical
+
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile check_schema
+	sprite_css sprite_image css_combine compile check_schema pydoctor
