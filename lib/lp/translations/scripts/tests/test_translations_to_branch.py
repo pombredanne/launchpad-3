@@ -40,7 +40,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # End-to-end test of the script doing its work.
 
         # Set up a server for hosted branches.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches(direct_database=False)
 
         # Set up a product and translatable series.
         product = self.factory.makeProduct(name='committobranch')
@@ -48,8 +48,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         series = product.getSeries('trunk')
 
         # Set up a translations_branch for the series.
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, product=product)
+        db_branch, tree = self.create_branch_and_tree(product=product)
         removeSecurityProxy(db_branch).last_scanned_id = 'null:'
         product.official_rosetta = True
         series.translations_branch = db_branch
@@ -77,7 +76,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock\n'
             'INFO    Exporting to translations branches.\n'
             'INFO    Exporting Committobranch trunk series.\n'
             'INFO    Processed 1 item(s); 0 failure(s).',
@@ -87,7 +86,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         # The branch now contains a snapshot of the translation.  (Only
         # one file: the Dutch translation we set up earlier).
-        branch_contents = map_branch_contents(db_branch.getPullURL())
+        branch_contents = map_branch_contents(db_branch.getBzrBranch())
         expected_contents = {
             'po/nl.po': """
                 # Dutch translation for .*
@@ -163,11 +162,11 @@ class TestExportToStackedBranch(TestCaseWithFactory):
         self.useBzrBranches()
 
         base_branch, base_tree = self.create_branch_and_tree(
-            'base', name='base', hosted=True)
+            'base', name='base')
         self._setUpBranch(base_branch, base_tree, "Base branch.")
 
         stacked_branch, stacked_tree = self.create_branch_and_tree(
-            'stacked', name='stacked', hosted=True)
+            'stacked', name='stacked')
         stacked_tree.branch.set_stacked_on_url('/' + base_branch.unique_name)
         stacked_branch.stacked_on = base_branch
         self._setUpBranch(stacked_branch, stacked_tree, "Stacked branch.")

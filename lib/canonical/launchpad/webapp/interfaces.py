@@ -8,6 +8,7 @@ __metaclass__ = type
 import logging
 
 import zope.app.publication.interfaces
+from zope.component.interfaces import IObjectEvent
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import (
     IAuthentication, IPrincipal, IPrincipalSource)
@@ -672,6 +673,10 @@ class INotificationResponse(Interface):
         that redirect from lp.net to vhost.lp.net don't have to pass
         trusted=True explicitly.
         """
+
+
+class IErrorReportEvent(IObjectEvent):
+    """A new error report has been created."""
 
 
 class IErrorReport(Interface):

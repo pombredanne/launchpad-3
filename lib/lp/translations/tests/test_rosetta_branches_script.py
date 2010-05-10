@@ -38,9 +38,9 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
             queue.remove(entry)
 
     def _setup_series_branch(self, pot_path):
-        self.useTempBzrHome()
+        self.useBzrBranches()
         pot_content = self.factory.getUniqueString()
-        branch, tree = self.createMirroredBranchAndTree()
+        branch, tree = self.create_branch_and_tree()
         tree.bzrdir.root_transport.put_bytes(pot_path, pot_content)
         tree.add(pot_path)
         revision_id = tree.commit("first commit")
