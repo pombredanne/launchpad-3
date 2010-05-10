@@ -93,8 +93,7 @@ class TranslationSideMessageTraits:
     flag that says whether a message is current on this side, set or
     clear the flag, and provide the same traits for the other side.
     """
-    def __init__(self, potmsgset, potemplate=None, language=None,
-                 variant=None):
+    def __init__(self, potmsgset, potemplate, language, variant):
         self.potmsgset = potmsgset
         self.potemplate = potemplate
         self.language = language
@@ -106,7 +105,7 @@ class TranslationSideMessageTraits:
     def incumbent_message(self):
         """Message that currently has the flag."""
         if not self._found_incumbent:
-            self._incumbent = self._getIncumbentMessage()
+            self._incumbent = self.potmsgset.getUsedTranslationMessage(self)
             self._found_incumbent = True
         return self._incumbent
 
@@ -125,10 +124,6 @@ class TranslationSideMessageTraits:
         setattr(translationmessage, self.flag_name, value)
         self._found_incumbent = False
 
-    def _getIncumbentMessage(self):
-        """Get the message that is current on this side, if any."""
-        raise NotImplementedError('_getIncumbentMessage')
-
 
 class UpstreamSideTraits(TranslationSideMessageTraits):
     """Traits for upstream translations."""
@@ -136,11 +131,6 @@ class UpstreamSideTraits(TranslationSideMessageTraits):
     side = TranslationSide.UPSTREAM
 
     flag_name = 'is_current_upstream'
-
-    def _getIncumbentMessage(self):
-        """See `TranslationSideMessageTraits`."""
-        return self.potmsgset.getImportedTranslationMessage(
-            self.potemplate, self.language, variant=self.variant)
 
 
 class UbuntuSideTraits(TranslationSideMessageTraits):
@@ -150,14 +140,9 @@ class UbuntuSideTraits(TranslationSideMessageTraits):
 
     flag_name = 'is_current_ubuntu'
 
-    def _getIncumbentMessage(self):
-        """See `TranslationSideMessageTraits`."""
-        return self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.language, variant=self.variant)
 
-
-def make_translation_side_message_traits(potmsgset, potemplate, language,
-                                         side, variant=None):
+def make_translation_side_message_traits(side, potmsgset, potemplate,
+                                         language, variant=None):
     """Create `TranslationSideTraits` object of the appropriate subtype."""
     ubuntu = UbuntuSideTraits(potmsgset, potemplate, language, variant)
     upstream = UpstreamSideTraits(potmsgset, potemplate, language, variant)
@@ -316,39 +301,32 @@ class POTMsgSet(SQLBase):
                 'There is already a translation message in our database.')
         return DummyTranslationMessage(pofile, self)
 
-    def _getUsedTranslationMessage(self, potemplate, language, variant,
-                                   side=TranslationSide.UPSTREAM):
-        """Get a translation message which is either used in
-        Launchpad (current=True) or in an import (current=False).
+    def getUsedTranslationMessage(self, traits):
+        """See `IPOTMsgSet`."""
+        # Change this clause with extreme care: it needs to match the
+        # conditions specified in indexes, or postgres may not use them.
+        # (In complicated queries, the postgres query optimizer
+        # sometimes does text-matching of indexes).
+        used_clause = '%s IS TRUE' % traits.flag_name
 
-        Prefers a diverged message if present.
-        """
-        # Change the is_current_ubuntu and is_current_upstream conditions
-        # with extreme care: they need to match condition specified in
-        # indexes, or postgres may not pick them up (in complicated queries,
-        # postgres query optimizer sometimes does text-matching of indexes).
-        if side == TranslationSide.UPSTREAM:
-            used_clause = 'is_current_upstream IS TRUE'
-        else:
-            assert side == TranslationSide.UBUNTU, "What side are you on?"
-            used_clause = 'is_current_ubuntu IS TRUE'
-
-        if potemplate is None:
+        if traits.potemplate is None:
             template_clause = 'TranslationMessage.potemplate IS NULL'
         else:
             template_clause = (
                 '(TranslationMessage.potemplate IS NULL OR '
-                ' TranslationMessage.potemplate=%s)' % sqlvalues(potemplate))
+                ' TranslationMessage.potemplate = %s)' % sqlvalues(
+                    traits.potemplate))
         clauses = [
             'potmsgset = %s' % sqlvalues(self),
             used_clause,
             template_clause,
-            'TranslationMessage.language = %s' % sqlvalues(language)]
-        if variant is None:
+            'TranslationMessage.language = %s' % sqlvalues(traits.language),
+            ]
+        if traits.variant is None:
             clauses.append('TranslationMessage.variant IS NULL')
         else:
             clauses.append(
-                'TranslationMessage.variant=%s' % sqlvalues(variant))
+                'TranslationMessage.variant = %s' % sqlvalues(traits.variant))
 
         order_by = '-COALESCE(potemplate, -1)'
 
@@ -360,19 +338,22 @@ class POTMsgSet(SQLBase):
     def getCurrentTranslationMessage(self, potemplate,
                                      language, variant=None):
         """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, variant, side=TranslationSide.UBUNTU)
+        traits = make_translation_side_message_traits(
+            TranslationSide.UBUNTU, self, potemplate, language, variant)
+        return self.getUsedTranslationMessage(traits)
 
     def getImportedTranslationMessage(self, potemplate,
                                       language, variant=None):
         """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, variant, side=TranslationSide.UPSTREAM)
+        traits = make_translation_side_message_traits(
+            TranslationSide.UPSTREAM, self, potemplate, language, variant)
+        return self.getUsedTranslationMessage(traits)
 
     def getSharedTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            None, language, variant, current=True)
+        traits = make_translation_side_message_traits(
+            TranslationSide.UBUNTU, self, None, language, variant)
+        return self.getUsedTranslationMessage(traits)
 
     def getLocalTranslationMessages(self, potemplate, language,
                                     include_dismissed=False,
@@ -1087,7 +1068,7 @@ class POTMsgSet(SQLBase):
                               translation_side, share_with_other_side=False):
         """See `IPOTMsgSet`."""
         traits = make_translation_side_message_traits(
-            self, pofile.potemplate, pofile.language, translation_side,
+            translation_side, self, pofile.potemplate, pofile.language,
             variant=pofile.variant)
 
         incumbent_message = traits.incumbent_message

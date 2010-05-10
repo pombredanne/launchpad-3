@@ -145,6 +145,17 @@ class IPOTMsgSet(Interface):
     def getSharedTranslationMessage(language, variant=None):
         """Returns a shared TranslationMessage."""
 
+    def getUsedTranslationMessage(side_traits):
+        """Finds the current translation for this message.
+
+        `getCurrentTranslationMessage`, `getImportedTranslationMessage`,
+        and `getSharedTranslationMessage` are shorthand for this method.
+
+        :param traits: Message traits for this message, in the
+            appropriate language and on the applicable
+            `TranslationSide`.
+        """
+
     def getLocalTranslationMessages(potemplate, language,
                                     include_dismissed=False,
                                     include_unreviewed=True):

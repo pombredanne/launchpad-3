@@ -1524,7 +1524,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         sides = (TranslationSide.UPSTREAM, TranslationSide.UBUNTU)
         for side in sides:
             traits = make_translation_side_message_traits(
-                potmsgset, pofile.potemplate, pofile.language, side)
+                side, potmsgset, pofile.potemplate, pofile.language)
             self.assertEqual(side, traits.side)
             self.assertNotEqual(side, traits.other_side.side)
             self.assertIn(traits.other_side.side, sides)
@@ -1536,8 +1536,8 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
             pofile=pofile, potmsgset=potmsgset)
 
         traits = make_translation_side_message_traits(
-            potmsgset, pofile.potemplate, pofile.language,
-            TranslationSide.UPSTREAM)
+            TranslationSide.UPSTREAM, potmsgset, pofile.potemplate,
+            pofile.language)
 
         self.assertEqual('is_current_upstream', traits.flag_name)
 
