@@ -938,7 +938,7 @@ class IArchiveView(IHasBuildRecords):
         """Return a dictionary with the filenames and the SHA1s for each
         source file.
 
-        :param source_files: An array of filenames to return SHA1s of
+        :param source_files: An list of filenames to return SHA1s of
         :return: A dictionary of filenames and sha1s.
         """
 
