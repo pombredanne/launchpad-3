@@ -509,7 +509,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
         for queue_build in self.builds:
-            names.append(queue_build.build.sourcepackagerelease.name)
+            names.append(queue_build.build.source_package_release.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
@@ -1413,7 +1413,7 @@ class PackageUploadBuild(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
-        build_archtag = self.build.distroarchseries.architecturetag
+        build_archtag = self.build.distro_arch_series.architecturetag
         # Determine the target arch series.
         # This will raise NotFoundError if anything odd happens.
         target_dar = self.packageupload.distroseries[build_archtag]

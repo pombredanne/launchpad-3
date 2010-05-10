@@ -565,7 +565,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Check DistroArchSeries database IDs because the object belongs
         # to different transactions (architecture_available is cached).
         if (build_candidate is not None and
-            (build_candidate.distroarchseries.id == arch.id or
+            (build_candidate.distro_arch_series.id == arch.id or
              build_candidate.buildstate == BuildStatus.FULLYBUILT)):
             return None
 
