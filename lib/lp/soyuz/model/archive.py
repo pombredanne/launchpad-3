@@ -1435,6 +1435,23 @@ class Archive(SQLBase):
         self.status = ArchiveStatus.DELETING
         self.disable()
 
+    def getFilesAndSha1s(self, source):
+        """See `IArchive`."""
+        source_files = [
+            sprf.libraryfile.filename for sprf in 
+            source.sourcepackagerelease.files]
+        return dict(Store.of(self).find(
+            (LibraryFileAlias.filename, LibraryFileContent.sha1),
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            LibraryFileAlias.filename.is_in(source_files),
+            LibraryFileContent.id == LibraryFileAlias.contentID).config(
+                distinct=True))
+
 
 class ArchiveSet:
     implements(IArchiveSet)

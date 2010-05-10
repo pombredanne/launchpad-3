@@ -347,22 +347,11 @@ class CopyChecker:
         # do not conflict.
         if source.archive.id == self.archive.id:
             return None
-        # Check if files with the same filename already exist in the target
-        destination_source_conflicts = self.archive.getPublishedSources(
-            name=source.sourcepackagerelease.name)
-        file_conflicts = {}
-        for source_pub in destination_source_conflicts:
-            for file_alias in source_pub.sourcepackagerelease.files:
-                library_file = file_alias.libraryfile
-                if library_file.content is None:
-                    # The source is expired, we don't care
-                    continue
-                sha1 = library_file.content.sha1
-                file_conflicts[library_file.filename] = sha1
+        destination_sha1s = self.archive.getFilesAndSha1s(source)
         for lf in source.sourcepackagerelease.files:
-            if lf.libraryfile.filename in file_conflicts.keys():
+            if lf.libraryfile.filename in destination_sha1s:
                 sha1 = lf.libraryfile.content.sha1
-                if sha1 != file_conflicts[lf.libraryfile.filename]:
+                if sha1 != destination_sha1s[lf.libraryfile.filename]:
                     raise CannotCopy(
                         "%s already exists in destination archive with "
                         "different contents." % lf.libraryfile.filename)
