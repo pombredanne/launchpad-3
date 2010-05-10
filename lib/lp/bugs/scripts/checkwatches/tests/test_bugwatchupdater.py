@@ -101,7 +101,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         bug_watch_updater = BugWatchUpdater(
             self.checkwatches_master, self.bug_watch, external_bugtracker)
 
-        comment = self.factory.makeBugComment(
+        self.factory.makeBugComment(
             bug=self.bug_task.bug, bug_watch=self.bug_watch)
 
         bug_watch_updater.updateBugWatch(
