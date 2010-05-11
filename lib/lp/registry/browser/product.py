@@ -58,6 +58,7 @@ from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -284,10 +285,21 @@ class ProductLicenseMixin:
             from_address, user_address,
             subject, message, headers={'Reply-To': commercial_address})
         # Inform that Launchpad recognized the license change.
+        self._addLicenseChangeToReviewWhiteboard()
         self.request.response.addInfoNotification(_(
             "Launchpad is free to use for software under approved "
             "licenses. The Launchpad team will be in contact with "
             "you soon."))
+
+    def _addLicenseChangeToReviewWhiteboard(self):
+        """Update the whiteboard for the reviewer's benefit."""
+        now = datetime.now(tz=pytz.UTC).strftime('YYYY-mm-dd')
+        whiteboard = 'User notified of license policy on %s.' % now
+        naked_product = removeSecurityProxy(self.product)
+        if naked_product.reviewer_whiteboard is None:
+            naked_product.reviewer_whiteboard = whiteboard
+        else:
+            naked_product.reviewer_whiteboard += '\n' + whiteboard
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
