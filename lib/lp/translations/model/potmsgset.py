@@ -88,10 +88,13 @@ credits_message_str = (u'This is a dummy translation so that the '
 class TranslationSideMessageTraits:
     """Dealing with a `POTMsgSet` on either `TranslationSide`.
 
-    Abstracts away primitives that are needed regardless of side: find
-    the message that is current on the given side (if any), check the
-    flag that says whether a message is current on this side, set or
-    clear the flag, and provide the same traits for the other side.
+    Encapsulates primitives that depend on translation side: finding the
+    message that is current on the given side, checking the flag that
+    says whether a message is current on this side, setting or clearing
+    the flag, and providing the same capabilities for the other side.
+
+    For an introduction to the Traits pattern, see
+    http://www.cantrip.org/traits.html
     """
     def __init__(self, potmsgset, potemplate, language, variant):
         self.potmsgset = potmsgset

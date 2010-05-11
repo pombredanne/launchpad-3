@@ -1220,7 +1220,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
     def test_creation_pofile(self):
         # When a new pofile is created, dummy translations are created for
         # all translation credits messages.
-        
+
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
@@ -1581,8 +1581,6 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
 
         self.assertEqual(message, potmsgset.getImportedTranslationMessage(
             pofile.potemplate, pofile.language))
-
-    # XXX: Verify that nothing ever produces a diverged suggestion.
 
 
 def test_suite():
