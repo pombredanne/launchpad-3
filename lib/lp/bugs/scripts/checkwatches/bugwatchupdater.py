@@ -32,7 +32,6 @@ from lp.bugs.scripts.checkwatches.utilities import (
 from lp.registry.interfaces.person import PersonCreationRationale
 
 
-
 class BugWatchUpdater(WorkingBase):
     """Handles the updating of a single BugWatch for checkwatches."""
 
@@ -51,10 +50,18 @@ class BugWatchUpdater(WorkingBase):
             ('bug_id', self.remote_bug),
             ('local_ids', str(self.local_bug))])
 
+        self.can_import_comments = parent.can_import_comments
+        self.can_push_comments = parent.can_push_comments
+        self.can_back_link = parent.can_back_link
+
+    # XXX 2010-05-11 gmb bug=578714:
+    #     The last three parameters on this method aren't needed and
+    #     should be removed.
     @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
                        new_remote_importance, new_malone_importance,
-                       can_import_comments, can_push_comments, can_back_link):
+                       can_import_comments=None, can_push_comments=None,
+                       can_back_link=None):
         """Update the BugWatch."""
         with self.transaction:
             if new_malone_status is not None:
@@ -82,14 +89,14 @@ class BugWatchUpdater(WorkingBase):
         oops_id = None
         if do_sync:
             try:
-                if can_import_comments:
+                if can_import_comments or self.can_import_comments:
                     error_status = (
                         BugWatchActivityStatus.COMMENT_IMPORT_FAILED)
                     self.importBugComments()
-                if can_push_comments:
+                if can_push_comments or self.can_push_comments:
                     error_status = BugWatchActivityStatus.COMMENT_PUSH_FAILED
                     self.pushBugComments()
-                if can_back_link:
+                if can_back_link or self.can_back_link:
                     error_status = BugWatchActivityStatus.BACKLINK_FAILED
                     self.linkLaunchpadBug()
             except Exception, ex:

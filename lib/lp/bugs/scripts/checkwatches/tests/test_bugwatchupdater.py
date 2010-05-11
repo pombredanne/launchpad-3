@@ -8,11 +8,15 @@ __metaclass__ = type
 import transaction
 import unittest
 
+from datetime import datetime
+
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
+from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
 from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
 from lp.testing import TestCaseWithFactory
@@ -33,6 +37,23 @@ class BrokenCommentSyncingExternalBugTracker(TestExternalBugTracker):
 
     def getLaunchpadBugId(self, remote_bug):
         raise Exception(self.back_link_error_message)
+
+
+class LoggingBugWatchUpdater(BugWatchUpdater):
+    """A BugWatchUpdater that logs what's going on."""
+
+    import_bug_comments_called = False
+    push_bug_comments_called = False
+    link_launchpad_bug_called = False
+
+    def importBugComments(self):
+        self.import_bug_comments_called = True
+
+    def pushBugComments(self):
+        self.push_bug_comments_called = True
+
+    def linkLaunchpadBug(self):
+        self.link_launchpad_bug_called = True
 
 
 class BugWatchUpdaterTestCase(TestCaseWithFactory):
@@ -129,6 +150,50 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         self._checkLastErrorAndMessage(
             BugWatchActivityStatus.BACKLINK_FAILED,
             external_bugtracker.back_link_error_message)
+
+    def test_comment_bools_inherited(self):
+        # BugWatchUpdater.updateBugWatches() doesn't have to be passed
+        # values for can_import_comments, can_push_comments and
+        # can_back_link. Instead, these can be taken from the parent
+        # object passed to it upon instantiation, usually a
+        # RemoteBugUpdater.
+        # XXX 2010-05-11 gmb bug=578714:
+        #     This test can be removed when bug 578714 is fixed.
+        remote_bug_updater = RemoteBugUpdater(
+            self.checkwatches_master,
+            BugzillaAPI("http://example.com"),
+            self.bug_watch.remotebug, [self.bug_watch.id],
+            [], datetime.now())
+        bug_watch_updater = LoggingBugWatchUpdater(
+            remote_bug_updater, self.bug_watch,
+            remote_bug_updater.external_bugtracker)
+
+        # If all the can_* properties of remote_bug_updater are True,
+        # bug_watch_updater will attempt to import, push and backlink.
+        self.assertTrue(remote_bug_updater.can_import_comments)
+        self.assertTrue(remote_bug_updater.can_push_comments)
+        self.assertTrue(remote_bug_updater.can_back_link)
+        bug_watch_updater.updateBugWatch(
+            'FIXED', BugTaskStatus.FIXRELEASED, 'LOW', BugTaskImportance.LOW)
+
+        self.assertTrue(bug_watch_updater.import_bug_comments_called)
+        self.assertTrue(bug_watch_updater.push_bug_comments_called)
+        self.assertTrue(bug_watch_updater.link_launchpad_bug_called)
+
+        # Otherwise, bug_watch_updater won't attempt those functions
+        # whose can_* properties are False.
+        remote_bug_updater.can_import_comments = False
+        remote_bug_updater.can_push_comments = False
+        remote_bug_updater.can_back_link = False
+        bug_watch_updater = LoggingBugWatchUpdater(
+            remote_bug_updater, self.bug_watch,
+            remote_bug_updater.external_bugtracker)
+        bug_watch_updater.updateBugWatch(
+            'FIXED', BugTaskStatus.FIXRELEASED, 'LOW', BugTaskImportance.LOW)
+
+        self.assertFalse(bug_watch_updater.import_bug_comments_called)
+        self.assertFalse(bug_watch_updater.push_bug_comments_called)
+        self.assertFalse(bug_watch_updater.link_launchpad_bug_called)
 
 
 def test_suite():
