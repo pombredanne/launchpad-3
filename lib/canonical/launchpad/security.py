@@ -551,14 +551,6 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
-class AdminSeriesByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IProductSeries
-
-    def checkAuthenticated(self, user):
-        return user.in_vcs_imports
-
-
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone
