@@ -60,6 +60,34 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.failIfEqual(None, bq.processor)
         self.failUnless(bq, self.build.buildqueue_record)
 
+    def addFakeBuildLog(self):
+        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
+        removeSecurityProxy(self.build).log = lfa
+
+    def test_log_url(self):
+        # The log URL for a binary package build will use
+        # the distribution source package release when the context
+        # is not a PPA or a copy archive.
+        self.addFakeBuildLog()
+        self.failUnlessEqual(
+            'http://launchpad.dev/ubuntutest/+source/'
+            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
+                self.build.package_build.build_farm_job.id),
+            self.build.log_url)
+
+    def test_log_url_ppa(self):
+        # On the other hand, ppa or copy builds will have a url in the
+        # context of the archive.
+        self.addFakeBuildLog()
+        ppa_owner = self.factory.makePerson(name="joe")
+        removeSecurityProxy(self.build).archive = self.factory.makeArchive(
+            owner=ppa_owner, name="myppa")
+        self.failUnlessEqual(
+            'http://launchpad.dev/~joe/'
+            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
+                self.build.build_farm_job.id),
+            self.build.log_url)
+
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 

@@ -10,5 +10,6 @@
     i18n_domain="launchpad">
     <browser:url
         for="lp.buildmaster.interfaces.packagebuild.IPackageBuild"
-        urldata="lp.buildmaster.browser.packagebuild.PackageBuildUrl"/>
+        path_expression="string:+build/${build_farm_job/id}"
+        attribute_to_parent="archive"/>
 </configure>

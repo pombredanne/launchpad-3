@@ -24,6 +24,8 @@ from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
+from canonical.launchpad.browser.librarian import (
+    ProxiedLibraryFileAlias)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
@@ -207,6 +209,17 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def arch_tag(self):
         """See `IBuild`."""
         return self.distro_arch_series.architecturetag
+
+    @property
+    def log_url(self):
+        """See `IBuildFarmJob`.
+
+        Overridden here for the case of builds for distro archives,
+        currently only supported for binary package builds.
+        """
+        if self.log is None:
+            return None
+        return ProxiedLibraryFileAlias(self.log, self).http_url
 
     @property
     def distributionsourcepackagerelease(self):
