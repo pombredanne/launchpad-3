@@ -90,7 +90,7 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
     ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
@@ -1110,8 +1110,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
@@ -1390,16 +1391,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
 
-        # The PGP signature is stripped from all changesfiles for PPAs
-        # to avoid replay attacks (see bug 159304).
-        if archive.is_ppa:
-            signed_message = signed_message_from_string(changesfilecontent)
-            if signed_message is not None:
-                # Overwrite `changesfilecontent` with the text stripped
-                # of the PGP signature.
-                new_content = signed_message.signedContent
-                if new_content is not None:
-                    changesfilecontent = signed_message.signedContent
+        # The PGP signature is stripped from all changesfiles
+        # to avoid replay attacks (see bugs 159304 and 451396).
+        signed_message = signed_message_from_string(changesfilecontent)
+        if signed_message is not None:
+            # Overwrite `changesfilecontent` with the text stripped
+            # of the PGP signature.
+            new_content = signed_message.signedContent
+            if new_content is not None:
+                changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),

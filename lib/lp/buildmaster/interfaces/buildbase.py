@@ -207,6 +207,8 @@ class IBuildBase(Interface):
             description=_("A URL for failed upload logs."
                           "Will be None if there was no failure.")))
 
+    title = exported(TextLine(title=_("Title"), required=False))
+
     def getUploaderCommand(upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 

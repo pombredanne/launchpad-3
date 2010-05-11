@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'CorruptBuildID',
+    'CorruptBuildCookie',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -46,7 +46,7 @@ class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
 
 
-class CorruptBuildID(BuildDaemonError):
+class CorruptBuildCookie(BuildDaemonError):
     """The build slave is working with mismatched information.
 
     It needs to be rescued.
@@ -173,6 +173,18 @@ class IBuilder(IHasOwner):
         :raises BuildDaemonError: When the slave is down.
         """
 
+    def rescueIfLost(logger=None):
+        """Reset the slave if its job information doesn't match the DB.
+
+        If the builder is BUILDING or WAITING but has a build ID string
+        that doesn't match what is stored in the DB, we have to dismiss
+        its current actions and clean the slave for another job, assuming
+        the XMLRPC is working properly at this point.
+        """
+
+    def updateStatus(logger=None):
+        """Update the builder's status by probing it."""
+
     def cleanSlave():
         """Clean any temporary files from the slave."""
 
@@ -217,8 +229,8 @@ class IBuilder(IHasOwner):
             the status.
         """
 
-    def verifySlaveBuildID(slave_build_id):
-        """Verify that a slave's build ID is consistent.
+    def verifySlaveBuildCookie(slave_build_id):
+        """Verify that a slave's build cookie is consistent.
 
         This should delegate to the current `IBuildFarmJobBehavior`.
         """
@@ -338,10 +350,13 @@ class IBuilderSet(Interface):
         :param txn: A zopeless transaction object which is currently used by
             legacy code that we are in the process of removing. DO NOT add
             additional uses of this parameter.
-        :return: A lp.buildmaster.master.BuilddMaster instance. This is
-            temporary and once the dispatchBuilds method no longer requires
-            a used instance this return parameter will be dropped.
         """
+
+    def checkBuilders(logger, txn):
+        """Update the status of all builders and commit."""
+
+    def scanActiveBuilders(logger, txn):
+        """Scan all active builders, updating the current build jobs."""
 
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

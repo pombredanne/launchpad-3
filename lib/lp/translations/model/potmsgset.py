@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = ['POTMsgSet']
 
 import datetime
-import gettextpo
 import logging
 import pytz
 
@@ -21,7 +20,6 @@ from storm.store import EmptyResultSet, Store
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.launchpad import helpers
 from canonical.launchpad.helpers import shortlist
 from lp.translations.model.translationmessage import (
     make_plurals_sql_fragment)
@@ -51,6 +49,8 @@ from lp.translations.model.translationmessage import (
     TranslationMessage)
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem)
+from lp.translations.utilities.validate import (
+    GettextValidationError, validate_translation)
 
 
 # Msgids that indicate translation credit messages, and their
@@ -484,9 +484,9 @@ class POTMsgSet(SQLBase):
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            helpers.validate_translation(
+            validate_translation(
                 original_texts, translations, self.flags)
-        except gettextpo.error:
+        except GettextValidationError:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as
                 # broken.
@@ -702,11 +702,11 @@ class POTMsgSet(SQLBase):
                     # Either converge_shared==True, or a new message.
                     new_message.potemplate = None
 
-                new_message.is_current_ubuntu = True
+                new_message.makeCurrentUbuntu()
             else:
                 new_message.potemplate = None
         if is_current_upstream or new_message == upstream_message:
-            new_message.is_current_upstream = True
+            new_message.makeCurrentUpstream()
 
 
     def _isTranslationMessageASuggestion(self, force_suggestion,
@@ -918,6 +918,24 @@ class POTMsgSet(SQLBase):
 
         return message
 
+    def _maybeRaiseTranslationConflict(self, message, lock_timestamp):
+        """Checks if there is a translation conflict for the message.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+        if message.date_reviewed is not None:
+            use_date = message.date_reviewed
+        else:
+            use_date = message.date_created
+        if use_date >= lock_timestamp:
+            raise TranslationConflict(
+                'While you were reviewing these suggestions, somebody '
+                'else changed the actual translation. This is not an '
+                'error but you might want to re-review the strings '
+                'concerned.')
+        else:
+            return
+
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
@@ -928,19 +946,29 @@ class POTMsgSet(SQLBase):
             current = self.updateTranslation(
                 pofile, reviewer, [], False, lock_timestamp)
         else:
-            if current.date_reviewed is not None:
-                use_date = current.date_reviewed
-            else:
-                use_date = current.date_created
-            if use_date >= lock_timestamp:
-                raise TranslationConflict(
-                    'While you were reviewing these suggestions, somebody '
-                    'else changed the actual translation. This is not an '
-                    'error but you might want to re-review the strings '
-                    'concerned.')
-            else:
-                current.reviewer = reviewer
-                current.date_reviewed = lock_timestamp
+            # Check for translation conflicts and update review fields.
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
+            current.reviewer = reviewer
+            current.date_reviewed = lock_timestamp
+
+    def resetCurrentTranslation(self, pofile, lock_timestamp):
+        """See `IPOTMsgSet`."""
+
+        assert(lock_timestamp is not None)
+
+        current = self.getCurrentTranslationMessage(
+            pofile.potemplate, pofile.language)
+
+        if (current is not None):
+            # Check for transltion conflicts and update the required
+            # attributes.
+            self._maybeRaiseTranslationConflict(current, lock_timestamp)
+            current.is_current = False
+            # Converge the current translation only if it is diverged and not
+            # imported.
+            if current.potemplate is not None and not current.is_imported:
+                current.potemplate = None
+            pofile.date_changed = UTC_NOW
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""

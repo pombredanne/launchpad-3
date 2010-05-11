@@ -29,7 +29,7 @@ from lp.soyuz.model.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory)
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import \
     SourcePackagePublishingHistory
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
@@ -100,8 +100,9 @@ class DistributionSourcePackageRelease:
         # distribution that were built for a PPA but have been published
         # in a main archive.
         builds_for_distro_exprs = (
-            Build.sourcepackagerelease == self.sourcepackagerelease,
-            Build.distroarchseries == DistroArchSeries.id,
+            (BinaryPackageBuild.sourcepackagerelease ==
+                self.sourcepackagerelease),
+            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
             )
@@ -109,9 +110,9 @@ class DistributionSourcePackageRelease:
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distro_exprs,
-            Build.archive == Archive.id,
+            BinaryPackageBuild.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the
@@ -119,9 +120,9 @@ class DistributionSourcePackageRelease:
         # query, but not the new/failed ones. It will also include
         # ppa builds that have been published in main archives.
         builds_published_in_main_archives = store.find(
-            Build,
+            BinaryPackageBuild,
             builds_for_distro_exprs,
-            BinaryPackageRelease.build == Build.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archive == Archive.id,
@@ -130,7 +131,8 @@ class DistributionSourcePackageRelease:
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
-                Desc(Build.datecreated), Desc(Build.id))
+                Desc(
+                    BinaryPackageBuild.datecreated), Desc(BinaryPackageBuild.id))
 
     @property
     def binary_package_names(self):

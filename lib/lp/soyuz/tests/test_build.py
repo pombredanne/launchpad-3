@@ -16,7 +16,8 @@ from lp.services.job.model.job import Job
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.soyuz.interfaces.build import IBuild, IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import (
+    IBinaryPackageBuild, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -38,13 +39,13 @@ class TestBuildInterface(TestCaseWithFactory):
             sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
         build = gedit_src_hist.createMissingBuilds()[0]
 
-        # The IBuild.calculated_buildstart property asserts
+        # The IBinaryPackageBuild.calculated_buildstart property asserts
         # that both datebuilt and buildduration are set.
         build.datebuilt = datetime.now(pytz.UTC)
         build.buildduration = timedelta(0, 1)
 
         self.assertProvides(build, IBuildBase)
-        self.assertProvides(build, IBuild)
+        self.assertProvides(build, IBinaryPackageBuild)
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 
@@ -53,7 +54,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
     def _setupSimpleDepwaitContext(self):
         """Use `SoyuzTestPublisher` to setup a simple depwait context.
 
-        Return an `IBuild` in MANUALDEWAIT state and depending on a
+        Return an `IBinaryPackageBuild` in MANUALDEWAIT state and depending on a
         binary that exists and is reachable.
         """
         test_publisher = SoyuzTestPublisher()
@@ -107,14 +108,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             0)
 
     def testUpdateDependenciesWorks(self):
-        # Calling `IBuild.updateDependencies` makes the build
+        # Calling `IBinaryPackageBuild.updateDependencies` makes the build
         # record ready for dispatch.
         depwait_build = self._setupSimpleDepwaitContext()
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
 
     def testInvalidDependencies(self):
-        # Calling `IBuild.updateDependencies` on a build with
+        # Calling `IBinaryPackageBuild.updateDependencies` on a build with
         # invalid 'dependencies' raises an AssertionError.
         # Anything not following '<name> [([relation] <version>)][, ...]'
         depwait_build = self._setupSimpleDepwaitContext()
@@ -140,10 +141,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             AssertionError, depwait_build.updateDependencies)
 
     def testBug378828(self):
-        # `IBuild.updateDependencies` copes with the scenario where
-        # the corresponding source publication is not active (deleted)
-        # and the source original component is not a valid ubuntu
-        # component.
+        # `IBinaryPackageBuild.updateDependencies` copes with the
+        # scenario where the corresponding source publication is not
+        # active (deleted) and the source original component is not a
+        # valid ubuntu component.
         depwait_build = self._setupSimpleDepwaitContext()
 
         depwait_build.current_source_publication.requestDeletion(
@@ -194,7 +195,7 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
         # Short-cuts for our tests.
         self.archive = self.publisher.distroseries.main_archive
-        self.build_set = getUtility(IBuildSet)
+        self.build_set = getUtility(IBinaryPackageBuildSet)
 
     def test_getBuildsForArchive_no_params(self):
         # All builds should be returned when called without filtering
@@ -218,7 +219,7 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         super(TestBuildSetGetBuildsForBuilder, self).setUp()
 
         # Short-cuts for our tests.
-        self.build_set = getUtility(IBuildSet)
+        self.build_set = getUtility(IBinaryPackageBuildSet)
 
         # Create a 386 builder
         owner = self.factory.makePerson()

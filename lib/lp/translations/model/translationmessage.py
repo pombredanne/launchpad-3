@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -154,6 +154,12 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         # This object is already non persistent, so nothing needs to be done.
         return
+
+    def makeCurrentUbuntu(self, new_value=True):
+        self.is_current_ubuntu = new_value
+
+    def makeCurrentUpstream(self, new_value=True):
+        self.is_current_upstream = new_value
 
 
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
@@ -416,18 +422,49 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         return twins.order_by(TranslationMessage.id).first()
 
+    def makeCurrentUbuntu(self, new_value=True):
+        """See `ITranslationMessage`."""
+        if new_value and not self.is_current_ubuntu:
+            incumbent = self.potmsgset.getCurrentTranslationMessage(
+                self.potemplate, self.language, self.variant)
+            if incumbent == self:
+                return
+            if (incumbent is not None and
+                incumbent.potemplate == self.potemplate):
+                # The incumbent is in the way.  Clear its flag.
+                incumbent.is_current_ubuntu = False
+                Store.of(self).add_flush_order(incumbent, self)
+
+        self.is_current_ubuntu = new_value
+
+    def makeCurrentUpstream(self, new_value=True):
+        """See `ITranslationMessage`."""
+        if new_value and not self.is_current_upstream:
+            incumbent = self.potmsgset.getImportedTranslationMessage(
+                self.potemplate, self.language, self.variant)
+            if incumbent == self:
+                return
+            if (incumbent is not None and
+                incumbent.potemplate == self.potemplate):
+                # The incumbent is in the way.  Clear its flag.
+                incumbent.is_current_upstream = False
+                Store.of(self).add_flush_order(incumbent, self)
+
+        self.is_current_upstream = new_value
+
+
 
 class TranslationMessageSet:
     """See `ITranslationMessageSet`."""
     implements(ITranslationMessageSet)
 
     def getByID(self, ID):
-        """See `ILanguageSet`."""
+        """See `ITranslationMessageSet`."""
         try:
             return TranslationMessage.get(ID)
         except SQLObjectNotFound:
             return None
 
     def selectDirect(self, where=None, order_by=None):
-        """See `ILanguageSet`."""
+        """See `ITranslationMessageSet`."""
         return TranslationMessage.select(where, orderBy=order_by)

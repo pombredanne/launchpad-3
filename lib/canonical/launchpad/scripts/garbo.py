@@ -13,7 +13,6 @@ import pytz
 import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
-from zope.interface import implements
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -22,22 +21,25 @@ from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from lp.hardwaredb.model.hwdb import HWSubmission
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.scripts.checkwatches.scheduler import (
+    BugWatchScheduler, MAX_SAMPLE_SIZE)
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
-from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
@@ -45,29 +47,6 @@ from lp.services.scripts.base import (
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-class TunableLoop:
-    implements(ITunableLoop)
-
-    goal_seconds = 4
-    minimum_chunk_size = 1
-    maximum_chunk_size = None # Override
-    cooldown_time = 0
-
-    def __init__(self, log, abort_time=None):
-        self.log = log
-        self.abort_time = abort_time
-
-    def run(self):
-        assert self.maximum_chunk_size is not None, (
-            "Did not override maximum_chunk_size.")
-        DBLoopTuner(
-            self, self.goal_seconds,
-            minimum_chunk_size = self.minimum_chunk_size,
-            maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -141,19 +120,17 @@ class OpenIDConsumerNoncePruner(TunableLoop):
         transaction.commit()
 
 
-class OpenIDAssociationPruner(TunableLoop):
+class OpenIDConsumerAssociationPruner(TunableLoop):
     minimum_chunk_size = 3500
     maximum_chunk_size = 50000
 
-    table_name = 'OpenIDAssociation'
-    store_name = AUTH_STORE
+    table_name = 'OpenIDConsumerAssociation'
 
     _num_removed = None
 
     def __init__(self, log, abort_time=None):
-        super(OpenIDAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(
-            self.store_name, MASTER_FLAVOR)
+        super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     def __call__(self, chunksize):
         result = self.store.execute("""
@@ -170,11 +147,6 @@ class OpenIDAssociationPruner(TunableLoop):
 
     def isDone(self):
         return self._num_removed == 0
-
-
-class OpenIDConsumerAssociationPruner(OpenIDAssociationPruner):
-    table_name = 'OpenIDConsumerAssociation'
-    store_name = MAIN_STORE
 
 
 class RevisionCachePruner(TunableLoop):
@@ -371,150 +343,6 @@ class HWSubmissionEmailLinker(TunableLoop):
         transaction.commit()
 
 
-class MailingListSubscriptionPruner(TunableLoop):
-    """Prune `MailingListSubscription`s pointing at deleted email addresses.
-
-    Users subscribe to mailing lists with one of their verified email
-    addresses.  When they remove an address, the mailing list
-    subscription should go away too.
-    """
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(MailingListSubscriptionPruner, self).__init__(log, abort_time)
-        self.subscription_store = IMasterStore(MailingListSubscription)
-        self.email_store = IMasterStore(EmailAddress)
-
-        (self.min_subscription_id,
-         self.max_subscription_id) = self.subscription_store.find(
-            (Min(MailingListSubscription.id),
-             Max(MailingListSubscription.id))).one()
-
-        self.next_subscription_id = self.min_subscription_id
-
-    def isDone(self):
-        return (self.min_subscription_id is None or
-                self.next_subscription_id > self.max_subscription_id)
-
-    def __call__(self, chunk_size):
-        result = self.subscription_store.find(
-            MailingListSubscription,
-            MailingListSubscription.id >= self.next_subscription_id,
-            MailingListSubscription.id < (self.next_subscription_id +
-                                          chunk_size))
-        used_ids = set(result.values(MailingListSubscription.email_addressID))
-        existing_ids = set(self.email_store.find(
-                EmailAddress.id, EmailAddress.id.is_in(used_ids)))
-        deleted_ids = used_ids - existing_ids
-
-        self.subscription_store.find(
-            MailingListSubscription,
-            MailingListSubscription.id >= self.next_subscription_id,
-            MailingListSubscription.id < (self.next_subscription_id +
-                                          chunk_size),
-            MailingListSubscription.email_addressID.is_in(deleted_ids)
-            ).remove()
-
-        self.next_subscription_id += chunk_size
-        transaction.commit()
-
-
-class PersonEmailAddressLinkChecker(TunableLoop):
-    """Report invalid references between the authdb and main replication sets.
-
-    We can't use referential integrity to ensure references remain valid,
-    so we have to check regularly for any bugs that creep into our code.
-
-    We don't repair links yet, but could add this feature. I'd
-    rather track down the source of problems and fix problems there
-    and avoid automatic repair, which might be dangerous. In particular,
-    replication lag introduces a number of race conditions that would
-    need to be addressed.
-    """
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(PersonEmailAddressLinkChecker, self).__init__(log, abort_time)
-
-        self.person_store = IMasterStore(Person)
-        self.email_store = IMasterStore(EmailAddress)
-
-        # This query detects invalid links between Person and EmailAddress.
-        # The first part detects difference in opionion about what Account
-        # is linked to. The second part detects EmailAddresses linked to
-        # non existent Person records.
-        query = """
-            SELECT Person.id, EmailAddress.id
-            FROM EmailAddress, Person
-            WHERE EmailAddress.person = Person.id
-                AND Person.account IS DISTINCT FROM EmailAddress.account
-            UNION
-            SELECT NULL, EmailAddress.id
-            FROM EmailAddress LEFT OUTER JOIN Person
-                ON EmailAddress.person = Person.id
-            WHERE EmailAddress.person IS NOT NULL
-                AND Person.id IS NULL
-            """
-        # We need to issue this query twice, waiting between calls
-        # for all pending database changes to replicate. The known
-        # bad set are the entries common in both results.
-        bad_links_1 = set(self.person_store.execute(query))
-        transaction.abort()
-
-        self.blockForReplication()
-
-        bad_links_2 = set(self.person_store.execute(query))
-        transaction.abort()
-
-        self.bad_links = bad_links_1.intersection(bad_links_2)
-
-    def blockForReplication(self):
-        start = time.time()
-        while True:
-            lag = self.person_store.execute(
-                "SELECT COALESCE(EXTRACT(EPOCH FROM replication_lag()), 0);"
-                ).get_one()[0]
-            if lag < (time.time() - start):
-                return
-            # Guestimate on how long we should wait for. We cap
-            # it as several hours of lag can clear in an instant
-            # in some cases.
-            naptime = min(300, lag)
-            self.log.debug(
-                "Waiting for replication. Lagged %s secs. Napping %s secs."
-                % (lag, naptime))
-            time.sleep(naptime)
-
-    def isDone(self):
-        return not self.bad_links
-
-    def __call__(self, chunksize):
-        for counter in range(0, int(chunksize)):
-            if not self.bad_links:
-                return
-            person_id, emailaddress_id = self.bad_links.pop()
-            if person_id is None:
-                person = None
-            else:
-                person = self.person_store.get(Person, person_id)
-            emailaddress = self.email_store.get(EmailAddress, emailaddress_id)
-            self.report(person, emailaddress)
-            # We don't repair... yet.
-            # self.repair(person, emailaddress)
-        transaction.abort()
-
-    def report(self, person, emailaddress):
-        if person is None:
-            self.log.error(
-                "Corruption - '%s' is linked to a non-existant Person."
-                % emailaddress.email)
-        else:
-            self.log.error(
-                "Corruption - '%s' and '%s' reference different Accounts."
-                % (emailaddress.email, person.name))
-
-
 class PersonPruner(TunableLoop):
 
     maximum_chunk_size = 1000
@@ -687,7 +515,7 @@ class BranchJobPruner(TunableLoop):
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._ids_to_remove()[:chunk_size])
-        num_removed = self.job_store.find(
+        self.job_store.find(
             BranchJob,
             In(BranchJob.id, ids_to_remove)).remove()
         transaction.commit()
@@ -752,6 +580,93 @@ class BugHeatUpdater(TunableLoop):
             self.log.debug("Adding CalculateBugHeatJob for bug %s" % bug.id)
             getUtility(ICalculateBugHeatJobSource).create(bug)
             self.total_processed += 1
+        transaction.commit()
+
+
+class BugWatchActivityPruner(TunableLoop):
+    """A TunableLoop to prune BugWatchActivity entries."""
+
+    maximum_chunk_size = 1000
+
+    def getPrunableBugWatchIds(self, chunk_size):
+        """Return the set of BugWatch IDs whose activity is prunable."""
+        query = """
+            SELECT
+                watch_activity.id
+            FROM (
+                SELECT
+                    BugWatch.id AS id,
+                    COUNT(BugWatchActivity.id) as activity_count
+                FROM BugWatch, BugWatchActivity
+                WHERE BugWatchActivity.bug_watch = BugWatch.id
+                GROUP BY BugWatch.id) AS watch_activity
+            WHERE watch_activity.activity_count > %s
+            LIMIT %s;
+        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
+        store = IMasterStore(BugWatch)
+        results = store.execute(query)
+        return set(result[0] for result in results)
+
+    def pruneBugWatchActivity(self, bug_watch_ids):
+        """Prune the BugWatchActivity for bug_watch_ids."""
+        query = """
+            DELETE FROM BugWatchActivity
+            WHERE id IN (
+                SELECT id
+                FROM BugWatchActivity
+                WHERE bug_watch = %s
+                ORDER BY id DESC
+                OFFSET %s);
+        """
+        store = IMasterStore(BugWatch)
+        for bug_watch_id in bug_watch_ids:
+            results = store.execute(
+                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
+            self.log.debug(
+                "Pruned %s BugWatchActivity entries for watch %s" %
+                (results.rowcount, bug_watch_id))
+
+    def __call__(self, chunk_size):
+        transaction.begin()
+        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
+        self.pruneBugWatchActivity(prunable_ids)
+        transaction.commit()
+
+    def isDone(self):
+        """Return True if there are no watches left to prune."""
+        return len(self.getPrunableBugWatchIds(1)) == 0
+
+
+class ObsoleteBugAttachmentDeleter(TunableLoop):
+    """Delete bug attachments without a LibraryFileContent record.
+
+    Our database schema allows LibraryFileAlias records that have no
+    corresponding LibraryFileContent records.
+
+    This class deletes bug attachments that reference such "content free"
+    and thus completely useless LFA records.
+    """
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
+        self.store = IMasterStore(BugAttachment)
+
+    def _to_remove(self):
+        return self.store.find(
+            BugAttachment.id,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content == None)
+
+    def isDone(self):
+        return self._to_remove().any() is None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        ids_to_remove = list(self._to_remove()[:chunk_size])
+        self.store.find(
+            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
         transaction.commit()
 
 
@@ -835,10 +750,10 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
-        OpenIDAssociationPruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
         BugHeatUpdater,
+        BugWatchScheduler,
         ]
     experimental_tunable_loops = []
 
@@ -856,10 +771,10 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportResultPruner,
         RevisionAuthorEmailLinker,
         HWSubmissionEmailLinker,
-        MailingListSubscriptionPruner,
-        PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
+        BugWatchActivityPruner,
+        ObsoleteBugAttachmentDeleter,
         ]
     experimental_tunable_loops = [
         PersonPruner,

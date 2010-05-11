@@ -7,14 +7,15 @@ __all__ = ['GettextCheckMessages']
 
 from datetime import timedelta, datetime
 
-import gettextpo
+from storm.locals import Store
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessageSet)
-from canonical.launchpad.helpers import validate_translation
+from lp.translations.utilities.validate import (
+    GettextValidationError, validate_translation)
 from lp.services.scripts.base import LaunchpadScript
 
 
@@ -99,7 +100,7 @@ class GettextCheckMessages(LaunchpadScript):
 
         try:
             validate_translation(msgids, msgstrs, potmsgset.flags)
-        except gettextpo.error, error:
+        except GettextValidationError, error:
             self._error_count += 1
             return unicode(error)
 
@@ -137,6 +138,8 @@ class GettextCheckMessages(LaunchpadScript):
             self._disable_count += 1
             if imported is not None:
                 imported.is_current_ubuntu = True
+                Store.of(imported).add_flush_order(
+                    translationmessage, imported)
                 self._unmask_count += 1
 
     def _do_commit(self):

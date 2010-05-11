@@ -163,7 +163,8 @@
         <browser:url
             for="canonical.launchpad.interfaces.IBugComment"
             path_expression="string:comments/${index}"
-            attribute_to_parent="bugtask"/>
+            attribute_to_parent="bugtask"
+            rootsite="bugs"/>
         <browser:page
             for="canonical.launchpad.interfaces.IBugComment"
             name="+index"
@@ -1103,6 +1104,12 @@
             class="lp.bugs.browser.bugwatch.BugWatchEditView"
             permission="launchpad.AnyPerson"
             template="../templates/bugwatch-editform.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugwatch.IBugWatch"
+            name="+portlet-activity"
+            class="lp.bugs.browser.bugwatch.BugWatchActivityPortletView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bugwatch-portlet-activity.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             permission="launchpad.AnyPerson">

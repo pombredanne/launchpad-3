@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import shutil
 import sys
+import tempfile
 import os
 from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
@@ -558,6 +559,36 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # This should cope.
         librariangc.delete_unwanted_files(self.con)
+
+    def test_delete_unwanted_files_follows_symlinks(self):
+        # In production, our tree has symlinks in it now.  We need to be able
+        # to cope.
+        # First, let's make sure we have some trash.
+        self.layer.switchDbUser(dbuser='testadmin')
+        content = 'foo'
+        self.client.addFile(
+            'foo.txt', len(content), StringIO(content), 'text/plain')
+        # Roll back the database changes, leaving the file on disk.
+        transaction.abort()
+
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+
+        # Now, we will move the directory containing the trash somewhere else
+        # and make a symlink to it.
+        original = os.path.join(config.librarian_server.root, '00', '00')
+        newdir = tempfile.mkdtemp()
+        alt = os.path.join(newdir, '00')
+        shutil.move(original, alt)
+        os.symlink(alt, original)
+
+        # Now we will do our thing.  This is the actual test.  It used to
+        # fail.
+        librariangc.delete_unwanted_files(self.con)
+
+        # Clean up.
+        os.remove(original)
+        shutil.move(alt, original)
+        shutil.rmtree(newdir)
 
     def test_cronscript(self):
         script_path = os.path.join(

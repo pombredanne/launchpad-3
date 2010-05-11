@@ -9,7 +9,6 @@ __all__ = [
     'is_identical_translation',
     ]
 
-import gettextpo
 import datetime
 import posixpath
 import pytz
@@ -52,6 +51,7 @@ from lp.translations.utilities.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData)
+from lp.translations.utilities.validate import GettextValidationError
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -482,7 +482,7 @@ class FileImporter(object):
                 self.logger.info(
                     "Conflicting updates on message %d." % potmsgset.id)
             return None
-        except gettextpo.error, e:
+        except GettextValidationError, e:
             # We got an error, so we submit the translation again but
             # this time asking to store it as a translation with
             # errors.
@@ -610,7 +610,7 @@ class POTFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation template."""
 
-        assert(translation_import_queue_entry.pofile is None,
+        assert translation_import_queue_entry.pofile is None, (
             "Pofile must be None when importing a template.")
 
         # Call base constructor
@@ -686,7 +686,7 @@ class POFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation file."""
 
-        assert(translation_import_queue_entry.pofile is not None,
+        assert translation_import_queue_entry.pofile is not None, (
             "Pofile must not be None when importing a translation.")
 
         # Call base constructor

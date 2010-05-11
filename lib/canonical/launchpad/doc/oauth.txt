@@ -103,7 +103,7 @@ token is considered used and can only be exchanged for an access token
 
 When reviewing a token, we can also change the context associated with
 it, which means the consumer using that token will only have access
-to things linked to that context (Product, Project, Distribution,
+to things linked to that context (Product, ProjectGroup, Distribution,
 DistroSourcePackage).
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -430,3 +430,57 @@ Here's a quick demonstration of the behavior.
     Traceback (most recent call last):
     ...
     TimestampOrderingError: ...
+
+
+Helper methods
+==============
+
+The oauth_access_token_for() helper function makes it easy to get an
+access token for any user, consumer key, permission, and context.
+
+If the user already has an access token that does what you need,
+oauth_access_token_for() returns the existing token.
+
+    >>> from lp.testing import oauth_access_token_for
+    >>> existing_token = salgado.oauth_access_tokens[0]
+    >>> token = oauth_access_token_for(
+    ...     existing_token.consumer.key, existing_token.person,
+    ...     existing_token.permission, existing_token.context)
+
+    >>> from zope.proxy import sameProxiedObjects
+    >>> sameProxiedObjects(token, existing_token)
+    True
+
+If the user does not already have an access token that matches your
+requirements, oauth_access_token_for() creates a request token and
+automatically authorizes it. Here, we create a brand new token for a
+never-before-seen consumer.
+
+    >>> new_consumer = 'new consumer key to test oauth_access_token_for'
+    >>> token = oauth_access_token_for(
+    ...     new_consumer, salgado, 'WRITE_PRIVATE', firefox)
+
+    >>> print token.consumer.key
+    new consumer key to test oauth_access_token_for
+
+    >>> print token.person.name
+    salgado
+
+    >>> token.permission
+    <DBItem AccessLevel.WRITE_PRIVATE...>
+
+    >>> print token.context.name
+    firefox
+
+    >>> print token.date_expires
+    None
+
+You can use the token identifying one of Launchpad's OAuth permission
+levels instead of the constant itself, but if you specify a
+nonexistent permission you'll get an error.
+
+    >>> oauth_access_token_for(
+    ...     new_consumer, salgado, 'NO_SUCH_PERMISSION', firefox)
+    Traceback (most recent call last):
+    ...
+    KeyError: 'NO_SUCH_PERMISSION'

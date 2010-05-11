@@ -14,7 +14,7 @@ test:
 You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     DebBugs)
+    ...     BATCH_SIZE_UNLIMITED, DebBugs)
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
@@ -42,8 +42,8 @@ Because we keep a local copy of the DebBugs database we don't need to
 worry about batching bug watch updates for performance reasons, so
 DebBugs instances don't have a batch_size limit.
 
-    >>> print external_debbugs.batch_size
-    None
+    >>> external_debbugs.batch_size == BATCH_SIZE_UNLIMITED
+    True
 
 
 == Retrieving bug status from the debbugs database ==
@@ -91,7 +91,7 @@ being correct.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
+    >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)
     0
 
@@ -105,7 +105,7 @@ bug watches should solve that problem.
     >>> for watch in debbugs.watches:
     ...     watch.next_check = datetime.now(utc)
 
-    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate())
+    >>> bug_watches = list(debbugs.watches_needing_update)
     >>> len(bug_watches)
     5
 
@@ -113,8 +113,10 @@ Now there are some watches to update we can run the update against them.
 The importing of comments, which is controlled by a configuration
 option, is disabled here and will be tested later.
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> transaction.commit()
+
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = sorted([bug_watch.id for bug_watch in bug_watches])
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
@@ -134,7 +136,7 @@ The next_check value for all the watches got set to null when they
 were updated, so there are no watches left needing an update.
 
     >>> flush_database_updates()
-    >>> watches = debbugs.getBugWatchesNeedingUpdate()
+    >>> watches = debbugs.watches_needing_update
     >>> watches.count()
     0
 
@@ -417,7 +419,7 @@ However, getCommentIds() will only return the comment ID once.
 The debbugs implementation of fetchComments() doesn't actually do
 anything, since DebBugs comments are stored locally and there is no need
 to pre-fetch them. It exists, nevertheless, so that
-BugWatchUpdater.importBugComments() can call it.
+CheckwatchesMaster.importBugComments() can call it.
 
     >>> external_debbugs.fetchComments(bug_watch, comment_ids)
 
@@ -570,6 +572,8 @@ which we want to push the comment, the body of the comment that we wish
 to push and the rfc822msgid of the comment that we're pushing. It
 returns the ID of the comment on the remote bugtracker, which in this
 case will be the rfc822msgid that gets passed as a parameter.
+
+    >>> transaction.commit()
 
     >>> external_debbugs.addRemoteComment(
     ...     '1234', 'A little fermented curd will do the trick!',

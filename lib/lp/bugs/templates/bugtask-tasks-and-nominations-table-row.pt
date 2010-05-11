@@ -115,7 +115,9 @@
             <span tal:condition="not:context/bugwatch/last_error_type"
                   class="sprite bug-remote"></span>
             <span tal:condition="context/bugwatch/last_error_type"
-                  class="sprite warning-icon"></span>
+                  class="sprite warning-icon"
+                  tal:attributes="title context/bugwatch/getLastErrorMessage"
+                  id="bugwatch-error-sprite"></span>
           </tal:bugtracker-active>
           <span tal:condition="not:context/bugwatch/bugtracker/active"
                 class="sprite warning-icon"></span>

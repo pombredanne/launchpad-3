@@ -5,7 +5,13 @@
 # pylint: disable-msg=E0213
 __metaclass__ = type
 
+import signal
+
 from zope.interface import Interface
+
+
+SIGDUMPMEM = signal.SIGRTMIN + 10
+DUMP_FILE = '/tmp/librarian-memory.dump'
 
 
 class LibrarianFailure(Exception):

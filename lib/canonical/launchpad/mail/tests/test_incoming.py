@@ -3,6 +3,7 @@
 
 import unittest
 
+import transaction
 from zope.testing.doctest import DocTestSuite
 
 from canonical.launchpad.mail.incoming import handleMail, MailErrorUtility
@@ -22,6 +23,7 @@ class TestIncoming(TestCaseWithFactory):
         It should produce a message explaining to the user what went wrong.
         """
         person = self.factory.makePerson()
+        transaction.commit()
         email_address = person.preferredemail.email
         invalid_body = (
             '-----BEGIN PGP SIGNED MESSAGE-----\n'

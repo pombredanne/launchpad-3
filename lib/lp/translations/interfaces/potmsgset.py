@@ -233,7 +233,7 @@ class IPOTMsgSet(Interface):
             message.
 
         If there is an error with the translations and ignore_errors is not
-        True or it's not a fuzzy submit, raises gettextpo.error
+        True or it's not a fuzzy submit, raises GettextValidationError.
 
         :return: a modified or newly created translation message; or None if
             no message is to be updated.  This can happen when updating a
@@ -255,6 +255,18 @@ class IPOTMsgSet(Interface):
 
         :param pofile: a `POFile` to dismiss suggestions from.
         :param reviewer: the person that is doing the dismissal.
+        :param lock_timestamp: the timestamp when we checked the values we
+            want to update.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+
+    def resetCurrentTranslation(pofile, lock_timestamp):
+        """Reset the currently used translation.
+
+        This will set the "is_current" attribute to False and if the message
+        is diverge, will try to converge it.
+        :param pofile: a `POFile` to dismiss suggestions from.
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.
 
