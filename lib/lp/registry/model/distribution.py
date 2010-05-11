@@ -768,7 +768,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getSeriesByStatus(self, status):
         """See `IDistribution`."""
-        return self.getSeries().find(status=status)
+        return [s for s in self.series if s.status == status]
 
     def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See `IDistribution`."""

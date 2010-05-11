@@ -16,6 +16,7 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import TestCaseWithFactory
 
+from canonical.testing import LaunchpadFunctionalLayer
 
 class TestDistributionCurrentSourceReleases(
     TestDistroSeriesCurrentSourceReleases):
@@ -79,6 +80,8 @@ class SeriesByStatusTests(TestCaseWithFactory):
     """Test IDistribution.getSeriesByStatus().
     """
 
+    layer = LaunchpadFunctionalLayer
+
     def test_get_none(self):
         distro = self.factory.makeDistribution()
         self.assertEquals([], distro.getSeriesByStatus(SeriesStatus.FROZEN))
@@ -94,5 +97,6 @@ class SeriesByStatusTests(TestCaseWithFactory):
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestDistributionCurrentSourceReleases))
+    suite.addTest(unittest.makeSuite(SeriesByStatusTests))
     return suite
 
