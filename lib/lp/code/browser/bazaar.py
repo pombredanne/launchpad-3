@@ -25,11 +25,8 @@ from lp.code.enums import CodeImportReviewStatus
 from lp.code.interfaces.branch import IBranchCloud, IBranchSet
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
-from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
-    Link)
+from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 
 class BazaarApplicationView(LaunchpadView):
