@@ -177,6 +177,7 @@ class TestPersonEditView(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         self.person = self.factory.makePerson()
+        login_person(self.person)
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = PersonEditView(
             self.person, LaunchpadTestRequest())
@@ -203,11 +204,21 @@ class TestPersonEditView(TestCaseWithFactory):
             "This user has an active PPA with packages published and "
             "may not be renamed.")
 
+    def test_cannot_rename_with_deleting_PPA(self):
+        # When a PPA is in the DELETING state we should not allow
+        # renaming just yet.
+        self._publishPPAPackage()
+        self.view.initialize()
+        self.ppa.delete(self.person)
+        self.assertEqual(self.ppa.status, ArchiveStatus.DELETING)
+        self.assertTrue(self.view.form_fields['name'].for_display)
+
     def test_can_rename_with_deleted_PPA(self):
         # Delete a PPA and test that the person can be renamed.
         self._publishPPAPackage()
-        # Remove the publications.
-        self.ppa.delete()
+        # Deleting the PPA will remove the publications, which is
+        # necessary for the renaming check.
+        self.ppa.delete(self.person)
         # Simulate the external script running and finalising the
         # DELETED status.
         self.ppa.status = ArchiveStatus.DELETED

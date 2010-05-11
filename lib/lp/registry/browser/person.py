@@ -3874,13 +3874,13 @@ class PersonEditView(BasePersonEditView):
         active_ppas = [
             ppa for ppa in self.context.ppas
             if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
-        has_packages = sum(
+        num_packages = sum(
             ppa.getPublishedSources().count() for ppa in active_ppas)
-        if has_packages:
+        if num_packages > 0:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if has_packages:
+        if num_packages > 0:
             self.widgets['name'].hint = _(
                 'This user has an active PPA with packages published and '
                 'may not be renamed.')
