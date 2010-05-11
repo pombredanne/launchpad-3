@@ -1119,11 +1119,9 @@ class POTMsgSet(SQLBase):
                 # There may be an identical shared message.
                 traits.setFlag(incumbent_message, False)
                 incumbent_message.shareIfPossible()
-# XXX: Test!
             elif character == 'B':
                 # Deactivate.
                 traits.setFlag(incumbent_message, False)
-# XXX: Clean up or prevent "diverged suggestions."
             elif character == 'Z':
                 # There is no incumbent message, so do nothing to it.
                 assert incumbent_message is None, (
@@ -1151,7 +1149,6 @@ class POTMsgSet(SQLBase):
                 # Converge & activate.
                 message = twin
                 message.shareIfPossible()
-# XXX: Test: we never put this in a situation where it deletes message.
             elif character == '+':
                 if share_with_other_side:
                     # Steal flag if appropriate.
