@@ -166,9 +166,12 @@ class SourcePackageRecipeView(LaunchpadView):
 
 def buildable_distroseries_vocabulary(context):
     """Return a vocabulary of buildable distroseries."""
+    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
+    supported_distros = [ppa.distribution for ppa in ppas]
     dsset = getUtility(IDistroSeriesSet).search()
     terms = [SimpleTerm(distro, distro.id, distro.displayname)
-             for distro in dsset if distro.active]
+             for distro in dsset if (
+                 distro.active and distro.distribution in supported_distros)]
     return SimpleVocabulary(terms)
 
 def target_ppas_vocabulary(context):
