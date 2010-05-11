@@ -12,8 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.branchtarget import (
     check_default_stacked_on,
-    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget,
-    ProductSeriesBranchTarget)
+    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
 from lp.code.enums import BranchType, RevisionControlSystems
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImport
@@ -109,7 +108,8 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
         default_branch.startMirroring()
-        default_branch.mirrorComplete(self.factory.getUniqueString())
+        removeSecurityProxy(default_branch).branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
             ubuntu_branches.teamowner,
@@ -121,6 +121,10 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_supports_merge_proposals(self):
         # Package branches do support merge proposals.
         self.assertTrue(self.target.supports_merge_proposals)
+
+    def test_supports_short_identites(self):
+        # Package branches do support short bzr identites.
+        self.assertTrue(self.target.supports_short_identites)
 
     def test_displayname(self):
         # The display name of a source package target is the display name of
@@ -177,15 +181,22 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             ubuntu_branches.teamowner)
         self.assertEqual(branch, self.target.default_merge_target)
 
-    def test_doesnt_support_code_imports(self):
-        self.assertFalse(self.target.supports_code_imports)
+    def test_supports_code_imports(self):
+        self.assertTrue(self.target.supports_code_imports)
 
-    def test_creating_code_import_fails(self):
-        self.assertRaises(
-            AssertionError, self.target.newCodeImport,
-                self.factory.makePerson(),
-                self.factory.getUniqueString("name-"),
-                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
+    def test_creating_code_import_succeeds(self):
+        target_url = self.factory.getUniqueURL()
+        branch_name = self.factory.getUniqueString("name-")
+        owner = self.factory.makePerson()
+        code_import = self.target.newCodeImport(
+            owner, branch_name, RevisionControlSystems.GIT, url=target_url)
+        code_import = removeSecurityProxy(code_import)
+        self.assertProvides(code_import, ICodeImport)
+        self.assertEqual(target_url, code_import.url)
+        self.assertEqual(branch_name, code_import.branch.name)
+        self.assertEqual(owner, code_import.registrant)
+        self.assertEqual(owner, code_import.branch.owner)
+        self.assertEqual(self.target, code_import.branch.target)
 
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -227,6 +238,10 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_supports_merge_proposals(self):
         # Personal branches do not support merge proposals.
         self.assertFalse(self.target.supports_merge_proposals)
+
+    def test_supports_short_identites(self):
+        # Personal branches do not support short bzr identites.
+        self.assertFalse(self.target.supports_short_identites)
 
     def test_displayname(self):
         # The display name of a person branch target is ~$USER/+junk.
@@ -333,13 +348,18 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         branch = self.factory.makeProductBranch(product=self.original)
         self._setDevelopmentFocus(self.original, branch)
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        removeSecurityProxy(branch).branchChanged(
+            '', 'rev1', None, None, None)
         target = IBranchTarget(self.original)
         self.assertEqual(branch, target.default_stacked_on_branch)
 
     def test_supports_merge_proposals(self):
         # Product branches do support merge proposals.
         self.assertTrue(self.target.supports_merge_proposals)
+
+    def test_supports_short_identites(self):
+        # Product branches do support short bzr identites.
+        self.assertTrue(self.target.supports_short_identites)
 
     def test_displayname(self):
         # The display name of a product branch target is the display name of
@@ -403,30 +423,6 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(self.target, code_import.branch.target)
 
 
-class TestProductSeriesBranchTarget(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.original = self.factory.makeProductSeries()
-        self.target = ProductSeriesBranchTarget(self.original)
-
-    def test_adapter(self):
-        target = IBranchTarget(self.original)
-        self.assertIsInstance(target, ProductSeriesBranchTarget)
-
-    def test_doesnt_support_code_imports(self):
-        self.assertFalse(self.target.supports_code_imports)
-
-    def test_creating_code_import_fails(self):
-        self.assertRaises(
-            AssertionError, self.target.newCodeImport,
-                self.factory.makePerson(),
-                self.factory.getUniqueString("name-"),
-                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
-
-
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
     """Only certain branches are allowed to be default stacked-on branches."""
 
@@ -456,7 +452,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # life.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
-        branch.mirrorComplete(self.factory.getUniqueString())
+        removeSecurityProxy(branch).branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         removeSecurityProxy(branch).branch_type = BranchType.REMOTE
         self.assertIs(None, check_default_stacked_on(branch))
 
@@ -472,7 +469,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(private=True)
         naked_branch = removeSecurityProxy(branch)
         naked_branch.startMirroring()
-        naked_branch.mirrorComplete(self.factory.getUniqueString())
+        naked_branch.branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_been_mirrored(self):
@@ -481,7 +479,8 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # futile.
         branch = self.factory.makeAnyBranch()
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
+        removeSecurityProxy(branch).branchChanged(
+            '', self.factory.getUniqueString(), None, None, None)
         self.assertEqual(branch, check_default_stacked_on(branch))
 
 

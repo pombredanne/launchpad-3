@@ -76,6 +76,7 @@ class TestGarbo(TestCaseWithFactory):
         self.runHourly()
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
@@ -292,7 +293,6 @@ class TestGarbo(TestCaseWithFactory):
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
         self.assertEqual(rev2.revision_author.person, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -301,7 +301,6 @@ class TestGarbo(TestCaseWithFactory):
         # Creating a person for an existing account creates a linkage.
         person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
         self.assertEqual(rev3.revision_author.person, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -339,7 +338,6 @@ class TestGarbo(TestCaseWithFactory):
         # Validating an email address creates a linkage.
         person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
         self.assertEqual(sub2.owner, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -348,33 +346,10 @@ class TestGarbo(TestCaseWithFactory):
         # Creating a person for an existing account creates a linkage.
         person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
         self.assertEqual(sub3.owner, None)
-        transaction.commit()
 
         self.runDaily()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(sub3.owner, person3)
-
-    def test_MailingListSubscriptionPruner(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        team, mailing_list = self.factory.makeTeamAndMailingList(
-            'mlist-team', 'mlist-owner')
-        person = self.factory.makePerson(email='preferred@example.org')
-        email = self.factory.makeEmail('secondary@example.org', person)
-        transaction.commit()
-        mailing_list.subscribe(person, email)
-        transaction.commit()
-
-        # User remains subscribed if we run the garbage collector.
-        self.runDaily()
-        self.assertNotEqual(mailing_list.getSubscription(person), None)
-
-        # If we remove the email address that was subscribed, the
-        # garbage collector removes the subscription.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        Store.of(email).remove(email)
-        transaction.commit()
-        self.runDaily()
-        self.assertEqual(mailing_list.getSubscription(person), None)
 
     def test_PersonPruner(self):
         personset = getUtility(IPersonSet)
@@ -390,7 +365,6 @@ class TestGarbo(TestCaseWithFactory):
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
             2008, 01, 01, tzinfo=UTC)
-        transaction.commit()
 
         # Normally, the garbage collector will do nothing because the
         # PersonPruner is experimental
@@ -453,7 +427,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(num_new, 8)
 
         # Run the garbage collector.
-        transaction.commit()
         self.runDaily()
 
         # We should have 9 BugNotifications left.
@@ -473,54 +446,15 @@ class TestGarbo(TestCaseWithFactory):
                 BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
             0)
 
-    def test_PersonEmailAddressLinkChecker(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-
-        # Make an EmailAddress record reference a non-existant Person.
-        emailaddress = IMasterStore(EmailAddress).get(EmailAddress, 16)
-        emailaddress.personID = -1
-
-        # Make a Person record reference a different Account to its
-        # EmailAddress records.
-        person = IMasterStore(Person).get(Person, 1)
-        person_email = Store.of(person).find(
-            EmailAddress, person=person).any()
-        person.accountID = -1
-
-        transaction.commit()
-
-        # Run the garbage collector. We should get two ERROR reports
-        # about the corrupt data.
-        collector = self.runDaily()
-
-        # The PersonEmailAddressLinkChecker is not intelligent enough
-        # to repair corruption. It is only there to alert us to the
-        # issue so data can be manually repaired and the cause
-        # tracked down and fixed.
-        self.assertEqual(emailaddress.personID, -1)
-        self.assertNotEqual(person.accountID, person_email.accountID)
-
-        # The corruption has been reported though as a ERROR messages.
-        log_output = collector.logger.output_file.getvalue()
-        error_message_1 = (
-            "ERROR Corruption - "
-            "'test@canonical.com' is linked to a non-existant Person.")
-        self.assertNotEqual(log_output.find(error_message_1), -1)
-        error_message_2 = (
-            "ERROR Corruption - "
-            "'mark@example.com' and 'mark' reference different Accounts")
-        self.assertNotEqual(log_output.find(error_message_2), -1)
-
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
-        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
         db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
-
+        Store.of(db_branch).flush()
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
@@ -530,7 +464,6 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob,
                 BranchJob.branch == db_branch.id).count(),
                 1)
-        transaction.commit()
 
         collector = self.runDaily()
 
@@ -544,7 +477,6 @@ class TestGarbo(TestCaseWithFactory):
     def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
         # Check to make sure the garbo doesn't remove jobs that aren't more
         # than thirty days old.
-        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
@@ -561,7 +493,6 @@ class TestGarbo(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_KNIT_1)
         branch_job2 = BranchUpgradeJob.create(db_branch2)
         job_id_newer = branch_job2.job.id
-        transaction.commit()
 
         collector = self.runDaily()
 

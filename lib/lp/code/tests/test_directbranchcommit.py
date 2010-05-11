@@ -20,10 +20,10 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(DirectBranchCommitTestCase, self).setUp()
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
 
         self.series = self.factory.makeProductSeries()
-        self.db_branch, self.tree = self.create_branch_and_tree(hosted=True)
+        self.db_branch, self.tree = self.create_branch_and_tree()
 
         self.series.translations_branch = self.db_branch
 
@@ -46,7 +46,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
 
     def _getContents(self):
         """Return branch contents as dict mapping filenames to contents."""
-        return map_branch_contents(self.committer.db_branch.getPullURL())
+        return map_branch_contents(self.committer.db_branch.getBzrBranch())
 
 
 class TestDirectBranchCommit(DirectBranchCommitTestCase):
@@ -227,24 +227,6 @@ class TestDirectBranchCommit_getDir(DirectBranchCommitTestCase):
         # If a directory was newly created, _getDir will reuse its id.
         dir_id = self.committer._getDir('foo/bar')
         self.assertEqual(dir_id, self.committer._getDir('foo/bar'))
-
-
-class TestDirectBranchCommitMirror(TestCaseWithFactory):
-
-    layer = ZopelessDatabaseLayer
-
-    def test_direct_branch_commit_respects_to_mirror(self):
-        # The "to_mirror" argument causes the commit to apply to the mirrored
-        # copy of the branch.
-        self.useBzrBranches()
-        branch = self.factory.makeBranch()
-        bzr_branch = self.createBzrBranch(branch)
-        dbc = DirectBranchCommit(branch, to_mirror=True)
-        try:
-            dbc.writeFile('path', 'contents')
-            dbc.commit('making commit to mirrored area.')
-        finally:
-            dbc.unlock()
 
 
 def test_suite():

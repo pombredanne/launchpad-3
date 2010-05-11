@@ -68,7 +68,7 @@ We can add a new chroot for ubuntu/hoary/i386 with the "add" command:
     >>> process.returncode
     0
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-mangage-chroot.lock
     DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) added.
@@ -193,6 +193,6 @@ results in an appropriate error.
     ... else:
     ...     print "Did not get expected exception"
     DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
-    Librarian upload failed: [...]: (111, 'Connection refused')
+    Librarian upload failed: ...Connection refused...
 
     >>> LibrarianLayer.reveal()

@@ -207,7 +207,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability"),
-             required=False, default=False))
+             required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -374,11 +374,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
-    def subscribe(person, subscribed_by):
+    def subscribe(person, subscribed_by, suppress_notify=True):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
+        :param suppress_notify: a flag to suppress notify call.
         :return: an `IBugSubscription`.
         """
 
@@ -700,6 +701,17 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
             :private: True/False.
             :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
+    @mutator_for(security_related)
+    @operation_parameters(security_related=copy_field(security_related))
+    @export_write_operation()
+    def setSecurityRelated(security_related):
+        """Set bug security.
+
+            :security_related: True/False.
 
         Return True if a change is made, False otherwise.
         """

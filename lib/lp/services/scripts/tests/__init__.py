@@ -38,6 +38,8 @@ KNOWN_BROKEN = [
     'scripts/librarian-report.py',
     'scripts/rosetta/message-sharing-populate-test.py',
     'scripts/get-stacked-on-branches.py',
+    'scripts/start-loggerhead.py',
+    'scripts/stop-loggerhead.py',
     ]
 
 

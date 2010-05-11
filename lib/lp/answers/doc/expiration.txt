@@ -132,7 +132,7 @@ somebody are subject to expiration.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-expire-questions.lock
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
     INFO    Found 5 questions to expire.

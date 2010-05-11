@@ -25,7 +25,7 @@ class TestBranchFileSystemClient(TestCase):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.user = self.factory.makePerson()
-        self._xmlrpc_client = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        self._xmlrpc_client = XMLRPCWrapper(frontend.getCodehostingEndpoint())
         self.fake_time = FakeTime(12345)
 
     def advanceTime(self, amount):

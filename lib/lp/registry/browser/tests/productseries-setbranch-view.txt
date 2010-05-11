@@ -74,6 +74,14 @@ Providing a valid branch results in a successful linking.
     >>> print series.branch.name
     impala-branch
 
+Revisiting the +setbranch page when the branch is already set will
+show the branch location pre-populated with the existing value.
+
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> print view.widgets.get('branch_location')._getFormValue().unique_name
+    ~person.../chevy/impala-branch
+
 
 Creating a new branch
 ---------------------
@@ -105,6 +113,10 @@ When creating a new branch the branch name and owner must be specified.
     ...     }
 
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> print view.errors_in_action
+    False
+    >>> print view.next_url
+    http://launchpad.dev/chevy/camaro
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -112,6 +124,26 @@ When creating a new branch the branch name and owner must be specified.
     New branch created and linked to the series.
     >>> print series.branch.name
     camaro-branch
+
+Using a branch name that already exists results in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'create-new',
+    ...     'field.branch_name': 'camaro-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.actions.update': 'Update',
+    ...     }
+
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>camaro-branch</em>.
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
 
 
 Import a branch hosted elsewhere
@@ -168,6 +200,7 @@ A correct URL is accepted.
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
     >>> for notification in view.request.response.notifications:
@@ -335,5 +368,50 @@ in an error.
     This foreign branch URL is already specified for
     the imported branch <a href="http://code.launchpad.dev/~.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
 
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+Using a branch name that already exists results in an error.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'GIT',
+    ...     'field.branch_name': 'chevette-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'git://github.com/different/chevette',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch',
+    ...                                principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>chevette-branch</em>.
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+
+Bazaar external branches are handled differently but they also give an
+error if a duplicate name is used.
+
+    >>> form = {
+    ...     'field.branch_type': 'import-external',
+    ...     'field.rcs_type': 'BZR',
+    ...     'field.branch_name': 'blazer-branch',
+    ...     'field.branch_owner': product.owner.name,
+    ...     'field.repo_url': 'http://bzr.com/foo',
+    ...     'field.actions.update': 'Update',
+    ...     }
+    >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You already have a branch for <em>Chevy</em> called <em>blazer-branch</em>.
+    >>> print view.errors_in_action
+    True
+    >>> print view.next_url
+    None
     >>> for notification in view.request.response.notifications:
     ...     print notification.message

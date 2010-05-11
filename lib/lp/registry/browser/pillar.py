@@ -6,17 +6,16 @@
 __metaclass__ = type
 
 __all__ = [
+    'InvolvedMenu',
     'PillarView',
     ]
 
 
 from operator import attrgetter
 
-from zope.component.globalregistry import provideAdapter
 from zope.interface import implements, Interface
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.interfaces import INavigationMenu
 from canonical.launchpad.webapp.menu import Link, NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView, nearest
 from canonical.launchpad.webapp.tales import MenuAPI
@@ -39,30 +38,34 @@ class InvolvedMenu(NavigationMenu):
         'report_bug', 'ask_question', 'help_translate', 'submit_code',
         'register_blueprint']
 
+    @property
+    def pillar(self):
+        return self.context
+
     def report_bug(self):
         return Link(
             '+filebug', 'Report a bug', site='bugs', icon='bugs',
-            enabled=self.context.official_malone)
+            enabled=self.pillar.official_malone)
 
     def ask_question(self):
         return Link(
             '+addquestion', 'Ask a question', site='answers', icon='answers',
-            enabled=self.context.official_answers)
+            enabled=self.pillar.official_answers)
 
     def help_translate(self):
         return Link(
             '', 'Help translate', site='translations', icon='translations',
-            enabled=self.context.official_rosetta)
+            enabled=self.pillar.official_rosetta)
 
     def submit_code(self):
         return Link(
             '+addbranch', 'Submit code', site='code', icon='code',
-            enabled=self.context.official_codehosting)
+            enabled=self.pillar.official_codehosting)
 
     def register_blueprint(self):
         return Link(
             '+addspec', 'Register a blueprint', site='blueprints',
-            icon='blueprints', enabled=self.context.official_blueprints)
+            icon='blueprints', enabled=self.pillar.official_blueprints)
 
 
 class PillarView(LaunchpadView):
@@ -83,7 +86,7 @@ class PillarView(LaunchpadView):
         if IProjectGroup.providedBy(pillar):
             for product in pillar.products:
                 self._set_official_launchpad(product)
-            # Projectgroups do not support submit code, override the
+            # Project groups do not support submit code, override the
             # default.
             self.official_codehosting = False
         else:
@@ -146,56 +149,3 @@ class PillarView(LaunchpadView):
         return sorted([
             link for link in important_links if not link.enabled],
             key=attrgetter('sort_key'))
-
-
-provideAdapter(
-    InvolvedMenu, [IInvolved], INavigationMenu, name="overview")
-
-
-# This class can't be moved into the browser/product.py file, since
-# the pillar-views.txt test will fail due to the MenuAPI adapter
-# for PillarView.enabled_links not working.
-class ProductInvolvementView(PillarView):
-    """Encourage configuration of involvement links for projects."""
-
-    has_involvement = True
-    visible_disabled_link_names = ['submit_code']
-
-    @property
-    def configuration_links(self):
-        """The enabled involvement links."""
-        overview_menu = MenuAPI(self.context).overview
-        series_menu = MenuAPI(self.context.development_focus).overview
-        configuration_names = [
-            'configure_answers',
-            'configure_bugtracker',
-            'configure_translations',
-            ]
-        configuration_links = [
-            overview_menu[name] for name in configuration_names]
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure project branch'
-        configuration_links.append(set_branch)
-        return sorted([
-            link for link in configuration_links if link.enabled],
-            key=attrgetter('sort_key'))
-
-
-class ProductSeriesInvolvementView(PillarView):
-    """Encourage configuration of involvement links for project series."""
-
-    has_involvement = True
-    visible_disabled_link_names = ['submit_code']
-
-    def __init__(self, context, request):
-        super(ProductSeriesInvolvementView, self).__init__(context, request)
-        self.official_codehosting = self.context.branch is not None
-        self.official_answers = False
-
-    @property
-    def configuration_links(self):
-        """The enabled involvement links."""
-        series_menu = MenuAPI(self.context).overview
-        set_branch = series_menu['set_branch']
-        set_branch.text = 'Configure series branch'
-        return [set_branch]

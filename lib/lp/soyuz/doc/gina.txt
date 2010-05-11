@@ -13,7 +13,7 @@ Get the current counts of stuff in the database:
     ...     BinaryPackagePublishingHistory,
     ...     EmailAddress,
     ...     BinaryPackageRelease,
-    ...     Build)
+    ...     BinaryPackageBuild)
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.registry.interfaces.pocket import (
@@ -28,7 +28,7 @@ Get the current counts of stuff in the database:
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
-    >>> orig_build_count = Build.select().count()
+    >>> orig_build_count = BinaryPackageBuild.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
     >>> orig_sspph_main_count = SSPPH.selectBy(
     ...     componentID=1, pocket=PackagePublishingPocket.RELEASE).count()
@@ -338,7 +338,7 @@ python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
     >>> SBPPH.select().count() - orig_sbpph_count
     46
@@ -366,7 +366,7 @@ priority was correctly munged to "extra":
     >>> print ed.build.processor.name
     386
     >>> print ed.build.buildstate
-    Successful build
+    Successfully built
     >>> print ed.build.distroarchseries.processorfamily.name
     x86
     >>> print ed.build.distroarchseries.architecturetag
@@ -526,7 +526,7 @@ changed, etc.
     13
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
-    >>> Build.select().count() - orig_build_count
+    >>> BinaryPackageBuild.select().count() - orig_build_count
     13
 
 But the overrides do generate extra publishing entries:
@@ -730,7 +730,7 @@ batch.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
     >>> print proc.stderr.read()
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-gina.lock
     ...
     INFO    === Processing debian/lenny/release ===
     ...

@@ -4,12 +4,13 @@
 """Tests for the renovated slave scanner aka BuilddManager."""
 
 import os
+import signal
 import transaction
 import unittest
 
-from twisted.internet import defer, task, reactor
-from twisted.internet.error import (
-    ConnectionClosed, ProcessTerminated, TimeoutError)
+from twisted.internet import defer
+from twisted.internet.error import ConnectionClosed
+from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -30,7 +31,7 @@ from lp.buildmaster.manager import (
     ResetDispatchResult, buildd_success_result_map)
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
@@ -109,9 +110,11 @@ class TestRecordingSlaves(TrialTestCase):
 
         # On success the response is None.
         def check_resume_success(response):
-            self.assertEquals(None, response)
+            out, err, code = response
+            self.assertEqual(os.EX_OK, code)
+            self.assertEqual("%s\n" % self.slave.vm_host, out)
         d = self.slave.resumeSlave()
-        d.addCallback(check_resume_success)
+        d.addBoth(check_resume_success)
         return d
 
     def test_resumeHost_failure(self):
@@ -124,15 +127,16 @@ class TestRecordingSlaves(TrialTestCase):
         vm_resume_command: test "%(vm_host)s = 'no-sir'"
         """
         config.push('failed_resume_command', failed_config)
+        self.addCleanup(config.pop, 'failed_resume_command')
 
         # On failures, the response is a twisted `Failure` object containing
-        # a `ProcessTerminated` error.
+        # a tuple.
         def check_resume_failure(failure):
-            self.assertIsInstance(failure, Failure)
-            self.assertIsInstance(failure.value, ProcessTerminated)
-            config.pop('failed_resume_command')
+            out, err, code = failure.value
+            # The process will exit with a return code of "1".
+            self.assertEqual(code, 1)
         d = self.slave.resumeSlave()
-        d.addErrback(check_resume_failure)
+        d.addBoth(check_resume_failure)
         return d
 
     def test_resumeHost_timeout(self):
@@ -146,15 +150,21 @@ class TestRecordingSlaves(TrialTestCase):
         socket_timeout: 1
         """
         config.push('timeout_resume_command', timeout_config)
+        self.addCleanup(config.pop, 'timeout_resume_command')
 
         # On timeouts, the response is a twisted `Failure` object containing
         # a `TimeoutError` error.
         def check_resume_timeout(failure):
             self.assertIsInstance(failure, Failure)
-            self.assertIsInstance(failure.value, TimeoutError)
-            config.pop('timeout_resume_command')
-        d = self.slave.resumeSlave()
-        d.addErrback(check_resume_timeout)
+            out, err, code = failure.value
+            self.assertEqual(code, signal.SIGKILL)
+        clock = Clock()
+        d = self.slave.resumeSlave(clock=clock)
+        # Move the clock beyond the socket_timeout but earlier than the
+        # sleep 5.  This stops the test having to wait for the timeout.
+        # Fast tests FTW!
+        clock.advance(2)
+        d.addBoth(check_resume_timeout)
         return d
 
 
@@ -236,6 +246,7 @@ class TestBuilddManager(TrialTestCase):
         # Stop automatic collection of dispatching results.
         def testSlaveDone(slave):
             pass
+        self._realSlaveDone = self.manager.slaveDone
         self.manager.slaveDone = testSlaveDone
 
     def testFinishCycle(self):
@@ -274,7 +285,7 @@ class TestBuilddManager(TrialTestCase):
             # They corresponds to the ones created above and were already
             # processed.
             self.assertEqual(
-                '<foo:http://foo> reset', repr(reset))
+                '<foo:http://foo> reset failure', repr(reset))
             self.assertTrue(reset.processed)
             self.assertEqual(
                 '<bar:http://bar> failure (boingo)', repr(fail))
@@ -293,7 +304,7 @@ class TestBuilddManager(TrialTestCase):
             isinstance(result, TestingFailDispatchResult),
             'Dispatch failure did not result in a FailBuildResult object')
 
-    def testCheckResume(self):
+    def test_checkResume(self):
         """`BuilddManager.checkResume` is chained after resume requests.
 
         If the resume request succeed it returns None, otherwise it returns
@@ -310,11 +321,76 @@ class TestBuilddManager(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
-        failed_response = Failure(ProcessTerminated())
+        failed_response = ['stdout', 'stderr', 1]
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset', repr(result))
+            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
+        self.assertEqual(
+            result.info, "stdout\nstderr")
+
+    def test_fail_to_resume_slave_resets_slave(self):
+        # If an attempt to resume and dispatch a slave fails, we reset the
+        # slave by calling self.reset_result(slave)().
+
+        reset_result_calls = []
+        class LoggingResetResult(BaseDispatchResult):
+            """A DispatchResult that logs calls to itself.
+
+            This *must* subclass BaseDispatchResult, otherwise finishCycle()
+            won't treat it like a dispatch result.
+            """
+            def __init__(self, slave, info=None):
+                self.slave = slave
+            def __call__(self):
+                reset_result_calls.append(self.slave)
+
+        # Make a failing slave that is requesting a resume.
+        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave.resume_requested = True
+        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
+
+        # Make the manager log the reset result calls.
+        self.manager.reset_result = LoggingResetResult
+        # Restore the slaveDone method. It's very relevant to this test.
+        self.manager.slaveDone = self._realSlaveDone
+        # We only care about this one slave. Reset the list of manager
+        # deferreds in case setUp did something unexpected.
+        self.manager._deferreds = []
+
+        self.manager.resumeAndDispatch([slave])
+        # Note: finishCycle isn't generally called by external users, normally
+        # resumeAndDispatch or slaveDone calls it. However, these calls
+        # swallow the Deferred that finishCycle returns, and we need that
+        # Deferred to make sure this test completes properly.
+        d = self.manager.finishCycle()
+        return d.addCallback(
+            lambda ignored: self.assertEqual([slave], reset_result_calls))
+
+    def test_failed_to_resume_slave_ready_for_reset(self):
+        # When a slave fails to resume, the manager has a Deferred in its
+        # Deferred list that is ready to fire with a ResetDispatchResult.
+
+        # Make a failing slave that is requesting a resume.
+        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave.resume_requested = True
+        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
+
+        # We only care about this one slave. Reset the list of manager
+        # deferreds in case setUp did something unexpected.
+        self.manager._deferreds = []
+        # Restore the slaveDone method. It's very relevant to this test.
+        self.manager.slaveDone = self._realSlaveDone
+        self.manager.resumeAndDispatch([slave])
+        [d] = self.manager._deferreds
+
+        # The Deferred for our failing slave should be ready to fire
+        # successfully with a ResetDispatchResult.
+        def check_result(result):
+            self.assertIsInstance(result, ResetDispatchResult)
+            self.assertEqual(slave, result.slave)
+            self.assertFalse(result.processed)
+        return d.addCallback(check_result)
 
     def testCheckDispatch(self):
         """`BuilddManager.checkDispatch` is chained after dispatch requests.
@@ -366,7 +442,7 @@ class TestBuilddManager(TrialTestCase):
             twisted_failure, 'ensurepresent', slave)
         self.assertIsDispatchReset(result)
         self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset', repr(result))
+            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
 
         # Unexpected response, results in a `FailDispatchResult`.
         unexpected_response = [1, 2, 3]
@@ -509,7 +585,7 @@ class TestBuilddManagerScan(TrialTestCase):
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
         self.assertEqual(job.job.status, JobStatus.RUNNING)
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
@@ -552,7 +628,7 @@ class TestBuilddManagerScan(TrialTestCase):
                'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
                '', '')),
              ('build',
-              ('11-2',
+              ('6358a89e2215e19b02bf91e2e4d009640fae5cf8',
                'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
                {'alsa-utils_1.0.9a-4ubuntu1.dsc':
                 '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
@@ -633,7 +709,7 @@ class TestBuilddManagerScan(TrialTestCase):
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
         self.assertTrue(job.date_started is None)
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
     def testScanRescuesJobFromBrokenBuilder(self):
@@ -717,7 +793,7 @@ class TestDispatchResult(unittest.TestCase):
         builder.builderok = True
 
         job = builder.currentjob
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
             build.title)
@@ -734,7 +810,7 @@ class TestDispatchResult(unittest.TestCase):
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
         job = getUtility(IBuildQueueSet).get(job_id)
-        build = getUtility(IBuildSet).getByQueueEntry(job)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
         self.assertEqual(None, job.date_started)
@@ -746,6 +822,7 @@ class TestDispatchResult(unittest.TestCase):
         Although it keeps the builder active in pool.
         """
         builder, job_id = self._getBuilder('bob')
+        builder.builderok = True
 
         # Setup a interaction to satisfy 'write_transaction' decorator.
         login(ANONYMOUS)
@@ -755,7 +832,7 @@ class TestDispatchResult(unittest.TestCase):
 
         self.assertJobIsClean(job_id)
 
-        self.assertTrue(builder.builderok)
+        self.assertFalse(builder.builderok)
         self.assertEqual(None, builder.currentjob)
 
     def testFailDispatchResult(self):

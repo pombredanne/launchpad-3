@@ -10,11 +10,18 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.codeimporthelpers import (
+    make_running_import)
+from lp.code.errors import (
+    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState)
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.interfaces.branch import BranchCreatorNotMemberOfOwnerTeam
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPersonSet
 from lp.code.enums import (
@@ -133,6 +140,65 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.HG,
             url=self.factory.getUniqueURL(),
             review_status=None)
+
+    def test_create_source_package_import(self):
+        """Test that we can create an import targetting a source package."""
+        registrant = self.factory.makePerson()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(registrant, code_import.branch.owner)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_set_owner(self):
+        """Test that we can create an import owned by someone else."""
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam()
+        removeSecurityProxy(registrant).join(owner)
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        code_import = CodeImportSet().new(
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None, owner=owner)
+        code_import = removeSecurityProxy(code_import)
+        self.assertEqual(registrant, code_import.registrant)
+        self.assertEqual(owner, code_import.branch.owner)
+        self.assertEqual(registrant, code_import.branch.registrant)
+        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(source_package, code_import.branch.sourcepackage)
+        # And a job is still created
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_registrant_must_be_in_owner(self):
+        """Test that we can't create an import for an arbitrary team."""
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam()
+        source_package = self.factory.makeSourcePackage()
+        target = IBranchTarget(source_package)
+        self.assertRaises(
+            BranchCreatorNotMemberOfOwnerTeam,
+            CodeImportSet().new,
+            registrant=registrant,
+            target=target,
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None, owner=owner)
 
 
 class TestCodeImportDeletion(TestCaseWithFactory):
@@ -557,6 +623,68 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         code_import.tryFailingImportAgain(requester)
         self.assertEqual(
             requester, code_import.import_job.requesting_user)
+
+
+class TestRequestImport(TestCaseWithFactory):
+    """Tests for `ICodeImport.requestImport`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # We have to be logged in to request imports
+        TestCaseWithFactory.setUp(self, user='no-priv@canonical.com')
+
+    def test_requestsJob(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        old_date = code_import.import_job.date_due
+        code_import.requestImport(requester)
+        self.assertEqual(requester, code_import.import_job.requesting_user)
+        self.assertTrue(code_import.import_job.date_due <= old_date)
+
+    def test_noop_if_already_requested(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        code_import.requestImport(requester)
+        old_date = code_import.import_job.date_due
+        code_import.requestImport(requester)
+        # The checks don't matter so much, it's more that we don't get
+        # an exception.
+        self.assertEqual(requester, code_import.import_job.requesting_user)
+        self.assertEqual(old_date, code_import.import_job.date_due)
+
+    def test_optional_error_if_already_requested(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        code_import.requestImport(requester)
+        old_date = code_import.import_job.date_due
+        e = self.assertRaises(
+            CodeImportAlreadyRequested, code_import.requestImport, requester,
+            error_if_already_requested=True)
+        self.assertEqual(requester, e.requesting_user)
+
+    def test_exception_on_disabled(self):
+        # get an SVN request, which isn't reviewed by default
+        code_import = self.factory.makeCodeImport(
+            svn_branch_url=self.factory.getUniqueURL())
+        requester = self.factory.makePerson()
+        # which leads to an exception if we try and ask for an import
+        self.assertRaises(
+            CodeImportNotInReviewedState, code_import.requestImport,
+            requester)
+
+    def test_exception_if_already_running(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url=self.factory.getUniqueURL())
+        code_import = make_running_import(factory=self.factory,
+            code_import=code_import)
+        requester = self.factory.makePerson()
+        self.assertRaises(
+            CodeImportAlreadyRunning, code_import.requestImport,
+            requester)
 
 
 def test_suite():

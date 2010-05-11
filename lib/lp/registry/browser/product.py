@@ -14,7 +14,6 @@ __all__ = [
     'ProductBugsMenu',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureBranchesView',
     'ProductConfigureBugTrackerView',
     'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
@@ -45,7 +44,10 @@ __all__ = [
 
 
 from cgi import escape
+from datetime import datetime, timedelta
 from operator import attrgetter
+
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -70,6 +72,7 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -94,6 +97,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
+from lp.registry.browser.pillar import PillarView
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin)
@@ -115,6 +119,7 @@ from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
     ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -299,6 +304,32 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
+class ProductInvolvementView(PillarView):
+    """Encourage configuration of involvement links for projects."""
+
+    has_involvement = True
+    visible_disabled_link_names = ['submit_code']
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        overview_menu = MenuAPI(self.context).overview
+        series_menu = MenuAPI(self.context.development_focus).overview
+        configuration_names = [
+            'configure_answers',
+            'configure_bugtracker',
+            'configure_translations',
+            ]
+        configuration_links = [
+            overview_menu[name] for name in configuration_names]
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure project branch'
+        configuration_links.append(set_branch)
+        return sorted([
+            link for link in configuration_links if link.enabled],
+            key=attrgetter('sort_key'))
+
+
 class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct
@@ -398,7 +429,8 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
-class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
+                          HasRecipesMenuMixin):
 
     usedfor = IProduct
     facet = 'overview'
@@ -420,9 +452,11 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'announcements',
         'administer',
         'review_license',
+        'branch_add',
         'branchvisibility',
         'rdf',
         'branding',
+        'view_recipes',
         ]
 
     def top_contributors(self):
@@ -475,6 +509,11 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def branchvisibility(self):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text, icon='edit')
+
+    def branch_add(self):
+        text = 'Register a branch'
+        summary = "Register a new Bazaar branch for this project"
+        return Link('+addbranch', text, summary, icon='add')
 
 
 class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
@@ -1008,10 +1047,14 @@ class ProductPackagesPortletView(LaunchpadFormView):
     """View class for product packaging portlet."""
 
     schema = Interface
+    package_field_name = 'distributionsourcepackage'
     custom_widget(
-        'distributionsourcepackage', LaunchpadRadioWidget,
-        orientation='vertical')
+        package_field_name, LaunchpadRadioWidget, orientation='vertical')
     suggestions = None
+    max_suggestions = 8
+    other_package = object()
+    not_packaged = object()
+    initial_focus_widget = None
 
     @cachedproperty
     def sourcepackages(self):
@@ -1025,7 +1068,19 @@ class ProductPackagesPortletView(LaunchpadFormView):
     @cachedproperty
     def can_show_portlet(self):
         """Are there packages, or can packages be suggested."""
-        return len(self.sourcepackages) > 0 or not config.launchpad.is_lpnet
+        if len(self.sourcepackages) > 0:
+            return True
+        if self.user is None:
+            return False
+        date_next_suggest_packaging = self.context.date_next_suggest_packaging
+        return (
+            date_next_suggest_packaging is None
+            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        return {self.package_field_name: self.other_package}
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -1038,7 +1093,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
         # term descriptions that include a link to the source package.
         self.suggestions = []
         vocab_terms = []
-        for package in distro_source_packages[:20]:
+        for package in distro_source_packages[:self.max_suggestions]:
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)
@@ -1046,20 +1101,42 @@ class ProductPackagesPortletView(LaunchpadFormView):
                     item_url, escape(package.name))
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
+        # Add an option to represent the user's decision to choose a
+        # different package. Note that source packages cannot have uppercase
+        # names with underscores, so the name is safe to use.
+        description = 'Choose another Ubuntu package'
+        vocab_terms.append(
+            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
+        # Add an option to represent that the project is not packaged in
+        # Ubuntu.
+        description = 'This project is not packaged in Ubuntu'
+        vocab_terms.append(
+            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        series_display_name = ubuntu.currentseries.displayname
         self.form_fields = form.Fields(
-            Choice(__name__='distributionsourcepackage',
-                   title=_('Ubuntu packages'),
+            Choice(__name__=self.package_field_name,
+                   title=_('Ubuntu %s packages') % series_display_name,
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Link to this Ubuntu Package'), name='link')
+    @action(_('Set Ubuntu Package Information'), name='link')
     def link(self, action, data):
         product = self.context
-        dsp = data.get('distributionsourcepackage')
-        assert dsp is not None, "distributionsourcepackage was not specified"
+        dsp = data.get(self.package_field_name)
         product_series = product.development_focus
+        if dsp is self.other_package:
+            # The user wants to link an alternate package to this project.
+            self.next_url = canonical_url(
+                product_series, view_name="+ubuntupkg")
+            return
+        if dsp is self.not_packaged:
+            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
+            self.context.date_next_suggest_packaging = year_from_now
+            self.next_url = self.request.getURL()
+            return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         product_series.setPackaging(ubuntu.currentseries,
                                     dsp.sourcepackagename,
@@ -1320,7 +1397,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class EditPrivateBugsMixin:
+class ProductValidationMixin:
 
     def validate_private_bugs(self, data):
         """Perform validation for the private bugs setting."""
@@ -1331,8 +1408,20 @@ class EditPrivateBugsMixin:
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
+    def validate_deactivation(self, data):
+        """Verify whether a product can be safely deactivated."""
+        if data['active'] == False and self.context.active == True:
+            if len(self.context.sourcepackages) > 0:
+                self.setFieldError('active',
+                    structured(
+                        'This project cannot be deactivated since it is '
+                        'linked to one or more '
+                        '<a href="%s">source packages</a>.',
+                        canonical_url(self.context, view_name='+packages')))
 
-class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
+
+class ProductAdminView(ProductEditView, ProductValidationMixin):
+    """View for $project/+admin"""
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
@@ -1387,6 +1476,7 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     def validate(self, data):
         """See `LaunchpadFormView`."""
         self.validate_private_bugs(data)
+        self.validate_deactivation(data)
 
     @property
     def cancel_url(self):
@@ -1395,7 +1485,7 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
 
 
 class ProductReviewLicenseView(ReturnToReferrerMixin,
-                               ProductEditView, EditPrivateBugsMixin):
+                               ProductEditView, ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1434,6 +1524,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
+        self.validate_deactivation(data)
 
 
 class ProductAddSeriesView(LaunchpadFormView):

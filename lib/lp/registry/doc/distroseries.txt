@@ -487,6 +487,7 @@ upstream.
     ...     package = factory.makeSourcePackage(sourcepackagename=spn,
     ...                                         distroseries=distroseries)
     ...     package.setPackaging(productseries, product.owner)
+    ...     transaction.commit()
 
 
     >>> pkgs = distroseries.getMostRecentlyLinkedPackagings()

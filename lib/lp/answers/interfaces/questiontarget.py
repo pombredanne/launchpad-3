@@ -161,4 +161,4 @@ class IAnswersFrontPageSearchForm(ISearchQuestionsForm):
     """Schema for the Answers front page search form."""
 
     scope = Choice(title=_('Search scope'), required=False,
-                   vocabulary='DistributionOrProductOrProject')
+                   vocabulary='DistributionOrProductOrProjectGroup')

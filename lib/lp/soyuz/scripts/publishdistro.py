@@ -16,7 +16,7 @@ from lp.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     clear_current_connection_cache, flush_database_updates)
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ArchivePurpose, ArchiveStatus, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import logger, logger_options
 from lp.services.scripts.base import LaunchpadScriptFailure
@@ -178,8 +178,11 @@ def run_publisher(options, txn, log=None):
     else:
         archives = [distribution.main_archive]
 
-    # Consider only archives that have their "to be published" flag turned on.
-    archives = [archive for archive in archives if archive.publish]
+    # Consider only archives that have their "to be published" flag turned on
+    # or are pending deletion.
+    archives = [
+        archive for archive in archives 
+        if archive.publish or archive.status == ArchiveStatus.DELETING]
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
@@ -191,24 +194,34 @@ def run_publisher(options, txn, log=None):
         else:
             log.info("Processing %s" % archive.archive_url)
             publisher = getPublisher(archive, allowed_suites, log)
-
-        try_and_commit("publishing", publisher.A_publish,
-                       options.careful or options.careful_publishing)
-        # Flag dirty pockets for any outstanding deletions.
-        publisher.A2_markPocketsWithDeletionsDirty()
-        try_and_commit("dominating", publisher.B_dominate,
-                       options.careful or options.careful_domination)
-
-        # The primary and copy archives use apt-ftparchive to generate the
-        # indexes, everything else uses the newer internal LP code.
-        if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                           options.careful or options.careful_apt)
+        
+        # Do we need to delete the archive or publish it?
+        if archive.status == ArchiveStatus.DELETING:
+            if archive.purpose == ArchivePurpose.PPA:
+                try_and_commit("deleting archive", publisher.deleteArchive)
+            else:
+                # Other types of archives do not currently support deletion.
+                log.warning(
+                    "Deletion of %s skipped: operation not supported on %s"
+                    % archive.displayname)
         else:
-            try_and_commit("building indexes", publisher.C_writeIndexes,
-                           options.careful or options.careful_apt)
+            try_and_commit("publishing", publisher.A_publish,
+                           options.careful or options.careful_publishing)
+            # Flag dirty pockets for any outstanding deletions.
+            publisher.A2_markPocketsWithDeletionsDirty()
+            try_and_commit("dominating", publisher.B_dominate,
+                           options.careful or options.careful_domination)
 
-        try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                       options.careful or options.careful_apt)
+            # The primary and copy archives use apt-ftparchive to generate the
+            # indexes, everything else uses the newer internal LP code.
+            if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+                try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+                               options.careful or options.careful_apt)
+            else:
+                try_and_commit("building indexes", publisher.C_writeIndexes,
+                               options.careful or options.careful_apt)
+
+            try_and_commit("doing release files", publisher.D_writeReleaseFiles,
+                           options.careful or options.careful_apt)
 
     log.debug("Ciao")

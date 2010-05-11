@@ -84,7 +84,7 @@ If we try and create the merge proposal again, we should get a ValueError.
     ...     initial_comment='Merge\nit!', needs_review=True,
     ...     commit_message='It was merged!\n', reviewers=[reviewer_url],
     ...     review_types=['green'])
-    HTTP/1.1 500 Internal Server Error ...
+    HTTP/1.1 400 Bad Request ...
     BranchMergeProposalExists: There is already a branch merge proposal
     registered for branch ... to land on ... that is still active.
 
@@ -125,6 +125,7 @@ Branch merge proposals can be fetched through the API.
     ...     subject='Not really', body='This is mediocre work.',
     ...     vote=CodeReviewVote.ABSTAIN, parent=comment,
     ...     merge_proposal=fixit_proposal)
+    >>> transaction.commit()
 
     >>> proposal_url = fix_url(canonical_url(
     ...     fixit_proposal, request=request, rootsite='api'))
@@ -179,7 +180,9 @@ The comments on a branch merge proposal are exposed through the API.
     2
     >>> pprint_entry(all_comments['entries'][0])
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'
@@ -192,7 +195,9 @@ The comments on a branch merge proposal are exposed through the API.
     ...     merge_proposal['self_link'], 'getComment', id=2).jsonBody()
     >>> pprint_entry(comment_2)
     as_quoted_email: u'> This is mediocre work.'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is mediocre work.'
     resource_type_link: u'http://.../#code_review_comment'
@@ -263,7 +268,9 @@ Now the code review should be made.
     >>> comment = reviewer_webservice.get(comment_link).jsonBody()
     >>> pprint_entry(comment)
     as_quoted_email: u'> This is great work'
+    author_link: u'http://api.launchpad.dev/devel/~...'
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
+    date_created: u'...'
     id: ...
     message_body: u'This is great work'
     resource_type_link: u'http://.../#code_review_comment'

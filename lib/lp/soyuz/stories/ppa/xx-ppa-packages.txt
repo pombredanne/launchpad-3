@@ -192,7 +192,7 @@ the source into a public PPA to demonstrate this.
     ...     distribution=ubuntu)
     >>> joe = factory.makePerson(name="joe")
     >>> public_ppa = factory.makeArchive(
-    ...     owner=joe, distribution=ubuntu)
+    ...     owner=joe, distribution=ubuntu, name='ppa')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()

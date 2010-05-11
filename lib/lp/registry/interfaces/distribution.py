@@ -40,6 +40,7 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -555,8 +556,9 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic,
-                    IRootContext, IStructuralSubscriptionTarget):
+class IDistribution(
+    IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
+    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
 

@@ -88,7 +88,7 @@ to configure each service.
     configure_translations
     set_branch
 
-Project are supported too, but they only display the applications used by
+Project groups are supported too, but they only display the applications used by
 their products.
 
     >>> project_group = factory.makeProject(name='box', owner=product.owner)
@@ -132,16 +132,6 @@ DistroSeries can use this view. The distribution is used to set the links.
     ...     print link.name
     report_bug
 
-ProductSeries can use this view. The product is used to set the links,
-but the answers link will be disbaled.
-
-    >>> series = factory.makeProductSeries(product=product)
-    >>> product.official_answers = True
-    >>> view = create_view(series, '+get-involved')
-    >>> for link in view.enabled_links:
-    ...     print link.name
-    register_blueprint
-
 DistributionSourcePackages can use this view. The distribution is used to
 set the links.  Despite the fact that the distribution uses blueprints,
 and translations those links are not enabled for DistributionSourcePackages.
@@ -150,6 +140,7 @@ and translations those links are not enabled for DistributionSourcePackages.
     >>> distribution.official_blueprints = True
     >>> distribution.official_rosetta = True
     >>> package = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename="box",
     ...     distribution=distribution)
     >>> view = create_view(package, '+get-involved')
     >>> for link in view.enabled_links:
@@ -160,10 +151,12 @@ and translations those links are not enabled for DistributionSourcePackages.
 Involvement links
 -----------------
 
-The pillar involvement view uses the InvolvedMenu when rendering links:
+The pillar involvement view uses the InvolvedMenu when rendering links.
 
     >>> from operator import attrgetter
     >>> from canonical.launchpad.webapp.tales import MenuAPI
+
+The menu when viewed from a product page.
 
     >>> view = create_view(product, '+get-involved')
     >>> menuapi = MenuAPI(view)
@@ -175,3 +168,32 @@ The pillar involvement view uses the InvolvedMenu when rendering links:
     http://translations.launchpad.dev/bread
     http://code.launchpad.dev/bread/+addbranch
     http://blueprints.launchpad.dev/bread/+addspec
+
+    >>> from lp.testing.menu import check_menu_links
+    >>> from lp.registry.browser.pillar import InvolvedMenu
+    >>> check_menu_links(InvolvedMenu(product))
+    True
+
+The menu when viewed from a distribution page.
+
+    >>> view = create_view(distribution, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     if link.enabled:
+    ...         print link.url
+    http://bugs.launchpad.dev/umbra/+filebug
+    http://answers.launchpad.dev/umbra/+addquestion
+    http://translations.launchpad.dev/umbra
+    http://blueprints.launchpad.dev/umbra/+addspec
+
+The menu when viewed from a distribution source package page.
+
+    >>> view = create_view(package, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     if link.enabled:
+    ...         print link.url
+    http://bugs.launchpad.dev/umbra/+source/box/+filebug
+    http://answers.launchpad.dev/umbra/+source/box/+addquestion

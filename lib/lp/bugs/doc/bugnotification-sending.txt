@@ -984,7 +984,7 @@ makes it write out the emails it sends.
     >>> process.returncode
     0
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-send-bug-notifications.lock
     INFO    Notifying mark@example.com about bug 2.
     ...
     INFO    Notifying support@ubuntu.com about bug 2.
@@ -1199,7 +1199,8 @@ security vulnerability. It can have the value "yes" or "no".
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
 
-    >>> bug_three.security_related = True
+    >>> bug_three.setSecurityRelated(True)
+    True
     >>> bug_three.security_related
     True
 
