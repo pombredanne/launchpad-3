@@ -175,7 +175,8 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase):
         self.assertRaises(ConcurrentUpdateError, self.committer.commit, '')
 
     def test_DirectBranchCommit_records_committed_revision_id(self):
-        #
+        # commit() records the committed revision in the database record for
+        # the branch.
         self.committer.writeFile('hi.c', 'main(){puts("hi world");}')
         revid = self.committer.commit('')
         self.assertEqual(revid, self.db_branch.last_mirrored_id)
