@@ -1555,6 +1555,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
         message = self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
+        message.is_current_ubuntu = False
 
         traits = make_translation_side_message_traits(
             TranslationSide.UBUNTU, potmsgset, pofile.potemplate,
