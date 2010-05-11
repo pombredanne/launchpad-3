@@ -141,10 +141,6 @@
             name="+index"
             template="../templates/bazaar-index.pt"/>
     </browser:pages>
-    <browser:menus
-        classes="
-            BazaarBranchesMenu"
-        module="lp.code.browser.bazaar"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
