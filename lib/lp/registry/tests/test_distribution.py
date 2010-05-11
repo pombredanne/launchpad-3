@@ -84,14 +84,15 @@ class SeriesByStatusTests(TestCaseWithFactory):
 
     def test_get_none(self):
         distro = self.factory.makeDistribution()
-        self.assertEquals([], distro.getSeriesByStatus(SeriesStatus.FROZEN))
+        self.assertEquals([],
+            list(distro.getSeriesByStatus(SeriesStatus.FROZEN)))
 
     def test_get_current(self):
         distro = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distro, 
             status=SeriesStatus.CURRENT)
         self.assertEquals([series],
-            distro.getSeriesByStatus(SeriesStatus.CURRENT))
+            list(distro.getSeriesByStatus(SeriesStatus.CURRENT)))
 
 
 def test_suite():
