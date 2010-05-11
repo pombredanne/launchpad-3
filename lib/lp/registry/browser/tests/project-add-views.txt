@@ -203,7 +203,7 @@ However, when a proprietary license is selected, a description is required.
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: Launchpad <noreply@launchpad.net>
-    To: feedback@launchpad.net
+    To: commercial@launchpad.net
     Subject: Project License Submitted for badger by name16
     Please review this project's licenses.
     http://launchpad.dev/badger
@@ -265,7 +265,7 @@ details are required...
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: Launchpad <noreply@launchpad.net>
-    To: feedback@launchpad.net
+    To: commercial@launchpad.net
     Subject: Project License Submitted for cougar by name16
     Please review this project's licenses.
     http://launchpad.dev/cougar

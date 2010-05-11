@@ -228,22 +228,35 @@ class ProductLicenseMixin:
             # Launchpad is ok with all licenses used in this project.
             pass
 
-    def notifyFeedbackMailingList(self):
+    def notifyCommercialMailingList(self):
         """Email feedback@canonical.com to review product license."""
         if (License.OTHER_PROPRIETARY in self.product.licenses
-                or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            user = getUtility(ILaunchBag).user
+            or License.OTHER_OPEN_SOURCE in self.product.licenses):
+            review_needed = True
+#            advisory_template = helpers.get_email_template(
+#                'product-other-license.txt')
+        elif (len(self.product.licenses) == 1
+            and License.DONT_KNOW in self.product.licenses):
+            review_needed = False
+#            advisory_template = helpers.get_email_template(
+#                'product-dont-know-license.txt')
+        else:
+            # The project has a recognized license.
+            return
+
+        def indent(text):
+            text = '\n    '.join(line for line in text.split('\n'))
+            text = '    ' + text
+            return text
+
+        user = getUtility(ILaunchBag).user
+        if review_needed:
             subject = "Project License Submitted for %s by %s" % (
                     self.product.name, user.name)
             fromaddress = format_address(
                 "Launchpad", config.canonical.noreply_from_address)
             license_titles = '\n'.join(
                 license.title for license in self.product.licenses)
-
-            def indent(text):
-                text = '\n    '.join(line for line in text.split('\n'))
-                text = '    ' + text
-                return text
 
             template = helpers.get_email_template('product-license.txt')
             message = template % dict(
@@ -258,14 +271,14 @@ class ProductLicenseMixin:
             reply_to = format_address(user.displayname,
                                       user.preferredemail.email)
             simple_sendmail(fromaddress,
-                            'feedback@launchpad.net',
+                            'commercial@launchpad.net',
                             subject, message,
                             headers={'Reply-To': reply_to})
 
-            self.request.response.addInfoNotification(_(
-                "Launchpad is free to use for software under approved "
-                "licenses. The Launchpad team will be in contact with "
-                "you soon."))
+        self.request.response.addInfoNotification(_(
+            "Launchpad is free to use for software under approved "
+            "licenses. The Launchpad team will be in contact with "
+            "you soon."))
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -1379,9 +1392,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         self.updateContextFromData(data)
         # only send email the first time licenses are set
         if len(previous_licenses) == 0:
-            # self.product is expected by notifyFeedbackMailingList
+            # self.product is expected by notifyCommercialMailingList
             self.product = self.context
-            self.notifyFeedbackMailingList()
+            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
@@ -1941,7 +1954,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             data['license_reviewed'] = False
 
         self.product = self.create_product(data)
-        self.notifyFeedbackMailingList()
+        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
 
