@@ -1116,17 +1116,14 @@ class POTMsgSet(SQLBase):
         for character in decisions:
             if character == 'A':
                 # Deactivate & converge.
-                # XXX: Split off a C case for
-                # twin_shared/twin_other_shared?
-                if twin is not None and twin.potemplate is None:
-                    incumbent_message.delete()
-                else:
-                    # If there were a twin, this might violate unique
-                    # constraints.
-                    incumbent_message.potemplate = False
+                # There may be an identical shared message.
+                traits.setFlag(incumbent_message, False)
+                incumbent_message.shareIfPossible()
+# XXX: Test!
             elif character == 'B':
                 # Deactivate.
                 traits.setFlag(incumbent_message, False)
+# XXX: Clean up or prevent "diverged suggestions."
             elif character == 'Z':
                 # There is no incumbent message, so do nothing to it.
                 assert incumbent_message is None, (
@@ -1153,8 +1150,8 @@ class POTMsgSet(SQLBase):
             elif character == '7':
                 # Converge & activate.
                 message = twin
-                # XXX: Deal with clashes when converging!
-                message.potemplate = None
+                message.shareIfPossible()
+# XXX: Test: we never put this in a situation where it deletes message.
             elif character == '+':
                 if share_with_other_side:
                     # Steal flag if appropriate.
