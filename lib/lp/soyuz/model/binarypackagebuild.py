@@ -270,7 +270,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.buildstate = BuildStatus.NEEDSBUILD
+        self.status = BuildStatus.NEEDSBUILD
         self.datebuilt = None
         self.buildduration = None
         self.builder = None
@@ -522,15 +522,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             config.builddmaster.default_sender_address)
 
         extra_headers = {
-            'X-Launchpad-Build-State': self.buildstate.name,
+            'X-Launchpad-Build-State': self.status.name,
             'X-Launchpad-Build-Component' : self.current_component.name,
-            'X-Launchpad-Build-Arch' : self.distroarchseries.architecturetag,
+            'X-Launchpad-Build-Arch' : self.distro_arch_series.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
         # SPR.creator in context, to be used during the service quarantine,
         # notify_owner will be disabled to avoid *spamming* Debian people.
-        creator = self.sourcepackagerelease.creator
+        creator = self.source_package_release.creator
         extra_headers['X-Creator-Recipient'] = ",".join(
             get_contact_email_addresses(creator))
 
@@ -545,7 +545,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         #     * the package build (failure) occurred in the original
         #       archive.
         package_was_not_copied = (
-            self.archive == self.sourcepackagerelease.upload_archive)
+            self.archive == self.source_package_release.upload_archive)
 
         if package_was_not_copied and config.builddmaster.notify_owner:
             if (self.archive.is_ppa and creator.inTeam(self.archive.owner)
@@ -557,7 +557,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 # Non-PPA notifications inform the creator regardless.
                 recipients = recipients.union(
                     get_contact_email_addresses(creator))
-            dsc_key = self.sourcepackagerelease.dscsigningkey
+            dsc_key = self.source_package_release.dscsigningkey
             if dsc_key:
                 recipients = recipients.union(
                     get_contact_email_addresses(dsc_key.owner))
@@ -596,13 +596,13 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # with the state in the build worflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
         # respective page template.
-        if self.buildstate in [
+        if self.status in [
             BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
             # untouched builds
             buildduration = 'not available'
             buildlog_url = 'not available'
             builder_url = 'not available'
-        elif self.buildstate == BuildStatus.BUILDING:
+        elif self.status == BuildStatus.BUILDING:
             # build in process
             buildduration = 'not finished'
             buildlog_url = 'see builder page'
@@ -610,11 +610,11 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         else:
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
-                self.buildduration).approximateduration()
-            buildlog_url = self.build_log_url
+                self.date_finished - self.date_started).approximateduration()
+            buildlog_url = self.log_url
             builder_url = canonical_url(self.builder)
 
-        if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
+        if self.status == BuildStatus.FAILEDTOUPLOAD:
             assert extra_info is not None, (
                 'Extra information is required for FAILEDTOUPLOAD '
                 'notifications.')
@@ -624,10 +624,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
         template = get_email_template('build-notification.txt')
         replacements = {
-            'source_name': self.sourcepackagerelease.name,
-            'source_version': self.sourcepackagerelease.version,
-            'architecturetag': self.distroarchseries.architecturetag,
-            'build_state': self.buildstate.title,
+            'source_name': self.source_package_release.name,
+            'source_version': self.source_package_release.version,
+            'architecturetag': self.distro_arch_series.architecturetag,
+            'build_state': self.status.title,
             'build_duration': buildduration,
             'buildlog_url': buildlog_url,
             'builder_url': builder_url,
@@ -868,7 +868,7 @@ class BinaryPackageBuildSet:
         # and share it with ISourcePackage.getBuildRecords()
 
         # exclude gina-generated and security (dak-made) builds
-        # buildstate == FULLYBUILT && datebuilt == null
+        # status == FULLYBUILT && datebuilt == null
         if status == BuildStatus.FULLYBUILT:
             condition_clauses.append("BuildFarmJob.date_finished IS NOT NULL")
         else:
@@ -927,8 +927,8 @@ class BinaryPackageBuildSet:
 
         # Get the MANUALDEPWAIT records for all archives.
         candidates = BinaryPackageBuild.selectBy(
-            buildstate=BuildStatus.MANUALDEPWAIT,
-            distroarchseries=distroarchseries)
+            status=BuildStatus.MANUALDEPWAIT,
+            distro_arch_series=distroarchseries)
 
         candidates_count = candidates.count()
         if candidates_count == 0:
