@@ -661,7 +661,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         if filename.endswith('.changes'):
             file_object = self.upload_changesfile
         elif filename.endswith('.txt.gz'):
-            file_object = self.buildlog
+            file_object = self.log
         elif filename.endswith('_log.txt'):
             file_object = self.upload_log
         elif filename.endswith('deb'):
