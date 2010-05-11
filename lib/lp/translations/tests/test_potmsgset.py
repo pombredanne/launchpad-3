@@ -1551,6 +1551,27 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         self.assertTrue(message.is_current_upstream)
         self.assertEquals(message, traits.incumbent_message)
 
+    def test_UpstreamSideTraits_ubuntu(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        message = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+
+        traits = make_translation_side_message_traits(
+            TranslationSide.UBUNTU, potmsgset, pofile.potemplate,
+            pofile.language)
+
+        self.assertEqual('is_current_ubuntu', traits.flag_name)
+
+        self.assertFalse(traits.getFlag(message))
+        self.assertFalse(message.is_current_ubuntu)
+        self.assertEquals(None, traits.incumbent_message)
+
+        traits.setFlag(message, True)
+
+        self.assertTrue(traits.getFlag(message))
+        self.assertTrue(message.is_current_ubuntu)
+        self.assertEquals(message, traits.incumbent_message)
+
     def test_identical(self):
         # Setting the same message twice leaves the original as-is.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
