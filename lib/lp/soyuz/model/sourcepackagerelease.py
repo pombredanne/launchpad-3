@@ -146,12 +146,14 @@ class SourcePackageRelease(SQLBase):
         # a build may well have a different archive to the corresponding
         # sourcepackagerelease.
         return BinaryPackageBuild.select("""
-            sourcepackagerelease = %s AND
-            archive.id = build.archive AND
+            source_package_release = %s AND
+            package_build = packagebuild.id AND
+            archive.id = packagebuild.archive AND
+            packagebuild.build_farm_job = buildfarmjob.id AND
             archive.purpose IN %s
             """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
-            orderBy=['-datecreated', 'id'],
-            clauseTables=['Archive'])
+            orderBy=['-buildfarmjob.date_created', 'id'],
+            clauseTables=['Archive', 'PackageBuild', 'BuildFarmJob'])
 
     @property
     def age(self):
@@ -173,7 +175,7 @@ class SourcePackageRelease(SQLBase):
     @property
     def needs_building(self):
         for build in self._cached_builds:
-            if build.buildstate in [BuildStatus.NEEDSBUILD,
+            if build.status in [BuildStatus.NEEDSBUILD,
                                     BuildStatus.MANUALDEPWAIT,
                                     BuildStatus.CHROOTWAIT]:
                 return True
