@@ -505,6 +505,24 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: The reason for not being able to upload, None otherwise.
         """
 
+    def verifyUpload(person, sourcepackagename, component,
+                      distroseries, strict_component=True):
+        """Can 'person' upload 'sourcepackagename' to this archive ?
+
+        :param person: The `IPerson` trying to upload to the package. Referred to
+            as 'the signer' in upload code.
+        :param sourcepackagename: The source package being uploaded. None if the
+            package is new.
+        :param archive: The `IArchive` being uploaded to.
+        :param component: The `IComponent` that the source package belongs to.
+        :param distroseries: The upload's target distro series.
+        :param strict_component: True if access to the specific component for the
+            package is needed to upload to it. If False, then access to any
+            package will do.
+        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
+            None otherwise.
+        """
+
     def canAdministerQueue(person, component):
         """Check to see if person is allowed to administer queue items.
 

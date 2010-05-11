@@ -27,7 +27,8 @@ class TestComponents(TestCaseWithFactory):
         # By default, a person cannot upload to any component of an archive.
         archive = self.factory.makeArchive()
         person = self.factory.makePerson()
-        self.assertEqual(set(), archive.getComponentsForUploader(person))
+        self.assertEqual(set(), 
+            set(archive.getComponentsForUploader(person)))
 
     def test_components_for_person_with_permissions(self):
         # If a person has been explicitly granted upload permissions to a
@@ -39,9 +40,9 @@ class TestComponents(TestCaseWithFactory):
         # Only admins or techboard members can add permissions normally. That
         # restriction isn't relevant to this test.
         ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
-        ap_set.newComponentUploader(archive, person, component)
-        self.assertEqual(
-            set([component]), archive.getComponentsForUploader(person))
+        ap = ap_set.newComponentUploader(archive, person, component)
+        self.assertEqual(set([ap]),
+            set(archive.getComponentsForUploader(person)))
 
 
 class TestPermission(TestCaseWithFactory):
@@ -135,9 +136,8 @@ class TestPermission(TestCaseWithFactory):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
         self.assertCannotUpload(
-            ("The signer of this package has no upload rights to this "
-             "distribution's primary archive.  Did you mean to upload to "
-             "a PPA?"),
+            ("The signer of this package is lacking the upload rights for "
+             "the source package, component or package set in question."),
             person, spn, archive, None)
 
     def test_package_specific_rights(self):

@@ -1715,8 +1715,8 @@ def can_upload_linked_package(person_role, branch):
     # around this by assuming that things are fine as long as we find at least
     # one combination that allows us to upload the corresponding source
     # package.
-    archive = ISourcePackage.get_default_archive()
     for ssp in ssp_list:
+        archive = ssp.sourcepackage.get_default_archive()
         if archive.canUploadSuiteSourcePackage(person_role.person, ssp):
             return True
     return False

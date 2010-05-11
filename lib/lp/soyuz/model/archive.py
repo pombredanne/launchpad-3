@@ -991,7 +991,7 @@ class Archive(SQLBase):
         # (otherwise we couldn't have a suitesourcepackage object) and
         # nascentupload passes True as a matter of policy when the package exists.
         reason = self.checkUpload(
-            person, distroseries, sourcepackagename, self, component, pocket,
+            person, distroseries, sourcepackagename, component, pocket,
             strict_component=True)
         return reason is None
 
@@ -1019,27 +1019,13 @@ class Archive(SQLBase):
         reason = self.checkUploadToPocket(distroseries, pocket)
         if reason is not None:
             return reason
-        return self._verifyUpload(
+        return self.verifyUpload(
             person, sourcepackagename, component, distroseries,
             strict_component)
 
-    def _verifyUpload(self, person, sourcepackagename, component,
+    def verifyUpload(self, person, sourcepackagename, component,
                       distroseries, strict_component=True):
-        """Can 'person' upload 'sourcepackagename' to this archive ?
-
-        :param person: The `IPerson` trying to upload to the package. Referred to
-            as 'the signer' in upload code.
-        :param sourcepackagename: The source package being uploaded. None if the
-            package is new.
-        :param archive: The `IArchive` being uploaded to.
-        :param component: The `IComponent` that the source package belongs to.
-        :param distroseries: The upload's target distro series.
-        :param strict_component: True if access to the specific component for the
-            package is needed to upload to it. If False, then access to any
-            package will do.
-        :return: CannotUploadToArchive if 'person' cannot upload to the archive,
-            None otherwise.
-        """
+        """See `IArchive`."""
         if not self.enabled:
             return ArchiveDisabled(self.displayname)
 

@@ -632,6 +632,8 @@ class TestArchiveCanUpload(TestCaseWithFactory):
                                 PackagePublishingPocket.PROPOSED),
                                 InvalidPocketForPPA)
 
+    # XXX: JRV 20100511: IArchive.canUploadSuiteSourcePackage needs tests
+
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
     """Ensure that updatePackageDownloadCount works as expected."""
