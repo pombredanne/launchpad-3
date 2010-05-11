@@ -1093,11 +1093,6 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_vcs_imports
 
 
-class AdminTheBazaar(OnlyVcsImportsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IBazaarApplication
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 

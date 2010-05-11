@@ -32,19 +32,6 @@ from canonical.launchpad.webapp import (
     Link)
 
 
-class BazaarBranchesMenu(ApplicationMenu):
-    usedfor = IBazaarApplication
-    facet = 'branches'
-    links = ['importer']
-
-    @enabled_with_permission('launchpad.Admin')
-    def importer(self):
-        target = 'series/'
-        text = 'Branch importer'
-        summary = 'Manage CVS and SVN Trunk Imports'
-        return Link(target, text, summary, icon='branch')
-
-
 class BazaarApplicationView(LaunchpadView):
 
     @property
