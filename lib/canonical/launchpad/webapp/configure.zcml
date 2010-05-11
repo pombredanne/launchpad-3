@@ -542,6 +542,12 @@
         name="fmt"
         />
     <adapter
+        for="lp.soyuz.interfaces.packagediff.IPackageDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PackageDiffFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="*"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
