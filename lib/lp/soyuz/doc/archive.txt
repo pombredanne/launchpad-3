@@ -1047,13 +1047,13 @@ This method can return build records for sources matching the given
     >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
     >>> cd_lookup.count()
     1
-    >>> cd_lookup[0].sourcepackagerelease.name
+    >>> cd_lookup[0].source_package_release.name
     u'cdrkit'
 
     >>> ice_lookup = cprov_archive.getBuildRecords(name='ice')
     >>> ice_lookup.count()
     1
-    >>> ice_lookup[0].sourcepackagerelease.name
+    >>> ice_lookup[0].source_package_release.name
     u'iceweasel'
 
     >>> cprov_archive.getBuildRecords(name='foo').count()

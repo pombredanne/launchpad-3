@@ -882,18 +882,21 @@ class Archive(SQLBase):
         extra_exprs = []
         if not include_needsbuild:
             extra_exprs.append(
-                BinaryPackageBuild.buildstate != BuildStatus.NEEDSBUILD)
+                BuildFarmJob.status != BuildStatus.NEEDSBUILD)
 
         find_spec = (
-            BinaryPackageBuild.buildstate,
+            BuildFarmJob.status,
             Count(BinaryPackageBuild.id)
             )
-        result = store.using(BinaryPackageBuild).find(
+        result = store.using(
+            BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
             find_spec,
-            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
             *extra_exprs
-            ).group_by(BinaryPackageBuild.buildstate).order_by(
-                BinaryPackageBuild.buildstate)
+            ).group_by(BuildFarmJob.status).order_by(
+                BuildFarmJob.status)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {

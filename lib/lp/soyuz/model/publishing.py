@@ -439,15 +439,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.distroarchseries=
                 DistroArchSeries.id AND
-            BinaryPackageRelease.build=Build.id AND
-            Build.sourcepackagerelease=%s AND
+            BinaryPackageRelease.build=BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release=%s AND
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.pocket=%s
         """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
                         self.archive, self.pocket)
 
-        clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
+        clauseTables = [
+            'BinaryPackageBuild', 'BinaryPackageRelease', 'DistroArchSeries']
         orderBy = ['-BinaryPackagePublishingHistory.id']
         preJoins = ['binarypackagerelease']
 

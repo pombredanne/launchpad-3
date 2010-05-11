@@ -978,7 +978,7 @@ class BinaryPackageBuildSet:
             wanted = []
             for state in states:
                 candidates = [build for build in builds
-                                if build.buildstate == state]
+                                if build.status == state]
                 wanted.extend(candidates)
             return wanted
 
