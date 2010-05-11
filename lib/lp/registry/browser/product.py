@@ -233,48 +233,57 @@ class ProductLicenseMixin:
         if (License.OTHER_PROPRIETARY in self.product.licenses
             or License.OTHER_OPEN_SOURCE in self.product.licenses):
             review_needed = True
-#            advisory_template = helpers.get_email_template(
-#                'product-other-license.txt')
         elif (len(self.product.licenses) == 1
             and License.DONT_KNOW in self.product.licenses):
             review_needed = False
-#            advisory_template = helpers.get_email_template(
-#                'product-dont-know-license.txt')
         else:
             # The project has a recognized license.
             return
 
         def indent(text):
+            if text is None:
+                return None
             text = '\n    '.join(line for line in text.split('\n'))
             text = '    ' + text
             return text
 
         user = getUtility(ILaunchBag).user
+        user_address = format_address(
+            user.displayname, user.preferredemail.email)
+        from_address = format_address(
+            "Launchpad", config.canonical.noreply_from_address)
+        commercial_address = format_address(
+            'Commercial', 'commercial@launchpad.net')
+        license_titles = '\n'.join(
+            license.title for license in self.product.licenses)
+        substitutions = dict(
+            user_browsername=user.displayname,
+            user_name=user.name,
+            product_name=self.product.name,
+            product_url=canonical_url(self.product),
+            product_summary=indent(self.product.summary),
+            license_titles=indent(license_titles),
+            license_info=indent(self.product.license_info))
         if review_needed:
-            subject = "Project License Submitted for %s by %s" % (
-                    self.product.name, user.name)
-            fromaddress = format_address(
-                "Launchpad", config.canonical.noreply_from_address)
-            license_titles = '\n'.join(
-                license.title for license in self.product.licenses)
-
+            # Email the Commercial team that a project needs review.
+            subject = (
+                "Project License Submitted for %(product_name)s "
+                "by %(user_name)s" % substitutions)
             template = helpers.get_email_template('product-license.txt')
-            message = template % dict(
-                user_browsername=user.displayname,
-                user_name=user.name,
-                product_name=self.product.name,
-                product_url=canonical_url(self.product),
-                product_summary=indent(self.product.summary),
-                license_titles=indent(license_titles),
-                license_info=indent(self.product.license_info))
-
-            reply_to = format_address(user.displayname,
-                                      user.preferredemail.email)
-            simple_sendmail(fromaddress,
-                            'commercial@launchpad.net',
-                            subject, message,
-                            headers={'Reply-To': reply_to})
-
+            message = template % substitutions
+            simple_sendmail(
+                from_address, commercial_address,
+                subject, message, headers={'Reply-To': user_address})
+        # Email the user about license policy.
+        subject = (
+            "License information for %(product_name)s "
+            "in Launchpad" % substitutions)
+        template = helpers.get_email_template('product-other-license.txt')
+        message = template % substitutions
+        simple_sendmail(
+            from_address, user_address,
+            subject, message, headers={'Reply-To': commercial_address})
+        # Inform that Launchpad recognized the license change.
         self.request.response.addInfoNotification(_(
             "Launchpad is free to use for software under approved "
             "licenses. The Launchpad team will be in contact with "
