@@ -39,10 +39,10 @@ that generated it.
     >>> print firefox_build.distribution.displayname
     ubuntutest
 
-    >>> print firefox_build.distroseries.displayname
+    >>> print firefox_build.distro_series.displayname
     Breezy Badger Autotest
 
-    >>> print firefox_build.distroarchseries.displayname
+    >>> print firefox_build.distro_arch_series.displayname
     ubuntutest Breezy Badger Autotest i386
 
     >>> firefox_build.pocket
@@ -54,7 +54,7 @@ that generated it.
     >>> firefox_build.is_virtualized
     False
 
-    >>> print firefox_build.sourcepackagerelease.title
+    >>> print firefox_build.source_package_release.title
     mozilla-firefox - 0.9
 
 A build has an state that represents in which stage it is in a
@@ -62,12 +62,12 @@ life-cycle that goes from PENDING to BUILDING until FULLYBUILT or one
 of the intermediate failed states (FAILEDTOBUILD, MANUALDEPWAIT,
 CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
 
-    >>> firefox_build.buildstate
+    >>> firefox_build.status
     <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
 
 Builds which were already processed also offer additional information
 about its process such as the time it was started and finished and its
-'buildlog' and 'upload_changesfile' as librarian files.
+'log' and 'upload_changesfile' as librarian files.
 
     >>> firefox_build.was_built
     True
@@ -75,16 +75,16 @@ about its process such as the time it was started and finished and its
     >>> firefox_build.date_started
     datetime.datetime(...)
 
-    >>> firefox_build.datebuilt
+    >>> firefox_build.date_finished
     datetime.datetime(...)
 
-    >>> firefox_build.buildduration
+    >>> firefox_build.duration
     datetime.timedelta(...)
 
-    >>> print firefox_build.buildlog.filename
+    >>> print firefox_build.log.filename
     buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
 
-    >>> print firefox_build.build_log_url
+    >>> print firefox_build.log_url
     http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
 
     >>> print firefox_build.upload_changesfile.filename
@@ -119,7 +119,7 @@ publication of the source in question.
 
 It is not necessarily the same as:
 
-    >>> print firefox_build.sourcepackagerelease.component.name
+    >>> print firefox_build.source_package_release.component.name
     main
 
 which is the component the source was originally uploaded to, before
@@ -151,7 +151,7 @@ Test "retry" functionality:
     >>> frozen_build = getUtility(IBinaryPackageBuildSet).getByBuildID(9)
     >>> frozen_build.title
     u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
-    >>> frozen_build.buildstate.title
+    >>> frozen_build.status.title
     'Failed to build'
     >>> frozen_build.can_be_retried
     False
@@ -166,13 +166,13 @@ Let's retrieve a build record that can be retried.
     >>> print active_build.title
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
-    >>> print active_build.buildstate.name
+    >>> print active_build.status.name
     FAILEDTOBUILD
 
     >>> print active_build.builder.name
     bob
 
-    >>> print active_build.buildlog.filename
+    >>> print active_build.log.filename
     netapplet-1.0.0.tar.gz
 
 At this point, it's also convenient to test if any content can be
@@ -318,18 +318,18 @@ BuildQueue record was created.
     >>> print active_build.builder
     None
 
-    >>> print active_build.buildstate.name
+    >>> print active_build.status.name
     NEEDSBUILD
 
     >>> print active_build.buildqueue_record
     <...BuildQueue...>
 
-'buildlog' and 'upload_log' librarian references were removed when the
+'log' and 'upload_log' librarian references were removed when the
 build was retried. They will be garbage-collected later by
 'librariangc' and replaced by new ones when the build re-attempt
 finishes.
 
-    >>> print active_build.buildlog
+    >>> print active_build.log
     None
 
     >>> print active_build.upload_log
@@ -353,8 +353,8 @@ given build record entry.
     >>> description = 'Descripppppppption'
     >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
-    >>> component = firefox_build.sourcepackagerelease.component.id
-    >>> section = firefox_build.sourcepackagerelease.section.id
+    >>> component = firefox_build.source_package_release.component.id
+    >>> section = firefox_build.source_package_release.section.id
     >>> from canonical.launchpad.interfaces import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
@@ -699,9 +699,9 @@ For a given distribution as well:
     >>> ubuntu.getBuildRecords().count()
     17
 
-    >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
-    >>> for l in L:
-    ...     print l.datebuilt, l.id, l.buildstate.value
+    >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
+    >>> for build in builds:
+    ...     print build.date_finished, build.id, build.status.value
     2007-08-10 00:00:14+00:00 30 1
     2007-08-09 23:59:59+00:00 29 1
     2005-03-25 00:00:03+00:00 7 1
@@ -727,7 +727,7 @@ new BuildQueue record:
 Note that they are ordered by DESC lastscore, as expected:
 
     >>> for b in builds:
-    ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
+    ...     b.id, b.status.value, b.buildqueue_record.lastscore
     (11, 0, 10)
     (9, 0, 0)
 

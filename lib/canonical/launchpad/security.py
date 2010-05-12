@@ -1509,7 +1509,7 @@ class ViewBuildRecord(EditBuildRecord):
         # privacy since the source package is published publicly.
         # This happens when copy-package is used to re-publish a private
         # package in the primary archive.
-        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True
 
@@ -1522,7 +1522,7 @@ class ViewBuildRecord(EditBuildRecord):
             return True
 
         # See comment above.
-        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         return auth_spr.checkUnauthenticated()
 
 

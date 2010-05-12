@@ -212,7 +212,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
 
     @property
     def log_url(self):
-        """See `IBuildFarmJob`.
+        """See `IPackageBuild`.
 
         Overridden here for the case of builds for distro archives,
         currently only supported for binary package builds.
@@ -220,6 +220,17 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         if self.log is None:
             return None
         return ProxiedLibraryFileAlias(self.log, self).http_url
+
+    @property
+    def upload_log_url(self):
+        """See `IPackageBuild`.
+
+        Overridden here for the case of builds for distro archives,
+        currently only supported for binary package builds.
+        """
+        if self.upload_log is None:
+            return None
+        return ProxiedLibraryFileAlias(self.upload_log, self).http_url
 
     @property
     def distributionsourcepackagerelease(self):
