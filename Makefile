@@ -436,6 +436,14 @@ lp-clustered.svg: lp-clustered.dot
 	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
 	mv lp-clustered.svg.tmp lp-clustered.svg
 
+PYDOCTOR = pydoctor
+PYDOCTOR_OPTIONS = 
+
+pydoctor:
+	$(PYDOCTOR) --make-html --html-output=apidocs --add-package=lib/lp \
+		--add-package=lib/canonical --project-name=Launchpad \
+		--docformat restructuredtext --verbose-about epytext-summary \
+		$(PYDOCTOR_OPTIONS)
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
@@ -443,4 +451,4 @@ lp-clustered.svg: lp-clustered.dot
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile check_schema
+	sprite_css sprite_image css_combine compile check_schema pydoctor
