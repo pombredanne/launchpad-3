@@ -162,7 +162,7 @@ right target location, they are passed via process-upload command-line:
   >>> buildd_policy = getPolicy(
   ...     name='buildd',
   ...     distro=failedtoupload_candidate.distribution.name,
-  ...     distroseries=failedtoupload_candidate.distroseries.name,
+  ...     distroseries=failedtoupload_candidate.distro_series.name,
   ...     buildid=failedtoupload_candidate.id)
 
   >>> cdrkit_bin_upload = NascentUpload(
