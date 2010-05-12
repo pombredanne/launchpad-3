@@ -5,10 +5,13 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+import pytz
 import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -111,6 +114,27 @@ class TestBuildFarmJob(TestCaseWithFactory):
         self.assertEqual(
             self.build_farm_job.job_type.title,
             self.build_farm_job.title)
+
+    def test_duration_none(self):
+        # If either start or finished is none, the duration will be
+        # none.
+        self.build_farm_job.jobStarted()
+        self.failUnlessEqual(None, self.build_farm_job.duration)
+
+        self.build_farm_job.jobAborted()
+        removeSecurityProxy(self.build_farm_job).date_finished = (
+            datetime.now(pytz.UTC))
+        self.failUnlessEqual(None, self.build_farm_job.duration)
+
+    def test_duration_set(self):
+        # If both start and finished are defined, the duration will be
+        # returned.
+        now = datetime.now(pytz.UTC)
+        duration = timedelta(1)
+        naked_bfj = removeSecurityProxy(self.build_farm_job)
+        naked_bfj.date_started = now
+        naked_bfj.date_finished = now + duration
+        self.failUnlessEqual(duration, self.build_farm_job.duration)
 
 
 def test_suite():

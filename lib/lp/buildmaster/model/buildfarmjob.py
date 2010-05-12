@@ -220,6 +220,13 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuildFarmJob`."""
         return self.job_type.title
 
+    @property
+    def duration(self):
+        """See `IBuildFarmJob`."""
+        if self.date_started is None or self.date_finished is None:
+            return None
+        return self.date_finished - self.date_started
+
     def makeJob(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError

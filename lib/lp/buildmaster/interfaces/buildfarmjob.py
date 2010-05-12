@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine
+from zope.schema import Bool, Choice, Datetime, TextLine, Timedelta
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
@@ -193,6 +193,11 @@ class IBuildFarmJob(IBuildFarmJobOld):
             description=_(
                 "The timestamp when the build farm job was finished.")),
         ("1.0", dict(exported=True, exported_as="datebuilt")))
+
+    duration = Timedelta(
+        title=_("Duration"), required=False,
+        description=_("Duration interval, calculated when the "
+                      "result gets collected."))
 
     date_first_dispatched = exported(
         Datetime(
