@@ -26,7 +26,10 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before)
+from lp.bugs.scripts.checkwatches.utilities import (
+    get_remote_system_oops_properties)
 from lp.registry.interfaces.person import PersonCreationRationale
+
 
 
 class BugWatchUpdater(WorkingBase):
@@ -81,10 +84,6 @@ class BugWatchUpdater(WorkingBase):
     @commit_before
     def importBugComments(self):
         """Import all the comments from the remote bug."""
-        # Avoid circularity.
-        from lp.bugs.scripts.checkwatches.core import (
-            get_remote_system_oops_properties)
-
         with self.transaction:
             local_bug_id = self.bug_watch.bug.id
             remote_bug_id = self.bug_watch.remotebug
