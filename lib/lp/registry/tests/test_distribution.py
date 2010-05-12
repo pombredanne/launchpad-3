@@ -15,7 +15,8 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import TestCaseWithFactory
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -50,7 +51,7 @@ class TestDistributionCurrentSourceReleases(
     for the latest published source across multiple distro series.
     """
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
     release_interface = IDistributionSourcePackageRelease
 
     @property
