@@ -436,10 +436,14 @@ lp-clustered.svg: lp-clustered.dot
 	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
 	mv lp-clustered.svg.tmp lp-clustered.svg
 
+PYDOCTOR = pydoctor
+PYDOCTOR_OPTIONS = 
 
 pydoctor:
-	pydoctor --make-html --html-output=apidocs --add-package=lib/lp \
-		--add-package=lib/canonical
+	$(PYDOCTOR) --make-html --html-output=apidocs --add-package=lib/lp \
+		--add-package=lib/canonical --project-name=Launchpad \
+		--docformat restructuredtext --verbose-about epytext-summary \
+		$(PYDOCTOR_OPTIONS)
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
