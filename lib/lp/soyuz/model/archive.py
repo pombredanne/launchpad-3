@@ -1436,6 +1436,20 @@ class Archive(SQLBase):
         if self.enabled:
             self.disable()
 
+    def getFilesAndSha1s(self, source_files):
+        """See `IArchive`."""
+        return dict(Store.of(self).find(
+            (LibraryFileAlias.filename, LibraryFileContent.sha1),
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            LibraryFileAlias.filename.is_in(source_files),
+            LibraryFileContent.id == LibraryFileAlias.contentID).config(
+                distinct=True))
+
 
 class ArchiveSet:
     implements(IArchiveSet)
