@@ -13,7 +13,10 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, IBuildFarmJobDerived)
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
@@ -225,3 +228,13 @@ class TestBuildPackageJob(TestBuildJobBase):
         # Test that BuildPackageJob returns the title of the build.
         build, bq = find_job(self, 'gcc', '386')
         self.assertEqual(bq.specific_job.getTitle(), build.title)
+
+    def test_providesInterfaces(self):
+        # Ensure that a BuildPackageJob generates an appropriate cookie.
+        build, bq = find_job(self, 'gcc', '386')
+        build_farm_job = bq.specific_job
+        self.assertProvides(build_farm_job, IBuildPackageJob)
+        self.assertProvides(build_farm_job, IBuildFarmJob)
+        self.assertProvides(build_farm_job, IBuildFarmJobDerived)
+
+

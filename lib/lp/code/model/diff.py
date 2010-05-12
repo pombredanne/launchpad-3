@@ -322,16 +322,15 @@ class PreviewDiff(Storm):
         :param bmp: The `BranchMergeProposal` to generate a `PreviewDiff` for.
         :return: A `PreviewDiff`.
         """
-        source_branch = Branch.open(bmp.source_branch.warehouse_url)
+        source_branch = bmp.source_branch.getBzrBranch()
         source_revision = source_branch.last_revision()
-        target_branch = Branch.open(bmp.target_branch.warehouse_url)
+        target_branch = bmp.target_branch.getBzrBranch()
         target_revision = target_branch.last_revision()
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
         if bmp.prerequisite_branch is not None:
-            prerequisite_branch = Branch.open(
-                bmp.prerequisite_branch.warehouse_url)
+            prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
             prerequisite_branch = None
         preview.diff, conflicts = Diff.mergePreviewFromBranches(

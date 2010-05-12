@@ -133,6 +133,7 @@ from lp.soyuz.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -151,6 +152,7 @@ from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -914,7 +916,8 @@ class PersonMenuMixin(CommonMenuLinks):
         return Link(target, text, icon='edit')
 
 
-class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
+class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
+                         HasRecipesMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -925,7 +928,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
              'codesofconduct', 'karma', 'administer', 'administer_account',
              'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary']
+             'related_software_summary', 'view_recipes']
 
     def related_software_summary(self):
         target = '+related-software'
@@ -3868,14 +3871,19 @@ class PersonEditView(BasePersonEditView):
 
         When a user has a PPA renames are prohibited.
         """
-        writable = self.context.archive is None
-        if not writable:
+        active_ppas = [
+            ppa for ppa in self.context.ppas
+            if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
+        num_packages = sum(
+            ppa.getPublishedSources().count() for ppa in active_ppas)
+        if num_packages > 0:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if not writable:
+        if num_packages > 0:
             self.widgets['name'].hint = _(
-                'This user has a PPA and may not be renamed.')
+                'This user has an active PPA with packages published and '
+                'may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""

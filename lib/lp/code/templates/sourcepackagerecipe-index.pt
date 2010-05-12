@@ -20,6 +20,10 @@
 </tal:registering>
 
 
+<metal:side fill-slot="side">
+  <div tal:replace="structure context/@@+global-actions" />
+</metal:side>
+
 <div metal:fill-slot="main">
   <div class="yui-g first">
     <div class="yui-u first">
@@ -72,7 +76,8 @@
           <tbody>
             <tr tal:repeat="build view/builds">
               <td>
-                <tal:status replace="build/@@+index/status" />
+                <a tal:content="build/@@+index/status"
+                   tal:attributes="href build/fmt:url"></a>
               </td>
               <td>
                 <tal:date replace="build/@@+index/date/fmt:displaydate" />
@@ -90,6 +95,9 @@
             </tr>
           </tbody>
         </table>
+        <p tal:condition="not: view/builds">
+          This recipe has not been built yet.
+        </p>
         <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
       </div>
       <div class='portlet'>

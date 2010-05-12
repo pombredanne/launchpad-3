@@ -334,9 +334,9 @@ class SanitizeDb(LaunchpadScript):
 
     def removeInactiveProjects(self):
         """Remove inactive projects."""
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         count = self.store.find(
-            Project, Project.active == False).remove()
+            ProjectGroup, ProjectGroup.active == False).remove()
         self.store.flush()
         self.logger.info("Removed %d inactive product groups.", count)
 

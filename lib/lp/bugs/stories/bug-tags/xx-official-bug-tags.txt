@@ -73,7 +73,7 @@ They are grouped together at the beginning of the list.
     >>> browser.open(gfoobar_bug_url)
     >>> tags_div = find_tag_by_id(browser.contents, 'bug-tags')
     >>> for anchor in tags_div.findAll('a'):
-    ...     if anchor['href'] != '+edit':
+    ...     if anchor['href'] != '+edit'  and anchor['href'] != '/+help/tag-help.html':
     ...         print anchor['class'], anchor.contents[0]
     official-tag alpha
     official-tag charlie
@@ -211,4 +211,3 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> print js
     <script...>var available_official_tags =
     ["eenie", "meenie", "miney", "moe"];</script>
-

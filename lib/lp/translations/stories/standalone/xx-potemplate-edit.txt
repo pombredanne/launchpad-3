@@ -97,7 +97,6 @@ We remember the 'last_update_date' in order to check if it was changed
 after updating the template.
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
   >>> from lp.translations.model.potemplate import POTemplateSubset
   >>> from lp.registry.interfaces.product import IProductSet
   >>> login('foo.bar@canonical.com')
@@ -142,6 +141,37 @@ edit page.
   >>> previous_date_last_updated != evolution_template.date_last_updated
   True
 
+
+Priority range
+--------------
+
+The priority value must be between 0 and 100000. When entering a priority that
+is not in this range the form validation will inform users about what values
+are accepted for the priority field.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/+edit')
+  >>> admin_browser.getControl(name='field.priority').value = '-1'
+  >>> admin_browser.getControl('Change').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
+
+  >>> print_feedback_messages(admin_browser.contents)
+  There is 1 error.
+  The priority value must be between ...
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/+edit')
+  >>> admin_browser.getControl(name='field.priority').value = '100001'
+  >>> admin_browser.getControl('Change').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
+
+  >>> print_feedback_messages(admin_browser.contents)
+  There is 1 error.
+  The priority value must be between ...
 
 Change and cancel actions
 -------------------------

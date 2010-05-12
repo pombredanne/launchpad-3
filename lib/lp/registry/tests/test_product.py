@@ -26,6 +26,34 @@ from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
 from lp.testing import TestCaseWithFactory
 
+class TestProduct(TestCaseWithFactory):
+    """Tests product object."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_deactivation_failure(self):
+        # Ensure that a product cannot be deactivated if
+        # it is linked to source packages.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        source_package = self.factory.makeSourcePackage()
+        self.assertEqual(True, product.active)
+        source_package.setPackaging(
+            product.development_focus, self.factory.makePerson())
+        self.assertRaises(
+            AssertionError,
+            setattr, product, 'active', False)
+
+    def test_deactivation_success(self):
+        # Ensure that a product can be deactivated if
+        # it is not linked to source packages.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        self.assertEqual(True, product.active)
+        product.active = False
+        self.assertEqual(False, product.active)
+
+
 class TestProductFiles(unittest.TestCase):
     """Tests for downloadable product files."""
 

@@ -24,6 +24,10 @@ class BugHeatConstants:
 
 class BugHeatCalculator:
     """A class to calculate the heat for a bug."""
+    # If you change the way that bug heat is calculated, remember to update
+    # the description of how it is calculated at
+    # /lib/lp/bugs/help/bug-heat.html and
+    # https://help.launchpad.net/Bugs/BugHeat
 
     def __init__(self, bug):
         self.bug = bug
@@ -79,12 +83,26 @@ class BugHeatCalculator:
             self._getHeatFromSubscribers(),
             ])
 
-        # Bugs decay over time. Every month the bug isn't touched its heat
-        # decreases by 10%.
-        months = (
+        # Bugs decay over time. Every day the bug isn't touched its heat
+        # decreases by 1%.
+        days = (
             datetime.utcnow() -
-            self.bug.date_last_updated.replace(tzinfo=None)).days / 30
-        total_heat = int(total_heat * (0.9 ** months))
+            self.bug.date_last_updated.replace(tzinfo=None)).days
+        total_heat = int(total_heat * (0.99 ** days))
 
-        return total_heat
+        if days > 0:
+            # Bug heat increases by a quarter of the maximum bug heat divided
+            # by the number of days since the bug's creation date.
+            days_since_last_activity = (
+                datetime.utcnow() -
+                max(self.bug.date_last_updated.replace(tzinfo=None),
+                    self.bug.date_last_message.replace(tzinfo=None))).days
+            days_since_created = (
+                datetime.utcnow() - self.bug.datecreated.replace(tzinfo=None)).days
+            max_heat = max(
+                task.target.max_bug_heat for task in self.bug.bugtasks)
+            if max_heat is not None and days_since_created > 0:
+                total_heat = total_heat + (max_heat * 0.25 / days_since_created)
+
+        return int(total_heat)
 

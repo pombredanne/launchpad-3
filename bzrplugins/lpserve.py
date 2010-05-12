@@ -45,9 +45,9 @@ class cmd_launchpad_server(Command):
         Option('mirror-directory',
                help='serve branches from this directory. Defaults to '
                     'config.codehosting.mirrored_branches_root.'),
-        Option('branchfs-endpoint',
+        Option('codehosting-endpoint',
                help='the url of the internal XML-RPC server. Defaults to '
-                    'config.codehosting.branchfs_endpoint.',
+                    'config.codehosting.codehosting_endpoint.',
                type=unicode),
         ]
 
@@ -85,8 +85,8 @@ class cmd_launchpad_server(Command):
         finally:
             ui.ui_factory = old_factory
 
-    def run(self, user_id, port=None, upload_directory=None,
-            mirror_directory=None, branchfs_endpoint_url=None, inet=False):
+    def run(self, user_id, port=None, branch_directory=None,
+            codehosting_endpoint_url=None, inet=False):
         from lp.codehosting.bzrutils import install_oops_handler
         from lp.codehosting.vfs import get_lp_server, hooks
         install_oops_handler(user_id)
@@ -94,8 +94,8 @@ class cmd_launchpad_server(Command):
         resource.setrlimit(resource.RLIMIT_AS, (four_gig, four_gig))
         seen_new_branch = hooks.SetProcTitleHook()
         lp_server = get_lp_server(
-            int(user_id), branchfs_endpoint_url,
-            upload_directory, mirror_directory, seen_new_branch.seen)
+            int(user_id), codehosting_endpoint_url, branch_directory,
+            seen_new_branch.seen)
         lp_server.start_server()
 
         old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS

@@ -314,6 +314,21 @@ class TestBazaarBranchStore(WorkerTest):
             set([revid, revid1, revid2]),
             set(retrieved_branch.repository.all_revision_ids()))
 
+    def test_pull_doesnt_bring_backup_directories(self):
+        # If the branch has been upgraded in the branch store, `pull` does not
+        # copy the backup.bzr directory to `target_path`, just the .bzr
+        # directory.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original')
+        store.push(self.arbitrary_branch_id, tree.branch, default_format)
+        t = get_transport(store._getMirrorURL(self.arbitrary_branch_id))
+        t.mkdir('backup.bzr')
+        retrieved_branch = store.pull(
+            self.arbitrary_branch_id, 'pulled', default_format,
+            needs_tree=False)
+        self.assertEqual(
+            ['.bzr'], retrieved_branch.bzrdir.root_transport.list_dir('.'))
+
 
 class TestImportDataStore(WorkerTest):
     """Tests for `ImportDataStore`."""

@@ -222,6 +222,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
 
+    is_active = Bool(
+        title=_("True if the archive is in the active state"),
+        required=False, readonly=True)
+
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
@@ -930,6 +934,13 @@ class IArchiveView(IHasBuildRecords):
     def getPackageDownloadCount(bpr, day, country):
         """Get the `IBinaryPackageDownloadCount` with the given key."""
 
+    def getFilesAndSha1s(source_files):
+        """Return a dictionary with the filenames and the SHA1s for each
+        source file.
+
+        :param source_files: A list of filenames to return SHA1s of
+        :return: A dictionary of filenames and SHA1s.
+        """
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
@@ -1150,6 +1161,19 @@ class IArchiveEdit(Interface):
 
     def disable():
         """Disable the archive."""
+
+    def delete(deleted_by):
+        """Delete this archive.
+
+        :param deleted_by: The `IPerson` requesting the deletion.
+
+        The ArchiveStatus will be set to DELETING and any published
+        packages will be marked as DELETED by deleted_by.
+
+        The publisher is responsible for deleting the repository area
+        when it sees the status change and sets it to DELETED once
+        processed.
+        """
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

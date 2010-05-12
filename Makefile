@@ -209,9 +209,9 @@ ftest_build: build
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
-mpcreationjobs:
-	# Handle merge proposal creations.
-	$(PY) cronscripts/mpcreationjobs.py
+merge-proposal-jobs:
+	# Handle merge proposal email jobs.
+	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
 	$(RM) thread*.request
@@ -229,13 +229,13 @@ run_all: check_schema inplace stop hosted_branches
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
-	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
+	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
 
 start_codebrowse: build
-	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
 
 stop_codebrowse:
-	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
+	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop hosted_branches
 	$(RM) thread*.request
@@ -255,8 +255,7 @@ scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/scan_branches.py
 
-
-sync_branches: pull_branches scan_branches mpcreationjobs
+sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
@@ -334,6 +333,7 @@ clean: clean_js
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) _pythonpath.py
+	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
@@ -436,6 +436,14 @@ lp-clustered.svg: lp-clustered.dot
 	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
 	mv lp-clustered.svg.tmp lp-clustered.svg
 
+PYDOCTOR = pydoctor
+PYDOCTOR_OPTIONS = 
+
+pydoctor:
+	$(PYDOCTOR) --make-html --html-output=apidocs --add-package=lib/lp \
+		--add-package=lib/canonical --project-name=Launchpad \
+		--docformat restructuredtext --verbose-about epytext-summary \
+		$(PYDOCTOR_OPTIONS)
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
@@ -443,4 +451,4 @@ lp-clustered.svg: lp-clustered.dot
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile check_schema
+	sprite_css sprite_image css_combine compile check_schema pydoctor

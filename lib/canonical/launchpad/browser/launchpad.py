@@ -225,6 +225,8 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    vhost_breadcrumb = True
+
     @property
     def objects(self):
         """The objects for which we want breadcrumbs."""
@@ -238,13 +240,15 @@ class Hierarchy(LaunchpadView):
         """
         breadcrumbs = []
         for obj in self.objects:
-            breadcrumb = queryAdapter(obj, IBreadcrumb)
+            breadcrumb = IBreadcrumb(obj, None)
             if breadcrumb is not None:
                 breadcrumbs.append(breadcrumb)
 
         host = URI(self.request.getURL()).host
         mainhost = allvhosts.configs['mainsite'].hostname
-        if len(breadcrumbs) != 0 and host != mainhost:
+        if (len(breadcrumbs) != 0 and
+            host != mainhost and
+            self.vhost_breadcrumb):
             # We have breadcrumbs and we're not on the mainsite, so we'll
             # sneak an extra breadcrumb for the vhost we're on.
             vhost = host.split('.')[0]

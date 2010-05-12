@@ -5,10 +5,12 @@
 
 __metaclass__ = type
 
+import transaction
 from unittest import TestLoader
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
@@ -33,6 +35,11 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
                 productseries=series))
             for path in filenames]
 
+    def _becomeBuilddMaster(self):
+        """Switch db identity to the script that uses this approver."""
+        transaction.commit()
+        self.layer.switchDbUser(config.builddmaster.dbuser)
+
     def test_approve_all_new(self):
         # A happy approval case, all new templates.
         filenames = [
@@ -41,6 +48,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             'po-domain3/domain3.pot',
             ]
         series = self.factory.makeProductSeries()
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -58,6 +67,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             'po/eo.po',
             ]
         series = self.factory.makeProductSeries()
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -79,6 +90,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             productseries=series, name='domain2')
         domain3_pot = self.factory.makePOTemplate(
             productseries=series, name='domain3')
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -102,6 +115,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             productseries=series, name='domain1')
         domain2_pot = self.factory.makePOTemplate(
             productseries=series, name='domain2')
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -120,6 +135,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             ]
         product = self.factory.makeProduct(name='fooproduct')
         series = product.getSeries('trunk')
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -133,6 +150,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             ]
         series = self.factory.makeProductSeries()
         pot = self.factory.makePOTemplate(productseries=series)
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -146,6 +165,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             'mydomain/mydomain.pot',
             ]
         series = self.factory.makeProductSeries()
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -162,6 +183,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         series = self.factory.makeProductSeries()
         self.factory.makePOTemplate(productseries=series)
         self.factory.makePOTemplate(productseries=series)
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -174,6 +197,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             'po-domain2/domain2.pot',
             ]
         series = self.factory.makeProductSeries()
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(
             series, approver, filenames + ['po-domain3/domain3.pot'])
@@ -196,6 +221,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
             productseries=series, name='name1', path=filenames[0])
         domain2_pot = self.factory.makePOTemplate(
             productseries=series, name='name2', path=filenames[1])
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 
@@ -215,6 +242,8 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         series = self.factory.makeProductSeries()
         domain1_pot = self.factory.makePOTemplate(
             productseries=series, name='domain1', path='po/foo.pot')
+
+        self._becomeBuilddMaster()
         approver = TranslationBuildApprover(filenames, productseries=series)
         entries = self._makeApprovedEntries(series, approver, filenames)
 

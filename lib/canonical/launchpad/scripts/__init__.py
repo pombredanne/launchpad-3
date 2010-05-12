@@ -68,25 +68,6 @@ def NullFactory(context, data, info):
     return NullItem(context, data, info)
 
 
-class CustomMachine(ConfigurationMachine):
-
-    def factory(self, context, name):
-        # Hackery to remove 'browser:xxx' directives from being processed.
-        # This is needed to avoid page directives, which screw up when you
-        # parse the zcml from a cwd that isn't the launchpad root.
-        # XXX: Bjorn Tillenius 2005-07-14:
-        #      I added a workaround so that browser:url directives get
-        #      processed, though. SteveA said he will fix it better when
-        #      he lands the navigation stuff.
-        ns, simplename = name
-        if (ns == u'http://namespaces.zope.org/browser'
-            and simplename != 'url'):
-            return NullFactory
-        else:
-            f = ConfigurationMachine.factory(self, context, name)
-            return f
-
-
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml
 
@@ -122,7 +103,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     zope.site.hooks.setHooks()
 
     # Load server-independent site config
-    context = CustomMachine()
+    context = ConfigurationMachine()
     xmlconfig.registerCommonDirectives(context)
     context = xmlconfig.file(
         scriptzcmlfilename, execute=True, context=context)

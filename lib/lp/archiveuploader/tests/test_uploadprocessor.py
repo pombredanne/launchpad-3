@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     "MockOptions",
     "MockLogger",
+    "TestUploadProcessorBase",
     ]
 
 import os
@@ -44,7 +45,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet, PackagePublishingStatus)
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -293,6 +295,29 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             self.assertTrue(
                 content in body,
                 "Expect: '%s'\nGot:\n%s" % (content, body))
+
+    def PGPSignatureNotPreserved(self, archive=None):
+        """PGP signatures should be removed from .changes files.
+
+        Email notifications and the librarian file for .changes file should
+        both have the PGP signature removed.
+        """
+        bar = archive.getPublishedSources(
+            name='bar', version="1.0-1", exact_match=True)
+        changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
+            bar[0].sourcepackagerelease)
+        changes_file = changes_lfa.read()
+        self.assertTrue(
+            "Format: " in changes_file, "Does not look like a changes file")
+        self.assertTrue(
+            "-----BEGIN PGP SIGNED MESSAGE-----" not in changes_file,
+            "Unexpected PGP header found")
+        self.assertTrue(
+            "-----BEGIN PGP SIGNATURE-----" not in changes_file,
+            "Unexpected start of PGP signature found")
+        self.assertTrue(
+            "-----END PGP SIGNATURE-----" not in changes_file,
+            "Unexpected end of PGP signature found")
 
 
 class TestUploadProcessor(TestUploadProcessorBase):
@@ -1704,6 +1729,30 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Daniel Silverstone <daniel.silverstone@canonical.com>',
             ]
         self.assertEmail(contents, recipients=recipients)
+
+    def testPGPSignatureNotPreserved(self):
+        """PGP signatures should be removed from .changes files.
+
+        Email notifications and the librarian file for the .changes file
+        should both have the PGP signature removed.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+	    policy='insecure')
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        # ACCEPT the upload
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        self.assertEqual(queue_items.count(), 1)
+        queue_item = queue_items[0]
+        queue_item.setAccepted()
+        pubrec = queue_item.sources[0].publish(self.log)
+        pubrec.status = PackagePublishingStatus.PUBLISHED
+        pubrec.datepublished = UTC_NOW
+        queue_item.setDone()
+        self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

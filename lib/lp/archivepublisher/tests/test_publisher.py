@@ -25,7 +25,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
+    ArchivePurpose, ArchiveStatus, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -93,6 +93,32 @@ class TestPublisher(TestPublisherBase):
         foo_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
+    def testDeletingPPA(self):
+        """Test deleting a PPA"""
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest, owner=ubuntu_team,
+            purpose=ArchivePurpose.PPA)
+        publisher = getPublisher(test_archive, None, self.logger)
+
+        self.assertTrue(os.path.exists(publisher._config.archiveroot))
+
+        # Create a file inside archiveroot to ensure we're recursive.
+        open(os.path.join(
+            publisher._config.archiveroot, 'test_file'), 'w').close()
+
+        publisher.deleteArchive()
+        root_dir = os.path.join(
+            publisher._config.distroroot, test_archive.owner.name,
+            test_archive.name)
+        self.assertFalse(os.path.exists(root_dir))
+        self.assertEqual(test_archive.status, ArchiveStatus.DELETED)
+        self.assertEqual(test_archive.publish, False)
+
+        # Trying to delete it again won't fail, in the corner case where
+        # some admin manually deleted the repo.
+        publisher.deleteArchive()
+
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
         archive = self.ubuntutest.getArchiveByComponent('partner')
@@ -102,8 +128,7 @@ class TestPublisher(TestPublisherBase):
             pub_config.poolroot, pub_config.temproot, self.logger)
         publisher = Publisher(
             self.logger, pub_config, disk_pool, archive)
-        pub_source = self.getPubSource(archive=archive,
-            filecontent="I am partner")
+        self.getPubSource(archive=archive, filecontent="I am partner")
 
         publisher.A_publish(False)
 
@@ -141,7 +166,7 @@ class TestPublisher(TestPublisherBase):
         disk_pool = DiskPool(
             pub_config.poolroot, pub_config.temproot, self.logger)
         publisher = Publisher(self.logger, pub_config, disk_pool, archive)
-        pub_source = self.getPubSource(
+        self.getPubSource(
             archive=archive, filecontent="I am partner",
             status=PackagePublishingStatus.PENDING)
 
@@ -228,8 +253,7 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(
-            status=PackagePublishingStatus.PUBLISHED)
+        self.getPubSource(status=PackagePublishingStatus.PUBLISHED)
 
         # a new non-careful publisher won't find anything to publish, thus
         # no pockets will be *dirtied*.
@@ -249,7 +273,7 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(
+        self.getPubSource(
             filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -392,17 +416,17 @@ class TestPublisher(TestPublisherBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         spiv = person_set.getByName('spiv')
-        spiv_archive = archive_set.new(
+        archive_set.new(
             owner=spiv, distribution=ubuntu, purpose=ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.new(
+        archive_set.new(
             owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
-        pub_source = self.getPubSource(
+        self.getPubSource(
             sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=spiv.archive)
 
-        pub_source = self.getPubSource(
+        self.getPubSource(
             sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
 
@@ -465,7 +489,7 @@ class TestPublisher(TestPublisherBase):
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
-        pub_bin = self.getPubBinaries(
+        self.getPubBinaries(
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
                         "space but not trailing.  \n    It does nothing, "
@@ -476,7 +500,7 @@ class TestPublisher(TestPublisherBase):
         ignored_source = self.getPubSource(
             status=PackagePublishingStatus.DELETED,
             archive=cprov.archive)
-        pub_udeb = self.getPubBinaries(
+        self.getPubBinaries(
             pub_source=ignored_source, binaryname='bingo',
             description='nice udeb', format=BinaryPackageFormat.UDEB)[0]
 
@@ -607,27 +631,27 @@ class TestPublisher(TestPublisherBase):
         # waiting to be deleted, each in different pockets.  The deleted
         # source in the release pocket should not be processed.  We'll
         # also have a binary waiting to be deleted.
-        published_source = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED)
 
-        deleted_source_in_release_pocket = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.DELETED)
 
-        removed_source = self.getPubSource(
+        self.getPubSource(
             scheduleddeletiondate=UTC_NOW,
             dateremoved=UTC_NOW,
             pocket=PackagePublishingPocket.UPDATES,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_source = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_binary = self.getPubBinaries(
+        self.getPubBinaries(
             pocket=PackagePublishingPocket.BACKPORTS,
-            status=PackagePublishingStatus.DELETED)[0]
+            status=PackagePublishingStatus.DELETED)
 
         # Run the deletion detection.
         publisher.A2_markPocketsWithDeletionsDirty()
@@ -679,19 +703,19 @@ class TestPublisher(TestPublisherBase):
 
         # Create pending deletions in RELEASE, BACKPORTS, SECURITY and
         # UPDATES pockets.
-        deleted_source = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_binary = self.getPubBinaries(
+        self.getPubBinaries(
             pocket=PackagePublishingPocket.BACKPORTS,
             status=PackagePublishingStatus.DELETED)[0]
 
-        allowed_source_deletion = self.getPubSource(
+        self.getPubSource(
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.DELETED)
 
-        allowed_binary_deletion = self.getPubBinaries(
+        self.getPubBinaries(
             pocket=PackagePublishingPocket.UPDATES,
             status=PackagePublishingStatus.DELETED)[0]
 
@@ -761,7 +785,7 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        pub_source = self.getPubSource(filecontent='Hello world')
+        self.getPubSource(filecontent='Hello world')
 
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
@@ -846,8 +870,7 @@ class TestPublisher(TestPublisherBase):
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
-        pub_source = self.getPubSource(
-            filecontent='Hello world', archive=cprov.archive)
+        self.getPubSource(filecontent='Hello world', archive=cprov.archive)
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -950,8 +973,7 @@ class TestPublisher(TestPublisherBase):
         allowed_suites = []
         archive_publisher = getPublisher(
             named_ppa, allowed_suites, self.logger)
-        pub_source = self.getPubSource(
-            filecontent='Hello world', archive=named_ppa)
+        self.getPubSource(filecontent='Hello world', archive=named_ppa)
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -1060,7 +1082,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         Publish files in pool, generate archive indexes and release files.
         """
         self.setupPublisher(archive)
-        pub_source = self.getPubSource(archive=archive)
+        self.getPubSource(archive=archive)
 
         self.archive_publisher.A_publish(False)
         transaction.commit()

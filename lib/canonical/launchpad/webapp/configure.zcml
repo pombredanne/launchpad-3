@@ -470,6 +470,12 @@
         name="fmt"
         />
     <adapter
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
@@ -491,6 +497,12 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageReleaseFormatterAPI"
         name="fmt"
         />
     <adapter
