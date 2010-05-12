@@ -46,12 +46,13 @@ read and accepted the conditions. The is also an optional 'description'
 text-area.
 
 There is also a message, near the form actions, in which the user is
-warned about the fact the activating this PPA will block renaming of
-the context launchpad user.
+warned about the fact that if the user has any PPAs with published
+packages then they will not be able to rename their account.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Sample Person
+    If you have any PPAs with published packages, you will not be able to
+    rename ... until those PPAs are deleted.
     ...
 
 'PPA name' and 'Displayname' are required fields.  For the first activated
@@ -149,25 +150,6 @@ user can't have an emtpy displayname on his PPA.
     There is 1 error.
     Required input is missing.
 
-Once the PPA is activated, the Sample user account cannot be renamed
-anymore. Changing the account name affects the PPA repository paths
-and we don't have infrastructure in place to support that yet. See
-more information about the feature in bug #87326.
-
-    >>> sample_browser.open("http://launchpad.dev/~name12/+edit")
-    >>> sample_browser.getControl(name='field.name').value = 'el-duderino'
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.name'
-
-    >>> print extract_text(
-    ...     first_tag_by_class(sample_browser.contents, 'form'))
-    Display Name:
-    ...
-    Name: name12
-    This user has a PPA and may not be renamed.
-    ...
-
 
 == Activating Personal Package Archives for Teams ==
 
@@ -215,7 +197,8 @@ will block renaming of the context team.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Landscape Developers
+    If you have any PPAs with published packages, you will not be able to
+    rename ... until those PPAs are deleted.
     ...
 
 That understood, the PPA gets activated.
@@ -584,15 +567,6 @@ all his PPAs.
     PPA contents description: (Optional)
       A short description of this PPA. URLs are allowed and will be rendered
       as links.
-
-Note that, differently than the time when the first PPA was activated,
-this time there is no warning about the fact that the context renaming
-will be blocked. We assumed that, at this point, this is already a
-known aspect.
-
-    >>> print extract_text(
-    ...     first_tag_by_class(cprov_browser.contents, 'actions'))
-    or Cancel
 
 The 'PPA name' field is not pre-filled and if Celso does not fill it then
 an error is raised.
