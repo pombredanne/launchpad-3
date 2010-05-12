@@ -69,7 +69,7 @@ class MultiStepView(LaunchpadView):
         """Return a dict of step numbers with the current step set to True.
 
         This is a path traversal friendly mechanism to ask:
-        view/is_step/2
+        <tal:x condition="view/is_step/2">
         """
         step_state = {}
         for step in range(1, self.total_steps + 1):

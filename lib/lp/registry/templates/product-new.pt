@@ -275,7 +275,7 @@ LPS.use('node', 'lazr.effects', function(Y) {
           <li><a href="https://help.launchpad.net/Code/PersonalBranches">Access
             your personal branches</a> (sandbox, repo)</li>
           <li><a href="https://help.launchpad.net/Translations/YourProject">Translate
-            an project</a> that is already registered</li>
+            a project</a> that is already registered</li>
           <li><a href="https://help.launchpad.net/ProjectGroups">Request a project group</a></li>
         </ul>
       </div>

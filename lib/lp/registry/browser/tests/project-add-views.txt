@@ -208,7 +208,7 @@ However, when a proprietary license is selected, a description is required.
     Hello name16,
     <BLANKLINE>
     You recently registered the project 'badger' in Launchpad
-    with a license(s) of:
+    with this licensing:
     <BLANKLINE>
         Other/Proprietary.
     <BLANKLINE>

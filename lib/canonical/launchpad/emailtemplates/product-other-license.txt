@@ -1,7 +1,7 @@
 Hello %(user_name)s,
 
 You recently registered the project '%(product_name)s' in Launchpad
-with a license(s) of:
+with this licensing:
 
 %(license_titles)s.
 

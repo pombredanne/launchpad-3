@@ -34,7 +34,7 @@ project registration.
     >>> print user_browser.getLink('Access your personal branches').url
     https://help.launchpad.net/Code/PersonalBranches
 
-    >>> print user_browser.getLink('Translate an project').url
+    >>> print user_browser.getLink('Translate a project').url
     https://help.launchpad.net/Translations/YourProject
 
     >>> print user_browser.getLink('Request a project group').url
