@@ -49,20 +49,21 @@ translation, or link the product to a translatable package.
     ...     find_tag_by_id(
     ...         registrant.contents, 'not-translated-in-launchpad'))
     This project is not using Launchpad for translations.
-    You can change this in the project settings. (Getting
-    started with translating your project in Launchpad)
+    Configure translations
+    Getting started with translating your project in Launchpad
 
     >>> registrant.getLink(
     ...     url=('/gnomebaker/trunk/'
     ...          '+translations-upload')) is not None
     True
 
-The instructions for the registrant link to the settings page, where they can
-configure the project to use Launchpad for translations if desired.
+The instructions for the registrant link to the translations
+configuration page, where they can configure the project to use
+Launchpad for translations if desired.
 
-    >>> registrant.getLink('project settings').click()
+    >>> registrant.getLink('Configure translations').click()
     >>> print registrant.url
-    http://.../gnomebaker/+edit
+    http://.../gnomebaker/+configure-translations
 
 (The template upload process is tested in xx-translation-import-queue.txt.)
 
@@ -140,7 +141,7 @@ If the netapplet project is updated to use Launchpad for translations...
     >>> admin_browser.getLink('Overview').click()
     >>> print admin_browser.title
     Network Applet in Launchpad
-    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getLink('Configure translations').click()
     >>> admin_browser.getControl(
     ...     'Translations for this project are done in Launchpad').selected
     False

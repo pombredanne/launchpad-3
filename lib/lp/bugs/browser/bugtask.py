@@ -485,7 +485,12 @@ class BugTaskNavigation(Navigation):
         # I have chosed to use this simple solution for now.
         #   -- kiko, 2006-07-11
         try:
-            return comments[index]
+            comment = comments[index]
+            if (comment.visible
+                or check_permission('launchpad.Admin', self.context)):
+                return comment
+            else:
+                return None
         except IndexError:
             return None
 
@@ -1116,8 +1121,9 @@ def bugtask_heat_html(bugtask, target=None):
         max_bug_heat = 5000
     heat_ratio = calculate_heat_display(bugtask.bug.heat, max_bug_heat)
     html = (
-        '<span><img src="/@@/bug-heat-%(ratio)i.png" '
-        'alt="%(ratio)i out of 4 heat flames"  title="Heat: %(heat)i" />'
+        '<span><a href="/+help/bug-heat.html" target="help" class="icon"><img'
+        ' src="/@@/bug-heat-%(ratio)i.png" '
+        'alt="%(ratio)i out of 4 heat flames" title="Heat: %(heat)i" /></a>'
         '</span>'
         % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
     return html
@@ -1297,10 +1303,11 @@ class BugTaskEditView(LaunchpadEditFormView):
         # it uses based on the permissions of the user viewing form.
         if 'status' in self.editable_field_names:
             if self.user is None:
-                status_noshow = list(BugTaskStatus.items)
+                status_noshow = set(BugTaskStatus.items)
             else:
-                status_noshow = [BugTaskStatus.UNKNOWN]
-                status_noshow.extend(
+                status_noshow = set((
+                    BugTaskStatus.UNKNOWN, BugTaskStatus.EXPIRED))
+                status_noshow.update(
                     status for status in BugTaskStatus.items
                     if not self.context.canTransitionToStatus(
                         status, self.user))
@@ -1793,6 +1800,12 @@ class BugsInfoMixin:
             status=BugTaskStatus.NEW.title)
 
     @property
+    def inprogress_bugs_url(self):
+        """A URL to a page of inprogress bugs."""
+        return get_buglisting_search_filter_url(
+            status=BugTaskStatus.INPROGRESS.title)
+
+    @property
     def open_bugs_url(self):
         """A URL to a list of open bugs."""
         return canonical_url(self.context, view_name='+bugs')
@@ -1803,6 +1816,13 @@ class BugsInfoMixin:
         return get_buglisting_search_filter_url(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=BugTaskImportance.CRITICAL.title)
+
+    @property
+    def high_bugs_url(self):
+        """A URL to a list of high priority bugs."""
+        return get_buglisting_search_filter_url(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            importance=BugTaskImportance.HIGH.title)
 
     @property
     def my_bugs_url(self):
@@ -1873,9 +1893,19 @@ class BugsStatsMixin(BugsInfoMixin):
         return self.context.open_bugtasks.count()
 
     @property
+    def inprogress_bugs_count(self):
+        """A count of in-progress bugs."""
+        return self.context.inprogress_bugtasks.count()
+
+    @property
     def critical_bugs_count(self):
         """A count of critical bugs."""
         return self.context.critical_bugtasks.count()
+
+    @property
+    def high_bugs_count(self):
+        """A count of high priority bugs."""
+        return self.context.high_bugtasks.count()
 
     @property
     def my_bugs_count(self):
@@ -2559,7 +2589,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                 dict(
                     value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
-        return helpers.shortlist(widget_values, longest_expected=10)
+        return helpers.shortlist(widget_values, longest_expected=11)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -3339,7 +3369,8 @@ class BugTaskTableRowView(LaunchpadView):
             # the title as the token for backwards compatibility.
             status_items = [
                 (item.title, item) for item in BugTaskStatus.items
-                if item != BugTaskStatus.UNKNOWN]
+                if item not in (BugTaskStatus.UNKNOWN,
+                                BugTaskStatus.EXPIRED)]
 
             disabled_items = [status for status in BugTaskStatus.items
                 if not self.context.canTransitionToStatus(status, self.user)]
@@ -3437,7 +3468,6 @@ class BugTaskTableRowView(LaunchpadView):
                                 None),
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
-            'status_requires_confirmation': not self.user_can_edit_importance,
             'user_can_edit_importance': (
                 self.user_can_edit_importance and
                 not self.context.bugwatch)})

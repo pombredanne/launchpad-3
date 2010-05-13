@@ -107,6 +107,8 @@ When getExternalBugTrackerToUse() receives a Fault of type
 METHOD_NOT_FOUND from the remote server in response to its check, it
 will return a standard Bugzilla instance.
 
+    >>> transaction.commit()
+
     >>> from lp.bugs.externalbugtracker import (
     ...     BugzillaAPI, BugzillaLPPlugin)
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
@@ -310,8 +312,8 @@ The main use of an ExternalBugtracker is to update bug watches. This is
 done through updateBugWatches(), which expects a list of bug watches to
 update:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     304070: None
@@ -422,7 +424,7 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> gnome_bugzilla.getBugWatchesNeedingUpdate().count()
+    >>> gnome_bugzilla.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get

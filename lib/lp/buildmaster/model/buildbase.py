@@ -43,7 +43,7 @@ class BuildBase:
     package.
 
     Note: this class does not implement IBuildBase as we currently duplicate
-    the properties defined on IBuildBase on the inheriting class tables. 
+    the properties defined on IBuildBase on the inheriting class tables.
     BuildBase cannot therefore implement IBuildBase itself, as storm requires
     that the corresponding __storm_table__ be defined for the class. Instead,
     the classes using the BuildBase mixin must ensure that they implement IBuildBase.
@@ -148,12 +148,11 @@ class BuildBase:
         directory, store build information and push them through the
         uploader.
         """
-        # XXX cprov 2007-07-11 bug=129487: untested code path.
-        buildid = slave_status['build_id']
         filemap = slave_status['filemap']
 
         logger.info("Processing successful build %s from builder %s" % (
-            buildid, self.buildqueue_record.builder.name))
+            self.buildqueue_record.specific_job.build.title,
+            self.buildqueue_record.builder.name))
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -166,7 +165,8 @@ class BuildBase:
         root = os.path.abspath(config.builddmaster.root)
 
         # create a single directory to store build result files
-        upload_leaf = self.getUploadLeaf(buildid)
+        upload_leaf = self.getUploadLeaf(
+            '%s-%s' % (self.id, self.buildqueue_record.id))
         upload_dir = self.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 
@@ -181,33 +181,48 @@ class BuildBase:
         os.makedirs(upload_path)
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
+        successful_copy_from_slave = True
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
-            slave_file = slave.getFile(filemap[filename])
             out_file_name = os.path.join(upload_path, filename)
+            # If the evaluated output file name is not within our
+            # upload path, then we don't try to copy this or any
+            # subsequent files.
+            if not os.path.realpath(out_file_name).startswith(upload_path):
+                successful_copy_from_slave = False
+                logger.warning(
+                    "A slave tried to upload the file '%s' "
+                    "for the build %d." % (filename, self.id))
+                break
             out_file = open(out_file_name, "wb")
+            slave_file = slave.getFile(filemap[filename])
             copy_and_close(slave_file, out_file)
 
-        uploader_logfilename = os.path.join(upload_dir, UPLOAD_LOG_FILENAME)
-        uploader_command = self.getUploaderCommand(
-            upload_leaf, uploader_logfilename)
-        logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
+        # We only attempt the upload if we successfully copied all the
+        # files from the slave.
+        if successful_copy_from_slave:
+            uploader_logfilename = os.path.join(
+                upload_dir, UPLOAD_LOG_FILENAME)
+            uploader_command = self.getUploaderCommand(
+                upload_leaf, uploader_logfilename)
+            logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
-        logger.info("Invoking uploader on %s" % root)
-        logger.info("%s" % uploader_command)
+            logger.info("Invoking uploader on %s" % root)
+            logger.info("%s" % uploader_command)
 
-        uploader_process = subprocess.Popen(
-            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            uploader_process = subprocess.Popen(
+                uploader_command, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
 
-        # Nothing should be written to the stdout/stderr.
-        upload_stdout, upload_stderr = uploader_process.communicate()
+            # Nothing should be written to the stdout/stderr.
+            upload_stdout, upload_stderr = uploader_process.communicate()
 
-        # XXX cprov 2007-04-17: we do not check uploader_result_code
-        # anywhere. We need to find out what will be best strategy
-        # when it failed HARD (there is a huge effort in process-upload
-        # to not return error, it only happen when the code is broken).
-        uploader_result_code = uploader_process.returncode
-        logger.info("Uploader returned %d" % uploader_result_code)
+            # XXX cprov 2007-04-17: we do not check uploader_result_code
+            # anywhere. We need to find out what will be best strategy
+            # when it failed HARD (there is a huge effort in process-upload
+            # to not return error, it only happen when the code is broken).
+            uploader_result_code = uploader_process.returncode
+            logger.info("Uploader returned %d" % uploader_result_code)
 
         # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
@@ -263,6 +278,7 @@ class BuildBase:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         if (self.buildstate != BuildStatus.FULLYBUILT or
+            not successful_copy_from_slave or
             not self.verifySuccessfulUpload()):
             logger.warning("Build %s upload failed." % self.id)
             self.buildstate = BuildStatus.FAILEDTOUPLOAD
@@ -349,7 +365,7 @@ class BuildBase:
         ZERO.
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
-                       % (slave_status['build_id'],
+                       % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
         self.storeBuildInfo(librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not

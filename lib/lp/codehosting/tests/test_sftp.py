@@ -25,7 +25,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.sftp import (
     FatLocalTransport, TransportSFTPServer, FileIsADirectory)
-from lp.codehosting.sshserver.auth import LaunchpadAvatar
+from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import TwistedLayer
 
@@ -107,16 +107,16 @@ class TestSFTPAdapter(TrialTestCase):
         TrialTestCase.setUp(self)
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branchfs_endpoint = XMLRPCWrapper(
-            frontend.getFilesystemEndpoint())
+        self.codehosting_endpoint = XMLRPCWrapper(
+            frontend.getCodehostingEndpoint())
 
-    def makeLaunchpadAvatar(self):
+    def makeCodehostingAvatar(self):
         user = self.factory.makePerson()
         user_dict = dict(id=user.id, name=user.name)
-        return LaunchpadAvatar(user_dict, self.branchfs_endpoint)
+        return CodehostingAvatar(user_dict, self.codehosting_endpoint)
 
     def test_canAdaptToSFTPServer(self):
-        avatar = self.makeLaunchpadAvatar()
+        avatar = self.makeCodehostingAvatar()
         # The adapter logs the SFTPStarted event, which gets the id of the
         # transport attribute of 'avatar'. Here we set transport to an
         # arbitrary object that can have its id taken.

@@ -126,8 +126,8 @@ Here we see the updated values.
     u'.../mugshot.png'
 
 
-Project branding
-----------------
+ProjectGroup branding
+---------------------
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/mozilla/+branding')

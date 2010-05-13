@@ -359,16 +359,19 @@
             <require
                 permission="zope.Public"
                 attributes="
+                    active
                     aliases
                     baseurl
                     bugtrackertype
                     contactdetails
+                    getBugFilingAndSearchLinks
                     getBugsWatching
-                    getBugWatchesNeedingUpdate
                     getLinkedPersonByName
+                    has_lp_plugin
                     id
                     imported_bug_messages
                     latestwatches
+                    multi_product
                     name
                     owner
                     products
@@ -376,17 +379,27 @@
                     summary
                     title
                     watches
-                    getBugFilingAndSearchLinks
-                    has_lp_plugin
-                    multi_product
-                    active"/>
+                    watches_needing_update
+                    watches_ready_to_check
+                    watches_with_unpushed_comments
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf"
-                set_attributes="aliases baseurl bugtrackertype contactdetails                                                                                                         name owner summary title has_lp_plugin"/>
+                set_attributes="
+                    aliases
+                    baseurl
+                    bugtrackertype
+                    contactdetails
+                    has_lp_plugin
+                    name
+                    owner
+                    summary
+                    title
+                    "/>
             <require
                 permission="launchpad.Admin"
                 attributes="resetWatches"
@@ -570,8 +583,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    linkBranch
-                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -670,6 +681,7 @@
                     expireNotifications
                     setStatus
                     setPrivate
+                    setSecurityRelated
                     convertToQuestion
                     markUserAffected
                     addTask
@@ -677,6 +689,8 @@
                     markAsDuplicate
                     linkHWSubmission
                     unlinkHWSubmission
+                    linkBranch
+                    unlinkBranch
                     linkAttachment"
                 set_attributes="
                     activity initial_message
@@ -835,7 +849,9 @@
                     bug
                     bugtasks
                     bugtracker
+                    can_be_rescheduled
                     datecreated
+                    failed_activity
                     getLastErrorMessage
                     hasComment
                     unpushed_comments
@@ -856,7 +872,8 @@
                 permission="launchpad.AnyPerson"
                 attributes="
                     destroySelf
-                    addActivity"
+                    addActivity
+                    setNextCheck"
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"

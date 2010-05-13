@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 from pytz import utc
 from unittest import TestLoader
 
-from zope.component import getUtility
+from zope import component
+from zope.component import getGlobalSiteManager, getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.webapp.interfaces import (
@@ -17,16 +18,17 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import specific_job_classes
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.buildmaster.model.buildqueue import BuildQueue, get_builder_data
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -341,7 +343,7 @@ class SingleArchBuildsBase(TestBuildQueueBase):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -637,7 +639,7 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -843,7 +845,7 @@ class TestJobClasses(TestCaseWithFactory):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -885,9 +887,7 @@ class TestJobClasses(TestCaseWithFactory):
 
     def test_OtherTypeClasses(self):
         """Other job type classes are picked up as well."""
-        from zope import component
-        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-        class FakeBranchBuild(BuildFarmJob):
+        class FakeBranchBuild(BuildFarmJobDerived):
             pass
 
         _build, bq = find_job(self, 'gedit')
@@ -896,17 +896,24 @@ class TestJobClasses(TestCaseWithFactory):
         self.assertTrue(
             specific_job_classes().get(BuildFarmJobType.BRANCHBUILD) is None)
 
-        # Pretend that our `FakeBranchBuild` class implements the
-        # `IBuildFarmJob` interface.
-        component.provideUtility(
-            FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
+        try:
+            # Pretend that our `FakeBranchBuild` class implements the
+            # `IBuildFarmJob` interface.
+            component.provideUtility(
+                FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
 
-        # Now we should see the `FakeBranchBuild` class "registered" in the
-        # `specific_job_classes` dictionary under the 'BRANCHBUILD' key.
-        self.assertEqual(
-            specific_job_classes()[BuildFarmJobType.BRANCHBUILD],
-            FakeBranchBuild)
-
+            # Now we should see the `FakeBranchBuild` class "registered"
+            # in the `specific_job_classes` dictionary under the
+            # 'BRANCHBUILD' key.
+            self.assertEqual(
+                specific_job_classes()[BuildFarmJobType.BRANCHBUILD],
+                FakeBranchBuild)
+        finally:
+            # Just de-register the utility so we don't affect other
+            # tests.
+            site_manager = getGlobalSiteManager()
+            site_manager.unregisterUtility(
+                FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
 
 class TestPlatformData(TestCaseWithFactory):
     """Tests covering the processor/virtualized properties."""
@@ -922,7 +929,7 @@ class TestPlatformData(TestCaseWithFactory):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()

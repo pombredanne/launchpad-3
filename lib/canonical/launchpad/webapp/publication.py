@@ -37,7 +37,7 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import (
-    IDefaultSkin, IBrowserRequest, IBrowserApplicationRequest)
+    IDefaultSkin, IBrowserRequest)
 from zope.publisher.publish import mapply
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
@@ -55,13 +55,12 @@ from lp.registry.interfaces.person import (
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
     IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
-    MASTER_FLAVOR, OffsiteFormPostError, SLAVE_FLAVOR)
+    MASTER_FLAVOR, OffsiteFormPostError, NoReferrerError, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import (
     DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
-from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
@@ -214,9 +213,9 @@ class LaunchpadBrowserPublication(
                     structured("""
                         Launchpad is undergoing maintenance and is in
                         read-only mode. <i>You cannot make any
-                        changes.</i> Please see the <a
-                        href="http://blog.launchpad.net/maintenance">Launchpad
-                        Blog</a> for details.
+                        changes.</i> You can find more information on the
+                        <a href="http://identi.ca/launchpadstatus">Launchpad
+                        system status</a> page.
                         """))
 
     def getPrincipal(self, request):
@@ -318,7 +317,7 @@ class LaunchpadBrowserPublication(
         if request.method != 'POST':
             return
         # XXX: jamesh 2007-11-23 bug=124421:
-        # Allow offsite posts to our OpenID endpoint.  Ideally we'd
+        # Allow offsite posts to our TestOpenID endpoint.  Ideally we'd
         # have a better way of marking this URL as allowing offsite
         # form posts.
         if request['PATH_INFO'] == '/+openid':
@@ -326,7 +325,8 @@ class LaunchpadBrowserPublication(
         if (IOAuthSignedRequest.providedBy(request)
             or not IBrowserRequest.providedBy(request)
             or request['PATH_INFO']  in (
-                '/+storeblob', '/+request-token', '/+access-token')):
+                '/+storeblob', '/+request-token', '/+access-token',
+                '/+hwdb/+submit')):
             # We only want to check for the referrer header if we are
             # in the middle of a request initiated by a web browser. A
             # request to the web service (which is necessarily
@@ -343,6 +343,12 @@ class LaunchpadBrowserPublication(
             # +request-token and +access-token without providing a
             # Referer.
             #
+            # XXX Abel Deuring 2010-04-09 bug=550973
+            # The HWDB client "checkbox" accesses /+hwdb/+submit without
+            # a referer. This will change in the version in Ubuntu 10.04,
+            # but Launchpad should support HWDB submissions from older
+            # Ubuntu versions during their support period.
+            #
             # We'll have to keep an application's one-off exception
             # until the application has been changed to send a
             # Referer, and until we have no legacy versions of that
@@ -353,7 +359,7 @@ class LaunchpadBrowserPublication(
             return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
-            raise OffsiteFormPostError('No value for REFERER header')
+            raise NoReferrerError('No value for REFERER header')
         # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no

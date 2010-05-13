@@ -610,7 +610,7 @@ class POTFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation template."""
 
-        assert(translation_import_queue_entry.pofile is None,
+        assert translation_import_queue_entry.pofile is None, (
             "Pofile must be None when importing a template.")
 
         # Call base constructor
@@ -686,7 +686,7 @@ class POFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation file."""
 
-        assert(translation_import_queue_entry.pofile is not None,
+        assert translation_import_queue_entry.pofile is not None, (
             "Pofile must not be None when importing a translation.")
 
         # Call base constructor

@@ -92,7 +92,8 @@ When we are on the first message, we should be 100% sure that the 'First' and
 
 And the link to the IPOFile view should be there too:
 
-  >>> print browser.getLink('Return to multiple messages view').url
+  >>> zoom_link = browser.getLink(id="zoom-out")
+  >>> print zoom_link.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0
 
 when we choose the next entry, all links should appear.
@@ -110,7 +111,8 @@ when we choose the next entry, all links should appear.
 
 And the link to the IPOFile view should be there too:
 
-  >>> print browser.getLink('Return to multiple messages view').url
+  >>> zoom_link = browser.getLink(id="zoom-out")
+  >>> print zoom_link.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1
 
 And the last one.
@@ -134,7 +136,8 @@ And the last one.
 
 And the link to the IPOFile view should be there too:
 
-  >>> print browser.getLink('Return to multiple messages view').url
+  >>> zoom_link = browser.getLink(id="zoom-out")
+  >>> print zoom_link.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21
 
 Let's test the ones at the end of the form.

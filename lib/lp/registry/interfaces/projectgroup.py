@@ -3,7 +3,7 @@
 
 # pylint: disable-msg=E0211,E0213
 
-"""Project-related interfaces for Launchpad."""
+"""ProjectGroup-related interfaces for Launchpad."""
 
 __metaclass__ = type
 
@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -25,6 +25,7 @@ from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot)
@@ -45,7 +46,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
-from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_read_operation, exported,
@@ -236,8 +237,8 @@ class IProjectGroupPublic(
                           "reviewed.")))
 
     bugtracker = exported(
-        Choice(title=_('Bug Tracker'), required=False,
-               vocabulary='BugTracker',
+        ReferenceChoice(title=_('Bug Tracker'), required=False,
+               vocabulary='BugTracker', schema=IBugTracker,
                description=_(
                 "The bug tracker the projects in this project group use.")),
         exported_as="bug_tracker")
@@ -275,12 +276,12 @@ class IProjectGroupPublic(
         """
 
     def getSeries(series_name):
-        """Return a ProjectSeries object with name `series_name`."""
+        """Return a ProjectGroupSeries object with name `series_name`."""
 
 
 class IProjectGroup(IProjectGroupPublic, IStructuralSubscriptionTarget,
                ITranslationPolicy):
-    """A Project."""
+    """A ProjectGroup."""
 
     export_as_webservice_entry('project_group')
 
@@ -339,13 +340,13 @@ class IProjectGroupSet(Interface):
         applications."""
 
     def forReview():
-        """Return a list of Projects which need review, or which have
+        """Return a list of ProjectGroups which need review, or which have
         products that needs review."""
 
 
 class IProjectGroupSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                      IHasOwner):
-    """Interface for ProjectSeries.
+    """Interface for ProjectGroupSeries.
 
     This class provides the specifications related to a "virtual project
     series", i.e., to those specifactions that are assigned to a series
