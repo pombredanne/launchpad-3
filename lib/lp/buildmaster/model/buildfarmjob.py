@@ -81,7 +81,7 @@ class BuildFarmJobOld:
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJobOld`."""
-        return ('')
+        raise NotImplementedError
 
     @staticmethod
     def postprocessCandidate(job, logger):
@@ -155,6 +155,11 @@ class BuildFarmJobOldDerived:
         after themselves correctly.
         """
         Store.of(self).remove(self)
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `IBuildFarmJobOld`."""
+        return ('')
 
 
 class BuildFarmJob(BuildFarmJobOld, Storm):

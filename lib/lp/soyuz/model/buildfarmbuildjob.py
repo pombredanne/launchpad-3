@@ -36,15 +36,16 @@ class BuildFarmBuildJob(BuildFarmJobOld):
 
     def jobStarted(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.status = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
+        self.build.date_started = UTC_NOW
         if self.build.date_first_dispatched is None:
             self.build.date_first_dispatched = UTC_NOW
 
     def jobReset(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.build.status = BuildStatus.NEEDSBUILD
 
     def jobAborted(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.build.status = BuildStatus.NEEDSBUILD

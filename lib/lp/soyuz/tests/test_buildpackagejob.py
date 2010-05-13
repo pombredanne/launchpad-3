@@ -236,3 +236,11 @@ class TestBuildPackageJob(TestBuildJobBase):
         build_farm_job = bq.specific_job
         self.assertProvides(build_farm_job, IBuildPackageJob)
         self.assertProvides(build_farm_job, IBuildFarmBuildJob)
+
+    def test_jobStarted(self):
+        # Starting a build updates the status.
+        build, bq = find_job(self, 'gcc', '386')
+        build_package_job = bq.specific_job
+        build_package_job.jobStarted()
+        self.failUnlessEqual(
+            BuildStatus.BUILDING, build_package_job.build.status)
