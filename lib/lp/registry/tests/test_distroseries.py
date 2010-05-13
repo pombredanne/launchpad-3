@@ -353,7 +353,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables, self._ref_translatables()))
 
         new_sourcepackagename = self.factory.makeSourcePackageName()
-        new_potemplate = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=new_distroseries,
             sourcepackagename=new_sourcepackagename)
         transaction.commit()
@@ -382,7 +382,6 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
     def test_fromSuite_non_release_pocket(self):
         series = self.factory.makeDistroRelease()
-        pocket = PackagePublishingPocket.BACKPORTS
         suite = '%s-backports' % series.name
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, suite)
