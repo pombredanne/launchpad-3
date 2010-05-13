@@ -130,8 +130,6 @@ by clicking the "Update Now" button.
 
 For a new watch, the "Update Now" button isn't shown.
 
-    >>> from pytz import utc
-    >>> from datetime import datetime, timedelta
     >>> login('foo.bar@canonical.com')
     >>> bug_watch = factory.makeBugWatch()
     >>> bug_watch.next_check = None
@@ -203,8 +201,6 @@ The button will no longer be shown on the page.
 If a watch has run once and failed once, the reschedule button will be
 shown.
 
-    >>> from pytz import utc
-    >>> from datetime import datetime, timedelta
     >>> login('foo.bar@canonical.com')
     >>> bug_watch = factory.makeBugWatch()
     >>> bug_watch.next_check = None
@@ -222,3 +218,21 @@ shown.
     ...     user_browser.contents, 'informational message'):
     ...     print extract_text(message)
     The ... bug watch has been scheduled for immediate checking.
+
+However, once the watch succeeds the button will disappear, even though
+the watch has failed > 60% of the time. This is because the most recent
+check succeeded, so there's no point in allowing users to reschedule the
+watch for checking.
+
+    >>> from datetime import timedelta
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch.next_check = datetime.now(utc) + timedelta(days=7)
+    >>> bug_watch.addActivity()
+    >>> logout()
+
+    >>> user_browser.open(watch_url)
+    >>> user_browser.getControl('Update Now')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Update Now'
