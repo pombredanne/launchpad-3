@@ -502,10 +502,11 @@ class CookieLogoutPage:
 
     def logout(self):
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
-            _(u'You have been logged out')
-            )
-        target = '%s/?loggingout=1' % self.request.URL[-1]
+        openid_vhost = config.launchpad.openid_provider_vhost
+        openid_root = allvhosts.configs[openid_vhost].rooturl
+        target = '%s+logout?%s' % (
+            config.codehosting.secure_codebrowse_root,
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root,))))
         self.request.response.redirect(target)
         return ''
 
