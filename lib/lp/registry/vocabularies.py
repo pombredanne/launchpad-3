@@ -441,7 +441,9 @@ class ValidPersonOrTeamVocabulary(
                 # visible.
                 private_query = AND(
                     Not(Person.teamowner == None),
-                    Person.visibility == PersonVisibility.PRIVATE)
+                    Person.visibility in (
+                        PersonVisibility.PRIVATE,
+                        PersonVisibility.PRIVATE_MEMBERSHIP))
             else:
                 private_query = AND(
                     TeamParticipation.person == logged_in_user.id,
