@@ -12,6 +12,8 @@ import logging
 import operator
 
 from storm.locals import Int, Reference
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -290,10 +292,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
         self.status = BuildStatus.NEEDSBUILD
-        self.datebuilt = None
-        self.buildduration = None
+        self.date_finished = None
+        self.date_started = None
         self.builder = None
-        self.buildlog = None
+        self.log = None
         self.upload_log = None
         self.dependencies = None
         self.queueBuild()
@@ -706,7 +708,7 @@ class BinaryPackageBuildSet:
         package_build = getUtility(IPackageBuildSource).new(
             BinaryPackageBuild.build_farm_job_type,
             archive.require_virtualized, archive, pocket, processor,
-            status) #, date_created)
+            status, date_created=date_created)
 
         binary_package_build = BinaryPackageBuild(
             package_build=package_build,
@@ -717,8 +719,9 @@ class BinaryPackageBuildSet:
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         """See `IBinaryPackageBuildSet`"""
         clauseTables = ['DistroArchSeries']
-        query = ('Build.sourcepackagerelease = %s '
-                 'AND Build.distroarchseries = DistroArchSeries.id '
+        query = ('BinaryPackageBuild.source_package_release = %s '
+                 'AND BinaryPackageBuild.distro_arch_series = '
+                     'DistroArchSeries.id '
                  'AND DistroArchSeries.architecturetag = %s'
                  % sqlvalues(sourcepackagereleaseID, archtag)
                  )
@@ -902,7 +905,7 @@ class BinaryPackageBuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
-            orderBy = ["-BuildQueue.lastscore", "Build.id"]
+            orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
             condition_clauses.append(
@@ -945,9 +948,14 @@ class BinaryPackageBuildSet:
         logger = logging.getLogger('retry-depwait')
 
         # Get the MANUALDEPWAIT records for all archives.
-        candidates = BinaryPackageBuild.selectBy(
-            status=BuildStatus.MANUALDEPWAIT,
-            distro_arch_series=distroarchseries)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        candidates = store.find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.distro_arch_series == distroarchseries,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status == BuildStatus.MANUALDEPWAIT)
 
         candidates_count = candidates.count()
         if candidates_count == 0:
@@ -977,17 +985,19 @@ class BinaryPackageBuildSet:
             return []
 
         query = """
-            sourcepackagerelease IN %s AND
-            archive.id = build.archive AND
-            archive.purpose != %s
+            source_package_release IN %s AND
+            package_build = packagebuild.id AND
+            archive.id = packagebuild.archive AND
+            archive.purpose != %s AND
+            packagebuild.build_farm_job = buildfarmjob.id
             """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
 
         if buildstate is not None:
-            query += "AND buildstate = %s" % sqlvalues(buildstate)
+            query += "AND buildfarmjob.status = %s" % sqlvalues(buildstate)
 
         return BinaryPackageBuild.select(
-            query, orderBy=["-datecreated", "id"],
-            clauseTables=["Archive"])
+            query, orderBy=["-buildfarmjob.date_created", "id"],
+            clauseTables=["Archive", "PackageBuild", "BuildFarmJob"])
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""

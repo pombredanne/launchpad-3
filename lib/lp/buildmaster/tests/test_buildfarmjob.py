@@ -140,6 +140,16 @@ class TestBuildFarmJob(TestBuildFarmJobBase):
         naked_bfj.date_finished = now + duration
         self.failUnlessEqual(duration, self.build_farm_job.duration)
 
+    def test_date_created(self):
+        # date_created can be passed optionally when creating a
+        # bulid farm job to ensure we don't get identical timestamps
+        # when transactions are committed.
+        ten_years_ago = datetime.now(pytz.UTC) - timedelta(365*10)
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            job_type=BuildFarmJobType.PACKAGEBUILD,
+            date_created=ten_years_ago)
+        self.failUnlessEqual(ten_years_ago, build_farm_job.date_created)
+
 
 class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
 

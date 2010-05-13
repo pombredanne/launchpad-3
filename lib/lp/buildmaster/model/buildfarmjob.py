@@ -195,7 +195,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
-                 processor=None, virtualized=None):
+                 processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
         self.job_type, self.status, self.processor, self.virtualized = (
             job_type,
@@ -203,13 +203,15 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
             processor,
             virtualized,
             )
+        if date_created is not None:
+            self.date_created = date_created
 
     @classmethod
     def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None):
+            virtualized=None, date_created=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized)
+            job_type, status, processor, virtualized, date_created)
 
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
