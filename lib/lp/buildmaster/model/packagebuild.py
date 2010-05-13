@@ -107,6 +107,11 @@ class PackageBuild(BuildFarmJobDerived, Storm):
             return None
         return ProxiedLibraryFileAlias(self.log, self).http_url
 
+    @property
+    def is_private(self):
+        """See `IBuildBase`"""
+        return self.archive.private
+
     def getUploadDirLeaf(self, build_cookie, now=None):
         """See `IPackageBuild`."""
         return BuildBase.getUploadDirLeaf(build_cookie, now)

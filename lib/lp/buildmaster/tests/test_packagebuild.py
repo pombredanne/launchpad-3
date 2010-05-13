@@ -122,6 +122,16 @@ class TestPackageBuild(TestPackageBuildBase):
             hashlib.sha1("Some content").hexdigest(),
             self.package_build.upload_log.content.sha1)
 
+    def test_storeUploadLog_private(self):
+        # A private package build will store the upload log on the
+        # restricted librarian.
+        login('admin@canonical.com')
+        self.package_build.archive.buildd_secret = 'sekrit'
+        self.package_build.archive.private = True
+        self.failUnless(self.package_build.is_private)
+        self.package_build.storeUploadLog("Some content")
+        self.failUnless(self.package_build.upload_log.restricted)
+
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
         Store.of(self.package_build).flush()

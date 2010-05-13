@@ -185,11 +185,6 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         return self.archive.require_virtualized
 
     @property
-    def is_private(self):
-        """See `IBuildBase`"""
-        return self.archive.private
-
-    @property
     def title(self):
         """See `IBuild`"""
         return '%s build of %s %s in %s %s %s' % (
