@@ -320,22 +320,20 @@ class POTMsgSet(SQLBase):
         return DummyTranslationMessage(pofile, self)
 
     def _getUsedTranslationMessage(self, potemplate, language, variant,
-                                   side=TranslationSide.UPSTREAM):
+                                   current=True):
         """Get a translation message which is either used in
         Launchpad (current=True) or in an import (current=False).
-
+        
         Prefers a diverged message if present.
         """
-        # Change the is_current_ubuntu and is_current_upstream conditions
-        # with extreme care: they need to match condition specified in
-        # indexes, or postgres may not pick them up (in complicated queries,
-        # postgres query optimizer sometimes does text-matching of indexes).
-        if side == TranslationSide.UPSTREAM:
-            used_clause = 'is_current_upstream IS TRUE'
+        # Change 'is_current IS TRUE' and 'is_imported IS TRUE' conditions
+        # carefully: they need to match condition specified in indexes,
+        # or Postgres may not pick them up (in complicated queries,
+        # Postgres query optimizer sometimes does text-matching of indexes).
+        if current:
+            used_clause = 'is_current IS TRUE'
         else:
-            assert side == TranslationSide.UBUNTU, "What side are you on?"
-            used_clause = 'is_current_ubuntu IS TRUE'
-
+            used_clause = 'is_imported IS TRUE'
         if potemplate is None:
             template_clause = 'TranslationMessage.potemplate IS NULL'
         else:
@@ -364,18 +362,18 @@ class POTMsgSet(SQLBase):
                                      language, variant=None):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
-            potemplate, language, variant, side=TranslationSide.UBUNTU)
+            potemplate, language, variant, current=True)
 
     def getImportedTranslationMessage(self, potemplate,
                                       language, variant=None):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
-            potemplate, language, variant, side=TranslationSide.UPSTREAM)
+            potemplate, language, variant, current=False)
 
     def getSharedTranslationMessage(self, language, variant=None):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
-            None, language, variant, side=TranslationSide.UBUNTU)
+            None, language, variant, current=True)
 
     def getLocalTranslationMessages(self, potemplate, language,
                                     include_dismissed=False,
