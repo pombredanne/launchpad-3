@@ -92,7 +92,7 @@ Re-trying builds
 
 If a build is in a retry-able state, the retry method can be invoked
 to cause a new build request for that build.  The caller must also have
-permission to retry the build.  See doc/build.txt and
+permission to retry the build.  See doc/binarypackagebuild.txt and
 stories/soyuz/xx-build-record.txt for more information.
 
     >>> a_build = builds['entries'][0]
