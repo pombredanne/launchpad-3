@@ -29,6 +29,7 @@ from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
 from lp.services.job.model.job import Job
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationtemplatesbuildjob import (
@@ -82,6 +83,16 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertIsInstance(buildqueue, BuildQueue)
         self.assertEqual(job_id, get_job_id(buildqueue.job))
+
+    def test_BuildQueue_for_i386(self):
+        # BuildQueue entry is for i386 architecture.
+        queueset = getUtility(IBuildQueueSet)
+        job_id = get_job_id(self.specific_job.job)
+        buildqueue = queueset.get(job_id)
+
+        processor_set = getUtility(IProcessorFamilySet)
+        i386 = processor_set.getByProcessorName('386').processors[0]
+        self.assertEquals(i386, buildqueue.processor)
 
     def test_getName(self):
         # Each job gets a unique name.
