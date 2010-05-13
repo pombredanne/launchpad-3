@@ -10,6 +10,7 @@ import hashlib
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -20,7 +21,7 @@ from lp.buildmaster.interfaces.packagebuild import (
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.test_buildbase import TestBuildBaseMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 
 
 class TestPackageBuildBase(TestCaseWithFactory):
@@ -132,6 +133,37 @@ class TestPackageBuild(TestPackageBuildBase):
             '+archive/ppa/+build/%d/+files/upload_%d_log.txt' % (
                 build_id, build_id),
             log_url)
+
+    def test_view_package_build(self):
+        # Anonymous access can read public builds, but not edit.
+        self.failUnlessEqual(
+            None, self.package_build.dependencies)
+        self.assertRaises(
+            Unauthorized, setattr, self.package_build,
+            'dependencies', u'my deps')
+
+    def test_edit_package_build(self):
+        # An authenticated user who belongs to the owning archive team
+        # can edit the build.
+        login_person(self.package_build.archive.owner)
+        self.package_build.dependencies = u'My deps'
+        self.failUnlessEqual(
+            u'My deps', self.package_build.dependencies)
+
+        # But other users cannot.
+        other_person = self.factory.makePerson()
+        login_person(other_person)
+        self.assertRaises(
+            Unauthorized, setattr, self.package_build,
+            'dependencies', u'my deps')
+
+
+    def test_admin_package_build(self):
+        # Users with edit access can update attributes.
+        login('admin@canonical.com')
+        self.package_build.dependencies = u'My deps'
+        self.failUnlessEqual(
+            u'My deps', self.package_build.dependencies)
 
 
 def test_suite():

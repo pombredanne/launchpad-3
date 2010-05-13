@@ -11,6 +11,7 @@ import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -20,22 +21,25 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSource)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import TestCaseWithFactory
+from lp.testing import login, TestCaseWithFactory
 
 
-class TestBuildFarmJob(TestCaseWithFactory):
-    """Tests for the build farm job object."""
+class TestBuildFarmJobBase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Create a build farm job with which to test."""
-        super(TestBuildFarmJob, self).setUp()
+        super(TestBuildFarmJobBase, self).setUp()
         self.build_farm_job = self.makeBuildFarmJob()
 
     def makeBuildFarmJob(self):
         return getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD)
+
+
+class TestBuildFarmJob(TestBuildFarmJobBase):
+    """Tests for the build farm job object."""
 
     def test_providesInterface(self):
         # BuildFarmJob provides IBuildFarmJob
@@ -135,6 +139,24 @@ class TestBuildFarmJob(TestCaseWithFactory):
         naked_bfj.date_started = now
         naked_bfj.date_finished = now + duration
         self.failUnlessEqual(duration, self.build_farm_job.duration)
+
+
+class TestBuildFarmJobSecurity(TestBuildFarmJobBase):
+
+    def test_view_build_farm_job(self):
+        # Anonymous access can read public builds, but not edit.
+        self.failUnlessEqual(
+            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.assertRaises(
+            Unauthorized, setattr, self.build_farm_job,
+            'status', BuildStatus.FULLYBUILT)
+
+    def test_edit_build_farm_job(self):
+        # Users with edit access can update attributes.
+        login('admin@canonical.com')
+        self.build_farm_job.status = BuildStatus.FULLYBUILT
+        self.failUnlessEqual(
+            BuildStatus.FULLYBUILT, self.build_farm_job.status)
 
 
 def test_suite():

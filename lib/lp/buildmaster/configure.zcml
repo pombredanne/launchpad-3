@@ -47,6 +47,9 @@
         class="lp.buildmaster.model.buildfarmjob.BuildFarmJob">
         <allow
             interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="status"/>
     </class>
     <securedutility
         component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
@@ -56,6 +59,22 @@
             interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource" />
     </securedutility>
 
+    <!-- PackageBuild -->
+    <class
+        class="lp.buildmaster.model.packagebuild.PackageBuild">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuild" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="dependencies"/>
+    </class>
+
+    <securedutility
+        component="lp.buildmaster.model.packagebuild.PackageBuild"
+        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource" />
+    </securedutility>
 
     <!-- BuildQueue -->
     <class
@@ -80,17 +99,5 @@
             interface="lp.buildmaster.interfaces.buildqueue.IBuildQueueSet"/>
     </securedutility>
 
-    <class
-        class="lp.buildmaster.model.packagebuild.PackageBuild">
-        <allow
-            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuild" />
-    </class>
-
-    <securedutility
-        component="lp.buildmaster.model.packagebuild.PackageBuild"
-        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource">
-        <allow
-            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource" />
-    </securedutility>
 
 </configure>

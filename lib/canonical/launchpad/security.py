@@ -39,7 +39,9 @@ from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, IBuildFarmJobOld)
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -1446,10 +1448,29 @@ class EditBuilder(AdminByBuilddAdmin):
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):
-    usedfor = IBinaryPackageBuild
+    usedfor = IBuildFarmJob
 
 
-class EditBuildRecord(AdminByBuilddAdmin):
+class EditBuildFarmJob(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuildFarmJob
+
+
+class EditPackageBuild(EditBuildFarmJob):
+    usedfor = IPackageBuild
+
+    def checkAuthenticated(self, user):
+        """Check if the user has access to edit the archive."""
+        if EditBuildFarmJob.checkAuthenticated(self, user):
+            return True
+
+        # If the user is in the owning team for the archive,
+        # then they have access to edit the builds.
+        # If it's a PPA or a copy archive only allow its owner.
+        return (self.obj.archive.owner and
+                user.inTeam(self.obj.archive.owner))
+
+class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
     usedfor = IBinaryPackageBuild
 
@@ -1462,29 +1483,26 @@ class EditBuildRecord(AdminByBuilddAdmin):
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+        if EditPackageBuild.checkAuthenticated(self, user):
             return True
-
-        # If it's a PPA or a copy archive only allow its owner.
-        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
-            return (self.obj.archive.owner and
-                    user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component, packageset or package? Allow
         # user to retry build if so.
         # strict_component is True because the source package already exists,
         # otherwise, how can they give it back?
-        check_perms = check_upload_to_archive(
-            user.person, self.obj.distro_series,
-            self.obj.source_package_release.sourcepackagename,
-            self.obj.archive,
-            self.obj.current_component, self.obj.pocket,
-            strict_component=True)
-        return check_perms == None
+        if self.obj.archive.is_main:
+            check_perms = check_upload_to_archive(
+                user.person, self.obj.distro_series,
+                self.obj.source_package_release.sourcepackagename,
+                self.obj.archive,
+                self.obj.current_component, self.obj.pocket,
+                strict_component=True)
+            return check_perms == None
+        return False
 
 
-class ViewBuildRecord(EditBuildRecord):
+class ViewBinaryPackageBuild(EditBinaryPackageBuild):
     permission = 'launchpad.View'
 
     # This code MUST match the logic in
@@ -1526,14 +1544,14 @@ class ViewBuildRecord(EditBuildRecord):
         return auth_spr.checkUnauthenticated()
 
 
-class ViewBuildFarmJob(AuthorizationBase):
-    """Permission to view an `IBuildFarmJob`.
+class ViewBuildFarmJobOld(AuthorizationBase):
+    """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
     associated `IBinaryPackageBuild` and/or `IBranch`.
     """
     permission = 'launchpad.View'
-    usedfor = IBuildFarmJob
+    usedfor = IBuildFarmJobOld
 
     def _getBranch(self):
         """Get `IBranch` associated with this job, if any."""
@@ -1551,7 +1569,7 @@ class ViewBuildFarmJob(AuthorizationBase):
 
     def _checkBuildPermission(self, user=None):
         """Check access to `IBuildBase` for this job."""
-        permission = ViewBuildRecord(self.obj.build)
+        permission = ViewBinaryPackageBuild(self.obj.build)
         if user is None:
             return permission.checkUnauthenticated()
         else:
