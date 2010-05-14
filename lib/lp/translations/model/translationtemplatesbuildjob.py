@@ -136,9 +136,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
         """Returns an `IProcessor` to queue a translation build for."""
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         # A round-about way of hard-coding i386.
-        distroarchseries = removeSecurityProxy(
-            ubuntu.currentseries.nominatedarchindep)
-        return distroarchseries.default_processor
+        return ubuntu.currentseries.nominatedarchindep.default_processor
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
