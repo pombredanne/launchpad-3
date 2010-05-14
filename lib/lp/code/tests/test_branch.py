@@ -16,11 +16,8 @@ from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.tests.helpers import make_official_package_branch
 from lp.code.xmlrpc.branch import PublicCodehostingAPI
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
 
