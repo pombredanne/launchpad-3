@@ -350,6 +350,11 @@ class BugWatch(SQLBase):
             # failed.
             return False
 
+        if self.failed_activity.count() == 1 and self.activity.count() == 1:
+            # In cases where a watch has been updated once and failed,
+            # we allow the user to reschedule it.
+            return True
+
         # If the ratio is lower than the reschedule threshold, we
         # can show the button.
         failure_ratio = (
