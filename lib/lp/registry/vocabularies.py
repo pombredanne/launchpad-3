@@ -1332,7 +1332,6 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         query = query.lower()
         like_query = "'%%' || %s || '%%'" % quote_like(query)
-        fti_query = quote(query)
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
@@ -1459,7 +1458,8 @@ class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
             return IDistribution.providedBy(obj)
 
 
-class FeaturedProjectVocabulary(DistributionOrProductOrProjectGroupVocabulary):
+class FeaturedProjectVocabulary(
+                               DistributionOrProductOrProjectGroupVocabulary):
     """Vocabulary of projects that are featured on the LP Home Page."""
 
     _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,
