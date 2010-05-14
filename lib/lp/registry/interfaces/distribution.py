@@ -295,6 +295,18 @@ class IDistributionPublic(
     def __iter__():
         """Iterate over the series for this distribution."""
 
+    @operation_parameters(
+        name=TextLine(title=_("Archive name"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getArchive(name):
+        """Return the distribution archive with the given name.
+
+        Only distribution archives are considered -- PPAs will not be found.
+
+        :param name: The name of the archive, e.g. 'partner'
+        """
+
     # Really IDistroSeries, see _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
