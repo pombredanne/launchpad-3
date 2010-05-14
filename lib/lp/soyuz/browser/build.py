@@ -227,7 +227,7 @@ class BuildView(LaunchpadView):
         in state WAITING.
         """
         return (
-            self.context.buildstate == BuildStatus.NEEDSBUILD and
+            self.context.status == BuildStatus.NEEDSBUILD and
             self.context.buildqueue_record.job.status == JobStatus.WAITING)
 
 

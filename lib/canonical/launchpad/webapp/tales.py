@@ -1008,10 +1008,10 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 
-        alt = '[%s]' % self._context.buildstate.name
-        title = self._context.buildstate.title
-        source = icon_map[self._context.buildstate].get('src')
-        width = icon_map[self._context.buildstate].get('width', '14')
+        alt = '[%s]' % self._context.status.name
+        title = self._context.status.title
+        source = icon_map[self._context.status].get('src')
+        width = icon_map[self._context.status].get('width', '14')
 
         return self.icon_template % {
             'alt': alt,
