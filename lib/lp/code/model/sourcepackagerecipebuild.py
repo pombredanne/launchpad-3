@@ -253,7 +253,7 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
 
     @property
     def processor(self):
-        return self.build.distroseries.nominatedarchindep
+        return self.build.distroseries.nominatedarchindep.default_processor
 
     virtualized = True
 
