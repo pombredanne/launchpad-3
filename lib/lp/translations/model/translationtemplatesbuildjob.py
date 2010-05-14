@@ -120,6 +120,8 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
         specific_job = TranslationTemplatesBuildJob(branch_job)
         duration_estimate = cls.duration_estimate
 
+        # XXX Danilo Segan: we hard-code processor to the Ubuntu
+        # default processor architecture.  See bug 580429.
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
