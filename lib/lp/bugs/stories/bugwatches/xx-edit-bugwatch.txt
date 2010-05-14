@@ -200,3 +200,25 @@ The button will no longer be shown on the page.
       ...
     LookupError: label 'Update Now'
 
+If a watch has run once and failed once, the reschedule button will be
+shown.
+
+    >>> from pytz import utc
+    >>> from datetime import datetime, timedelta
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch = factory.makeBugWatch()
+    >>> bug_watch.next_check = None
+    >>> bug_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> watch_url = (
+    ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
+    ...     (bug_watch.bug.id, bug_watch.id))
+    >>> logout()
+
+    >>> user_browser.open(watch_url)
+    >>> reschedule_button = user_browser.getControl('Update Now')
+    >>> reschedule_button.click()
+
+    >>> for message in find_tags_by_class(
+    ...     user_browser.contents, 'informational message'):
+    ...     print extract_text(message)
+    The ... bug watch has been scheduled for immediate checking.
