@@ -140,19 +140,17 @@ heartbeat for some time.
 The setQuiescing method sets the machine's state to QUIESCING and
 records the corresponding event.  A user is passed into the method
 to be recorded in the event, and will in almost all cases be a
-member of vcs-imports.
+member of the bazaar experts or more likely a LOSA (administrator).
 
-    >>> login('david.allouche@canonical.com')
+    >>> login('admin@canonical.com')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> ddaa = getUtility(ILaunchBag).user
-    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
-    True
+    >>> admin = getUtility(ILaunchBag).user
 
     >>> new_machine.setOnline()
     >>> new_events = NewEvents()
-    >>> new_machine.setQuiescing(ddaa, "1.1.42 rollout")
+    >>> new_machine.setQuiescing(admin, "1.1.42 rollout")
     >>> print new_events.summary()
-    QUIESCE frobisher ddaa
+    QUIESCE frobisher name16
 
     >>> [new_event] = new_events
     >>> dict(new_event.items())[CodeImportEventDataType.MESSAGE]
@@ -210,7 +208,7 @@ execution makes redundant calls to this method.
 Attempting the transition from OFFLINE to QUIESCING is also logic error.
 
     >>> offline_machine = new_machine_with_state(OFFLINE)
-    >>> offline_machine.setQuiescing(ddaa, "No worky!")
+    >>> offline_machine.setQuiescing(admin, "No worky!")
     Traceback (most recent call last):
     ...
     AssertionError: State of machine ... was OFFLINE.
@@ -219,7 +217,7 @@ From the ONLINE state, a machine can go OFFLINE or QUIESCING, setOnline
 must fail.
 
     >>> online_machine = new_machine_with_state(ONLINE)
-    >>> online_machine.setQuiescing(ddaa, "Because.")
+    >>> online_machine.setQuiescing(admin, "Because.")
     >>> print online_machine.state.name
     QUIESCING
 
@@ -243,7 +241,7 @@ setQuiescing method must fail.
     ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
-    >>> quiescing_machine.setQuiescing(ddaa, "No worky!")
+    >>> quiescing_machine.setQuiescing(admin, "No worky!")
     Traceback (most recent call last):
     ...
     AssertionError: State of machine ... was QUIESCING.

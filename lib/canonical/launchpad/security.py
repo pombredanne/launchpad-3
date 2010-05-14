@@ -551,14 +551,6 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
-class AdminSeriesByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IProductSeries
-
-    def checkAuthenticated(self, user):
-        return user.in_vcs_imports
-
-
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone
@@ -1101,11 +1093,6 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_vcs_imports
 
 
-class AdminTheBazaar(OnlyVcsImportsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IBazaarApplication
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
@@ -1136,7 +1123,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportJobWorkflow
 
 
-class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
+class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
     Access is restricted to members of ~vcs-imports and Launchpad admins.
