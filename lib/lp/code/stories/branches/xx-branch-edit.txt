@@ -315,7 +315,10 @@ member of, like ubuntu-branches.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.tests.helpers import make_official_package_branch
-    >>> branch = make_official_package_branch(factory)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> owner = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> branch = make_official_package_branch(factory, owner=owner)
     >>> editor = factory.makePerson(
     ...     name='editor', email='editor@example.com', password='test')
     >>> # Give editor upload rights.
@@ -333,5 +336,13 @@ to the editor, they stay as the default owner for this branch.
     >>> browser = setupBrowser(auth='Basic editor@example.com:test')
     >>> browser.open(branch_url)
     >>> browser.getLink('Change branch details').click()
+
+The owner is still ubuntu-branches.
+
     >>> browser.getControl('Owner').displayValue
     ['Ubuntu branches (ubuntu-branches)']
+
+But the editor has the option to change the owner to themselves.
+
+    >>> browser.getControl('Owner').displayOptions
+    ['Ubuntu branches (ubuntu-branches)', 'Editor (editor)']
