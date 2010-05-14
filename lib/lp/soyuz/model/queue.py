@@ -526,7 +526,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             archs.append('source')
         for queue_build in self.builds:
-            archs.append(queue_build.build.distroarchseries.architecturetag)
+            archs.append(queue_build.build.distro_arch_series.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
         return ", ".join(archs)
