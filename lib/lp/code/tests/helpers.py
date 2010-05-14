@@ -230,9 +230,9 @@ def make_mint_distro_with_branches(factory):
                 owner=mint_team, registrant=albert)
 
 
-def make_official_package_branch(factory):
+def make_official_package_branch(factory, owner=None):
     """Make a branch linked to the pocket of a source package."""
-    branch = factory.makePackageBranch()
+    branch = factory.makePackageBranch(owner=owner)
     # Make sure the (distroseries, pocket) combination used allows us to
     # upload to it.
     stable_states = (
