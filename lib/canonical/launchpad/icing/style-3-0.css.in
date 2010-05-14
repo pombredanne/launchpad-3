@@ -1656,7 +1656,9 @@ a.unofficial-tag {
 .distromirrorstatusONEHOURBEHIND,
 .distromirrorstatusTWOHOURSBEHIND,
 .distromirrorstatusFOURHOURSBEHIND,
-.distromirrorstatusSIXHOURSBEHIND,
+.distromirrorstatusSIXHOURSBEHIND {
+    color: green;
+    }
 .distromirrorstatusONEDAYBEHIND {
     color: #f60;
     }

@@ -12,6 +12,9 @@ __all__ = [
 
 import re
 import urllib
+
+from datetime import datetime
+from pytz import utc
 from urlparse import urlunsplit
 
 from zope.event import notify
@@ -44,8 +47,9 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchActivityStatus, IBugWatch, IBugWatchActivity, IBugWatchSet,
-    NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, BugWatchActivityStatus,
+    BugWatchCannotBeRescheduled, IBugWatch, IBugWatchActivity,
+    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -64,6 +68,25 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.SAVANE:      'bugs/?%s',
     BugTrackerType.PHPPROJECT:  'bug.php?id=%s',
     }
+
+
+WATCH_RESCHEDULE_THRESHOLD = 0.6
+
+def get_bug_watch_ids(references):
+    """Yield bug watch IDs from any given iterator.
+
+    For each item in the given iterators, yields the ID if it provides
+    IBugWatch, and yields if it is an integer. Everything else is
+    discarded.
+    """
+    for reference in references:
+        if IBugWatch.providedBy(reference):
+            yield reference.id
+        elif isinstance(reference, (int, long)):
+            yield reference
+        else:
+            raise AssertionError(
+                '%r is not a bug watch or an ID.' % (reference,))
 
 
 class BugWatch(SQLBase):
@@ -212,6 +235,8 @@ class BugWatch(SQLBase):
 
         if self.last_error_type in error_message_mapping:
             message = error_message_mapping[self.last_error_type]
+        elif self.last_error_type != BugWatchActivityStatus.UNKNOWN:
+            message = self.last_error_type.description
         else:
             message = ("Launchpad couldn't import bug #%(bug)s from "
                 "%(bugtracker)s.")
@@ -284,7 +309,12 @@ class BugWatch(SQLBase):
         """See `IBugWatch`."""
         activity = BugWatchActivity()
         activity.bug_watch = self
-        activity.result = result
+        if result is None:
+            # If no result is passed we assume that the activity
+            # succeded and set the result field accordingly.
+            activity.result = BugWatchActivityStatus.SYNC_SUCCEEDED
+        else:
+            activity.result = result
         if message is not None:
             activity.message = unicode(message)
         if oops_id is not None:
@@ -299,6 +329,57 @@ class BugWatch(SQLBase):
             BugWatchActivity,
             BugWatchActivity.bug_watch == self).order_by(
                 Desc('activity_date'))
+
+    @property
+    def can_be_rescheduled(self):
+        """See `IBugWatch`."""
+        if (self.next_check is not None and
+            self.next_check <= datetime.now(utc)):
+            # If the watch is already scheduled for a time in the past
+            # (or for right now) it can't be rescheduled, since it
+            # should be be checked by the next checkwatches run anyway.
+            return False
+
+        if self.activity.is_empty():
+            # Don't show the reschedule button if the watch has never
+            # been checked.
+            return False
+
+        if self.failed_activity.is_empty():
+            # Don't show the reschedule button if the watch has never
+            # failed.
+            return False
+
+        if self.failed_activity.count() == 1 and self.activity.count() == 1:
+            # In cases where a watch has been updated once and failed,
+            # we allow the user to reschedule it.
+            return True
+
+        # If the ratio is lower than the reschedule threshold, we
+        # can show the button.
+        failure_ratio = (
+            float(self.failed_activity.count()) /
+            self.activity.count())
+        return failure_ratio <= WATCH_RESCHEDULE_THRESHOLD
+
+    @property
+    def failed_activity(self):
+        store = Store.of(self)
+        success_status_ids = [
+            status.value for status in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES]
+
+        return store.find(
+            BugWatchActivity,
+            BugWatchActivity.bug_watch == self,
+            Not(In(BugWatchActivity.result, success_status_ids))).order_by(
+                Desc('activity_date'))
+
+    def setNextCheck(self, next_check):
+        """See `IBugWatch`."""
+        if not self.can_be_rescheduled:
+            raise BugWatchCannotBeRescheduled()
+
+        self.next_check = next_check
 
 
 class BugWatchSet(BugSetBase):
@@ -641,33 +722,32 @@ class BugWatchSet(BugSetBase):
             query = query.find(In(BugWatch.id, bug_watch_ids))
         return query
 
-    def bulkSetError(self, bug_watches, last_error_type=None):
+    def bulkSetError(self, references, last_error_type=None):
         """See `IBugWatchSet`."""
-        bug_watch_ids = set(
-            (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
-            for bug_watch in bug_watches)
-        bug_watches_in_database = IStore(BugWatch).find(
-            BugWatch, In(BugWatch.id, list(bug_watch_ids)))
-        bug_watches_in_database.set(
-            lastchecked=UTC_NOW,
-            last_error_type=last_error_type,
-            next_check=None)
+        bug_watch_ids = set(get_bug_watch_ids(references))
+        if len(bug_watch_ids) > 0:
+            bug_watches_in_database = IStore(BugWatch).find(
+                BugWatch, In(BugWatch.id, list(bug_watch_ids)))
+            bug_watches_in_database.set(
+                lastchecked=UTC_NOW,
+                last_error_type=last_error_type,
+                next_check=None)
 
-    def bulkAddActivity(self, bug_watches, result=None, message=None,
-                        oops_id=None):
+    def bulkAddActivity(self, references,
+                        result=BugWatchActivityStatus.SYNC_SUCCEEDED,
+                        message=None, oops_id=None):
         """See `IBugWatchSet`."""
-        bug_watch_ids = set(
-            (bug_watch.id if IBugWatch.providedBy(bug_watch) else bug_watch)
-            for bug_watch in bug_watches)
-        insert_activity_statement = (
-            "INSERT INTO BugWatchActivity"
-            " (bug_watch, result, message, oops_id) "
-            "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
-            " WHERE BugWatch.id IN %s"
-            )
-        IStore(BugWatch).execute(
-            insert_activity_statement % sqlvalues(
-                result, message, oops_id, bug_watch_ids))
+        bug_watch_ids = set(get_bug_watch_ids(references))
+        if len(bug_watch_ids) > 0:
+            insert_activity_statement = (
+                "INSERT INTO BugWatchActivity"
+                " (bug_watch, result, message, oops_id) "
+                "SELECT BugWatch.id, %s, %s, %s FROM BugWatch"
+                " WHERE BugWatch.id IN %s"
+                )
+            IStore(BugWatch).execute(
+                insert_activity_statement % sqlvalues(
+                    result, message, oops_id, bug_watch_ids))
 
 
 class BugWatchActivity(Storm):
