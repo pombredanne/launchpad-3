@@ -22,6 +22,20 @@ from lp.bugs.tests.externalbugtracker import TestExternalBugTracker
 from lp.testing import TestCaseWithFactory
 
 
+def make_bug_watch_updater(checkwatches_master, bug_watch,
+                           external_bugtracker, server_time=None):
+    """Helper function to create a BugWatchUpdater instance."""
+    if server_time is None:
+        server_time = datetime.now()
+
+    remote_bug_updater = checkwatches_master.remote_bug_updater_factory(
+        checkwatches_master, external_bugtracker, bug_watch.remotebug,
+        [bug_watch.id], [], server_time)
+    return BugWatchUpdater(
+        remote_bug_updater, bug_watch,
+        remote_bug_updater.external_bugtracker)
+
+
 class BrokenCommentSyncingExternalBugTracker(TestExternalBugTracker):
     """An ExternalBugTracker that can't sync comments."""
 
@@ -78,7 +92,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
     def test_updateBugWatch(self):
         # Calling BugWatchUpdater.updateBugWatch() will update the
         # updater's current BugWatch.
-        bug_watch_updater = BugWatchUpdater(
+        bug_watch_updater = make_bug_watch_updater(
             self.checkwatches_master, self.bug_watch,
             TestExternalBugTracker('http://example.com'))
 
@@ -102,7 +116,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         # recorded as BugWatchActivityStatus.COMMENT_IMPORT_FAILED.
         external_bugtracker = BrokenCommentSyncingExternalBugTracker(
             'http://example.com')
-        bug_watch_updater = BugWatchUpdater(
+        bug_watch_updater = make_bug_watch_updater(
             self.checkwatches_master, self.bug_watch, external_bugtracker)
 
         bug_watch_updater.updateBugWatch(
@@ -119,7 +133,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         # recorded as BugWatchActivityStatus.COMMENT_IMPORT_FAILED.
         external_bugtracker = BrokenCommentSyncingExternalBugTracker(
             'http://example.com')
-        bug_watch_updater = BugWatchUpdater(
+        bug_watch_updater = make_bug_watch_updater(
             self.checkwatches_master, self.bug_watch, external_bugtracker)
 
         self.factory.makeBugComment(
@@ -139,7 +153,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         # be recorded as BugWatchActivityStatus.BACKLINK_FAILED.
         external_bugtracker = BrokenCommentSyncingExternalBugTracker(
             'http://example.com')
-        bug_watch_updater = BugWatchUpdater(
+        bug_watch_updater = make_bug_watch_updater(
             self.checkwatches_master, self.bug_watch, external_bugtracker)
 
         bug_watch_updater.updateBugWatch(
