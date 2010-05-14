@@ -537,7 +537,7 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
-            return self.builds[0].build.sourcepackagerelease.version
+            return self.builds[0].build.source_package_release.version
         if self.customfiles:
             return '-'
 
@@ -550,7 +550,7 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease
         elif self.builds:
-            return self.builds[0].build.sourcepackagerelease
+            return self.builds[0].build.source_package_release
         else:
             return None
 
@@ -570,7 +570,7 @@ class PackageUpload(SQLBase):
         if self.sources is not None and self.sources.count() > 0:
             return self.sources[0].sourcepackagerelease
         elif self.builds is not None and self.builds.count() > 0:
-            return self.builds[0].build.sourcepackagerelease
+            return self.builds[0].build.source_package_release
         else:
             return None
 
