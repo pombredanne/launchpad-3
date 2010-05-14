@@ -25,6 +25,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 
 
@@ -33,11 +34,15 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeSourcePackageRecipeBuild(self):
+    def makeSourcePackageRecipeBuild(self, distroseries=None):
         """Create a `SourcePackageRecipeBuild` for testing."""
+        if distroseries == None:
+            distroseries = self.factory.makeDistroSeries()
         return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=self.factory.makeSourcePackage(),
-            recipe=self.factory.makeSourcePackageRecipe(),
+            sourcepackage=self.factory.makeSourcePackage(
+                distroseries=distroseries),
+            recipe=self.factory.makeSourcePackageRecipe(
+                distroseries=distroseries),
             archive=self.factory.makeArchive(),
             requester=self.factory.makePerson())
 
@@ -61,12 +66,25 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
 
     def test_queueBuild(self):
-        spb = self.makeSourcePackageRecipeBuild()
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
+        spb = self.makeSourcePackageRecipeBuild(distroseries=distroseries)
+
         bq = spb.queueBuild()
         self.assertProvides(bq, IBuildQueue)
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
-        self.assertIs(None, bq.processor)
+
+        # The processor for SourcePackageRecipeBuilds should not be None.  They
+        # do require specific environments.
+        self.assertNotEqual(None, bq.processor)
+        self.assertEqual(
+            spb.distroseries.nominatedarchindep.default_processor,
+            bq.processor)
         self.assertEqual(bq, spb.buildqueue_record)
 
     def test_title(self):
