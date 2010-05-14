@@ -135,8 +135,7 @@ class DistributionSourcePackageRelease:
 
         return builds_built_in_main_archives.union(
             builds_published_in_main_archives).order_by(
-                Desc(
-                    BuildFarmJob.date_created), Desc(BinaryPackageBuild.id))
+                Desc(BinaryPackageBuild.id))
 
     @property
     def binary_package_names(self):
@@ -144,10 +143,10 @@ class DistributionSourcePackageRelease:
         return BinaryPackageName.select("""
             BinaryPackageName.id =
                 BinaryPackageRelease.binarypackagename AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTables=['BinaryPackageRelease', 'Build'],
+            clauseTables=['BinaryPackageRelease', 'BinaryPackageBuild'],
             orderBy='name',
             distinct=True)
 
