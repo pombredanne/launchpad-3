@@ -12,8 +12,6 @@ import logging
 import operator
 
 from storm.locals import Int, Reference
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 from zope.interface import implements
 from zope.component import getUtility
