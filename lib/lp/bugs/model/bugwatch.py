@@ -345,6 +345,11 @@ class BugWatch(SQLBase):
             # been checked.
             return False
 
+        if self.activity[0].result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
+            # If the last update was successful the watch can't be
+            # rescheduled.
+            return False
+
         if self.failed_activity.is_empty():
             # Don't show the reschedule button if the watch has never
             # failed.
