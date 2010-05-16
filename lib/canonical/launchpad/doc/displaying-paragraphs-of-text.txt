@@ -481,7 +481,7 @@ fmt:text-to-html code.  It is a helper for writing regular expressions where
 we want to replace a variable number of spaces with the same number of
 &nbsp; entities.
 
-    >>> from canonical.launchpad.webapp.tales import FormattersAPI
+    >>> from lp.app.browser.stringformatter import FormattersAPI
     >>> import re
     >>> matchobj = re.match('foo(.*)bar', 'fooX Ybar')
     >>> matchobj.groups()

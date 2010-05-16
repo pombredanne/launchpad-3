@@ -286,13 +286,6 @@
         />
 
     <adapter
-        for="basestring"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.FormattersAPI"
-        name="fmt"
-        />
-
-    <adapter
         for="int"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"

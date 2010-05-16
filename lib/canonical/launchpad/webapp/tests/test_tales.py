@@ -9,8 +9,8 @@ import unittest
 from zope.testing.doctestunit import DocTestSuite
 
 from canonical.launchpad.testing.pages import find_tags_by_class
-from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.testing import DatabaseFunctionalLayer
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.testing import TestCase
 
 
