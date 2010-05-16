@@ -2459,24 +2459,11 @@ class FormattersAPI:
 
     @staticmethod
     def _linkify_bug_number(text, bugnum, trailers=''):
-        # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
-        # we still have a link for bugs that don't exist.
+        # Don't look up the bug or display anything about the bug, just
+        # linkify to the general bug url.
         url = '/bugs/%s' % bugnum
-
-        bugset = getUtility(IBugSet)
-        try:
-            bug = bugset.get(bugnum)
-        except NotFoundError:
-            title = "No such bug"
-        else:
-            try:
-                title = bug.title
-            except Unauthorized:
-                title = "private bug"
-        title = cgi.escape(title, quote=True)
         # The text will have already been cgi escaped.
-        return '<a href="%s" title="%s">%s</a>%s' % (
-            url, title, text, trailers)
+        return '<a href="%s">%s</a>%s' % (url, text, trailers)
 
     @staticmethod
     def _linkify_substitution(match):
