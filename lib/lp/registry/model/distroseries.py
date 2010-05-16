@@ -183,14 +183,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='SectionSelection')
 
     @property
-    def all_potemplates(self):
-        from lp.translations.interfaces.potemplate import IPOTemplateSet
-        potemplateset = getUtility(IPOTemplateSet)
-        return list(potemplateset.getSubset(
-            productseries=None,
-            distroseries=self))
-
-    @property
     def named_version(self):
         return '%s (%s)' % (self.displayname, self.version)
 

@@ -64,6 +64,7 @@ from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import ISeriesMixin
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
@@ -272,6 +273,12 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
 
+
+#ISeriesMixin
+patch_collection_property(
+    ISeriesMixin, 'all_potemplates', IPOTemplate)
+
+
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
@@ -309,8 +316,6 @@ patch_choice_parameter_type(
     PackageUploadCustomFormat)
 patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
-patch_collection_property(
-    IDistroSeries, 'all_potemplates', IPOTemplate)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)

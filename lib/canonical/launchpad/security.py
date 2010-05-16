@@ -63,8 +63,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
-    IPersonRoles)
+    IHasBug, IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -1161,6 +1160,11 @@ class AdminDistributionTranslations(AuthorizationBase):
                         self.obj).checkAuthenticated(user))
 
 
+class ViewPOTemplates(AnonymousAuthorization):
+    """Anyone can view an IPOTemplate."""
+    usedfor = IPOTemplate
+
+
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     """Controls administration of an `IPOTemplate`.
 
@@ -1211,6 +1215,11 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
     usedfor = IProductSeries
+
+
+class ViewPOFile(AnonymousAuthorization):
+    """Anyone can view an IPOFile."""
+    usedfor = IPOFile
 
 
 class EditPOFileDetails(EditByOwnersOrAdmins):

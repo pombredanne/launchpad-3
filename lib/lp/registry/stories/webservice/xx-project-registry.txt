@@ -853,6 +853,7 @@ virtual host.
     >>> fooey = factory.makeAnyBranch(
     ...     product=babadoo, name='fooey', owner=babadoo_owner)
     >>> foobadoo.branch = fooey
+    >>> potemplate = factory.makePOTemplate(productseries=foobadoo)
     >>> logout()
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
@@ -860,6 +861,7 @@ virtual host.
     active: True
     active_milestones_collection_link: u'http://.../babadoo/foobadoo/active_milestones'
     all_milestones_collection_link: u'http://.../babadoo/foobadoo/all_milestones'
+    all_potemplates_collection_link: u'http://.../babadoo/foobadoo/all_potemplates'
     branch_link: u'http://.../~babadoo-owner/babadoo/fooey'
     bug_reporting_guidelines: None
     date_created: u'...'
@@ -889,6 +891,15 @@ milestones and releases.
      u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
 
+"all_potemplates" will list all POTemplates associated with this product
+series.
+
+    >>> all_potemplates = anon_webservice.get(
+    ...     babadoo_foobadoo['all_potemplates_collection_link']).jsonBody()
+    >>> print all_potemplates['total_size']
+    1
+    >>> print(all_potemplates['entries'][0]['resource_type_link'])
+    http://.../#potemplate
 
 Creating a milestone on the product series
 ==========================================

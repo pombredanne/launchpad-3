@@ -25,7 +25,7 @@ from lazr.restful.declarations import (
     export_factory_operation, export_read_operation, exported,
     operation_parameters, operation_returns_collection_of,
     operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import Reference, ReferenceChoice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -235,13 +235,6 @@ class IDistroSeriesPublic(
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
         "series.")
-
-    all_potemplates = exported(
-        CollectionField(
-            title=_("All po templates associated with this distroseries,"
-                    " ordered by priority."),
-            # Really IPOTemplates, see _schema_circular_imports.py.
-            value_type=Reference(schema=Interface)))
 
     hide_all_translations = Bool(
         title=u'Hide translations for this release', required=True,

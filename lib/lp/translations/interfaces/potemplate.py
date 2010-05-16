@@ -11,6 +11,7 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
     exported, export_as_webservice_entry)
 
+from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.distribution import IDistribution
@@ -20,8 +21,6 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
-from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from canonical.launchpad import _
@@ -171,7 +170,7 @@ class IPOTemplate(IRosettaStats):
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(Choice(
+    owner = exported(ParticipatingPersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -274,8 +273,6 @@ class IPOTemplate(IRosettaStats):
             '''),
         vocabulary='TranslationPermission')
 
-#    pofiles = Attribute("All `IPOFile` that exist for this template.")
-
     pofiles = exported(
         CollectionField(
             title=_("All `IPOFile` that exist for this template."),
@@ -306,17 +303,18 @@ class IPOTemplate(IRosettaStats):
 
     distribution = Object(
         title=_(
-            'The `IDistribution` to which this translation template belongs.'),
+            'The `IDistribution` to which this translation template '
+            'belongs.'),
         readonly=True, schema=IDistribution)
 
     messagecount = exported(Int(
-        title=_('The number of messages for this template.'),
+        title=_('The number of translation messages for this template.'),
         required=True, readonly=True),
-        exported_as='messages_count')
+        exported_as='message_count')
 
     language_count = exported(Int(
         title=_('The number of languages for which we have translations.'),
-        required=True, readonly=True), exported_as='languages_count')
+        required=True, readonly=True))
 
     translationtarget = Attribute(
         _('''
@@ -326,7 +324,7 @@ class IPOTemplate(IRosettaStats):
 
     date_last_updated = exported(Datetime(
         title=_('Date for last update'),
-        required=True), exported_as='last_update')
+        required=True))
 
     uses_english_msgids = Bool(
         title=_("Uses English strings as msgids"), readonly=True,
