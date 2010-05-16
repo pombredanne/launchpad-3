@@ -10,6 +10,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
@@ -30,6 +32,7 @@ class BugSubscription(SQLBase):
         notNull=True
         )
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_person_not_private_membership,

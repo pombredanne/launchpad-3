@@ -25,7 +25,8 @@ package.
     >>> owner = factory.makePerson(email='o@example.com', password='test')
     >>> rosetta_admin = factory.makePerson(
     ...     email='r@example.com', password='test')
-    >>> rosetta_admin.join(getUtility(ILaunchpadCelebrities).rosetta_experts)
+    >>> removeSecurityProxy(rosetta_admin).join(
+    ...     getUtility(ILaunchpadCelebrities).rosetta_experts)
     >>> product = factory.makeProduct(displayname="Foo", owner=owner)
     >>> trunk = product.getSeries('trunk')
     >>> removeSecurityProxy(product).official_rosetta = True

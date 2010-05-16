@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export translation snapshots to bzr branches where requested."""
@@ -17,7 +17,7 @@ from zope.component import getUtility
 from storm.expr import Join, SQL
 
 from canonical.launchpad.helpers import shortlist
-from lp.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_rw_server
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
@@ -238,10 +238,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 raise
             except Exception, e:
                 items_failed += 1
-                message = unicode(e)
-                if message == u'':
-                    message = e.__class__.__name__
-                self.logger.error("Failure: %s" % message)
+                self.logger.error("Failure: %s" % repr(e))
                 if self.txn:
                     self.txn.abort()
 
@@ -273,7 +270,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
 
-        bzrserver = get_multi_server(write_hosted=True)
+        bzrserver = get_rw_server()
         bzrserver.start_server()
         try:
             self._exportToBranches(productseries)

@@ -157,7 +157,6 @@
         </tal:block>
       </p>
 
-      <tal:logged-in condition="request/lp:person">
         <tal:person condition="not: view/context_is_probably_a_team">
           <ul tal:condition="context/preferredemail">
             <li>
@@ -183,11 +182,6 @@
         <tal:team condition="view/context_is_probably_a_team">
           <a href="+claimteam">Is this a team you run?</a>
         </tal:team>
-      </tal:logged-in>
-
-      <tal:not-logged-in condition="not: request/lp:person">
-        <a href="+claim">Are you <span tal:replace="context/displayname" />?</a>
-      </tal:not-logged-in>
     </tal:noaccount>
 
     <tal:deactivated-account

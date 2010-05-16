@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import ANONYMOUS, login
@@ -12,8 +13,10 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.registry.browser.person import PersonView
+from lp.registry.browser.person import PersonEditView, PersonView
 from lp.registry.model.karma import KarmaCategory
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.testing import TestCaseWithFactory, login_person
 
 
@@ -25,6 +28,7 @@ class TestPersonViewKarma(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
+        transaction.commit()
         self.view = PersonView(
             person, LaunchpadTestRequest())
         self._makeKarmaCache(
@@ -66,7 +70,7 @@ class TestPersonViewKarma(TestCaseWithFactory):
 
         # We must commit here so that the change is seen in other transactions
         # (e.g. when the callsite issues a switchDbUser() after we return).
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
         return karmacache
 
 
@@ -164,6 +168,62 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         second_ppa = self.factory.makeArchive(owner=self.team)
         person_view = PersonView(self.team, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
+
+
+class TestPersonEditView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.ppa = self.factory.makeArchive(owner=self.person)
+        self.view = PersonEditView(
+            self.person, LaunchpadTestRequest())
+
+    def test_can_rename_with_empty_PPA(self):
+        # If a PPA exists but has no packages, we can rename the
+        # person.
+        self.view.initialize()
+        self.assertFalse(self.view.form_fields['name'].for_display)
+
+    def _publishPPAPackage(self):
+        stp = SoyuzTestPublisher()
+        stp.setUpDefaultDistroSeries()
+        stp.getPubSource(archive=self.ppa)
+
+    def test_cannot_rename_with_non_empty_PPA(self):
+        # Publish some packages in the PPA and test that we can't rename
+        # the person.
+        self._publishPPAPackage()
+        self.view.initialize()
+        self.assertTrue(self.view.form_fields['name'].for_display)
+        self.assertEqual(
+            self.view.widgets['name'].hint,
+            "This user has an active PPA with packages published and "
+            "may not be renamed.")
+
+    def test_cannot_rename_with_deleting_PPA(self):
+        # When a PPA is in the DELETING state we should not allow
+        # renaming just yet.
+        self._publishPPAPackage()
+        self.view.initialize()
+        self.ppa.delete(self.person)
+        self.assertEqual(self.ppa.status, ArchiveStatus.DELETING)
+        self.assertTrue(self.view.form_fields['name'].for_display)
+
+    def test_can_rename_with_deleted_PPA(self):
+        # Delete a PPA and test that the person can be renamed.
+        self._publishPPAPackage()
+        # Deleting the PPA will remove the publications, which is
+        # necessary for the renaming check.
+        self.ppa.delete(self.person)
+        # Simulate the external script running and finalising the
+        # DELETED status.
+        self.ppa.status = ArchiveStatus.DELETED
+        self.view.initialize()
+        self.assertFalse(self.view.form_fields['name'].for_display)
 
 
 def test_suite():

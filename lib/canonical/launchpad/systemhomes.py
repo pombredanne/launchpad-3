@@ -42,8 +42,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication)
 from lp.registry.interfaces.product import IProduct
@@ -61,18 +60,11 @@ class AuthServerApplication:
     title = "Auth Server"
 
 
-class BranchFileSystemApplication:
-    """BranchFileSystem End-Point."""
-    implements(IBranchFileSystemApplication)
+class CodehostingApplication:
+    """Codehosting End-Point."""
+    implements(ICodehostingApplication)
 
-    title = "Branch File System"
-
-
-class BranchPullerApplication:
-    """BranchPuller End-Point."""
-    implements(IBranchPullerApplication)
-
-    title = "Puller API"
+    title = "Codehosting API"
 
 
 class CodeImportSchedulerApplication:
@@ -143,7 +135,7 @@ class MaloneApplication:
 
     @property
     def bugtracker_count(self):
-        return getUtility(IBugTrackerSet).search().count()
+        return getUtility(IBugTrackerSet).count
 
     @property
     def projects_with_bugs_count(self):
@@ -354,6 +346,13 @@ class WebServiceApplication(ServiceRootResource):
 
     cached_wadl = {}
 
+    @classmethod
+    def cachedWADLPath(cls, instance_name, version):
+        """Helper method to calculate the path to a cached WADL file."""
+        return os.path.join(
+            os.path.dirname(os.path.normpath(__file__)),
+            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
+
     def toWADL(self):
         """See `IWebServiceApplication`.
 
@@ -370,10 +369,8 @@ class WebServiceApplication(ServiceRootResource):
             return super(WebServiceApplication, self).toWADL()
         if  version not in self.__class__.cached_wadl:
             # It's not cached. Look for it on disk.
-            _wadl_filename = os.path.join(
-                os.path.dirname(os.path.normpath(__file__)),
-                'apidoc', 'wadl-%s-%s.xml' % (config.instance_name, version))
-
+            _wadl_filename = self.cachedWADLPath(
+                config.instance_name, version)
             _wadl_fd = None
             try:
                 _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')

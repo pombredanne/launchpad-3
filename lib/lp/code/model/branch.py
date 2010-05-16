@@ -13,7 +13,6 @@ __all__ = [
 from datetime import datetime
 import os.path
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.revision import NULL_REVISION
 from bzrlib import urlutils
 import pytz
@@ -21,9 +20,10 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
-from storm.expr import And, Count, Desc, Max, Not, NamedFunc, Or, Select
+from storm.expr import (
+    And, Count, Desc, Max, Not, NamedFunc, Or, Select)
 from storm.locals import AutoReload
 from storm.store import Store
 from sqlobject import (
@@ -62,8 +62,8 @@ from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
-    bazaar_identity, BranchCannotBePrivate, BranchCannotBePublic,
-    BranchTargetError, BranchTypeError, CannotDeleteBranch,
+    BranchCannotBePrivate, BranchCannotBePublic,
+    BranchTargetError, BranchTypeError, BzrIdentityMixin, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchNavigationMenu, IBranchSet, user_has_special_branch_access)
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -73,9 +73,9 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
+from lp.codehosting.bzrutils import safe_open
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.services.job.interfaces.job import JobStatus
@@ -83,7 +83,7 @@ from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
 
 
-class Branch(SQLBase):
+class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch, IBranchNavigationMenu)
@@ -401,7 +401,8 @@ class Branch(SQLBase):
         """See `IBranch`."""
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets]
+                for target in self.active_landing_targets
+                if target.target_branch.last_scanned_id is not None]
         return jobs
 
     # XXX: Tim Penhey, 2008-06-18, bug 240881
@@ -425,18 +426,6 @@ class Branch(SQLBase):
         """See `IBranch`."""
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
-
-    def getStackedBranchesWithIncompleteMirrors(self):
-        """See `IBranch`."""
-        store = Store.of(self)
-        return store.find(
-            Branch, Branch.stacked_on == self,
-            # Have been started.
-            Branch.last_mirror_attempt != None,
-            # Either never successfully mirrored or started since the last
-            # successful mirror.
-            Or(Branch.last_mirrored == None,
-               Branch.last_mirror_attempt > Branch.last_mirrored))
 
     def getMergeQueue(self):
         """See `IBranch`."""
@@ -463,21 +452,6 @@ class Branch(SQLBase):
     def browse_source_url(self):
         return self.codebrowse_url('files')
 
-    @property
-    def bzr_identity(self):
-        """See `IBranch`."""
-        # Should probably put this into the branch target.
-        if self.product is not None:
-            series_branch = self.product.development_focus.branch
-            is_dev_focus = (series_branch == self)
-        elif self.distroseries is not None:
-            distro_package = self.sourcepackage.distribution_sourcepackage
-            linked_branch = ICanHasLinkedBranch(distro_package)
-            is_dev_focus = (linked_branch.branch == self)
-        else:
-            is_dev_focus = False
-        return bazaar_identity(self, is_dev_focus)
-
     def composePublicURL(self, scheme='http'):
         """See `IBranch`."""
         # Not all protocols work for private branches.
@@ -486,17 +460,13 @@ class Branch(SQLBase):
             "Private branch %s has no public URL." % self.unique_name)
         return compose_public_url(scheme, self.unique_name)
 
-    @property
-    def warehouse_url(self):
+    def getInternalBzrUrl(self):
         """See `IBranch`."""
-        return 'lp-mirrored:///%s' % self.unique_name
+        return 'lp-internal:///' + self.unique_name
 
     def getBzrBranch(self):
-        """Return the BzrBranch for this database Branch.
-
-        This provides the mirrored copy of the branch.
-        """
-        return BzrBranch.open(self.warehouse_url)
+        """See `IBranch`."""
+        return safe_open('lp-internal', self.getInternalBzrUrl())
 
     @property
     def displayname(self):
@@ -623,7 +593,9 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        # XXX MichaelHudson 2010-01-13: Handle sourcepackagerecipes here.
+        deletion_operations.extend(
+            DeletionCallable.forSourcePackageRecipe(recipe)
+            for recipe in self.getRecipes())
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -856,6 +828,8 @@ class Branch(SQLBase):
         new_data_pushed = (
              self.branch_type in (BranchType.HOSTED, BranchType.IMPORTED)
              and self.next_mirror_time is not None)
+        # XXX 2010-04-22, MichaelHudson: This should really look for a branch
+        # scan job.
         pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
         pull_in_progress = (
             self.last_mirror_attempt is not None
@@ -895,10 +869,6 @@ class Branch(SQLBase):
             # another RCS system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
             return urlappend(prefix, '%08x' % self.id)
-        elif self.branch_type == BranchType.HOSTED:
-            # This is a push branch, hosted on Launchpad (pushed there by
-            # users via sftp or bzr+ssh).
-            return 'lp-hosted:///%s' % (self.unique_name,)
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -923,24 +893,37 @@ class Branch(SQLBase):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
-    def mirrorComplete(self, last_revision_id):
+    def branchChanged(self, stacked_on_location, last_revision_id,
+                      control_format, branch_format, repository_format):
         """See `IBranch`."""
-        if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError(self.unique_name)
-        assert self.last_mirror_attempt != None, (
-            "startMirroring must be called before mirrorComplete.")
-        self.last_mirrored = self.last_mirror_attempt
-        self.mirror_failures = 0
         self.mirror_status_message = None
+        if stacked_on_location == '' or stacked_on_location is None:
+            stacked_on_branch = None
+        else:
+            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
+                stacked_on_location.strip('/'))
+            if stacked_on_branch is None:
+                self.mirror_status_message = (
+                    'Invalid stacked on location: ' + stacked_on_location)
+        self.stacked_on = stacked_on_branch
+        if self.branch_type == BranchType.HOSTED:
+            self.last_mirrored = UTC_NOW
+        else:
+            self.last_mirrored = self.last_mirror_attempt
+        self.mirror_failures = 0
         if (self.next_mirror_time is None
             and self.branch_type == BranchType.MIRRORED):
             # No mirror was requested since we started mirroring.
             increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
-        self.last_mirrored_id = last_revision_id
-        from lp.code.model.branchjob import BranchScanJob
-        BranchScanJob.create(self)
+        if self.last_mirrored_id != last_revision_id:
+            self.last_mirrored_id = last_revision_id
+            from lp.code.model.branchjob import BranchScanJob
+            BranchScanJob.create(self)
+        self.control_format = control_format
+        self.branch_format = branch_format
+        self.repository_format = repository_format
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
@@ -1064,12 +1047,18 @@ class Branch(SQLBase):
                     user, checked_branches)
         return can_access
 
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipedata import (
+            SourcePackageRecipeData)
+        return SourcePackageRecipeData.findRecipes(self)
+
 
 class DeletionOperation:
     """Represent an operation to perform as part of branch deletion."""
 
     def __init__(self, affected_object, rationale):
-        self.affected_object = affected_object
+        self.affected_object = ProxyFactory(affected_object)
         self.rationale = rationale
     def __call__(self):
         """Perform the deletion operation."""
@@ -1086,6 +1075,11 @@ class DeletionCallable(DeletionOperation):
     def __call__(self):
         self.func()
 
+    @classmethod
+    def forSourcePackageRecipe(cls, recipe):
+        return cls(
+            recipe, _('This recipe uses this branch.'), recipe.destroySelf)
+
 
 class ClearDependentBranch(DeletionOperation):
     """Delete operation that clears a merge proposal's prerequisite branch."""
@@ -1097,7 +1091,7 @@ class ClearDependentBranch(DeletionOperation):
 
     def __call__(self):
         self.affected_object.prerequisite_branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesBranch(DeletionOperation):
@@ -1111,7 +1105,7 @@ class ClearSeriesBranch(DeletionOperation):
     def __call__(self):
         if self.affected_object.branch == self.branch:
             self.affected_object.branch = None
-        self.affected_object.syncUpdate()
+        Store.of(self.affected_object).flush()
 
 
 class ClearSeriesTranslationsBranch(DeletionOperation):

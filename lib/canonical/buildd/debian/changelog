@@ -1,3 +1,19 @@
+launchpad-buildd (60) lucid-cat; urgency=low
+
+  * Depends: lsb-release, which is ubuntu-minimal, but not essential.
+
+ -- LaMont Jones <lamont@ubuntu.com>  Thu, 01 Apr 2010 08:54:48 -0600
+
+launchpad-buildd (59) lucid-cat; urgency=low
+
+  [ Henning Eggers ]
+  * Added translation template generation code (pottery).
+
+  [ LaMont Jones ]
+  * set umask for twisted where supported
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 31 Mar 2010 10:38:15 -0600
+
 launchpad-buildd (58~1) karmic; urgency=low
 
   * Misc fixes to match APIs.

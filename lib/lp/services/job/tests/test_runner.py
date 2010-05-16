@@ -11,23 +11,24 @@ from time import sleep
 from unittest import TestLoader
 
 import transaction
-from canonical.testing import LaunchpadZopelessLayer
+
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
-from lp.code.interfaces.branchmergeproposal import (
-    IUpdatePreviewDiffJobSource,)
-from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.runner import (
-    JobCronScript, JobRunner, BaseRunnableJob, TwistedJobRunner
-)
-from lp.services.job.interfaces.job import JobStatus, IRunnableJob
-from lp.services.job.model.job import Job
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+from canonical.testing import LaunchpadZopelessLayer
+
+from lp.code.interfaces.branchmergeproposal import (
+    IUpdatePreviewDiffJobSource)
+from lp.services.job.interfaces.job import JobStatus, IRunnableJob
+from lp.services.job.model.job import Job
+from lp.services.job.runner import (
+    BaseRunnableJob, JobCronScript, JobRunner, TwistedJobRunner)
+from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
+from lp.testing.mail_helpers import pop_notifications
 
 
 class NullJob(BaseRunnableJob):
@@ -73,6 +74,37 @@ class RaisingJob(NullJob):
 
     def run(self):
         raise RaisingJobException(self.message)
+
+
+class RaisingJobUserError(NullJob):
+    """A job that raises a user error when it runs."""
+
+    user_error_types = (RaisingJobException, )
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+
+class RaisingJobRaisingNotifyOops(NullJob):
+    """A job that raises when it runs, and when calling notifyOops."""
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+    def notifyOops(self, oops):
+        raise RaisingJobException('oops notifying oops')
+
+
+class RaisingJobRaisingNotifyUserError(NullJob):
+    """A job that raises when it runs, and when notifying user errors."""
+
+    user_error_types = (RaisingJobException, )
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+    def notifyUserError(self, error):
+        raise RaisingJobException('oops notifying users')
 
 
 class TestJobRunner(TestCaseWithFactory):
@@ -253,6 +285,38 @@ class TestJobRunner(TestCaseWithFactory):
         transaction.abort()
         self.assertEqual(JobStatus.FAILED, job.job.status)
 
+    def test_runJobHandleErrors_oops_generated(self):
+        """The handle errors method records an oops for raised errors."""
+        job = RaisingJob('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
+
+    def test_runJobHandleErrors_user_error_no_oops(self):
+        """If the job raises a user error, there is no oops."""
+        job = RaisingJobUserError('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(0, len(self.oopses))
+
+    def test_runJobHandleErrors_oops_generated_notify_fails(self):
+        """A second oops is logged if the notification of the oops fails."""
+        job = RaisingJobRaisingNotifyOops('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(2, len(self.oopses))
+
+    def test_runJobHandleErrors_oops_generated_user_notify_fails(self):
+        """A second oops is logged if the notification of the oops fails.
+
+        In this test case the error is a user expected error, so the
+        notifyUserError is called, and in this case the notify raises too.
+        """
+        job = RaisingJobRaisingNotifyUserError('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
+
 
 class StuckJob(BaseRunnableJob):
     """Simulation of a job that stalls."""
@@ -296,11 +360,15 @@ class ListLogger:
     def __init__(self):
         self.entries = []
 
+    def debug(self, input, *args):
+        # We don't care about debug messages.
+        pass
+
     def info(self, input, *args):
         self.entries.append(input)
 
 
-class TestTwistedJobRunner(TestCaseWithFactory):
+class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -325,7 +393,7 @@ class TestTwistedJobRunner(TestCaseWithFactory):
         self.assertIn('Job ran too long.', oops.value)
 
 
-class TestJobCronScript(TestCaseWithFactory):
+class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -337,7 +405,7 @@ class TestJobCronScript(TestCaseWithFactory):
             @classmethod
             def runFromSource(cls, source, dbuser, logger):
                 expected_config = errorlog.ErrorReportingUtility()
-                expected_config.configure('update_preview_diffs')
+                expected_config.configure('merge_proposal_jobs')
                 self.assertEqual(
                     errorlog.globalErrorUtility.oops_prefix,
                     expected_config.oops_prefix)
@@ -347,11 +415,12 @@ class TestJobCronScript(TestCaseWithFactory):
             incomplete_jobs = []
 
         class JobCronScriptSubclass(JobCronScript):
-            config_name = 'update_preview_diffs'
+            config_name = 'merge_proposal_jobs'
             source_interface = IUpdatePreviewDiffJobSource
 
             def __init__(self):
-                super(JobCronScriptSubclass, self).__init__(DummyRunner)
+                super(JobCronScriptSubclass, self).__init__(
+                    DummyRunner, test_args=[])
                 self.logger = ListLogger()
 
         old_errorlog = errorlog.globalErrorUtility

@@ -36,7 +36,7 @@ from zope import formlib
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
@@ -45,6 +45,7 @@ from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -52,8 +53,7 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
@@ -297,6 +297,14 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
         self.form_fields += formlib.form.Fields(subscribe_field)
+
+        security_related_field = Bool(
+            __name__='security_related',
+            title=_("This bug is a security vulnerability"),
+            required=False, default=False)
+
+        self.form_fields = self.form_fields.omit('security_related')
+        self.form_fields += formlib.form.Fields(security_related_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -942,7 +950,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         to the inline bug filing form via the returned URL.
 
         The URL returned will be the URL of the first of the current
-        Project's products, since that's the product that will be
+        ProjectGroup's products, since that's the product that will be
         selected by default when the view is rendered.
         """
         url = canonical_url(
@@ -956,7 +964,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         """Return the URL to the inline duplicate search view.
 
         The URL returned will be the URL of the first of the current
-        Project's products, since that's the product that will be
+        ProjectGroup's products, since that's the product that will be
         selected by default when the view is rendered.
         """
         url = canonical_url(
@@ -1313,7 +1321,7 @@ class BugsPatchesView(LaunchpadView):
         return BatchNavigator(
             self.context.searchTasks(
                 None, user=self.user, order_by=orderby,
-                status=UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES,
+                status=UNRESOLVED_BUGTASK_STATUSES,
                 omit_duplicates=True, has_patch=True),
             self.request)
 

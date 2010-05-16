@@ -14,9 +14,9 @@ from zope.component import getUtility
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 
 
@@ -33,7 +33,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.recipe = self.factory.makeSourcePackageRecipe()
         self.build = getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=self.factory.makeSourcePackage(
-                sourcename='bar', distroseries=self.breezy),
+                sourcepackagename='bar', distroseries=self.breezy),
             recipe=self.recipe, archive=self.factory.makeArchive(
                 distribution=self.ubuntu, owner=self.recipe.owner),
             requester=self.recipe.owner)

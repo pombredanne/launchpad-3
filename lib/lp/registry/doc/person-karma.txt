@@ -101,14 +101,6 @@ show the 5 most active projects.
     Mozilla Thunderbird [u'bugs']
     Mozilla Firefox [u'bugs']
 
-As we can see, the results are ordered descending by the karma of the person
-on that project.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> print removeSecurityProxy(foobar)._getProjectsWithTheMostKarma()
-    [(u'evolution', 175), (u'ubuntu', 26), (u'gnomebaker', 15),
-     (u'thunderbird', 15), (u'firefox', 8), (u'bazaar', 2)]
-
 
 Karma Updater
 =============
@@ -131,9 +123,13 @@ is updated by the foaf-update-karma-cache.py cronscript.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-karma-update.lock
     INFO    Updating Launchpad karma caches
     INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Scaling bugs by a factor of 2.6667 (capped to 2.0000)
+    INFO    Scaling translations by a factor of 1.0000
+    INFO    Scaling specs by a factor of 1.0000
+    INFO    Scaling answers by a factor of 1.0000
     INFO    Step B: Rebuilding KarmaTotalCache
     INFO    Step C: Calculating KarmaCache sums
     INFO    Finished updating Launchpad karma caches
@@ -165,6 +161,13 @@ we ensure that the scaling factors never get too high. So as we saw earlier
 when running the karma updater script, the scaling factor for the Bug
 Management category was calculated to be 2.667, but reduced to 2 because this
 was the maximum specified in config.karmacacheupdater.max_scaling.
+
+    >>> for karma in salgado.latestKarma():
+    ...     print karma.action.title, karma.action.points
+    Specification Review     10
+    Bug Marked as Fixed      10
+    Registered Specification 30
+    Bug Marked as Duplicate   5
 
     >>> for cache in salgado.karma_category_caches:
     ...     print "%s: %d" % (cache.category.title, cache.karmavalue)

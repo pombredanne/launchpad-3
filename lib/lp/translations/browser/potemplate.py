@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=F0401
 
 """Browser code for PO templates."""
 
@@ -60,6 +61,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -510,7 +512,7 @@ class POTemplateViewPreferred(POTemplateView):
         return POTemplateView.pofiles(self, preferred_only=True)
 
 
-class POTemplateEditView(LaunchpadEditFormView):
+class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
@@ -518,6 +520,8 @@ class POTemplateEditView(LaunchpadEditFormView):
         'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
+    PRIORITY_MIN_VALUE = 0
+    PRIORITY_MAX_VALUE = 100000
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -537,13 +541,23 @@ class POTemplateEditView(LaunchpadEditFormView):
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    def validate(self, data):
+        priority = data.get('priority')
+        if priority is None:
+            return
+
+        if (priority < self.PRIORITY_MIN_VALUE or
+            priority > self.PRIORITY_MAX_VALUE):
+            self.setFieldError(
+                'priority',
+                'The priority value must be between %s and %s.' % (
+                self.PRIORITY_MIN_VALUE, self.PRIORITY_MAX_VALUE))
+            return
 
     @property
-    def next_url(self):
-        return canonical_url(self.context)
+    def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
+        return "name"
 
 
 class POTemplateAdminView(POTemplateEditView):
@@ -580,6 +594,7 @@ class POTemplateAdminView(POTemplateEditView):
             return
 
     def validate(self, data):
+        super(POTemplateAdminView, self).validate(data)
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
         productseries = data.get('productseries')

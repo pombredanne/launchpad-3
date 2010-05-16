@@ -16,11 +16,13 @@ __all__ = []
 
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from lazr.restful.fields import Reference
 
 from canonical.launchpad.components.apihelpers import (
     patch_entry_return_type, patch_collection_property,
-    patch_collection_return_type, patch_plain_parameter_type,
-    patch_choice_parameter_type, patch_reference_property)
+    patch_collection_return_type, patch_list_parameter_type,
+    patch_plain_parameter_type, patch_choice_parameter_type,
+    patch_reference_property)
 
 from canonical.launchpad.interfaces.message import (
     IIndexedMessage, IMessage, IUserToUserEmail)
@@ -33,21 +35,23 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuild)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
+from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.hasbranches import (
-    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+    IHasBranches, IHasCodeImports, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
 from lp.registry.interfaces.distribution import IDistribution
@@ -97,6 +101,7 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IBranch, 'setTarget', 'source_package', ISourcePackage)
 patch_reference_property(IBranch, 'sourcepackage', ISourcePackage)
+patch_reference_property(IBranch, 'code_import', ICodeImport)
 
 IBranch['spec_links'].value_type.schema = ISpecificationBranch
 IBranch['subscribe'].queryTaggedValue(
@@ -130,6 +135,10 @@ patch_collection_return_type(
     IHasMergeProposals, 'getMergeProposals', IBranchMergeProposal)
 patch_collection_return_type(
     IHasRequestedReviews, 'getRequestedReviews', IBranchMergeProposal)
+patch_entry_return_type(
+    IHasCodeImports, 'newCodeImport', ICodeImport)
+patch_plain_parameter_type(
+    IHasCodeImports, 'newCodeImport', 'owner', IPerson)
 
 # IBugTask
 
@@ -165,7 +174,7 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
         'params']['build_state'].vocabulary = BuildStatus
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
-        'return_type'].value_type.schema = IBuild
+        'return_type'].value_type.schema = IBinaryPackageBuild
 
 ISourcePackage['distroseries'].schema = IDistroSeries
 ISourcePackage['productseries'].schema = IProductSeries
@@ -181,11 +190,19 @@ ISourcePackage['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
+# IPerson
+patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
+patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
+                          Reference(schema=IDistroSeries))
+
+patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
 ISourcePackagePublishingHistoryPublic['getBuilds'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IBuild
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = (
+        IBinaryPackageBuild)
 ISourcePackagePublishingHistoryPublic[
     'getPublishedBinaries'].queryTaggedValue(
         LAZR_WEBSERVICE_EXPORTED)[
@@ -296,6 +313,7 @@ patch_collection_property(
     IDistroSeries, 'all_potemplates', IPOTemplate)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
+patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 
 
 # IDistroArchSeries
@@ -326,10 +344,9 @@ patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
-IBuildBase['buildstate'].vocabulary = BuildStatus
-
 patch_reference_property(
-    ISourcePackageRelease, 'source_package_recipe_build', ISourcePackageRecipeBuild)
+    ISourcePackageRelease, 'source_package_recipe_build',
+    ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(
@@ -382,3 +399,6 @@ patch_reference_property(IBugTracker, 'owner', IPerson)
 # IPOTemplate
 patch_collection_property(
     IPOTemplate, 'pofiles', IPOFile)
+
+# IProductSeries
+patch_reference_property(IProductSeries, 'product', IProduct)

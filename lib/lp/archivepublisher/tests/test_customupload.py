@@ -85,6 +85,9 @@ class TestTarfileVerification(TestCase):
     def createTarfile(self):
         self.tar_fileobj = cStringIO.StringIO()
         tar_file = tarfile.open(name=None, mode="w", fileobj=self.tar_fileobj)
+        root_info = tarfile.TarInfo(name='./')
+        root_info.type = tarfile.DIRTYPE
+        tar_file.addfile(root_info)
         # Ordering matters here, addCleanup pushes onto a stack which is
         # popped in reverse order.
         self.addCleanup(self.tar_fileobj.close)
@@ -158,6 +161,10 @@ class TestTarfileVerification(TestCase):
     def testSymlinkDoesntRaise(self):
         """Adding a symlink should pass inspection."""
         tar_file = self.createTarfileWithSymlink(target="something/blah")
+        self.assertPasses(tar_file)
+
+    def testRelativeSymlinkToRootDoesntRaise(self):
+        tar_file = self.createTarfileWithSymlink(target=".")
         self.assertPasses(tar_file)
 
     def testRelativeSymlinkTargetInsideDirectoryDoesntRaise(self):

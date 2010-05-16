@@ -155,7 +155,8 @@ judge the licenses.
     ['license_reviewed', 'license_approved', 'active', 'private_bugs',
      'reviewer_whiteboard']
 
-The reviewer can deactivate a project if he concludes it is bogus.
+The reviewer cannot deactivate a project if it is linked
+to a source package.
 
     >>> firefox.active
     True
@@ -168,10 +169,27 @@ The reviewer can deactivate a project if he concludes it is bogus.
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
     >>> view.errors
+    [...This project cannot be deactivated since it is linked to
+    ...source packages</a>.']
+
+The reviewer can deactivate a project if he concludes it is bogus.
+
+    >>> product = factory.makeProduct(name='tomato', title='Tomato')
+    >>> product.active
+    True
+
+    >>> form = {
+    ...     'field.active.used': '', # unchecked
+    ...     'field.reviewer_whiteboard': 'Looks bogus',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     product, name='+review-license', form=form)
+    >>> view.errors
     []
-    >>> firefox.active
+    >>> product.active
     False
-    >>> print firefox.reviewer_whiteboard
+    >>> print product.reviewer_whiteboard
     Looks bogus
 
 The reviewer can enable privileged features like private bugs. He can
@@ -440,7 +458,7 @@ officially supports.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
-    >>> product = factory.makeProduct(name='tomato', title='Tomato')
+    >>> product = factory.makeProduct(name='cucumber')
     >>> owner = product.owner
     >>> login_person(owner)
     >>> question = factory.makeQuestion(target=product)
@@ -478,78 +496,3 @@ Answers, Blueprints, and Bugs applications.
     portlet-latest-bugs
     >>> print find_tag_by_id(content, 'portlet-blueprints')['id']
     portlet-blueprints
-
-
-+portlet-packages
------------------
-
-When the product is not linked to a source package in Ubuntu the
-+portlet-packages will show suggestions on potential matches and ask
-the user to make the connection.
-
-    >>> product = factory.makeProduct(name="bingo")
-    >>> login_person(product.owner)
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []
-
-    >>> content = find_tag_by_id(view.render(), 'portlet-packages')
-    >>> print extract_text(content)
-    All packages
-    Packages in Ubuntu
-    Launchpad doesn't know which Ubuntu packages this project
-    provides. Links from distribution packages to upstream projects
-    let distribution and upstream maintainers share bugs, patches, and
-    translations efficiently.
-    There are no unlinked source packages that are a good match.
-    Can you suggest one?
-    Link to Ubuntu package
-
-    >>> spn = factory.makeSourcePackageName(name="bingo")
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> distro_package = factory.makeDistributionSourcePackage(
-    ...     sourcepackagename=spn, distribution=ubuntu)
-    >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []
-
-    >>> distro_package = factory.makeDistributionSourcePackage(
-    ...     sourcepackagename=spn, distribution=ubuntu)
-
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []
-
-    >>> import transaction
-    >>> #transaction.commit()
-    >>> from canonical.launchpad.scripts import QuietFakeLogger
-    >>> logger = QuietFakeLogger()
-    >>> from canonical.testing.layers import reconnect_stores
-    >>> from canonical.config import config
-    >>> # Switch to the statistician user who is the only user with
-    >>> # write permission to the source package cache tables.
-    >>> reconnect_stores(config.statistician.dbuser)
-    >>> # LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> updated = ubuntu.updateCompleteSourcePackageCache(
-    ...     archive=ubuntu.main_archive, log=logger, ztm=transaction)
-    >>> transaction.commit()
-    >>> reconnect_stores('launchpad')
-    >>> login(ANONYMOUS)
-    >>> product = getUtility(IProductSet)['bingo']
-    >>> view = create_initialized_view(
-    ...     product, name="+portlet-packages",
-    ...     principal=product.owner)
-    >>> print view.suggestions
-    []

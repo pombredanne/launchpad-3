@@ -39,7 +39,6 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -172,6 +171,12 @@ class BugTaskStatus(DBEnumeratedType):
         fixing, or it might not be fixed in this release.
         """)
 
+    EXPIRED = DBItem(19, """
+        Expired
+
+        This bug is expired. There was no activity since a longer time.
+        """)
+
     CONFIRMED = DBItem(20, """
         Confirmed
 
@@ -229,7 +234,7 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
+        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
         'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
@@ -304,16 +309,15 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
 
-UNRESOLVED_PLUS_FIXRELEASED_BUGTASK_STATUSES = (
-    UNRESOLVED_BUGTASK_STATUSES + (BugTaskStatus.FIXRELEASED,))
-
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
-    BugTaskStatus.WONTFIX)
+    BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED)
 
 BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED,
     BugTaskStatus.TRIAGED)
 
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
@@ -465,7 +469,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Fix Committed or Fix Released."),
+                               "either Won't Fix, Invalid or Fix Released."),
                  readonly=True,
                  required=False))
     date_left_new = exported(
@@ -502,11 +506,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
-    task_age = exported(
-        Int(title=_("Age of the bug task"),
+    task_age = Int(title=_("Age of the bug task"),
             description=_("The age of this task in seconds, a delta between "
-                         "now and the date the bug task was created."),
-            readonly=True))
+                         "now and the date the bug task was created."))
     owner = exported(
         Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
@@ -828,10 +830,10 @@ class IBugTaskSearchBase(Interface):
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
     has_branches = Bool(
-        title=_('Show only bugs with linked branches'), required=False,
+        title=_('Show bugs with linked branches'), required=False,
         default=True)
     has_no_branches = Bool(
-        title=_('Show only bugs without linked branches'), required=False,
+        title=_('Show bugs without linked branches'), required=False,
         default=True)
 
 
@@ -887,7 +889,7 @@ class IFrontPageBugTaskSearch(IBugTaskSearchBase):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
-        vocabulary="DistributionOrProductOrProject")
+        vocabulary="DistributionOrProductOrProjectGroup")
 
 
 class IBugTaskDelta(Interface):

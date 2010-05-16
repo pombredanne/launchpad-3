@@ -22,6 +22,7 @@
 
   <include package="lp.app" />
   <include package="lp.bugs" />
+  <include package="lp.buildmaster" />
   <include package="lp.registry" />
   <include package="lp.answers" />
   <include package="lp.coop.answersbugs" />
@@ -92,10 +93,5 @@
   <browser:navigation
       module="canonical.launchpad.browser"
       classes="LaunchpadRootNavigation"
-      />
-
-  <browser:resourceDirectory
-      name="PlotKit"
-      directory="../../contrib/PlotKit"
       />
 </configure>

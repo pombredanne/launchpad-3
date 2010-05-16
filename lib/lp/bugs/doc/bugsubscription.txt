@@ -887,11 +887,13 @@ they receive an email notification. The notification is sent only when
 an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
-    >>> from lazr.lifecycle.event import ObjectCreatedEvent
+An ObjectCreatedEvent is created by setting the suppress_notify parameter
+for Bug.subscribe to False.
+
     >>> transaction.commit()
     >>> stub.test_emails = []
-    >>> bug_subscription = bug_six.subscribe(mark, lifeless)
-    >>> notify(ObjectCreatedEvent(bug_subscription))
+    >>> bug_subscription = bug_six.subscribe(
+    ...     mark, lifeless, suppress_notify=False)
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
@@ -911,3 +913,13 @@ where no notification should be sent.
     ** Affects: firefox
     ...
     http://bugs.launchpad.dev/bugs/...
+
+Notifications are not created if suppress_notify is True.
+
+    >>> len(stub.test_emails)
+    1
+    >>> not_notified = bug_six.subscribe(
+    ...     keybuk, lifeless, suppress_notify=True)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1

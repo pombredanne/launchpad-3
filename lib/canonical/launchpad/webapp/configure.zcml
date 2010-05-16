@@ -62,7 +62,7 @@
     <!-- lazr.batchnavigator hook -->
     <adapter
         factory='.batching.FiniteSequenceAdapter' />
-    
+
     <adapter
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
@@ -216,7 +216,7 @@
         />
 
     <adapter
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
         name="image"
@@ -426,6 +426,13 @@
         />
 
     <adapter
+        for="lp.buildmaster.interfaces.buildbase.IBuildBase"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildBaseFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
@@ -463,6 +470,12 @@
         name="fmt"
         />
     <adapter
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
@@ -484,6 +497,12 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageReleaseFormatterAPI"
         name="fmt"
         />
     <adapter
@@ -733,6 +752,11 @@
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
         />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
 
     <!-- Confirm the database is the correct revision level -->
     <subscriber
@@ -744,12 +768,6 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
-        />
-
-    <!-- Make sure that the config is sane for references debugging. -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
         />
 
     <!-- Set the default timeout function. -->

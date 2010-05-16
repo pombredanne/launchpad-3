@@ -12,11 +12,16 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductConfigureAnswersView',
+    'ProductConfigureBlueprintsView',
+    'ProductConfigureBugTrackerView',
+    'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
     'ProductEditView',
     'ProductFacets',
+    'ProductInvolvementView',
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
@@ -39,7 +44,10 @@ __all__ = [
 
 
 from cgi import escape
+from datetime import datetime, timedelta
 from operator import attrgetter
+
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -50,6 +58,7 @@ from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -64,6 +73,7 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -88,6 +98,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
+from lp.registry.browser.pillar import PillarView
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin)
@@ -109,6 +120,7 @@ from canonical.launchpad.webapp.launchpadform import (
     action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
     ReturnToReferrerMixin)
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.tales import MenuAPI
 from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -217,44 +229,77 @@ class ProductLicenseMixin:
             # Launchpad is ok with all licenses used in this project.
             pass
 
-    def notifyFeedbackMailingList(self):
+    def notifyCommercialMailingList(self):
         """Email feedback@canonical.com to review product license."""
         if (License.OTHER_PROPRIETARY in self.product.licenses
-                or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            user = getUtility(ILaunchBag).user
-            subject = "Project License Submitted for %s by %s" % (
-                    self.product.name, user.name)
-            fromaddress = format_address(
-                "Launchpad", config.canonical.noreply_from_address)
-            license_titles = '\n'.join(
-                license.title for license in self.product.licenses)
+            or License.OTHER_OPEN_SOURCE in self.product.licenses):
+            review_needed = True
+        elif (len(self.product.licenses) == 1
+            and License.DONT_KNOW in self.product.licenses):
+            review_needed = False
+        else:
+            # The project has a recognized license.
+            return
 
-            def indent(text):
-                text = '\n    '.join(line for line in text.split('\n'))
-                text = '    ' + text
-                return text
+        def indent(text):
+            if text is None:
+                return None
+            text = '\n    '.join(line for line in text.split('\n'))
+            text = '    ' + text
+            return text
 
+        user = getUtility(ILaunchBag).user
+        user_address = format_address(
+            user.displayname, user.preferredemail.email)
+        from_address = format_address(
+            "Launchpad", config.canonical.noreply_from_address)
+        commercial_address = format_address(
+            'Commercial', 'commercial@launchpad.net')
+        license_titles = '\n'.join(
+            license.title for license in self.product.licenses)
+        substitutions = dict(
+            user_browsername=user.displayname,
+            user_name=user.name,
+            product_name=self.product.name,
+            product_url=canonical_url(self.product),
+            product_summary=indent(self.product.summary),
+            license_titles=indent(license_titles),
+            license_info=indent(self.product.license_info))
+        if review_needed:
+            # Email the Commercial team that a project needs review.
+            subject = (
+                "Project License Submitted for %(product_name)s "
+                "by %(user_name)s" % substitutions)
             template = helpers.get_email_template('product-license.txt')
-            message = template % dict(
-                user_browsername=user.displayname,
-                user_name=user.name,
-                product_name=self.product.name,
-                product_url=canonical_url(self.product),
-                product_summary=indent(self.product.summary),
-                license_titles=indent(license_titles),
-                license_info=indent(self.product.license_info))
+            message = template % substitutions
+            simple_sendmail(
+                from_address, commercial_address,
+                subject, message, headers={'Reply-To': user_address})
+        # Email the user about license policy.
+        subject = (
+            "License information for %(product_name)s "
+            "in Launchpad" % substitutions)
+        template = helpers.get_email_template('product-other-license.txt')
+        message = template % substitutions
+        simple_sendmail(
+            from_address, user_address,
+            subject, message, headers={'Reply-To': commercial_address})
+        # Inform that Launchpad recognized the license change.
+        self._addLicenseChangeToReviewWhiteboard()
+        self.request.response.addInfoNotification(_(
+            "Launchpad is free to use for software under approved "
+            "licenses. The Launchpad team will be in contact with "
+            "you soon."))
 
-            reply_to = format_address(user.displayname,
-                                      user.preferredemail.email)
-            simple_sendmail(fromaddress,
-                            'feedback@launchpad.net',
-                            subject, message,
-                            headers={'Reply-To': reply_to})
-
-            self.request.response.addInfoNotification(_(
-                "Launchpad is free to use for software under approved "
-                "licenses. The Launchpad team will be in contact with "
-                "you soon."))
+    def _addLicenseChangeToReviewWhiteboard(self):
+        """Update the whiteboard for the reviewer's benefit."""
+        now = datetime.now(tz=pytz.UTC).strftime('YYYY-mm-dd')
+        whiteboard = 'User notified of license policy on %s.' % now
+        naked_product = removeSecurityProxy(self.product)
+        if naked_product.reviewer_whiteboard is None:
+            naked_product.reviewer_whiteboard = whiteboard
+        else:
+            naked_product.reviewer_whiteboard += '\n' + whiteboard
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -291,6 +336,32 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Translations'
         summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
+
+
+class ProductInvolvementView(PillarView):
+    """Encourage configuration of involvement links for projects."""
+
+    has_involvement = True
+    visible_disabled_link_names = ['submit_code']
+
+    @property
+    def configuration_links(self):
+        """The enabled involvement links."""
+        overview_menu = MenuAPI(self.context).overview
+        series_menu = MenuAPI(self.context.development_focus).overview
+        configuration_names = [
+            'configure_answers',
+            'configure_bugtracker',
+            'configure_translations',
+            ]
+        configuration_links = [
+            overview_menu[name] for name in configuration_names]
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure project branch'
+        configuration_links.append(set_branch)
+        return sorted([
+            link for link in configuration_links if link.enabled],
+            key=attrgetter('sort_key'))
 
 
 class ProductNavigationMenu(NavigationMenu):
@@ -331,6 +402,30 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
+        return Link('+configure-bugtracker', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_translations(self):
+        text = 'Configure translations'
+        summary = 'Allow users to submit translations for this project'
+        return Link('+configure-translations', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_answers(self):
+        text = 'Configure support tracker'
+        summary = 'Allow users to ask questions on this project'
+        return Link('+configure-answers', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_blueprints(self):
+        text = 'Configure blueprints'
+        summary = 'Enable tracking of specifications and meetings'
+        return Link('+configure-blueprints', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def branding(self):
         text = 'Change branding'
         return Link('+branding', text, icon='edit')
@@ -368,12 +463,17 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
-class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
+                          HasRecipesMenuMixin):
 
     usedfor = IProduct
     facet = 'overview'
     links = [
         'edit',
+        'configure_answers',
+        'configure_blueprints',
+        'configure_bugtracker',
+        'configure_translations',
         'reassign',
         'top_contributors',
         'distributions',
@@ -386,9 +486,11 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'announcements',
         'administer',
         'review_license',
+        'branch_add',
         'branchvisibility',
         'rdf',
         'branding',
+        'view_recipes',
         ]
 
     def top_contributors(self):
@@ -442,6 +544,11 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         text = 'Branch Visibility Policy'
         return Link('+branchvisibility', text, icon='edit')
 
+    def branch_add(self):
+        text = 'Register a branch'
+        summary = "Register a new Bazaar branch for this project"
+        return Link('+addbranch', text, summary, icon='add')
+
 
 class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
@@ -452,7 +559,7 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         'bugsupervisor',
         'securitycontact',
         'cve',
-        'subscribe'
+        'subscribe',
         )
 
     def filebug(self):
@@ -473,11 +580,12 @@ class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         return Link('+securitycontact', text, icon='edit')
 
 
-class ProductSpecificationsMenu(NavigationMenu,
+class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
                                 HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
+    links = ['configure_blueprints', 'listall', 'doc', 'assignments', 'new',
+             'register_sprint']
 
 
 def _cmp_distros(a, b):
@@ -973,42 +1081,96 @@ class ProductPackagesPortletView(LaunchpadFormView):
     """View class for product packaging portlet."""
 
     schema = Interface
+    package_field_name = 'distributionsourcepackage'
     custom_widget(
-        'distributionsourcepackage', LaunchpadRadioWidget,
-        orientation='vertical')
+        package_field_name, LaunchpadRadioWidget, orientation='vertical')
     suggestions = None
+    max_suggestions = 8
+    other_package = object()
+    not_packaged = object()
+    initial_focus_widget = None
+
+    @cachedproperty
+    def sourcepackages(self):
+        """The project's latest source packages."""
+        current_packages = [
+            sp for sp in self.context.sourcepackages
+            if sp.currentrelease is not None]
+        current_packages.reverse()
+        return current_packages[0:5]
+
+    @cachedproperty
+    def can_show_portlet(self):
+        """Are there packages, or can packages be suggested."""
+        if len(self.sourcepackages) > 0:
+            return True
+        if self.user is None:
+            return False
+        date_next_suggest_packaging = self.context.date_next_suggest_packaging
+        return (
+            date_next_suggest_packaging is None
+            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView`."""
+        return {self.package_field_name: self.other_package}
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProductPackagesPortletView, self).setUpFields()
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        source_packages = ubuntu.searchSourcePackages(self.context.name)
+        distro_source_packages = ubuntu.searchSourcePackages(
+            self.context.name, has_packaging=False,
+            publishing_distroseries=ubuntu.currentseries)
         # Based upon the matches, create a new vocabulary with
         # term descriptions that include a link to the source package.
         self.suggestions = []
         vocab_terms = []
-        for package in source_packages:
-            if package.upstream_product is not None:
-                continue
-            self.suggestions.append(package)
-            item_url = canonical_url(package)
-            description = """<a href="%s">%s</a>""" % (
-                item_url, escape(package.name))
-            vocab_terms.append(SimpleTerm(package, package.name, description))
+        for package in distro_source_packages[:self.max_suggestions]:
+            if package.development_version.currentrelease is not None:
+                self.suggestions.append(package)
+                item_url = canonical_url(package)
+                description = """<a href="%s">%s</a>""" % (
+                    item_url, escape(package.name))
+                vocab_terms.append(
+                    SimpleTerm(package, package.name, description))
+        # Add an option to represent the user's decision to choose a
+        # different package. Note that source packages cannot have uppercase
+        # names with underscores, so the name is safe to use.
+        description = 'Choose another Ubuntu package'
+        vocab_terms.append(
+            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
+        # Add an option to represent that the project is not packaged in
+        # Ubuntu.
+        description = 'This project is not packaged in Ubuntu'
+        vocab_terms.append(
+            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        series_display_name = ubuntu.currentseries.displayname
         self.form_fields = form.Fields(
-            Choice(__name__='distributionsourcepackage',
-                   title=_('Ubuntu packages'),
+            Choice(__name__=self.package_field_name,
+                   title=_('Ubuntu %s packages') % series_display_name,
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Link to this Ubuntu Package'), name='link')
+    @action(_('Set Ubuntu Package Information'), name='link')
     def link(self, action, data):
         product = self.context
-        dsp = data.get('distributionsourcepackage')
-        assert dsp is not None, "distributionsourcepackage was not specified"
+        dsp = data.get(self.package_field_name)
         product_series = product.development_focus
+        if dsp is self.other_package:
+            # The user wants to link an alternate package to this project.
+            self.next_url = canonical_url(
+                product_series, view_name="+ubuntupkg")
+            return
+        if dsp is self.not_packaged:
+            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
+            self.context.date_next_suggest_packaging = year_from_now
+            self.next_url = self.request.getURL()
+            return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         product_series.setPackaging(ubuntu.currentseries,
                                     dsp.sourcepackagename,
@@ -1129,6 +1291,70 @@ class ProductBrandingView(BrandingChangeView):
         return canonical_url(self.context)
 
 
+class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
+    implements(IProductEditMenu)
+    schema = IProduct
+
+    @property
+    def page_title(self):
+        return self.label
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
+class ProductConfigureBugTrackerView(ProductConfigureBase):
+    """View class to configure the bug tracker for a project."""
+
+    label = "Configure bug tracker"
+    field_names = [
+        "bugtracker",
+        "enable_bug_expiration",
+        "remote_product",
+        "bug_reporting_guidelines",
+        ]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The constraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
+
+
+class ProductConfigureBlueprintsView(ProductConfigureBase):
+    """View class to configure the Launchpad Blueprints for a project."""
+
+    label = "Configure Blueprints"
+    field_names = [
+        "official_blueprints",
+        ]
+
+
+class ProductConfigureTranslationsView(ProductConfigureBase):
+    """View class to configure the Launchpad Translations for a project."""
+
+    label = "Configure Translations"
+    field_names = [
+        "official_rosetta",
+        ]
+
+
+class ProductConfigureAnswersView(ProductConfigureBase):
+    """View class to configure the Launchpad Answers for a project."""
+
+    label = "Configure Answers"
+    field_names = [
+        "official_answers",
+        ]
+
+
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
@@ -1141,15 +1367,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "title",
         "summary",
         "description",
-        "bug_reporting_guidelines",
         "project",
-        "official_codehosting",
-        "bugtracker",
-        "enable_bug_expiration",
-        "official_blueprints",
-        "official_rosetta",
-        "official_answers",
-        "remote_product",
         "homepageurl",
         "sourceforgeproject",
         "freshmeatproject",
@@ -1162,7 +1380,6 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "license_info",
         ]
     custom_widget('licenses', LicenseWidget)
-    custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
 
     @property
@@ -1190,27 +1407,15 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
             return False
         return super(ProductEditView, self).showOptionalMarker(field_name)
 
-    def validate(self, data):
-        """Constrain bug expiration to Launchpad Bugs tracker."""
-        # enable_bug_expiration is disabled by JavaScript when bugtracker
-        # is not 'In Launchpad'. The contraint is enforced here in case the
-        # JavaScript fails to activate or run. Note that the bugtracker
-        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
-        # 'In a registered bug tracker' : IBugTracker}.
-        bugtracker = data.get('bugtracker', None)
-        if bugtracker is None or IBugTracker.providedBy(bugtracker):
-            data['enable_bug_expiration'] = False
-        ProductLicenseMixin.validate(self, data)
-
     @action("Change", name='change')
     def change_action(self, action, data):
         previous_licenses = self.context.licenses
         self.updateContextFromData(data)
         # only send email the first time licenses are set
         if len(previous_licenses) == 0:
-            # self.product is expected by notifyFeedbackMailingList
+            # self.product is expected by notifyCommercialMailingList
             self.product = self.context
-            self.notifyFeedbackMailingList()
+            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
@@ -1226,7 +1431,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class EditPrivateBugsMixin:
+class ProductValidationMixin:
 
     def validate_private_bugs(self, data):
         """Perform validation for the private bugs setting."""
@@ -1237,8 +1442,20 @@ class EditPrivateBugsMixin:
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
 
+    def validate_deactivation(self, data):
+        """Verify whether a product can be safely deactivated."""
+        if data['active'] == False and self.context.active == True:
+            if len(self.context.sourcepackages) > 0:
+                self.setFieldError('active',
+                    structured(
+                        'This project cannot be deactivated since it is '
+                        'linked to one or more '
+                        '<a href="%s">source packages</a>.',
+                        canonical_url(self.context, view_name='+packages')))
 
-class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
+
+class ProductAdminView(ProductEditView, ProductValidationMixin):
+    """View for $project/+admin"""
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
@@ -1293,6 +1510,7 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     def validate(self, data):
         """See `LaunchpadFormView`."""
         self.validate_private_bugs(data)
+        self.validate_deactivation(data)
 
     @property
     def cancel_url(self):
@@ -1301,7 +1519,7 @@ class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
 
 
 class ProductReviewLicenseView(ReturnToReferrerMixin,
-                               ProductEditView, EditPrivateBugsMixin):
+                               ProductEditView, ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1340,6 +1558,8 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
         # Private bugs can only be enabled if the product has a bug
         # supervisor.
         self.validate_private_bugs(data)
+        self.validate_deactivation(data)
+
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
@@ -1742,8 +1962,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
-            project=project
-            )
+            project=project)
 
     def main_action(self, data):
         """See `MultiStepView`."""
@@ -1756,7 +1975,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             data['license_reviewed'] = False
 
         self.product = self.create_product(data)
-        self.notifyFeedbackMailingList()
+        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
 

@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'BugTargetBase',
     'HasBugsBase',
+    'HasBugHeatMixin',
     'OfficialBugTag',
     'OfficialBugTagTargetMixin',
     ]
@@ -125,6 +126,17 @@ class HasBugsBase:
         return self.searchTasks(open_tasks_query)
 
     @property
+    def high_bugtasks(self):
+        """See `IHasBugs`."""
+        high_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            importance=BugTaskImportance.HIGH,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(high_tasks_query)
+
+    @property
     def critical_bugtasks(self):
         """See `IHasBugs`."""
         critical_tasks_query = BugTaskSearchParams(
@@ -139,7 +151,8 @@ class HasBugsBase:
     def inprogress_bugtasks(self):
         """See `IHasBugs`."""
         inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
+            user=getUtility(ILaunchBag).user,
+            status=BugTaskStatus.INPROGRESS,
             omit_dupes=True)
 
         return self.searchTasks(inprogress_tasks_query)
@@ -162,8 +175,56 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
-    def setMaxBugHeat(self, heat):
+    @property
+    def has_bugtasks(self):
         """See `IHasBugs`."""
+        # Check efficiently if any bugtasks exist. We should avoid
+        # expensive calls like all_bugtasks.count(). all_bugtasks
+        # returns a storm.SQLObjectResultSet instance, and this
+        # class does not provide methods like is_empty(). But we can
+        # indirectly call SQLObjectResultSet._result_set.is_empty()
+        # by converting all_bugtasks into a boolean object.
+        return bool(self.all_bugtasks)
+
+    def getBugCounts(self, user, statuses=None):
+        """See `IHasBugs`."""
+        if statuses is None:
+            statuses = BugTaskStatus.items
+        statuses = list(statuses)
+
+        count_column = """
+            COUNT (CASE WHEN BugTask.status = %s
+                        THEN BugTask.id ELSE NULL END)"""
+        select_columns = [count_column % sqlvalues(status)
+                          for status in statuses]
+        conditions = [
+            '(%s)' % self._getBugTaskContextClause(),
+            'BugTask.bug = Bug.id',
+            'Bug.duplicateof is NULL']
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        cur = cursor()
+        cur.execute(
+            "SELECT %s FROM BugTask, Bug WHERE %s" % (
+                ', '.join(select_columns), ' AND '.join(conditions)))
+        counts = cur.fetchone()
+        return dict(zip(statuses, counts))
+
+
+class BugTargetBase(HasBugsBase):
+    """Standard functionality for IBugTargets.
+
+    All IBugTargets should inherit from this class.
+    """
+
+
+class HasBugHeatMixin:
+    """Standard functionality for objects implementing IHasBugHeat."""
+
+    def setMaxBugHeat(self, heat):
+        """See `IHasBugHeat`."""
         if (IDistribution.providedBy(self)
             or IProduct.providedBy(self)
             or IProjectGroup.providedBy(self)
@@ -174,7 +235,7 @@ class HasBugsBase:
             raise NotImplementedError
 
     def recalculateMaxBugHeat(self):
-        """See `IHasBugs`."""
+        """See `IHasBugHeat`."""
         if IProductSeries.providedBy(self):
             return self.product.recalculateMaxBugHeat()
         if IDistroSeries.providedBy(self):
@@ -240,49 +301,15 @@ class HasBugsBase:
             self.project.recalculateMaxBugHeat()
 
 
-    def getBugCounts(self, user, statuses=None):
-        """See `IHasBugs`."""
-        if statuses is None:
-            statuses = BugTaskStatus.items
-        statuses = list(statuses)
-
-        count_column = """
-            COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END)"""
-        select_columns = [count_column % sqlvalues(status)
-                          for status in statuses]
-        conditions = [
-            '(%s)' % self._getBugTaskContextClause(),
-            'BugTask.bug = Bug.id',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        cur = cursor()
-        cur.execute(
-            "SELECT %s FROM BugTask, Bug WHERE %s" % (
-                ', '.join(select_columns), ' AND '.join(conditions)))
-        counts = cur.fetchone()
-        return dict(zip(statuses, counts))
-
-
-
-class BugTargetBase(HasBugsBase):
-    """Standard functionality for IBugTargets.
-
-    All IBugTargets should inherit from this class.
-    """
-
 
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
     This class is inteneded to be used as a mixin for the classes
-    Distribution, Product and Project, which can define official
+    Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
-    Using this call in Project requires a fix of bug 341203, see
+    Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
     """
 

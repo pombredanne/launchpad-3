@@ -12,6 +12,7 @@ __metaclass__ = type
 import hashlib
 import logging
 import os
+import shutil
 
 from datetime import datetime
 
@@ -29,7 +30,7 @@ from lp.archivepublisher.utils import (
 from canonical.database.sqlbase import sqlvalues
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, ArchiveStatus
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
@@ -596,3 +597,32 @@ class Publisher(object):
             in_file.close()
 
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
+
+    def deleteArchive(self):
+        """Delete the archive.
+        
+        Physically remove the entire archive from disk and set the archive's 
+        status to DELETED.
+
+        Any errors encountered while removing the archive from disk will 
+        be caught and an OOPS report generated.
+        """
+
+        root_dir = os.path.join(
+            self._config.distroroot, self.archive.owner.name,
+            self.archive.name)
+
+        self.log.info(
+            "Attempting to delete archive '%s/%s' at '%s'." % (
+                self.archive.owner.name, self.archive.name, root_dir))
+
+        try:
+            shutil.rmtree(root_dir)
+        except (shutil.Error, OSError), e:
+            self.log.warning(
+                "Failed to delete directory '%s' for archive '%s/%s'\n%s" % (
+                    root_dir, self.archive.owner.name, 
+                    self.archive.name, e))
+
+        self.archive.status = ArchiveStatus.DELETED
+        self.archive.publish = False

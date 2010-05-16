@@ -2,7 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
-"""Database classes that implement SourcePacakge items."""
+"""Database classes that implement SourcePackage items."""
 
 __metaclass__ = type
 
@@ -21,13 +21,17 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.model.branch import Branch
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from lp.soyuz.model.build import Build, BuildSet
+from lp.soyuz.model.binarypackagebuild import (
+    BinaryPackageBuild, BinaryPackageBuildSet)
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
@@ -48,7 +52,6 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -157,7 +160,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin,
+                    HasBugHeatMixin, HasCodeImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -166,8 +170,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBuildRecords, IHasTranslationTemplates,
-        IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        IHasTranslationTemplates, IQuestionTarget)
 
     classProvides(ISourcePackageFactory)
 
@@ -528,7 +532,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # We re-use the optional-parameter handling provided by BuildSet
         # here, but pass None for the name argument as we've already
         # matched on exact source package name.
-        BuildSet().handleOptionalParamsForBuildQueries(
+        BinaryPackageBuildSet().handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, build_state, name=None,
             pocket=pocket, arch_tag=arch_tag)
 
@@ -559,7 +563,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
-        return Build.select(' AND '.join(condition_clauses),
+        return BinaryPackageBuild.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)
 
     @property
@@ -678,7 +682,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
 
         packagename = self.sourcepackagename.name
-        displayname = self.displayname
         distro = self.distroseries.distribution
 
         histories = distro.main_archive.getPublishedSources(

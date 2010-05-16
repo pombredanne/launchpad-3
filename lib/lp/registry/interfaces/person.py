@@ -11,11 +11,8 @@ __all__ = [
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INewPerson',
-    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
-    'IPersonChangePassword',
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
@@ -44,7 +41,8 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -72,8 +70,7 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_person_email, validate_new_team_email)
+from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
@@ -86,6 +83,8 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.location import (
@@ -93,6 +92,7 @@ from lp.registry.interfaces.location import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
+from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName
@@ -128,6 +128,7 @@ def validate_person(obj, attr, value, validate_func):
 
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
+
     def validate(person):
         return not is_public_person(person)
 
@@ -296,6 +297,7 @@ class PersonCreationRationale(DBEnumeratedType):
         commented on.
         """)
 
+
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
@@ -431,35 +433,10 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
-# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
-# to remove this.
-class IPersonChangePassword(Interface):
-    """The schema used by Person +changepassword form."""
-
-    currentpassword = PasswordField(
-        title=_('Current password'), required=True, readonly=False)
-
-    password = PasswordField(
-        title=_('New password'), required=True, readonly=False)
-
-
 class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
-
-
-class INewPerson(Interface):
-    """The schema used by IPersonSet's +newperson form."""
-
-    emailaddress = StrippedTextLine(
-        title=_('Email address'), required=True,
-        constraint=validate_new_person_email)
-    displayname = StrippedTextLine(title=_('Display name'), required=True)
-    creation_comment = Text(
-        title=_('Creation reason'), required=True,
-        description=_("The reason why you're creating this profile."))
 
 
 # This has to be defined here to avoid circular import problems.
@@ -482,7 +459,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs):
+                    IPrivacy, IHasBugs, IHasRecipes):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -495,9 +472,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
-             description=_(
-                 "The content of your home page. Edit this and it will be "
-                 "displayed for all the world to see.")))
+            description=_(
+                "The content of your profile page. Use plain text, "
+                "paragraphs are preserved and URLs are linked in pages.")))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -519,8 +496,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             description=_(
                 "An image of exactly 64x64 pixels that will be displayed in "
                 "the heading of all pages related to you. Traditionally this "
-                "is a logo, a small picture or a personal mascot. It should be "
-                "no bigger than 50kb in size.")))
+                "is a logo, a small picture or a personal mascot. It should "
+                "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
     mugshot = exported(MugshotImageUpload(
@@ -535,39 +512,31 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
-            description=_('Your address (Line 1)')
-            )
+            description=_('Your address (Line 1)'))
     addressline2 = TextLine(
             title=_('Address'), required=False, readonly=False,
-            description=_('Your address (Line 2)')
-            )
+            description=_('Your address (Line 2)'))
     city = TextLine(
             title=_('City'), required=True, readonly=False,
             description=_('The City/Town/Village/etc to where the CDs should '
-                          'be shipped.')
-            )
+                          'be shipped.'))
     province = TextLine(
             title=_('Province'), required=True, readonly=False,
             description=_('The State/Province/etc to where the CDs should '
-                          'be shipped.')
-            )
+                          'be shipped.'))
     country = Choice(
             title=_('Country'), required=True, readonly=False,
             vocabulary='CountryName',
-            description=_('The Country to where the CDs should be shipped.')
-            )
+            description=_('The Country to where the CDs should be shipped.'))
     postcode = TextLine(
             title=_('Postcode'), required=True, readonly=False,
-            description=_('The Postcode to where the CDs should be shipped.')
-            )
+            description=_('The Postcode to where the CDs should be shipped.'))
     phone = TextLine(
             title=_('Phone'), required=True, readonly=False,
-            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
-            )
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445'))
     organization = TextLine(
             title=_('Organization'), required=False, readonly=False,
-            description=_('The Organization requesting the CDs')
-            )
+            description=_('The Organization requesting the CDs'))
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),
@@ -605,7 +574,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
     oauth_request_tokens = Attribute(_("Non-expired request tokens"))
 
-    sshkeys = Attribute(_('List of SSH keys'))
+    sshkeys = exported(
+             CollectionField(
+                title= _('List of SSH keys'),
+                readonly=False, required=False,
+                value_type=Reference(schema=ISSHKey)))
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -628,14 +601,21 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     is_probationary = exported(
         Bool(title=_("Is this a probationary user?"), readonly=True))
     is_ubuntu_coc_signer = exported(
-	Bool(title=_("Signed Ubuntu Code of Conduct"),
-        readonly=True))
+    Bool(title=_("Signed Ubuntu Code of Conduct"),
+            readonly=True))
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
-    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
-    inactivegpgkeys = Attribute(
+    gpg_keys = exported(
+        CollectionField(
+            title=_("List of valid OpenPGP keys ordered by ID"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = CollectionField(
+        title=_("Set of fingerprints pending confirmation"),
+        readonly=False, required=False,
+        value_type=Reference(schema=IGPGKey))
+    inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
         CollectionField(
@@ -772,8 +752,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             description=_("The PPA named 'ppa' owned by this person."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
-            schema=Interface)
-        )
+            schema=Interface))
 
     ppas = exported(
         CollectionField(
@@ -864,6 +843,33 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
         """
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        description=Text(),
+        distroseries=List(value_type=Reference(schema=Interface)),
+        name=TextLine(),
+        recipe_text=Text(),
+        sourcepackagename=TextLine(),
+        )
+    @export_factory_operation(Interface, [])
+    def createRecipe(name, description, recipe_text, distroseries,
+                     sourcepackagename, registrant):
+        """Create a SourcePackageRecipe owned by this person.
+
+        :param name: the name to use for referring to the recipe.
+        :param description: A description of the recipe.
+        :param recipe_text: The text of the recipe.
+        :param distroseries: The distroseries to use.
+        :param sourcepackagename: The name of the sourcepackage for the recipe.
+        :return: a SourcePackageRecipe.
+        """
+
+    @operation_parameters(name=TextLine(required=True))
+    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @export_read_operation()
+    def getRecipe(name):
+        """Return the person's recipe with the given name."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
@@ -1470,6 +1476,15 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    @export_read_operation()
+    def getArchiveSubscriptionURLs():
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
 
 class IPersonModerate(Interface):
     """IPerson attributes that require launchpad.Moderate."""
@@ -1487,8 +1502,7 @@ class IPersonCommAdminWriteRestricted(Interface):
                    "Public visibility is standard.  Private Membership "
                    "means that a team's members are hidden.  "
                    "Private means the team is completely "
-                   "hidden [experimental]."
-                   ),
+                   "hidden [experimental]."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 
@@ -1538,16 +1552,6 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 PersonChoice.schema = IPerson
 
 
-class INewPersonForm(IPerson):
-    """Interface used to create new Launchpad accounts.
-
-    The only change with `IPerson` is a customised Password field.
-    """
-
-    password = PasswordField(
-        title=_('Create password'), required=True, readonly=False)
-
-
 class ITeamPublic(Interface):
     """Public attributes of a Team."""
 
@@ -1579,8 +1583,9 @@ class ITeamPublic(Interface):
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
              description=_(
-                "Include information on how to get involved with "
-                "development. Use plain text; URLs will be linkified.")),
+                "Details about the team's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages.")),
         exported_as='team_description')
 
     subscriptionpolicy = exported(

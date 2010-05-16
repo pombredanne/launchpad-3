@@ -12,54 +12,161 @@ A new bug will have a heat of zero.
     >>> bug.heat
     0
 
+It will also have a heat_last_updated of None.
+
+    >>> print bug.heat_last_updated
+    None
+
 The bug's heat can be set by calling its setHeat() method.
 
     >>> bug.setHeat(42)
     >>> bug.heat
     42
 
+Its heat_last_updated will also have been set.
+
+    >>> bug.heat_last_updated
+    datetime.datetime(..., tzinfo=<UTC>)
+
+
+Adjusting bug heat in transaction
+---------------------------------
+
+Sometimes, when a bug changes, we want to see the changes reflected in the bug's
+heat value immidiately, without waiting for heat to be recalculated. Currently
+we adjust heat immidiately for bug privacy and security.
+
+    >>> bug_owner = factory.makePerson()
+    >>> bug = factory.makeBug(owner=bug_owner)
+    >>> bug.heat
+    0
+    >>> changed = bug.setPrivate(True, bug_owner)
+    >>> bug.heat
+    150
+    >>> changed = bug.setSecurityRelated(True)
+    >>> bug.heat
+    400
+    >>> changed = bug.setPrivate(False, bug_owner)
+    >>> bug.heat
+    250
+
+
+Getting bugs whose heat is outdated
+-----------------------------------
+
+It's possible to get the set of bugs whose heat hasn't been updated for
+a given amount of time by calling IBugSet's getBugsWithOutdatedHeat()
+method.
+
+First, we'll set the heat of all bugs so that none of them are out of
+date.
+
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> for bug in getUtility(IBugSet).dangerousGetAllBugs():
+    ...     bug.setHeat(0)
+
+If we call getBugsWithOutdatedHeat() now, the set that is returned will
+be empty because all the bugs have been recently updated.
+getBugsWithOutdatedHeat() takes a single parameter, max_heat_age, which
+is the maximum age, in days, that a bug's heat can be before it gets
+included in the returned set.
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    0
+
+IBug.setHeat() takes a timestamp parameter so that we can set the
+heat_last_updated date manually for the purposes of testing. If we make
+a bug's heat older than the max_heat_age that we pass to
+getBugsWithOutdatedHeat() it will appear in the set returned by
+getBugsWithOutdatedHeat().
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import timezone
+    >>> old_heat_bug = factory.makeBug()
+    >>> old_heat_bug.setHeat(
+    ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))
+
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs.count()
+    1
+
+    >>> outdated_bugs[0] == old_heat_bug
+    True
+
+getBugsWithOutdatedHeat() also returns bugs whose heat has never been
+updated.
+
+    >>> new_bug = factory.makeBug()
+    >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
+    >>> outdated_bugs.count()
+    2
+
+    >>> new_bug in outdated_bugs
+    True
+
 
 The BugHeatUpdater class
 ---------------------------
 
-In order to calculate bug heat we need to use the BugHeatUpdater
-class, which is designed precisely for that task. It's part of the garbo
-module and runs as part of the garbo-daily cronjob.
+The BugHeatUpdater class is used to create bug heat calculation jobs for
+bugs with out-of-date heat.
 
     >>> from canonical.launchpad.scripts.garbo import BugHeatUpdater
     >>> from canonical.launchpad.scripts import FakeLogger
 
-    >>> update_bug_heat = BugHeatUpdater(FakeLogger())
+    >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
-it as a method will update the heat for all the bugs currently held in
-Launchpad.
+it as a method will add jobs to calculate the heat of for all the bugs
+whose heat is more than seven days old.
 
-Before update_bug_heat is called, bug 1 will have no heat.
+Before update_bug_heat is called, we'll ensure that there are no waiting
+jobs in the bug heat calculation queue.
 
-    >>> from zope.component import getUtility
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> bug_1 = getUtility(IBugSet).get(1)
+    >>> from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
+    >>> for calc_job in getUtility(ICalculateBugHeatJobSource).iterReady():
+    ...     calc_job.job.start()
+    ...     calc_job.job.complete()
 
-    >>> bug_1.heat
+    >>> ready_jobs = list(getUtility(ICalculateBugHeatJobSource).iterReady())
+    >>> len(ready_jobs)
     0
 
-We touch bug 1 to make sure its date_last_updated is recent enough (bug heat
-decays over time).
+We need to commit here to ensure that the bugs we've created are
+available to the update_bug_heat script.
 
-    >>> new_comment = bug_1.newMessage(
-    ...     owner=bug_1.owner, subject="...", content="...")
-    >>> import transaction ; transaction.commit()
-    >>> bug_1 = getUtility(IBugSet).get(1)
+    >>> import transaction
+    >>> transaction.commit()
 
-    >>> update_bug_heat(chunk_size=1)
-    DEBUG Updating 1 Bugs (starting id: ...)
-    ...
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    2
 
-Bug 1's heat will now be greater than 0.
+We need to run update_bug_heat() twice to ensure that both the bugs are
+updated.
 
-    >>> bug_1.heat > 0
-    True
+    >>> update_bug_heat(chunk_size=2)
+    DEBUG Adding CalculateBugHeatJobs for 2 Bugs (starting id: ...)
+    DEBUG Adding CalculateBugHeatJob for bug ...
+    DEBUG Adding CalculateBugHeatJob for bug ...
+
+There will now be two CalculateBugHeatJobs in the queue.
+
+    >>> ready_jobs = list(getUtility(ICalculateBugHeatJobSource).iterReady())
+    >>> len(ready_jobs)
+    2
+
+Running them will update the bugs' heat.
+
+    >>> for calc_job in getUtility(ICalculateBugHeatJobSource).iterReady():
+    ...     calc_job.job.start()
+    ...     calc_job.run()
+    ...     calc_job.job.complete()
+
+IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
+the bugs have been updated.
+
+    >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
+    0
 
 
 Caculating the maximum heat for a target
@@ -95,6 +202,7 @@ Transitioning from one target to another, calculates the value for the new
 target.
 
     >>> another_product = factory.makeProduct()
+    >>> transaction.commit()
     >>> bug.bugtasks[0].transitionToTarget(another_product)
     >>> print another_product.max_bug_heat
     123

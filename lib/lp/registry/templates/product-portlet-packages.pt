@@ -3,17 +3,18 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag=""
-  define="packages context/sourcepackages">
+  define="packages view/sourcepackages"
+  condition="view/can_show_portlet">
 
 <div class="portlet" id="portlet-packages">
+  <h2>
+    <span class="see-all"><a
+      tal:attributes="href context/menu:overview/packages/fmt:url">
+      All packages</a></span>
+    Packages in Ubuntu
+  </h2>
 
   <tal:has_packages condition="packages">
-    <h2>
-      <span class="see-all"><a
-        tal:attributes="href context/menu:overview/packages/fmt:url">All
-        packages</a></span>
-      Packages in distributions
-    </h2>
 
     <ul>
       <tal:pair tal:repeat="package packages">
@@ -35,12 +36,6 @@
   </tal:has_packages>
 
   <tal:has_no_packages condition="not:packages">
-    <h2>
-      <span class="see-all"><a
-        tal:attributes="href context/menu:overview/packages/fmt:url">All
-        packages</a></span>
-      Packages in Ubuntu
-    </h2>
 
     <p>
       Launchpad doesn't know which Ubuntu packages this project
@@ -48,24 +43,17 @@
       let distribution and upstream maintainers share bugs, patches, and
       translations efficiently.
     </p>
-    <div id="suggestions" tal:condition="view/suggestions">
-      <div metal:use-macro="context/@@launchpad_form/form">
-        <div class="actions" metal:fill-slot="buttons">
-          <input tal:replace="structure view/link/render"/>
-              &nbsp;or&nbsp;
-              <a tal:replace="structure
-                              context/development_focus/menu:overview/ubuntupkg/fmt:link" />
-        </div>
-      </div>
-    </div>
-
-    <div id="suggestions" tal:condition="not:view/suggestions">
-      <p>
+    <div id="suggestions">
+      <p tal:condition="not:view/suggestions">
         There are no unlinked source packages that are a good match.
         Can you suggest one?
       </p>
-      <a tal:replace="structure
-                      context/development_focus/menu:overview/ubuntupkg/fmt:link" />
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div class="actions" metal:fill-slot="buttons">
+          <input tal:replace="structure view/link/render"/>
+        </div>
+      </div>
     </div>
 
   </tal:has_no_packages>

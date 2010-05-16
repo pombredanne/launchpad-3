@@ -13,13 +13,9 @@
         color: lightgray;
     }
     </style>
-    <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
       LPS.use('node', 'lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
+        Y.on('domready', Y.lp.pofile.initializeTranslationMessage);
       });
     </script>
     </div>
@@ -76,6 +72,7 @@
                 <th colspan="5" style="text-align: right;">
                   <input type="submit"
                          name="submit_translations"
+                         id="save_and_continue_button"
                          value="Save &amp; Continue" />
                 </th>
               </tr>
@@ -89,6 +86,8 @@
           replace="structure view/batchnav/@@+navigation-links-lower" />
       <tal:status replace="structure context/pofile/@@+access" />
       </tal:havepluralforms>
+      <metal:pofile-js-footer 
+        use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
 
   </body>

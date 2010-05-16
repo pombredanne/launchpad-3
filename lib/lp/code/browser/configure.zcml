@@ -57,19 +57,11 @@
       permission="zope.Public"
       />
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+code-import-list"
-      class="lp.registry.browser.productseries.ProductSeriesSourceListView"
-      template="../templates/sources-list.pt"
-      permission="zope.Public"
-      />
-  <browser:page
       for="zope.interface.Interface"
       name="+test-webservice-js"
       template="../../../canonical/launchpad/templates/test-webservice-js.pt"
       permission="zope.Public"
       />
-
 
 </facet>
 
@@ -149,10 +141,6 @@
             name="+index"
             template="../templates/bazaar-index.pt"/>
     </browser:pages>
-    <browser:menus
-        classes="
-            BazaarBranchesMenu"
-        module="lp.code.browser.bazaar"/>
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+hierarchy"
@@ -714,6 +702,11 @@
             template="../templates/codeimport-new.pt"
             permission="launchpad.AnyPerson"/>
     </facet>
+    <browser:url
+        for="lp.code.interfaces.codeimport.ICodeImport"
+        attribute_to_parent="branch"
+        path_expression="string:+code-import"
+        rootsite="code"/>
     <browser:navigation
         module="lp.code.browser.codeimport"
         classes="
@@ -1058,6 +1051,19 @@
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
+        factory="lp.code.browser.codeimportmachine.CodeImportMachineBreadcrumb"
+        permission="zope.Public"/>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.code.interfaces.codeimportmachine.ICodeImportMachineSet"
+        factory="lp.code.browser.codeimportmachine.CodeImportMachineSetBreadcrumb"
+        permission="zope.Public"/>
+
     <adapter
          factory="lp.code.browser.branchmergeproposal.PreviewDiffHTMLRepresentation"
          name="lazr.restful.EntryResource"/>
@@ -1074,5 +1080,16 @@
         factory="lp.code.browser.diff.DiffFormatterAPI"
         name="fmt"
         />
+
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+        attribute_to_parent="owner"
+        path_expression="string:+recipe/${name}"
+        rootsite="code" />
+    <browser:url
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        attribute_to_parent="recipe"
+        path_expression="string:+build/${id}"
+        rootsite="code" />
 
 </configure>

@@ -1,7 +1,7 @@
 ProductSeries Views
 ===================
 
-Productseries menus
+ProductSeries menus
 -------------------
 
 The ProductSeriesOverviewMenu provides the links to the common ProductSeries
@@ -11,9 +11,59 @@ views.
     ...     ProductSeriesOverviewMenu)
     >>> from lp.testing.menu import check_menu_links
 
-    >>> series = factory.makeSeries()
+    >>> product = factory.makeProduct(name='app')
+    >>> series = factory.makeSeries(name='simple', product=product)
     >>> check_menu_links(ProductSeriesOverviewMenu(series))
     True
+
+
+ProductSeries Involvement links
+...............................
+
+The ProductSeries involvement view uses the ProductSeriesInvolvedMenu when
+rendering links:
+
+    >>> login_person(product.owner)
+    >>> product.official_answers = True
+    >>> product.official_blueprints = True
+    >>> product.official_malone = True
+    >>> product.official_rosetta = True
+    >>> view = create_view(series, '+get-involved')
+
+    # official_answers is always false for product series.
+    >>> print view.official_answers
+    False
+    >>> print view.official_blueprints
+    True
+    >>> print view.official_malone
+    True
+    >>> print view.official_rosetta
+    True
+    >>> print view.official_codehosting
+    False
+    >>> for link in view.enabled_links:
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
+    http://code.launchpad.dev/app/+addbranch
+
+Setting a branch for the series should enable the +addbranch link.
+
+    >>> series.branch = factory.makeBranch()
+    >>> view = create_view(series, '+get-involved')
+    >>> print view.official_codehosting
+    True
+    >>> for link in view.enabled_links:
+    ...     print link.url
+    http://bugs.launchpad.dev/app/simple/+filebug
+    http://translations.launchpad.dev/app/simple
+    http://code.launchpad.dev/app/+addbranch
+    http://blueprints.launchpad.dev/app/simple/+addspec
+    >>> for link in view.visible_disabled_links:
+    ...     print link.url
 
 
 ProductSeries view
@@ -26,14 +76,11 @@ update the milestones and releases table.
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
     >>> login('foo.bar@canonical.com')
-
-    >>> product = factory.makeProduct(name='app')
-    >>> series = factory.makeSeries(name='simple', product=product)
     >>> view = create_view(series, '+index', principal=product.owner)
     >>> script = find_tag_by_id(view.render(), 'milestone-script')
     >>> print script
     <script id="milestone-script" type="text/javascript">
-        YUI().use(... 'registry.milestoneoverlay', 'registry.milestonetable'...
+        YUI().use(... 'lp.registry.milestoneoverlay', 'lp.registry.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
             var milestone_row_uri =
@@ -43,8 +90,8 @@ update the milestones and releases table.
                 var create_milestone_link = Y.get(
                     '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
-                Y.registry.milestoneoverlay.attach_widget(config);...
-                Y.registry.milestonetable.setup(table_config);...
+                Y.lp.registry.milestoneoverlay.attach_widget(config);...
+                Y.lp.registry.milestonetable.setup(table_config);...
 
 If the Create milestone link is not enabled, the script is not present.
 
@@ -106,6 +153,11 @@ The view provides access to the latest release if it has one.
     >>> view = create_initialized_view(series_with_downloads, name='+index')
     >>> print view.latest_release_with_download_files.version
     0.9.2
+
+The view also provides a link to register a new code import.
+
+    >>> print view.request_import_link
+    http://launchpad.dev/firefox/+new-import
 
 
 Edit ProductSeries
@@ -332,7 +384,6 @@ view's can_delete property checks this rule.
 The delete action will not delete a series that is the active focus of
 development.
 
-    >>> transaction.commit()
     >>> form = {
     ...     'field.actions.delete': 'Delete this Series',
     ...     }

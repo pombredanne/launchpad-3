@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -16,8 +16,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IProductSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.ftests import login
-from canonical.launchpad.webapp.interaction import Participation
+from canonical.launchpad.webapp.interaction import setupInteractionByEmail
 
 from canonical.launchpad.scripts.sftracker import Tracker, TrackerImporter
 
@@ -52,11 +51,7 @@ def main(argv):
 
     execute_zcml_for_scripts()
     ztm = initZopeless()
-    # XXX gary 21-Oct-2008 bug 285808
-    # We should reconsider using a ftest helper for production code.  For now,
-    # we explicitly keep the code from using a test request by using a basic
-    # participation.
-    login('bug-importer@launchpad.net', Participation())
+    setupInteractionByEmail('bug-importer@launchpad.net')
 
     product = getUtility(IProductSet).getByName(options.product)
     tracker = Tracker(options.dumpfile, options.dumpdir)

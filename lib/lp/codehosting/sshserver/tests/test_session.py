@@ -5,17 +5,16 @@
 
 __metaclass__ = type
 
-import os
-import sys
 import unittest
 
 from twisted.conch.interfaces import ISession
+from twisted.conch.ssh import connection
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
-from lp.codehosting.sshserver.auth import LaunchpadAvatar
+from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
     ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
 from lp.codehosting.tests.helpers import AvatarTestCase
@@ -36,6 +35,16 @@ class MockReactor:
         return MockProcessTransport(executable)
 
 
+class MockSSHSession:
+    """Just enough of SSHSession to allow checking of reporting to stderr."""
+
+    def __init__(self, log):
+        self.log = log
+
+    def writeExtended(self, channel, data):
+        self.log.append(('writeExtended', channel, data))
+
+
 class MockProcessTransport:
     """Mock transport used to fake speaking with child processes that are
     mocked out in tests.
@@ -44,6 +53,7 @@ class MockProcessTransport:
     def __init__(self, executable):
         self._executable = executable
         self.log = []
+        self.session = MockSSHSession(self.log)
 
     def closeStdin(self):
         self.log.append(('closeStdin',))
@@ -73,7 +83,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         # The logging system will try to get the id of avatar.transport, so
         # let's give it something to take the id of.
         self.avatar.transport = object()
@@ -90,7 +100,11 @@ class TestExecOnlySession(AvatarTestCase):
         # openShell closes the connection.
         protocol = MockProcessTransport('bash')
         self.session.openShell(protocol)
-        self.assertEqual(protocol.log[-1], ('loseConnection',))
+        self.assertEqual(
+            [('writeExtended', connection.EXTENDED_DATA_STDERR,
+              'No shells on this server.\r\n'),
+             ('loseConnection',)],
+            protocol.log)
 
     def test_windowChangedNotImplemented(self):
         # windowChanged raises a NotImplementedError. It doesn't matter what
@@ -225,7 +239,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = RestrictedExecOnlySession(
             self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
@@ -253,7 +267,11 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         protocol = MockProcessTransport('cat')
         self.assertEqual(
             None, self.session.execCommand(protocol, 'cat'))
-        self.assertEqual(protocol.log[-1], ('loseConnection',))
+        self.assertEqual(
+            [('writeExtended', connection.EXTENDED_DATA_STDERR,
+             "Not allowed to execute 'cat'.\r\n"),
+             ('loseConnection',)],
+            protocol.log)
 
     def test_getCommandToRunReturnsTemplateCommand(self):
         # When passed the allowed command, getCommandToRun always returns the
@@ -287,7 +305,7 @@ class TestSessionIntegration(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
         # When Conch tries to adapt the SSH server avatar to ISession, it

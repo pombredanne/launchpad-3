@@ -11,11 +11,14 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, IBuildFarmJobDerived)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -126,7 +129,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # First mark all builds in the sample data as already built.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(Build)
+        sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
         store.flush()
@@ -225,3 +228,13 @@ class TestBuildPackageJob(TestBuildJobBase):
         # Test that BuildPackageJob returns the title of the build.
         build, bq = find_job(self, 'gcc', '386')
         self.assertEqual(bq.specific_job.getTitle(), build.title)
+
+    def test_providesInterfaces(self):
+        # Ensure that a BuildPackageJob generates an appropriate cookie.
+        build, bq = find_job(self, 'gcc', '386')
+        build_farm_job = bq.specific_job
+        self.assertProvides(build_farm_job, IBuildPackageJob)
+        self.assertProvides(build_farm_job, IBuildFarmJob)
+        self.assertProvides(build_farm_job, IBuildFarmJobDerived)
+
+

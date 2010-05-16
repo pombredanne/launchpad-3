@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -16,18 +16,17 @@ import logging
 import socket
 import xmlrpclib
 
-from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
-from lp.buildmaster.interfaces.builder import CorruptBuildID
+
+from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 
 class BuildFarmJobBehaviorBase:
@@ -53,29 +52,17 @@ class BuildFarmJobBehaviorBase:
         """The default behavior is a no-op."""
         pass
 
-    def slaveStatus(self, raw_slave_status):
+    def updateSlaveStatus(self, raw_slave_status, status):
         """See `IBuildFarmJobBehavior`.
 
         The default behavior is that we don't add any extra values."""
-        return {}
+        pass
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_cookie):
         """See `IBuildFarmJobBehavior`."""
-        # Extract information from the identifier.
-        try:
-            build_id, queue_item_id = slave_build_id.split('-')
-            build_id = int(build_id)
-            queue_item_id = int(queue_item_id)
-        except ValueError:
-            raise CorruptBuildID('Malformed build ID')
-
-        try:
-            queue_item = getUtility(IBuildQueueSet).get(queue_item_id)
-            # Check whether build and buildqueue are properly related.
-        except SQLObjectNotFound, reason:
-            raise CorruptBuildID(str(reason))
-        if queue_item.specific_job.build.id != build_id:
-            raise CorruptBuildID('Job build entry mismatch')
+        expected_cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        if slave_build_cookie != expected_cookie:
+            raise CorruptBuildCookie("Invalid slave build cookie.")
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -226,6 +213,6 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         return "Idle"
 
-    def verifySlaveBuildID(self, slave_build_id):
+    def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuildFarmJobBehavior`."""
-        raise CorruptBuildID('No job assigned to builder')
+        raise CorruptBuildCookie('No job assigned to builder')

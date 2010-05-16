@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,C0322
 
 """Person-related view classes."""
 
@@ -10,17 +10,14 @@ __all__ = [
     'BeginTeamClaimView',
     'BugSubscriberPackageBugsSearchListingView',
     'EmailToPersonView',
-    'PeopleSearchMenu'
     'PeopleSearchView',
     'PersonAccountAdministerView',
-    'PersonAddView',
     'PersonAdministerView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
     'PersonBugsMenu',
-    'PersonClaimView',
     'PersonCodeOfConductEditView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
@@ -102,7 +99,7 @@ from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import adapts, getUtility
+from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -116,7 +113,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
-from lazr.restful.interface import copy_field, use_template
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
@@ -136,6 +133,7 @@ from lp.soyuz.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -154,6 +152,7 @@ from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
 from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -163,9 +162,8 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    INewPerson, IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
-    PersonCreationRationale, PersonVisibility, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    IPerson, IPersonClaim, IPersonSet, ITeam, ITeamReassignment,
+    PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, IPollSubset
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
@@ -175,8 +173,8 @@ from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
 from canonical.launchpad.interfaces.message import (
@@ -221,9 +219,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import (
-    logoutPerson, allowUnauthenticatedSession)
+from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
@@ -429,11 +425,28 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return None
         return irc_nick
 
-    @stepthrough('+archivesubscriptions')
-    def traverse_archive_subscription(self, archive_id):
+    @stepto('+archivesubscriptions')
+    def traverse_archive_subscription(self):
         """Traverse to the archive subscription for this person."""
-        return traverse_archive_subscription_for_subscriber(
-            self.context, archive_id)
+        if self.context.is_team:
+            raise NotFoundError
+
+        if self.request.stepstogo:
+            # In which case we assume it is the archive_id (for the
+            # moment, archive name will be an option soon).
+            archive_id = self.request.stepstogo.consume()
+            return traverse_archive_subscription_for_subscriber(
+                self.context, archive_id)
+        else:
+            # Otherwise we return the normal view for a person's
+            # archive subscriptions.
+            return queryMultiAdapter(
+                (self.context, self.request), name ="+archivesubscriptions")
+
+    @stepthrough('+recipe')
+    def traverse_recipe(self, name):
+        """Traverse to this person's recipes."""
+        return self.context.getRecipe(name)
 
 
 class TeamNavigation(PersonNavigation):
@@ -754,7 +767,7 @@ class PersonBugsMenu(NavigationMenu):
         return Link('+assignedbugs', text, site='bugs', summary=summary)
 
     def softwarebugs(self):
-        text = 'Show package report'
+        text = 'List subscribed packages'
         summary = (
             'A summary report for packages where %s is a bug supervisor.'
             % self.context.displayname)
@@ -903,7 +916,8 @@ class PersonMenuMixin(CommonMenuLinks):
         return Link(target, text, icon='edit')
 
 
-class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
+class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
+                         HasRecipesMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -914,7 +928,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
              'codesofconduct', 'karma', 'administer', 'administer_account',
              'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary']
+             'related_software_summary', 'view_recipes']
 
     def related_software_summary(self):
         target = '+related-software'
@@ -1364,35 +1378,7 @@ class PeopleSearchView(LaunchpadView):
         return BatchNavigator(results, self.request)
 
 
-class PersonAddView(LaunchpadFormView):
-    """The page where users can create new Launchpad profiles."""
-
-    page_title = "Create a new Launchpad profile"
-    label = page_title
-    schema = INewPerson
-
-    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
-
-    @action(_("Create Profile"), name="create")
-    def create_action(self, action, data):
-        emailaddress = data['emailaddress']
-        displayname = data['displayname']
-        creation_comment = data['creation_comment']
-        person, ignored = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, PersonCreationRationale.USER_CREATED,
-            displayname=displayname, comment=creation_comment,
-            registrant=self.user)
-        self.next_url = canonical_url(person)
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            requester=self.user,
-            requesteremail=self.user.preferredemail.email,
-            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
-        token.sendProfileCreatedEmail(person, creation_comment)
-
-
 class DeactivateAccountSchema(Interface):
-    use_template(IPerson, include=['password'])
     comment = copy_field(
         IPerson['account_status_comment'], readonly=False, __name__='comment')
 
@@ -1403,19 +1389,6 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     label = "Deactivate your Launchpad account"
     custom_widget('comment', TextAreaWidget, height=5, width=60)
 
-    def validate(self, data):
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(
-            self.user.preferredemail.email)
-        assert principal is not None, "User must be logged in at this point."
-        # The widget will transform '' into a special marker value.
-        password = data.get('password')
-        if password is self.schema['password'].UNCHANGED_PASSWORD:
-            password = u''
-        if not principal.validate(password):
-            self.setFieldError('password', 'Incorrect password.')
-            return
-
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['comment'])
@@ -1425,11 +1398,14 @@ class PersonDeactivateAccountView(LaunchpadFormView):
         self.next_url = self.request.getApplicationURL()
 
 
-class PersonClaimView(LaunchpadFormView):
-    """The page where a user can claim an unvalidated profile."""
+class BeginTeamClaimView(LaunchpadFormView):
+    """Where you can claim an unvalidated profile turning it into a team.
 
+    This is actually just the first step, where you enter the email address
+    of the team and we email further instructions to that address.
+    """
+    label = 'Claim team'
     schema = IPersonClaim
-    label = 'Claim account'
 
     def initialize(self):
         if self.context.is_valid_person_or_team:
@@ -1459,28 +1435,17 @@ class PersonClaimView(LaunchpadFormView):
                      "associated with."
                      % self.context.name)
         elif email.personID != self.context.id:
-            if email.person.is_valid_person:
-                error = structured(
-                         "This email address is associated with yet another "
-                         "Launchpad profile, which you seem to have used at "
-                         "some point. If that's the case, you can "
-                         '<a href="/people/+requestmerge'
-                         '?field.dupe_person=%s">combine '
-                         "this profile with the other one</a> (you'll "
-                         "have to log in with the other profile first, "
-                         "though). If that's not the case, please try with a "
-                         "different email address.",
-                         self.context.name)
-            else:
-                # There seems to be another unvalidated profile for you!
-                error = structured(
-                         "Although this email address is not associated with "
-                         "this profile, it's associated with yet another "
-                         'one. You can <a href="%s/+claim">claim that other '
-                         'profile</a> and then later '
-                         '<a href="/people/+requestmerge">combine</a> both '
-                         'of them into a single one.',
-                         canonical_url(email.person))
+            error = structured(
+                        "This email address is associated with yet another "
+                        "Launchpad profile, which you seem to have used at "
+                        "some point. If that's the case, you can "
+                        '<a href="/people/+requestmerge'
+                        '?field.dupe_person=%s">combine '
+                        "this profile with the other one</a> (you'll "
+                        "have to log in with the other profile first, "
+                        "though). If that's not the case, please try with a "
+                        "different email address.",
+                        self.context.name)
         else:
             # Yay! You got the right email this time.
             pass
@@ -1490,34 +1455,6 @@ class PersonClaimView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-    @action(_("E-mail Me"), name="confirm")
-    def confirm_action(self, action, data):
-        email = data['emailaddress']
-        token = getUtility(ILoginTokenSet).new(
-            requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.PROFILECLAIM)
-        token.sendClaimProfileEmail()
-        # A dance to assert that we want to break the rules about no
-        # unauthenticated sessions. Only after this next line is it safe
-        # to use the ``addNoticeNotification`` method.
-        allowUnauthenticatedSession(self.request)
-        self.request.response.addInfoNotification(_(
-            "A confirmation  message has been sent to '${email}'. "
-            "Follow the instructions in that message to finish claiming this "
-            "profile. "
-            "(If the message doesn't arrive in a few minutes, your mail "
-            "provider might use 'greylisting', which could delay the message "
-            "for up to an hour or two.)", mapping=dict(email=email)))
-
-
-class BeginTeamClaimView(PersonClaimView):
-    """Where you can claim an unvalidated profile turning it into a team.
-
-    This is actually just the first step, where you enter the email address
-    of the team and we email further instructions to that address.
-    """
-    label = 'Claim team'
 
     @action(_("Continue"), name="confirm")
     def confirm_action(self, action, data):
@@ -1886,6 +1823,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         totals = {
             'open_bugs_count': 0,
             'critical_bugs_count': 0,
+            'high_bugs_count': 0,
             'unassigned_bugs_count': 0,
             'inprogress_bugs_count': 0,
             }
@@ -1912,6 +1850,8 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
                 'open_bugs_url': self.getOpenBugsURL(package),
                 'critical_bugs_count': package_counts['open_critical'],
                 'critical_bugs_url': self.getCriticalBugsURL(package),
+                'high_bugs_count': package_counts['open_high'],
+                'high_bugs_url': self.getHighBugsURL(package),
                 'unassigned_bugs_count': package_counts['open_unassigned'],
                 'unassigned_bugs_url': self.getUnassignedBugsURL(package),
                 'inprogress_bugs_count': package_counts['open_inprogress'],
@@ -1999,6 +1939,18 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=critical_bugs_params)
+
+    def getHighBugsURL(self, distributionsourcepackage):
+        """Return the URL for high importance bugs on distributionsourcepackage."""
+        high_bugs_params = {
+            'field.status': [], 'field.importance': "High"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            high_bugs_params["field.status"].append(status.title)
+
+        return self.getBugSubscriberPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=high_bugs_params)
 
     def getUnassignedBugsURL(self, distributionsourcepackage):
         """Return the URL for unassigned bugs on distributionsourcepackage."""
@@ -2411,9 +2363,9 @@ class PersonVouchersView(LaunchpadFormView):
             # The call to redeemVoucher returns True if it succeeds or it
             # raises an exception.  Therefore the return value does not need
             # to be checked.
-            result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
-                                                    self.context,
-                                                    project)
+            salesforce_proxy.redeemVoucher(voucher.voucher_id,
+                                           self.context,
+                                           project)
             project.redeemSubscriptionVoucher(
                 voucher=voucher.voucher_id,
                 registrant=self.context,
@@ -2683,7 +2635,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         It's shown when the person has OpenPGP keys registered or has rights
         to register new ones.
         """
-        return bool(self.context.gpgkeys) or (
+        return bool(self.context.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
 
     @cachedproperty
@@ -3404,7 +3356,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                     'The URL scheme "%(scheme)s" is not allowed.  '
                     'Only http or https URLs may be used.', scheme=uri.scheme)
                 return False
-        except InvalidURIError, e:
+        except InvalidURIError:
             self.error_message = structured(
                 '"%(url)s" is not a valid URL.', url=url)
             return False
@@ -3919,14 +3871,19 @@ class PersonEditView(BasePersonEditView):
 
         When a user has a PPA renames are prohibited.
         """
-        writable = self.context.archive is None
-        if not writable:
+        active_ppas = [
+            ppa for ppa in self.context.ppas
+            if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
+        num_packages = sum(
+            ppa.getPublishedSources().count() for ppa in active_ppas)
+        if num_packages > 0:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if not writable:
+        if num_packages > 0:
             self.widgets['name'].hint = _(
-                'This user has a PPA and may not be renamed.')
+                'This user has an active PPA with packages published and '
+                'may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
@@ -4239,8 +4196,6 @@ class TeamLeaveView(LaunchpadFormView, TeamJoinMixin):
 
     @action(_("Leave"), name="leave")
     def action_save(self, action, data):
-        response = self.request.response
-
         if self.user_can_request_to_leave:
             self.user.leave(self.context)
 
@@ -5217,7 +5172,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         the source package release.
         """
         # Calculate all the failed builds with one query.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
         package_release_ids = [
             package_release.id for package_release in package_releases]
         all_builds = build_set.getBuildsBySourcePackageRelease(

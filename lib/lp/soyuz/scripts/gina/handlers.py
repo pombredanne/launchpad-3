@@ -24,34 +24,29 @@ from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import quote, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.scripts import log
 
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.archiveuploader.utils import (determine_binary_file_type,
     determine_source_file_type)
-
-from canonical.database.sqlbase import sqlvalues
-
-from canonical.launchpad.scripts import log
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.sourcepackage import SourcePackageType
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
+from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.section import Section
 from lp.soyuz.scripts.gina.library import getLibraryAlias
 from lp.soyuz.scripts.gina.packages import (SourcePackageData,
     urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
-
-from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.processor import Processor
-from lp.soyuz.model.section import Section
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.interfaces.sourcepackage import SourcePackageType
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -853,7 +848,7 @@ class BinaryPackageHandler:
     def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
         """Ensure a build record."""
         # Avoid circular imports.
-        from lp.soyuz.model.build import Build
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
@@ -878,7 +873,7 @@ class BinaryPackageHandler:
                       % quote(archtag))
 
         try:
-            build = Build.selectOne(query, clauseTables)
+            build = BinaryPackageBuild.selectOne(query, clauseTables)
         except SQLObjectMoreThanOneResultError:
             # XXX kiko 2005-10-27: Untested.
             raise MultipleBuildError("More than one build was found "
@@ -901,7 +896,7 @@ class BinaryPackageHandler:
             key = None
 
             processor = distroarchinfo['processor']
-            build = Build(processor=processor.id,
+            build = BinaryPackageBuild(processor=processor.id,
                           distroarchseries=distroarchseries.id,
                           buildstate=BuildStatus.FULLYBUILT,
                           sourcepackagerelease=srcpkg.id,

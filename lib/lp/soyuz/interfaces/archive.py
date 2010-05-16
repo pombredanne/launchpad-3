@@ -13,6 +13,7 @@ __all__ = [
     'ArchiveDependencyError',
     'ArchiveNotPrivate',
     'ArchivePurpose',
+    'ArchiveStatus',
     'CannotCopy',
     'CannotSwitchPrivacy',
     'ComponentNotFound',
@@ -30,6 +31,7 @@ __all__ = [
     'IPPAActivateForm',
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
+    'NoTokensForTeams',
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
@@ -105,6 +107,11 @@ class ArchiveNotPrivate(Exception):
     webservice_error(400) # Bad request.
 
 
+class NoTokensForTeams(Exception):
+    """Raised when creating a token for a team, rather than a person."""
+    webservice_error(400) # Bad request.
+
+
 class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
@@ -159,13 +166,15 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Private"), required=False,
             description=_(
                 "Whether the archive is private to the owner or not. "
-                "This can only be changed if the archive has not had "
+                "This can only be changed by launchpad admins or launchpad "
+                "commercial admins and only if the archive has not had "
                 "any sources published.")))
 
-    require_virtualized = Bool(
-        title=_("Require Virtualized Builder"), required=False,
-        description=_("Whether this archive requires its packages to be "
-                      "built on a virtual builder."))
+    require_virtualized = exported(
+        Bool(
+            title=_("Require Virtualized Builder"), required=False,
+            description=_("Whether this archive requires its packages to be "
+                          "built on a virtual builder."), readonly=False))
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
@@ -174,6 +183,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     purpose = Int(
         title=_("Purpose of archive."), required=True, readonly=True,
+        )
+
+    status = Int(
+        title=_("Status of archive."), required=True, readonly=True,
         )
 
     sources_cached = Int(
@@ -197,10 +210,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
-    expanded_archive_dependencies = Attribute(
-        "The expanded list of archive dependencies. It includes the implicit "
-        "PRIMARY archive dependency for PPAs.")
-
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
 
@@ -212,6 +221,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     is_main = Bool(
         title=_("True if archive is a main archive type"), required=False)
+
+    is_active = Bool(
+        title=_("True if the archive is in the active state"),
+        required=False, readonly=True)
 
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
@@ -272,6 +285,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "The series variable is replaced with the series name of the "
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!"))
+
+    arm_builds_allowed = Bool(
+        title=_("Allow ARM builds for this archive"))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -407,6 +423,26 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getBinaryPackageRelease(name, version, archtag):
+        """Find the specified `IBinaryPackageRelease` in the archive.
+
+        :param name: The `IBinaryPackageName` of the package.
+        :param version: The version of the package.
+        :param archtag: The architecture tag of the package's build. 'all'
+            will not work here -- 'i386' (the build DAS) must be used instead.
+
+        :return The binary package release with the given name and version,
+            or None if one does not exist or there is more than one.
+        """
+
+    def getBinaryPackageReleaseByFileName(filename):
+        """Return the corresponding `IBinaryPackageRelease` in this context.
+
+        :param filename: The filename to look up.
+        :return: The `IBinaryPackageRelease` with the specified filename,
+            or None if it was not found.
         """
 
     def requestPackageCopy(target_location, requestor, suite=None,
@@ -629,6 +665,23 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A `ResultSet` of distinct `SourcePackageReleases` for this
             archive.
         """
+
+    def updatePackageDownloadCount(bpr, day, country, count):
+        """Update the daily download count for a given package.
+
+        :param bpr: The `IBinaryPackageRelease` to update the count for.
+        :param day: The date to update the count for.
+        :param country: The `ICountry` to update the count for.
+        :param count: The new download count.
+
+        If there's no matching `IBinaryPackageReleaseDownloadCount` entry,
+        we create one with the given count.  Otherwise we just increase the
+        count of the existing one by the given amount.
+        """
+
+    def getPackageDownloadTotal(bpr):
+        """Get the total download count for a given package."""
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -878,6 +931,16 @@ class IArchiveView(IHasBuildRecords):
         :return: A list of `IArchivePermission` records.
         """
 
+    def getPackageDownloadCount(bpr, day, country):
+        """Get the `IBinaryPackageDownloadCount` with the given key."""
+
+    def getFilesAndSha1s(source_files):
+        """Return a dictionary with the filenames and the SHA1s for each
+        source file.
+
+        :param source_files: A list of filenames to return SHA1s of
+        :return: A dictionary of filenames and SHA1s.
+        """
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
@@ -1099,8 +1162,18 @@ class IArchiveEdit(Interface):
     def disable():
         """Disable the archive."""
 
-    arm_builds_allowed = Bool(
-        title=_("Allow ARM builds for this archive"))
+    def delete(deleted_by):
+        """Delete this archive.
+
+        :param deleted_by: The `IPerson` requesting the deletion.
+
+        The ArchiveStatus will be set to DELETING and any published
+        packages will be marked as DELETED by deleted_by.
+
+        The publisher is responsible for deleting the repository area
+        when it sees the status change and sets it to DELETED once
+        processed.
+        """
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
@@ -1361,6 +1434,30 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be user for publishing package with
         debug-symbols.
         """)
+
+
+class ArchiveStatus(DBEnumeratedType):
+    """The status of an archive, e.g. active, disabled. """
+
+    ACTIVE = DBItem(0, """
+        Active
+
+        This archive accepts uploads, copying and publishes packages.
+        """)
+
+    DELETING = DBItem(1, """
+        Deleting
+
+        This archive is in the process of being deleted.  This is a user-
+        requested and short-lived status.
+        """)
+
+    DELETED = DBItem(2, """
+        Deleted
+
+        This archive has been deleted and removed from disk.
+        """)
+
 
 
 default_name_by_purpose = {

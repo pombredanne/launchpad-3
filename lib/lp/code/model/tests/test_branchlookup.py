@@ -598,7 +598,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             NoLinkedBranch, self.branch_lookup.getByLPPath, path)
 
     def test_project_linked_branch(self):
-        # Projects cannot have linked branches, so `getByLPPath` raises a
+        # ProjectGroups cannot have linked branches, so `getByLPPath` raises a
         # `CannotHaveLinkedBranch` error if we try to get the linked branch
         # for a project.
         project = self.factory.makeProject()
