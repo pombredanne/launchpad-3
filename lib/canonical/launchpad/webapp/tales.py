@@ -12,7 +12,6 @@ import cgi
 from email.Utils import formatdate
 import math
 import os.path
-import re
 import rfc822
 import sys
 import urllib
@@ -36,12 +35,10 @@ from zope.security.proxy import isinstance as zope_isinstance
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IDistribution, IFAQSet,
-    IProduct, IProjectGroup, IDistributionSourcePackage, ISprint,
-    LicenseStatus, NotFoundError)
+    IBug, IDistribution, IProduct, IProjectGroup, IDistributionSourcePackage,
+    ISprint, LicenseStatus)
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 import canonical.launchpad.pagetitles
@@ -2270,135 +2267,6 @@ class PageTemplateContextsAPI:
                 return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
             else:
                 return title
-
-
-def split_paragraphs(text):
-    """Split text into paragraphs.
-
-    This function yields lists of strings that represent lines of text
-    in each paragraph.
-
-    Paragraphs are split by one or more blank lines.
-    """
-    paragraph = []
-    for line in text.splitlines():
-        line = line.rstrip()
-
-        # blank lines split paragraphs
-        if not line:
-            if paragraph:
-                yield paragraph
-            paragraph = []
-            continue
-
-        paragraph.append(line)
-
-    if paragraph:
-        yield paragraph
-
-
-def re_substitute(pattern, replace_match, replace_nomatch, string):
-    """Transform a string, replacing matched and non-matched sections.
-
-     :param patter: a regular expression
-     :param replace_match: a function used to transform matches
-     :param replace_nomatch: a function used to transform non-matched text
-     :param string: the string to transform
-
-    This function behaves similarly to re.sub() when a function is
-    passed as the second argument, except that the non-matching
-    portions of the string can be transformed by a second function.
-    """
-    if replace_match is None:
-        replace_match = lambda match: match.group()
-    if replace_nomatch is None:
-        replace_nomatch = lambda text: text
-    parts = []
-    position = 0
-    for match in re.finditer(pattern, string):
-        if match.start() != position:
-            parts.append(replace_nomatch(string[position:match.start()]))
-        parts.append(replace_match(match))
-        position = match.end()
-    remainder = string[position:]
-    if remainder:
-        parts.append(replace_nomatch(remainder))
-    return ''.join(parts)
-
-
-def next_word_chunk(word, pos, minlen, maxlen):
-    """Return the next chunk of the word of length between minlen and maxlen.
-
-    Shorter word chunks are preferred, preferably ending in a non
-    alphanumeric character.  The index of the end of the chunk is also
-    returned.
-
-    This function treats HTML entities in the string as single
-    characters.  The string should not include HTML tags.
-    """
-    nchars = 0
-    endpos = pos
-    while endpos < len(word):
-        # advance by one character
-        if word[endpos] == '&':
-            # make sure we grab the entity as a whole
-            semicolon = word.find(';', endpos)
-            assert semicolon >= 0, 'badly formed entity: %r' % word[endpos:]
-            endpos = semicolon + 1
-        else:
-            endpos += 1
-        nchars += 1
-        if nchars >= maxlen:
-            # stop if we've reached the maximum chunk size
-            break
-        if nchars >= minlen and not word[endpos-1].isalnum():
-            # stop if we've reached the minimum chunk size and the last
-            # character wasn't alphanumeric.
-            break
-    return word[pos:endpos], endpos
-
-
-def add_word_breaks(word):
-    """Insert manual word breaks into a string.
-
-    The word may be entity escaped, but is not expected to contain
-    any HTML tags.
-
-    Breaks are inserted at least every 7 to 15 characters,
-    preferably after puctuation.
-    """
-    broken = []
-    pos = 0
-    while pos < len(word):
-        chunk, pos = next_word_chunk(word, pos, 7, 15)
-        broken.append(chunk)
-    return '<wbr></wbr>'.join(broken)
-
-
-break_text_pat = re.compile(r'''
-  (?P<tag>
-    <[^>]*>
-  ) |
-  (?P<longword>
-    (?<![^\s<>])(?:[^\s<>&]|&[^;]*;){20,}
-  )
-''', re.VERBOSE)
-
-def break_long_words(text):
-    """Add word breaks to long words in a run of text.
-
-    The text may contain entity references or HTML tags.
-    """
-    def replace(match):
-        if match.group('tag'):
-            return match.group()
-        elif match.group('longword'):
-            return add_word_breaks(match.group())
-        else:
-            raise AssertionError('text matched but neither named group found')
-    return break_text_pat.sub(replace, text)
-
-
 
 
 class PermissionRequiredQuery:
