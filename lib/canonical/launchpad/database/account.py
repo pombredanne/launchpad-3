@@ -48,8 +48,9 @@ class Account(SQLBase):
         dbName='openid_identifier', notNull=True, default=DEFAULT)
 
     def __repr__(self):
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, self.displayname, self.status)
+            self.__class__.__name__, displayname, self.status)
 
     def _getEmails(self, status):
         """Get related `EmailAddress` objects with the given status."""

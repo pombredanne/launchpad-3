@@ -18,6 +18,7 @@ from bzrlib.transform import TransformPreview, ROOT_PARENT
 
 from canonical.launchpad.interfaces import IMasterObject
 
+from lp.codehosting.bzrutils import get_stacked_on_url
 
 class ConcurrentUpdateError(Exception):
     """Bailout exception for concurrent updates.
@@ -189,7 +190,10 @@ class DirectBranchCommit:
                     return
             new_rev_id = self.transform_preview.commit(
                 self.bzrbranch, commit_message)
-            IMasterObject(self.db_branch).requestMirror()
+            IMasterObject(self.db_branch).branchChanged(
+                get_stacked_on_url(self.bzrbranch), new_rev_id,
+                self.db_branch.control_format, self.db_branch.branch_format,
+                self.db_branch.repository_format)
 
             if txn:
                 txn.commit()
