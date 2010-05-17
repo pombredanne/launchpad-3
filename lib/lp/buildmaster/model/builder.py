@@ -694,16 +694,22 @@ class BuilderSet(object):
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
+        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+        from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import Archive
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
 
+
+
         store = Store.of(processor)
         origin = (
             Archive,
             BinaryPackageBuild,
+            PackageBuild,
+            BuildFarmJob,
             BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
@@ -713,10 +719,12 @@ class BuilderSet(object):
             BuildQueue,
             BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == BinaryPackageBuild.id,
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
-            BinaryPackageBuild.archive == Archive.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == Archive.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            BinaryPackageBuild.buildstate == BuildStatus.NEEDSBUILD,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
             Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,
