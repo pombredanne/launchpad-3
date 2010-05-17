@@ -49,26 +49,52 @@ main_action() method to process the form.
     ...         self.next_step = StepTwo
 
     >>> class CounterView(MultiStepView):
+    ...     total_steps = 3
     ...     first_step = StepOne
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> form = {'field.actions.continue': 'Continue'}
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = CounterView(None, request)
+
+    >>> view = CounterView(None, LaunchpadTestRequest())
+    >>> view.initialize()
+    >>> view.view.step_number
+    1
+
+    >>> view.view.is_step['1']
+    True
+    >>> view.view.is_step['2']
+    False
+    >>> view.view.is_step['3']
+    False
 
 The view gets initialized three times to simulate the three clicks on the
 'Continue' button of each subsequent page.
 
+    >>> form = {'field.actions.continue': 'Continue'}
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+
     >>> visited_steps = 'one'
+    >>> view = CounterView(None, request)
     >>> view.initialize()
     one
 
+    >>> view.view.step_number
+    2
+
+    >>> view.view.is_step['1']
+    False
+    >>> view.view.is_step['2']
+    True
+    >>> view.view.is_step['3']
+    False
+
     >>> visited_steps = 'one|two'
+    >>> view = CounterView(None, request)
     >>> view.initialize()
     one
     two
 
     >>> visited_steps = 'one|two|three'
+    >>> view = CounterView(None, request)
     >>> view.initialize()
     one
     two
