@@ -1169,7 +1169,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
-                     owner=None):
+                     owner=None, bug_task=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -1177,7 +1177,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        if bug is None:
+        if bug_task is not None:
+            # If someone passes a value for bug *and* a value for
+            # bug_task then the bug value will get clobbered, but that
+            # doesn't matter since the bug should be the one that the
+            # bug task belongs to anyway (unless they're having a crazy
+            # moment, in which case we're saving them from themselves).
+            bug = bug_task.bug
+        elif bug is None:
             bug = self.makeBug()
 
         if owner is None:
@@ -1185,6 +1192,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
+        if bug_task is not None:
+            bug_task.bugwatch = bug_watch
 
         # You need to be an admin to set next_check on a BugWatch.
         def set_next_check(bug_watch):
@@ -1194,7 +1203,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         run_with_login(person, set_next_check, bug_watch)
         return bug_watch
 
-    def makeBugComment(self, bug=None, owner=None, subject=None, body=None):
+    def makeBugComment(self, bug=None, owner=None, subject=None, body=None,
+                       bug_watch=None):
         """Create and return a new bug comment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -1205,6 +1215,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             case a new message will be generated.
         :param body: An `IMessage` or a string, or None, in which
             case a new message will be generated.
+        :param bug_watch: An `IBugWatch`, which will be used to set the
+            new comment's bugwatch attribute.
         :return: An `IBugMessage`.
         """
         if bug is None:
@@ -1218,7 +1230,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if body is None:
             body = self.getUniqueString()
         return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=None,
+                              content=body, parent=None, bugwatch=bug_watch,
                               remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
@@ -2305,7 +2317,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return DistributionSourcePackage(distribution, sourcepackagename)
 
     def makeEmailMessage(self, body=None, sender=None, to=None,
-                         attachments=None):
+                         attachments=None, encode_attachments=False):
         """Make an email message with possible attachments.
 
         :param attachments: Should be an interable of tuples containing
@@ -2335,6 +2347,8 @@ class LaunchpadObjectFactory(ObjectFactory):
                 attachment['Content-Type'] = content_type
                 attachment['Content-Disposition'] = (
                     'attachment; filename="%s"' % filename)
+                if encode_attachments:
+                    encode_base64(attachment)
                 msg.attach(attachment)
         return msg
 
