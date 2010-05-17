@@ -225,45 +225,40 @@ links:
     ...     '#123\n'
     ...     'debug #52\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug    123</a><br />
-    <a href="/bugs/123" title="No such bug">bug #123</a><br />
-    <a href="/bugs/123" title="No such bug">bug number 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug number. 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug num 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug num. 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug no 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug report 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug#123</a><br />
-    <a href="/bugs/123" title="No such bug">bug-123</a><br />
-    <a href="/bugs/123" title="No such bug">bug-report-123</a><br />
-    <a href="/bugs/123" title="No such bug">bug=123</a><br />
-    <a href="/bugs/123" title="No such bug">bug<br />
-    #123</a><br />
+    <p><a href="/bugs/123">bug 123</a><br />
+    <a href="/bugs/123">bug    123</a><br />
+    <a href="/bugs/123">bug #123</a><br />
+    <a href="/bugs/123">bug number 123</a><br />
+    <a href="/bugs/123">bug number. 123</a><br />
+    <a href="/bugs/123">bug num 123</a><br />
+    <a href="/bugs/123">bug num. 123</a><br />
+    <a href="/bugs/123">bug no 123</a><br />
+    <a href="/bugs/123">bug report 123</a><br />
+    <a href="/bugs/123">bug no. 123</a><br />
+    <a href="/bugs/123">bug#123</a><br />
+    <a href="/bugs/123">bug-123</a><br />
+    <a href="/bugs/123">bug-report-123</a><br />
+    <a href="/bugs/123">bug=123</a><br />
+    <a href="/bugs/123">bug<br /> #123</a><br />
     debug #52</p>
 
     >>> text = (
     ...     'bug 123\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
-    <a href="/bugs/123" title="No such bug">bug 123</a></p>
+    <p><a href="/bugs/123">bug 123</a><br />
+    <a href="/bugs/123">bug 123</a></p>
 
     >>> text = (
     ...     'bug 1234\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/1234" title="No such bug">bug 1234</a><br />
-    <a href="/bugs/123" title="No such bug">bug 123</a></p>
+    <p><a href="/bugs/1234">bug 1234</a><br />
+    <a href="/bugs/123">bug 123</a></p>
 
     >>> text = 'bug 0123\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/123" title="No such bug">bug 0123</a></p>
-
-    >>> text = 'bug 2\n'
-    >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/2" title="Blackhole Trash folder">bug 2</a></p>
+    <p><a href="/bugs/123">bug 0123</a></p>
 
 
 We linkify bugs that are in the Ubuntu convention for referring to bugs in
@@ -271,26 +266,26 @@ Debian changelogs.
 
     >>> text = 'LP: #123.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>LP: <a href="/bugs/123" title="No such bug">#123</a>.</p>
+    <p>LP: <a href="/bugs/123">#123</a>.</p>
 
 Works with multiple bugs:
 
     >>> text = 'LP: #123, #2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>LP: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+    <p>LP: <a href="/bugs/123">#123</a>, <a href="/bugs/2">#2</a>.</p>
 
 And with lower case 'lp' too:
 
     >>> text = 'lp: #123, #2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>lp: <a href="/bugs/123" title="No such bug">#123</a>, <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+    <p>lp: <a href="/bugs/123">#123</a>, <a href="/bugs/2">#2</a>.</p>
 
 Even line breaks cannot stop the power of bug linking:
 
     >>> text = 'LP:  #123,\n#2.\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>LP:  <a href="/bugs/123" title="No such bug">#123</a>,<br />
-    <a href="/bugs/2" title="Blackhole Trash folder">#2</a>.</p>
+    <p>LP:  <a href="/bugs/123">#123</a>,<br />
+    <a href="/bugs/2">#2</a>.</p>
 
 To check a private bug, we need to log in and set a bug to be private.
 
@@ -309,11 +304,11 @@ subscriber.
 
     >>> firefox_crashes.unsubscribe(current_user, current_user)
 
-A private bug has a title "private bug".
+A private bug is still linked as no check is made on the actual bug.
 
     >>> text = 'bug 6\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/6" title="private bug">bug 6</a></p>
+    <p><a href="/bugs/6">bug 6</a></p>
 
 
 == FAQ references ==
@@ -379,14 +374,14 @@ treated as a link to a bug.
 
     >>> text = 'lp:1234'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/1234" title="No such bug">lp:1234</a></p>
+    <p><a href="/bugs/1234">lp:1234</a></p>
 
 We are even smart enough to notice the trailing punctuation gunk and separate
 that from the link.
 
     >>> text = 'lp:1234,'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/bugs/1234" title="No such bug">lp:1234</a>,</p>
+    <p><a href="/bugs/1234">lp:1234</a>,</p>
 
 
 == OOPS references ==
@@ -529,7 +524,7 @@ and the 'bugnum' is used to look up the bug.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    u'<a href="/bugs/2" title="Blackhole Trash folder">xxxx</a>'
+    '<a href="/bugs/2">xxxx</a>'
 
 When the bugnum doesn't match any bug, we still get a link, but get a message
 in the link's title.
@@ -539,15 +534,4 @@ in the link's title.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2000'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/bugs/2000" title="No such bug">xxxx</a>'
-
-When the bug is private, we still get a link, but get a message in the link's
-title.
-
-    >>> matchobj = re.match(
-    ...     '(?P<bug>xxxx)?(?P<bugnum>6)?(?P<url>yyy)?', 'xxxx6')
-    >>> sorted(matchobj.groupdict().items())
-    [('bug', 'xxxx'), ('bugnum', '6'), ('url', None)]
-    >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/bugs/6" title="private bug">xxxx</a>'
-
+    '<a href="/bugs/2000">xxxx</a>'
