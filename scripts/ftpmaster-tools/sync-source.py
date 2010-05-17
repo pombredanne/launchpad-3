@@ -267,8 +267,10 @@ def parse_control(control_filename):
         priority = Control.Section.Find("Priority")
         description = Control.Section.Find("Description")
         if source:
-            source_section = section
-            source_priority = priority
+            if section:
+                source_section = section
+            if priority:
+                source_priority = priority
             source_name = source
         if package and package == source_name:
             source_description = (
