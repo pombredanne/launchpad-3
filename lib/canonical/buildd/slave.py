@@ -651,7 +651,8 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         # check requested builder
         if not builder in self._builders:
-            return (BuilderStatus.UNKNOWNBUILDER, None)
+            extra_info = "%s not in %r" % (builder, self._builders.keys())
+            return (BuilderStatus.UNKNOWNBUILDER, extra_info)
         # check requested chroot availability
         chroot_present, info = self.slave.ensurePresent(chrootsum)
         if not chroot_present:
