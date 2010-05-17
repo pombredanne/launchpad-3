@@ -14,6 +14,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.widgets.textwidgets import URIWidget
 
@@ -184,8 +185,22 @@ class BugWatchActivityPortletView(LaunchpadFormView):
                 completion_message = "completed successfully"
             else:
                 icon = "/@@/no"
+                oops_info = ""
+                if activity.oops_id is not None:
+                    if getUtility(ILaunchBag).developer:
+                        # If the user is an LP developer we linkify the
+                        # OOPS ID.
+                        root_url = config.launchpad.oops_root_url
+                        oops_url = root_url + activity.oops_id
+                        oops_str = '<a href="%s">%s</a>' % (
+                            oops_url, activity.oops_id)
+                    else:
+                        oops_str = activity.oops_id
+                    oops_info = " (%s)" % oops_str
+
                 completion_message = (
-                    "failed with error '%s'" % activity.result.title)
+                    "failed with error '%s'%s" % (
+                        activity.result.title, oops_info))
 
             activity_items.append({
                 'icon': icon,
