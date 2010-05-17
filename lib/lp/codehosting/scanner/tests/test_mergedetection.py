@@ -14,16 +14,21 @@ import transaction
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.config import config
+from canonical.launchpad.interfaces import IStore
+from canonical.testing import LaunchpadZopelessLayer
+
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner import mergedetection
 from lp.codehosting.scanner.tests.test_bzrsync import (
     BzrSyncTestCase, run_as_db_user)
-from canonical.config import config
 from lp.code.enums import BranchLifecycleStatus, BranchMergeProposalStatus
+from lp.code.model.branchmergeproposaljob import (
+    BranchMergeProposalJob, BranchMergeProposalJobFactory,
+    BranchMergeProposalJobType)
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
@@ -258,6 +263,13 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         self.assertEqual(
             BranchLifecycleStatus.MERGED,
             proposal.source_branch.lifecycle_status)
+        job = IStore(proposal).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == proposal,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED).one()
+        derived_job = BranchMergeProposalJobFactory.create(job)
+        derived_job.run()
         notifications = pop_notifications()
         self.assertIn('Work in progress => Merged',
                       notifications[0].get_payload(decode=True))

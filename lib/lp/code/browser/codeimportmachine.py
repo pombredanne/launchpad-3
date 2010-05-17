@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CodeImportMachineBreadcrumb',
     'CodeImportMachineSetBreadcrumb',
     'CodeImportMachineSetNavigation',
     'CodeImportMachineSetView',
@@ -28,6 +29,14 @@ from canonical.launchpad.webapp import (
     LaunchpadView)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lazr.delegates import delegates
+
+
+class CodeImportMachineBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the machines hostname."""
+
+    @property
+    def text(self):
+        return self.context.hostname
 
 
 class CodeImportMachineSetNavigation(Navigation):

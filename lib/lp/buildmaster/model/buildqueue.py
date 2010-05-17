@@ -18,7 +18,6 @@ import pytz
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
-from storm.store import Store
 from zope.component import getSiteManager, getUtility
 from zope.interface import implements
 
@@ -130,7 +129,7 @@ class BuildQueue(SQLBase):
         job = self.job
         specific_job = self.specific_job
         SQLBase.destroySelf(self)
-        Store.of(specific_job).remove(specific_job)
+        specific_job.cleanUp()
         job.destroySelf()
 
     def manualScore(self, value):

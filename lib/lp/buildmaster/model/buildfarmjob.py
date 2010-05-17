@@ -8,13 +8,15 @@ __all__ = [
     ]
 
 
-from lazr.delegates import delegates
-
 import hashlib
+
+from lazr.delegates import delegates
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
+
+from storm.store import Store
 
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -128,4 +130,6 @@ class BuildFarmJobDerived:
 
         return hashlib.sha1(contents).hexdigest()
 
-
+    def cleanUp(self):
+        """See `IBuildFarmJob`."""
+        Store.of(self).remove(self)

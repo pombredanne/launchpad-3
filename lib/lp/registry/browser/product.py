@@ -44,7 +44,10 @@ __all__ = [
 
 
 from cgi import escape
+from datetime import datetime, timedelta
 from operator import attrgetter
+
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -55,6 +58,7 @@ from zope.formlib import form
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleVocabulary, SimpleTerm)
+from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -225,44 +229,77 @@ class ProductLicenseMixin:
             # Launchpad is ok with all licenses used in this project.
             pass
 
-    def notifyFeedbackMailingList(self):
+    def notifyCommercialMailingList(self):
         """Email feedback@canonical.com to review product license."""
         if (License.OTHER_PROPRIETARY in self.product.licenses
-                or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            user = getUtility(ILaunchBag).user
-            subject = "Project License Submitted for %s by %s" % (
-                    self.product.name, user.name)
-            fromaddress = format_address(
-                "Launchpad", config.canonical.noreply_from_address)
-            license_titles = '\n'.join(
-                license.title for license in self.product.licenses)
+            or License.OTHER_OPEN_SOURCE in self.product.licenses):
+            review_needed = True
+        elif (len(self.product.licenses) == 1
+            and License.DONT_KNOW in self.product.licenses):
+            review_needed = False
+        else:
+            # The project has a recognized license.
+            return
 
-            def indent(text):
-                text = '\n    '.join(line for line in text.split('\n'))
-                text = '    ' + text
-                return text
+        def indent(text):
+            if text is None:
+                return None
+            text = '\n    '.join(line for line in text.split('\n'))
+            text = '    ' + text
+            return text
 
+        user = getUtility(ILaunchBag).user
+        user_address = format_address(
+            user.displayname, user.preferredemail.email)
+        from_address = format_address(
+            "Launchpad", config.canonical.noreply_from_address)
+        commercial_address = format_address(
+            'Commercial', 'commercial@launchpad.net')
+        license_titles = '\n'.join(
+            license.title for license in self.product.licenses)
+        substitutions = dict(
+            user_browsername=user.displayname,
+            user_name=user.name,
+            product_name=self.product.name,
+            product_url=canonical_url(self.product),
+            product_summary=indent(self.product.summary),
+            license_titles=indent(license_titles),
+            license_info=indent(self.product.license_info))
+        if review_needed:
+            # Email the Commercial team that a project needs review.
+            subject = (
+                "Project License Submitted for %(product_name)s "
+                "by %(user_name)s" % substitutions)
             template = helpers.get_email_template('product-license.txt')
-            message = template % dict(
-                user_browsername=user.displayname,
-                user_name=user.name,
-                product_name=self.product.name,
-                product_url=canonical_url(self.product),
-                product_summary=indent(self.product.summary),
-                license_titles=indent(license_titles),
-                license_info=indent(self.product.license_info))
+            message = template % substitutions
+            simple_sendmail(
+                from_address, commercial_address,
+                subject, message, headers={'Reply-To': user_address})
+        # Email the user about license policy.
+        subject = (
+            "License information for %(product_name)s "
+            "in Launchpad" % substitutions)
+        template = helpers.get_email_template('product-other-license.txt')
+        message = template % substitutions
+        simple_sendmail(
+            from_address, user_address,
+            subject, message, headers={'Reply-To': commercial_address})
+        # Inform that Launchpad recognized the license change.
+        self._addLicenseChangeToReviewWhiteboard()
+        self.request.response.addInfoNotification(_(
+            "Launchpad is free to use for software under approved "
+            "licenses. The Launchpad team will be in contact with "
+            "you soon."))
 
-            reply_to = format_address(user.displayname,
-                                      user.preferredemail.email)
-            simple_sendmail(fromaddress,
-                            'feedback@launchpad.net',
-                            subject, message,
-                            headers={'Reply-To': reply_to})
-
-            self.request.response.addInfoNotification(_(
-                "Launchpad is free to use for software under approved "
-                "licenses. The Launchpad team will be in contact with "
-                "you soon."))
+    def _addLicenseChangeToReviewWhiteboard(self):
+        """Update the whiteboard for the reviewer's benefit."""
+        now = datetime.now(tz=pytz.UTC).strftime('YYYY-mm-dd')
+        whiteboard = 'User notified of license policy on %s.' % now
+        naked_product = removeSecurityProxy(self.product)
+        if naked_product.reviewer_whiteboard is None:
+            naked_product.reviewer_whiteboard = whiteboard
+        else:
+            naked_product.reviewer_whiteboard += '\n' + whiteboard
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -1050,6 +1087,7 @@ class ProductPackagesPortletView(LaunchpadFormView):
     suggestions = None
     max_suggestions = 8
     other_package = object()
+    not_packaged = object()
     initial_focus_widget = None
 
     @cachedproperty
@@ -1066,10 +1104,12 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """Are there packages, or can packages be suggested."""
         if len(self.sourcepackages) > 0:
             return True
-        if self.user is None or config.launchpad.is_lpnet:
+        if self.user is None:
             return False
-        else:
-            return True
+        date_next_suggest_packaging = self.context.date_next_suggest_packaging
+        return (
+            date_next_suggest_packaging is None
+            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
 
     @property
     def initial_values(self):
@@ -1102,15 +1142,21 @@ class ProductPackagesPortletView(LaunchpadFormView):
         vocab_terms.append(
             SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
         vocabulary = SimpleVocabulary(vocab_terms)
+        # Add an option to represent that the project is not packaged in
+        # Ubuntu.
+        description = 'This project is not packaged in Ubuntu'
+        vocab_terms.append(
+            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
+        vocabulary = SimpleVocabulary(vocab_terms)
+        series_display_name = ubuntu.currentseries.displayname
         self.form_fields = form.Fields(
             Choice(__name__=self.package_field_name,
-                   title=_('Ubuntu %s packages' %
-                           ubuntu.currentseries.displayname),
+                   title=_('Ubuntu %s packages') % series_display_name,
                    default=None,
                    vocabulary=vocabulary,
                    required=True))
 
-    @action(_('Set Ubuntu package information'), name='link')
+    @action(_('Set Ubuntu Package Information'), name='link')
     def link(self, action, data):
         product = self.context
         dsp = data.get(self.package_field_name)
@@ -1119,6 +1165,11 @@ class ProductPackagesPortletView(LaunchpadFormView):
             # The user wants to link an alternate package to this project.
             self.next_url = canonical_url(
                 product_series, view_name="+ubuntupkg")
+            return
+        if dsp is self.not_packaged:
+            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
+            self.context.date_next_suggest_packaging = year_from_now
+            self.next_url = self.request.getURL()
             return
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         product_series.setPackaging(ubuntu.currentseries,
@@ -1362,9 +1413,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         self.updateContextFromData(data)
         # only send email the first time licenses are set
         if len(previous_licenses) == 0:
-            # self.product is expected by notifyFeedbackMailingList
+            # self.product is expected by notifyCommercialMailingList
             self.product = self.context
-            self.notifyFeedbackMailingList()
+            self.notifyCommercialMailingList()
 
     @property
     def next_url(self):
@@ -1924,7 +1975,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             data['license_reviewed'] = False
 
         self.product = self.create_product(data)
-        self.notifyFeedbackMailingList()
+        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.next_url = canonical_url(self.product)
 

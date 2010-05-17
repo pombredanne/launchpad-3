@@ -262,7 +262,7 @@ class OpenIDCallbackView(OpenIDLogin):
     def sreg_response(self):
         return sreg.SRegResponse.fromSuccessResponse(self.openid_response)
 
-    def _createAccount(self, openid_identifier):
+    def _getEmailAddressAndFullName(self):
         # Here we assume the OP sent us the user's email address and
         # full name in the response. Note we can only do that because
         # we used a fixed OP (login.launchpad.net) that includes the
@@ -275,95 +275,119 @@ class OpenIDCallbackView(OpenIDLogin):
         email_address = self.sreg_response.get('email')
         full_name = self.sreg_response.get('fullname')
         assert email_address is not None and full_name is not None, (
-            "No email address or full name found in sreg response; "
-            "can't create a new account for this identity URL.")
-        email = getUtility(IEmailAddressSet).getByEmail(email_address)
-        if email is not None:
-            account = email.account
-            assert account is not None, (
-                "This email address should have an associated account.")
-            removeSecurityProxy(account).openid_identifier = openid_identifier
-            if account.status == AccountStatus.DEACTIVATED:
+            "No email address or full name found in sreg response")
+        return email_address, full_name
+
+    def _createAccount(self, openid_identifier, email_address, full_name):
+        account, email = getUtility(IAccountSet).createAccountAndEmail(
+            email_address, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            full_name, password=None, openid_identifier=openid_identifier)
+        return account
+
+    def processPositiveAssertion(self):
+        """Process an OpenID response containing a positive assertion.
+
+        We'll get the account with the given OpenID identifier (creating one 
+        if it doesn't already exist) and act according to the account's state:
+          - If the account is suspended, we stop and render an error page;
+          - If the account is deactivated, we reactivate it and proceed;
+          - If the account is active, we just proceed.
+
+        After that we ensure there's an IPerson associated with the account
+        and login using that account.
+
+        We also update the 'last_write' key in the session if we've done any
+        DB writes, to ensure subsequent requests use the master DB and see
+        the changes we just did.
+        """
+        identifier = self.openid_response.identity_url.split('/')[-1]
+        should_update_last_write = False
+        email_set = getUtility(IEmailAddressSet)
+        # Force the use of the master database to make sure a lagged slave
+        # doesn't fool us into creating a Person/Account when one already
+        # exists.
+        with MasterDatabasePolicy():
+            try:
+                account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                    identifier)
+            except LookupError:
+                # The two lines below are duplicated a few more lines down,
+                # but to avoid this duplication we'd have to refactor most of
+                # our tests to provide an SREG response, which would be rather
+                # painful.
+                email_address, full_name = self._getEmailAddressAndFullName()
+                email = email_set.getByEmail(email_address)
+                if email is None:
+                    # We got an OpenID response containing a positive
+                    # assertion, but we don't have an account for the
+                    # identifier or for the email address.  We'll create one.
+                    account = self._createAccount(
+                        identifier, email_address, full_name)
+                else:
+                    account = email.account
+                    assert account is not None, (
+                        "This email address should have an associated "
+                        "account.")
+                    removeSecurityProxy(account).openid_identifier = (
+                        identifier)
+                should_update_last_write = True
+
+            if account.status == AccountStatus.SUSPENDED:
+                return self.suspended_account_template()
+            elif account.status in [AccountStatus.DEACTIVATED,
+                                    AccountStatus.NOACCOUNT]:
                 comment = 'Reactivated by the user'
-                password = None # Needed just to please reactivate() below.
+                password = '' # Needed just to please reactivate() below.
+                email_address, dummy = self._getEmailAddressAndFullName()
+                email = email_set.getByEmail(email_address)
+                if email is None:
+                    email = email_set.new(email_address, account=account)
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
-        else:
-            account, email = getUtility(IAccountSet).createAccountAndEmail(
-                email_address,
-                PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-                full_name,
-                password=None,
-                openid_identifier=openid_identifier)
-        return account
+            else:
+                # Account is active, so nothing to do.
+                pass
+            if IPerson(account, None) is None:
+                removeSecurityProxy(account).createPerson(
+                    PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+                should_update_last_write = True
+            self.login(account)
+
+        if should_update_last_write:
+            # This is a GET request but we changed the database, so update
+            # session_data['last_write'] to make sure further requests use
+            # the master DB and thus see the changes we've just made.
+            session_data = ISession(self.request)['lp.dbpolicy']
+            session_data['last_write'] = datetime.utcnow()
+        self._redirect()
+        # No need to return anything as we redirect above.
+        return None
 
     def render(self):
         if self.openid_response.status == SUCCESS:
-            identifier = self.openid_response.identity_url.split('/')[-1]
-            should_update_last_write = False
-            # Force the use of the master database to make sure a lagged slave
-            # doesn't fool us into creating a Person/Account when one already
-            # exists.
-            with MasterDatabasePolicy():
-                try:
-                    account = getUtility(IAccountSet).getByOpenIDIdentifier(
-                        identifier)
-                except LookupError:
-                    account = self._createAccount(identifier)
-                    should_update_last_write = True
+            return self.processPositiveAssertion()
 
-                if account.status == AccountStatus.SUSPENDED:
-                    return self.suspended_account_template()
-                elif account.status == AccountStatus.DEACTIVATED:
-                    comment = 'Reactivated by the user'
-                    password = '' # Needed just to please reactivate() below.
-                    sreg_email = self.sreg_response.get('email')
-                    email_address = getUtility(IEmailAddressSet).getByEmail(
-                        sreg_email)
-                    if email_address is None:
-                        email_address = getUtility(IEmailAddressSet).new(
-                            sreg_email, account=account)
-                    removeSecurityProxy(account).reactivate(
-                        comment, password, removeSecurityProxy(email_address))
-                else:
-                    # Account is active, so nothing to do.
-                    pass
-                if IPerson(account, None) is None:
-                    removeSecurityProxy(account).createPerson(
-                        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-                    should_update_last_write = True
-                self.login(account)
-
-            if should_update_last_write:
-                # This is a GET request but we changed the database, so update
-                # session_data['last_write'] to make sure further requests use
-                # the master DB and thus see the changes we've just made.
-                session_data = ISession(self.request)['lp.dbpolicy']
-                session_data['last_write'] = datetime.utcnow()
+        if self.account is not None:
+            # The authentication failed (or was canceled), but the user is
+            # already logged in, so we just add a notification message and
+            # redirect.
+            self.request.response.addNoticeNotification(
+                _(u'Your authentication failed but you were already '
+                   'logged into Launchpad.'))
             self._redirect()
             # No need to return anything as we redirect above.
-            retval = None
+            return None
         else:
-            if self.account is not None:
-                # The authentication failed (or was canceled), but the user is
-                # already logged in, so we just add a notification message and
-                # redirect.
-                self.request.response.addNoticeNotification(
-                    _(u'Your authentication failed but you were already '
-                       'logged into Launchpad.'))
-                self._redirect()
-                # No need to return anything as we redirect above.
-                retval = None
-            else:
-                retval = OpenIDLoginErrorView(
-                    self.context, self.request, self.openid_response)()
+            return OpenIDLoginErrorView(
+                self.context, self.request, self.openid_response)()
 
-        # The consumer.complete() call above will create entries in
+    def __call__(self):
+        retval = super(OpenIDCallbackView, self).__call__()
+        # The consumer.complete() call in initialize() will create entries in
         # OpenIDConsumerNonce to prevent replay attacks, but since this will
         # be a GET request, the transaction would be rolled back, so we need
         # an explicit commit here.
         transaction.commit()
-
         return retval
 
     def _redirect(self):
@@ -478,10 +502,11 @@ class CookieLogoutPage:
 
     def logout(self):
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
-            _(u'You have been logged out')
-            )
-        target = '%s/?loggingout=1' % self.request.URL[-1]
+        openid_vhost = config.launchpad.openid_provider_vhost
+        openid_root = allvhosts.configs[openid_vhost].rooturl
+        target = '%s+logout?%s' % (
+            config.codehosting.secure_codebrowse_root,
+            urllib.urlencode(dict(next_to='%s+logout' % (openid_root,))))
         self.request.response.redirect(target)
         return ''
 

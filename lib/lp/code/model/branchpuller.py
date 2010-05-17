@@ -31,8 +31,7 @@ class BranchPuller:
     def acquireBranchToPull(self, *branch_types):
         """See `IBranchPuller`."""
         if not branch_types:
-            branch_types = (
-                BranchType.HOSTED, BranchType.MIRRORED, BranchType.IMPORTED)
+            branch_types = (BranchType.MIRRORED, BranchType.IMPORTED)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch = store.find(
             Branch,

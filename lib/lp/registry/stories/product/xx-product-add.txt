@@ -14,12 +14,31 @@ from the Launchpad home page or the projects home page.
     >>> print user_browser.title
     Register a project in Launchpad...
 
-The page includes both a direct link and a button to order Ubuntu CDs.
+The page includes both a direct link and a button to test projects on staging.
 
-    >>> print user_browser.getLink('shipit.ubuntu.com').url
-    https://shipit.ubuntu.com/
-    >>> print user_browser.getControl('Oh, I want Ubuntu CDs').type
+    >>> print user_browser.getLink('staging.launchpad.net').url
+    https://staging.launchpad.net/
+    >>> print user_browser.getControl(
+    ...     'Oh, I want to create a test project').type
     submit
+
+The user can see links about things that are often assumed to be related to
+project registration.
+
+    >>> print user_browser.getLink('Register a team').url
+    https://help.launchpad.net/Teams
+
+    >>> print user_browser.getLink('Activate a PPA').url
+    https://help.launchpad.net/Packaging/PPA
+
+    >>> print user_browser.getLink('Access your personal branches').url
+    https://help.launchpad.net/Code/PersonalBranches
+
+    >>> print user_browser.getLink('Translate a project').url
+    https://help.launchpad.net/Translations/YourProject
+
+    >>> print user_browser.getLink('Request a project group').url
+    https://help.launchpad.net/ProjectGroups
 
 
 Project basics
