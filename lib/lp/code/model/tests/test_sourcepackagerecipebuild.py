@@ -34,17 +34,22 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeSourcePackageRecipeBuild(self, distroseries=None):
+    def makeSourcePackageRecipeBuild(self):
         """Create a `SourcePackageRecipeBuild` for testing."""
-        if distroseries == None:
-            distroseries = self.factory.makeDistroSeries()
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
         return getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=self.factory.makeSourcePackage(
                 distroseries=distroseries),
             recipe=self.factory.makeSourcePackageRecipe(
                 distroseries=distroseries),
             archive=self.factory.makeArchive(),
-            requester=self.factory.makePerson())
+            requester=person)
 
     def test_providesInterfaces(self):
         # SourcePackageRecipeBuild provides IBuildBase and
@@ -66,13 +71,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
 
     def test_queueBuild(self):
-        distroseries = self.factory.makeDistroSeries()
-        distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
-
-        spb = self.makeSourcePackageRecipeBuild(distroseries=distroseries)
+        spb = self.makeSourcePackageRecipeBuild()
 
         bq = spb.queueBuild()
         self.assertProvides(bq, IBuildQueue)

@@ -41,6 +41,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
     TestCaseWithFactory, ws_object)
@@ -569,6 +570,11 @@ class TestWebservice(TestCaseWithFactory):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
         distroseries = self.factory.makeDistroSeries()
+        distroseries_i386 = distroseries.newArch(
+            'i386', ProcessorFamily.get(1), False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
         archive = ws_object(launchpad, archive)
