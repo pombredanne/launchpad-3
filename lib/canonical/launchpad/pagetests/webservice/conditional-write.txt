@@ -102,6 +102,7 @@ resource, the later one still gets a 412 error. If an unwritable field
 changes, a conditional read will fail, but a conditional write will
 succeed, even though the ETags don't match exactly.
 
+
 It's okay if mod_compress modifies outgoing ETags
 =================================================
 
@@ -117,16 +118,13 @@ modified by mod_compress as though it were the original ETag.
   HTTP/1.1 304 Not Modified
   ...
 
-Sometimes mod_compress turns '"foo"' info '"foo"-gzip'. Launchpad
-treats these two ETags the same.
+Some versions of mod_compress turn '"foo"' into '"foo"-gzip', and some
+versions turn it into '"foo-gzip"'. We treat all three forms the same.
 
   >>> headers = {'If-None-Match': etag + "-gzip"}
   >>> print webservice.get(url, headers=headers)
   HTTP/1.1 304 Not Modified
   ...
-
-Sometimes it turns '"foo"' info '"foo-gzip"'. Launchpad treats these
-two ETags the same.
 
   >>> headers = {'If-None-Match': etag[:-1] + "-gzip" + etag[-1]}
   >>> print webservice.get(url, headers=headers)
