@@ -38,7 +38,8 @@ class TestCaseForRecipe(BrowserTestCase):
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
         self.squirrel = self.factory.makeDistroSeries(
-            displayname='Secret Squirrel', name='secret')
+            displayname='Secret Squirrel', name='secret',
+            distribution=self.ppa.distribution)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -129,7 +130,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
     def test_edit_recipe(self):
         self.factory.makeDistroSeries(
-            displayname='Mumbly Midget', name='mumbly')
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.factory.makeBranch(
@@ -295,14 +297,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Archive:
             Secret PPA (chef/ppa)
             Distribution series:
+            Secret Squirrel
             Warty
             Hoary
-            Six
-            7.0
-            Woody
-            Sarge
-            Guada2005
-            Secret Squirrel
             or
             Cancel""")
         main_text = self.getMainText(recipe, '+request-builds')
@@ -310,6 +307,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
         recipe = self.makeRecipe()
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
