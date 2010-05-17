@@ -162,8 +162,8 @@ class DistributionSourcePackageRelease:
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %s
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.source_package_release = %s
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
@@ -171,7 +171,7 @@ class DistributionSourcePackageRelease:
             orderBy=['BinaryPackageName.name'],
             clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'BinaryPackageName',
-                          'Build'],
+                          'BinaryPackageBuild'],
             prejoinClauseTables=['BinaryPackageRelease', 'BinaryPackageName'])
         samples = []
         names = set()
