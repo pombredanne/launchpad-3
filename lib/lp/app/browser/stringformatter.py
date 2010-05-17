@@ -21,7 +21,6 @@ from zope.traversing.interfaces import (
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
@@ -679,6 +678,9 @@ class FormattersAPI:
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
+                # Circular dependancies now. Should be resolved by moving the
+                # object image display api.
+                from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">%s</a>' % (
