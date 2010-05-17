@@ -1530,6 +1530,7 @@ class HasTranslationTemplatesMixin:
 
     @property
     def all_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
         return self.getTranslationTemplates()
 
     @property

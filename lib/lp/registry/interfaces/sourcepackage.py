@@ -29,8 +29,8 @@ from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasCodeImports, IHasMergeProposals)
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.component import IComponent
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,

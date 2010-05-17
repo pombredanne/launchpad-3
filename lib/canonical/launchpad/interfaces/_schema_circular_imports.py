@@ -54,16 +54,17 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
+from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson, IPersonPublic
-from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
@@ -79,7 +80,6 @@ from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSharingSubset, IPOTemplateSubset)
