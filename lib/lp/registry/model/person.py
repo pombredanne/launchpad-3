@@ -263,8 +263,8 @@ class Person(
                      storm_validator=_validate_name)
 
     def __repr__(self):
-        return '<Person at 0x%x %s (%s)>' % (
-            id(self), self.name, self.displayname)
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
+        return '<Person at 0x%x %s (%s)>' % (id(self), self.name, displayname)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 
