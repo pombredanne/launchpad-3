@@ -180,7 +180,6 @@ class BugWatchActivityPortletView(LaunchpadFormView):
         """Return a list of dicts representing recent watch activity."""
         activity_items = []
         for activity in self.context.activity:
-            oops_str = None
             if activity.result in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES:
                 icon = "/@@/yes"
                 completion_message = "completed successfully"
@@ -189,24 +188,12 @@ class BugWatchActivityPortletView(LaunchpadFormView):
                 completion_message = (
                     "failed with error '%s'" % activity.result.title)
 
-                if activity.oops_id is not None:
-                    if getUtility(ILaunchBag).developer:
-                        # If the user is an LP developer we linkify the
-                        # OOPS ID.
-                        root_url = config.launchpad.oops_root_url
-                        oops_url = root_url + activity.oops_id
-                        oops_str = '<a href="%s">%s</a>' % (
-                            oops_url, activity.oops_id)
-                    else:
-                        oops_str = activity.oops_id
-
-
             activity_items.append({
                 'icon': icon,
                 'date': activity.activity_date,
                 'completion_message': completion_message,
                 'result_text': activity.result.title,
-                'oops_str': oops_str,
+                'oops_id': activity.oops_id,
                 })
 
         return activity_items
