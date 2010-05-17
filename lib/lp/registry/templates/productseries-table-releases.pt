@@ -6,7 +6,8 @@
 
 <table class="listing"
   tal:attributes="id context/name/fmt:css-id/series-;
-                  class view/milestone_table_class">
+                  class view/milestone_table_class"
+  tal:content="cache:public, 1 hour">
   <thead>
     <tr>
       <th>Version</th>
