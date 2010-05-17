@@ -96,16 +96,13 @@ each Launchpad comment that needs to be pushed to the remote bug
 tracker.
 
     >>> from canonical.launchpad.scripts.logger import log
-    >>> from lp.bugs.scripts.checkwatches.base import (
-    ...     WorkingBase)
-    >>> from lp.bugs.scripts.checkwatches.bugwatchupdater import (
-    ...     BugWatchUpdater)
+    >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
+    >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
+    ...     make_bug_watch_updater)
 
-    >>> working_base = WorkingBase()
-    >>> working_base.init(
-    ...     'bugwatch@bugs.launchpad.net', transaction, log)
-    >>> bugwatch_updater = BugWatchUpdater(
-    ...     working_base, bug_watch, external_bugtracker)
+    >>> bugwatch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
 
     >>> bugwatch_updater.pushBugComments()
     Comment added as remote comment 1
@@ -270,8 +267,9 @@ invalid remote comment ID, an error will be raised:
     >>> broken_external_bugtracker = ErroringExternalBugTracker(
     ...     'http://example.com')
 
-    >>> bugwatch_updater = BugWatchUpdater(
-    ...     working_base, bug_watch, external_bugtracker)
+    >>> bugwatch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
     >>> bugwatch_updater.external_bugtracker = broken_external_bugtracker
     >>> bugwatch_updater.pushBugComments()
     Traceback (most recent call last):
