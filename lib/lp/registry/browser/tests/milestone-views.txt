@@ -727,10 +727,10 @@ project owner or series driver..
     >>> check_permission('launchpad.Edit', view)
     False
 
-Milestones with private bugs can be deleted. There is one caveate, the
-person deleting the milestone must have permssion to access the bug for it
-untargeted. It is possible for the owner or release manager to not have
-access to a private bug was targeted to a milestone by a driver.
+Milestones with private bugs can be deleted. There is one caveate, the person
+deleting the milestone must have permssion to access the bug for it to be
+untargeted. It is possible for the owner or release manager to not have access
+to a private bug that was targeted to a milestone by a driver.
 
     >>> login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.13')
