@@ -29,6 +29,8 @@ distribution series.
     ...     name='evolution').jsonBody()
 
     >>> pprint_entry(evolution)
+    all_translation_templates_collection_link:
+        u'http://.../ubuntu/hoary/+source/evolution/all_translation_templates'
     bug_reporting_guidelines: None
     displayname: u'evolution in Ubuntu Hoary'
     distribution_link: u'http://.../ubuntu'
@@ -120,3 +122,18 @@ no longer an official branch for that pocket.
     ...     pocket='Release').jsonBody()
     >>> print branch
     None
+
+
+Getting translation templates
+-----------------------------
+
+All translation templates for a source package are available at the
+'all_translation_templates' collection link.
+
+    >>> all_translation_templates = anon_webservice.get(
+    ...     evolution['self_link'] + '/all_translation_templates').jsonBody()
+    >>> print all_translation_templates['total_size']
+    3
+    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
+    http://.../#potemplate
+

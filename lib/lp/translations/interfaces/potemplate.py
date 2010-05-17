@@ -15,9 +15,6 @@ from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName)
@@ -76,50 +73,6 @@ class TranslationPriority(DBEnumeratedType):
 
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
-
-
-class IHasTranslationTemplates(Interface):
-    """An entity that has translation templates attached.
-
-    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
-    """
-
-    has_current_translation_templates = Bool(
-        title=_("Does this object have current translation templates?"),
-        readonly=True)
-
-    def getCurrentTranslationTemplates(just_ids=False):
-        """Return an iterator over all active translation templates.
-
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and parent official_rosetta flags
-        are set to True.
-        """
-
-    def getCurrentTranslationFiles(just_ids=False):
-        """Return an iterator over all active translation files.
-
-        A translation file is active if it's attached to an
-        active translation template.
-        """
-
-    def getObsoleteTranslationTemplates():
-        """Return an iterator over its not active translation templates.
-
-        A translation template is considered not active when any of
-        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
-        are set to False.
-        """
-
-    def getTranslationTemplates():
-        """Return an iterator over all its translation templates.
-
-        The returned templates are either obsolete or current.
-        """
-
-    def getTranslationTemplateFormats():
-        """A list of native formats for all current translation templates.
-        """
 
 
 class IPOTemplate(IRosettaStats):
@@ -299,7 +252,9 @@ class IPOTemplate(IRosettaStats):
 
     product = Object(
         title=_('The `IProduct` to which this translation template belongs.'),
-        required=False, readonly=True, schema=IProduct)
+        required=False, readonly=True,
+        # Really IProduct, see _schema_circular_imports.py.
+        schema=Interface)
 
     distribution = Object(
         title=_(
@@ -554,12 +509,14 @@ class IPOTemplateSubset(Interface):
     distroseries = Object(
         title=_(
             'The `IDistroSeries` associated with this subset.'),
-        schema=IDistroSeries)
+        # Really IDistroSeries, see _schema_circular_imports.py.
+        schema=Interface)
 
     productseries = Object(
         title=_(
             'The `IProductSeries` associated with this subset.'),
-        schema=IProductSeries)
+        # Really IProductSeries, see _schema_circular_imports.py.
+        schema=Interface)
 
     iscurrent = Bool(
         title=_("Filter for iscurrent flag."),
@@ -694,7 +651,8 @@ class IPOTemplateSharingSubset(Interface):
     product = Object(
         title=_(
             'The `IProduct` associated with this subset.'),
-        schema=IProduct)
+        # Really IProduct, see _schema_circular_imports.py.
+        schema=Interface)
 
     sourcepackagename = Object(
         title=_(
@@ -739,3 +697,56 @@ class IPOTemplateWithContent(IPOTemplate):
     content = Bytes(
         title=_("PO Template File to Import"),
         required=True)
+
+
+class IHasTranslationTemplates(Interface):
+    """An entity that has translation templates attached.
+
+    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
+    """
+
+    has_current_translation_templates = Bool(
+        title=_("Does this object have current translation templates?"),
+        readonly=True)
+
+    all_translation_templates = exported(
+        CollectionField(
+            title=_("All translation templates, either obsolete or current."),
+            # Really IPOTemplate, see _schema_circular_imports.py.
+            value_type=Reference(schema=IPOTemplate)))
+
+    def getCurrentTranslationTemplates(just_ids=False):
+        """Return an iterator over all active translation templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and parent official_rosetta flags
+        are set to True.
+        """
+
+    def getCurrentTranslationFiles(just_ids=False):
+        """Return an iterator over all active translation files.
+
+        A translation file is active if it's attached to an
+        active translation template.
+        """
+
+    def getObsoleteTranslationTemplates():
+        """Return an iterator over its not active translation templates.
+
+        A translation template is considered not active when any of
+        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
+        are set to False.
+        """
+
+    def getTranslationTemplates():
+        """Return an iterator over all its translation templates.
+
+        The returned templates are either obsolete or current.
+        """
+
+    def getTranslationTemplateFormats():
+        """A list of native formats for all current translation templates.
+        """
+
+# Monkey patch for circular import avoidance done in
+# _schema_circular_imports.py

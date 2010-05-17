@@ -64,7 +64,6 @@ from lp.hardwaredb.interfaces.hwdb import HWBus, IHWSubmission
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import ISeriesMixin
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermission)
@@ -81,8 +80,10 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.pofile import IPOFile
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate, IPOTemplateSharingSubset, IPOTemplateSubset)
+
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['linked_bugs'].value_type.schema = IBug
@@ -273,12 +274,6 @@ patch_plain_parameter_type(
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
 
-
-#ISeriesMixin
-patch_collection_property(
-    ISeriesMixin, 'all_potemplates', IPOTemplate)
-
-
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
@@ -319,7 +314,6 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
-
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -402,8 +396,15 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 patch_reference_property(IBugTracker, 'owner', IPerson)
 
 # IPOTemplate
-patch_collection_property(
-    IPOTemplate, 'pofiles', IPOFile)
+patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
+patch_reference_property(IPOTemplate, 'product', IProduct)
+
+# IPOTemplateSubset
+patch_reference_property(IPOTemplateSubset, 'distroseries', IDistroSeries)
+patch_reference_property(IPOTemplateSubset, 'productseries', IProductSeries)
+
+# IPOTemplateSharingSubset
+patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)

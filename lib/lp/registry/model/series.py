@@ -12,13 +12,9 @@ __all__ = [
 from operator import attrgetter
 from sqlobject import StringCol
 
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 class SeriesMixin:
@@ -55,19 +51,3 @@ class SeriesMixin:
         drivers = drivers.union(self.parent.drivers)
         drivers.discard(None)
         return sorted(drivers, key=attrgetter('displayname'))
-
-    @property
-    def all_potemplates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        if IProductSeries.providedBy(self):
-            return list(potemplateset.getSubset(
-                productseries=self,
-                distroseries=None))
-        elif IDistroSeries.providedBy(self):
-            return list(potemplateset.getSubset(
-                productseries=None,
-                distroseries=self))
-        else:
-            raise AssertionError(
-                "The object should implement either IProductSeries or "
-                "IDistroSeries.")

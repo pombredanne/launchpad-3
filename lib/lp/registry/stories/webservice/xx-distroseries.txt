@@ -61,7 +61,8 @@ For distroseries we publish a subset of its attributes.
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
-    all_potemplates_collection_link: u'http://...ubuntu/hoary/all_potemplates'
+    all_translation_templates_collection_link:
+        u'http://.../ubuntu/hoary/all_translation_templates'
     bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
     date_created: u'2006-10-16T18:31:43.483559+00:00'
@@ -104,12 +105,11 @@ Getting all potemplates for a distroseries
 ------------------------------------------
 
 All templates associated to a distribution series are available at the
-'all_potemplates' collection link.
+'all_translation_templates' collection link.
 
-    >>> all_potemplates = anon_webservice.get(
-    ...     '/ubuntu/hoary/all_potemplates').jsonBody()
-    >>> print all_potemplates['total_size']
+    >>> all_translation_templates = anon_webservice.get(
+    ...     '/ubuntu/hoary/all_translation_templates').jsonBody()
+    >>> print all_translation_templates['total_size']
     6
-    >>> print(all_potemplates['entries'][0]['resource_type_link'])
+    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
     http://.../#potemplate
-

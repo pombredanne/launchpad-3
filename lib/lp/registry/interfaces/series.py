@@ -12,7 +12,6 @@ __all__ = [
     'ISeriesMixin',
     ]
 
-from zope.interface import Interface
 from zope.schema import Bool
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -129,13 +128,3 @@ class ISeriesMixin(IHasDrivers):
         description=_('Currently just a reference to the parent '
                       'security contact.'),
         required=False, vocabulary='ValidPersonOrTeam')
-
-    all_potemplates = exported(
-        CollectionField(
-            title=_("All po templates associated with this distroseries,"
-                    " ordered by priority."),
-            # Really IPOTemplate, see _schema_circular_imports.py.
-            value_type=Reference(schema=Interface)))
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py
