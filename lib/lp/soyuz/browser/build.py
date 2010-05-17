@@ -135,8 +135,8 @@ class BuildBreadcrumb(Breadcrumb):
         if self.context.archive.is_ppa or self.context.archive.is_copy:
             return '%s build of %s %s' % (
                 self.context.arch_tag,
-                self.context.sourcepackagerelease.sourcepackagename.name,
-                self.context.sourcepackagerelease.version)
+                self.context.source_package_release.sourcepackagename.name,
+                self.context.source_package_release.version)
         else:
             return '%s build' % self.context.arch_tag
 
