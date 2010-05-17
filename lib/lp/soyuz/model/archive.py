@@ -458,13 +458,14 @@ class Archive(SQLBase):
         has_published_binaries_clause = """
             EXISTS (SELECT TRUE FROM
                 BinaryPackagePublishingHistory bpph,
-                BinaryPackageRelease bpr, Build
+                BinaryPackageRelease bpr, BinaryPackageBuild
             WHERE
                 bpph.archive = %s AND
                 bpph.status = %s AND
                 bpph.binarypackagerelease = bpr.id AND
-                bpr.build = Build.id AND
-                Build.sourcepackagerelease = SourcePackageRelease.id)
+                bpr.build = BinaryPackageBuild.id AND
+                BinaryPackageBuild.source_package_release =
+                    SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
         source_deletable_states = (
