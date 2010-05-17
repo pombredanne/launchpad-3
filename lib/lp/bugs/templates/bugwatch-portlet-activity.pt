@@ -36,8 +36,10 @@
       <div>
         <img tal:attributes="src activity/icon; title activity/result_text" />
         Update
-        <tal:message
-        replace="structure activity/completion_message" />
+        <tal:message replace="activity/completion_message" />
+        <tal:oopsid condition="activity/oops_str">
+          (<tal:oops_link replace="structure activity/oops_str" />)
+        </tal:oopsid>
         <tal:time replace="activity/date/fmt:displaydate" />
       </div>
     </tal:activity>
