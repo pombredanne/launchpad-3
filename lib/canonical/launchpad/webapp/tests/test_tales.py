@@ -10,7 +10,6 @@ from zope.component import getUtility
 from zope.testing.doctestunit import DocTestSuite
 
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.tales import FormattersAPI
@@ -283,12 +282,17 @@ class TestOOPSFormatter(TestCase):
             "Formatted string should be '%s', was '%s'" % (
                 oops_id, formatted_string))
 
+    def _setDeveloper(self):
+        """Override ILaunchBag.developer for testing purposes."""
+        launch_bag = getUtility(ILaunchBag)
+        launch_bag.setDeveloper(True)
+
     def test_linkifies_for_developers(self):
         # OOPS IDs will be linkified for Launchpad developers.
-        login('foo.bar@canonical.com')
-
         oops_id = 'OOPS-12345TEST'
         formatter = FormattersAPI(oops_id)
+
+        self._setDeveloper()
         formatted_string = formatter.oops_id()
 
         expected_string = '<a href="%s">%s</a>' % (
