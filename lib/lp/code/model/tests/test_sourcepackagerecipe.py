@@ -24,8 +24,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.archiveuploader.permission import (
-    ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -40,7 +40,6 @@ from lp.code.model.sourcepackagerecipe import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS, launchpadlib_for, login, login_person, person_logged_in,
