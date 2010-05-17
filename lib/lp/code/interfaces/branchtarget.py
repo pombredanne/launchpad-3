@@ -34,7 +34,9 @@ def check_default_stacked_on(branch):
     Branches that are *not* suitable include:
       - remote branches
       - branches the user cannot see
-      - branches that have not yet been successfully processed by the puller.
+      - branches that have no last revision information set (hosted branches
+        where a push hasn't completed or a mirrored branch that hasn't been
+        mirrored, etc).
 
     If the given branch is not suitable, return None. For convenience, also
     returns None if passed None. Otherwise, return the branch.
@@ -47,7 +49,7 @@ def check_default_stacked_on(branch):
         return None
     if branch_type == BranchType.REMOTE:
         return None
-    if branch.last_mirrored is None:
+    if branch.last_mirrored_id is None:
         return None
     return branch
 

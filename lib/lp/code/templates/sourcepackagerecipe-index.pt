@@ -76,7 +76,8 @@
           <tbody>
             <tr tal:repeat="build view/builds">
               <td>
-                <tal:status replace="build/@@+index/status" />
+                <a tal:content="build/@@+index/status"
+                   tal:attributes="href build/fmt:url"></a>
               </td>
               <td>
                 <tal:date replace="build/@@+index/date/fmt:displaydate" />

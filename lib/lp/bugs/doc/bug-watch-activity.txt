@@ -50,11 +50,14 @@ is written to the database.
     >>> activity.activity_date
     datetime.datetime...
 
+The BugWatchActivity's result will be BugWatchActivityStatus.SYNC_SUCCEEDED.
+
+    >>> print activity.result.title
+    Synchronisation succeeded
+
 The other fields on the BugWatchActivity record, which aren't required,
 will all be None.
 
-    >>> print activity.result
-    None
     >>> print activity.message
     None
     >>> print activity.oops_id
@@ -83,12 +86,13 @@ property.
     >>> print bug_watch.activity.count()
     2
 
-The most recent activity entry will have a result of None since it was
+The most recent activity entry will have a result of
+BugWatchActivityStatus.SYNC_SUCCEEDED since it was
 successful.
 
     >>> most_recent_activity = bug_watch.activity.first()
-    >>> print most_recent_activity.result
-    None
+    >>> print most_recent_activity.result.title
+    Synchronisation succeeded
 
 Its message will also be empty
 
