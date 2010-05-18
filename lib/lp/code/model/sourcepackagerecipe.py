@@ -176,3 +176,12 @@ class SourcePackageRecipe(Storm):
             *clauses)
         result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
         return result
+
+    def getLastBuild(self):
+        """See `ISourcePackageRecipeBuild`."""
+        store = Store.of(self)
+        result = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result.first()
+
