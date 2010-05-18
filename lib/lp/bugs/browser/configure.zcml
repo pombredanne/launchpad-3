@@ -386,6 +386,13 @@
         template="../templates/securitycontact-edit.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
+        facet="bugs"
+        permission="launchpad.Edit"
+        name="+configure-bugtracker"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
         class="lp.bugs.browser.bugtarget.BugTargetBugsView"
         permission="zope.Public"

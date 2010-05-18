@@ -1482,13 +1482,6 @@
         for="lp.registry.interfaces.product.IProduct"
         facet="overview"
         permission="launchpad.Edit"
-        name="+configure-bugtracker"
-        template="../../app/templates/generic-edit.pt"
-        class="lp.registry.browser.product.ProductConfigureBugTrackerView"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        facet="overview"
-        permission="launchpad.Edit"
         name="+configure-translations"
         template="../../app/templates/generic-edit.pt"
         class="lp.registry.browser.product.ProductConfigureTranslationsView"/>
