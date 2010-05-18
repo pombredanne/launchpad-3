@@ -47,7 +47,6 @@ __all__ = [
     'IHasMugshot',
     'IHasProduct',
     'IHasProductAndAssignee',
-    'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -433,16 +432,6 @@ class IHasBug(Interface):
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     """An object that has a product attribute and an assigned attribute.
     See IHasProduct and IHasAssignee."""
-
-
-class IHasSecurityContact(Interface):
-    """An object that has a security contact."""
-
-    security_contact = exported(PublicPersonChoice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related bug reports"),
-        required=False, vocabulary='ValidPersonOrTeam'))
 
 
 class IHasIcon(Interface):

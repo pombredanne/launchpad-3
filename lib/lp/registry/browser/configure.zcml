@@ -1578,13 +1578,6 @@
             ProductSpecificationsMenu
             "
         module="lp.registry.browser.product"/>
-    <browser:page
-        name="+securitycontact"
-        for="canonical.launchpad.interfaces.IHasSecurityContact"
-        class="lp.registry.browser.securitycontact.SecurityContactEditView"
-        facet="bugs"
-        permission="launchpad.Edit"
-        template="../templates/securitycontact-edit.pt"/>
     <browser:navigation
         module="lp.registry.browser.productseries"
         classes="

@@ -378,6 +378,13 @@
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
     <browser:page
+        name="+securitycontact"
+        for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
+        class="lp.bugs.browser.securitycontact.SecurityContactEditView"
+        facet="bugs"
+        permission="launchpad.Edit"
+        template="../templates/securitycontact-edit.pt"/>
+    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
         class="lp.bugs.browser.bugtarget.BugTargetBugsView"
