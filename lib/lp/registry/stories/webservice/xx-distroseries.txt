@@ -107,9 +107,19 @@ Getting all potemplates for a distroseries
 All templates associated to a distribution series are available at the
 'all_translation_templates' collection link.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> login('admin@canonical.com')
+    >>> hoary = getUtility(ILaunchpadCelebrities).ubuntu.getSeries('hoary')
+    >>> templates = getUtility(IPOTemplateSet).getSubset(distroseries=hoary)
+    >>> db_count = len(list(templates))
+    >>> logout()
     >>> all_translation_templates = anon_webservice.get(
     ...     '/ubuntu/hoary/all_translation_templates').jsonBody()
-    >>> print all_translation_templates['total_size']
-    6
+    >>> api_count = all_translation_templates['total_size']
+    >>> api_count == db_count
+    True
     >>> print(all_translation_templates['entries'][0]['resource_type_link'])
     http://.../#potemplate
