@@ -14,10 +14,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
-from lazr.restful.declarations import exported
 from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX kiko 2007-02-08:
