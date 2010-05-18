@@ -119,6 +119,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `IBuildBase`."""
         return self.distroseries.distribution
 
+    is_virtualized = True
+
     pocket = DBEnum(enum=PackagePublishingPocket)
 
     recipe_id = Int(name='recipe', allow_none=False)
@@ -169,11 +171,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive,
-            pocket=PackagePublishingPocket.RELEASE,
+    def new(cls, sourcepackage, recipe, requester, archive, pocket=None,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
         if date_created is None:
             date_created = UTC_NOW
         spbuild = cls(
@@ -252,7 +255,12 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
         build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
-    virtualized = True
+
+    @property
+    def virtualized(self):
+        """See `IBuildFarmJob`."""
+        return self.build.is_virtualized
+
 
     def __init__(self, build, job):
         self.build = build
