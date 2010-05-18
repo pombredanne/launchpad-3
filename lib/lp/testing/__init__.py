@@ -414,7 +414,7 @@ class TestCase(testtools.TestCase):
         self.addCleanup(os.chdir, cwd)
 
     def _unfoldEmailHeader(self, header):
-        """Unfold an multiline e-mail header."""
+        """Unfold a multiline e-mail header."""
         header = ''.join(header.splitlines())
         return header.replace('\t', ' ')
 
