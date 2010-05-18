@@ -413,6 +413,19 @@ class TestCase(testtools.TestCase):
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
 
+    def _unfoldEmailHeader(self, header):
+        """Unfold an multiline e-mail header."""
+        header = ''.join(header.splitlines())
+        return header.replace('\t', ' ')
+
+    def assertEmailHeadersEqual(self, expected, observed):
+        """Assert that two e-mail headers are equal.
+
+        The headers are unfolded before being compared.
+        """
+        return self.assertEqual(
+            self._unfoldEmailHeader(expected),
+            self._unfoldEmailHeader(observed))
 
 class TestCaseWithFactory(TestCase):
 
