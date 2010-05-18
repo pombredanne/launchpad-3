@@ -1410,7 +1410,7 @@ Whereas Verbose Person does get the description and task status:
     desc
     <BLANKLINE>
     To unsubscribe from this bug, go to:
-    http://bugs.launchpad.dev/product-name4/+bug/.../+subscribe
+    http://bugs.launchpad.dev/.../+bug/.../+subscribe
     <BLANKLINE>
     ----------------------------------------------------------------------
 
