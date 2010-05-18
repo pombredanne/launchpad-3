@@ -36,12 +36,10 @@ from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import IArchive
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
-from lp.soyuz.interfaces.archive import IArchive
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
