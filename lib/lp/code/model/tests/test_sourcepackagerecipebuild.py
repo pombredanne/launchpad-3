@@ -20,7 +20,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
@@ -78,8 +78,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
 
-        # The processor for SourcePackageRecipeBuilds should not be None.  They
-        # do require specific environments.
+        # The processor for SourcePackageRecipeBuilds should not be None.
+        # They do require specific environments.
         self.assertNotEqual(None, bq.processor)
         self.assertEqual(
             spb.distroseries.nominatedarchindep.default_processor,

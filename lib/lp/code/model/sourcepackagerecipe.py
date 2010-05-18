@@ -22,7 +22,6 @@ from zope.interface import classProvides, implements
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)

@@ -27,7 +27,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
     InvalidPocketForPPA)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
