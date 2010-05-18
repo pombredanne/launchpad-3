@@ -94,7 +94,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(uncommit_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision removed' % self.db_branch.unique_name,
             message['Subject'])
 
