@@ -155,7 +155,7 @@ class DistributionSourcePackage(BugTargetBase,
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagenameID ==
-                    sourcepackagename.id
+                    self.sourcepackagename.id
                 ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
             if spph is None:
                 return None
@@ -506,7 +506,7 @@ class DistributionSourcePackage(BugTargetBase,
                 dsp.sourcepackagename = sourcepackagename
                 dsp.distribution = distribution
                 dsp.section = section
-                store.add(dsp)
+                Store.of(spph).add(dsp)
             elif distroseries.status == SeriesStatus.CURRENT:
                 # If the distroseries.status is not CURRENT, it should
                 # not override the section from a previously created
