@@ -133,6 +133,7 @@ from lp.soyuz.browser.archivesubscription import (
 from canonical.launchpad.browser.launchpad import get_launchpad_views
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.account import AccountStatus
+from lp.soyuz.interfaces.archive import ArchiveStatus
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -3870,14 +3871,19 @@ class PersonEditView(BasePersonEditView):
 
         When a user has a PPA renames are prohibited.
         """
-        writable = self.context.archive is None
-        if not writable:
+        active_ppas = [
+            ppa for ppa in self.context.ppas
+            if ppa.status in (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)]
+        num_packages = sum(
+            ppa.getPublishedSources().count() for ppa in active_ppas)
+        if num_packages > 0:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
-        if not writable:
+        if num_packages > 0:
             self.widgets['name'].hint = _(
-                'This user has a PPA and may not be renamed.')
+                'This user has an active PPA with packages published and '
+                'may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""

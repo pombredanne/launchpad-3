@@ -391,12 +391,15 @@ logged saying that comments won't be imported.
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import ISupportsCommentImport
     >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
+    ...     baseurl = 'http://whatever.com'
     ...     implements(ISupportsCommentImport)
     ...     sync_comments = True
-    >>> bug_watch_updater.updateBugWatches(
-    ...     CommentImportExternalBugTracker(), [], now=utc_now)
-    getCurrentDBTime() called
-    initializeRemoteBugDB() called: []
+
+    >>> checkwatches_master = CheckwatchesMaster(
+    ...     transaction, syncable_gnome_products=[])
+    >>> remote_bug_updater = checkwatches_master.remote_bug_updater_factory(
+    ...     checkwatches_master, CommentImportExternalBugTracker(), '1',
+    ...     [], [], server_time=None)
     WARNING:...:Comment importing supported, but server time can't be
                 trusted. No comments will be imported. (OOPS-...)
 
@@ -641,7 +644,7 @@ IDs to be updated.
 
 === Converting statuses ===
 
-Once it has retrieved the bugs from the remote server, CheckwatchesMaster
+Once it has retrieved the bugs from the remote server, RemoteBugUpdater
 attempts to convert their statuses into Launchpad BugTaskStatuses by
 calling the convertRemoteStatus() method on the ExternalBugTracker via
 its own _convertRemoteStatus() method.
@@ -660,17 +663,18 @@ BugTaskStatus or will raise an UnknownRemoteStatusError.
     ...         else:
     ...             raise UnknownRemoteStatusError(remote_status)
 
-CheckwatchesMaster._convertRemoteStatus() will handle these errors and will
+RemoteBugUpdater._convertRemoteStatus() will handle these errors and will
 return BugTaskStatus.UNKNOWN when they occur. It will also log a
 warning.
 
-    >>> status = bug_watch_updater._convertRemoteStatus(
-    ...     StatusConvertingExternalBugTracker(), 'new')
+    >>> remote_bug_updater = bug_watch_updater.remote_bug_updater_factory(
+    ...     bug_watch_updater, StatusConvertingExternalBugTracker(),
+    ...     '1', [1], [], utc_now)
+    >>> status = remote_bug_updater._convertRemoteStatus('new')
     >>> print status.title
     New
 
-    >>> status = bug_watch_updater._convertRemoteStatus(
-    ...     StatusConvertingExternalBugTracker(), 'spam')
+    >>> status = remote_bug_updater._convertRemoteStatus('spam')
     WARNING...Unknown remote status 'spam'. (OOPS-...)
     >>> print status.title
     Unknown
