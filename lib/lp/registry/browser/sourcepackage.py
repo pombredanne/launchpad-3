@@ -373,7 +373,7 @@ class SourcePackageView:
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
         for bin in self.context.currentrelease.binaries:
-            distroarchseries = bin.build.distroarchseries
+            distroarchseries = bin.build.distro_arch_series
             if bin.name not in results:
                 results[bin.name] = []
 

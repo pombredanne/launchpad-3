@@ -1060,9 +1060,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
-            (BinaryPackageBuild.sourcepackagerelease ==
+            (BinaryPackageBuild.source_package_release ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
