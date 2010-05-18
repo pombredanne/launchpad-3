@@ -82,6 +82,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
+    distro_series = distroseries
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(

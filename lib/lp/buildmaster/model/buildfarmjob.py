@@ -86,7 +86,7 @@ class BuildFarmJobOld:
     @staticmethod
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJobOld`."""
-        return True
+        raise NotImplementedError
 
     def cleanUp(self):
         """See `IBuildFarmJob`."""
@@ -160,6 +160,11 @@ class BuildFarmJobOldDerived:
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJobOld`."""
         return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `IBuildFarmJobOld`."""
+        return True
 
 
 class BuildFarmJob(BuildFarmJobOld, Storm):

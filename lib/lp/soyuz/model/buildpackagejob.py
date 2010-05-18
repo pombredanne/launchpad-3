@@ -232,15 +232,15 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             sub_query += """
                 AND EXISTS (SELECT true
                 WHERE ((
-                    SELECT COUNT(build2.id)
+                    SELECT COUNT(binarypackagebuild2.id)
                     FROM BinaryPackageBuild binarypackagebuild2,
-                         PackageBuild packagebuild2
-                         BuildFarmJob buildfarmjob2
+                         PackageBuild packagebuild2,
+                         BuildFarmJob buildfarmjob2,
                          DistroArchSeries distroarchseries2
                     WHERE
                         binarypackagebuild2.package_build =
                             packagebuild2.id AND
-                        packagebuild2.archive = binarypackagebuild.archive AND
+                        packagebuild2.archive = packagebuild.archive AND
                         archive.purpose = %s AND
                         archive.private IS FALSE AND
                         binarypackagebuild2.distro_arch_series =

@@ -38,6 +38,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
+    # XXX michaeln 2010-05-18 bug=567922
+    # Temporarily alias distro_series until SPRecipeBuild is
+    # implementing IPackageBuild.
+    distro_series = distroseries
 
     sourcepackagename = Reference(
         ISourcePackageName,
