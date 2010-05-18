@@ -15,14 +15,18 @@ upstream project is not set.
     >>> user_browser.getLink('pmount').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'no-upstreams'))
+    Launchpad...
     There are no projects registered in Launchpad that are a potential
     match for this source package. Can you help us find one?
-    Set upstream link
+    Registered upstream project:
+    Choose another upstream project
 
 No Privileges Person knows that the pmount package comes from the thunderbird
 project. He sets the upstream packaging link and sees that it is set.
 
-    >>> user_browser.getLink('Set upstream link').click()
+    >>> user_browser.getControl(
+    ...     'Choose another upstream project').selected = True
+    >>> user_browser.getControl("Link to Upstream Project").click()
     >>> user_browser.getControl(name='field.product').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl(name='field.productseries').value = ['trunk']
