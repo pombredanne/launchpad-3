@@ -15,7 +15,6 @@ from zope.interface import implements
 
 from canonical.config import config
 
-from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -158,8 +157,8 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
-        reason = check_upload_to_pocket(
-            build.archive, build.distroseries, build.pocket)
+        reason = build.archive.checkUploadToPocket(
+            build.distroseries, build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
                 "to the series status of %s." %

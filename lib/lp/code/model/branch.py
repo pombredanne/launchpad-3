@@ -897,7 +897,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
         self.mirror_status_message = None
-        if stacked_on_location == '':
+        if stacked_on_location == '' or stacked_on_location is None:
             stacked_on_branch = None
         else:
             stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(

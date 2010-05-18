@@ -254,13 +254,14 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
     build = Reference(
         build_id, 'SourcePackageRecipeBuild.id')
 
-    processor = None
+    @property
+    def processor(self):
+        return self.build.distroseries.nominatedarchindep.default_processor
 
     @property
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
-
 
     def __init__(self, build, job):
         self.build = build

@@ -34,19 +34,16 @@ from twisted.python.threadpool import ThreadPool
 
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTrackerSet, IBugWatchSet, IDistribution,
-    ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
-    ISupportsCommentPushing, PersonCreationRationale)
+    ILaunchpadCelebrities, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.scripts.logger import log as default_log
 
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED, BugWatchUpdateError,
     UnknownBugTrackerTypeError)
-from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
 from lp.bugs.scripts.checkwatches.base import (
     WorkingBase, commit_before, with_interaction)
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
