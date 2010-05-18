@@ -179,10 +179,8 @@ ALTER TABLE binarypackagepublishinghistory
 
 
 -- Step 4
--- Note, to enable parallel development getting the codebase updated, we will
--- uncomment the following deletion of the build table once the code has been
--- updated.
--- ALTER TABLE Build SET SCHEMA todrop;
+-- Drop the old Build table.
+ALTER TABLE Build SET SCHEMA todrop;
 
 -- Step 5
 -- Update views that reference the build table:
