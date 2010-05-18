@@ -47,8 +47,10 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
+from lp.buildmaster.model.packagebuild import PackageBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
@@ -694,15 +696,11 @@ class BuilderSet(object):
     def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
-        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-        from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import Archive
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
-
-
 
         store = Store.of(processor)
         origin = (
