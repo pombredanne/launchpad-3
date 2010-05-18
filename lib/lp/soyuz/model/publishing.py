@@ -47,6 +47,7 @@ from lp.services.worlddata.model.country import Country
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (BinaryPackageRelease,
     BinaryPackageReleaseDownloadCount)
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -1159,7 +1160,10 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW)
-
+        # Import here to prevent import loop.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage)
+        DistributionSourcePackage.ensure(pub)
         return pub
 
     def getBuildsForSourceIds(

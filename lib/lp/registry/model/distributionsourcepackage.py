@@ -22,6 +22,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.structuralsubscription import (
@@ -54,6 +55,22 @@ from lp.translations.model.customlanguagecode import (
     CustomLanguageCode, HasCustomLanguageCodesMixin)
 
 
+class DistributionSourcePackageProperty:
+    def __init__(self, attrname):
+        self.attrname = attrname
+
+    def __get__(self, obj, class_):
+        return getattr(obj._self_in_database, self.attrname, None)
+
+    def __set__(self, obj, value):
+        if obj._self_in_database is None:
+            raise AttributeError(
+                "DistributionSourcePackage record does not exist in the "
+                "database for distro=%s, sourcepackagename=%s"
+                % (obj.distribution.name, obj.sourcepackagename.name))
+        setattr(obj._self_in_database, self.attrname, value)
+
+
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
@@ -71,6 +88,14 @@ class DistributionSourcePackage(BugTargetBase,
     implements(
         IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
         IQuestionTarget)
+
+    bug_reporting_guidelines = DistributionSourcePackageProperty(
+        'bug_reporting_guidelines')
+    max_bug_heat = DistributionSourcePackageProperty('max_bug_heat')
+    total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
+    bug_count = DistributionSourcePackageProperty('bug_count')
+    po_message_count = DistributionSourcePackageProperty('po_message_count')
+    section = DistributionSourcePackageProperty('section')
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -118,54 +143,24 @@ class DistributionSourcePackage(BugTargetBase,
         # measure while DistributionSourcePackage is not yet hooked
         # into the database but we need access to some of the fields
         # in the database.
-        return Store.of(self.distribution).find(
-            DistributionSourcePackageInDatabase,
-            DistributionSourcePackageInDatabase.sourcepackagename == (
-                self.sourcepackagename),
-            DistributionSourcePackageInDatabase.distribution == (
-                self.distribution)
-            ).one()
-
-    def _get_bug_reporting_guidelines(self):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
+        dsp_in_db = self.get(self.distribution, self.sourcepackagename)
         if dsp_in_db is not None:
-            return dsp_in_db.bug_reporting_guidelines
-        return None
-
-    def _set_bug_reporting_guidelines(self, value):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.bug_reporting_guidelines = value
-
-    bug_reporting_guidelines = property(
-        _get_bug_reporting_guidelines,
-        _set_bug_reporting_guidelines)
-
-    def _get_max_bug_heat(self):
-        """See `IHasBugs`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            return None
+            return dsp_in_db
         else:
-            return dsp_in_db.max_bug_heat
-
-    def _set_max_bug_heat(self, value):
-        """See `IHasBugs`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.max_bug_heat = value
-
-    max_bug_heat = property(_get_max_bug_heat, _set_max_bug_heat)
+            spph = Store.of(self.distribution).find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id,
+                DistroSeries.distributionID == self.distribution.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagenameID ==
+                    sourcepackagename.id
+                ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
+            if spph is None:
+                return None
+            else:
+                return self.ensure(spph)
 
     @property
     def latest_overall_publication(self):
@@ -483,6 +478,42 @@ class DistributionSourcePackage(BugTargetBase,
             In(Lower(EmailAddress.email), email_addresses))
         return result_set
 
+    @classmethod
+    def get(cls, distribution, sourcepackagename):
+        return Store.of(distribution).find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename ==
+                sourcepackagename,
+            DistributionSourcePackageInDatabase.distribution ==
+                distribution
+            ).one()
+
+    @classmethod
+    def ensure(cls, spph):
+        """Create DistributionSourcePackage record.
+
+        If it exists, update the section attribute.
+        """
+        # Import here to avoid import loop.
+        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        distribution = spph.distroseries.distribution
+        section = spph.section
+
+        dsp = cls.get(distribution, sourcepackagename)
+        if spph.archive.purpose == ArchivePurpose.PRIMARY:
+            if dsp is None:
+                dsp = DistributionSourcePackageInDatabase()
+                dsp.sourcepackagename = sourcepackagename
+                dsp.distribution = distribution
+                dsp.section = section
+                store.add(dsp)
+            elif distroseries.status == SeriesStatus.CURRENT:
+                # If the distroseries.status is not CURRENT, it should
+                # not override the section from a previously created
+                # SourcePackagePublishingHistory.
+                dsp.section = section
+        return dsp
+
 
 class DistributionSourcePackageInDatabase(Storm):
     """Temporary class to allow access to the database."""
@@ -507,4 +538,9 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_reporting_guidelines = Unicode()
 
     max_bug_heat = Int()
+    total_bug_heat = Int()
+    bug_count = Int()
+    po_message_count = Int()
 
+    section_id = Int(name='section')
+    section = Reference(section_id, 'Section.id')
