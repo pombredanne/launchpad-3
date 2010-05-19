@@ -129,6 +129,9 @@ Person reads that they will be deleted too.
 Sample Person chooses the delete button, then reads that the action is
 successful.
 
+    >>> from canonical.testing.layers import MemcachedLayer
+
+    >>> MemcachedLayer.purge()
     >>> driver_browser.getControl('Delete Milestone').click()
     >>> print driver_browser.title
     Series trunk : Mozilla Firefox
