@@ -1,0 +1,81 @@
+<html>
+  <head>
+    <title>Bug watch errors</title>
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssreset/reset.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssfonts/fonts.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssbase/base.css" />
+  </head>
+  <body>
+    <h1>Bug watch update errors</h1>
+    <p>
+      Bug watches don't always update successfully. When a bug watch
+      fails to update, Launchpad records what went wrong.
+    </p>
+    <a name="UNKNOWN"></a>
+    <h2>Unknown</h2>
+    <p>Launchpad encountered an unexpected error when trying to
+    retrieve the bug from the remote server.
+    </p>
+    <a name="BUG_NOT_FOUND"></a>
+    <h2>Bug Not Found</h2>
+    <p>Launchpad could not find the specified bug on the remote server.
+    </p>
+    <a name="CONNECTION_ERROR"></a>
+    <h2>Connection Error</h2>
+    <p>Launchpad was unable to connect to the remote server.
+    </p>
+    <a name="INVALID_BUG_ID"></a>
+    <h2>Invalid Bug ID</h2>
+    <p>The specified bug ID is not valid.
+    </p>
+    <a name="TIMEOUT"></a>
+    <h2>Timeout</h2>
+    <p>Launchpad encountered a timeout when trying to connect to the
+    remote server and was unable to retrieve the bug's status.
+    </p>
+    <a name="UNPARSABLE_BUG"></a>
+    <h2>Unparsable Bug</h2>
+    <p>Launchpad could not extract a status from the data it received
+    from the remote server.
+    </p>
+    <a name="UNPARSABLE_BUG_TRACKER"></a>
+    <h2>Unparsable Bug Tracker Version</h2>
+    <p>Launchpad could not determine the version of the bug tracker
+    software running on the remote server.
+    </p>
+    <a name="UNSUPPORTED_BUG_TRACKER"></a>
+    <h2>Unsupported Bugtracker</h2>
+    <p>The remote server is using bug tracker software which Launchpad
+    does not currently support.
+    </p>
+    <a name="PRIVATE_REMOTE_BUG"></a>
+    <h2>Private Remote Bug</h2>
+    <p>The bug is marked as private on the remote bug tracker.
+    Launchpad cannot import the status of private remote bugs.
+    </p>
+    <a name="SYNC_SUCCEEDED"></a>
+    <h2>Synchronisation succeeded</h2>
+    <p>The remote bug's status was successfully synchronized to Launchpad.
+    </p>
+    <a name="COMMENT_IMPORT_FAILED"></a>
+    <h2>Unable to import comments</h2>
+    <p>The remote bug's status was synchronized successfully but
+    comments could not be imported from the remote bug.
+    </p>
+    <a name="COMMENT_PUSH_FAILED"></a>
+    <h2>Unable to push comments</h2>
+    <p>The remote bug's status was synchronized successfully and
+    its comments were successfully imported but Launchpad was unable
+    to push comments back to the remote bug.
+    </p>
+    <a name="BACKLINK_FAILED"></a>
+    <h2>Unable to set link remote bug to Launchpad</h2>
+    <p>The remote bug's status and comments were synchronized
+    sucessfully with Launchpad but Launchpad was unable to set the
+    remote bug's link back to the relevant Launchpad bug.
+    </p>
+  </body>
+</html>
