@@ -127,9 +127,9 @@ class IPOFile(IRosettaStats):
             '''),
         required=False)
 
-    translation_messages = Attribute(_(
-        'All `ITranslationMessage` objects related to this translation file.'
-        ))
+    translation_messages = Attribute(_('''
+        All `ITranslationMessage` objects related to this translation file.
+        '''))
 
     plural_forms = Int(
         title=_('Number of plural forms for the language of this PO file.'),
@@ -280,7 +280,7 @@ class IPOFile(IRosettaStats):
 
     def getTranslationRows():
         """Return exportable rows of translation data.
-        
+
         :return: a list of `VPOExport` objects.
         """
 

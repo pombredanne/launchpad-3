@@ -1299,15 +1299,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
-            )
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)))
         origin = [
             DistroSeriesPackageCache,
             Join(
                 BinaryPackageName,
                 DistroSeriesPackageCache.binarypackagename ==
-                    BinaryPackageName.id
-                )
+                    BinaryPackageName.id),
             ]
 
         # Note: When attempting to convert the query below into straight
@@ -1321,7 +1319,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text)),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting

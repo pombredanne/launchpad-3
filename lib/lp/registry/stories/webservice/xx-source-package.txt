@@ -122,35 +122,3 @@ no longer an official branch for that pocket.
     ...     pocket='Release').jsonBody()
     >>> print branch
     None
-
-
-Getting translation templates
------------------------------
-
-All translation templates for a source package are available at the
-'all_translation_templates' collection link.
-
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.sourcepackagename import (
-    ...     ISourcePackageNameSet)
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
-    >>> login('admin@canonical.com')
-    >>> hoary = getUtility(ILaunchpadCelebrities).ubuntu.getSeries('hoary')
-    >>> evolution_package = getUtility(ISourcePackageNameSet)['evolution']
-    >>> templates = getUtility(
-    ...     IPOTemplateSet).getSubset(
-    ...         distroseries=hoary,
-    ...         sourcepackagename=evolution_package)
-    >>> db_count = len(list(templates))
-    >>> logout()
-    >>> all_translation_templates = anon_webservice.get(
-    ...     evolution['self_link'] + '/all_translation_templates').jsonBody()
-    >>> api_count = all_translation_templates['total_size']
-    >>> api_count == db_count
-    True
-    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
-    http://.../#potemplate
-

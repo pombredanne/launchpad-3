@@ -853,7 +853,6 @@ virtual host.
     >>> fooey = factory.makeAnyBranch(
     ...     product=babadoo, name='fooey', owner=babadoo_owner)
     >>> foobadoo.branch = fooey
-    >>> potemplate = factory.makePOTemplate(productseries=foobadoo)
     >>> logout()
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
@@ -894,25 +893,6 @@ milestones and releases.
      u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
 
-"all_translation_templates" will list all POTemplates associated with this
-product series.
-
-
-    >>> from zope.component import getUtility
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
-    >>> login('admin@canonical.com')
-    >>> templates = getUtility(
-    ...     IPOTemplateSet).getSubset(productseries=foobadoo)
-    >>> db_count = len(list(templates))
-    >>> logout()
-    >>> all_translation_templates = anon_webservice.get(
-    ...     babadoo_foobadoo[
-    ...         'all_translation_templates_collection_link']).jsonBody()
-    >>> api_count = all_translation_templates['total_size']
-    >>> api_count == db_count
-    True
-    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
-    http://.../#potemplate
 
 Creating a milestone on the product series
 ==========================================

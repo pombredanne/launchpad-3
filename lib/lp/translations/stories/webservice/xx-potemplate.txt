@@ -1,6 +1,10 @@
 PO Template webservices
 =======================
 
+
+Getting the attributes of a POTemplate
+--------------------------------------
+
 Anonymous users have read access to PO templates attributes.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
@@ -32,3 +36,84 @@ Anonymous users have read access to PO templates attributes.
     9
     >>> print(all_pofiles['entries'][0]['resource_type_link'])
     http://.../#pofile
+
+
+Getting all potemplates for a distribution series
+-------------------------------------------------
+
+All templates associated to a distribution series are available as the
+'all_translation_templates' collection link attribute.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> login('admin@canonical.com')
+    >>> hoary = getUtility(ILaunchpadCelebrities).ubuntu.getSeries('hoary')
+    >>> templates = getUtility(IPOTemplateSet).getSubset(distroseries=hoary)
+    >>> db_count = len(list(templates))
+    >>> logout()
+    >>> all_translation_templates = anon_webservice.get(
+    ...     '/ubuntu/hoary/all_translation_templates').jsonBody()
+    >>> api_count = all_translation_templates['total_size']
+    >>> api_count == db_count
+    True
+    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
+    http://.../#potemplate
+
+
+Getting all potemplates for a product series
+--------------------------------------------
+
+All translation templates for a product series are available as the
+'all_translation_templates' collection link attribute.
+
+    >>> login('admin@canonical.com')
+    >>> productseries = factory.makeProductSeries()
+    >>> potemplate_1 = factory.makePOTemplate(productseries=productseries)
+    >>> potemplate_2 = factory.makePOTemplate(productseries=productseries)
+    >>> potemplate_count = 2
+    >>> logout()
+    >>> all_translation_templates = anon_webservice.get(
+    ...     '/%s/%s/all_translation_templates' % (
+    ...         productseries.product.name,
+    ...         productseries.name)
+    ...     ).jsonBody()
+    >>> api_count = all_translation_templates['total_size']
+    >>> api_count == potemplate_count
+    True
+    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
+    http://.../#potemplate
+
+
+Getting all translation templates for a source package
+------------------------------------------------------
+
+All translation templates for a source package are available as the
+'all_translation_templates' collection link attribute.
+
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> login('admin@canonical.com')
+    >>> hoary = getUtility(ILaunchpadCelebrities).ubuntu.getSeries('hoary')
+    >>> evolution_package = getUtility(ISourcePackageNameSet)['evolution']
+    >>> templates = getUtility(
+    ...     IPOTemplateSet).getSubset(
+    ...         distroseries=hoary,
+    ...         sourcepackagename=evolution_package)
+    >>> db_count = len(list(templates))
+    >>> logout()
+    >>> all_translation_templates = anon_webservice.get(
+    ...     '/ubuntu/hoary/+source/evolution'
+    ...     '/all_translation_templates').jsonBody()
+    >>> api_count = all_translation_templates['total_size']
+    >>> api_count == db_count
+    True
+    >>> print(all_translation_templates['entries'][0]['resource_type_link'])
+    http://.../#potemplate
+
