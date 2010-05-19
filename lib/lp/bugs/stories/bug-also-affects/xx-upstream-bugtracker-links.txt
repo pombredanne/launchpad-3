@@ -117,8 +117,8 @@ filing link, such as Debbugs, only a search link will be displayed.
 Setting the remote project
 ==========================
 
-The remote_product field - which stores a Product's ID on the remote bug
-tracker - can be set from the +configure-bugtracker page, too.
+The remote_product field, which stores a Product's ID on the remote bug
+tracker, can be set from the +configure-bugtracker page, too.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')

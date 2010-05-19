@@ -136,7 +136,7 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
     login(ANONYMOUS)
-    # Remove the notifcations for the newly created question.
+    # Remove the notifications for the newly created question.
     pop_notifications()
     return ubuntu_bugtask.id
 
