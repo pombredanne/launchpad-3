@@ -14,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
+from lazr.restful.declarations import exported
 from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -437,11 +438,11 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
 class IHasSecurityContact(Interface):
     """An object that has a security contact."""
 
-    security_contact = PublicPersonChoice(
+    security_contact = exported(PublicPersonChoice(
         title=_("Security Contact"),
         description=_(
             "The person or team who handles security-related bug reports"),
-        required=False, vocabulary='ValidPersonOrTeam')
+        required=False, vocabulary='ValidPersonOrTeam'))
 
 
 class IHasIcon(Interface):

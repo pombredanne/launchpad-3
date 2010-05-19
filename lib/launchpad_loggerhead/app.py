@@ -9,6 +9,7 @@ import urlparse
 import xmlrpclib
 
 from bzrlib import errors, lru_cache, urlutils
+from bzrlib.transport import get_transport
 
 from loggerhead.apps import favicon_app, static_app
 from loggerhead.apps.branch import BranchWSGIApp
@@ -63,11 +64,12 @@ class RootApp:
         self.store = MemoryStore()
         self.log = logging.getLogger('lp-loggerhead')
 
-    def get_transports(self):
-        t = getattr(thread_transports, 'transports', None)
+    def get_transport(self):
+        t = getattr(thread_transports, 'transport', None)
         if t is None:
-            thread_transports.transports = []
-        return thread_transports.transports
+            thread_transports.transport = get_transport(
+                config.codehosting.internal_branch_by_id_root)
+        return thread_transports.transport
 
     def _make_consumer(self, environ):
         """Build an OpenID `Consumer` object with standard arguments."""
@@ -121,13 +123,25 @@ class RootApp:
         elif response.status == CANCEL:
             self.log.error('open id response: CANCEL')
             exc = HTTPUnauthorized()
-            exc.explanation = "Authetication cancelled."
+            exc.explanation = "Authentication cancelled."
             raise exc
         else:
             self.log.error('open id response: UNKNOWN')
             exc = HTTPUnauthorized()
             exc.explanation = "Unknown OpenID response."
             raise exc
+
+    def _logout(self, environ, start_response):
+        """Logout of loggerhead.
+
+        Clear the cookie and redirect to `next_to`.
+        """
+        environ[self.session_var].clear()
+        query = dict(parse_querystring(environ))
+        next_url = query.get('next_to')
+        if next_url is None:
+            next_url = allvhosts.configs['mainsite'].rooturl
+        raise HTTPMovedPermanently(next_url)
 
     def __call__(self, environ, start_response):
         environ['loggerhead.static.url'] = environ['SCRIPT_NAME']
@@ -140,11 +154,12 @@ class RootApp:
             return robots_app(environ, start_response)
         elif environ['PATH_INFO'].startswith('/+login'):
             return self._complete_login(environ, start_response)
+        elif environ['PATH_INFO'].startswith('/+logout'):
+            return self._logout(environ, start_response)
         path = environ['PATH_INFO']
         trailingSlashCount = len(path) - len(path.rstrip('/'))
         user = environ[self.session_var].get('user', LAUNCHPAD_ANONYMOUS)
-        lp_server = get_lp_server(
-            user, branch_url=config.codehosting.internal_branch_by_id_root)
+        lp_server = get_lp_server(user, branch_transport=self.get_transport())
         lp_server.start_server()
         try:
             try:
@@ -198,8 +213,7 @@ class RootApp:
             self.log.info('branch_url: %s', branch_url)
             try:
                 bzr_branch = safe_open(
-                    lp_server.get_url().strip(':/'), branch_url,
-                    possible_transports=self.get_transports())
+                    lp_server.get_url().strip(':/'), branch_url)
             except errors.NotBranchError, err:
                 self.log.warning('Not a branch: %s', err)
                 raise HTTPNotFound()

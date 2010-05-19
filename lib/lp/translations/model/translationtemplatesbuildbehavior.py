@@ -63,6 +63,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""
+        if filemap is None:
+            logger.error("Slave returned no filemap.")
+            return None
+
         slave_filename = filemap.get(self.templates_tarball_path)
         if slave_filename is None:
             logger.error("Did not find templates tarball in slave output.")
@@ -98,7 +102,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         retry it.
         """
         build_status = self.extractBuildStatus(slave_status)
-        filemap = slave_status['filemap']
 
         logger.debug(
             "Templates generation job %s for %s finished with status %s." % (
@@ -108,7 +111,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         if build_status == 'OK':
             logger.debug("Processing successful templates build.")
+            filemap = slave_status.get('filemap')
             tarball = self._readTarball(queue_item, filemap, logger)
+
             if tarball is None:
                 logger.error("Build produced no tarball.")
             else:

@@ -151,8 +151,8 @@ class ArchivePermissionSet:
             prejoins.append("packageset")
         else:
             raise AssertionError(
-                "'item' is not an IComponent, IPackageset or an "
-                "ISourcePackageName")
+                "'item' %r is not an IComponent, IPackageset or an "
+                "ISourcePackageName" % item)
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(

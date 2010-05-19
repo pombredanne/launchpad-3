@@ -9,6 +9,7 @@ import unittest
 
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import PackagePublishingStatus
@@ -84,8 +85,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Setup an UploadProcessor instance for a given buildd context."""
         self.options.context = self.policy
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = self.getUploadProcessor(
-            self.layer.txn)
+        self.uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
 
     def testDelayedBinaryUpload(self):
         """Check if Soyuz copes with delayed binary uploads.

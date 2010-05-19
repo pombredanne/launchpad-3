@@ -12,8 +12,6 @@ from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import (
-    can_upload_to_archive, check_upload_to_archive)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -551,14 +549,6 @@ class AdminProductTranslations(AuthorizationBase):
         return (user.isOwner(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
-
-
-class AdminSeriesByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IProductSeries
-
-    def checkAuthenticated(self, user):
-        return user.in_vcs_imports
 
 
 class EditProjectMilestoneNever(AuthorizationBase):
@@ -1103,11 +1093,6 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_vcs_imports
 
 
-class AdminTheBazaar(OnlyVcsImportsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IBazaarApplication
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
@@ -1138,7 +1123,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportJobWorkflow
 
 
-class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
+class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
     Access is restricted to members of ~vcs-imports and Launchpad admins.
@@ -1491,15 +1476,12 @@ class EditBinaryPackageBuild(EditPackageBuild):
         # user to retry build if so.
         # strict_component is True because the source package already exists,
         # otherwise, how can they give it back?
-        if self.obj.archive.is_main:
-            check_perms = check_upload_to_archive(
-                user.person, self.obj.distro_series,
-                self.obj.source_package_release.sourcepackagename,
-                self.obj.archive,
-                self.obj.current_component, self.obj.pocket,
-                strict_component=True)
-            return check_perms == None
-        return False
+        check_perms = self.obj.archive.checkUpload(
+            user.person, self.obj.distroseries,
+            self.obj.sourcepackagerelease.sourcepackagename,
+            self.obj.current_component, self.obj.pocket,
+            strict_component=True)
+        return check_perms == None
 
 
 class ViewBinaryPackageBuild(EditBinaryPackageBuild):
@@ -1737,7 +1719,8 @@ def can_upload_linked_package(person_role, branch):
     # one combination that allows us to upload the corresponding source
     # package.
     for ssp in ssp_list:
-        if can_upload_to_archive(person_role.person, ssp):
+        archive = ssp.sourcepackage.get_default_archive()
+        if archive.canUploadSuiteSourcePackage(person_role.person, ssp):
             return True
     return False
 
@@ -2066,7 +2049,7 @@ class ViewArchive(AuthorizationBase):
             return True
 
         # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         return False
@@ -2081,7 +2064,7 @@ class AppendArchive(AuthorizationBase):
 
     No one can upload to disabled archives.
 
-    PPA upload rights are managed via `IArchive.canUpload`;
+    PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
 
@@ -2098,7 +2081,7 @@ class AppendArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         celebrities = getUtility(ILaunchpadCelebrities)

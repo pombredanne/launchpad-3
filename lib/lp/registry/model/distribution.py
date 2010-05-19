@@ -185,8 +185,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     max_bug_heat = Int()
 
     def __repr__(self):
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, self.displayname, self.name)
+            self.__class__.__name__, displayname, self.name)
 
     def _init(self, *args, **kw):
         """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
@@ -1530,7 +1531,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
-            subscription = self.addBugSubscription(bug_supervisor, user)
+            self.addBugSubscription(bug_supervisor, user)
 
     def userCanEdit(self, user):
         """See `IDistribution`."""
@@ -1634,6 +1635,6 @@ class DistributionSet:
             mugshot=mugshot,
             logo=logo,
             icon=icon)
-        archive = getUtility(IArchiveSet).new(distribution=distro,
+        getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro

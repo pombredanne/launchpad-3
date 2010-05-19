@@ -218,12 +218,11 @@ class IBuildBase(Interface):
 
     title = exported(TextLine(title=_("Title"), required=False))
 
-    def processUpload(leaf, root, logger):
-        """Process an upload.
+    def getUploaderCommand(upload_leaf, uploader_logfilename):
+        """Get the command to run as the uploader.
 
-        :param leaf: Leaf for this particular upload
-        :param root: Root directory for the uploads
-        :param logger: A logger object
+        :return: A list of command line arguments, beginning with the
+            executable.
         """
 
     def handleStatus(build, status, librarian, slave_status):
