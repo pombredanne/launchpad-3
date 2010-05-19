@@ -37,7 +37,7 @@
         condition="watch/bugtracker/active">
       <p tal:condition="watch/last_error_type"
           class="error message"
-          tal:content="watch/getLastErrorMessage"
+          tal:content="view/bug_watch_error_message"
       />
     </tal:bugtracker-active>
     <p class="warning message"
