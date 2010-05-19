@@ -522,7 +522,7 @@ class DistributionSourcePackage(BugTargetBase,
         if spph.archive.purpose == ArchivePurpose.PRIMARY:
             if dsp is None:
                 dsp = cls._new(distribution, sourcepackagename, section)
-            elif distroseries.status == SeriesStatus.CURRENT:
+            elif spph.distroseries.status == SeriesStatus.CURRENT:
                 # If the distroseries.status is not CURRENT, it should
                 # not override the section from a previously created
                 # SourcePackagePublishingHistory.

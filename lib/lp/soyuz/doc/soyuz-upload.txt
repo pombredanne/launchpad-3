@@ -521,8 +521,13 @@ Using getQueueItem to inspect current NEW queue and accept them.
 Now we process the accepted queue items, one more time.
 
   >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
-  >>> process = subprocess.Popen([sys.executable, script, "ubuntutest"])
-  >>> process.wait()
+  >>> process = subprocess.Popen([sys.executable, script, "ubuntutest"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> print stderr
+  INFO    Creating lockfile: /var/lock/launchpad-upload-queue.lock
+  >>> process.returncode
   0
 
 These packages must now be in the publishing history. Let's check it.
