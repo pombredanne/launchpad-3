@@ -44,20 +44,16 @@ class GenerateTranslationTemplates:
         logger.addHandler(ch)
         return logger
 
-    def _log(self, message):
-        """Log a `message` at INFO level."""
-        self.logger.info(message)
-
     def _getBranch(self):
         """Set `self.branch_dir`, and check out branch if needed."""
         if ':' in self.branch_spec:
             # This is a branch URL.  Check out the branch.
             self.branch_dir = os.path.join(self.work_dir, 'source-tree')
-            self._log("Getting remote branch %s..." % self.branch_spec)
+            self.logger.info("Getting remote branch %s..." % self.branch_spec)
             self._checkout(self.branch_spec)
         else:
             # This is a local filesystem path.  Use the branch in-place.
-            self._log("Using local branch %s..." % self.branch_spec)
+            self.logger.info("Using local branch %s..." % self.branch_spec)
             self.branch_dir = self.branch_spec
 
     def _checkout(self, branch_url):
@@ -66,33 +62,33 @@ class GenerateTranslationTemplates:
         The branch is checked out to the location specified by
         `self.branch_dir`.
         """
-        self._log("Opening branch %s..." % branch_url)
+        self.logger.info("Opening branch %s..." % branch_url)
         branch = Branch.open(branch_url)
-        self._log("Getting branch revision tree...")
+        self.logger.info("Getting branch revision tree...")
         rev_tree = branch.basis_tree()
-        self._log("Exporting branch to %s..." % self.branch_dir)
+        self.logger.info("Exporting branch to %s..." % self.branch_dir)
         export(rev_tree, self.branch_dir)
-        self._log("Exporting branch done.")
+        self.logger.info("Exporting branch done.")
 
     def _makeTarball(self, files):
         """Put the given files into a tarball in the working directory."""
         tarname = os.path.join(self.work_dir, self.result_name)
-        self._log("Making tarball with templates in %s..." % tarname)
+        self.logger.info("Making tarball with templates in %s..." % tarname)
         tarball = tarfile.open(tarname, 'w|gz')
         files = [name for name in files if not name.endswith('/')]
         for path in files:
             full_path = os.path.join(self.branch_dir, path)
-            self._log("Adding template %s..." % full_path)
+            self.logger.info("Adding template %s..." % full_path)
             tarball.add(full_path, path)
         tarball.close()
-        self._log("Tarball generated.")
+        self.logger.info("Tarball generated.")
 
     def generate(self):
         """Do It.  Generate templates."""
-        self._log("Generating templates for %s." % self.branch_spec)
+        self.logger.info("Generating templates for %s." % self.branch_spec)
         self._getBranch()
         pots = intltool.generate_pots(self.branch_dir)
-        self._log("Generated %d templates." % len(pots))
+        self.logger.info("Generated %d templates." % len(pots))
         if len(pots) > 0:
             self._makeTarball(pots)
         return 0

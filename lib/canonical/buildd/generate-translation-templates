@@ -44,9 +44,8 @@ BUILDD_PACKAGE=canonical/buildd
 POTTERY=$BUILDD_PACKAGE/pottery
 # The script should be smarter about detecting the python version.
 PYMODULES=/usr/lib/pymodules/python2.6
-echo -n "All available pymodules paths:"
-ls /usr/lib/pymodules
-echo "Chosen $PYMODULES."
+echo -n "Default Python on the system is: "
+python --version
 
 GENERATE_SCRIPT=$PYMODULES/$POTTERY/generate_translation_templates.py
 
