@@ -1228,7 +1228,11 @@ class BugTaskBugWatchMixin:
             'bugtracker': bug_watch.bugtracker.title,
             'bugtrackertype': bug_watch.bugtracker.bugtrackertype.title}
 
-        return message % error_data
+        return {
+            'message': message % error_data,
+            'help_url': '/+help/bug-watch-errors.html#%s' % (
+                bug_watch.last_error_type.name),
+            }
 
 
 class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
