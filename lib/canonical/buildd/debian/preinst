@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# Post install script
+
+set -e
+set -u
+
+BUILDLOG=/home/buildd/filecache-default/buildlog
+
+test ! -e $BUILDLOG && exit 0
+
+echo "**************************************************"
+echo "Unable to install buildd while a build is running."
+echo "Please set the builder to 'manual' and wait for"
+echo "the current build to finish."
+echo
+echo "If you are certain this is an error, please remove"
+echo "/home/buildd/filecache-default/buildlog"
+echo "and retry the installation."
+echo "**************************************************"
+
+exit 1
