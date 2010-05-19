@@ -213,4 +213,6 @@ SELECT (libraryfilealias.id::text || '.'::text) || securebinarypackagepublishing
    JOIN distroarchseries ON securebinarypackagepublishinghistory.distroarchseries = distroarchseries.id
    JOIN distroseries ON distroarchseries.distroseries = distroseries.id
    JOIN component ON securebinarypackagepublishinghistory.component = component.id
-  WHERE securebinarypackagepublishinghistory.dateremoved IS NULL;
+   WHERE securebinarypackagepublishinghistory.dateremoved IS NULL;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
