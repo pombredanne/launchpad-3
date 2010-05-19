@@ -396,7 +396,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Needs building
@@ -425,7 +425,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Successfully built
