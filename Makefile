@@ -67,6 +67,7 @@ $(API_INDEX): $(BZR_VERSION_INFO)
 
 apidoc: compile $(API_INDEX)
 
+# Run by PQM.
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -86,7 +87,19 @@ check_schema: build
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY)
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
+
+# A version of 'make check' that applies modifications specifically for the
+# ec2 environment.
+ec2_check: clean build
+        # XXX mars 2010-05-17 bug=570380
+        # Disable the windmill test suite to prevent the whole system from
+        # hanging.  See bug 570380.
+        #
+        # Yes, this is code duplication.  If you conceive of a better
+        # solution in a less heated moment, then please replace this!
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
+		--layer='!\(MailmanLayer\|WindmillLayer\)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -94,7 +107,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	bin/test $(VERBOSITY) --layer=WindmillLayer
+	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
 
 jscheck_functest: build
     # Run the old functest Windmill integration tests.  The test runner
@@ -107,7 +120,8 @@ jscheck_functest: build
 check_mailman: build
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
+		--layer=MailmanLayer
 
 lint: ${PY}
 	@bash ./bin/lint.sh
@@ -437,7 +451,7 @@ lp-clustered.svg: lp-clustered.dot
 	mv lp-clustered.svg.tmp lp-clustered.svg
 
 PYDOCTOR = pydoctor
-PYDOCTOR_OPTIONS = 
+PYDOCTOR_OPTIONS =
 
 pydoctor:
 	$(PYDOCTOR) --make-html --html-output=apidocs --add-package=lib/lp \
@@ -447,7 +461,7 @@ pydoctor:
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge \
+	check check_merge ec2_check \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild jsbuild_lazr clean_js buildonce_eggs \

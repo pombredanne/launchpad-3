@@ -564,7 +564,8 @@
              value="diverge_translation"
              tal:attributes="
                checked view/force_diverge;
-               name string:${view/html_id}_diverge"
+               name string:${view/html_id}_diverge;
+               id string:${view/html_id}_diverge"
              />
            <tal:block condition="not:view/is_plural">
              Make this translation specific to
