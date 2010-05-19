@@ -132,7 +132,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -1767,6 +1767,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
+            distroseries.nominatedarchindep = distroseries.newArch(
+                'i386', ProcessorFamily.get(1), False, owner,
+                supports_virtualized=True)
+
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):

@@ -6,9 +6,12 @@
 from textwrap import dedent
 import unittest
 
+from zope.component import getUtility
 from zope.testing.doctestunit import DocTestSuite
 
+from canonical.config import config
 from canonical.launchpad.testing.pages import find_tags_by_class
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCase
@@ -261,6 +264,44 @@ class TestDiffFormatter(TestCase):
         html = FormattersAPI(diff).format_diff()
         line_count = html.count('<td class="line-no">')
         self.assertEqual(3, line_count)
+
+
+class TestOOPSFormatter(TestCase):
+    """A test case for the oops_id() string formatter."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_doesnt_linkify_for_non_developers(self):
+        # OOPS IDs won't be linkified for non-developers.
+        oops_id = 'OOPS-12345TEST'
+        formatter = FormattersAPI(oops_id)
+        formatted_string = formatter.oops_id()
+
+        self.assertEqual(
+            oops_id, formatted_string,
+            "Formatted string should be '%s', was '%s'" % (
+                oops_id, formatted_string))
+
+    def _setDeveloper(self):
+        """Override ILaunchBag.developer for testing purposes."""
+        launch_bag = getUtility(ILaunchBag)
+        launch_bag.setDeveloper(True)
+
+    def test_linkifies_for_developers(self):
+        # OOPS IDs will be linkified for Launchpad developers.
+        oops_id = 'OOPS-12345TEST'
+        formatter = FormattersAPI(oops_id)
+
+        self._setDeveloper()
+        formatted_string = formatter.oops_id()
+
+        expected_string = '<a href="%s">%s</a>' % (
+            config.launchpad.oops_root_url + oops_id, oops_id)
+
+        self.assertEqual(
+            expected_string, formatted_string,
+            "Formatted string should be '%s', was '%s'" % (
+                expected_string, formatted_string))
 
 
 def test_suite():
