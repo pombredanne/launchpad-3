@@ -56,6 +56,7 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.uuid import generate_uuid
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -131,7 +132,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -244,7 +245,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s%s" % (prefix, generate_uuid())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -1766,6 +1767,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
+            distroseries.nominatedarchindep = distroseries.newArch(
+                'i386', ProcessorFamily.get(1), False, owner,
+                supports_virtualized=True)
+
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):

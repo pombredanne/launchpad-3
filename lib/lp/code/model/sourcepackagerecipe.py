@@ -22,7 +22,6 @@ from zope.interface import classProvides, implements
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -153,9 +152,9 @@ class SourcePackageRecipe(Storm):
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
-        reject_reason = check_upload_to_archive(
-            requester, distroseries, self.sourcepackagename,
-            archive, component, pocket)
+        reject_reason = archive.checkUpload(
+            requester, self.distroseries, self.sourcepackagename,
+            component, pocket)
         if reject_reason is not None:
             raise reject_reason
 

@@ -3025,6 +3025,16 @@ class FormattersAPI:
         else:
             return id_
 
+    def oops_id(self):
+        """Format an OOPS ID for display."""
+        if not getUtility(ILaunchBag).developer:
+            # We only linkify OOPS IDs for Launchpad developers.
+            return self._stringtoformat
+
+        root_url = config.launchpad.oops_root_url
+        url = root_url + self._stringtoformat
+        return '<a href="%s">%s</a>' % (url, self._stringtoformat)
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -3063,6 +3073,8 @@ class FormattersAPI:
                 return self.css_id(furtherPath.pop())
             else:
                 return self.css_id()
+        elif name == 'oops-id':
+            return self.oops_id()
         else:
             raise TraversalError(name)
 
