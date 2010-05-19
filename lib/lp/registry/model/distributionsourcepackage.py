@@ -18,7 +18,10 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import And, Desc, In, Join, Lower
 from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
+
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -44,6 +47,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -63,11 +67,6 @@ class DistributionSourcePackageProperty:
         return getattr(obj._self_in_database, self.attrname, None)
 
     def __set__(self, obj, value):
-        if obj._self_in_database is None:
-            raise AttributeError(
-                "DistributionSourcePackage record does not exist in the "
-                "database for distro=%s, sourcepackagename=%s"
-                % (obj.distribution.name, obj.sourcepackagename.name))
         setattr(obj._self_in_database, self.attrname, value)
 
 
@@ -143,10 +142,18 @@ class DistributionSourcePackage(BugTargetBase,
         # measure while DistributionSourcePackage is not yet hooked
         # into the database but we need access to some of the fields
         # in the database.
-        dsp_in_db = self.get(self.distribution, self.sourcepackagename)
+        dsp_in_db = self._get(self.distribution, self.sourcepackagename)
         if dsp_in_db is not None:
             return dsp_in_db
         else:
+            # Log an oops without raising an error.
+            exception = AssertionError(
+                "DistributionSourcePackage record should have been created "
+                "earlier in the database for distro=%s, sourcepackagename=%s"
+                % (self.distribution.name, self.sourcepackagename.name))
+            getUtility(IErrorReportingUtility).raising(
+                (exception.__class__, exception, None))
+
             spph = Store.of(self.distribution).find(
                 SourcePackagePublishingHistory,
                 SourcePackagePublishingHistory.distroseriesID ==
@@ -158,9 +165,11 @@ class DistributionSourcePackage(BugTargetBase,
                     self.sourcepackagename.id
                 ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
             if spph is None:
-                return None
+                section = getUtility(ISectionSet)['misc']
             else:
-                return self.ensure(spph)
+                section = spph.section
+            return self._new(
+                self.distribution, self.sourcepackagename, section)
 
     @property
     def latest_overall_publication(self):
@@ -479,7 +488,7 @@ class DistributionSourcePackage(BugTargetBase,
         return result_set
 
     @classmethod
-    def get(cls, distribution, sourcepackagename):
+    def _get(cls, distribution, sourcepackagename):
         return Store.of(distribution).find(
             DistributionSourcePackageInDatabase,
             DistributionSourcePackageInDatabase.sourcepackagename ==
@@ -489,24 +498,30 @@ class DistributionSourcePackage(BugTargetBase,
             ).one()
 
     @classmethod
-    def ensure(cls, spph):
-        """Create DistributionSourcePackage record.
+    def _new(cls, distribution, sourcepackagename, section):
+        dsp = DistributionSourcePackageInDatabase()
+        dsp.distribution = distribution
+        dsp.sourcepackagename = sourcepackagename
+        dsp.section = section
+        Store.of(distribution).add(dsp)
+        return dsp
 
-        If it exists, update the section attribute.
+    @classmethod
+    def ensure(cls, spph):
+        """Create DistributionSourcePackage record, if necessary.
+
+        Only create a record for primary archives (i.e. not for PPAs).
+        If it already exists, update the section attribute.
         """
         # Import here to avoid import loop.
         sourcepackagename = spph.sourcepackagerelease.sourcepackagename
         distribution = spph.distroseries.distribution
         section = spph.section
 
-        dsp = cls.get(distribution, sourcepackagename)
+        dsp = cls._get(distribution, sourcepackagename)
         if spph.archive.purpose == ArchivePurpose.PRIMARY:
             if dsp is None:
-                dsp = DistributionSourcePackageInDatabase()
-                dsp.sourcepackagename = sourcepackagename
-                dsp.distribution = distribution
-                dsp.section = section
-                Store.of(spph).add(dsp)
+                dsp = cls._new(distribution, sourcepackagename, section)
             elif distroseries.status == SeriesStatus.CURRENT:
                 # If the distroseries.status is not CURRENT, it should
                 # not override the section from a previously created
