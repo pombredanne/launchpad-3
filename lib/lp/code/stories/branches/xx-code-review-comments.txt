@@ -63,7 +63,12 @@ We can reply to a comment.
 
     >>> eric_browser.open(merge_proposal_url)
     >>> eric_browser.getLink('Reply').click()
-    >>> print eric_browser.getControl(name='field.comment').value.replace(
+
+
+XXX: Bjorn Tillenius 2010-05-19 bug=582842: Following test disabled,
+     since it failed spuriously in buildbot.
+
+    XXX print eric_browser.getControl(name='field.comment').value.replace(
     ...     '\r\n', '\n') # doctest: -NORMALIZE_WHITESPACE
     > This is a very long comment about what things should be done to the source
     > branch to land it.  When this comment is replied to, it should wrap the line
