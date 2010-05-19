@@ -12,5 +12,5 @@ ADD COLUMN bug_reported_acknowledgement TEXT;
 ALTER TABLE Project
 ADD COLUMN bug_reported_acknowledgement TEXT;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 55, 0);
 
