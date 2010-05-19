@@ -500,6 +500,12 @@
         name="fmt"
         />
     <adapter
+        for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageReleaseFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"

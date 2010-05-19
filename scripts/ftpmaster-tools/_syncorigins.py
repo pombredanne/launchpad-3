@@ -12,7 +12,7 @@ origins = {
 "debian": {
     "name": "Debian",
     "url": "http://ftp.debian.org/debian/",
-    "default suite": "testing",
+    "default suite": "unstable",
     "default component": "main",
     "dsc": "must be signed and valid"
     },

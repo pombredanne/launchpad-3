@@ -101,7 +101,8 @@ class MilestoneOverlayMixin:
             }
         return """
             YUI().use(
-                'node', 'registry.milestoneoverlay', 'registry.milestonetable',
+                'node', 'lp.registry.milestoneoverlay',
+                'lp.registry.milestonetable',
                 function (Y) {
 
                 var series_uri = '%(series_api_uri)s';
@@ -116,15 +117,15 @@ class MilestoneOverlayMixin:
                     var config = {
                         milestone_form_uri: milestone_form_uri,
                         series_uri: series_uri,
-                        next_step: Y.registry.milestonetable.get_milestone_row,
+                        next_step: Y.lp.registry.milestonetable.get_milestone_row,
                         activate_node: create_milestone_link
                         };
-                    Y.registry.milestoneoverlay.attach_widget(config);
+                    Y.lp.registry.milestoneoverlay.attach_widget(config);
                     var table_config = {
                         milestone_row_uri_template: milestone_row_uri,
                         milestone_rows_id: milestone_rows_id
                         }
-                    Y.registry.milestonetable.setup(table_config);
+                    Y.lp.registry.milestonetable.setup(table_config);
                 });
             });
             """ % uris
@@ -141,10 +142,10 @@ class RegistryDeleteViewMixin:
     def _getBugtasks(self, target):
         """Return the list `IBugTask`s associated with the target."""
         if IProductSeries.providedBy(target):
-            params = BugTaskSearchParams(user=None)
+            params = BugTaskSearchParams(user=self.user)
             params.setProductSeries(target)
         else:
-            params = BugTaskSearchParams(milestone=target, user=None)
+            params = BugTaskSearchParams(milestone=target, user=self.user)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 

@@ -61,7 +61,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(initial_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 0 revisions' % self.db_branch.unique_name,
             message['Subject'])
 
@@ -76,7 +76,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(initial_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision' % self.db_branch.unique_name,
             message['Subject'])
 
@@ -94,7 +94,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         message = email.message_from_string(uncommit_email[2])
         email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
-        self.assertEqual(
+        self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision removed' % self.db_branch.unique_name,
             message['Subject'])
 
@@ -122,10 +122,13 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         subject = (
             'Subject: [Branch %s] Test branch' % self.db_branch.unique_name)
         self.assertTextIn(expected, uncommit_email_body)
-        recommit_email_body = recommit_email[2]
+
+        recommit_email_msg = email.message_from_string(recommit_email[2])
+        recommit_email_body = recommit_email_msg.get_payload()[0].get_payload(
+            decode=True)
+        subject =  '[Branch %s] Rev 1: second' % self.db_branch.unique_name
+        self.assertEmailHeadersEqual(subject, recommit_email_msg['Subject'])
         body_bits = [
-            'Subject: [Branch %s] Rev 1: second'
-            % self.db_branch.unique_name,
             'revno: 1',
             'committer: %s' % author,
             'branch nick: %s'  % self.bzr_branch.nick,
@@ -142,7 +145,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def test_queue_tip_changed_email_jobs_subscribed(self):
         """A queue_tip_changed_email_jobs is run when TipChanged emitted."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         db_branch.subscribe(
             db_branch.registrant,
@@ -155,7 +158,7 @@ class TestScanBranches(TestCaseWithFactory):
 
     def test_send_removed_revision_emails_subscribed(self):
         """send_removed_revision_emails run when RevisionsRemoved emitted."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         db_branch.subscribe(
             db_branch.registrant,

@@ -887,13 +887,13 @@ they receive an email notification. The notification is sent only when
 an ObjectCreatedEvent is issued, since subscribe() is used in places
 where no notification should be sent.
 
-An ObjectCreatedEvent is created using the send_notifications parameter
-for Bug.subscribe.
+An ObjectCreatedEvent is created by setting the suppress_notify parameter
+for Bug.subscribe to False.
 
     >>> transaction.commit()
     >>> stub.test_emails = []
     >>> bug_subscription = bug_six.subscribe(
-    ...     mark, lifeless, send_notifications=True)
+    ...     mark, lifeless, suppress_notify=False)
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
@@ -914,12 +914,12 @@ for Bug.subscribe.
     ...
     http://bugs.launchpad.dev/bugs/...
 
-Notifications are not created if send_notifications is False.
+Notifications are not created if suppress_notify is True.
 
     >>> len(stub.test_emails)
     1
     >>> not_notified = bug_six.subscribe(
-    ...     keybuk, lifeless, send_notifications=False)
+    ...     keybuk, lifeless, suppress_notify=True)
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1

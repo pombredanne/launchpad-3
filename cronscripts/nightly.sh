@@ -3,11 +3,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This script performs nightly chores. It should be run from 
+# This script performs nightly chores. It should be run from
 # cron as the launchpad user once a day. Typically the output
 # will be sent to an email address for inspection.
 
-# Note that http/ftp proxies are needed by the product 
+# Note that http/ftp proxies are needed by the product
 # release finder
 
 # Only run this script on loganberry
@@ -42,41 +42,41 @@ fi
 cd /srv/launchpad.net/production/launchpad/cronscripts
 
 echo == Expiring memberships `date` ==
-python flag-expired-memberships.py -q
+python -S flag-expired-memberships.py -q
 
 echo == Allocating revision karma `date` ==
-python allocate-revision-karma.py -q
+python -S allocate-revision-karma.py -q
 
 echo == Recalculating karma `date` ==
-python foaf-update-karma-cache.py -q
+python -S foaf-update-karma-cache.py -q
 
 echo == Updating cached statistics `date` ==
-python update-stats.py -q
+python -S update-stats.py -q
 
 echo == Expiring questions `date` ==
-python expire-questions.py
+python -S expire-questions.py
 
 ### echo == Expiring bugs `date` ==
-### python expire-bugtasks.py
+### python -S expire-bugtasks.py
 
 # checkwatches.py is scheduled in the /code/pqm/launchpad_crontabs branch.
 ### echo == Updating bug watches `date` ==
-### python checkwatches.py
+### python -S checkwatches.py
 
 echo == Updating bugtask target name caches `date` ==
-python update-bugtask-targetnamecaches.py -q
+python -S update-bugtask-targetnamecaches.py -q
 
 echo == Updating personal standings `date` ==
-python update-standing.py -q
+python -S update-standing.py -q
 
 echo == Updating CVE database `date` ==
-python update-cve.py -q
+python -S update-cve.py -q
 
 echo == Updating package cache `date` ==
-python update-pkgcache.py -q
+python -S update-pkgcache.py -q
 
 echo == Product Release Finder `date` ==
-python product-release-finder.py -q
+python -S product-release-finder.py -q
 
 
 rm -f $LOCK

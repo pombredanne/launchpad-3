@@ -11,6 +11,7 @@ import unittest
 
 import transaction
 
+from datetime import datetime
 from zope.component import getUtility
 
 from canonical.config import config
@@ -24,9 +25,11 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches
+from lp.bugs.scripts.checkwatches.base import (
+    CheckWatchesErrorUtility, WorkingBase)
 from lp.bugs.scripts.checkwatches.core import (
-    CheckwatchesMaster, TwistedThreadScheduler)
-from lp.bugs.scripts.checkwatches.base import CheckWatchesErrorUtility
+    CheckwatchesMaster, LOGIN, TwistedThreadScheduler)
+from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
 from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
@@ -57,10 +60,10 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
         return self
 
 
-class NoBugWatchesByRemoteBugUpdater(checkwatches.CheckwatchesMaster):
-    """A subclass of CheckwatchesMaster with methods overridden for testing."""
+class NoBugWatchesByRemoteBugUpdater(RemoteBugUpdater):
+    """A subclass of RemoteBugUpdater with methods overridden for testing."""
 
-    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+    def _getBugWatchesForRemoteBug(self):
         """Return an empty list.
 
         This method overrides _getBugWatchesForRemoteBug() so that bug
@@ -154,10 +157,8 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
 
     def test_bug_497141(self):
         # Regression test for bug 497141. KeyErrors raised in
-        # CheckwatchesMaster.updateBugWatches() shouldn't cause
+        # RemoteBugUpdater.updateRemoteBug() shouldn't cause
         # checkwatches to abort.
-        updater = NoBugWatchesByRemoteBugUpdater(
-            transaction.manager, QuietFakeLogger())
 
         # Create a couple of bug watches for testing purposes.
         bug_tracker = self.factory.makeBugTracker()
@@ -170,17 +171,27 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         remote_system = NonConnectingBugzillaAPI(
             bug_tracker.baseurl, xmlrpc_transport=test_transport)
 
-        # Calling updateBugWatches() shouldn't raise a KeyError, even
-        # though with our broken updater _getExternalBugTrackersAndWatches()
-        # will return an empty dict.
-        updater.updateBugWatches(remote_system, bug_watches)
+        working_base = WorkingBase()
+        working_base.init(LOGIN, transaction.manager, QuietFakeLogger())
 
-        # An error will have been logged instead of the KeyError being
-        # raised.
-        error_utility = CheckWatchesErrorUtility()
-        last_oops = error_utility.getLastOopsReport()
-        self.assertTrue(
-            last_oops.value.startswith('Spurious remote bug ID'))
+        for bug_watch in bug_watches:
+            updater = NoBugWatchesByRemoteBugUpdater(
+                working_base, remote_system, bug_watch.remotebug,
+                [bug_watch.id], [], datetime.now())
+
+            # Calling updateRemoteBug() shouldn't raise a KeyError,
+            # even though with our broken updater
+            # _getExternalBugTrackersAndWatches() will return an empty
+            # dict.
+            updater.updateRemoteBug()
+
+            # An error will have been logged instead of the KeyError being
+            # raised.
+            error_utility = CheckWatchesErrorUtility()
+            last_oops = error_utility.getLastOopsReport()
+            self.assertTrue(
+                last_oops.value.startswith('Spurious remote bug ID'),
+                "Unexpected last OOPS value: %s" % last_oops.value)
 
     def test_suggest_batch_size(self):
         class RemoteSystem: pass

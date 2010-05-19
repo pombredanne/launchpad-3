@@ -45,7 +45,6 @@ from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 branch_type_map = {
-    BranchType.HOSTED: 'upload',
     BranchType.MIRRORED: 'mirror',
     BranchType.IMPORTED: 'import'
     }

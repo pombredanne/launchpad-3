@@ -13,6 +13,7 @@ __all__ = [
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
+    'ProductSeriesInvolvedMenu',
     'ProductSeriesInvolvementView',
     'ProductSeriesLinkBranchView',
     'ProductSeriesLinkBranchFromCodeView',
@@ -165,7 +166,7 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     def branches(self):
         """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
-        text = 'Branches'
+        text = 'Code'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
@@ -181,12 +182,18 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     links = [
         'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
 
+    @property
+    def view(self):
+        return self.context
+
+    @property
+    def pillar(self):
+        return self.view.context.product
+
     def submit_code(self):
-        view = self.context
-        product_series = view.context
         target = canonical_url(
-            product_series, view_name='+addbranch', rootsite='code')
-        enabled = view.official_codehosting
+            self.pillar, view_name='+addbranch', rootsite='code')
+        enabled = self.view.official_codehosting
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
