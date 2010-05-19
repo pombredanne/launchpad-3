@@ -17,6 +17,7 @@ from storm.store import Store
 
 from canonical.config import config
 
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -118,13 +119,24 @@ class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
         store.add(branch_job)
         specific_job = TranslationTemplatesBuildJob(branch_job)
         duration_estimate = cls.duration_estimate
+
+        # XXX Danilo Segan: we hard-code processor to the Ubuntu
+        # default processor architecture.  See bug 580429.
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job.id)
+            job=specific_job.job.id,
+            processor=cls._getBuildArch())
         store.add(build_queue_entry)
 
         return specific_job
+
+    @classmethod
+    def _getBuildArch(cls):
+        """Returns an `IProcessor` to queue a translation build for."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        # A round-about way of hard-coding i386.
+        return ubuntu.currentseries.nominatedarchindep.default_processor
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):

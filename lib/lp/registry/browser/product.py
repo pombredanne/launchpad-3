@@ -293,7 +293,7 @@ class ProductLicenseMixin:
 
     def _addLicenseChangeToReviewWhiteboard(self):
         """Update the whiteboard for the reviewer's benefit."""
-        now = datetime.now(tz=pytz.UTC).strftime('YYYY-mm-dd')
+        now = datetime.now(tz=pytz.UTC).strftime('%Y-%M-%d')
         whiteboard = 'User notified of license policy on %s.' % now
         naked_product = removeSecurityProxy(self.product)
         if naked_product.reviewer_whiteboard is None:
@@ -323,7 +323,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 

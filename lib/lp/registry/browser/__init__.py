@@ -142,10 +142,10 @@ class RegistryDeleteViewMixin:
     def _getBugtasks(self, target):
         """Return the list `IBugTask`s associated with the target."""
         if IProductSeries.providedBy(target):
-            params = BugTaskSearchParams(user=None)
+            params = BugTaskSearchParams(user=self.user)
             params.setProductSeries(target)
         else:
-            params = BugTaskSearchParams(milestone=target, user=None)
+            params = BugTaskSearchParams(milestone=target, user=self.user)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 

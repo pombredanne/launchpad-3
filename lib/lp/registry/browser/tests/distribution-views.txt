@@ -272,6 +272,10 @@ not appear.
 
 If the distribution officially uses the application, its portlet does appear.
 
+    >>> from canonical.testing.layers import MemcachedLayer
+
+    # When the cache regenerated, all users will see the change.
+    >>> MemcachedLayer.purge()
     >>> distribution.official_answers = True
     >>> distribution.official_blueprints = True
     >>> distribution.official_malone = True
