@@ -228,6 +228,9 @@ class BuilderManager:
         # improved if we add more methods to RecordingSlave.  In fact we
         # should use it exclusively and remove the wrapper hack.
         self.logger = logger
+        self.scheduleNextScanCycle()
+
+    def scheduleNextScanCycle(self):
         reactor.callLater(self.SCAN_INTERVAL, self.startCycle)
 
     def startCycle(self):
@@ -263,13 +266,186 @@ class BuilderManager:
             self.builder.updateBuild(buildqueue)
             transaction.commit()
 
-        # XXX check for manual, return None if so
+        # If the builder is in manual mode, don't dispatch anything.
+        if self.builder.manual:
+            self.logger.debug(
+            '%s is in manual mode, not dispatching.' % self.builder.name)
+            return None
 
-        # XXX reset job if builder not ok
+        # If the builder is marked unavailable, don't dispatch anything.
+        # Additionally see if we think there's a job running on it.  If
+        # there is then it means the builder was just taken out of the
+        # pool and we need to put the job back in the queue.
+        if not self.builder.is_available:
+            job = self.builder.currentjob
+            if job is not None and not self.builder.builderok:
+                self.logger.info(
+                    "%s was made unavailable, resetting attached "
+                    "job" % self.builder.name)
+                job.reset()
+                transaction.commit()
+            return None
 
-        # XXX findAndStartJob
+        # See if there is a job we can dispatch to the builder slave.
+        slave = RecordingSlave(
+            self.builder.name, self.builder.url, self.builder.vm_host)
+        candidate = self.builder.findAndStartJob(buildd_slave=slave)
+        if self.builder.currentjob is not None:
+            transaction.commit()
+            return slave
 
-        
+        return None
+
+    def scanFailed(self, error):
+        """Deal with scanning failures."""
+        self.logger.info("Scanning failed with: %s\n%s" %
+            (error.getErrorMessage(), error.getTraceback()))
+        # We should probably detect continuous failures here and mark
+        # the builder down.
+        self.scheduleNextScanCycle()
+
+    def resumeAndDispatch(self, slave):
+        """Chain the resume and dispatching Deferreds."""
+        if slave is not None:
+            if slave.resume_requested:
+                # The slave needs to be reset before we can dispatch to
+                # it (e.g. a virtual slave)
+                d = slave.resumeSlave()
+                d.addBoth(self.checkResume, slave)
+            else:
+                # No resume required, build dispatching can commence.
+                d = defer.succeed(None)
+
+            # Use Twisted events to dispatch the build to the slave.
+            d.addCallback(self.initiateDispatch, slave)
+
+            # Chain a method that will get called with the return value
+            # of dispatchBuild() results when it finishes.
+            d.addBoth(self.evaluateDispatchResult)
+        else:
+            # The scan for this builder didn't want to dispatch
+            # anything, so we can finish this cycle.
+            self.scheduleNextScanCycle()
+
+    def initiateDispatch(self, resume_result, slave):
+        """Start dispatching a build to a slave.
+
+        If the previous task in chain (slave resuming) has failed it will
+        receive a `ResetBuilderRequest` instance as 'resume_result' and
+        will immediately return that so the subsequent callback can collect
+        it.
+
+        If the slave resuming succeeded, it starts the XMLRPC dialogue.  The
+        dialogue may consist of many calls to the slave before the build
+        starts.  Each call is done via a Deferred event, where slave calls
+        are sent in callSlave(), and checked in checkDispatch() which will
+        keep firing events via callSlave() until all the events are done or
+        an error occurrs.
+        """
+        if resume_result is not None:
+            return resume_result
+
+        self.logger.info('Dispatching: %s' % slave)
+        self.callSlave(slave)
+
+    def _getProxyForSlave(self, slave):
+        """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
+
+        Uses a protocol with timeout support, See QueryFactoryWithTimeout.
+        """
+        proxy = xmlrpc.Proxy(str(urlappend(slave.url, 'rpc')))
+        proxy.queryFactory = QueryFactoryWithTimeout
+        return proxy
+
+    def callSlave(self, slave):
+        """Dispatch the next XMLRPC for the given slave."""
+        if len(slave.calls) == 0:
+            # That's the end of the dialogue with the slave.
+            return
+
+        # Get an XMPRPC proxy for the buildd slave.
+        proxy = self._getProxyForSlave(slave)
+        method, args = slave.calls.pop(0)
+        d = proxy.callRemote(method, *args)
+        d.addBoth(self.checkDispatch, method, slave)
+        self.logger.debug('%s -> %s(%s)' % (slave, method, args))
+
+    def evaluateDispatchResult(self, dispatch_result):
+        """Process the DispatchResult for this dispatch chain.
+
+        After waiting for the Deferred chain to finish, we'll have a
+        DispatchResult to evaluate, which deals with the result of
+        dispatching.
+        """
+        status, result = dispatch_result
+        if not isinstance(result, BaseDispatchResult):
+            # The Deferred chain finished with no further action needed.
+            return
+
+        self.logger.info("%r" % result)
+        result()
+
+        # At this point, we're done dispatching, so we can schedule the
+        # next scan cycle.
+        self.scheduleNextScanCycle()
+
+    def checkResume(self, response, slave):
+        """Check the result of resuming a slave.
+
+        If there's a problem resuming, we return a ResetDispatchResult which
+        will get evaluated at the end of the scan, or None if the resume
+        was OK.
+        """
+        # 'response' is the tuple that's constructed in
+        # ProcessWithTimeout.processEnded(), or is a Failure that
+        # contains the tuple.
+        if isinstance(response, Failure):
+            out, err, code = response.value
+        else:
+            out, err, code = response
+            if code == os.EX_OK:
+                return None
+
+        error_text = '%s\n%s' % (out, err)
+        self.logger.error('%s resume failure: %s' % (slave, error_text))
+        return self.reset_result(slave, error_text)
+
+    def checkDispatch(self, response, method, slave):
+        """Verify the results of a slave xmlrpc call.
+
+        If it failed and it compromises the slave then return a corresponding
+        `FailDispatchResult`, if it was a communication failure, simply
+        reset the slave by returning a `ResetDispatchResult`.
+        """
+        # XXX these DispatchResult classes are badly named and do the
+        # same thing.  We need to fix that.
+        self.logger.debug(
+            '%s response for "%s": %s' % (slave, method, response))
+
+        if isinstance(response, Failure):
+            self.logger.warn(
+                '%s communication failed (%s)' %
+                (slave, response.getErrorMessage()))
+            return ResetDispatchResult(slave)
+
+        if isinstance(response, list) and len(response) == 2 :
+            if method in buildd_success_result_map.keys():
+                expected_status = buildd_success_result_map.get(method)
+                status, info = response
+                if status == expected_status:
+                    self._mayDispatch(slave)
+                    return None
+            else:
+                info = 'Unknown slave method: %s' % method
+        else:
+            info = 'Unexpected response: %s' % repr(response)
+
+        self.logger.error(
+            '%s failed to dispatch (%s)' % (slave, info))
+
+        return FailDispatchResult(slave, info)
+
+
 
 
 class BuilddManager(service.Service):
