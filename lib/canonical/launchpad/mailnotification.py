@@ -342,9 +342,10 @@ def _send_bug_details_to_new_bug_subscribers(
 
 @block_implicit_flushes
 def update_security_contact_subscriptions(modified_bugtask, event):
-    """
-    Subscribe the new security contact when a bugtask's product changes,
-    but only if the bug was marked a security issue originally.
+    """Subscribe the new security contact when a bugtask's product changes.
+
+    Only subscribes the new security contact if the bug was marked a
+    security issue originally.
 
     No change is made for private bugs.
     """
