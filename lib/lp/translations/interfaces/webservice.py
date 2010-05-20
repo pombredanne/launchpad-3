@@ -5,6 +5,14 @@
 
 """All the interfaces that are exposed through the webservice."""
 
+__all__ = [
+    'IHasTranslationImports',
+    'IPOFile',
+    'IPOTemplate',
+    'ITranslationImportQueue',
+    'ITranslationImportQueueEntry',
+    ]
+
 from lp.translations.interfaces.translationimportqueue import (
     IHasTranslationImports,
     ITranslationImportQueue,
@@ -14,3 +22,11 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplate)
 from lp.translations.interfaces.pofile import (
     IPOFile)
+
+__all__ = [
+    'IHasTranslationImports',
+    'IPOFile',
+    'IPOTemplate',
+    'ITranslationImportQueue',
+    'ITranslationImportQueueEntry',
+    ]

@@ -114,7 +114,7 @@ class DistroSeriesVersionField(UniqueField):
 
     def _validate(self, version):
         """See `UniqueField`."""
-        super(DistroSeriesVersionField, self)._validate(version)
+        DistroSeriesVersionField._validate(self, version)
         if not sane_version(version):
             raise LaunchpadValidationError(
                 "%s is not a valid version" % version)
