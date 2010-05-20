@@ -144,6 +144,12 @@ $$
         LIMIT 1
         """, 1).nrows() > 0
     if stats_reset:
+        # The database stats have been reset. We cannot calculate
+        # deltas because we do not know when this happened. So we trash
+        # our records as they are now useless to us. We could be more
+        # sophisticated about this, but this should only happen
+        # when an admin explicitly resets the statistics or if the
+        # database is rebuilt.
         plpy.notice("Stats wraparound. Purging DatabaseTableStats")
         plpy.execute("DELETE FROM DatabaseTableStats")
     else:
