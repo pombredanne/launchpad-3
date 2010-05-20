@@ -3658,13 +3658,17 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
-        permitted_actions = ['claim_gpg', 'deactivate_gpg',
-                             'remove_gpgtoken', 'reactivate_gpg']
+        permitted_actions = [
+            'claim_gpg',
+            'deactivate_gpg',
+            'remove_gpgtoken',
+            'reactivate_gpg',
+            ]
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
-        if action and (action not in permitted_actions):
-            raise UnexpectedFormData("Action was not defined")
+        if action not in permitted_actions:
+            raise UnexpectedFormData("Action not permitted: %s" % action)
         getattr(self, action)()
 
     def claim_gpg(self):
