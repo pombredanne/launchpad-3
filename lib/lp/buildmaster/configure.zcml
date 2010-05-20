@@ -87,7 +87,7 @@
         <!-- Grant permissions to write on BuildQueue and Build. -->
         <require
             permission="zope.Public"
-            set_attributes="lastscore builder logtail date_started"/>
+            set_attributes="lastscore estimated_duration builder logtail date_started"/>
     </class>
 
 

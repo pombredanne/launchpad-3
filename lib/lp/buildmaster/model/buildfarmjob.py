@@ -62,7 +62,7 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
-    def getByJob(self):
+    def getByJob(self, job):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
