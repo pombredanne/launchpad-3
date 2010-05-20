@@ -11,6 +11,7 @@ __all__ = [
 from zope.component import getUtility
 
 from lazr.restful.simple import BaseWebServiceConfiguration
+from lp.services.memcache.client import memcache_client_factory
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -19,6 +20,28 @@ from canonical.launchpad.webapp.servers import (
 
 from canonical.launchpad import versioninfo
 
+class RepresentationCache(dict):
+
+    def __setitem__(self, key, value):
+        super(RepresentationCache, self).__setitem__(key, value)
+
+
+class MemcachedRepresentationCache:
+
+    def __init__(self):
+        self.client = memcache_client_factory()
+
+    def key_for(self, obj):
+        import pdb; pdb.set_trace()
+
+    def get(self, key, default=None):
+        return self.client.get(key.encode('utf-8')) or default
+
+    def __setitem__(self, key, value):
+        self.client.set(key.encode('utf-8'), value)
+
+    def __delitem__(self, key):
+        self.client.delete(key.encode('utf-8'))
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
@@ -64,7 +87,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     @property
     def default_batch_size(self):
-        return config.launchpad.default_batch_size
+        return 80 #config.launchpad.default_batch_size
 
     @property
     def max_batch_size(self):
