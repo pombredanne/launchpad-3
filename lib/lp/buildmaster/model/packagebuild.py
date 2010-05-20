@@ -182,7 +182,7 @@ class PackageBuildDerived:
 
     def queueBuild(self, suspended=False):
         """See `IPackageBuild`."""
-        return BuildBase.queueBuild(self, suspended=False)
+        return BuildBase.queueBuild(self, suspended=suspended)
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
