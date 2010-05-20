@@ -20,7 +20,6 @@ from storm.expr import (
     Desc, In, Join, LeftJoin)
 from storm.store import Store
 from sqlobject import SQLObjectNotFound
-from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
 from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
@@ -739,11 +738,13 @@ class BinaryPackageBuildSet:
             return None
 
         archseries_ids = [d.id for d in archseries]
-
-        return BinaryPackageBuild.select(
-            AND(BinaryPackageBuild.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(BinaryPackageBuild.q.distroarchseriesID, archseries_ids))
-            )
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            BinaryPackageBuild,
+            In(BinaryPackageBuild.distro_arch_series_id, archseries_ids),
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
 
     def handleOptionalParamsForBuildQueries(
         self, queries, tables, status=None, name=None, pocket=None,
@@ -1140,17 +1141,21 @@ class BinaryPackageBuildSet:
         arch_ids = [d.id for d in archseries]
 
         query = """
-           Build.distroarchseries IN %s AND
-           Build.buildstate = %s AND
+           BinaryPackageBuild.distro_arch_series IN %s AND
+           BinaryPackageBuild.package_build = PackageBuild.id AND
+           PackageBuild.build_farm_job = BuildFarmJob.id AND
+           BuildFarmJob.status = %s AND
            BuildQueue.job_type = %s AND
            BuildQueue.job = BuildPackageJob.job AND
-           BuildPackageJob.build = build.id AND
+           BuildPackageJob.build = BinaryPackageBuild.id AND
            BuildQueue.builder IS NULL
         """ % sqlvalues(
             arch_ids, BuildStatus.NEEDSBUILD, BuildFarmJobType.PACKAGEBUILD)
 
         candidates = BuildQueue.select(
-            query, clauseTables=['Build', 'BuildPackageJob'],
+            query, clauseTables=[
+                'BinaryPackageBuild', 'PackageBuild', 'BuildFarmJob',
+                'BuildPackageJob'],
             orderBy=['-BuildQueue.lastscore'])
 
         return candidates
