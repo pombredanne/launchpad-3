@@ -58,11 +58,14 @@ from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
-    AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, ArchiveStatus, CannotCopy, CannotSwitchPrivacy,
+    AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled,
+    ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
+    CannotSwitchPrivacy, CannotUploadToPPA, CannotUploadToPocket,
     DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
-    InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES, NoSuchPPA,
-    NoTokensForTeams, PocketNotFound, VersionRequiresName,
+    InsufficientUploadRights, InvalidPocketForPPA,
+    InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
+    MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
+    NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
     default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
@@ -150,7 +153,8 @@ class Archive(SQLBase):
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     status = EnumCol(
-        dbName="status", unique=False, notNull=True, schema=ArchiveStatus)
+        dbName="status", unique=False, notNull=True, schema=ArchiveStatus,
+        default=ArchiveStatus.ACTIVE)
 
     _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
     enabled = property(lambda x: x._enabled)
@@ -267,6 +271,11 @@ class Archive(SQLBase):
     def is_main(self):
         """See `IArchive`."""
         return self.purpose in MAIN_ARCHIVE_PURPOSES
+
+    @property
+    def is_active(self):
+        """See `IArchive`."""
+        return self.status == ArchiveStatus.ACTIVE
 
     @property
     def series_with_sources(self):
@@ -948,7 +957,7 @@ class Archive(SQLBase):
             source_ids,
             archive=self)
 
-    def canUpload(self, user, component_or_package=None):
+    def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
         assert not self.is_copy, "Uploads to copy archives are not allowed."
         # PPA access is immediately granted if the user is in the PPA
@@ -970,6 +979,87 @@ class Archive(SQLBase):
         # ArchivePermission entries.
         return self._authenticate(
             user, component_or_package, ArchivePermissionType.UPLOAD)
+
+    def canUploadSuiteSourcePackage(self, person, suitesourcepackage):
+        """See `IArchive`."""
+        sourcepackage = suitesourcepackage.sourcepackage
+        pocket = suitesourcepackage.pocket
+        distroseries = sourcepackage.distroseries
+        sourcepackagename = sourcepackage.sourcepackagename
+        component = sourcepackage.latest_published_component
+        # strict_component is True because the source package already exists
+        # (otherwise we couldn't have a suitesourcepackage object) and
+        # nascentupload passes True as a matter of policy when the package exists.
+        reason = self.checkUpload(
+            person, distroseries, sourcepackagename, component, pocket,
+            strict_component=True)
+        return reason is None
+
+    def checkUploadToPocket(self, distroseries, pocket):
+        """See `IArchive`."""
+        if self.purpose == ArchivePurpose.PARTNER:
+            if pocket not in (
+                PackagePublishingPocket.RELEASE,
+                PackagePublishingPocket.PROPOSED):
+                return InvalidPocketForPartnerArchive()
+        elif self.is_ppa:
+            if pocket != PackagePublishingPocket.RELEASE:
+                return InvalidPocketForPPA()
+        else:
+            # Uploads to the partner archive are allowed in any distroseries
+            # state.
+            # XXX julian 2005-05-29 bug=117557:
+            # This is a greasy hack until bug #117557 is fixed.
+            if not distroseries.canUploadToPocket(pocket):
+                return CannotUploadToPocket(distroseries, pocket)
+
+    def checkUpload(self, person, distroseries, sourcepackagename, component, 
+                    pocket, strict_component=True):
+        """See `IArchive`."""
+        reason = self.checkUploadToPocket(distroseries, pocket)
+        if reason is not None:
+            return reason
+        return self.verifyUpload(
+            person, sourcepackagename, component, distroseries,
+            strict_component)
+
+    def verifyUpload(self, person, sourcepackagename, component,
+                      distroseries, strict_component=True):
+        """See `IArchive`."""
+        if not self.enabled:
+            return ArchiveDisabled(self.displayname)
+
+        # For PPAs...
+        if self.is_ppa:
+            if not self.checkArchivePermission(person):
+                return CannotUploadToPPA()
+            else:
+                return None
+
+        if sourcepackagename is not None:
+            # Check whether user may upload because they hold a permission for
+            #   - the given source package directly
+            #   - a package set in the correct distro series that includes the
+            #     given source package
+            source_allowed = self.checkArchivePermission(person,
+                                                         sourcepackagename)
+            set_allowed = self.isSourceUploadAllowed(
+                sourcepackagename, person, distroseries)
+            if source_allowed or set_allowed:
+                return None
+
+        if not self.getComponentsForUploader(person):
+            if not self.getPackagesetsForUploader(person):
+                return NoRightsForArchive()
+            else:
+                return InsufficientUploadRights()
+
+        if (component is not None
+            and strict_component
+            and not self.checkArchivePermission(person, component)):
+            return NoRightsForComponent(component)
+
+        return None
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""
@@ -1043,6 +1133,11 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.deletePackagesetUploader(
             self, person, packageset, explicit)
+
+    def getComponentsForUploader(self, person):
+        """See `IArchive`."""
+        permission_set = getUtility(IArchivePermissionSet)
+        return permission_set.componentsForUploader(self, person)
 
     def getPackagesetsForUploader(self, person):
         """See `IArchive`."""
@@ -1409,6 +1504,41 @@ class Archive(SQLBase):
         self._enabled = False
         self._setBuildStatuses(JobStatus.SUSPENDED)
 
+    def delete(self, deleted_by):
+        """See `IArchive`."""
+        assert self.status not in (
+            ArchiveStatus.DELETING, ArchiveStatus.DELETED,
+            "This archive is already deleted.")
+
+        # Set all the publications to DELETED.
+        statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+        sources = list(self.getPublishedSources(status=statuses))
+        getUtility(IPublishingSet).requestDeletion(
+            sources, removed_by=deleted_by,
+            removal_comment="Removed when deleting archive")
+
+        # Mark the archive's status as DELETING so the repository can be
+        # removed by the publisher.
+        self.status = ArchiveStatus.DELETING
+        if self.enabled:
+            self.disable()
+
+    def getFilesAndSha1s(self, source_files):
+        """See `IArchive`."""
+        return dict(Store.of(self).find(
+            (LibraryFileAlias.filename, LibraryFileContent.sha1),
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            LibraryFileAlias.filename.is_in(source_files),
+            LibraryFileContent.id == LibraryFileAlias.contentID).config(
+                distinct=True))
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1534,8 +1664,7 @@ class ArchiveSet:
                     (name, distribution.name))
         else:
             archive = Archive.selectOneBy(
-                owner=owner, distribution=distribution, name=name,
-                purpose=ArchivePurpose.PPA)
+                owner=owner, name=name, purpose=ArchivePurpose.PPA)
             if archive is not None:
                 raise AssertionError(
                     "Person '%s' already has a PPA named '%s'." %
@@ -1655,6 +1784,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             Archive.private = FALSE AND
+            Archive.enabled = TRUE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
         """ % sqlvalues(distribution, ArchivePurpose.PPA)

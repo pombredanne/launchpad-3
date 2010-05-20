@@ -265,10 +265,10 @@
             interface="lp.registry.interfaces.irc.IIrcIDSet"/>
     </securedutility>
 
-    <!-- Project -->
+    <!-- ProjectGroup -->
 
     <class
-        class="lp.registry.model.project.Project">
+        class="lp.registry.model.projectgroup.ProjectGroup">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow
@@ -335,24 +335,24 @@
     <facet
         facet="answers"/>
 
-    <!-- ProjectSet-->
+    <!-- ProjectGroupSet-->
 
     <class
-        class="lp.registry.model.project.ProjectSet">
+        class="lp.registry.model.projectgroup.ProjectGroupSet">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </class>
     <securedutility
-        class="lp.registry.model.project.ProjectSet"
+        class="lp.registry.model.projectgroup.ProjectGroupSet"
         provides="lp.registry.interfaces.projectgroup.IProjectGroupSet">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSet"/>
     </securedutility>
 
-    <!-- ProjectSeries -->
+    <!-- ProjectGroupSeries -->
 
     <class
-        class="lp.registry.model.project.ProjectSeries">
+        class="lp.registry.model.projectgroup.ProjectGroupSeries">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupSeries"/>
     </class>
@@ -1077,6 +1077,9 @@
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+        <require
+            permission="launchpad.View"
+            set_attributes="date_next_suggest_packaging"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>

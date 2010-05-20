@@ -46,12 +46,13 @@ read and accepted the conditions. The is also an optional 'description'
 text-area.
 
 There is also a message, near the form actions, in which the user is
-warned about the fact the activating this PPA will block renaming of
-the context launchpad user.
+warned about the fact that if the user has any PPAs with published
+packages then they will not be able to rename their account.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Sample Person
+    If you have any PPAs with published packages, you will not be able to
+    rename ... until those PPAs are deleted.
     ...
 
 'PPA name' and 'Displayname' are required fields.  For the first activated
@@ -149,25 +150,6 @@ user can't have an emtpy displayname on his PPA.
     There is 1 error.
     Required input is missing.
 
-Once the PPA is activated, the Sample user account cannot be renamed
-anymore. Changing the account name affects the PPA repository paths
-and we don't have infrastructure in place to support that yet. See
-more information about the feature in bug #87326.
-
-    >>> sample_browser.open("http://launchpad.dev/~name12/+edit")
-    >>> sample_browser.getControl(name='field.name').value = 'el-duderino'
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.name'
-
-    >>> print extract_text(
-    ...     first_tag_by_class(sample_browser.contents, 'form'))
-    Display Name:
-    ...
-    Name: name12
-    This user has a PPA and may not be renamed.
-    ...
-
 
 == Activating Personal Package Archives for Teams ==
 
@@ -215,7 +197,8 @@ will block renaming of the context team.
 
     >>> print extract_text(
     ...     first_tag_by_class(sample_browser.contents, 'actions'))
-    Activating this PPA will block future renaming of Landscape Developers
+    If you have any PPAs with published packages, you will not be able to
+    rename ... until those PPAs are deleted.
     ...
 
 That understood, the PPA gets activated.
@@ -392,7 +375,7 @@ see some of the updated information.
 
     >>> for msg in get_feedback_messages(admin_browser.contents):
     ...     print msg
-    This archive has been disabled.
+    This PPA has been disabled.
 
 We need go back to the "Administer archive" page to see the build score and
 external dependencies changes that were made:
@@ -585,15 +568,6 @@ all his PPAs.
       A short description of this PPA. URLs are allowed and will be rendered
       as links.
 
-Note that, differently than the time when the first PPA was activated,
-this time there is no warning about the fact that the context renaming
-will be blocked. We assumed that, at this point, this is already a
-known aspect.
-
-    >>> print extract_text(
-    ...     first_tag_by_class(cprov_browser.contents, 'actions'))
-    or Cancel
-
 The 'PPA name' field is not pre-filled and if Celso does not fill it then
 an error is raised.
 
@@ -718,7 +692,8 @@ They may also change whether the PPA is published to disk or not.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
 
 Initially, the PPA is enabled and publishes.
 
@@ -734,11 +709,12 @@ After disabling the PPA a warning message is displayed on its page.
     >>> no_priv_browser.getControl('Save').click()
     >>> print extract_text(
     ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
-    This archive has been disabled.
+    This PPA has been disabled.
 
 Going back to the edit page, we can see the publish flag was cleared:
 
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
     >>> print no_priv_browser.getControl(name='field.publish').value
     False
 
@@ -753,4 +729,80 @@ Once we re-enable the PPA the "disabled" warning message will be gone.
     ...  is None)
     True
 
+
+== Deleting a PPA ==
+
+Users with launchpad.Edit permission see a "Delete PPA" link in the
+navigation menu.
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> print anon_browser.getLink("Delete PPA")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.getLink("Delete PPA").click()
+
+Clicking this link takes the user to a page that allows deletion of a PPA:
+
+    >>> print no_priv_browser.title
+    Delete “PPA for No Privileges Person” : PPA for No Privileges Person :
+        No Privileges Person
+
+The page contains a stern warning that this action is final and irreversible:
+
+    >>> print extract_text(find_main_content(no_priv_browser.contents))
+    Delete “PPA for No Privileges Person”
+    ...
+    Deleting a PPA will destroy all of its packages, files and the
+    repository area.
+    This deletion is PERMANENT and cannot be undone.
+    Are you sure ?
+    ...
+
+If the user changes his mind, he can click on the cancel link to go back
+a page:
+
+    >>> print no_priv_browser.getLink("Cancel").url
+    http://launchpad.dev/~no-priv/+archive/ppa
+
+Otherwise, he has a button to press to confirm the deletion.
+
+    >>> no_priv_browser.getControl("Permanently delete PPA").click()
+
+This action will redirect the user back to his profile page, which will
+contain a notification message that the deletion is in progress.
+
+    >>> print no_priv_browser.url
+    http://launchpad.dev/~no-priv
+
+    >>> for msg in get_feedback_messages(no_priv_browser.contents):
+    ...     print msg
+    Deletion of 'PPA for No Privileges Person' has been requested and
+    the repository will be removed shortly.
+
+The deleted PPA is still available to browse via a link on the profile page
+so you can see its build history, etc.:
+
+    >>> no_priv_browser.getLink("PPA for No Privileges Person").click()
+
+However, most of the action links are removed for deleted PPAs, so you can
+no longer "Delete packages", "Edit PPA dependencies", or "Change details".
+
+    >>> print no_priv_browser.getLink("Change details")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    
+    >>> print no_priv_browser.getLink("Edit PPA dependencies")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> no_priv_browser.getLink("View package details").click()
+    >>> print no_priv_browser.getLink("Delete packages")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 

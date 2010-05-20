@@ -1283,9 +1283,9 @@ class PillarFormatterAPI(CustomizableFormatter):
         return super(PillarFormatterAPI, self).url(view_name, rootsite)
 
     def link(self, view_name, rootsite='mainsite'):
-        """The html to show a link to a Product, Project or distribution.
+        """The html to show a link to a Product, ProjectGroup or distribution.
 
-        In the case of Products or Project groups we display the custom
+        In the case of Products or ProjectGroups we display the custom
         icon, if one exists. The default URL for a pillar is to the mainsite.
         """
 
@@ -1331,6 +1331,18 @@ class SourcePackageFormatterAPI(CustomizableFormatter):
     def _link_summary_values(self):
         displayname = self._context.displayname
         return {'displayname': displayname}
+
+
+class SourcePackageReleaseFormatterAPI(CustomizableFormatter):
+
+    """Adapter for ISourcePackageRelease objects to a formatted string."""
+
+    _link_summary_template = '%(sourcepackage)s %(version)s'
+
+    def _link_summary_values(self):
+        return {'sourcepackage':
+                self._context.distrosourcepackage.displayname,
+                'version': self._context.version}
 
 
 class ProductReleaseFileFormatterAPI(ObjectFormatterAPI):
@@ -3013,6 +3025,16 @@ class FormattersAPI:
         else:
             return id_
 
+    def oops_id(self):
+        """Format an OOPS ID for display."""
+        if not getUtility(ILaunchBag).developer:
+            # We only linkify OOPS IDs for Launchpad developers.
+            return self._stringtoformat
+
+        root_url = config.launchpad.oops_root_url
+        url = root_url + self._stringtoformat
+        return '<a href="%s">%s</a>' % (url, self._stringtoformat)
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -3051,6 +3073,8 @@ class FormattersAPI:
                 return self.css_id(furtherPath.pop())
             else:
                 return self.css_id()
+        elif name == 'oops-id':
+            return self.oops_id()
         else:
             raise TraversalError(name)
 

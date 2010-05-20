@@ -13,15 +13,17 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
+from storm.store import Store
+
 from canonical.config import config
 
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, ISpecificBuildFarmJobClass)
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
@@ -31,17 +33,15 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
+class TranslationTemplatesBuildJob(BuildFarmJobDerived, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
     """
     implements(IBuildFarmBranchJob)
-
     class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
 
-    classProvides(
-        ISpecificBuildFarmJobClass, ITranslationTemplatesBuildJobSource)
+    classProvides(ITranslationTemplatesBuildJobSource)
 
     duration_estimate = timedelta(seconds=10)
 
@@ -69,6 +69,14 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
     def getTitle(self):
         """See `IBuildFarmJob`."""
         return '%s translation templates build' % self.branch.bzr_identity
+
+    def cleanUp(self):
+        """See `IBuildFarmJob`."""
+        # This class is not itself database-backed.  But it delegates to
+        # one that is.  We can't call its SQLObject destroySelf method
+        # though, because then the BuildQueue and the BranchJob would
+        # both try to delete the attached Job.
+        Store.of(self.context).remove(self.context)
 
     @classmethod
     def _hasPotteryCompatibleSetup(cls, branch):
@@ -110,15 +118,25 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
             branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
         store.add(branch_job)
         specific_job = TranslationTemplatesBuildJob(branch_job)
-
         duration_estimate = cls.duration_estimate
+
+        # XXX Danilo Segan: we hard-code processor to the Ubuntu
+        # default processor architecture.  See bug 580429.
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job.id)
+            job=specific_job.job.id,
+            processor=cls._getBuildArch())
         store.add(build_queue_entry)
 
         return specific_job
+
+    @classmethod
+    def _getBuildArch(cls):
+        """Returns an `IProcessor` to queue a translation build for."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        # A round-about way of hard-coding i386.
+        return ubuntu.currentseries.nominatedarchindep.default_processor
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
@@ -133,7 +151,10 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     @classmethod
     def getByJob(cls, job):
-        """See `ISpecificBuildFarmJobClass`."""
+        """See `IBuildFarmJobDerived`.
+
+        Overridden here to search via a BranchJob, rather than a Job.
+        """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch_job = store.find(BranchJob, BranchJob.job == job).one()
         if branch_job is None:

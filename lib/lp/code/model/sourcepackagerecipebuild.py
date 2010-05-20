@@ -16,6 +16,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
@@ -27,7 +28,8 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuildfarmjob import PackageBuildFarmJob
+from lp.buildmaster.model.packagebuildfarmjob import (
+    PackageBuildFarmJobDerived)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -36,6 +38,7 @@ from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -55,6 +58,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
+
+    @property
+    def binary_builds(self):
+        """See `ISourcePackageRecipeBuild`."""
+        return Store.of(self).find(BinaryPackageBuild,
+            BinaryPackageBuild.sourcepackagerelease==SourcePackageRelease.id,
+            SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
 
@@ -77,6 +87,24 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
     datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
+
+    @property
+    def datestarted(self):
+        """See `IBuild`."""
+        # datestarted is not stored on Build.  It can be calculated from
+        # self.datebuilt and self.buildduration, if both are set.  This does
+        # not happen until the build is complete.
+        #
+        # Before the build is complete, there will be a buildqueue_record.
+        # If buildqueue_record is set, buildqueue_record.job.date_started can
+        # be used.  Otherwise, None is returned.
+        if None not in (self.datebuilt, self.buildduration):
+            return self.datebuilt - self.buildduration
+        queue_record = self.buildqueue_record
+        if queue_record is None:
+            return None
+        return queue_record.job.date_started
+
     date_first_dispatched = UtcDateTimeCol(notNull=False)
 
     distroseries_id = Int(name='distroseries', allow_none=True)
@@ -197,8 +225,18 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         # XXX: wgrant 2010-01-20 bug=509893: Implement this.
         return
 
+    def getFileByName(self, filename):
+        """See `ISourcePackageRecipeBuild`."""
+        files = dict((lfa.filename, lfa)
+                     for lfa in [self.buildlog, self.upload_log]
+                     if lfa is not None)
+        try:
+            return files[filename]
+        except KeyError:
+            raise NotFoundError(filename)
 
-class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
+
+class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -213,19 +251,22 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJob, Storm):
     build = Reference(
         build_id, 'SourcePackageRecipeBuild.id')
 
-    processor = None
+    @property
+    def processor(self):
+        return self.build.distroseries.nominatedarchindep.default_processor
+
     virtualized = True
 
     def __init__(self, build, job):
-        super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
+        super(SourcePackageRecipeBuildJob, self).__init__()
 
     @classmethod
     def new(cls, build, job):
         """See `ISourcePackageRecipeBuildJobSource`."""
         specific_job = cls(build, job)
-        store = IMasterStore(SourcePackageRecipeBuildJob)
+        store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
 

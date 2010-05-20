@@ -14,24 +14,38 @@ __all__ = [
     'ISourcePackageRecipe',
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
+    'MINIMAL_RECIPE_TEXT',
     'TooNewRecipeFormat',
     ]
 
 
-from lazr.restful.fields import CollectionField, Reference
+from textwrap import dedent
 
+from lazr.restful.declarations import (
+    call_with, export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, REQUEST_USER)
+from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    ParticipatingPersonChoice, PublicPersonChoice
+)
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
+from lp.soyuz.interfaces.archive import IArchive
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
+
+MINIMAL_RECIPE_TEXT = dedent(u'''\
+    # bzr-builder format 0.2 deb-version 1.0
+    %s
+    ''')
 
 class ForbiddenInstruction(Exception):
     """A forbidden instruction was found in the recipe."""
@@ -66,22 +80,33 @@ class ISourcePackageRecipeData(Interface):
         """An iterator of the branches referenced by this recipe."""
 
 
-
 class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """An ISourcePackageRecipe describes how to build a source package.
 
     More precisely, it describes how to combine a number of branches into a
     debianized source tree.
     """
+    export_as_webservice_entry()
+
+    daily_build_archive = Reference(
+        IArchive, title=_("The archive to use for daily builds."))
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
 
-    registrant = Reference(
-        IPerson, title=_("The person who created this recipe"), readonly=True)
-    owner = Reference(
-        IPerson, title=_("The person or team who can edit this recipe"),
-        readonly=False)
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The person who created this recipe."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
+
+    owner = exported(
+        ParticipatingPersonChoice(
+            title=_('Owner'),
+            required=True, readonly=False,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("The person or team who can edit this recipe.")))
+
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
@@ -93,10 +118,13 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
                                     "recipe will build a source package"),
         readonly=True)
 
-    name = TextLine(
+    _sourcepackagename_text = exported(
+        TextLine(), exported_as='sourcepackagename')
+
+    name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
-            description=_("The name of this recipe."))
+            description=_("The name of this recipe.")))
 
     description = Text(
         title=_('Description'), required=True,
@@ -109,6 +137,20 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         IBranch, title=_("The base branch used by this recipe."),
         required=True, readonly=True)
 
+    @operation_parameters(recipe_text=Text())
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
+
+    recipe_text = exported(Text())
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=IArchive),
+        distroseries=Reference(schema=IDistroSeries),
+        pocket=Choice(vocabulary=PackagePublishingPocket,)
+        )
+    @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
 

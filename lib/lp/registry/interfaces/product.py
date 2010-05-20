@@ -38,6 +38,8 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
@@ -51,7 +53,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasSecurityContact, ILaunchpadUsage)
+    IHasLogo, IHasMugshot, ILaunchpadUsage)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -273,6 +275,11 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(releasefileglob="release_url_pattern")
+    @export_factory_operation(
+        IProductSeries, ['name', 'summary', 'branch', 'releasefileglob'])
+    @export_operation_as('newSeries')
     def newSeries(owner, name, summary, branch=None, releasefileglob=None):
         """Creates a new `IProductSeries` for this `IProduct`.
 
@@ -353,11 +360,10 @@ class IProductPublic(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
-            vocabulary='Project',
+            vocabulary='ProjectGroup',
             schema=IProjectGroup,
             description=_(
-                'Super-project. In Launchpad, we can setup a special '
-                '"project group" that is an overarching initiative that '
+                'Project group. This is an overarching initiative that '
                 'includes several related projects. For example, the Mozilla '
                 'Project produces Firefox, Thunderbird and Gecko. This '
                 'information is used to group those projects in a coherent '
@@ -567,6 +573,16 @@ class IProductPublic(
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
+    date_next_suggest_packaging = exported(
+        Datetime(
+            title=_('Next suggest packaging date'),
+            description=_(
+                "The date when Launchpad can resume suggesting Ubuntu "
+                "packages that the project provides. The default value is "
+                "one year after a user states the project is not packaged "
+                "in Ubuntu."),
+            required=False))
+
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
@@ -711,13 +727,14 @@ class IProductPublic(
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic, IRootContext,
-               IStructuralSubscriptionTarget):
+class IProduct(
+    IHasBugSupervisor, IProductEditRestricted, 
+    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
+    The Launchpad Registry describes the open source world as ProjectGroups
+    and Products. Each ProjectGroup may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """

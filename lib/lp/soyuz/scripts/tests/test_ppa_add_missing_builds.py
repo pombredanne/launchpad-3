@@ -119,6 +119,7 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
             "-a", "i386",
             "-a", "hppa",
             "--owner", "%s" % self.ppa.owner.name,
+            "--ppa", self.ppa.name,
             ]
         code, stdout, stderr = self.runScript(args)
         self.assertEqual(

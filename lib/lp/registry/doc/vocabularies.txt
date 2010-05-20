@@ -508,11 +508,11 @@ All the products in a project.
     thunderbird: Mozilla Thunderbird
 
 
-=== ProjectVocabulary ===
+=== ProjectGroupVocabulary ===
 
 The list of selectable projects. The results are ordered by displayname.
 
-    >>> project_vocabulary = get_naked_vocab(None, "Project")
+    >>> project_vocabulary = get_naked_vocab(None, "ProjectGroup")
     >>> project_vocabulary.displayname
     'Select a project group'
 
@@ -522,7 +522,7 @@ The list of selectable projects. The results are ordered by displayname.
     >>> mozilla.title
     u'The Mozilla Project'
 
-  The ProjectVocabulary does not list inactive projects.
+  The ProjectGroupVocabulary does not list inactive projects.
 
     >>> from canonical.launchpad.interfaces import IProjectGroupSet
     >>> moz_project = getUtility(IProjectGroupSet)['mozilla']
@@ -767,6 +767,7 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.  Notice that the
 PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
+    >>> login_person(sample_person)
     >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
     >>> sorted(person.name for person in vocab.search('team'))
     [u'ephemeral-team', u'hwdb-team', u'name18', u'name20', u'name21',
@@ -776,8 +777,10 @@ PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
 Valid teams do not include teams that have been merged.
 
+    >>> login_person(foo_bar)
     >>> ephemeral.deactivateAllMembers("Merging", foo_bar)
     >>> person_set.merge(ephemeral, foo_bar)
+    >>> login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam', u'simple-team',
@@ -809,11 +812,12 @@ A PRIVATE team is displayed when the logged in user is a member of the team.
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
 
-The PRIVATE team is also displayed for Launchpad admins.
+The PRIVATE team is also displayed for Launchpad admins, as is the
+PRIVATE_MEMBERSHIP team 'myteam'.
 
     >>> login('foo.bar@canonical.com')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21',
+    [u'hwdb-team', u'myteam', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam',
      u'private-team', u'simple-team', u'testing-spanish-team',
      u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
@@ -1253,12 +1257,12 @@ Project groups are not contained in this vocabulary:
     False
 
 
-=== DistributionOrProductOrProjectVocabulary ===
+=== DistributionOrProductOrProjectGroupVocabulary ===
 
-All products, projects and distributions. Note that the value type is
+All products, project groups and distributions. Note that the value type is
 heterogeneous.
 
-    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1298,7 +1302,7 @@ Inactive projects and project groups are not available.
     >>> apache in vocab
     False
 
-    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1308,11 +1312,11 @@ Inactive projects and project groups are not available.
     >>> product_set.getByName('tomcat').active = True
     >>> getUtility(IProjectGroupSet).getByName('apache').active = True
     >>> flush_database_updates()
-    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Apache (Project) - class Project
+    Apache (ProjectGroup) - class ProjectGroup
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1323,7 +1327,7 @@ Inactive projects and project groups are not available.
 
 The featured project vocabulary contains all the projects that are
 featured on Launchpad. It is a subset of the
-DistributionOrProductOrProjectVocabulary (defined using the
+DistributionOrProductOrProjectGroupVocabulary (defined using the
 _clauseTables).
 
     >>> featured_project_vocabulary = get_naked_vocab(
@@ -1337,9 +1341,9 @@ _clauseTables).
     bazaar          Bazaar               Bazaar (Product)
     firefox         Mozilla Firefox      Mozilla Firefox (Product)
     gentoo          Gentoo               The Gentoo Linux (Distribution)
-    gnome           GNOME                The GNOME Project (Project)
+    gnome           GNOME                The GNOME Project (ProjectGroup)
     gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Product)
-    mozilla the     Mozilla Project      The Mozilla Project (Project)
+    mozilla the     Mozilla Project      The Mozilla Project (ProjectGroup)
     thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 

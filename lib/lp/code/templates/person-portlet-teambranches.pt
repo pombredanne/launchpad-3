@@ -6,13 +6,12 @@
 
 <div class="yui-u" tal:condition="view/teams_with_branches">
   <div class="portlet related" id="portlet-team-branches">
-    <h2>Branches related to</h2>
-
+    <h2>Branches owned by</h2>
     <ul>
       <li tal:repeat="item view/teams_with_branches">
-        <img src="/@@/team" />
+        <tal:icon replace="structure item/team/fmt:icon" />
         <a tal:content="item/team/displayname"
-           tal:attributes="href item/url_provider/fmt:url">team name</a>
+           tal:attributes="href item/url_provider/fmt:url:code">team name</a>
       </li>
     </ul>
   </div>

@@ -8,9 +8,11 @@ __metaclass__ = type
 __all__ = [
     'launchpadlib_credentials_for',
     'launchpadlib_for',
-    'oauth_access_token_for'
+    'oauth_access_token_for',
     ]
 
+
+import transaction
 from zope.component import getUtility
 from launchpadlib.credentials import AccessToken, Credentials
 from launchpadlib.launchpad import Launchpad
@@ -21,6 +23,7 @@ from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IPersonSet)
 
 from lp.testing._login import login, logout
+
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
     """Find or create an OAuth access token for the given person.
@@ -116,5 +119,6 @@ def launchpadlib_for(
     """
     credentials = launchpadlib_credentials_for(
         consumer_name, person, permission, context)
+    transaction.commit()
     version = version or Launchpad.DEFAULT_VERSION
     return Launchpad(credentials, service_root, version=version)

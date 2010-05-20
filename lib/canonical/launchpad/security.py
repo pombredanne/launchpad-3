@@ -12,8 +12,6 @@ from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import (
-    can_upload_to_archive, check_upload_to_archive)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -29,6 +27,8 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchsubscription import (
     IBranchSubscription)
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -242,7 +242,7 @@ class ReviewProject(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroup
 
 
-class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
+class ReviewProjectGroupSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectGroupSet
 
 
@@ -373,6 +373,11 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
     usedfor = IDistributionMirror
+
+
+class ViewMilestone(AnonymousAuthorization):
+    """Anyone can view an IMilestone."""
+    usedfor = IMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -542,14 +547,6 @@ class AdminProductTranslations(AuthorizationBase):
         return (user.isOwner(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
-
-
-class AdminSeriesByVCSImports(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IProductSeries
-
-    def checkAuthenticated(self, user):
-        return user.in_vcs_imports
 
 
 class EditProjectMilestoneNever(AuthorizationBase):
@@ -1094,11 +1091,6 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
         return user.in_admin or user.in_vcs_imports
 
 
-class AdminTheBazaar(OnlyVcsImportsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IBazaarApplication
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
@@ -1129,7 +1121,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportJobWorkflow
 
 
-class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
+class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
     Access is restricted to members of ~vcs-imports and Launchpad admins.
@@ -1468,9 +1460,9 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # user to retry build if so.
         # strict_component is True because the source package already exists,
         # otherwise, how can they give it back?
-        check_perms = check_upload_to_archive(
+        check_perms = self.obj.archive.checkUpload(
             user.person, self.obj.distroseries,
-            self.obj.sourcepackagerelease.sourcepackagename, self.obj.archive,
+            self.obj.sourcepackagerelease.sourcepackagename, 
             self.obj.current_component, self.obj.pocket,
             strict_component=True)
         return check_perms == None
@@ -1711,7 +1703,8 @@ def can_upload_linked_package(person_role, branch):
     # one combination that allows us to upload the corresponding source
     # package.
     for ssp in ssp_list:
-        if can_upload_to_archive(person_role.person, ssp):
+        archive = ssp.sourcepackage.get_default_archive()
+        if archive.canUploadSuiteSourcePackage(person_role.person, ssp):
             return True
     return False
 
@@ -2040,7 +2033,7 @@ class ViewArchive(AuthorizationBase):
             return True
 
         # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         return False
@@ -2055,7 +2048,7 @@ class AppendArchive(AuthorizationBase):
 
     No one can upload to disabled archives.
 
-    PPA upload rights are managed via `IArchive.canUpload`;
+    PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
 
@@ -2072,7 +2065,7 @@ class AppendArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         celebrities = getUtility(ILaunchpadCelebrities)
@@ -2167,14 +2160,19 @@ class EditArchiveSubscriber(AuthorizationBase):
         return user.in_admin
 
 
-class ViewSourcePackageRecipe(AuthorizationBase):
+class DerivedAuthorization(AuthorizationBase):
+    """An Authorization that is based on permissions for other objects.
 
-    permission = "launchpad.View"
-    usedfor = ISourcePackageRecipe
+    Implementations must define permission, usedfor and iter_objects.
+    iter_objects should iterate through the objects to check permission on.
+
+    Failure on the permission check for any object causes an overall failure.
+    """
 
     def iter_adapters(self):
-        for branch in self.obj.getReferencedBranches():
-            yield getAdapter(branch, IAuthorization, self.permission)
+        return (
+            getAdapter(obj, IAuthorization, self.permission)
+            for obj in self.iter_objects())
 
     def checkAuthenticated(self, user):
         for adapter in self.iter_adapters():
@@ -2187,6 +2185,25 @@ class ViewSourcePackageRecipe(AuthorizationBase):
             if not adapter.checkUnauthenticated():
                 return False
         return True
+
+
+class ViewSourcePackageRecipe(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipe
+
+    def iter_objects(self):
+        return self.obj.getReferencedBranches()
+
+
+class ViewSourcePackageRecipeBuild(DerivedAuthorization):
+
+    permission = "launchpad.View"
+    usedfor = ISourcePackageRecipeBuild
+
+    def iter_objects(self):
+        yield self.obj.recipe
+        yield self.obj.archive
 
 
 class ViewSourcePackagePublishingHistory(ViewArchive):

@@ -23,7 +23,7 @@ a descriptive main heading.
     Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Branches - http://code.launchpad.dev/~cprov
+    * Code - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -192,7 +192,7 @@ the source into a public PPA to demonstrate this.
     ...     distribution=ubuntu)
     >>> joe = factory.makePerson(name="joe")
     >>> public_ppa = factory.makeArchive(
-    ...     owner=joe, distribution=ubuntu)
+    ...     owner=joe, distribution=ubuntu, name='ppa')
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()

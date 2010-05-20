@@ -16,27 +16,33 @@
   <div id="membership-summary" class="portletBody portletContent"
     style="margin-bottom: 1.5em;">
     <div>
-      <div id="membership-counts">
-        <img src="/@@/team" alt="team" />
-        <strong id="approved-member-count">
+      <div id="membership-counts"
+        tal:define="singular string:member; plural string:members">
+        <strong class="sprite team" id="approved-member-count">
           <tal:active content="context/all_member_count" />
         </strong>
         <a tal:attributes="href string:${context/fmt:url/+members}#active"
-          >active members</a><tal:invited
-            define="invited_member_count context/invited_member_count"
-            condition="invited_member_count">,
-          <strong id="invited-member-count">
-            <tal:invited_count content="context/invited_member_count" />
-          </strong>
-          <a tal:attributes="href string:${context/fmt:url/+members}#invited"
-            >invited members</a></tal:invited><tal:proposed
-              define="proposed_member_count context/proposed_member_count"
-              condition="proposed_member_count">,
-          <strong id="proposed-member-count">
-            <tal:proposed_count content="proposed_member_count" />
-          </strong>
-          <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
-            >proposed members</a>
+          tal:define="count context/all_member_count">active
+          <tal:plural
+            metal:use-macro="context/@@+base-layout-macros/plural-message"
+            /></a><tal:invited
+          define="count context/invited_member_count" condition="count">,
+            <strong id="invited-member-count">
+              <tal:invited_count content="count" />
+            </strong>
+            <a tal:attributes="href string:${context/fmt:url/+members}#invited"
+              >invited
+              <tal:plural
+                metal:use-macro="context/@@+base-layout-macros/plural-message"
+              /></a></tal:invited><tal:proposed
+          define="count context/proposed_member_count" condition="count">,
+            <strong id="proposed-member-count">
+              <tal:proposed_count content="count" />
+            </strong>
+            <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
+              >proposed
+              <tal:plural
+                metal:use-macro="context/@@+base-layout-macros/plural-message"/></a>
         </tal:proposed>
       </div>
     </div>
@@ -99,10 +105,10 @@
           tal:condition="link/enabled">
         <script type="text/javascript"
                 tal:content="string:
-          YUI().use('registry.team', function(Y) {
+          YUI().use('lp.registry.team', function(Y) {
               Y.on('load',
                   function(e) {
-                      Y.registry.team.setup_add_member_handler();
+                      Y.lp.registry.team.setup_add_member_handler();
                   },
                   window);
           });
