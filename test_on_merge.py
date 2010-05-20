@@ -12,8 +12,12 @@ import tabnanny
 from StringIO import StringIO
 import psycopg2
 from subprocess import Popen, PIPE, STDOUT
-from signal import SIGKILL, SIGTERM
+from signal import SIGKILL, SIGTERM, SIGINT, SIGHUP
 from select import select
+
+
+__metaclass__ = type
+
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.
@@ -21,7 +25,9 @@ from select import select
 # backing up the queue.
 # e.g. Usage: TIMEOUT = 60 * 15
 # This will set the timeout to 15 minutes.
-TIMEOUT = 60 * 15
+#TIMEOUT = 60 * 150
+TIMEOUT = 60
+
 
 def main():
     """Call bin/test with whatever arguments this script was run with.
@@ -136,68 +142,139 @@ def main():
 
     print 'Running tests.'
     os.chdir(here)
+
+    # Play shenanigans with our process group. We want to kill off our child
+    # groups while at the same time not slaughtering ourselves!
+    original_process_group = os.getpgid(0)
+
+    # Make sure we are not already the process group leader.  Otherwise this
+    # trick won't work.
+    assert original_process_group != os.getpid()
+
+    # Change our process group to match our PID, as per POSIX convention.
+    os.setpgrp()
+
+    # We run the test suite under a virtual frame buffer server so that the
+    # JavaScript integration test suite can run.
     cmd = [
         'xvfb-run',
         '-s',
         "'-screen 0 1024x768x24'",
         os.path.join(here, 'bin', 'test')] + sys.argv[1:]
+
     command_line = ' '.join(cmd)
-    print command_line
+    print "Running command:", command_line
 
     # Run the test suite and return the error code
-    #return call(cmd)
-
-    proc = Popen(
+    xvfb_proc = Popen(
         command_line, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
-    proc.stdin.close()
+    xvfb_proc.stdin.close()
 
-    # Do proc.communicate(), but timeout if there's no activity on stdout or
-    # stderr for too long.
-    open_readers = set([proc.stdout])
+    # Restore our original process group, thus removing ourselves from
+    # os.killpg's target list.  Our child process and its children will retain
+    # the process group number matching our PID.
+    os.setpgid(0, original_process_group)
+
+    # This code is very similar to what takes place in proc._communicate(),
+    # but this code times out if there is no activity on STDOUT for too long.
+    open_readers = set([xvfb_proc.stdout])
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
         if len(rlist) == 0:
-            if proc.poll() is not None:
+            # The select() statement timed out!
+
+            if xvfb_proc.poll() is not None:
+                # The process we were watching died.
                 break
-            print ("\nA test appears to be hung. There has been no output for"
-                " %d seconds. Sending SIGTERM." % TIMEOUT)
-            killem(proc.pid, SIGTERM)
-            time.sleep(3)
-            if proc.poll() is not None:
-                print ("\nSIGTERM did not work. Sending SIGKILL.")
-                killem(proc.pid, SIGKILL)
+
+            print
+            print ("WARNING: A test appears to be hung. There has been no "
+                "output for %d seconds." % TIMEOUT)
+            print "Forcibly shutting down the test suite:"
+
+            # This guarantees the processes the group will die.  In rare cases
+            # a child process may survive this if they are in a different
+            # process group and they ignore the signals we send their parent.
+            nice_killpg(xvfb_proc)
+
             # Drain the subprocess's stdout and stderr.
-            sys.stdout.write(proc.stdout.read())
+            print "The dying processes left behind the following output:"
+            print "--------------- BEGIN OUTPUT ---------------"
+            sys.stdout.write(xvfb_proc.stdout.read())
+            print "---------------- END OUTPUT ----------------"
+
             break
 
-        if proc.stdout in rlist:
-            chunk = os.read(proc.stdout.fileno(), 1024)
+        if xvfb_proc.stdout in rlist:
+            # Read a chunk of output from STDOUT.
+            chunk = os.read(xvfb_proc.stdout.fileno(), 1024)
             sys.stdout.write(chunk)
             if chunk == "":
-                open_readers.remove(proc.stdout)
+                # Gracefully exit the loop if STDOUT is empty.
+                open_readers.remove(xvfb_proc.stdout)
 
-    rv = proc.wait()
+    try:
+        rv = xvfb_proc.wait()
+    except OSError, exc:
+        raise
+        if exc.errno == errno.ECHILD:
+            # The process has already died and been collected.
+            rv = xvfb_proc.returncode
+        else:
+            raise
+
     if rv == 0:
-        print '\nSuccessfully ran all tests.'
+        print
+        print 'Successfully ran all tests.'
     else:
-        print '\nTests failed (exit code %d)' % rv
+        print
+        print 'Tests failed (exit code %d)' % rv
 
     return rv
 
 
-def killem(pid, signal):
-    """Kill the process group leader identified by pid and other group members
+def nice_killpg(process):
+    """Kill a Unix process group using increasingly harmful signals."""
+    pgid = os.getpgid(process.pid)
 
-    Note that bin/test sets its process to a process group leader.
-    """
     try:
-        os.killpg(os.getpgid(pid), signal)
-    except OSError, x:
-        if x.errno == errno.ESRCH:
+        print "Process group %d will be killed" % pgid
+
+        # Attempt a series of increasingly brutal methods of killing the
+        # process.
+        for signum in [SIGTERM, SIGINT, SIGHUP, SIGKILL]:
+            print "Sending signal %s to process group %d" % (signum, pgid)
+            os.killpg(pgid, signum)
+
+            # Give the processes some time to shut down.
+            time.sleep(3)
+
+            # Poll our original child process so that the Popen object can
+            # capture the process' exit code. If we do not do this now it
+            # will be lost by the following call to os.waitpid(). Note that
+            # this also reaps every process in the process group!
+            process.poll()
+
+            # This call will raise ESRCH if the group is empty, or ECHILD if
+            # the group has already been reaped. The exception will exit the
+            # loop for us.
+            os.waitpid(-pgid, os.WNOHANG)   # Check for survivors.
+
+            print "Some processes ignored our signal!"
+
+    except OSError, exc:
+        if exc.errno == errno.ESRCH:
+            # We tried to call os.killpg() and found the group to be empty.
+            pass
+        elif exc.errno == errno.ECHILD:
+            # We tried to poll the process group with os.waitpid() and found
+            # it was empty.
             pass
         else:
             raise
+    print "Process group %d is now empty." % pgid
+
 
 if __name__ == '__main__':
     sys.exit(main())
