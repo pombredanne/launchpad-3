@@ -21,6 +21,7 @@ TOP = os.path.abspath(
 JS_DIRSET = [
     (os.path.join('lib', 'lp', 'code', 'javascript'), 'code'),
     (os.path.join('lib', 'lp', 'registry', 'javascript'), 'registry'),
+    (os.path.join('lib', 'lp', 'translations', 'javascript'), 'translations'),
     ]
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 ICING_BUILD = os.path.join(ICING_ROOT, 'build')
