@@ -1,4 +1,4 @@
-launchpad-buildd (61) lucid-cat; urgency=high
+launchpad-buildd (61) UNRELEASED; urgency=high
 
   [William Grant]
   * Fixed translation templates slave to return files properly. LP#549422
