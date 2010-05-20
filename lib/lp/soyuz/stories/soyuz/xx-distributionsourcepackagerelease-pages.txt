@@ -48,7 +48,7 @@ they all point to the `DistributionSourcePackage` (parent) url.
     Hierarchy: ubuntutest > ?testing-dspr? package > 1.0
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
-    * Branches - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
+    * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
     * Bugs - http://bugs.launchpad.dev/ubuntutest/+source/testing-dspr
     * Blueprints - not linked
     * Translations - not linked

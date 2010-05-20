@@ -134,7 +134,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'answers', 'translations']
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
