@@ -109,7 +109,7 @@ def test_split_paragraphs():
     into paragraphs, which are separated by one or more blank lines.
     Paragraphs are yielded as a list of lines in the paragraph.
 
-      >>> from canonical.launchpad.webapp.tales import split_paragraphs
+      >>> from lp.app.browser.stringformatter import split_paragraphs
       >>> for paragraph in split_paragraphs('\na\nb\n\nc\nd\n\n\n'):
       ...     print paragraph
       ['a', 'b']
@@ -124,7 +124,7 @@ def test_re_substitute():
     lets us do that.
 
       >>> import re
-      >>> from canonical.launchpad.webapp.tales import re_substitute
+      >>> from lp.app.browser.stringformatter import re_substitute
 
       >>> def match_func(match):
       ...     return '[%s]' % match.group()
@@ -144,7 +144,7 @@ def test_add_word_breaks():
     15 characters, but will break on as little as 7 characters if
     there is a suitable non-alphanumeric character to break after.
 
-      >>> from canonical.launchpad.webapp.tales import add_word_breaks
+      >>> from lp.app.browser.stringformatter import add_word_breaks
 
       >>> print add_word_breaks('abcdefghijklmnop')
       abcdefghijklmno<wbr></wbr>p
@@ -167,7 +167,7 @@ def test_break_long_words():
     add word breaks to the long words.  It will not add breaks inside HTML
     tags.  Only words longer than 20 characters will have breaks added.
 
-      >>> from canonical.launchpad.webapp.tales import break_long_words
+      >>> from lp.app.browser.stringformatter import break_long_words
 
       >>> print break_long_words('1234567890123456')
       1234567890123456

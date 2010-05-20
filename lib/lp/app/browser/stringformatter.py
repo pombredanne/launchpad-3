@@ -5,8 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'add_word_breaks',
+    'break_long_words',
     'escape',
     'FormattersAPI',
+    're_substitute',
+    'split_paragraphs',
     ]
 
 import cgi
