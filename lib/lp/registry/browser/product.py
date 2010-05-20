@@ -12,9 +12,9 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
+    'ProductConfigureBase',
     'ProductConfigureAnswersView',
     'ProductConfigureBlueprintsView',
-    'ProductConfigureBugTrackerView',
     'ProductConfigureTranslationsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
@@ -72,7 +72,6 @@ from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -127,7 +126,7 @@ from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
 from canonical.widgets.product import (
-    LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
+    LicenseWidget, GhostWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -323,7 +322,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 
@@ -1302,30 +1301,6 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
-
-
-class ProductConfigureBugTrackerView(ProductConfigureBase):
-    """View class to configure the bug tracker for a project."""
-
-    label = "Configure bug tracker"
-    field_names = [
-        "bugtracker",
-        "enable_bug_expiration",
-        "remote_product",
-        "bug_reporting_guidelines",
-        ]
-    custom_widget('bugtracker', ProductBugTrackerWidget)
-
-    def validate(self, data):
-        """Constrain bug expiration to Launchpad Bugs tracker."""
-        # enable_bug_expiration is disabled by JavaScript when bugtracker
-        # is not 'In Launchpad'. The constraint is enforced here in case the
-        # JavaScript fails to activate or run. Note that the bugtracker
-        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
-        # 'In a registered bug tracker' : IBugTracker}.
-        bugtracker = data.get('bugtracker', None)
-        if bugtracker is None or IBugTracker.providedBy(bugtracker):
-            data['enable_bug_expiration'] = False
 
 
 class ProductConfigureBlueprintsView(ProductConfigureBase):

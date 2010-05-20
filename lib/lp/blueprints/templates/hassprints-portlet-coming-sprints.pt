@@ -5,7 +5,7 @@
   class="portlet" id="portlet-coming-events"
   tal:define="coming_sprints context/coming_sprints"
   tal:condition="coming_sprints"
->
+  tal:content="cache:public, 1 hour">
   <h2><span class="see-all"><a
       tal:attributes="href string:/sprints">All events</a></span>
     Coming events</h2>
