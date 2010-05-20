@@ -226,7 +226,7 @@ class BranchEditMenu(NavigationMenu):
 
     def create_recipe(self):
         enabled = config.build_from_branch.enabled
-        text = 'Create source package recipe'
+        text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
