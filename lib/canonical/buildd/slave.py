@@ -546,7 +546,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     """XMLRPC build daemon slave management interface"""
 
     def __init__(self, config):
-        xmlrpc.XMLRPC.__init__(self)
+        xmlrpc.XMLRPC.__init__(self, allowNone=True)
         # The V1.0 new-style protocol introduces string-style protocol
         # versions of the form 'MAJOR.MINOR', the protocol is '1.0' for now
         # implying the presence of /filecache/ /filecache/buildlog and
