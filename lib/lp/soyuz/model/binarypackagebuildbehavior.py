@@ -122,7 +122,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
-        reason = build.archive.checkUploadToPocket(build.distroseries,
+        reason = build.archive.checkUploadToPocket(
+            build.distro_series,
             build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
