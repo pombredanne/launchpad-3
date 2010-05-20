@@ -405,7 +405,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     def branches(self):
         target = ''
-        text = 'Branches'
+        text = 'Code'
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
