@@ -16,7 +16,7 @@ The breadcrumbs and other navigation include a link to the bug itself.
     Hierarchy: Debian > ?mozilla-firefox? package > Bug #2 (blackhole)
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
-    * Branches - http://code.launchpad.dev/debian/+source/mozilla-firefox
+    * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
     * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked

@@ -190,7 +190,7 @@ After posting the form, he sees the registered branch page.
     >>> browser.getControl('Experimental').click()
     >>> browser.getControl('Register Branch').click()
     >>> print browser.title
-    master : Branches : GNOME Terminal
+    master : Code : GNOME Terminal
 
 
 == Finding person/+addbranch ==

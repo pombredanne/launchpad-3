@@ -96,7 +96,7 @@ from lp.services.browser_helpers import get_plural_text
 
 class CodeVHostBreadcrumb(Breadcrumb):
     rootsite = 'code'
-    text = 'Branches'
+    text = 'Code'
 
 
 class BranchBadges(HasBadgeBase):
