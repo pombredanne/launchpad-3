@@ -1592,7 +1592,7 @@ COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update
 -- BuildFarmJob, and its related tables, PackageBuild, BinaryPackageBuild
 COMMENT ON TABLE BuildFarmJob IS 'BuildFarmJob: This table stores the information common to all jobs on the Launchpad build farm.';
 COMMENT ON COLUMN BuildFarmJob.processor IS 'Points to the required processor target for this job, or null.';
-COMMENT ON COLUMN BuildlFarmJob.virtualized IS 'The virtualization setting required by this build farm job, or null.';
+COMMENT ON COLUMN BuildFarmJob.virtualized IS 'The virtualization setting required by this build farm job, or null.';
 COMMENT ON COLUMN BuildFarmJob.date_created IS 'When the build farm job record was created.';
 COMMENT ON COLUMN BuildFarmJob.date_started IS 'When the build farm job started being processed.';
 COMMENT ON COLUMN BuildFarmJob.date_finished IS 'When the build farm job finished being processed.';
