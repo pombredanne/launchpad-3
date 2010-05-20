@@ -179,8 +179,16 @@ ALTER TABLE binarypackagepublishinghistory
 
 
 -- Step 4
--- Drop the old Build table.
+-- Drop the old Build table and its constraints.
 ALTER TABLE Build SET SCHEMA todrop;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__archive__fk;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__builder__fk;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__buildlog__fk;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__distroarchseries__fk;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__processor__fk;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__sourcepackagerelease__fk;
+ALTER TABLE todrop.Build DROP CONSTRAINT build__upload_log__fk;
+
 
 -- Step 5
 -- Update views that reference the build table:
