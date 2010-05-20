@@ -2371,3 +2371,10 @@ COMMENT ON TABLE DatabaseReplicationLag IS 'A cached snapshot of database replic
 COMMENT ON COLUMN DatabaseReplicationLag.node IS 'The Slony node number identifying the slave database.';
 COMMENT ON COLUMN DatabaseReplicationLag.lag IS 'lag time.';
 COMMENT ON COLUMN DatabaseReplicationLag.updated IS 'When this value was updated.';
+
+-- DatabaseTableStats
+COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let us calculate arbitrary deltas';
+
+-- DatabaseCpuStats
+COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
+COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';
