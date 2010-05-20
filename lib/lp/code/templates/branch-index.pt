@@ -103,9 +103,10 @@
   <div class="yui-g" tal:condition="view/show_merge_links">
 
     <div class="portlet" id="branch-merges">
-      <h2>Branch merges</h2>
       <tal:branch-pending-merges
           replace="structure context/@@++branch-pending-merges" />
+      <tal:branch-pending-merges
+          replace="structure context/@@++branch-recipes" />
     </div>
 
   </div>

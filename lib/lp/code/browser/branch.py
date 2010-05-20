@@ -197,7 +197,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete', 'create_recipe')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -224,11 +224,6 @@ class BranchEditMenu(NavigationMenu):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
-    def create_recipe(self):
-        enabled = config.build_from_branch.enabled
-        text = 'Create packaging recipe'
-        return Link('+new-recipe', text, enabled=enabled, icon='add')
-
 
 class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
@@ -236,7 +231,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'add_subscriber', 'browse_revisions', 'link_bug',
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
@@ -321,6 +316,11 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             enabled = True
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
+
+    def create_recipe(self):
+        enabled = config.build_from_branch.enabled
+        text = 'Create packaging recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
 class DecoratedBug:
@@ -468,6 +468,16 @@ class BranchView(LaunchpadView, FeedsMixin):
         candidates = self.context.landing_candidates
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
+
+    @property
+    def recipe_count_text(self):
+        count = self.context.getRecipes().count()
+        if count == 0:
+            return 'No recipes'
+        elif count == 1:
+            return '1 recipe'
+        else:
+            return '%s recipes' % count
 
     @property
     def is_import_branch_with_no_landing_candidates(self):

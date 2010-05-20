@@ -3,6 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
+  <h2>Branch merges</h2>
   <div id="merge-links"
        tal:condition="view/show_merge_links"
        tal:define="context_menu context/menu:context">
