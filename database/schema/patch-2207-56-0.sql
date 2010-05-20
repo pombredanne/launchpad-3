@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 56, 0);
 
 /*
 Existing Schema:
