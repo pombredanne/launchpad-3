@@ -50,6 +50,8 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         adapter, context = view.adapters.popitem()
         self.assertEqual(BugSupervisorEditSchema, adapter)
         self.assertEqual(self.product, context)
+        self.assertEqual('http://launchpad.dev/boing', view.next_url)
+        self.assertEqual('http://launchpad.dev/boing', view.cancel_url)
 
     def test_owner_appoint_self_from_none(self):
         # This also verifies that displaynames are escaped.
