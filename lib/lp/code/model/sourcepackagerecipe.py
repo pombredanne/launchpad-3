@@ -166,17 +166,6 @@ class SourcePackageRecipe(Storm):
             Not(_SourcePackageRecipeDistroSeries.distroseries_id.is_in(
                 up_to_date_distroseries)))
 
-    @classmethod
-    def requestDailyBuilds(cls):
-        candidates = cls.findStaleDailyBuilds()
-        builds = []
-        for candidate in candidates:
-            recipe = candidate.sourcepackage_recipe
-            builds.append(
-                recipe.requestBuild(recipe.daily_build_archive, recipe.owner,
-                candidate.distroseries, PackagePublishingPocket.RELEASE))
-        return builds
-
     def destroySelf(self):
         store = Store.of(self)
         self.distroseries.clear()

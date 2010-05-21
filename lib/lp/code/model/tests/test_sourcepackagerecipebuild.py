@@ -25,6 +25,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.code.model import SourcePackageRecipeBuild
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 
@@ -186,6 +187,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
 
+    def test_makeDailyBuilds(self):
+        self.assertEqual([],
+            SourcePackageRecipeBuild.makeDailyBuilds())
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        build = SourcePackageRecipe.makeDailyBuilds()[0]
+        self.assertEqual(recipe, build.recipe)
+        self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
 
 def test_suite():

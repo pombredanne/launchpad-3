@@ -348,14 +348,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             set((sprd.sourcepackage_recipe, sprd.distroseries) for sprd
                 in SourcePackageRecipe.findStaleDailyBuilds()))
 
-    def test_requestDailyBuilds(self):
-        self.assertEqual([],
-            SourcePackageRecipe.requestDailyBuilds())
-        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
-        build = SourcePackageRecipe.requestDailyBuilds()[0]
-        self.assertEqual(recipe, build.recipe)
-        self.assertEqual(list(recipe.distroseries), [build.distroseries])
-
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 

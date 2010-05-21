@@ -83,6 +83,9 @@ class ISourcePackageRecipeBuildSource(Interface):
         :return: `ISourcePackageRecipeBuild`.
         """
 
+    def makeDailyBuilds():
+        """Create and return builds for stale ISourcePackageRecipes."""
+
     def getById(build_id):
         """Return the `ISourcePackageRecipeBuild` for the given build id.
 

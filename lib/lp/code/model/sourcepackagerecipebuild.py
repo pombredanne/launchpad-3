@@ -187,6 +187,18 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store.add(spbuild)
         return spbuild
 
+    @staticmethod
+    def makeDailyBuilds():
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        candidates = SourcePackageRecipe.findStaleDailyBuilds()
+        builds = []
+        for candidate in candidates:
+            recipe = candidate.sourcepackage_recipe
+            builds.append(
+                recipe.requestBuild(recipe.daily_build_archive, recipe.owner,
+                candidate.distroseries, PackagePublishingPocket.RELEASE))
+        return builds
+
     def destroySelf(self):
         store = Store.of(self)
         job = self.buildqueue_record.job
