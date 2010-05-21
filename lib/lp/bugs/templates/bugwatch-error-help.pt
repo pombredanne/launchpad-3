@@ -15,10 +15,16 @@
       fails to update, Launchpad records what went wrong.
     </p>
     <a name="UNKNOWN"></a>
-    <h2>Unknown</h2>
+    <h2>Unknown error</h2>
+    <h3>What went wrong?</h3>
     <p>
       Launchpad encountered an unexpected error when trying to retrieve
       the bug from the remote server.
+    </p>
+    <h3>How can I help fix it?</h3>
+    <p>
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
+      know about the problem.
     </p>
     <a name="BUG_NOT_FOUND"></a>
     <h2>Bug Not Found</h2>
@@ -53,11 +59,12 @@
     <h2>Invalid Bug ID</h2>
     <h3>What went wrong?</h3>
     <p>
-      The specified bug ID is not valid.
+      The remote bug ID that the bug watch is linked it isn't valid on
+      the remote bug tracker.
     </p>
     <h3>How can I help fix it?</h3>
     <p>
-      XXX No idea.
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
     </p>
     <a name="TIMEOUT"></a>
     <h2>Timeout</h2>
@@ -67,6 +74,9 @@
       remote server and was unable to retrieve the bug's status.
     </p>
     <h3>How can I help fix it?</h3>
+    <p>
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
+    </p>
     <p>
       Check that the remote bug tracker
       (<a tal:replace="structure watch/bugtracker/fmt:external-link" />)
@@ -101,7 +111,7 @@
     </p>
     <h3>How can I help fix it?</h3>
     <p>
-      XXX No idea.
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
     </p>
     <a name="UNSUPPORTED_BUG_TRACKER"></a>
     <h2>Unsupported Bugtracker</h2>
@@ -125,7 +135,10 @@
     </p>
     <h3>How can I help fix it?</h3>
     <p>
-      XXX No idea.
+      Unfortunately there isn't a lot that can be done about this.
+      You can manually update any bug task linked to the bug watch by
+      choosing "None, the status of the bug is updated manually" for
+      the Remote Watch option of each linked bug task.
     </p>
     <a name="COMMENT_IMPORT_FAILED"></a>
     <h2>Unable to import comments</h2>
