@@ -1019,7 +1019,7 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
-    def checkUpload(self, person, distroseries, sourcepackagename, component, 
+    def checkUpload(self, person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """See `IArchive`."""
         reason = self.checkUploadToPocket(distroseries, pocket)
@@ -1837,9 +1837,14 @@ class ArchiveSet:
         """See `IArchiveSet`."""
         cur = cursor()
         query = """
-            SELECT buildstate, count(id) FROM Build
-            WHERE archive = %s AND distroarchseries = %s
-            GROUP BY buildstate ORDER BY buildstate;
+            SELECT BuildFarmJob.status, count(BuildFarmJob.id) FROM
+            BinaryPackageBuild, PackageBuild, BuildFarmJob
+            WHERE
+                BinaryPackageBuild.package_build = PackageBuild.id AND
+                PackageBuild.build_farm_job = BuildFarmJob.id AND
+                PackageBuild.archive = %s AND
+                BinaryPackageBuild.distro_arch_series = %s
+            GROUP BY BuildFarmJob.status ORDER BY BuildFarmJob.status;
         """ % sqlvalues(archive, distroarchseries)
         cur.execute(query)
         result = cur.fetchall()

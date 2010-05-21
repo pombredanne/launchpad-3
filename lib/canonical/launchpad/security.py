@@ -1477,8 +1477,8 @@ class EditBinaryPackageBuild(EditPackageBuild):
         # strict_component is True because the source package already exists,
         # otherwise, how can they give it back?
         check_perms = self.obj.archive.checkUpload(
-            user.person, self.obj.distroseries,
-            self.obj.sourcepackagerelease.sourcepackagename,
+            user.person, self.obj.distro_series,
+            self.obj.source_package_release.sourcepackagename,
             self.obj.current_component, self.obj.pocket,
             strict_component=True)
         return check_perms == None
