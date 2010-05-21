@@ -17,7 +17,7 @@ from lazr.delegates import delegates
 
 from pytz import utc
 from storm.locals import (
-    Bool, Desc, Int, Not, Reference, ReferenceSet, Select, Store, Storm,
+    And, Bool, Desc, Int, Not, Reference, ReferenceSet, Select, Store, Storm,
     Unicode)
 
 from zope.component import getUtility
@@ -31,8 +31,10 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeData)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
+from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
@@ -49,7 +51,10 @@ class _SourcePackageRecipeDistroSeries(Storm):
     __storm_table__ = "SourcePackageRecipeDistroSeries"
     id = Int(primary=True)
     sourcepackagerecipe_id = Int(name='sourcepackagerecipe', allow_none=False)
+    sourcepackage_recipe = Reference(
+        sourcepackagerecipe_id, 'SourcePackageRecipe.id')
     distroseries_id = Int(name='distroseries', allow_none=False)
+    distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
 
 class SourcePackageRecipe(Storm):
@@ -122,8 +127,9 @@ class SourcePackageRecipe(Storm):
         return str(self.builder_recipe)
 
     @staticmethod
-    def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe, description, build_daily=False):
+    def new(registrant, owner, sourcepackagename, name,
+            builder_recipe, description, distroseries=None,
+            daily_build_archive=None, build_daily=False):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -132,24 +138,44 @@ class SourcePackageRecipe(Storm):
         sprecipe.owner = owner
         sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
-        for distroseries_item in distroseries:
-            sprecipe.distroseries.add(distroseries_item)
+        if distroseries is not None:
+            for distroseries_item in distroseries:
+                sprecipe.distroseries.add(distroseries_item)
         sprecipe.description = description
+        sprecipe.daily_build_archive = daily_build_archive
         sprecipe.build_daily = build_daily
         store.add(sprecipe)
         return sprecipe
 
     @classmethod
-    def findDailyBuilds(cls, now=None):
-        if now is None:
-            now = datetime.datetime.now(utc)
+    def findStaleDailyBuilds(cls):
         store = IStore(cls)
-        yesterday = now - datetime.timedelta(days=1)
-        recently_built = Select(
-            SourcePackageRecipeBuild.recipe_id,
-            SourcePackageRecipeBuild.datebuilt > yesterday)
+        # Distroseries which have been built since the base branch was
+        # modified.
+        up_to_date_distroseries = Select(
+            SourcePackageRecipeBuild.distroseries_id,
+            And(
+                SourcePackageRecipeData.sourcepackage_recipe_id ==
+                SourcePackageRecipeBuild.recipe_id,
+                SourcePackageRecipeData.base_branch_id == Branch.id,
+                Branch.date_last_modified <
+                SourcePackageRecipeBuild.datebuilt))
         return store.find(
-            cls, cls.build_daily == True, Not(cls.id.is_in(recently_built)))
+            _SourcePackageRecipeDistroSeries, cls.build_daily == True,
+            _SourcePackageRecipeDistroSeries.sourcepackagerecipe_id == cls.id,
+            Not(_SourcePackageRecipeDistroSeries.distroseries_id.is_in(
+                up_to_date_distroseries)))
+
+    @classmethod
+    def requestDailyBuilds(cls):
+        candidates = cls.findStaleDailyBuilds()
+        builds = []
+        for candidate in candidates:
+            recipe = candidate.sourcepackage_recipe
+            builds.append(
+                recipe.requestBuild(recipe.daily_build_archive, recipe.owner,
+                candidate.distroseries, PackagePublishingPocket.RELEASE))
+        return builds
 
     def destroySelf(self):
         store = Store.of(self)

@@ -319,24 +319,42 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
-    def test_findDailyBuilds_requires_build_daily(self):
+    def test_findStaleDailyBuilds_requires_build_daily(self):
         recipe = self.factory.makeSourcePackageRecipe()
-        self.assertContentEqual([], SourcePackageRecipe.findDailyBuilds())
+        self.assertContentEqual([], SourcePackageRecipe.findStaleDailyBuilds())
         removeSecurityProxy(recipe).build_daily = True
-        self.assertContentEqual([recipe],
-            SourcePackageRecipe.findDailyBuilds())
+        self.assertEqual([recipe],
+            [sprd.sourcepackage_recipe for sprd
+             in SourcePackageRecipe.findStaleDailyBuilds()])
 
-    def test_findDailyBuilds_requires_no_builds_in_24_hours(self):
+    def test_findStaleDailyBuilds_for_modified_base_branch(self):
         recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
         now = self.factory.getUniqueDate()
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        self.assertEqual([recipe],
+            [sprd.sourcepackage_recipe for sprd
+             in SourcePackageRecipe.findStaleDailyBuilds()])
+        recipe.base_branch.date_last_modified = now - timedelta(hours=1)
+        build = recipe.requestBuild(
+            archive=recipe.daily_build_archive, requester=recipe.owner,
+            distroseries=list(recipe.distroseries)[0],
+            pocket=PackagePublishingPocket.RELEASE)
         removeSecurityProxy(build).datebuilt = now
-        self.assertContentEqual(
-            [], SourcePackageRecipe.findDailyBuilds(now=now))
-        removeSecurityProxy(build).datebuilt = now - timedelta(days=1)
-        self.assertContentEqual(
-            [recipe], SourcePackageRecipe.findDailyBuilds(now=now))
+        self.assertContentEqual([], SourcePackageRecipe.findStaleDailyBuilds())
+        distro2 = self.factory.makeDistroSeries()
+        distro3 = self.factory.makeDistroSeries()
+        recipe.distroseries.add(distro2)
+        recipe.distroseries.add(distro3)
+        self.assertContentEqual(set([(recipe, distro2), (recipe, distro3)]),
+            set((sprd.sourcepackage_recipe, sprd.distroseries) for sprd
+                in SourcePackageRecipe.findStaleDailyBuilds()))
 
+    def test_requestDailyBuilds(self):
+        self.assertEqual([],
+            SourcePackageRecipe.requestDailyBuilds())
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        build = SourcePackageRecipe.requestDailyBuilds()[0]
+        self.assertEqual(recipe, build.recipe)
+        self.assertEqual(list(recipe.distroseries), [build.distroseries])
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
