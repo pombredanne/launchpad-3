@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import datetime
+import sys
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -24,6 +25,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from canonical.launchpad.webapp import errorlog
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
@@ -194,9 +196,16 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         builds = []
         for candidate in candidates:
             recipe = candidate.sourcepackage_recipe
-            builds.append(
-                recipe.requestBuild(recipe.daily_build_archive, recipe.owner,
-                candidate.distroseries, PackagePublishingPocket.RELEASE))
+            try:
+                build = recipe.requestBuild(recipe.daily_build_archive,
+                    recipe.owner, candidate.distroseries,
+                    PackagePublishingPocket.RELEASE)
+            except:
+                info = sys.exc_info()
+                errorlog.globalErrorUtility.raising(info)
+            else:
+                builds.append(build)
+
         return builds
 
     def destroySelf(self):

@@ -10,6 +10,8 @@ import transaction
 
 from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.scripts.tests import run_script
+from lp.soyuz.interfaces.archive import (
+    default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.testing import TestCaseWithFactory
 
 
@@ -35,9 +37,10 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
         self.assertEqual(1, pack_recipe.getBuilds(True).count())
 
     def test_request_daily_builds_oops(self):
-        """Ensure the request_daily_builds script requests daily builds."""
-        recipe = self.factory.makeSourcePackageRecipe()
-        recipe.daily_build_archive.disable()
+        """Ensure errors are handled cleanly."""
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        recipe = self.factory.makeSourcePackageRecipe(
+            daily_build_archive=archive, build_daily=True)
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/request_daily_builds.py', [])

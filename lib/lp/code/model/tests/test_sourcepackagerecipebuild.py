@@ -25,7 +25,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
-from lp.code.model import SourcePackageRecipeBuild
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
 
