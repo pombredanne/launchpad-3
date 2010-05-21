@@ -1,8 +1,18 @@
-launchpad-buildd (60.1) lucid-cat; urgency=low
+launchpad-buildd (61) UNRELEASED; urgency=high
 
-  * Improve output of build xmplrpc call.
+  [William Grant]
+  * Fixed translation templates slave to return files properly. LP#549422
 
- -- Henning Eggers <henning@canonical.com>  Mon, 17 May 2010 15:58:48 +0200
+  [Danilo Segan]
+  * Added more output to generate-translation-templates. LP#580345
+
+  [Henning Eggers]
+  * Improved output of build xmplrpc call, not returning None now. LP#581746
+  * Added apache2 dependency. LP#557634
+  * Added preinst script to prevent installation when a build is running.
+    LP#557347
+
+ -- Henning Eggers <henning@canonical.com>  Wed, 19 May 2010 18:51:38 +0200
 
 launchpad-buildd (60) lucid-cat; urgency=low
 
