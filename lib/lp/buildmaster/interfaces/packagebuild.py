@@ -82,7 +82,7 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def getUploaderCommand(distro_series, upload_leaf, uploader_logfilename):
+    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the

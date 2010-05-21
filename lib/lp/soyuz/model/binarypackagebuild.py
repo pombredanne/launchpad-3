@@ -628,7 +628,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         else:
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
-                self.date_finished - self.date_started).approximateduration()
+                self.duration).approximateduration()
             buildlog_url = self.log_url
             builder_url = canonical_url(self.builder)
 

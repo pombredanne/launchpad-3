@@ -115,7 +115,7 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
              os.path.abspath(config.builddmaster.root),
              ])
         uploader_command = build_base.getUploaderCommand(
-            upload_leaf, log_file)
+            build_base, upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
 
 
