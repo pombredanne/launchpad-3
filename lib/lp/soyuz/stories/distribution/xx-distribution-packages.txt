@@ -140,9 +140,11 @@ archive as well as some new PPAs.
     ...     distroseries=ubuntutest['hoary-test'])
 
     # Next, we'll create some related netapplet publishings in some PPAs.
-    >>> ppa_nightly = factory.makeArchive(name="nightly",
+    >>> odd_owner = factory.makePerson(name='odd')
+    >>> ppa_nightly = factory.makeArchive(name="nightly", owner=odd_owner,
     ...                                   distribution=ubuntutest)
-    >>> ppa_beta = factory.makeArchive(name="beta",
+    >>> even_owner = factory.makePerson(name='even')
+    >>> ppa_beta = factory.makeArchive(name="beta", owner=even_owner,
     ...                                distribution=ubuntutest)
 
 The 'ppa_disabled' archive added below will be disabled at the end of this
@@ -213,7 +215,7 @@ The page has an appropriate title and main heading.
     Hierarchy: Ubuntu > ?iceweasel? package
     Tabs:
     * Overview (selected) - not linked
-    * Branches - http://code.launchpad.dev/ubuntu/+source/iceweasel
+    * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/iceweasel
     * Blueprints - not linked
     * Translations - not linked
@@ -373,9 +375,9 @@ At the bottom of the page, the three latest PPA uploads of this source package
 are displayed.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'ppa_packaging'))
-    PPA named nightly for Person-name2 owned by Person-name2
+    PPA named nightly for Odd owned by Odd
       Versions: Breezy Badger Autotest (0.8.2n3)
-    PPA named beta for Person-name5 owned by Person-name5
+    PPA named beta for Even owned by Even
       Versions: Breezy Badger Autotest (0.8.1), Hoary Mock (0.8.0)
 
 A link to further PPA searches is also included.
@@ -405,7 +407,7 @@ the index page.
     Hierarchy: Ubuntu > ?foobar? package > Change log
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
-    * Branches - http://code.launchpad.dev/ubuntu/+source/foobar
+    * Code - http://code.launchpad.dev/ubuntu/+source/foobar
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/foobar
     * Blueprints - not linked
     * Translations - not linked
@@ -598,7 +600,7 @@ source package hierarchy.
     Hierarchy: Ubuntu > ?alsa-utils? package > Publishing history
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
-    * Branches - http://code.launchpad.dev/ubuntu/+source/alsa-utils
+    * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/+source/alsa-utils
     * Blueprints - not linked
     * Translations - not linked

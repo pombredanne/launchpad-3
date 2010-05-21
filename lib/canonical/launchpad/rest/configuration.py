@@ -26,7 +26,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
     active_versions = ["beta", "1.0", "devel"]
     last_version_with_mutator_named_operations = "beta"
     view_permission = "launchpad.View"
-    set_hop_by_hop_headers = True
+    compensate_for_mod_compress_etag_modification = True
 
     service_description = """The Launchpad web service allows automated
         clients to access most of the functionality available on the

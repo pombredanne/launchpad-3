@@ -127,7 +127,8 @@
         </div>
 
         <div class="yui-u">
-          <div class="portlet">
+          <div class="portlet"
+            tal:content="cache:public, 1 hour">
             <h2>Activities</h2>
 
             <dl>
@@ -205,7 +206,8 @@
           targeted
         </h2>
 
-        <tal:has_specs condition="specs">
+        <tal:has_specs condition="specs"
+          tal:content="cache:public, 1 hour">
           <table class="listing sortable" id="milestone_specs"
             style="margin-bottom: 2em;">
             <thead>
@@ -262,7 +264,8 @@
           </table>
         </tal:has_specs>
 
-        <tal:has_bugtasks condition="bugtasks">
+        <tal:has_bugtasks condition="bugtasks"
+          tal:content="cache:private, 1 hour">
           <table class="listing sortable" id="milestone_bugtasks">
             <thead>
               <tr>

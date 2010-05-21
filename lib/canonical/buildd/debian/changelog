@@ -1,3 +1,9 @@
+launchpad-buildd (60.1) lucid-cat; urgency=low
+
+  * Improve output of build xmplrpc call.
+
+ -- Henning Eggers <henning@canonical.com>  Mon, 17 May 2010 15:58:48 +0200
+
 launchpad-buildd (60) lucid-cat; urgency=low
 
   * Depends: lsb-release, which is ubuntu-minimal, but not essential.
