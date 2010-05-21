@@ -8,9 +8,12 @@ __all__ = [
     'LaunchpadWebServiceConfiguration',
 ]
 
+import storm
+
 from zope.component import getUtility
 
-from lazr.restful.simple import BaseWebServiceConfiguration
+from lazr.restful.simple import (
+    BaseRepresentationCache, BaseWebServiceConfiguration)
 from lp.services.memcache.client import memcache_client_factory
 
 from canonical.config import config
@@ -20,28 +23,29 @@ from canonical.launchpad.webapp.servers import (
 
 from canonical.launchpad import versioninfo
 
-class RepresentationCache(dict):
-
-    def __setitem__(self, key, value):
-        super(RepresentationCache, self).__setitem__(key, value)
-
-
-class MemcachedRepresentationCache:
+class MemcachedStormRepresentationCache(BaseRepresentationCache):
+    """A way to cache representations of Storm objects in memcached."""
 
     def __init__(self):
         self.client = memcache_client_factory()
 
-    def key_for(self, obj):
-        import pdb; pdb.set_trace()
+    def key_for(self, obj, media_type, version):
+        storm_info = storm.info.get_obj_info(obj)
+        table_name = storm_info.cls_info.table
+        primary_key = tuple(var.get() for var in storm_info.primary_vars)
+        return (table_name + repr(primary_key)
+                + ',' + media_type + ',' + str(version))
 
     def get(self, key, default=None):
-        return self.client.get(key.encode('utf-8')) or default
+        return self.client.get(key) or default
 
     def __setitem__(self, key, value):
-        self.client.set(key.encode('utf-8'), value)
+        self.client.set(key, value)
 
-    def __delitem__(self, key):
-        self.client.delete(key.encode('utf-8'))
+    def delete_by_key(self, key):
+        print "Deleting " + repr(key)
+        self.client.delete(key)
+
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
