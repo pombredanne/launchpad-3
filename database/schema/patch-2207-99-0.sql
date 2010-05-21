@@ -54,6 +54,7 @@ CREATE UNIQUE INDEX binarypackagebuild__package_build__idx ON binarypackagebuild
 -- CREATE INDEX binarypackagebuild__distro_arch_series__status__idx ON binarypackagebuild(distro_arch_series, status?)
 -- CREATE INDEX binarypackagebuild__distro_arch_series__date_finished ON binarypackagebuild(distro_arch_series, date_finished)
 CREATE INDEX binarypackagebuild__source_package_release_idx ON binarypackagebuild(source_package_release);
+CREATE INDEX binarypackagebuild__distro_arch_series__idx ON BinaryPackageBuild(distro_arch_series);
 
 -- Step 2
 -- Migrate the current data from the build table to the newly created
@@ -92,6 +93,7 @@ BEGIN
             build.build_warnings -- We don't seem to use this in LP code at all?
         FROM
             build JOIN archive ON build.archive = archive.id
+        ORDER BY Build.id
     LOOP
         -- For url consistency, we'll give the new records the same id as the
         -- old builds.
