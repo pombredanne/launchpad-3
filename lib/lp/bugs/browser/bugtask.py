@@ -1218,11 +1218,8 @@ class BugTaskBugWatchMixin:
 
         if bug_watch.last_error_type in error_message_mapping:
             message = error_message_mapping[bug_watch.last_error_type]
-        elif bug_watch.last_error_type != BugWatchActivityStatus.UNKNOWN:
-            message = bug_watch.last_error_type.description
         else:
-            message = ("Launchpad couldn't import bug #%(bug)s from "
-                "%(bugtracker)s.")
+            message = bug_watch.last_error_type.description
 
         error_data = {
             'bug': bug_watch.remotebug,
