@@ -169,7 +169,7 @@
       know about the problem.
     </p>
     <a name="BACKLINK_FAILED"></a>
-    <h2>Unable to set link remote bug to Launchpad</h2>
+    <h2>Unable to set the link to the Launchpad bug on the remote server</h2>
     <h3>What went wrong?</h3>
     <p>
       The remote bug's status and comments were synchronized sucessfully
