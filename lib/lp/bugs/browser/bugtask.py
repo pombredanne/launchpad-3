@@ -115,6 +115,7 @@ from lp.bugs.interfaces.bugtask import (
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distribution import IDistribution
@@ -1176,7 +1177,65 @@ def get_prefix(bugtask):
     return '_'.join(parts)
 
 
-class BugTaskEditView(LaunchpadEditFormView):
+class BugTaskBugWatchMixin:
+
+    @property
+    def bug_watch_error_message(self):
+        """Return a browser-useable error message for a bug watch."""
+        if not self.context.bugwatch:
+            return None
+
+        bug_watch = self.context.bugwatch
+        if not bug_watch.last_error_type:
+            return None
+
+        error_message_mapping = {
+            BugWatchActivityStatus.BUG_NOT_FOUND: "%(bugtracker)s bug #"
+                "%(bug)s appears not to exist. Check that the bug "
+                "number is correct.",
+            BugWatchActivityStatus.CONNECTION_ERROR: "Launchpad couldn't "
+                "connect to %(bugtracker)s.",
+            BugWatchActivityStatus.INVALID_BUG_ID: "Bug ID %(bug)s isn't "
+                "valid on %(bugtracker)s. Check that the bug ID is "
+                "correct.",
+            BugWatchActivityStatus.TIMEOUT: "Launchpad's connection to "
+                "%(bugtracker)s timed out.",
+            BugWatchActivityStatus.UNKNOWN: "Launchpad couldn't import bug "
+                "#%(bug)s from " "%(bugtracker)s.",
+            BugWatchActivityStatus.UNPARSABLE_BUG: "Launchpad couldn't "
+                "extract a status from %(bug)s on %(bugtracker)s.",
+            BugWatchActivityStatus.UNPARSABLE_BUG_TRACKER: "Launchpad "
+                "couldn't determine the version of %(bugtrackertype)s "
+                "running on %(bugtracker)s.",
+            BugWatchActivityStatus.UNSUPPORTED_BUG_TRACKER: "Launchpad "
+                "doesn't support importing bugs from %(bugtrackertype)s"
+                " bug trackers.",
+            BugWatchActivityStatus.PRIVATE_REMOTE_BUG: "The bug is marked as "
+                "private on the remote bug tracker. Launchpad cannot import "
+                "the status of private remote bugs.",
+            }
+
+        if bug_watch.last_error_type in error_message_mapping:
+            message = error_message_mapping[bug_watch.last_error_type]
+        elif bug_watch.last_error_type != BugWatchActivityStatus.UNKNOWN:
+            message = bug_watch.last_error_type.description
+        else:
+            message = ("Launchpad couldn't import bug #%(bug)s from "
+                "%(bugtracker)s.")
+
+        error_data = {
+            'bug': bug_watch.remotebug,
+            'bugtracker': bug_watch.bugtracker.title,
+            'bugtrackertype': bug_watch.bugtracker.bugtrackertype.title}
+
+        return {
+            'message': message % error_data,
+            'help_url': '/+help/bug-watch-errors.html#%s' % (
+                bug_watch.last_error_type.name),
+            }
+
+
+class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
@@ -3264,7 +3323,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             return None
 
 
-class BugTaskTableRowView(LaunchpadView):
+class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     """Browser class for rendering a bugtask row on the bug page."""
 
     is_conjoined_slave = None
@@ -3841,3 +3900,4 @@ class BugTaskBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return self.context.bug.displayname
+
