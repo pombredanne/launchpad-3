@@ -1178,6 +1178,7 @@ def get_prefix(bugtask):
 
 
 class BugTaskBugWatchMixin:
+    """A mixin to be used where a BugTask view displays BugWatch data."""
 
     @property
     def bug_watch_error_message(self):
@@ -1230,7 +1231,8 @@ class BugTaskBugWatchMixin:
 
         return {
             'message': message % error_data,
-            'help_url': '/+help/bug-watch-errors.html#%s' % (
+            'help_url': '%s#%s' % (
+                canonical_url(bug_watch, view_name="+error-help"),
                 bug_watch.last_error_type.name),
             }
 
