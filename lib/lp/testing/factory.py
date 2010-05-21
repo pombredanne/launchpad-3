@@ -1759,7 +1759,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
                                 distroseries=None, sourcepackagename=None,
-                                name=None, description=None, branches=()):
+                                name=None, description=None, branches=(),
+                                build_daily=False):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1783,7 +1784,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, [distroseries], sourcepackagename, name,
-            recipe, description)
+            recipe, description, build_daily)
         IStore(source_package_recipe).flush()
         return source_package_recipe
 

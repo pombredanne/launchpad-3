@@ -10,17 +10,21 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+import datetime
+
 from bzrlib.plugins.builder import RecipeParser
 from lazr.delegates import delegates
 
+from pytz import utc
 from storm.locals import (
-    Bool, Desc, Int, Reference, ReferenceSet, Store, Storm, Unicode)
+    Bool, Desc, Int, Not, Reference, ReferenceSet, Select, Store, Storm,
+    Unicode)
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
@@ -119,7 +123,7 @@ class SourcePackageRecipe(Storm):
 
     @staticmethod
     def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe, description):
+            builder_recipe, description, build_daily=False):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -131,8 +135,21 @@ class SourcePackageRecipe(Storm):
         for distroseries_item in distroseries:
             sprecipe.distroseries.add(distroseries_item)
         sprecipe.description = description
+        sprecipe.build_daily = build_daily
         store.add(sprecipe)
         return sprecipe
+
+    @classmethod
+    def findDailyBuilds(cls, now=None):
+        if now is None:
+            now = datetime.datetime.now(utc)
+        store = IStore(cls)
+        yesterday = now - datetime.timedelta(days=1)
+        recently_built = Select(
+            SourcePackageRecipeBuild.recipe_id,
+            SourcePackageRecipeBuild.datebuilt > yesterday)
+        return store.find(
+            cls, cls.build_daily == True, Not(cls.id.is_in(recently_built)))
 
     def destroySelf(self):
         store = Store.of(self)

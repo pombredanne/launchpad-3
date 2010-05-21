@@ -7,7 +7,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import textwrap
 import unittest
 
@@ -36,7 +36,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipe import (
-    NonPPABuildRequest)
+    NonPPABuildRequest, SourcePackageRecipe)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
@@ -318,6 +318,25 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+    def test_findDailyBuilds_requires_build_daily(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        self.assertContentEqual([], SourcePackageRecipe.findDailyBuilds())
+        removeSecurityProxy(recipe).build_daily = True
+        self.assertContentEqual([recipe],
+            SourcePackageRecipe.findDailyBuilds())
+
+    def test_findDailyBuilds_requires_no_builds_in_24_hours(self):
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        now = self.factory.getUniqueDate()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        removeSecurityProxy(build).datebuilt = now
+        self.assertContentEqual(
+            [], SourcePackageRecipe.findDailyBuilds(now=now))
+        removeSecurityProxy(build).datebuilt = now - timedelta(days=1)
+        self.assertContentEqual(
+            [recipe], SourcePackageRecipe.findDailyBuilds(now=now))
+
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
