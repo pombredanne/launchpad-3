@@ -18,8 +18,6 @@ import logging
 import os
 import transaction
 
-from storm.store import Store
-
 from twisted.application import service
 from twisted.internet import defer, reactor
 from twisted.protocols.policies import TimeoutMixin
@@ -31,6 +29,8 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian.db import write_transaction
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.interfaces.buildbase import BUILDD_MANAGER_LOG_NAME
@@ -220,22 +220,31 @@ class SlaveScanner:
 
     SCAN_INTERVAL = 5
 
-    def __init__(self, builder, logger):
-        self.builder = builder
+    def __init__(self, builder_name, logger):
         # XXX in the original code, it doesn't set the slave as as
         # RecordingSlave until tries to dispatch a build.  This is the
         # only part that's using Deferreds right now, and can be
         # improved if we add more methods to RecordingSlave.  In fact we
         # should use it exclusively and remove the wrapper hack.
+        self.builder_name = builder_name
         self.logger = logger
         self.scheduleNextScanCycle()
 
     def scheduleNextScanCycle(self):
+        self._deferred_list = []
         reactor.callLater(self.SCAN_INTERVAL, self.startCycle)
 
     def startCycle(self):
         """Main entry point for each scan cycle on this builder."""
-        self.logger.info("Scanning builder: %s" % self.builder.name)
+        self.logger.debug("Scanning builder: %s" % self.builder_name)
+
+        # We need to re-fetch the builder object on each cycle as the
+        # Storm store is invalidated over transaction boundaries.
+
+        # Avoid circular import.
+        from lp.buildmaster.interfaces.builder import IBuilderSet
+        builder_set = getUtility(IBuilderSet)
+        self.builder = builder_set[self.builder_name]
         
         d = defer.maybeDeferred(self.scan)
         d.addCallback(self.resumeAndDispatch)
@@ -253,7 +262,9 @@ class SlaveScanner:
             transaction.commit()
 
         # See if we think there's an active build on the builder.
-        buildqueue = Store.of(self.builder).find(
+        store = store = getUtility(
+            IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        buildqueue = store.find(
             BuildQueue,
             BuildQueue.job == Job.id,
             BuildQueue.builder == self.builder.id,
@@ -318,10 +329,9 @@ class SlaveScanner:
 
             # Use Twisted events to dispatch the build to the slave.
             d.addCallback(self.initiateDispatch, slave)
-
-            # Chain a method that will get called with the return value
-            # of dispatchBuild() results when it finishes.
-            d.addBoth(self.evaluateDispatchResult)
+            # Store this deferred so we can wait for it along with all
+            # the others that will be generated.
+            self._deferred_list.append(d)
         else:
             # The scan for this builder didn't want to dispatch
             # anything, so we can finish this cycle.
@@ -343,6 +353,7 @@ class SlaveScanner:
         an error occurrs.
         """
         if resume_result is not None:
+            self.waitOnDeferredList()
             return resume_result
 
         self.logger.info('Dispatching: %s' % slave)
@@ -361,6 +372,7 @@ class SlaveScanner:
         """Dispatch the next XMLRPC for the given slave."""
         if len(slave.calls) == 0:
             # That's the end of the dialogue with the slave.
+            self.waitOnDeferredList()
             return
 
         # Get an XMPRPC proxy for the buildd slave.
@@ -368,7 +380,14 @@ class SlaveScanner:
         method, args = slave.calls.pop(0)
         d = proxy.callRemote(method, *args)
         d.addBoth(self.checkDispatch, method, slave)
+        self._deferred_list.append(d)
         self.logger.debug('%s -> %s(%s)' % (slave, method, args))
+
+    def waitOnDeferredList(self):
+        """After all the Deferreds are set up, wait on them."""
+        dl = defer.DeferredList(self._deferred_list, consumeErrors=True)
+        dl.addBoth(self.evaluateDispatchResult)
+        return dl
 
     def evaluateDispatchResult(self, dispatch_result):
         """Process the DispatchResult for this dispatch chain.
@@ -377,13 +396,13 @@ class SlaveScanner:
         DispatchResult to evaluate, which deals with the result of
         dispatching.
         """
-        status, result = dispatch_result
-        if not isinstance(result, BaseDispatchResult):
-            # The Deferred chain finished with no further action needed.
-            return
-
-        self.logger.info("%r" % result)
-        result()
+        # If the result is an instance of BaseDispatchResult we need to
+        # evaluate it, as there's further action required at the end of
+        # the dispatch chain.
+        if isinstance(dispatch_result, BaseDispatchResult):
+            status, result = dispatch_result
+            self.logger.info("%r" % result)
+            result()
 
         # At this point, we're done dispatching, so we can schedule the
         # next scan cycle.
@@ -426,6 +445,7 @@ class SlaveScanner:
             self.logger.warn(
                 '%s communication failed (%s)' %
                 (slave, response.getErrorMessage()))
+            self.waitOnDeferredList()
             return ResetDispatchResult(slave)
 
         if isinstance(response, list) and len(response) == 2 :
@@ -443,6 +463,7 @@ class SlaveScanner:
         self.logger.error(
             '%s failed to dispatch (%s)' % (slave, info))
 
+        self.waitOnDeferredList()
         return FailDispatchResult(slave, info)
 
 
@@ -482,7 +503,7 @@ class BuilddManager(service.Service):
         from lp.buildmaster.interfaces.builder import IBuilderSet
         builder_set = getUtility(IBuilderSet)
         for builder in builder_set:
-            slave_scanner = SlaveScanner(builder, self.logger)
+            slave_scanner = SlaveScanner(builder.name, self.logger)
             self.builder_slaves.append(slave_scanner)
 
         # Events will now fire in the SlaveScanner objects to scan each
