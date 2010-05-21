@@ -162,7 +162,8 @@ Create a helper for printing the build status summary:
 
 The underlying method being used here is getUnpublishedBuilds():
 
-    >>> for build in spph.getUnpublishedBuilds():
+    >>> unpublished_builds = spph.getUnpublishedBuilds()
+    >>> for build in sorted(unpublished_builds, key=lambda b:b.title):
     ...     print build.title
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
