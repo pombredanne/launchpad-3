@@ -895,7 +895,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Present 'all' in every archive index for architecture
         # independent binaries.
         if bpr.architecturespecific:
-            architecture = bpr.build.distroarchseries.architecturetag
+            architecture = bpr.build.distro_arch_series.architecturetag
         else:
             architecture = 'all'
 
