@@ -1197,3 +1197,35 @@ relevant importance values.
     ...     importance=[BugTaskImportance.LOW, BugTaskImportance.MEDIUM]))
     4 Mozilla Firefox Reflow problems with complex page layouts NEW MEDIUM
     1 Mozilla Firefox Firefox does not support SVG NEW LOW
+
+
+== Searching by structural subscriber ==
+
+The 'structural subscriber' parameter allows you to search all the bug tasks
+to which a person is structurally subscribed. A person can be a structural
+subscriber for a product, a distribution, or a distribution source package. No
+Privileges Person isn't a structural subscriber, so no bug tasks are found:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_struct_sub = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_struct_sub)
+    >>> found_bugtasks.count()
+    0
+
+Create a new person and make them a subscriber to all Firefox bug reports.
+Subsequently, we test to see that they are subscribed to all of the Firefox
+bug tasks.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> struct_subber = factory.makePerson(name='struct-subber')
+    >>> firefox.addBugSubscription(struct_subber, struct_subber)
+    <StructuralSubscription at ...>
+    >>> struct_subber_struct_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=struct_subber)
+    >>> found_bugtasks = bugtask_set.search(struct_subber_struct_search)
+    >>> logout()
+    >>> found_bugtasks.count() == firefox_bugs.count()
+    True

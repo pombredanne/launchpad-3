@@ -431,6 +431,38 @@ The patches view works for people and teams.
     Tabs: ...
     Main heading: Patch attachments for Patchy Person
 
+The patches view will also show patches to which a person or team is
+structurally subscribed.
+    
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> project_subscriber = factory.doAsUser(
+    ...     'foo.bar@canonical.com', factory.makePerson,
+    ...     name="project-subscriber", displayname="Project Subscriber")
+    >>> login('foo.bar@canonical.com')
+    >>> patchy_product.addBugSubscription(project_subscriber,
+    ...     project_subscriber)
+    <StructuralSubscription at ...>
+    >>> logout()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> subscriber_name = removeSecurityProxy(project_subscriber).name
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/~%s/+patches' % subscriber_name)
+    >>> show_patches_view(anon_browser.contents)
+    Bug                  Importance  Status        Project          Patch Age
+    Bug #18: bug_c title Wishlist  Fix Committed patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #17: bug_b title Critical  Confirmed     patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_c.diff
+    description of patch c
+    Bug #16: bug_a title Undecided New           patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
+
+
 Reaching the Patches View
 -------------------------
 
