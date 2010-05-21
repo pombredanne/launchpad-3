@@ -18,7 +18,7 @@ import logging
 import os
 import transaction
 
-from store.store import Store
+from storm.store import Store
 
 from twisted.application import service
 from twisted.internet import defer, reactor
