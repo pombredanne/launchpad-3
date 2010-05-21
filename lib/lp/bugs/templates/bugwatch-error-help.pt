@@ -59,7 +59,7 @@
     <h2>Invalid Bug ID</h2>
     <h3>What went wrong?</h3>
     <p>
-      The remote bug ID that the bug watch is linked it isn't valid on
+      The remote bug ID that the bug watch is linked to isn't valid on
       the remote bug tracker.
     </p>
     <h3>How can I help fix it?</h3>
