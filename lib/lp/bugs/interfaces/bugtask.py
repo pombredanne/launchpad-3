@@ -787,7 +787,7 @@ class IBugTaskSearchBase(Interface):
         required=False)
     importance = List(
         title=_('Importance'),
-        description=_('Show only bugs with the given importance'
+        description=_('Show only bugs with the given importance '
                       'or list of importances.'),
         value_type=IBugTask['importance'],
         required=False)
