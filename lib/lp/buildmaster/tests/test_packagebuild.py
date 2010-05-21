@@ -66,7 +66,7 @@ class TestPackageBuild(TestPackageBuildBase):
         """Create a package build with which to test."""
         super(TestPackageBuild, self).setUp()
         joe = self.factory.makePerson(name="joe")
-        joes_ppa = self.factory.makeArchive(owner=joe)
+        joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
         self.package_build = self.makePackageBuild(archive=joes_ppa)
 
     def test_providesInterface(self):
