@@ -126,7 +126,6 @@ class BugSupervisorEditView(LaunchpadEditFormView):
                     target=self.context.displayname,
                     url=(canonical_url(supervisor, rootsite='mainsite') +
                          '/+members'))
-                self.setFieldError('bug_supervisor', error)
             else:
                 error = structured(
                     "You cannot set another person as the bug supervisor for "
@@ -134,7 +133,6 @@ class BugSupervisorEditView(LaunchpadEditFormView):
                     "<a href=\"https://help.launchpad.net/BugSupervisors\">"
                     "the help wiki</a> for information about setting a bug "
                     "supervisor.",
-                    person=supervisor.displayname,
                     target=self.context.displayname)
             self.setFieldError('bug_supervisor', error)
 
