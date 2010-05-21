@@ -38,6 +38,60 @@ def escape(text, quote=True):
     return cgi.escape(text, quote)
 
 
+def split_paragraphs(text):
+    """Split text into paragraphs.
+
+    This function yields lists of strings that represent lines of text
+    in each paragraph.
+
+    Paragraphs are split by one or more blank lines.
+    """
+    paragraph = []
+    for line in text.splitlines():
+        line = line.rstrip()
+
+        # blank lines split paragraphs
+        if not line:
+            if paragraph:
+                yield paragraph
+            paragraph = []
+            continue
+
+        paragraph.append(line)
+
+    if paragraph:
+        yield paragraph
+
+
+def re_substitute(pattern, replace_match, replace_nomatch, string):
+    """Transform a string, replacing matched and non-matched sections.
+
+     :param patter: a regular expression
+     :param replace_match: a function used to transform matches
+     :param replace_nomatch: a function used to transform non-matched text
+     :param string: the string to transform
+
+    This function behaves similarly to re.sub() when a function is
+    passed as the second argument, except that the non-matching
+    portions of the string can be transformed by a second function.
+    """
+    if replace_match is None:
+        replace_match = lambda match: match.group()
+    if replace_nomatch is None:
+        replace_nomatch = lambda text: text
+    parts = []
+    position = 0
+    for match in re.finditer(pattern, string):
+        if match.start() != position:
+            parts.append(replace_nomatch(string[position:match.start()]))
+        parts.append(replace_match(match))
+        position = match.end()
+    remainder = string[position:]
+    if remainder:
+        parts.append(replace_nomatch(remainder))
+    return ''.join(parts)
+
+
 def next_word_chunk(word, pos, minlen, maxlen):
     """Return the next chunk of the word of length between minlen and maxlen.
 
@@ -110,60 +164,6 @@ def break_long_words(text):
         else:
             raise AssertionError('text matched but neither named group found')
     return break_text_pat.sub(replace, text)
-
-
-def split_paragraphs(text):
-    """Split text into paragraphs.
-
-    This function yields lists of strings that represent lines of text
-    in each paragraph.
-
-    Paragraphs are split by one or more blank lines.
-    """
-    paragraph = []
-    for line in text.splitlines():
-        line = line.rstrip()
-
-        # blank lines split paragraphs
-        if not line:
-            if paragraph:
-                yield paragraph
-            paragraph = []
-            continue
-
-        paragraph.append(line)
-
-    if paragraph:
-        yield paragraph
-
-
-def re_substitute(pattern, replace_match, replace_nomatch, string):
-    """Transform a string, replacing matched and non-matched sections.
-
-     :param patter: a regular expression
-     :param replace_match: a function used to transform matches
-     :param replace_nomatch: a function used to transform non-matched text
-     :param string: the string to transform
-
-    This function behaves similarly to re.sub() when a function is
-    passed as the second argument, except that the non-matching
-    portions of the string can be transformed by a second function.
-    """
-    if replace_match is None:
-        replace_match = lambda match: match.group()
-    if replace_nomatch is None:
-        replace_nomatch = lambda text: text
-    parts = []
-    position = 0
-    for match in re.finditer(pattern, string):
-        if match.start() != position:
-            parts.append(replace_nomatch(string[position:match.start()]))
-        parts.append(replace_match(match))
-        position = match.end()
-    remainder = string[position:]
-    if remainder:
-        parts.append(replace_nomatch(remainder))
-    return ''.join(parts)
 
 
 class FormattersAPI:
@@ -776,6 +776,16 @@ class FormattersAPI:
         else:
             return id_
 
+    def oops_id(self):
+        """Format an OOPS ID for display."""
+        if not getUtility(ILaunchBag).developer:
+            # We only linkify OOPS IDs for Launchpad developers.
+            return self._stringtoformat
+
+        root_url = config.launchpad.oops_root_url
+        url = root_url + self._stringtoformat
+        return '<a href="%s">%s</a>' % (url, self._stringtoformat)
+
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
@@ -814,5 +824,7 @@ class FormattersAPI:
                 return self.css_id(furtherPath.pop())
             else:
                 return self.css_id()
+        elif name == 'oops-id':
+            return self.oops_id()
         else:
             raise TraversalError(name)

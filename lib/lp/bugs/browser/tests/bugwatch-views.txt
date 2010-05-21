@@ -84,6 +84,7 @@ about the activity.
     {'completion_message': 'completed successfully',
      'date': datetime.datetime(...tzinfo=<UTC>),
      'icon': '/@@/yes',
+     'oops_id': None,
      'result_text': 'Synchronisation succeeded'}
 
 If an activity entry records a failure, the 'icon' entry in the dict
@@ -103,10 +104,12 @@ different dates.
     {'completion_message': "failed with error 'Bug Not Found'",
      'date': datetime.datetime(...tzinfo=<UTC>),
      'icon': '/@@/no',
+     'oops_id': None,
      'result_text': 'Bug Not Found'}
     {'completion_message': 'completed successfully',
      'date': datetime.datetime(...tzinfo=<UTC>),
      'icon': '/@@/yes',
+     'oops_id': None,
      'result_text': 'Synchronisation succeeded'}
 
 

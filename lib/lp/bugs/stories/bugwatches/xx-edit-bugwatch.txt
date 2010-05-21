@@ -86,9 +86,9 @@ Recent activity on a bug watch is shown on the page as a list of
 activity entries. When a watch has not been checked, no activity is
 shown.
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
-    ...     admin_browser.contents, 'recent-watch-activity')
+    ...     user_browser.contents, 'recent-watch-activity')
     >>> print recent_activity_list
     None
 
@@ -100,9 +100,9 @@ activity list.
     >>> watch.addActivity()
     >>> logout()
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
-    ...     admin_browser.contents, 'recent-watch-activity')
+    ...     user_browser.contents, 'recent-watch-activity')
     >>> print extract_text(recent_activity_list)
     Update completed successfully ... ago
 
@@ -114,12 +114,37 @@ If an update fails, that too will be reflected in the list.
     >>> watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> logout()
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
-    ...     admin_browser.contents, 'recent-watch-activity')
+    ...     user_browser.contents, 'recent-watch-activity')
     >>> print extract_text(recent_activity_list)
     Update failed with error 'Bug Not Found' ... ago
     Update completed successfully ... ago
+
+If a failure has an OOPS ID attached to it, that too will be reflected
+in the list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> watch = getUtility(IBugWatchSet).get(2)
+    >>> watch.addActivity(
+    ...     result=BugWatchActivityStatus.COMMENT_IMPORT_FAILED,
+    ...     oops_id="OOPS-12345TEST")
+    >>> logout()
+
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> recent_activity_list = find_tag_by_id(
+    ...     user_browser.contents, 'recent-watch-activity')
+    >>> print extract_text(recent_activity_list)
+    Update failed with error 'Unable to import...' (OOPS-12345TEST) ... ago
+    Update failed with error 'Bug Not Found' ... ago
+    Update completed successfully ... ago
+
+If a Launchpad developer views the page the OOPS IDs will be linkified.
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
+    >>> oops_link = admin_browser.getLink('OOPS-12345TEST')
+    >>> print oops_link.url
+    http...OOPS-12345TEST
 
 
 Rescheduling a watch
@@ -130,8 +155,6 @@ by clicking the "Update Now" button.
 
 For a new watch, the "Update Now" button isn't shown.
 
-    >>> from pytz import utc
-    >>> from datetime import datetime, timedelta
     >>> login('foo.bar@canonical.com')
     >>> bug_watch = factory.makeBugWatch()
     >>> bug_watch.next_check = None
@@ -200,3 +223,41 @@ The button will no longer be shown on the page.
       ...
     LookupError: label 'Update Now'
 
+If a watch has run once and failed once, the reschedule button will be
+shown.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch = factory.makeBugWatch()
+    >>> bug_watch.next_check = None
+    >>> bug_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> watch_url = (
+    ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
+    ...     (bug_watch.bug.id, bug_watch.id))
+    >>> logout()
+
+    >>> user_browser.open(watch_url)
+    >>> reschedule_button = user_browser.getControl('Update Now')
+    >>> reschedule_button.click()
+
+    >>> for message in find_tags_by_class(
+    ...     user_browser.contents, 'informational message'):
+    ...     print extract_text(message)
+    The ... bug watch has been scheduled for immediate checking.
+
+However, once the watch succeeds the button will disappear, even though
+the watch has failed > 60% of the time. This is because the most recent
+check succeeded, so there's no point in allowing users to reschedule the
+watch for checking.
+
+    >>> from datetime import timedelta
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_watch.next_check = datetime.now(utc) + timedelta(days=7)
+    >>> bug_watch.addActivity()
+    >>> logout()
+
+    >>> user_browser.open(watch_url)
+    >>> user_browser.getControl('Update Now')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Update Now'
