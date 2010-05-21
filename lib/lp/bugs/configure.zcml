@@ -852,7 +852,6 @@
                     can_be_rescheduled
                     datecreated
                     failed_activity
-                    getLastErrorMessage
                     hasComment
                     unpushed_comments
                     id

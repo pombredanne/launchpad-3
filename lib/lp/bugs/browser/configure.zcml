@@ -1133,6 +1133,9 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/bugwatch-portlet-details.pt"/>
+            <browser:page
+                name="+error-help"
+                template="../templates/bugwatch-error-help.pt"/>
         </browser:pages>
         <browser:url
             for="lp.bugs.interfaces.bugwatch.IBugWatchSet"
