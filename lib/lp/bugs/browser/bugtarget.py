@@ -14,8 +14,11 @@ __all__ = [
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugViewBase",
+    "IProductBugConfiguration",
     "OfficialBugTagsManageView",
+    "ProductConfigureBugTrackerView",
     "ProjectFileBugGuidedView",
+    "product_to_productbugconfiguration",
     ]
 
 import cgi
@@ -31,13 +34,16 @@ from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 from zope import formlib
-from zope.interface import implements
+from zope.interface import (
+    alsoProvides, implementer, implements, Interface)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice
 from zope.schema.vocabulary import SimpleVocabulary
+
+from lazr.restful.interface import copy_field
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -46,6 +52,7 @@ from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
@@ -99,11 +106,35 @@ SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
     [('yes', True), ('no', False)])
 
 
+class IProductBugConfiguration(Interface):
+    """A composite schema for editing bug app configuration."""
+
+    bug_supervisor = copy_field(
+        IHasBugSupervisor['bug_supervisor'], readonly=False)
+    security_contact = copy_field(IHasSecurityContact['security_contact'])
+    official_malone = copy_field(ILaunchpadUsage['official_malone'])
+    enable_bug_expiration = copy_field(
+        ILaunchpadUsage['enable_bug_expiration'])
+    bugtracker = copy_field(IProduct['bugtracker'])
+    remote_product = copy_field(IProduct['remote_product'])
+    bug_reporting_guidelines = copy_field(
+        IBugTarget['bug_reporting_guidelines'])
+
+
+def product_to_productbugconfiguration(product):
+    """Adapts an `IProduct` into an `IProductBugConfiguration`."""
+    alsoProvides(IProduct, IProductBugConfiguration)
+    return product
+
+
 class ProductConfigureBugTrackerView(ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
     label = "Configure bug tracker"
+    schema = IProductBugConfiguration
     field_names = [
+        "bug_supervisor",
+        "security_contact",
         "bugtracker",
         "enable_bug_expiration",
         "remote_product",
@@ -1336,7 +1367,6 @@ class BugsPatchesView(LaunchpadView):
             # Lower case for consistency with the other orderings.
             orderings.append((targetname.lower(), "targetname"))
         return orderings
-
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""

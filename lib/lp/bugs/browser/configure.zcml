@@ -384,6 +384,10 @@
         facet="bugs"
         permission="launchpad.Edit"
         template="../templates/securitycontact-edit.pt"/>
+    <adapter
+        for="lp.registry.interfaces.product.IProduct"
+        provides=".bugtarget.IProductBugConfiguration"
+        factory=".bugtarget.product_to_productbugconfiguration" />
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         facet="bugs"
