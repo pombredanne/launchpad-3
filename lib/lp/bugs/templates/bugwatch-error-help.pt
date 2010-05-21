@@ -100,6 +100,9 @@
       software running on the remote server.
     </p>
     <h3>How can I help fix it?</h3>
+    <p>
+      XXX No idea.
+    </p>
     <a name="UNSUPPORTED_BUG_TRACKER"></a>
     <h2>Unsupported Bugtracker</h2>
     <h3>What went wrong?</h3>
@@ -108,6 +111,11 @@
       does not currently support.
     </p>
     <h3>How can I help fix it?</h3>
+    <p>
+      <a href="https://bugs.launchpad.dev/malone/+filebug"
+      >File a bug</a> requesting that Launchpad support interactions
+      with the remote bug tracker.
+    </p>
     <a name="PRIVATE_REMOTE_BUG"></a>
     <h2>Private Remote Bug</h2>
     <h3>What went wrong?</h3>
@@ -116,13 +124,9 @@
       cannot import the status of private remote bugs.
     </p>
     <h3>How can I help fix it?</h3>
-    <a name="SYNC_SUCCEEDED"></a>
-    <h2>Synchronisation succeeded</h2>
-    <h3>What went wrong?</h3>
     <p>
-      The remote bug's status was successfully synchronized to Launchpad.
+      XXX No idea.
     </p>
-    <h3>How can I help fix it?</h3>
     <a name="COMMENT_IMPORT_FAILED"></a>
     <h2>Unable to import comments</h2>
     <h3>What went wrong?</h3>
@@ -131,6 +135,10 @@
       could not be imported from the remote bug.
     </p>
     <h3>How can I help fix it?</h3>
+    <p>
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
+      know about the problem.
+    </p>
     <a name="COMMENT_PUSH_FAILED"></a>
     <h2>Unable to push comments</h2>
     <h3>What went wrong?</h3>
@@ -140,6 +148,10 @@
       push comments back to the remote bug.
     </p>
     <h3>How can I help fix it?</h3>
+    <p>
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
+      know about the problem.
+    </p>
     <a name="BACKLINK_FAILED"></a>
     <h2>Unable to set link remote bug to Launchpad</h2>
     <h3>What went wrong?</h3>
@@ -149,5 +161,9 @@
       link back to the relevant Launchpad bug.
     </p>
     <h3>How can I help fix it?</h3>
+    <p>
+      <a href="mailto:feedback@launchpad.net">Contact us</a> and let us
+      know about the problem.
+    </p>
   </body>
 </html>
