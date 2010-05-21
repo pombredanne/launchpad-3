@@ -10,6 +10,8 @@
 __metaclass__ = type
 
 import _pythonpath
+
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -34,7 +36,6 @@ class RequestDailyBuilds(LaunchpadCronScript):
         source = getUtility(ISourcePackageRecipeBuildSource)
         builds = source.makeDailyBuilds()
         self.logger.info('Requested %d daily builds.' % len(builds))
-        import transaction
         transaction.commit()
 
 

@@ -191,7 +191,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual([],
             SourcePackageRecipeBuild.makeDailyBuilds())
         recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
-        build = SourcePackageRecipe.makeDailyBuilds()[0]
+        build = SourcePackageRecipeBuild.makeDailyBuilds()[0]
         self.assertEqual(recipe, build.recipe)
         self.assertEqual(list(recipe.distroseries), [build.distroseries])
 

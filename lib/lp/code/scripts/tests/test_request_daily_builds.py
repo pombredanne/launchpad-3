@@ -10,8 +10,6 @@ import transaction
 
 from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.testing import TestCaseWithFactory
 
 

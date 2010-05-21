@@ -10,12 +10,9 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-import datetime
-
 from bzrlib.plugins.builder import RecipeParser
 from lazr.delegates import delegates
 
-from pytz import utc
 from storm.locals import (
     And, Bool, Desc, Int, Not, Reference, ReferenceSet, Select, Store, Storm,
     Unicode)
@@ -34,7 +31,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.branch import Branch
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
