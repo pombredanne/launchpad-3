@@ -48,11 +48,6 @@ class ISourcePackageRecipeBuild(IBuildBase):
         IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
 
-    sourcepackagename = Reference(
-        ISourcePackageName,
-        title=_("The name of the source package being built"),
-        readonly=True)
-
     requester = Object(
         schema=IPerson, required=False,
         title=_("The person who wants this to be done."))

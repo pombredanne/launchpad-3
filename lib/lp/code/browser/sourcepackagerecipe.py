@@ -294,9 +294,6 @@ class ISourcePackageAddEditSchema(Interface):
         'description',
         'owner',
         ])
-    sourcepackagename = Choice(
-        title=u"Source Package Name", required=True,
-        vocabulary='SourcePackageName')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -341,7 +338,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['distros'], data['sourcepackagename'],
+            self.user, self.user, data['distros'],
             data['name'], recipe, data['description'])
         self.next_url = canonical_url(source_package_recipe)
 

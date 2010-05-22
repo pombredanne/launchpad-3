@@ -44,8 +44,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         distroseries.nominatedarchindep = distroseries_i386
 
         return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=self.factory.makeSourcePackage(
-                distroseries=distroseries),
+            distroseries=distroseries,
             recipe=self.factory.makeSourcePackageRecipe(
                 distroseries=distroseries),
             archive=self.factory.makeArchive(),

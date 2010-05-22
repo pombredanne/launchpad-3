@@ -1758,8 +1758,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return parser.parse()
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
-                                distroseries=None, sourcepackagename=None,
-                                name=None, description=None, branches=()):
+                                distroseries=None, name=None, description=None,
+                                branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1771,19 +1771,13 @@ class LaunchpadObjectFactory(ObjectFactory):
                 'i386', ProcessorFamily.get(1), False, owner,
                 supports_virtualized=True)
 
-        # Make sure we have a real sourcepackagename object.
-        if (sourcepackagename is None or
-            isinstance(sourcepackagename, basestring)):
-            sourcepackagename = self.getOrMakeSourcePackageName(
-                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, [distroseries], sourcepackagename, name,
-            recipe, description)
+            registrant, owner, [distroseries], name, recipe, description)
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
@@ -1792,20 +1786,16 @@ class LaunchpadObjectFactory(ObjectFactory):
                                      sourcename=None, distroseries=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe(
-                sourcepackagename=self.makeSourcePackageName(sourcename))
+            recipe = self.makeSourcePackageRecipe()
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-        if sourcepackage is None:
-            sourcepackage = distroseries.getSourcePackage(
-                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
         return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=sourcepackage,
+            distroseries=distroseries,
             recipe=recipe,
             archive=archive,
             requester=requester)
@@ -2114,11 +2104,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if sourcepackagename is None:
-            if source_package_recipe_build is not None:
-                sourcepackagename = (
-                    source_package_recipe_build.sourcepackagename)
-            else:
-                sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName()
 
         if component is None:
             component = self.makeComponent()

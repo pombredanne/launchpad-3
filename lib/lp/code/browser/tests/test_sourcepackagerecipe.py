@@ -70,7 +70,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        self.factory.makeSourcePackage()
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -78,7 +78,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
 
@@ -110,7 +109,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        self.factory.makeSourcePackage()
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -118,7 +117,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Recipe text').value = 'Foo bar baz'
         browser.getControl('Create Recipe').click()
 
@@ -142,13 +140,10 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, product=product, name='veggies')
         meat_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='meat')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='ratatouille')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='sloppyjoe')
+        source_package = self.factory.makeSourcePackage()
+        source_package = self.factory.makeSourcePackage()
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            sourcepackagename=source_package.sourcepackagename,
             name=u'things', description=u'This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
@@ -158,7 +153,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getLink('Edit recipe').click()
         browser.getControl(name='field.name').value = 'fings'
         browser.getControl('Description').value = 'This is stuff'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Recipe text').value = (
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
@@ -346,7 +340,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         archive = self.factory.makeArchive(name='build',
             owner=self.user)
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.user, name=u'my-recipe', sourcepackagename='mypackage')
+            owner=self.user, name=u'my-recipe')
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
         build = self.factory.makeSourcePackageRecipeBuild(
@@ -447,9 +441,9 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Archive:       PPA named build for Owner
             Series:        Squirrel
             Pocket:        Release
-            Result:        mypackage in ubuntu 3.14
+            Result:        .* in ubuntu 3.14
             Binary builds:
-            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE""",
+            itanic build of .* 3.14 in ubuntu squirrel RELEASE""",
             main_text)
 
     def makeBuildAndRelease(self):
@@ -464,7 +458,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Result: mypackage in ubuntu 3.14""", main_text)
+            Result: .* in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
         """Make a binary build with specified release and architecturetag."""
@@ -484,8 +478,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Binary builds:
-            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
-            x87-64 build of mypackage 3.14 in ubuntu squirrel RELEASE$""",
+            itanic build of .* 3.14 in ubuntu squirrel RELEASE
+            x87-64 build of .* 3.14 in ubuntu squirrel RELEASE$""",
             main_text)
 
     def test_logtail(self):
