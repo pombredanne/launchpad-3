@@ -101,7 +101,7 @@
     </div>
   </div>
 
-  <div class="yui-g" tal:condition="view/show_merge_links">
+  <div class="yui-g">
 
     <div class="portlet" id="branch-relations">
       <tal:branch-pending-merges
