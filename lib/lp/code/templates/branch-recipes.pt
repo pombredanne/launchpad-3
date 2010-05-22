@@ -9,7 +9,7 @@
 
   <div id="recipe-links" class="actions">
     <div id="recipe-summary">
-      <img src="/@@/package-source" />
+      <img src="/@@/source-package-recipe" />
       <a href="+recipes" tal:content="structure view/recipe_count_text">
         1 branch
       </a>
