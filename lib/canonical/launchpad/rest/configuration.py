@@ -23,6 +23,7 @@ from canonical.launchpad.webapp.servers import (
 
 from canonical.launchpad import versioninfo
 
+
 class MemcachedStormRepresentationCache(BaseRepresentationCache):
     """A way to cache representations of Storm objects in memcached."""
 
@@ -33,17 +34,18 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
         storm_info = storm.info.get_obj_info(obj)
         table_name = storm_info.cls_info.table
         primary_key = tuple(var.get() for var in storm_info.primary_vars)
-        return (table_name + repr(primary_key)
-                + ',' + media_type + ',' + str(version))
 
-    def get(self, key, default=None):
+        key = (table_name + repr(primary_key)
+                + ',' + media_type + ',' + str(version))
+        return key
+
+    def get_by_key(self, key, default=None):
         return self.client.get(key) or default
 
-    def __setitem__(self, key, value):
+    def set_by_key(self, key, value):
         self.client.set(key, value)
 
     def delete_by_key(self, key):
-        print "Deleting " + repr(key)
         self.client.delete(key)
 
 
