@@ -413,8 +413,13 @@ class LaunchpadBrowserPublication(
         # The view name used in the pageid usually comes from ZCML and so
         # it will be a unicode string although it shouldn't.  To avoid
         # problems we encode it into ASCII.
-        request.setInWSGIEnvironment(
-            'launchpad.pageid', pageid.encode('ASCII'))
+        pageid = pageid.encode('US-ASCII')
+
+        # Set the pageid in the WSGI environment.
+        request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
+        # And spit the pageid out to our tracelog.
+        tracelog(request, 'p', pageid)
 
         if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
             # this is a direct call on a C-defined method such as __repr__ or
@@ -435,7 +440,6 @@ class LaunchpadBrowserPublication(
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
-        orig_env = request._orig_env
         assert hasattr(request, '_publicationticks_start'), (
             'request._publicationticks_start, which should have been set by '
             'callObject(), was not found.')
@@ -497,9 +501,7 @@ class LaunchpadBrowserPublication(
         _maybePlacefullyAuthenticate.
         """
         # Log the URL including vhost information to the ZServer tracelog.
-        tracelog = ITraceLog(request, None)
-        if tracelog is not None:
-            tracelog.log(request.getURL())
+        tracelog(request, 'u', request.getURL())
 
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
@@ -788,3 +790,16 @@ def is_browser(request):
     return (
         user_agent is not None
         and _browser_re.search(user_agent) is not None)
+
+
+def tracelog(request, prefix, msg):
+    """Emit a message to the ITraceLog, or do nothing if there is none.
+
+    The message will be prefixed by ``prefix`` to make writing parsers
+    easier. ``prefix`` should be unique and contain no spaces, and
+    preferably a single character to save space.
+    """
+    tracelog = ITraceLog(request, None)
+    if tracelog is not None:
+        tracelog.log('%s %s' % (prefix, msg.encode('US-ASCII')))
+

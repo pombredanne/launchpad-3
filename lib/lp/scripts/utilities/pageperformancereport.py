@@ -19,7 +19,7 @@ import time
 
 import numpy
 import simplejson as json
-from zc.zservertracelog.tracereport import Request, parsedt
+from zc.zservertracelog.tracereport import Request
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import log
@@ -193,7 +193,7 @@ def parse(tracefiles, categories, options):
         for line in smart_open(tracefile):
             line = line.rstrip()
             try:
-                record = line.split(' ',7)
+                record = line.split(' ', 7)
                 try:
                     record_type, request_id, date, time_ = record[:4]
                 except ValueError:
@@ -233,11 +233,27 @@ def parse(tracefiles, categories, options):
                     continue
 
                 if record_type == '-': # Extension record from Launchpad.
-                    # Launchpad outputs the full URL to the tracelog,
-                    # including protocol & hostname. Use this in favor of
-                    # the ZServer logged path.
-                    require_args(1)
-                    request.url = args[0]
+                    if len(args) == 1:
+                        # No prefix - old logs containing just the url.
+                        request.url = args[0]
+                        continue
+
+                    # Launchpad outputs several things as tracelog
+                    # extension records. We include a prefix to tell
+                    # them apart.
+                    require_args(2)
+
+                    prefix = args[0]
+                    if prefix == 'u':
+                        # Launchpad outputs the full URL to the
+                        # tracelog, including protocol & hostname. Use
+                        # this in favor of the ZServer logged path.
+                        request.url = args[1]
+                    elif prefix == 'p':
+                        request.pageid = args[1]
+                    else:
+                        raise MalformedLine(
+                            "Unknown extension prefix %s" % prefix)
 
                 elif record_type == 'I': # Got request input.
                     require_args(1)
