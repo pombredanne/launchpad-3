@@ -67,7 +67,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             '<a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a>.'
             '<br /><a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a> '
             'has also been subscribed to bug notifications for '
-            '&lt;boing /&gt;. <br />You can '
+            '&lt;boing /&gt;.<br />You can '
             '<a href="http://launchpad.dev/boing/+subscribe">change '
             'the subscriptions</a> for &lt;boing /&gt; at any time.')
         self.assertEqual(expected, notifications.pop().message)
@@ -111,7 +111,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             'You cannot set &lt;smack /&gt; as the bug supervisor for '
             '&lt;boing /&gt; because you are not an administrator of that '
             'team.<br />If you believe that &lt;smack /&gt; should be the '
-            'bug supervisor for &lt;boing /&gt;, please notify one of the '
+            'bug supervisor for &lt;boing /&gt;, notify one of the '
             '<a href="http://launchpad.dev/~smack/+members">&lt;smack /&gt; '
             'administrators</a>. See '
             '<a href="https://help.launchpad.net/BugSupervisors">the '

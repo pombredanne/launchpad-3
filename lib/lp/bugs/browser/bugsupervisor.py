@@ -52,31 +52,31 @@ class BugRoleMixin:
         field_state = self._getFieldState('bug_supervisor', data)
         if field_state is self.INVALID_PERSON:
             error = (
-                'You must choose a valid person or team to be the'
-                ' bug supervisor for %s.' % self.context.displayname)
+                'You must choose a valid person or team to be the '
+                'bug supervisor for %s.' % self.context.displayname)
         elif field_state is self.OTHER_TEAM:
             supervisor = data['bug_supervisor']
             team_url = canonical_url(
                 supervisor, rootsite='mainsite', view_name='+members')
             error = structured(
-                "You cannot set %(team)s as the bug supervisor for "
-                "%(target)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the "
-                "bug supervisor for %(target)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>. See "
-                "<a href=\"https://help.launchpad.net/BugSupervisors\">"
-                "the help wiki</a> for information about setting a bug "
-                "supervisor.",
+                'You cannot set %(team)s as the bug supervisor for '
+                '%(target)s because you are not an administrator of that '
+                'team.<br />If you believe that %(team)s should be the '
+                'bug supervisor for %(target)s, notify one of the '
+                '<a href="%(url)s">%(team)s administrators</a>. See '
+                '<a href="https://help.launchpad.net/BugSupervisors">'
+                'the help wiki</a> for information about setting a bug '
+                'supervisor.',
                 team=supervisor.displayname,
                 target=self.context.displayname,
                 url=team_url)
         elif field_state is self.OTHER_USER:
             error = structured(
-                "You cannot set another person as the bug supervisor for "
-                "%(target)s.<br />See "
-                "<a href=\"https://help.launchpad.net/BugSupervisors\">"
-                "the help wiki</a> for information about setting a bug "
-                "supervisor.",
+                'You cannot set another person as the bug supervisor for '
+                '%(target)s.<br />See '
+                '<a href="https://help.launchpad.net/BugSupervisors">'
+                'the help wiki</a> for information about setting a bug '
+                'supervisor.',
                 target=self.context.displayname)
         else:
             # field_state is self.OK.
@@ -89,15 +89,11 @@ class BugRoleMixin:
             self.request.response.addNotification(structured(
                 'Successfully changed the bug supervisor to '
                 '<a href="%(supervisor_url)s">%(displayname)s</a>.'
-                '<br />'
-                '<a href="%(supervisor_url)s">%(displayname)s</a> '
-                'has also been '
-                'subscribed to bug notifications for %(targetname)s. '
-                '<br />'
-                'You can '
-                '<a href="%(targeturl)s/+subscribe">'
-                'change the subscriptions</a> for '
-                '%(targetname)s at any time.',
+                '<br /><a href="%(supervisor_url)s">%(displayname)s</a> '
+                'has also been subscribed to bug notifications for '
+                '%(targetname)s.<br />You can '
+                '<a href="%(targeturl)s/+subscribe">change the '
+                'subscriptions</a> for %(targetname)s at any time.',
                 supervisor_url=canonical_url(bug_supervisor),
                 displayname=bug_supervisor.displayname,
                 targetname=self.context.displayname,
@@ -119,18 +115,18 @@ class BugRoleMixin:
             team_url = canonical_url(
                 supervisor, rootsite='mainsite', view_name='+members')
             error = structured(
-                "You cannot set %(team)s as the security contact for "
-                "%(target)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the "
-                "security contact for %(target)s, notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>.",
+                'You cannot set %(team)s as the security contact for '
+                '%(target)s because you are not an administrator of that '
+                'team.<br />If you believe that %(team)s should be the '
+                'security contact for %(target)s, notify one of the '
+                '<a href="%(url)s">%(team)s administrators</a>.',
                 team=supervisor.displayname,
                 target=self.context.displayname,
                 url=team_url)
         elif field_state is self.OTHER_USER:
             error = structured(
-                "You cannot set another person as the security contact for "
-                "%(target)s.", target=self.context.displayname)
+                'You cannot set another person as the security contact for '
+                '%(target)s.', target=self.context.displayname)
         else:
             # field_state is self.OK.
             return
