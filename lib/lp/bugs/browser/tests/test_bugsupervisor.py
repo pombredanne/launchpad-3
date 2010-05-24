@@ -95,12 +95,11 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_owner_appoint_his_team(self):
-        team = self.factory.makeTeam(name='smack', owner=self.owner)
-        form = self._makeForm(team)
+        form = self._makeForm(self.team)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.bug_supervisor, team)
+        self.assertEqual(self.product.bug_supervisor, self.team)
 
     def test_owner_cannot_appoint_another_team(self):
         team = self.factory.makeTeam(name='smack', displayname='<smack />')
