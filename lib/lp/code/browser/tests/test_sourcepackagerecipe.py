@@ -23,6 +23,7 @@ from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeView, SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, BrowserTestCase, login
 
 
@@ -40,6 +41,9 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret',
             distribution=self.ppa.distribution)
+        self.squirrel.nominatedarchindep = self.squirrel.newArch(
+            'i386', ProcessorFamily.get(1), False, self.chef,
+            supports_virtualized=True)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -310,6 +314,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
+        woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+
         recipe = self.makeRecipe()
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
@@ -396,7 +404,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Needs building
@@ -425,7 +433,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Successfully built

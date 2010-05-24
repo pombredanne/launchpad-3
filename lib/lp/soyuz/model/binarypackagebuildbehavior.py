@@ -15,7 +15,6 @@ from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
 
-from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
@@ -123,8 +122,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again 
         # here in case of programmer errors.
-        reason = check_upload_to_pocket(
-            build.archive, build.distroseries, build.pocket)
+        reason = build.archive.checkUploadToPocket(build.distroseries,
+            build.pocket)
         assert reason is None, (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
                 "to the series status of %s." %

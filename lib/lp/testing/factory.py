@@ -56,6 +56,7 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.uuid import generate_uuid
 
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -131,7 +132,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
@@ -244,7 +245,7 @@ class ObjectFactory:
         """
         if prefix is None:
             prefix = "generic-string"
-        string = "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s%s" % (prefix, generate_uuid())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -1169,7 +1170,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             base_url, owner, bugtrackertype)
 
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
-                     owner=None):
+                     owner=None, bug_task=None):
         """Make a new bug watch."""
         if remote_bug is None:
             remote_bug = self.getUniqueInteger()
@@ -1177,7 +1178,14 @@ class LaunchpadObjectFactory(ObjectFactory):
         if bugtracker is None:
             bugtracker = self.makeBugTracker()
 
-        if bug is None:
+        if bug_task is not None:
+            # If someone passes a value for bug *and* a value for
+            # bug_task then the bug value will get clobbered, but that
+            # doesn't matter since the bug should be the one that the
+            # bug task belongs to anyway (unless they're having a crazy
+            # moment, in which case we're saving them from themselves).
+            bug = bug_task.bug
+        elif bug is None:
             bug = self.makeBug()
 
         if owner is None:
@@ -1185,6 +1193,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug, owner, bugtracker, str(remote_bug))
+        if bug_task is not None:
+            bug_task.bugwatch = bug_watch
 
         # You need to be an admin to set next_check on a BugWatch.
         def set_next_check(bug_watch):
@@ -1194,7 +1204,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         run_with_login(person, set_next_check, bug_watch)
         return bug_watch
 
-    def makeBugComment(self, bug=None, owner=None, subject=None, body=None):
+    def makeBugComment(self, bug=None, owner=None, subject=None, body=None,
+                       bug_watch=None):
         """Create and return a new bug comment.
 
         :param bug: An `IBug` or a bug ID or name, or None, in which
@@ -1205,6 +1216,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             case a new message will be generated.
         :param body: An `IMessage` or a string, or None, in which
             case a new message will be generated.
+        :param bug_watch: An `IBugWatch`, which will be used to set the
+            new comment's bugwatch attribute.
         :return: An `IBugMessage`.
         """
         if bug is None:
@@ -1218,7 +1231,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         if body is None:
             body = self.getUniqueString()
         return bug.newMessage(owner=owner, subject=subject,
-                              content=body, parent=None, bugwatch=None,
+                              content=body, parent=None, bugwatch=bug_watch,
                               remote_comment_id=None)
 
     def makeBugAttachment(self, bug=None, owner=None, data=None,
@@ -1754,6 +1767,10 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if distroseries is None:
             distroseries = self.makeDistroSeries()
+            distroseries.nominatedarchindep = distroseries.newArch(
+                'i386', ProcessorFamily.get(1), False, owner,
+                supports_virtualized=True)
+
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):

@@ -66,9 +66,7 @@ import xmlrpclib
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.config import TransportConfig
-from bzrlib.errors import (
-    NoSuchFile, NotStacked, PermissionDenied, TransportNotPossible,
-    UnstackableBranchFormat)
+from bzrlib.errors import NoSuchFile, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
@@ -83,6 +81,7 @@ from twisted.python import failure, log
 from zope.component import getUtility
 from zope.interface import implements, Interface
 
+from lp.codehosting.bzrutils import get_stacked_on_url
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient)
 from lp.codehosting.vfs.transport import (
@@ -704,14 +703,6 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
         BlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
-
-
-def get_stacked_on_url(branch):
-    """Get the stacked-on URL for 'branch', or `None` if not stacked."""
-    try:
-        return branch.get_stacked_on_url()
-    except (NotStacked, UnstackableBranchFormat):
-        return None
 
 
 class BranchPolicy:

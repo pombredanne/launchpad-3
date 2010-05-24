@@ -379,20 +379,3 @@ Revert team memberships.
     >>> nopriv.leave(celebs.registry_experts)
     >>> registry_member.leave(celebs.registry_experts)
     >>> logout()
-
-
-Setting the remote project
-==========================
-
-The remote_product field - which stores a Product's ID on the remote bug
-tracker - can be set from the +edit page, too.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
-    >>> user_browser.getControl('Remote project').value = 'Thunderbird'
-    >>> user_browser.getControl('Change').click()
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
-    >>> print user_browser.getControl('Remote project').value
-    Thunderbird
