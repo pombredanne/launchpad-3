@@ -295,7 +295,7 @@ class BaseTranslationView(LaunchpadView):
                     'Anonymous users or users who are not accepting our '
                     'licensing terms cannot do POST submissions.')
             translations_person = ITranslationsPerson(self.user)
-            if (translations_person.translations_relicensing_agreement 
+            if (translations_person.translations_relicensing_agreement
                     is not None and
                 not translations_person.translations_relicensing_agreement):
                 raise UnexpectedFormData, (
@@ -1553,6 +1553,10 @@ class TranslationMessageSuggestions:
                     is_empty=False))
         self.seen_translations = seen_translations
 
+
+class Submission:
+    """A submission generated from a TranslationMessage"""
+
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,
     is_empty=False, packaged=False):
@@ -1564,9 +1568,6 @@ def convert_translationmessage_to_submission(
     :param legal_warning_needed: Whether a warning check is needed.
     :param is_empty: Is the submission empty or not.
     """
-
-    class Submission:
-        pass
 
     submission = Submission()
     submission.translationmessage = message

@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
+from lp.archiveuploader.uploadprocessor import UploadProcessor
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamily
@@ -70,7 +71,8 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.options.context = self.policy
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
-        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
+        self.uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
         self.builds_before_upload = BinaryPackageBuild.select().count()
         self.source_queue = None
         self._uploadSource()
@@ -231,7 +233,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         """
         build_candidate = self._createBuild('i386')
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
+        self.uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
 
         build_used = self._uploadBinary('i386')
 
@@ -252,7 +255,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         """
         build_candidate = self._createBuild('hppa')
         self.options.buildid = str(build_candidate.id)
-        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
+        self.uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
 
         self.assertRaises(AssertionError, self._uploadBinary, 'i386')
 

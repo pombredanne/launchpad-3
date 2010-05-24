@@ -57,7 +57,6 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 
@@ -73,7 +72,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 from windmill.authoring import WindmillTestClient
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
@@ -83,6 +82,7 @@ from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
@@ -97,6 +97,7 @@ from lp.testing._login import (
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+from lp.testing.fixture import ZopeEventHandlerFixture
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -384,6 +385,14 @@ class TestCase(testtools.TestCase):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+        # Record the oopses generated during the test run.
+        self.oopses = []
+        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+
+    @adapter(ErrorReportEvent)
+    def _recordOops(self, event):
+        """Add the oops to the testcase's list."""
+        self.oopses.append(event.object)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -404,6 +413,19 @@ class TestCase(testtools.TestCase):
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
 
+    def _unfoldEmailHeader(self, header):
+        """Unfold a multiline e-mail header."""
+        header = ''.join(header.splitlines())
+        return header.replace('\t', ' ')
+
+    def assertEmailHeadersEqual(self, expected, observed):
+        """Assert that two e-mail headers are equal.
+
+        The headers are unfolded before being compared.
+        """
+        return self.assertEqual(
+            self._unfoldEmailHeader(expected),
+            self._unfoldEmailHeader(observed))
 
 class TestCaseWithFactory(TestCase):
 
@@ -545,6 +567,10 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+    def setUp(self):
+        """Provide useful defaults."""
+        super(BrowserTestCase, self).setUp()
+        self.user = self.factory.makePerson(password='test')
 
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
@@ -555,6 +581,11 @@ class BrowserTestCase(TestCaseWithFactory):
             normalise_whitespace(regular_expression_txt), re.S)
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
+
+    def getViewBrowser(self, context, view_name=None):
+        login(ANONYMOUS)
+        url = canonical_url(context, view_name=view_name)
+        return self.getUserBrowser(url, self.user)
 
 
 class WindmillTestCase(TestCaseWithFactory):

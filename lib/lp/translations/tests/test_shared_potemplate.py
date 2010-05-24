@@ -62,7 +62,7 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
         self.assertEquals(potmsgset, read_potmsgset)
 
     def test_getPOTMsgSetBySequence(self):
-        sequence = self.factory.getUniqueInteger()
+        sequence = 2
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                sequence=sequence)
 

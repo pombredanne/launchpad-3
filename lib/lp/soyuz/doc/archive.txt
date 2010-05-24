@@ -276,7 +276,7 @@ archive.
 
 Uploads to copy archives are not allowed.
 
-    >>> rebuild_archive.canUpload(cprov)
+    >>> rebuild_archive.checkArchivePermission(cprov)
     Traceback (most recent call last):
     ...
     AssertionError: Uploads to copy archives are not allowed.
@@ -1786,6 +1786,17 @@ they are essentially another source publication in this context.
     iceweasel 1.0 in breezy-autotest PUBLISHED mark
     pmount 0.1-1 in warty PUBLISHED cprov
 
+Publications in disabled archives are also excluded, since normal users
+can't see them.
+
+    >>> login("admin@canonical.com")
+    >>> cprov_cdrkit.archive.disable()
+    >>> print_latest_uploads()
+    cdrkit 1.0 in hoary PENDING mark
+    iceweasel 1.0 in hoary PENDING mark
+    iceweasel 1.0 in breezy-autotest PUBLISHED mark
+    >>> cprov_cdrkit.archive.enable()
+
 'getMostActivePPAsForDistribution' returns a list of dictionaries
 containing up to 5 PPAs with the highest number of publications in the
 last 7 days. Each dictionary contains the following keys:
@@ -2095,7 +2106,7 @@ package in the provided list of archives for a specific distribution.
 
 == Archive Permission Checking ==
 
-IArchive has two public methods, canUpload() and canAdministerQueue()
+IArchive has two public methods, checkArchivePermission() and canAdministerQueue()
 that check a user's permission to upload and/or administer a
 distroseries upload queue respectively.  See archivepermission.txt
 for more details.
@@ -2103,40 +2114,40 @@ for more details.
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> ubuntu.main_archive.canUpload(carlos, main_component)
+    >>> ubuntu.main_archive.checkArchivePermission(carlos, main_component)
     False
 
     >>> ubuntu.main_archive.canAdministerQueue(carlos, main_component)
     False
 
-    >>> ubuntu.main_archive.canUpload(ubuntu_team, main_component)
+    >>> ubuntu.main_archive.checkArchivePermission(ubuntu_team, main_component)
     True
 
     >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
     True
 
-canUpload() can also check someone's permission to upload a specific
+checkArchivePermission() can also check someone's permission to upload a specific
 source package.  Carlos, who does not have permission to upload to any
 Ubuntu components, has permission to upload "mozilla-firefox".
 
     >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> mozilla = getUtility(
     ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
-    >>> ubuntu.main_archive.canUpload(carlos, mozilla)
+    >>> ubuntu.main_archive.checkArchivePermission(carlos, mozilla)
     True
 
 Cprov does not have permission, however.
 
-    >>> ubuntu.main_archive.canUpload(cprov, mozilla)
+    >>> ubuntu.main_archive.checkArchivePermission(cprov, mozilla)
     False
 
-canUpload() also works in the same way for PPAs.  By default, it allows
+checkArchivePermission() also works in the same way for PPAs.  By default, it allows
 anyone in the PPA owning team to upload.
 
-    >>> cprov_archive.canUpload(cprov)
+    >>> cprov_archive.checkArchivePermission(cprov)
     True
 
-    >>> cprov_archive.canUpload(carlos)
+    >>> cprov_archive.checkArchivePermission(carlos)
     False
 
 We can also create an ArchivePermission entry for carlos to be able to upload
@@ -2148,7 +2159,7 @@ to someone else's PPA, even though he is not the owner.
 
 Carlos can now upload to Joe's PPA:
 
-    >>> joes_ppa.canUpload(carlos)
+    >>> joes_ppa.checkArchivePermission(carlos)
     True
 
 Note that when creating a new permission, trying to specify a component other
