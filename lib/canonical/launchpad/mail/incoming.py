@@ -14,6 +14,8 @@ import email.errors
 import re
 import sys
 
+import dkim
+
 import transaction
 from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
@@ -73,6 +75,8 @@ def authenticateEmail(mail):
     signature = mail.signature
     signed_content = mail.signedContent
 
+    log = getLogger('mail-dkim')
+
     name, email_addr = parseaddr(mail['From'])
     authutil = getUtility(IPlacelessAuthUtility)
     principal = authutil.getPrincipalByLogin(email_addr)
@@ -87,6 +91,27 @@ def authenticateEmail(mail):
     if person.account_status != AccountStatus.ACTIVE:
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
+
+    dkim_log = cStringIO()
+    log.info('Attempting DKIM authentication of message %s from %s'
+        % (mail['Message-ID'], email_addr))
+    try:
+        dkim_result = dkim.verify(mail.as_string(), dkim_log)
+    except dkim.DKIMException, e:
+        log.warning('DKIM error: %s' % (e,))
+        dkim_result = False
+    else:
+        log.info('DKIM verification result=%s' % (dkim_result,))
+    log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
+
+    if signature:
+        log.info('message has gpg signature, therefore not treating DKIM as conclusive')
+    elif dkim_result:
+        # adequately verified by DKIM?
+        # TODO: check that the From address was included in the verification?
+        setupInteraction(principal, email_addr)
+        log.info('accepted DKIM authentication as %s' % (email_addr,))
+        return principal
 
     if signature is None:
         # Mark the principal so that application code can check that the
