@@ -29,6 +29,7 @@ setup(
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
+        'dkim',
         'feedvalidator',
         'funkload',
         'launchpadlib',
