@@ -382,6 +382,7 @@
                 publishing_history
                 current_publishing_records
                 bug_reporting_guidelines
+                bug_reported_acknowledgement
                 latest_overall_publication
                 __getitem__
                 getVersion
@@ -446,7 +447,9 @@
                 removeAnswerContact"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines"/>
+            set_attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines"/>
     </class>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -1088,7 +1091,8 @@
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines bugtracker
+            set_attributes="bug_reporting_guidelines
+                            bug_reported_acknowledgement bugtracker
                             commercial_subscription description
                             development_focus displayname downloadurl
                             driver enable_bug_expiration
@@ -1407,7 +1411,8 @@
                 displayname title summary description driver
                 members owner security_contact mirror_admin homepage_content
                 icon logo mugshot enable_bug_expiration
-                bug_reporting_guidelines official_blueprints official_malone
+                bug_reporting_guidelines bug_reported_acknowledgement
+                official_blueprints official_malone
                 official_rosetta official_answers official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
