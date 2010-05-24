@@ -223,13 +223,14 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI, PersonFormatterAPI)
+    DateTimeFormatterAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
