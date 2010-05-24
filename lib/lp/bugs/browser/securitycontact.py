@@ -7,11 +7,12 @@ __metaclass__ = type
 __all__ = ["SecurityContactEditView"]
 
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.browser.bugsupervisor import BugRoleMixin
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadFormView, action)
 
 
-class SecurityContactEditView(LaunchpadFormView):
+class SecurityContactEditView(BugRoleMixin, LaunchpadFormView):
     """Browser view for editing the security contact.
 
     self.context is assumed to implement IHasSecurityContact.
@@ -35,6 +36,10 @@ class SecurityContactEditView(LaunchpadFormView):
         return {
             'security_contact': self.context.security_contact}
 
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        self.validateSecurityContact(data)
+
     @action('Change', name='change')
     def change_action(self, action, data):
         security_contact = data['security_contact']
@@ -43,25 +48,12 @@ class SecurityContactEditView(LaunchpadFormView):
 
         self.context.security_contact = security_contact
         if security_contact:
-            security_contact_display_value = None
-            if security_contact.preferredemail:
-                # The security contact was set to a new person or team.
-                security_contact_display_value = (
-                    security_contact.preferredemail.email)
-            else:
-                # The security contact doesn't have a preferred email address,
-                # so it must be a team.
-                assert security_contact.isTeam(), (
-                    "Expected security contact with no email address "
-                    "to be a team.")
-                security_contact_display_value = security_contact.displayname
-
             self.request.response.addNotification(
-                "Successfully changed the security contact to %s" %
-                security_contact_display_value)
+                "Successfully changed the security contact to %s." %
+                security_contact.displayname)
         else:
             self.request.response.addNotification(
-                "Successfully removed the security contact")
+                "Successfully removed the security contact.")
 
     @property
     def next_url(self):

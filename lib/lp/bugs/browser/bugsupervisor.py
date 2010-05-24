@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-__all__ = ['BugSupervisorEditView']
+__all__ = [
+    'BugRoleMixin',
+    'BugSupervisorEditView',
+    ]
 
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
@@ -98,6 +101,38 @@ class BugRoleMixin:
                 displayname=bug_supervisor.displayname,
                 targetname=self.context.displayname,
                 targeturl=canonical_url(self.context)))
+
+    def validateSecurityContact(self, data):
+        """Validates the new security.
+
+        Verify that the value is None, the user, or a team he administers,
+        otherwise, set a field error.
+        """
+        field_state = self._getFieldState('security_contact', data)
+        if field_state is self.INVALID_PERSON:
+            error = (
+                'You must choose a valid person or team to be the '
+                'security contact for %s.' % self.context.displayname)
+        elif field_state is self.OTHER_TEAM:
+            supervisor = data['security_contact']
+            error = structured(
+                "You cannot set %(team)s as the security contact for "
+                "%(target)s because you are not an administrator of that "
+                "team.<br />If you believe that %(team)s should be the "
+                "security contact for %(target)s, notify one of the "
+                "<a href=\"%(url)s\">%(team)s administrators</a>.",
+                team=supervisor.displayname,
+                target=self.context.displayname,
+                url=(canonical_url(supervisor, rootsite='mainsite') +
+                     '/+members'))
+        elif field_state is self.OTHER_USER:
+            error = structured(
+                "You cannot set another person as the security contact for "
+                "%(target)s.", target=self.context.displayname)
+        else:
+            # field_state is self.OK.
+            return
+        self.setFieldError('security_contact', error)
 
 
 class BugSupervisorEditSchema(Interface):
