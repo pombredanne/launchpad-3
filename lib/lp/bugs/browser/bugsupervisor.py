@@ -16,62 +16,68 @@ from zope.interface import Interface
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 
 
-class BugSupervisorMixin:
+class BugRoleMixin:
+
+    INVALID_PERSON = object()
+    OTHER_USER = object()
+    OTHER_TEAM = object()
+    OK = object()
+
+    def _getFieldState(self, field_name, data):
+        """Return the enum that summarises the field state."""
+        # The field_name will not be in the data if the user did not enter
+        # a person in the ValidPersonOrTeam vocabulary.
+        if field_name not in data:
+            return self.INVALID_PERSON
+        role = data[field_name]
+        user = self.user
+        # The user may assign the role to None, himself, or a team he admins.
+        if role is None or self.context.userCanAlterSubscription(role, user):
+            return self.OK
+        # The user is not an admin of the team, or he entered another user.
+        if role.isTeam():
+            return self.OTHER_TEAM
+        else:
+            return self.OTHER_USER
 
     def validateBugSupervisor(self, data):
         """Validates the new bug supervisor.
 
-        The following values are valid as bug supervisors:
-            * None, indicating that the bug supervisor field for the target
-              should be cleared in change_action().
-            * A valid Person (email address or launchpad id).
-            * A valid Team of which the current user is an administrator.
-
-        If the bug supervisor entered does not meet any of the above
-        criteria then the submission will fail and the user will be notified
-        of the error.
+        Verify that the value is None, the user, or a team he administers,
+        otherwise, set a field error.
         """
-        # `data` will not have a bug_supervisor entry in cases where the
-        # bug_supervisor the user entered is valid according to the
-        # ValidPersonOrTeam vocabulary
-        # (i.e. is not a Person, Team or None).
-        if 'bug_supervisor' not in data:
-            self.setFieldError(
-                'bug_supervisor',
+        field_state = self._getFieldState('bug_supervisor', data)
+        if field_state is self.INVALID_PERSON:
+            error = (
                 'You must choose a valid person or team to be the'
-                ' bug supervisor for %s.' %
-                self.context.displayname)
+                ' bug supervisor for %s.' % self.context.displayname)
+        elif field_state is self.OTHER_TEAM:
+            supervisor = data['bug_supervisor']
+            error = structured(
+                "You cannot set %(team)s as the bug supervisor for "
+                "%(target)s because you are not an administrator of that "
+                "team.<br />If you believe that %(team)s should be the "
+                "bug supervisor for %(target)s, please notify one of the "
+                "<a href=\"%(url)s\">%(team)s administrators</a>. See "
+                "<a href=\"https://help.launchpad.net/BugSupervisors\">"
+                "the help wiki</a> for information about setting a bug "
+                "supervisor.",
+                team=supervisor.displayname,
+                target=self.context.displayname,
+                url=(canonical_url(supervisor, rootsite='mainsite') +
+                     '/+members'))
+        elif field_state is self.OTHER_USER:
+            error = structured(
+                "You cannot set another person as the bug supervisor for "
+                "%(target)s.<br />See "
+                "<a href=\"https://help.launchpad.net/BugSupervisors\">"
+                "the help wiki</a> for information about setting a bug "
+                "supervisor.",
+                target=self.context.displayname)
+        else:
+            # field_state is self.OK.
             return
-
-        # Making a person the bug supervisor implies subscribing him
-        # to all bug mail. Ensure that the current user can indeed
-        # do this.
-        supervisor = data['bug_supervisor']
-        if (supervisor is not None and
-            not self.context.userCanAlterSubscription(supervisor, self.user)):
-            if supervisor.isTeam():
-                error = structured(
-                    "You cannot set %(team)s as the bug supervisor for "
-                    "%(target)s because you are not an administrator of that "
-                    "team.<br />If you believe that %(team)s should be the "
-                    "bug supervisor for %(target)s, please notify one of the "
-                    "<a href=\"%(url)s\">%(team)s administrators</a>. See "
-                    "<a href=\"https://help.launchpad.net/BugSupervisors\">"
-                    "the help wiki</a> for information about setting a bug "
-                    "supervisor.",
-                    team=supervisor.displayname,
-                    target=self.context.displayname,
-                    url=(canonical_url(supervisor, rootsite='mainsite') +
-                         '/+members'))
-            else:
-                error = structured(
-                    "You cannot set another person as the bug supervisor for "
-                    "%(target)s.<br />See "
-                    "<a href=\"https://help.launchpad.net/BugSupervisors\">"
-                    "the help wiki</a> for information about setting a bug "
-                    "supervisor.",
-                    target=self.context.displayname)
-            self.setFieldError('bug_supervisor', error)
+        self.setFieldError('bug_supervisor', error)
 
     def changeBugSupervisor(self, bug_supervisor):
         self.context.setBugSupervisor(bug_supervisor, self.user)
@@ -104,7 +110,7 @@ class BugSupervisorEditSchema(Interface):
         IHasBugSupervisor['bug_supervisor'], readonly=False)
 
 
-class BugSupervisorEditView(BugSupervisorMixin, LaunchpadEditFormView):
+class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
     """Browser view class for editing the bug supervisor."""
 
     schema = BugSupervisorEditSchema
