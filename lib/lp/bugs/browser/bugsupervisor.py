@@ -56,6 +56,8 @@ class BugRoleMixin:
                 ' bug supervisor for %s.' % self.context.displayname)
         elif field_state is self.OTHER_TEAM:
             supervisor = data['bug_supervisor']
+            team_url = canonical_url(
+                supervisor, rootsite='mainsite', view_name='+members')
             error = structured(
                 "You cannot set %(team)s as the bug supervisor for "
                 "%(target)s because you are not an administrator of that "
@@ -67,8 +69,7 @@ class BugRoleMixin:
                 "supervisor.",
                 team=supervisor.displayname,
                 target=self.context.displayname,
-                url=(canonical_url(supervisor, rootsite='mainsite') +
-                     '/+members'))
+                url=team_url)
         elif field_state is self.OTHER_USER:
             error = structured(
                 "You cannot set another person as the bug supervisor for "
@@ -103,7 +104,7 @@ class BugRoleMixin:
                 targeturl=canonical_url(self.context)))
 
     def validateSecurityContact(self, data):
-        """Validates the new security.
+        """Validates the new security contact.
 
         Verify that the value is None, the user, or a team he administers,
         otherwise, set a field error.
@@ -115,6 +116,8 @@ class BugRoleMixin:
                 'security contact for %s.' % self.context.displayname)
         elif field_state is self.OTHER_TEAM:
             supervisor = data['security_contact']
+            team_url = canonical_url(
+                supervisor, rootsite='mainsite', view_name='+members')
             error = structured(
                 "You cannot set %(team)s as the security contact for "
                 "%(target)s because you are not an administrator of that "
@@ -123,8 +126,7 @@ class BugRoleMixin:
                 "<a href=\"%(url)s\">%(team)s administrators</a>.",
                 team=supervisor.displayname,
                 target=self.context.displayname,
-                url=(canonical_url(supervisor, rootsite='mainsite') +
-                     '/+members'))
+                url=team_url)
         elif field_state is self.OTHER_USER:
             error = structured(
                 "You cannot set another person as the security contact for "
