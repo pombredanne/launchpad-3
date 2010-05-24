@@ -313,6 +313,9 @@ teams that they are a member of.  Official branches may well have an owner
 that is different to the editor, or be a celebrity that the editor is not a
 member of, like ubuntu-branches.
 
+    >>> # Create an official branch owned by ~ubuntu-branches, and an editor
+    >>> # who has nothing to do with ~ubuntu-branches but is still allowed
+    >>> # to edit the branch.
     >>> login('admin@canonical.com')
     >>> from lp.code.tests.helpers import make_official_package_branch
     >>> from canonical.launchpad.interfaces.launchpad import (
