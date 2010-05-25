@@ -11,6 +11,39 @@ LANGUAGE plpythonu AS $$
         AFFECTED_USER = 4
         SUBSCRIBER = 2
 
+
+    def get_max_heat_for_bug(bug_id):
+        bug_tasks = plpy.execute(
+            "SELECT * FROM BugTask WHERE bug = %s" % bug_id)
+
+        max_heats = []
+        for bug_task in bug_tasks:
+            if bug_task['product'] is not None:
+                product = plpy.execute(
+                    "SELECT * FROM Product WHERE id = %s" %
+                    bug_task['product'])[0]
+                max_heats.append(product['max_bug_heat'])
+            elif bug_task['productseries'] is not None:
+                product_series = plpy.execute(
+                    "SELECT * FROM ProductSeries WHERE id = %s" %
+                    bug_task['productseries'])[0]
+                max_heats.append(product_series['max_bug_heat'])
+            elif bug_task['distribution']:
+                distribution = plpy.execute(
+                    "SELECT * FROM Distribution WHERE id = %s" %
+                    bug_task['distribution'])[0]
+                max_heats.append(distribution['max_bug_heat'])
+            elif bug_task['distroseries']:
+                distro_series = plpy.execute(
+                    "SELECT * FROM DistroSeries WHERE id = %s" %
+                    bug_task['distroseries'])[0]
+                max_heats.append(distro_series['max_bug_heat'])
+            else:
+                pass
+
+        return max(max_heats)
+
+
     bug_data = plpy.execute("""
         SELECT * FROM Bug WHERE id = %s""" % bug_id)
 
@@ -69,21 +102,25 @@ LANGUAGE plpythonu AS $$
     days_since_last_update = (datetime.utcnow() - date_last_updated).days
     total_heat = int(total_heat * (0.99 ** days_since_last_update))
 
-#    if days_since_last_update > 0:
-#        # Bug heat increases by a quarter of the maximum bug heat
-#        # divided by the number of days since the bug's creation date.
-#        date_created = datetime.strptime(
-#            bug['date_created'], pg_datetime_fmt)
-#        date_last_message = datetime.strptime(
-#            bug['date_last_message'], pg_datetime_fmt)
-#        days_since_last_activity = (
-#            datetime.utcnow() -
-#            max(date_last_updated, date_last_message)).days
-#        days_since_created = (datetime.utcnow() - date_created).days
-#        max_heat = max(
-#            task.target.max_bug_heat for task in self.bug.bugtasks)
-#        if max_heat is not None and days_since_created > 0:
-#            total_heat = total_heat + (max_heat * 0.25 / days_since_created)
+    if days_since_last_update > 0:
+        # Bug heat increases by a quarter of the maximum bug heat
+        # divided by the number of days since the bug's creation date.
+        date_created = datetime.strptime(
+            bug['datecreated'], pg_datetime_fmt)
+
+        if bug['date_last_message'] is not None:
+            date_last_message = datetime.strptime(
+                bug['date_last_message'], pg_datetime_fmt)
+            oldest_date = max(date_last_updated, date_last_message)
+        else:
+            date_last_message = None
+            oldest_date = date_last_updated
+
+        days_since_last_activity = (datetime.utcnow() - oldest_date).days
+        days_since_created = (datetime.utcnow() - date_created).days
+        max_heat = get_max_heat_for_bug(bug_id)
+        if max_heat is not None and days_since_created > 0:
+            return total_heat + (max_heat * 0.25 / days_since_created)
 
     return total_heat
 $$;
