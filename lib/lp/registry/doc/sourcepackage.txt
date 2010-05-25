@@ -351,32 +351,10 @@ Zero or more spaces may appear between the ":" and the "#".
     >>> from lp.soyuz.browser.sourcepackagerelease import (
     ...     linkify_bug_numbers)
     >>> linkify_bug_numbers("LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
+    'LP: <a href="/bugs/10">#10</a>'
 
-    >>> linkify_bug_numbers("LP:         #10")
-    u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP:#10")
-    u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP: #999")
-    'LP: <a href="/bugs/999" title="No such bug">#999</a>'
-
-    >>> linkify_bug_numbers("garbage")
-    'garbage'
-
-    >>> linkify_bug_numbers("LP: #10, #7")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
-    <a href="/bugs/7" title="A test bug">#7</a>'
-
-    >>> linkify_bug_numbers("LP: #10 LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>
-      LP: <a href="/bugs/10" title="another test bug">#10</a>'
-
-The regex is case-insensitive, so "lp: #nnn" also works.
-
-    >>> linkify_bug_numbers("lp: #10")
-    u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
+More complete examples of the bug linkification can be found in the doctest
+displaying-paragraphs-of-text.
 
 
 Comparing Sourcepackages

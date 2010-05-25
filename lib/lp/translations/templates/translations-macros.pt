@@ -126,6 +126,17 @@
             tal:define="link navigation_menu/details"
             tal:condition="link/enabled"
             tal:content="structure link/render"></li>
+        <li tal:condition="view/user_is_official_translator"
+            id="translation-switch-working-mode-container"
+            class="unseen">
+          <span>
+          <a id="translation-switch-working-mode"
+             class="sprite edit js-action widget-hd">
+             Reviewer mode</a>&nbsp;<!--
+            -->(<a href="/+help/working-modes.html" target="help"><!--
+                -->What's&nbsp;this?</a>)
+          </span>
+        </li>
       </ul>
 </metal:nav-pofile-subpages>
 
@@ -152,14 +163,13 @@
 
 <metal:languages-table-js define-macro="languages-table-js">
       <script type="text/javascript">
-      LPS.use("node", "translations", function(Y) {
+      LPS.use('lp.translations.languages', 'event', function(Y) {
           Y.on("click", function(e) {
-            Y.translations.toggle_languages_visibility(e);
+            Y.lp.translations.languages.toggle_languages_visibility(e);
           }, "#toggle-languages-visibility");
-      });
-      LPS.use( 'translations', 'event', function(Y) {
+
           Y.on('domready', function(e) {
-              Y.translations.initialize_languages_table(Y);
+              Y.lp.translations.languages.initialize_languages_table(Y);
           });
       });
       </script>

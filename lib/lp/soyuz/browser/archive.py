@@ -93,7 +93,7 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
@@ -1236,7 +1236,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # XXX cprov 2009-07-17 bug=385503: copies cannot be properly traced
         # that's why we explicitly don't allow them do be done via the UI
         # in main archives, only PPAs.
-        return self.context.is_ppa and self.context.canUpload(self.user)
+        return (self.context.is_ppa and
+                self.context.checkArchivePermission(self.user))
 
     def createDestinationArchiveField(self):
         """Create the 'destination_archive' field."""
