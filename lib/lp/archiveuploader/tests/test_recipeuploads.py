@@ -33,7 +33,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         self.recipe = self.factory.makeSourcePackageRecipe()
         self.build = getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=self.factory.makeSourcePackage(
-                sourcepackagename='bar', distroseries=self.breezy),
+                distroseries=self.breezy),
             recipe=self.recipe, archive=self.factory.makeArchive(
                 distribution=self.ubuntu, owner=self.recipe.owner),
             requester=self.recipe.owner)

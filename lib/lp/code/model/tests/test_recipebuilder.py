@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 
+import re
 import transaction
 import unittest
 
@@ -65,10 +66,11 @@ class TestRecipeBuilder(TestCaseWithFactory):
         somebranch = self.factory.makeBranch(owner=requester, name="pkg",
             product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(requester, requester,
-             distroseries, spn, u"recept", u"Recipe description",
+             distroseries, u"recept", u"Recipe description",
              branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
-            sourcepackage=sourcepackage, recipe=recipe, requester=requester)
+            sourcepackage=sourcepackage, recipe=recipe, requester=requester,
+            distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
@@ -79,7 +81,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # display_name contains a sane description of the job
         job = self.makeJob()
         self.assertEquals(job.display_name,
-            "distro/mydistro/apackage, recept")
+            "Mydistro, recept, joe")
 
     def test_logStartBuild(self):
         # logStartBuild will properly report the package that's being built
@@ -87,7 +89,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         job.logStartBuild(logger)
         self.assertEquals(logger.buffer.getvalue(),
-            "INFO: startBuild(distro/mydistro/apackage, recept)\n")
+            "INFO: startBuild(Mydistro, recept, joe)\n")
 
     def test_verifyBuildRequest_valid(self):
         # VerifyBuildRequest won't raise any exceptions when called with a
@@ -111,14 +113,13 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives = get_sources_list_for_building(
-            job.build, distroarchseries, job.build.sourcepackagename.name)
+            job.build, distroarchseries, None)
         expected_archives.append(
             "deb http://foo %s main" % job.build.distroseries.name)
         self.assertEqual({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
-           'package_name': u'apackage',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
@@ -142,13 +143,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives = get_sources_list_for_building(
-            job.build, distroarchseries, job.build.sourcepackagename.name)
+            job.build, distroarchseries, None)
         logger = BufferLogger()
         self.assertEqual({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
-           'package_name': u'apackage',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
@@ -167,7 +167,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distroarchseries = job.build.distroseries.architectures[0]
         args = job._extraBuildArgs(distroarchseries)
         expected_archives = get_sources_list_for_building(
-            job.build, distroarchseries, job.build.sourcepackagename.name)
+            job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
 

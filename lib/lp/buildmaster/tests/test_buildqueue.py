@@ -44,11 +44,9 @@ def find_job(test, name, processor='386'):
 
     for build in test.builds:
         bq = build.buildqueue_record
-        source = None
-        for attr in ('sourcepackagerelease', 'sourcepackagename'):
-            source = getattr(build, attr, None)
-            if source is not None:
-                break
+        source = getattr(build, 'sourcepackagerelease', None)
+        if source is None:
+            source = build.recipe
         if (source.name == name and processor_matches(bq)):
             return (build, bq)
     return (None, None)
@@ -1185,32 +1183,32 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=332,
-            sourcename='xxr-aptitude', score=1025)
+            sourcename=u'xxr-aptitude', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=443,
-            sourcename='xxr-auto-apt', score=1053)
+            sourcename=u'xxr-auto-apt', score=1053)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=554, sourcename='xxr-daptup', score=1051,
+            estimated_duration=554, sourcename=u'xxr-daptup', score=1051,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=665, sourcename='xxr-cron-apt', score=1043)
+            estimated_duration=665, sourcename=u'xxr-cron-apt', score=1043)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=776, sourcename='xxr-apt-build', score=1043)
+            estimated_duration=776, sourcename=u'xxr-apt-build', score=1043)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=887, sourcename='xxr-debdelta', score=1044,
+            estimated_duration=887, sourcename=u'xxr-debdelta', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=998, sourcename='xxr-apt', score=1044,
+            estimated_duration=998, sourcename=u'xxr-apt', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=1110, sourcename='xxr-cupt', score=1044,
+            estimated_duration=1110, sourcename=u'xxr-cupt', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
 

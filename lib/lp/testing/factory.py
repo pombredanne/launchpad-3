@@ -1786,7 +1786,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                                      sourcename=None, distroseries=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe()
+            recipe = self.makeSourcePackageRecipe(name=sourcename)
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
