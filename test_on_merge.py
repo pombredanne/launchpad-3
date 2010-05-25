@@ -23,10 +23,9 @@ __metaclass__ = type
 # before it is deemed to be hung, and then appropriately terminated.
 # It's principal use is preventing a PQM job from hanging indefinitely and
 # backing up the queue.
-# e.g. Usage: TIMEOUT = 60 * 15
-# This will set the timeout to 15 minutes.
-#TIMEOUT = 60 * 150
-TIMEOUT = 60
+# e.g. Usage: TIMEOUT = 60 * 10
+# This will set the timeout to 10 minutes.
+TIMEOUT = 60 * 10
 
 
 def main():
