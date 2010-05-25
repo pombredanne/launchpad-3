@@ -10,12 +10,13 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
-class TestBugSubscribeBySomeoneElse(TestCaseWithFactory):
+class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
     """Test emails sent when subscribed by someone else."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        # Run the tests as a logged-in user.
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def test_subscribed_by_someone_else(self):
