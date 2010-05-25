@@ -659,7 +659,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
-                  code_review_level):
+                  code_review_level, subscribed_by):
         """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
@@ -668,7 +668,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             subscription = BranchSubscription(
                 branch=self, person=person,
                 notification_level=notification_level,
-                max_diff_lines=max_diff_lines, review_level=code_review_level)
+                max_diff_lines=max_diff_lines, review_level=code_review_level,
+                subscribed_by=subscribed_by)
             Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level

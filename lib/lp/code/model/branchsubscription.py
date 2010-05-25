@@ -42,7 +42,7 @@ class BranchSubscription(SQLBase):
     review_level = EnumCol(enum=CodeReviewNotificationLevel,
                                  notNull=True, default=DEFAULT)
     subscribed_by = ForeignKey(
-        dbName='person', foreignKey='Person',
+        dbName='subscribed_by', foreignKey='Person',
         storm_validator=validate_person_not_private_membership, notNull=True)
 
     @property
