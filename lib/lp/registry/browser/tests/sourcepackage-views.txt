@@ -197,16 +197,28 @@ the portlet showing the suggested project.
     package belongs to. ...
     Is the following project the upstream for this source package?
     Registered upstream project:
-    Lernid...
+    Lernid
+    Choose another upstream project
 
-If there are multiple potential matches they are all shown.
+The form does not steal focus because it is not the primary purpose of the
+page.
 
-    >>> product = factory.makeProduct(name='lernid-dev', displayname='Lernid Dev')
+    >>> print view.initial_focus_widget
+    None
+
+If there are multiple potential matches, the first 9 are shown. The 10th
+item is reserved for the "Choose another upstream project" option.
+
+    >>> product = factory.makeProduct(
+    ...     name='lernid-dev', displayname='Lernid Dev')
     >>> view = create_initialized_view(package, name='+portlet-associations')
     >>> for product in view.product_suggestions:
     ...     print product.name
     lernid
     lernid-dev
+
+    >>> view.max_suggestions
+    9
 
     >>> content = extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
     >>> print content
@@ -216,6 +228,21 @@ If there are multiple potential matches they are all shown.
     Registered upstream project:
     Lernid...
     Lernid Dev...
+    Choose another upstream project
+
+Choosing the "Choose another upstream project" option redirects the user
+to the +edit-packaging page where the user can search for a project.
+
+    >>> form = {
+    ...     'field.upstream': 'OTHER_UPSTREAM',
+    ...     'field.actions.link': 'Link to Upstream Project',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     package, name='+portlet-associations', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu/busy/+source/lernid/+edit-packaging
 
 
 Upstream connections view
@@ -328,6 +355,8 @@ to the project series.
 
     >>> view = create_initialized_view(package, name='+portlet-associations')
     >>> print extract_text(find_tag_by_id(view.render(), 'no-upstreams'))
+    Launchpad doesn&#8217;t know which project ...
     There are no projects registered in Launchpad that are a potential
     match for this source package. Can you help us find one?
-    Set upstream link
+    Registered upstream project:
+    Choose another upstream project

@@ -84,11 +84,20 @@
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
-    <!-- TALES watermark: namespace -->
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="lp.app.browser.watermark.WatermarkTalesAdapter"
-        name="watermark"
-        />
+  <!-- TALES watermark: namespace -->
+  <adapter
+      for="*"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.watermark.WatermarkTalesAdapter"
+      name="watermark"
+      />
+
+  <!-- TALES fmt: namespace for strings -->
+  <adapter
+      for="basestring"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.stringformatter.FormattersAPI"
+      name="fmt"
+      />
+
 </configure>
