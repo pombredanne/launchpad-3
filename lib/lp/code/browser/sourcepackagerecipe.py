@@ -341,8 +341,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['distros'], data['sourcepackagename'],
-            data['name'], recipe, data['description'])
+            self.user, self.user, data['sourcepackagename'],
+            data['name'], recipe, data['description'], data['distros'])
         self.next_url = canonical_url(source_package_recipe)
 
 

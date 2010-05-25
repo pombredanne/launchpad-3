@@ -53,7 +53,8 @@ class TestCaseForRecipe(BrowserTestCase):
         return self.factory.makeSourcePackageRecipe(
             owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
             description=u'This recipe builds a foo for disto bar, with my'
-            ' Secret Squirrel changes.', branches=[cake_branch])
+            ' Secret Squirrel changes.', branches=[cake_branch],
+            daily_build_archive=self.ppa)
 
     def getMainText(self, recipe, view_name=None):
         """Return the main text of a recipe page, as seen by Chef."""

@@ -2270,8 +2270,8 @@ class Person(
         spnset = getUtility(ISourcePackageNameSet)
         sourcepackagename = spnset.getOrCreateByName(sourcepackagename)
         return SourcePackageRecipe.new(
-            registrant, self, distroseries, sourcepackagename, name,
-            builder_recipe, description)
+            registrant, self, sourcepackagename, name,
+            builder_recipe, description, distroseries)
 
     def getRecipe(self, name):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe

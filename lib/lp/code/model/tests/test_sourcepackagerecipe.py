@@ -562,8 +562,8 @@ class TestWebservice(TestCaseWithFactory):
         ws_owner = ws_object(launchpad, owner)
         recipe = ws_owner.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
-            description='a recipe', distroseries=[distroseries.self_link],
-            recipe_text=recipe_text)
+            description='a recipe', recipe_text=recipe_text,
+            distroseries=[distroseries.self_link])
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
