@@ -10,13 +10,22 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
-class TestBugSubscribe(TestCaseWithFactory):
-    """Test basic Bug subscribing emails."""
+class TestBugSubscribeBySomeoneElse(TestCaseWithFactory):
+    """Test emails sent when subscribed by someone else."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_does_run_and_fail(self):
-        self.assertEqual(True, False)
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_subscribed_by_someone_else(self):
+        bug = self.factory.makeBug()
+        person_subscribing = self.factory.makePerson()
+        person_subscribed = self.factory.makePerson()
+        bug_subscription = bug.subscribe(
+            person_subscribed, person_subscribing, suppress_notify=False)
+        self.assertEqual(bug_subscription.person, person_subscribed)
+        self.assertEqual(bug_subscription.subscribed_by, person_subscribing)
 
 
 def test_suite():
