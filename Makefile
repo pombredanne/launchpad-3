@@ -99,7 +99,7 @@ ec2_check: clean build
         # Yes, this is code duplication.  If you conceive of a better
         # solution in a less heated moment, then please replace this!
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
-		--layer='!WindmillLayer'
+		--layer='!\(MailmanLayer\|WindmillLayer\)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of

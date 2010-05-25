@@ -44,7 +44,7 @@ product's blueprints.
     >>> browser.getControl('Blueprint').value = ['canvas']
     >>> browser.getControl('Continue').click()
     >>> printSpecBranchLinks(browser)
-    Support &lt;canvas&gt; Objects (Medium) - edit
+    Support &lt;canvas&gt; Objects edit
 
 
 == From the blueprint page ==
@@ -116,7 +116,7 @@ the spec-branch link.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/firefox/main')
     >>> printSpecBranchLinks(browser)
-    Support &lt;canvas&gt; Objects (Medium) - edit
+    Support &lt;canvas&gt; Objects edit
 
 Clicking on the edit link shows the form.  Unfortunately the
 testbrowser cannot handle javascript.  In these situations
