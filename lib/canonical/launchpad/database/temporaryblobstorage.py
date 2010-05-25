@@ -58,17 +58,26 @@ class TemporaryBlobStorage(SQLBase):
         finally:
             self.file_alias.close()
 
-    def hasBeenProcessed(self):
-        """See `ITemporaryBlobStorage`."""
+    @property
+    def _apport_job(self):
         # Imported here to avoid circular imports
-        from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+        from lp.bugs.interfaces.apportjob import
+        IProcessApportBlobJobSource
         try:
             job_for_blob = getUtility(
                 IProcessApportBlobJobSource).getByBlobUUID(self.uuid)
         except SQLObjectNotFound:
             return False
 
-        return (job_for_blob.job.status == JobStatus.COMPLETED)
+        return job_for_blob
+
+    def hasBeenProcessed(self):
+        """See `ITemporaryBlobStorage`."""
+        return (self._apport_job.job.status == JobStatus.COMPLETED)
+
+    def getProcessedData(self):
+        """See `ITemporaryBlobStorage`."""
+        return self._apport_job.metadata
 
 
 class TemporaryStorageManager:

@@ -49,6 +49,10 @@ class ITemporaryBlobStorage(Interface):
     def hasBeenProcessed():
         """Return True if this blob has been processed."""
 
+    @export_read_operation()
+    def getProcessedData():
+        """Returns metadata of the blob."""
+
 
 class ITemporaryStorageManager(Interface):
     """A tool to create temporary blobs."""
