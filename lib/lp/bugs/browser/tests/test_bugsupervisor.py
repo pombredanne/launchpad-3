@@ -78,7 +78,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.bug_supervisor, self.owner)
+        self.assertEqual(self.owner, self.product.bug_supervisor)
 
     def test_owner_appoint_none(self):
         self.product.setBugSupervisor(self.owner, self.owner)
@@ -99,7 +99,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.bug_supervisor, self.team)
+        self.assertEqual(self.team, self.product.bug_supervisor)
 
     def test_owner_cannot_appoint_another_team(self):
         team = self.factory.makeTeam(name='smack', displayname='<smack />')
@@ -119,6 +119,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(expected, view.errors.pop())
 
     def test_owner_cannot_appoint_a_nonvalid_user(self):
+        # The vocabulary only accepts valid users.
         form = self._makeForm(None)
         form['field.bug_supervisor'] = 'fnord'
         view = create_initialized_view(
@@ -131,7 +132,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertTrue(isinstance(view.errors.pop(), ConversionError))
 
     def test_owner_cannot_appoint_another_user(self):
-        another_user = self.factory.makePerson(name='smack')
+        another_user = self.factory.makePerson()
         form = self._makeForm(another_user)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
@@ -144,22 +145,22 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual(expected, view.errors.pop())
 
     def test_admin_appoint_another_user(self):
-        another_user = self.factory.makePerson(name='smack')
+        another_user = self.factory.makePerson()
         login('admin@canonical.com')
         form = self._makeForm(another_user)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.bug_supervisor, another_user)
+        self.assertEqual(another_user, self.product.bug_supervisor)
 
     def test_admin_appoint_another_team(self):
-        another_team = self.factory.makeTeam(name='smack')
+        another_team = self.factory.makeTeam()
         login('admin@canonical.com')
         form = self._makeForm(another_team)
         view = create_initialized_view(
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.bug_supervisor, another_team)
+        self.assertEqual(another_team, self.product.bug_supervisor)
 
 
 def test_suite():

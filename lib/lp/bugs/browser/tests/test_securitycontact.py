@@ -68,7 +68,7 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         view = create_initialized_view(
             self.product, name='+securitycontact', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.security_contact, self.owner)
+        self.assertEqual(self.owner, self.product.security_contact)
 
     def test_owner_appoint_none(self):
         self.product.security_contact = self.owner
@@ -121,7 +121,7 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         self.assertTrue(isinstance(view.errors.pop(), ConversionError))
 
     def test_owner_cannot_appoint_another_user(self):
-        another_user = self.factory.makePerson(name='smack')
+        another_user = self.factory.makePerson()
         form = self._makeForm(another_user)
         view = create_initialized_view(
             self.product, name='+securitycontact', form=form)
@@ -132,22 +132,22 @@ class TestSecurityContactEditView(TestCaseWithFactory):
         self.assertEqual(expected, view.errors.pop())
 
     def test_admin_appoint_another_user(self):
-        another_user = self.factory.makePerson(name='smack')
+        another_user = self.factory.makePerson()
         login('admin@canonical.com')
         form = self._makeForm(another_user)
         view = create_initialized_view(
             self.product, name='+securitycontact', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.security_contact, another_user)
+        self.assertEqual(another_user, self.product.security_contact)
 
     def test_admin_appoint_another_team(self):
-        another_team = self.factory.makeTeam(name='smack')
+        another_team = self.factory.makeTeam()
         login('admin@canonical.com')
         form = self._makeForm(another_team)
         view = create_initialized_view(
             self.product, name='+securitycontact', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.security_contact, another_team)
+        self.assertEqual(another_team, self.product.security_contact)
 
 
 def test_suite():

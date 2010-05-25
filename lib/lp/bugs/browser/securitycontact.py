@@ -1,15 +1,19 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes for security contacts."""
 
 __metaclass__ = type
-__all__ = ["SecurityContactEditView"]
 
+__all__ = [
+    "SecurityContactEditView",
+    ]
+
+from canonical.launchpad.webapp.launchpadform import (
+    action, LaunchpadFormView)
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.bugs.browser.bugsupervisor import BugRoleMixin
-from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadFormView, action)
+from lp.bugs.browser.bugrole import BugRoleMixin
 
 
 class SecurityContactEditView(BugRoleMixin, LaunchpadFormView):
