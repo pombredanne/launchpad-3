@@ -303,14 +303,14 @@ class TestRevisionMailJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        """Ensure that RevisionMailJob implements IRevisionMailJob."""
         branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
         verifyObject(IRevisionMailJob, job)
 
     def test_repr(self):
-        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        """Ensure that the revision mail job as a reasonable repr."""
         branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
