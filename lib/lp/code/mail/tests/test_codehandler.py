@@ -346,7 +346,7 @@ class TestCodeHandler(TestCaseWithFactory):
         subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, subscriber)
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)

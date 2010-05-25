@@ -930,7 +930,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         """A branch that has a subscription can be deleted."""
         self.branch.subscribe(
             self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, self.user)
         self.assertEqual(True, self.branch.canBeDeleted())
 
     def test_codeImportCanStillBeDeleted(self):

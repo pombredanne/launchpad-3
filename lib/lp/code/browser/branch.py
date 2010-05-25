@@ -354,6 +354,7 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
+        # TODO: FIXME - this is almost certainly not what we want.
         self._add_subscription_notice()
 
     def _add_subscription_notice(self):
@@ -361,10 +362,10 @@ class BranchView(LaunchpadView, FeedsMixin):
         if self.user and self.request.method == 'POST':
             newsub = self.request.form.get('subscribe', None)
             if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
+                self.context.subscribe(self.user, self.user)
                 self.notices.append("You have subscribed to this branch.")
             elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
+                self.context.unsubscribe(self.user, self.user)
                 self.notices.append("You have unsubscribed from this branch.")
 
     def user_is_subscribed(self):

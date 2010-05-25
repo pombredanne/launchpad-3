@@ -701,7 +701,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
         store = Store.of(subscription)
