@@ -271,7 +271,7 @@ We can add a new message to a bug by calling the newMessage method.
   ...     content='This is a new message added through the webservice API.')
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
   ...
 
@@ -290,7 +290,7 @@ We don't have to submit a subject when we add a new message.
   ...     content='This is a new message with no subject.')
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/2
   ...
 
@@ -852,7 +852,7 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     send_notifications=True,
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -905,7 +905,7 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     send_notifications=True,
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -949,7 +949,7 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     send_notifications=True,
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -980,7 +980,7 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     send_notifications=True,
+    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
@@ -1071,7 +1071,6 @@ But we can't change other things, like the URL.
   >>> print response
   HTTP/1.1 400 Bad Request...
   Content-Length: 47
-  Content-Type: text/plain
   ...
   <BLANKLINE>
   url: You tried to modify a read-only attribute.
@@ -1087,7 +1086,7 @@ associated with a bug.
   >>> print response
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://.../bugs/1/+watch/13
   ...
 
@@ -1150,7 +1149,7 @@ We can change various aspects of bug trackers.
   >>> print response
   HTTP/1.1 301 Moved Permanently...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://.../bugs/bugtrackers/bob
   ...
 
@@ -1160,7 +1159,7 @@ the bug tracker can be found has changed.
   >>> print webservice.get(bug_tracker['self_link'])
   HTTP/1.1 404 Not Found...
   Content-Length: ...
-  Content-Type: text/plain
+  ...
   X-Lazr-Oopsid: OOPS-...
   <BLANKLINE>
   Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
@@ -1233,7 +1232,7 @@ An attachment can be added to the bug:
   >>> print response
   HTTP/1.1 201 Created...
   Content-Length: 0
-  Content-Type: text/plain
+  ...
   Location: http://.../bugs/1/+attachment/1
   ...
 

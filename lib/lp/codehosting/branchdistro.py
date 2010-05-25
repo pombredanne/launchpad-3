@@ -21,8 +21,6 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NotBranchError, NotStacked
 
-from lazr.uri import URI
-
 import transaction
 
 from zope.component import getUtility
@@ -79,12 +77,9 @@ def switch_branches(prefix, scheme, old_db_branch, new_db_branch):
     # location so that it works to set the stacked on url to '/' + a
     # unique_name.
     new_location_bzrdir = BzrDir.open(
-        str(URI(
-            scheme=scheme, host='', path='/' + new_db_branch.unique_name)))
+        scheme + ':///' + new_db_branch.unique_name)
     old_location_bzrdir = new_location_bzrdir.clone(
-        str(URI(
-            scheme=scheme, host='', path='/' + old_db_branch.unique_name)),
-        revision_id='null:')
+        scheme + ':///' + old_db_branch.unique_name, revision_id='null:')
 
     # Set the stacked on url for old location.
     old_location_branch = old_location_bzrdir.open_branch()
@@ -207,8 +202,7 @@ class DistroBrancher:
 
         This function checks that every official package branch in the old
         distroseries has a matching branch in the new distroseries and that
-        stacking is set up as we expect in both the hosted and mirrored areas
-        on disk.
+        stacking is set up as we expect on disk.
 
         Every branch will be checked, even if some fail.
 
@@ -234,8 +228,7 @@ class DistroBrancher:
         """Check a branch in the old distroseries has been copied to the new.
 
         This function checks that `old_db_branch` has a matching branch in the
-        new distroseries and that stacking is set up as we expect in both the
-        hosted and mirrored areas on disk.
+        new distroseries and that stacking is set up as we expect on disk.
 
         This function simply returns True or False -- any problems will be
         logged to ``self.logger``.
@@ -258,71 +251,67 @@ class DistroBrancher:
         ok = self.checkConsistentOfficialPackageBranch(new_db_branch)
         if not ok:
             return ok
-        # for both mirrored and hosted areas:
-        for scheme in 'lp-mirrored', 'lp-hosted':
-            # the branch in the new distroseries is unstacked
-            new_location = str(URI(
-                scheme=scheme, host='', path='/' + new_db_branch.unique_name))
+        # the branch in the new distroseries is unstacked
+        new_location = 'lp-internal:///' + new_db_branch.unique_name
+        try:
+            new_bzr_branch = Branch.open(new_location)
+        except NotBranchError:
+            self.logger.warning(
+                "No bzr branch at new location %s", new_location)
+            ok = False
+        else:
             try:
-                new_bzr_branch = Branch.open(new_location)
-            except NotBranchError:
-                self.logger.warning(
-                    "No bzr branch at new location %s", new_location)
+                new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
                 ok = False
-            else:
-                try:
-                    new_stacked_on_url = new_bzr_branch.get_stacked_on_url()
-                    ok = False
-                    self.logger.warning(
-                        "New branch at %s is stacked on %s, should be "
-                        "unstacked.", new_location, new_stacked_on_url)
-                except NotStacked:
-                    pass
-            # The branch in the old distroseries is stacked on that in the
-            # new.
-            old_location = str(URI(
-                scheme=scheme, host='', path='/' + old_db_branch.unique_name))
+                self.logger.warning(
+                    "New branch at %s is stacked on %s, should be "
+                    "unstacked.", new_location, new_stacked_on_url)
+            except NotStacked:
+                pass
+        # The branch in the old distroseries is stacked on that in the
+        # new.
+        old_location = 'lp-internal:///' + old_db_branch.unique_name
+        try:
+            old_bzr_branch = Branch.open(old_location)
+        except NotBranchError:
+            self.logger.warning(
+                "No bzr branch at old location %s", old_location)
+            ok = False
+        else:
             try:
-                old_bzr_branch = Branch.open(old_location)
-            except NotBranchError:
-                self.logger.warning(
-                    "No bzr branch at old location %s", old_location)
-                ok = False
-            else:
-                try:
-                    old_stacked_on_url = old_bzr_branch.get_stacked_on_url()
-                    if old_stacked_on_url != '/' + new_db_branch.unique_name:
-                        self.logger.warning(
-                            "Old branch at %s is stacked on %s, should be "
-                            "stacked on %s", old_location, old_stacked_on_url,
-                            '/' + new_db_branch.unique_name)
-                        ok = False
-                except NotStacked:
+                old_stacked_on_url = old_bzr_branch.get_stacked_on_url()
+                if old_stacked_on_url != '/' + new_db_branch.unique_name:
                     self.logger.warning(
-                        "Old branch at %s is not stacked, should be stacked "
-                        "on %s", old_location,
+                        "Old branch at %s is stacked on %s, should be "
+                        "stacked on %s", old_location, old_stacked_on_url,
                         '/' + new_db_branch.unique_name)
                     ok = False
-                # The branch in the old distroseries has no revisions in its
-                # repository.  We open the repository independently of the
-                # branch because the branch's repository has had its fallback
-                # location activated. Note that this check might fail if new
-                # revisions get pushed to the branch in the old distroseries,
-                # which shouldn't happen but isn't totally impossible.
-                old_repo = BzrDir.open(old_location).open_repository()
-                if len(old_repo.all_revision_ids()) > 0:
-                    self.logger.warning(
-                        "Repository at %s has %s revisions.",
-                        old_location, len(old_repo.all_revision_ids()))
-                    ok = False
-                # The branch in the old distroseries has at least some
-                # history.  (We can't check that the tips are the same because
-                # the branch in the new distroseries might have new revisons).
-                if old_bzr_branch.last_revision() == 'null:':
-                    self.logger.warning(
-                        "Old branch at %s has null tip revision.",
-                        old_location)
-                    ok = False
+            except NotStacked:
+                self.logger.warning(
+                    "Old branch at %s is not stacked, should be stacked "
+                    "on %s", old_location,
+                    '/' + new_db_branch.unique_name)
+                ok = False
+            # The branch in the old distroseries has no revisions in its
+            # repository.  We open the repository independently of the
+            # branch because the branch's repository has had its fallback
+            # location activated. Note that this check might fail if new
+            # revisions get pushed to the branch in the old distroseries,
+            # which shouldn't happen but isn't totally impossible.
+            old_repo = BzrDir.open(old_location).open_repository()
+            if len(old_repo.all_revision_ids()) > 0:
+                self.logger.warning(
+                    "Repository at %s has %s revisions.",
+                    old_location, len(old_repo.all_revision_ids()))
+                ok = False
+            # The branch in the old distroseries has at least some
+            # history.  (We can't check that the tips are the same because
+            # the branch in the new distroseries might have new revisons).
+            if old_bzr_branch.last_revision() == 'null:':
+                self.logger.warning(
+                    "Old branch at %s has null tip revision.",
+                    old_location)
+                ok = False
         return ok
 
     def makeOneNewBranch(self, old_db_branch):
@@ -357,9 +346,6 @@ class DistroBrancher:
         # again.  So commit before doing that.
         transaction.commit()
         switch_branches(
-            config.codehosting.hosted_branches_root,
-            'lp-hosted', old_db_branch, new_db_branch)
-        switch_branches(
             config.codehosting.mirrored_branches_root,
-            'lp-mirrored', old_db_branch, new_db_branch)
+            'lp-internal', old_db_branch, new_db_branch)
         return new_db_branch

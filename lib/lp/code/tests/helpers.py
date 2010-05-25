@@ -19,11 +19,27 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.security.proxy import isinstance as zisinstance
 
+from lp.code.interfaces.branchmergeproposal import (
+    IBranchMergeProposalJobSource)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
+
+
+def mark_all_merge_proposal_jobs_done():
+    """Sometimes in tests we want to clear out all pending jobs.
+
+    This function iterates through all the pending jobs and marks the done.
+    """
+    while True:
+        jobs = list(getUtility(IBranchMergeProposalJobSource).iterReady())
+        if len(jobs) == 0:
+            break
+        for job in jobs:
+            job.start()
+            job.complete()
 
 
 def add_revision_to_branch(factory, branch, revision_date, date_created=None,

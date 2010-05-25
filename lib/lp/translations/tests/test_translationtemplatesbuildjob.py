@@ -9,9 +9,9 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from sqlobject import SQLObjectNotFound
 from storm.store import Store
 
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -82,6 +82,18 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertIsInstance(buildqueue, BuildQueue)
         self.assertEqual(job_id, get_job_id(buildqueue.job))
+
+    def test_BuildQueue_for_arch(self):
+        # BuildQueue entry is for i386 (default Ubuntu) architecture.
+        queueset = getUtility(IBuildQueueSet)
+        job_id = get_job_id(self.specific_job.job)
+        buildqueue = queueset.get(job_id)
+
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        expected_processor = (
+            ubuntu.currentseries.nominatedarchindep.default_processor)
+
+        self.assertEquals(expected_processor, buildqueue.processor)
 
     def test_getName(self):
         # Each job gets a unique name.
@@ -172,7 +184,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     def _makeTranslationBranch(self, fake_pottery_compatible=None):
         """Create a branch that provides translations for a productseries."""
         if fake_pottery_compatible is None:
-            self.useBzrBranches()
+            self.useBzrBranches(direct_database=True)
             branch, tree = self.create_branch_and_tree()
         else:
             branch = self.factory.makeAnyBranch()
@@ -242,7 +254,8 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         # If the feature is enabled, a TipChanged event for a branch that
         # generates templates will schedule a templates build.
         branch = self._makeTranslationBranch()
-        commit = DirectBranchCommit(branch, to_mirror=True)
+        removeSecurityProxy(branch).last_scanned_id = 'null:'
+        commit = DirectBranchCommit(branch)
         commit.writeFile('POTFILES.in', 'foo')
         commit.commit('message')
         notify(events.TipChanged(branch, None, False))

@@ -22,7 +22,6 @@ from zope.interface import classProvides, implements
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -61,6 +60,9 @@ class SourcePackageRecipe(Storm):
     delegates(ISourcePackageRecipeData, context='_recipe_data')
 
     id = Int(primary=True)
+
+    daily_build_archive_id = Int(name='daily_build_archive', allow_none=True)
+    daily_build_archive = Reference(daily_build_archive_id, 'Archive.id')
 
     date_created = UtcDateTimeCol(notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True)
@@ -150,9 +152,9 @@ class SourcePackageRecipe(Storm):
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
-        reject_reason = check_upload_to_archive(
-            requester, distroseries, self.sourcepackagename,
-            archive, component, pocket)
+        reject_reason = archive.checkUpload(
+            requester, self.distroseries, self.sourcepackagename,
+            component, pocket)
         if reject_reason is not None:
             raise reject_reason
 

@@ -45,6 +45,7 @@ from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
@@ -77,6 +78,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.job.interfaces.job import JobStatus
+from lp.registry.browser.product import ProductConfigureBase
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
@@ -88,13 +90,37 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.bugtask import NewLineToSpacesWidget
-
+from canonical.widgets.product import ProductBugTrackerWidget
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
     [('yes', True), ('no', False)])
+
+
+class ProductConfigureBugTrackerView(ProductConfigureBase):
+    """View class to configure the bug tracker for a project."""
+
+    label = "Configure bug tracker"
+    field_names = [
+        "bugtracker",
+        "enable_bug_expiration",
+        "remote_product",
+        "bug_reporting_guidelines",
+        ]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The constraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
 
 
 class FileBugViewBase(LaunchpadFormView):

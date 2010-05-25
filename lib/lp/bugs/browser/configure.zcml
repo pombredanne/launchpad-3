@@ -378,6 +378,20 @@
         facet="bugs"
         template="../templates/bugtarget-bugs.pt"/>
     <browser:page
+        name="+securitycontact"
+        for="lp.bugs.interfaces.securitycontact.IHasSecurityContact"
+        class="lp.bugs.browser.securitycontact.SecurityContactEditView"
+        facet="bugs"
+        permission="launchpad.Edit"
+        template="../templates/securitycontact-edit.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        facet="bugs"
+        permission="launchpad.Edit"
+        name="+configure-bugtracker"
+        template="../../app/templates/generic-edit.pt"
+        class="lp.bugs.browser.bugtarget.ProductConfigureBugTrackerView"/>
+    <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+bugs-index"
         class="lp.bugs.browser.bugtarget.BugTargetBugsView"
@@ -1104,6 +1118,12 @@
             class="lp.bugs.browser.bugwatch.BugWatchEditView"
             permission="launchpad.AnyPerson"
             template="../templates/bugwatch-editform.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugwatch.IBugWatch"
+            name="+portlet-activity"
+            class="lp.bugs.browser.bugwatch.BugWatchActivityPortletView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bugwatch-portlet-activity.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             permission="launchpad.AnyPerson">

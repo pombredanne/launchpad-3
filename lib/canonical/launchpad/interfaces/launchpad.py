@@ -16,7 +16,6 @@ from persistent import IPersistent
 
 from lazr.restful.interfaces import IServiceRootResource
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX kiko 2007-02-08:
@@ -46,7 +45,6 @@ __all__ = [
     'IHasMugshot',
     'IHasProduct',
     'IHasProductAndAssignee',
-    'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -292,9 +290,7 @@ class IPrivateApplication(ILaunchpadApplication):
 
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
-    branch_puller = Attribute("""Branch puller end point.""")
-
-    branchfilesystem = Attribute("""The branch filesystem end point.""")
+    codehosting = Attribute("""Codehosting end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
@@ -434,16 +430,6 @@ class IHasBug(Interface):
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     """An object that has a product attribute and an assigned attribute.
     See IHasProduct and IHasAssignee."""
-
-
-class IHasSecurityContact(Interface):
-    """An object that has a security contact."""
-
-    security_contact = PublicPersonChoice(
-        title=_("Security Contact"),
-        description=_(
-            "The person or team who handles security-related bug reports"),
-        required=False, vocabulary='ValidPersonOrTeam')
 
 
 class IHasIcon(Interface):

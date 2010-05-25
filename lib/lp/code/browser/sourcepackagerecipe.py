@@ -29,17 +29,20 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, NavigationMenu)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
@@ -89,6 +92,17 @@ class SourcePackageRecipeHierarchy(Hierarchy):
 
         for item in traversed:
             yield item
+
+
+class SourcePackageRecipeNavigation(Navigation):
+    """Navigation from the SourcePackageRecipe."""
+
+    usedfor = ISourcePackageRecipe
+
+    @stepthrough('+build')
+    def traverse_build(self, id):
+        """Traverse to this recipe's builds."""
+        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
@@ -152,9 +166,12 @@ class SourcePackageRecipeView(LaunchpadView):
 
 def buildable_distroseries_vocabulary(context):
     """Return a vocabulary of buildable distroseries."""
+    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
+    supported_distros = [ppa.distribution for ppa in ppas]
     dsset = getUtility(IDistroSeriesSet).search()
     terms = [SimpleTerm(distro, distro.id, distro.displayname)
-             for distro in dsset if distro.active]
+             for distro in dsset if (
+                 distro.active and distro.distribution in supported_distros)]
     return SimpleVocabulary(terms)
 
 def target_ppas_vocabulary(context):
@@ -204,6 +221,11 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
             self.context.requestBuild(
                 data['archive'], self.user, distroseries,
                 PackagePublishingPocket.RELEASE)
+
+
+class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
+
+    usedfor = ISourcePackageRecipeBuild
 
 
 class SourcePackageRecipeBuildView(LaunchpadView):
@@ -259,6 +281,9 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         if self.context.datebuilt is not None:
             return False
         return self.eta is not None
+
+    def binary_builds(self):
+        return list(self.context.binary_builds)
 
 
 class ISourcePackageAddEditSchema(Interface):

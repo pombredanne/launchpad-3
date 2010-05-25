@@ -100,7 +100,7 @@ and we see a message "no hot bugs" instead of the bug listing.
     >>> bug_list = find_tag_by_id(
     ...     anon_browser.contents, 'no-bugs-filed')
     >>> print extract_text(bug_list)
-    There are currently no hot bugs filed against Project Uses Malone.
+    There are currently no open bugs filed against Project Uses Malone.
 
 But since the project has a bug, the search box is still visible.
 
@@ -110,3 +110,20 @@ But since the project has a bug, the search box is still visible.
     by status
     ...
     Advanced search
+
+Projects that use an external bug tracker will list the tracker on a
+bugs home page in addition to the message that the project does not
+use Launchpad for bug tracking.
+
+    >>> login('foo.bar@canonical.com')
+    >>> some_tracker = factory.makeBugTracker(
+    ...     base_url='http://tracker.example.com/')
+    >>> test_project.bugtracker = some_tracker
+    >>> logout()
+    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
+    >>> print extract_text(uses_malone_p)
+    Simple Test Project does not use Launchpad for bug tracking.
+    >>> tracker_text = find_tag_by_id(anon_browser.contents, 'bugtracker')
+    >>> print extract_text(tracker_text)
+    Bugs are tracked in tracker.example.com/.
