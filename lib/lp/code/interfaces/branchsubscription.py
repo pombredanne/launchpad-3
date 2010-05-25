@@ -73,3 +73,8 @@ class IBranchSubscription(Interface):
                 'Control the kind of review activity that triggers '
                 'notifications.'
                 )))
+
+    subscribed_by = exported(ParticipatingPersonChoice(
+        title=_('Subscribed by'), required=True,
+        vocabulary='ValidPersonOrTeam', readonly=True,
+        description=_("The person who created this subscription.")))
