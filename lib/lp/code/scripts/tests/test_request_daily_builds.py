@@ -10,8 +10,8 @@ import transaction
 
 from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.scripts.tests import run_script
-from lp.soyuz.interfaces.archive import (
-    default_name_by_purpose, IArchiveSet, ArchivePurpose)
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 
 
@@ -46,6 +46,10 @@ class TestRequestDailyBuilds(TestCaseWithFactory):
             'cronscripts/request_daily_builds.py', [])
         self.assertEqual(0, recipe.getBuilds(True).count())
         self.assertIn('Requested 0 daily builds.', stderr)
+        utility = ErrorReportingUtility()
+        utility.configure('request_daily_builds')
+        oops = utility.getLastOopsReport()
+        self.assertIn('NonPPABuildRequest', oops.tb_text)
 
 
 def test_suite():
