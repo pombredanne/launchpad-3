@@ -185,8 +185,9 @@ class BranchJobDerived(BaseRunnableJob):
 
     def __repr__(self):
         branch = self.branch
-        return '<%(job_type)s job for %(branch)s>' % {
+        return '<%(job_type)s branch job (%(id)s) for %(branch)s>' % {
             'job_type': self.context.job_type.name,
+            'id': self.context.id,
             'branch': branch.unique_name,
             }
 
