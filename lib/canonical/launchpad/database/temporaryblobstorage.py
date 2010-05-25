@@ -61,8 +61,7 @@ class TemporaryBlobStorage(SQLBase):
     @property
     def _apport_job(self):
         # Imported here to avoid circular imports
-        from lp.bugs.interfaces.apportjob import
-        IProcessApportBlobJobSource
+        from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
         try:
             job_for_blob = getUtility(
                 IProcessApportBlobJobSource).getByBlobUUID(self.uuid)
