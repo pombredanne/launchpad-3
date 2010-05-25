@@ -184,7 +184,7 @@ def main():
                 # The process we were watching died.
                 break
 
-            cleanup_hung_testrunner_process(xvfb_proc)
+            cleanup_hung_testrunner(xvfb_proc)
             break
 
         if xvfb_proc.stdout in rlist:
@@ -207,7 +207,7 @@ def main():
     return rv
 
 
-def cleanup_hung_testrunner_process(process):
+def cleanup_hung_testrunner(process):
     """Kill and clean up the testrunner process and its children."""
     print
     print
