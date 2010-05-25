@@ -39,7 +39,6 @@ for teams (as they're defined in the ITeam interface).
     name: u'salgado'
     open_membership_invitations_collection_link: u'http://.../~salgado/open_membership_invitations'
     participants_collection_link: u'http://.../~salgado/participants'
-    pending_gpg_keys_collection_link: u'http://.../~salgado/pending_gpg_keys'
     ppas_collection_link: u'http://.../~salgado/ppas'
     preferred_email_address_link: u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
     private: False
@@ -89,7 +88,6 @@ for teams (as they're defined in the ITeam interface).
     name: u'ubuntu-team'
     open_membership_invitations_collection_link: u'http://.../~ubuntu-team/open_membership_invitations'
     participants_collection_link: u'http://.../~ubuntu-team/participants'
-    pending_gpg_keys_collection_link: u'http://.../~ubuntu-team/pending_gpg_keys'
     ppas_collection_link: u'http://.../~ubuntu-team/ppas'
     preferred_email_address_link: u'http://.../~ubuntu-team/+email/support@ubuntu.com'
     private: False
@@ -616,6 +614,24 @@ indicating what was wrong is returned.
     ...
     name:
     Invalid name 'XpTo@#$%'. Names must be at least two characters ...
+
+The 'getArchiveSubscriptionURLs' named operation will return a list of
+all the URLs to the private archives that the person can access.
+
+    >>> login("mark@example.com")
+    >>> mark_person = getUtility(IPersonSet).getByName("mark")
+    >>> mark_private_ppa = factory.makeArchive(
+    ...     owner=mark_person, distribution=mark_person.archive.distribution,
+    ...     private=True, name='p3a')
+    >>> new_sub_to_mark_ppa = mark_private_ppa.newSubscription(
+    ...     mark_person, mark_person, description=u"testing")
+    >>> token = mark_private_ppa.newAuthToken(mark_person, u"testtoken")
+    >>> logout()
+
+    >>> launchpad = launchpadlib_for(
+    ...     'person test', 'mark', 'WRITE_PUBLIC')
+    >>> print launchpad.me.getArchiveSubscriptionURLs()
+    [u'http://mark:testtoken@private-ppa.launchpad.dev/mark/p3a/ubuntu']
 
 
 == Custom operations ==

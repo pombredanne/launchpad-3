@@ -10,6 +10,7 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from bzrlib.plugins.builder import RecipeParser
 from lazr.delegates import delegates
 
 from storm.locals import (
@@ -21,7 +22,6 @@ from zope.interface import classProvides, implements
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.archiveuploader.permission import check_upload_to_archive
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
     ISourcePackageRecipeData)
@@ -61,6 +61,9 @@ class SourcePackageRecipe(Storm):
 
     id = Int(primary=True)
 
+    daily_build_archive_id = Int(name='daily_build_archive', allow_none=True)
+    daily_build_archive = Reference(daily_build_archive_id, 'Archive.id')
+
     date_created = UtcDateTimeCol(notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True)
 
@@ -79,6 +82,10 @@ class SourcePackageRecipe(Storm):
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
+
+    @property
+    def _sourcepackagename_text(self):
+        return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
     description = Unicode(allow_none=False)
@@ -102,6 +109,13 @@ class SourcePackageRecipe(Storm):
     @property
     def base_branch(self):
         return self._recipe_data.base_branch
+
+    def setRecipeText(self, recipe_text):
+        self.builder_recipe = RecipeParser(recipe_text).parse()
+
+    @property
+    def recipe_text(self):
+        return str(self.builder_recipe)
 
     @staticmethod
     def new(registrant, owner, distroseries, sourcepackagename, name,
@@ -138,9 +152,9 @@ class SourcePackageRecipe(Storm):
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
-        reject_reason = check_upload_to_archive(
-            requester, distroseries, self.sourcepackagename,
-            archive, component, pocket)
+        reject_reason = archive.checkUpload(
+            requester, self.distroseries, self.sourcepackagename,
+            component, pocket)
         if reject_reason is not None:
             raise reject_reason
 

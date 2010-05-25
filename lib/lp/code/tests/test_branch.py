@@ -12,7 +12,6 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 
-from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
@@ -277,8 +276,8 @@ class TestWriteToBranch(PermissionTest):
             distroseries = archive.distribution.currentseries
         self.assertIs(
             None,
-            verify_upload(
-                person, spn, archive, component, distroseries,
+            archive.verifyUpload(
+                person, spn, component, distroseries,
                 strict_component))
 
     def assertCannotUpload(
@@ -295,8 +294,8 @@ class TestWriteToBranch(PermissionTest):
         """
         if distroseries is None:
             distroseries = archive.distribution.currentseries
-        exception = verify_upload(
-            person, spn, archive, component, distroseries)
+        exception = archive.verifyUpload(
+            person, spn, component, distroseries)
         self.assertEqual(reason, str(exception))
 
     def test_package_upload_permissions_grant_branch_edit(self):

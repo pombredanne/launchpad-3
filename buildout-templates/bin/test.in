@@ -98,7 +98,7 @@ except KeyError:
 # need to be silenced should have an accompanied Bug reference.
 #
 warnings.filterwarnings(
-    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
+    'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh',
     )
 warnings.filterwarnings(
     'ignore', 'twisted.python.plugin', DeprecationWarning,
@@ -107,8 +107,19 @@ warnings.filterwarnings(
     'ignore', 'zope.testing.doctest', DeprecationWarning,
     )
 warnings.filterwarnings(
-    'ignore', 'bzrlib.*was deprecated', DeprecationWarning
-)
+    'ignore', 'bzrlib.*was deprecated', DeprecationWarning,
+    )
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
+# We cannot narrow this warnings filter to just twisted because
+# warnings.warn_explicit() sees this import as coming from importfascist, not
+# from twisted.  It makes no sense to put module='importfascist' here though
+# because /everything/ gets imported through it.  So, sad as it is, until
+# twisted doesn't produce warnings under Python 2.6, just ignore all these
+# deprecations.
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
 # The next one is caused by a lamosity in python-openid.  The following change
 # to openid/server/server.py would make the warning filter unnecessary:
 # 978c974,974
@@ -151,7 +162,7 @@ defaults = {
     # Find tests in the tests and ftests directories
     'tests_pattern': '^f?tests$',
     'test_path': [${buildout:directory/lib|path-repr}],
-    'package': ['canonical', 'lp', 'devscripts'],
+    'package': ['canonical', 'lp', 'devscripts', 'launchpad_loggerhead'],
     'layer': ['!(MailmanLayer)'],
     }
 

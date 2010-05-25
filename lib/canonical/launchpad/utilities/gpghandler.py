@@ -160,7 +160,14 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, plain, None)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.message)
+                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+                # for python2.5 compatibility. We should remove it when we no
+                # longer need to run on python2.5.
+                if hasattr(e, 'message'):
+                    msg = e.message
+                else:
+                    msg = e.strerror
+                raise GPGVerificationError(msg)
         else:
             # store clearsigned signature
             sig = StringIO(content)
@@ -170,7 +177,14 @@ class GPGHandler:
             try:
                 signatures = ctx.verify(sig, None, plain)
             except gpgme.GpgmeError, e:
-                raise GPGVerificationError(e.message)
+                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+                # for python2.5 compatibility. We should remove it when we no
+                # longer need to run on python2.5.
+                if hasattr(e, 'message'):
+                    msg = e.message
+                else:
+                    msg = e.strerror
+                raise GPGVerificationError(msg)
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
@@ -385,6 +399,13 @@ class GPGHandler:
         already knows about.
         """
         ctx = gpgme.Context()
+
+        # XXX michaeln 2010-05-07 bug=576405
+        # Currently gpgme.Context().keylist fails if passed a unicode
+        # string even though that's what is returned for fingerprints.
+        if type(filter) == unicode:
+            filter = filter.encode('utf-8')
+
         for key in ctx.keylist(filter, secret):
             yield PymeKey.newFromGpgmeKey(key)
 

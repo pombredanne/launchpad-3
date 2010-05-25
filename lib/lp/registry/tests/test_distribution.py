@@ -14,6 +14,32 @@ from lp.registry.tests.test_distroseries import (
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.registry.interfaces.series import SeriesStatus
+from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+
+
+class TestDistribution(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistribution, self).setUp('foo.bar@canonical.com')
+
+    def test_distribution_repr_ansii(self):
+        # Verify that ANSI displayname is ascii safe.
+        distro = self.factory.makeDistribution(
+            name="distro", displayname=u'\xdc-distro')
+        ignore, displayname, name = repr(distro).rsplit(' ', 2)
+        self.assertEqual("'\\xdc-distro'", displayname)
+        self.assertEqual('(distro)>', name)
+
+    def test_distribution_repr_unicode(self):
+        # Verify that Unicode displayname is ascii safe.
+        distro = self.factory.makeDistribution(
+            name="distro", displayname=u'\u0170-distro')
+        ignore, displayname, name = repr(distro).rsplit(' ', 2)
+        self.assertEqual("'\\u0170-distro'", displayname)
 
 
 class TestDistributionCurrentSourceReleases(
@@ -25,6 +51,7 @@ class TestDistributionCurrentSourceReleases(
     for the latest published source across multiple distro series.
     """
 
+    layer = LaunchpadFunctionalLayer
     release_interface = IDistributionSourcePackageRelease
 
     @property
@@ -75,7 +102,4 @@ class TestDistributionCurrentSourceReleases(
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestDistributionCurrentSourceReleases))
-    return suite
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

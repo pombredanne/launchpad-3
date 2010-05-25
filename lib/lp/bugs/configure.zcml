@@ -851,8 +851,9 @@
                     bug
                     bugtasks
                     bugtracker
+                    can_be_rescheduled
                     datecreated
-                    getLastErrorMessage
+                    failed_activity
                     hasComment
                     unpushed_comments
                     id
@@ -872,7 +873,8 @@
                 permission="launchpad.AnyPerson"
                 attributes="
                     destroySelf
-                    addActivity"
+                    addActivity
+                    setNextCheck"
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"

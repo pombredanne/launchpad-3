@@ -40,7 +40,7 @@ class AcceptAllPolicy:
 
 
 def get_user_key():
-    """Get a SSH key from the agent.  Raise an error if not found.
+    """Get a SSH key from the agent.  Raise an error if no keys were found.
 
     This key will be used to let the user log in (as $USER) to the instance.
     """
@@ -49,10 +49,14 @@ def get_user_key():
     if len(keys) == 0:
         raise BzrCommandError(
             'You must have an ssh agent running with keys installed that '
-            'will allow the script to rsync to devpad and get your '
+            'will allow the script to access Launchpad and get your '
             'branch.\n')
-    user_key = agent.get_keys()[0]
-    return user_key
+
+    # XXX mars 2010-05-07 bug=577118
+    # Popping the first key off of the stack can create problems if the person
+    # has more than one key in their ssh-agent, but alas, we have no good way
+    # to detect the right key to use.  See bug 577118 for a workaround.
+    return keys[0]
 
 
 # Commands to run to turn a blank image into one usable for the rest of the

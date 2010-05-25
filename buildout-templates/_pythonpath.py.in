@@ -12,7 +12,13 @@ ${python-relative-path-setup}
 
 import os
 import sys
+import warnings
 
+# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
+# warnings.
+warnings.filterwarnings(
+    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
+    )
 
 site_dir = ${scripts:parts-directory|path-repr}
 
@@ -30,4 +36,9 @@ if ('site' in sys.modules and
 
 if site_dir not in sys.path:
     sys.path.insert(0, site_dir)
+elif 'site' not in sys.modules:
+    # XXX 2010-05-04 gary bug 575206
+    # This one line is to support Mailman 2, which does something unexpected
+    # to set up its paths.
+    sys.path[:] = [p for p in sys.path if 'site-packages' not in p]
 import site # sets up paths
