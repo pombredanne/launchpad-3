@@ -25,8 +25,10 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
     def test_subscribed_by_someone_else_with_notification(self):
         """Test that notifications are sent when suppress_notify is False."""
         bug = self.factory.makeBug()
-        person_subscribing = self.factory.makePerson()
-        person_subscribed = self.factory.makePerson()
+        person_subscribing = self.factory.makePerson(
+            name='foosuber', displayname='Foo Suber')
+        person_subscribed = self.factory.makePerson(
+            name='foosubed', displayname='Foo Subed')
         # There are no email notifications before subscribing.
         self.assertEqual(len(stub.test_emails), 0)
         bug_subscription = bug.subscribe(
@@ -37,6 +39,9 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         self.assertEqual(bug_subscription.subscribed_by, person_subscribing)
         # Confirm a notification has been sent.
         self.assertEqual(len(stub.test_emails), 1)
+        rationale = 'You have been subscribed to a public bug by Foo Suber'
+        msg = stub.test_emails[-1][2]
+        self.assertTrue(rationale in msg)
 
 
 def test_suite():
