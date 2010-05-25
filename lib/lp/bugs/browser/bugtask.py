@@ -1175,6 +1175,14 @@ def get_prefix(bugtask):
     return '_'.join(parts)
 
 
+def get_assignee_vocabulary(context):
+    """The vocabulary of bug task assignees the current user can set."""
+    if context.userCanSetAnyAssignee(getUtility(ILaunchBag).user):
+        return 'ValidAssignee'
+    else:
+        return 'AllUserTeamsParticipation'
+
+
 class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
@@ -1382,7 +1390,8 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields = self.form_fields.omit('assignee')
             self.form_fields += formlib.form.Fields(ParticipatingPersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
-                vocabulary='ValidAssignee', readonly=False))
+                vocabulary=get_assignee_vocabulary(self.context),
+                readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
 
@@ -3448,11 +3457,21 @@ class BugTaskTableRowView(LaunchpadView):
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
+        assignee_vocabulary = get_assignee_vocabulary(self.context)
+        # Display the search field only if the user can set any person
+        # or team
+        user = getUtility(ILaunchBag).user
+        hide_assignee_team_selection = (
+            not self.context.userCanSetAnyAssignee(user) and
+            (user is None or user.teams_participated_in.count() == 0))
         return dumps({
             'row_id': 'tasksummary%s' % self.context.id,
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_vocabulary': assignee_vocabulary,
+            'hide_assignee_team_selection': hide_assignee_team_selection,
+            'user_can_unassign': self.context.userCanUnassign(user),
             'target_is_product': IProduct.providedBy(self.context.target),
             'status_widget_items': self.status_widget_items,
             'status_value': self.context.status.title,

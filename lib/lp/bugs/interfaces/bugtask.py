@@ -671,6 +671,21 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    def userCanSetAnyAssignee(user):
+        """Check if the current user can set anybody sa a bugtask assignee.
+
+        Return True for project owner, project drivers, series drivers,
+        bug supervisors and Launchpad admins; return False for other users.
+        """
+
+    def userCanUnassign(user):
+        """Check if the current user can set assignee to None.
+
+        Project owner, project drivers, series drivers, bug supervisors
+        and Launchpad admins can do this always; other users can do this
+        only if they or their reams are the assignee.
+        """
+
     @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))

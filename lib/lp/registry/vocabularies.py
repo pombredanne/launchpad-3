@@ -26,6 +26,7 @@ __metaclass__ = type
 __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
+    'AllUserTeamsParticipationVocabulary',
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
@@ -756,6 +757,27 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
         ValidPersonOrTeamVocabulary.__init__(self, context)
 
 
+class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
+    """The set of teams where the current user is a member.
+
+    Other than UserTeamsParticipationVocabulary, this vocabulary includes
+    private teams.
+    """
+
+    displayname = 'Select a Team of which you are a member'
+
+    def __init__(self, context):
+        super(AllUserTeamsParticipationVocabulary, self).__init__(context)
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            self.extra_clause = False
+        else:
+            self.extra_clause = AND(
+                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
+                TeamParticipation.person == user.id,
+                TeamParticipation.team == Person.id)
+
+
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
 
@@ -1457,7 +1479,8 @@ class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
             return IDistribution.providedBy(obj)
 
 
-class FeaturedProjectVocabulary(DistributionOrProductOrProjectGroupVocabulary):
+class FeaturedProjectVocabulary(
+    DistributionOrProductOrProjectGroupVocabulary):
     """Vocabulary of projects that are featured on the LP Home Page."""
 
     _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,
