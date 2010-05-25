@@ -16,9 +16,6 @@ from signal import SIGKILL, SIGTERM, SIGINT, SIGHUP
 from select import select
 
 
-__metaclass__ = type
-
-
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.
 # It's principal use is preventing a PQM job from hanging indefinitely and
@@ -174,7 +171,7 @@ def main():
     # the process group number matching our PID.
     os.setpgid(0, original_process_group)
 
-    # This code is very similar to what takes place in proc._communicate(),
+    # This code is very similar to what takes place in Popen._communicate(),
     # but this code times out if there is no activity on STDOUT for too long.
     open_readers = set([xvfb_proc.stdout])
     while open_readers:
@@ -187,22 +184,7 @@ def main():
                 # The process we were watching died.
                 break
 
-            print
-            print ("WARNING: A test appears to be hung. There has been no "
-                "output for %d seconds." % TIMEOUT)
-            print "Forcibly shutting down the test suite:"
-
-            # This guarantees the processes the group will die.  In rare cases
-            # a child process may survive this if they are in a different
-            # process group and they ignore the signals we send their parent.
-            nice_killpg(xvfb_proc)
-
-            # Drain the subprocess's stdout and stderr.
-            print "The dying processes left behind the following output:"
-            print "--------------- BEGIN OUTPUT ---------------"
-            sys.stdout.write(xvfb_proc.stdout.read())
-            print "---------------- END OUTPUT ----------------"
-
+            cleanup_hung_testrunner_process(xvfb_proc)
             break
 
         if xvfb_proc.stdout in rlist:
@@ -213,15 +195,7 @@ def main():
                 # Gracefully exit the loop if STDOUT is empty.
                 open_readers.remove(xvfb_proc.stdout)
 
-    try:
-        rv = xvfb_proc.wait()
-    except OSError, exc:
-        raise
-        if exc.errno == errno.ECHILD:
-            # The process has already died and been collected.
-            rv = xvfb_proc.returncode
-        else:
-            raise
+    rv = xvfb_proc.wait()
 
     if rv == 0:
         print
@@ -231,6 +205,27 @@ def main():
         print 'Tests failed (exit code %d)' % rv
 
     return rv
+
+
+def cleanup_hung_testrunner_process(process):
+    """Kill and clean up the testrunner process and its children."""
+    print
+    print
+    print ("WARNING: A test appears to be hung. There has been no "
+        "output for %d seconds." % TIMEOUT)
+    print "Forcibly shutting down the test suite"
+
+    # This guarantees the process' group will die.  In rare cases
+    # a child process may survive this if they are in a different
+    # process group and they ignore the signals we send their parent.
+    nice_killpg(process)
+
+    # Drain the subprocess's stdout and stderr.
+    print "The dying processes left behind the following output:"
+    print "--------------- BEGIN OUTPUT ---------------"
+    sys.stdout.write(process.stdout.read())
+    print
+    print "---------------- END OUTPUT ----------------"
 
 
 def nice_killpg(process):
