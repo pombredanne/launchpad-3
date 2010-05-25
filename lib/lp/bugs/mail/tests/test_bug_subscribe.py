@@ -29,15 +29,10 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
             name='foosuber', displayname='Foo Suber')
         person_subscribed = self.factory.makePerson(
             name='foosubed', displayname='Foo Subed')
-        # There are no email notifications before subscribing.
         self.assertEqual(len(stub.test_emails), 0)
         bug_subscription = bug.subscribe(
             person_subscribed, person_subscribing, suppress_notify=False)
         transaction.commit()
-        # Ensure the subscription was properly created.
-        self.assertEqual(bug_subscription.person, person_subscribed)
-        self.assertEqual(bug_subscription.subscribed_by, person_subscribing)
-        # Confirm a notification has been sent.
         self.assertEqual(len(stub.test_emails), 1)
         rationale = 'You have been subscribed to a public bug by Foo Suber'
         msg = stub.test_emails[-1][2]
