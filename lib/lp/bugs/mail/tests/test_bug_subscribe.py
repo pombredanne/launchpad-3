@@ -22,7 +22,7 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         # Run the tests as a logged-in user.
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
-    def test_subscribed_by_someone_else_sends_notification(self):
+    def test_suppress_notify_false_does_notify(self):
         """Test notifications are sent when suppress_notify is False."""
         bug = self.factory.makeBug()
         person_subscribing = self.factory.makePerson(
@@ -38,7 +38,7 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         msg = stub.test_emails[-1][2]
         self.assertTrue(rationale in msg)
 
-    def test_suppress_notify_does_not_notify(self):
+    def test_suppress_notify_true_does_not_notify(self):
         """Test notifications are not sent when suppress_notify is True."""
         bug = self.factory.makeBug()
         person_subscribing = self.factory.makePerson(
