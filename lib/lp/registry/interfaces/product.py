@@ -594,7 +594,10 @@ class IProductPublic(
             title=_('Development focus'), required=True,
             vocabulary='FilteredProductSeries',
             schema=IProductSeries,
-            description=_('The "trunk" series where development is focused')))
+            description=_(
+                'The series that represents the master or trunk branch. '
+                'The Bazaar URL lp:<project> points to the development focus '
+                'series branch.')))
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
