@@ -492,6 +492,27 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: Reason why uploading is not possible or None
         """
 
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("The distro series"), required=False),
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        component=TextLine(
+            title=_("Component"), required=True),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        strict_component=Bool(
+            title=_("Strict component"), required=False)
+        )
+    @export_operation_as("checkUpload")
+    @export_read_operation()
     def checkUpload(person, distroseries, sourcepackagename, component, 
                     pocket, strict_component=True):
         """Check if 'person' upload 'suitesourcepackage' to 'archive'.
