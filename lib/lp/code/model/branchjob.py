@@ -183,6 +183,13 @@ class BranchJobDerived(BaseRunnableJob):
     def __init__(self, branch_job):
         self.context = branch_job
 
+    def __repr__(self):
+        branch = self.branch
+        return '<%(job_type)s job for %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'branch': branch.unique_name,
+            }
+
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
