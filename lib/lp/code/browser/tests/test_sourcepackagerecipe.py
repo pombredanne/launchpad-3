@@ -227,9 +227,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
+            Build daily: False
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: 1.0
+            Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
 
             Build records
