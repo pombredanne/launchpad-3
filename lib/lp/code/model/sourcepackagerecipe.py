@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource,
@@ -176,3 +176,16 @@ class SourcePackageRecipe(Storm):
             *clauses)
         result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
         return result
+
+    def getMedianBuildDuration(self):
+        """Return the median duration of builds of this recipe."""
+        store = IStore(self)
+        result = store.find(
+            SourcePackageRecipeBuild.buildduration,
+            SourcePackageRecipeBuild.recipe==self.id,
+            SourcePackageRecipeBuild.buildduration != None)
+        result.order_by(Desc(SourcePackageRecipeBuild.buildduration))
+        count = result.count()
+        if count == 0:
+            return None
+        return result[count/2]
