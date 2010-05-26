@@ -103,7 +103,7 @@ And marking it not security-related removes 250 points.
 Adding a subscriber to the bug increases its heat by 2 points.
 
     >>> new_subscriber = factory.makePerson()
-    >>> bug.subscribe(new_subscriber, new_subscriber)
+    >>> subscription = bug.subscribe(new_subscriber, new_subscriber)
     >>> bug.heat
     10
 
@@ -161,6 +161,31 @@ duplicated bug's heat.
     >>> duplicated_bug.heat
     6
 
+A number of other changes, handled by the Bug's addChange() method, will
+cause heat to be recalculated, even if the heat itself may not actually
+change.
+
+For example, updating the bug's description calls the addChange() event,
+and will cause the bug's heat to be recalculated.
+
+We'll set the bug's heat to 0 first to demonstrate this.
+
+    >>> bug.setHeat(0)
+    >>> bug.heat
+    0
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import timezone
+
+    >>> from lp.bugs.adapters.bugchange import BugDescriptionChange
+    >>> change = BugDescriptionChange(
+    ...     when=datetime.now().replace(tzinfo=timezone('UTC')),
+    ...     person=bug.owner, what_changed='description',
+    ...     old_value=bug.description, new_value='Some text')
+    >>> bug.addChange(change)
+    >>> bug.heat
+    8
+
 
 Getting bugs whose heat is outdated
 -----------------------------------
@@ -191,8 +216,6 @@ a bug's heat older than the max_heat_age that we pass to
 getBugsWithOutdatedHeat() it will appear in the set returned by
 getBugsWithOutdatedHeat().
 
-    >>> from datetime import datetime, timedelta
-    >>> from pytz import timezone
     >>> old_heat_bug = factory.makeBug()
     >>> old_heat_bug.setHeat(
     ...     0, datetime.now(timezone('UTC')) - timedelta(days=2))

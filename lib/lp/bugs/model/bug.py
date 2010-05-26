@@ -73,7 +73,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -490,14 +489,13 @@ class Bug(SQLBase):
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
-
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
         if suppress_notify is False:
             notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
+        self.updateHeat()
         return sub
 
     def unsubscribe(self, person, unsubscribed_by):
@@ -523,6 +521,9 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 return
+
+        self._flushAndInvalidate()
+        self.updateHeat()
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
         """See `IBug`."""
@@ -800,7 +801,7 @@ class Bug(SQLBase):
                 notification_data['text'], change.person, recipients,
                 when)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
+        self.updateHeat()
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -1456,7 +1457,7 @@ class Bug(SQLBase):
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
+        self.updateHeat()
 
     @property
     def readonly_duplicateof(self):
@@ -1478,12 +1479,12 @@ class Bug(SQLBase):
             # Create a job to update the heat of the master bug and set
             # this bug's heat to 0 (since it's a duplicate, it shouldn't
             # have any heat at all).
-            getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
-            self.updateHeat()
+            self.setHeat(0)
+            duplicate_of.updateHeat()
         else:
             # Otherwise, create a job to recalculate this bug's heat,
             # since it will be 0 from having been a duplicate.
-            getUtility(ICalculateBugHeatJobSource).create(self)
+            self.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
