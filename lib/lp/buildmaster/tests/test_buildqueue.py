@@ -593,7 +593,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
         # The following job can only run on a native builder.
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename='xxr-gftp', score=1055,
+            estimated_duration=111, sourcename=u'xxr-gftp', score=1055,
             virtualized=False)
         self.builds.append(job.specific_job.build)
 
@@ -995,11 +995,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=22,
-            sourcename='xx-recipe-bash', score=1025)
+            sourcename=u'xx-recipe-bash', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=222,
-            sourcename='xx-recipe-zsh', score=1053)
+            sourcename=u'xx-recipe-zsh', score=1053)
         self.builds.append(job.specific_job.build)
 
         # Assign the same score to the '386' vim and apg build jobs.
@@ -1096,7 +1096,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
                 bq.virtualized = True
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=True, estimated_duration=332,
-            sourcename='xxr-openssh-client', score=1050)
+            sourcename=u'xxr-openssh-client', score=1050)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
         #   ...
@@ -1116,7 +1116,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # Now add a job with a NULL 'virtualized' flag. It should be treated
         # like jobs with virtualized=TRUE.
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename='xxr-gwibber', score=1051,
+            estimated_duration=111, sourcename=u'xxr-gwibber', score=1051,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
