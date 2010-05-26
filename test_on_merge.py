@@ -171,6 +171,8 @@ def run_test_process():
     # shell using "python foo.py" or "./foo.py".
     pid = os.fork()
     if pid != 0:
+        # We are the parent process, so we'll wait for our child process to
+        # do the heavy lifting for us.
         pid, exitstatus = os.waitpid(pid, os.P_WAIT)
         return exitstatus
 
