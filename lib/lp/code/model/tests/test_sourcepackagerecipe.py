@@ -28,11 +28,13 @@ from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.errors import SourcePackageRecipeExists
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
     TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipe import (
@@ -79,6 +81,21 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.name))
+
+    def test_creation_no_dupes(self):
+        # The metadata supplied when a SourcePackageRecipe is created is
+        # present on the new object.
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        self.assertRaises(
+            SourcePackageRecipeExists,
+            SourcePackageRecipe.new,
+                recipe.registrant,
+                recipe.owner,
+                [],
+                recipe.name,
+                self.factory.makeRecipe(),
+                u'description')
 
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.

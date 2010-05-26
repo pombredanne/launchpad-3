@@ -91,3 +91,8 @@ class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
     webservice_error(400)
+
+
+class SourcePackageRecipeExists(Exception):
+    """Raised when a recipe is created with the same name and owner as another.
+    """
