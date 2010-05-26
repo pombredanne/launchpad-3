@@ -119,6 +119,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `IBuildBase`."""
         return self.distroseries.distribution
 
+    is_virtualized = True
+
     pocket = DBEnum(enum=PackagePublishingPocket)
 
     recipe_id = Int(name='recipe', allow_none=False)
@@ -169,11 +171,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive,
-            pocket=PackagePublishingPocket.RELEASE,
+    def new(cls, sourcepackage, recipe, requester, archive, pocket=None,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
         if date_created is None:
             date_created = UTC_NOW
         spbuild = cls(
@@ -214,8 +217,10 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def estimateDuration(self):
         """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
-        return datetime.timedelta(minutes=2)
+        median = self.recipe.getMedianBuildDuration()
+        if median is not None:
+            return median
+        return datetime.timedelta(minutes=10)
 
     def verifySuccessfulUpload(self):
         return self.source_package_release is not None
@@ -255,7 +260,10 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
     def processor(self):
         return self.build.distroseries.nominatedarchindep.default_processor
 
-    virtualized = True
+    @property
+    def virtualized(self):
+        """See `IBuildFarmJob`."""
+        return self.build.is_virtualized
 
     def __init__(self, build, job):
         self.build = build
