@@ -217,8 +217,10 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def estimateDuration(self):
         """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
-        return datetime.timedelta(minutes=2)
+        median = self.recipe.getMedianBuildDuration()
+        if median is not None:
+            return median
+        return datetime.timedelta(minutes=10)
 
     def verifySuccessfulUpload(self):
         return self.source_package_release is not None
