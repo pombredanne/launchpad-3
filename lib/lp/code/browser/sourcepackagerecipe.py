@@ -220,7 +220,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         for distroseries in data['distros']:
             self.context.requestBuild(
                 data['archive'], self.user, distroseries,
-                PackagePublishingPocket.RELEASE)
+                PackagePublishingPocket.RELEASE, manual=True)
 
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
