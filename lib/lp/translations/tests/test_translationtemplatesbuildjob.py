@@ -11,6 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
 
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -80,6 +81,18 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertIsInstance(buildqueue, BuildQueue)
         self.assertEqual(job_id, get_job_id(buildqueue.job))
+
+    def test_BuildQueue_for_arch(self):
+        # BuildQueue entry is for i386 (default Ubuntu) architecture.
+        queueset = getUtility(IBuildQueueSet)
+        job_id = get_job_id(self.specific_job.job)
+        buildqueue = queueset.get(job_id)
+
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        expected_processor = (
+            ubuntu.currentseries.nominatedarchindep.default_processor)
+
+        self.assertEquals(expected_processor, buildqueue.processor)
 
     def test_getName(self):
         # Each job gets a unique name.

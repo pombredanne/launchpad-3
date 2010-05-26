@@ -17,7 +17,7 @@
       1.0
     </a> series
   </strong>
-  <em tal:condition="is_focus">focus of development</em>
+  <em tal:condition="is_focus">Focus of Development</em>
   <em tal:condition="not: is_focus" tal:content="series/status/title">
     This series' status
   </em>
@@ -72,7 +72,7 @@
               1.0
             </a>
           </strong>
-          <em tal:condition="is_focus">focus of development</em>
+          <em tal:condition="is_focus">Focus of Development</em>
         </td>
       </tr>
 

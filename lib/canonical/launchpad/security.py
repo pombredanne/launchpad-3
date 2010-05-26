@@ -1126,7 +1126,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
 class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
-    Access is restricted to members of ~vcs-imports and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine

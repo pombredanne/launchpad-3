@@ -473,6 +473,7 @@ COMMENT ON COLUMN Diff.removed_lines_count IS 'The number of lines removed in th
 COMMENT ON TABLE DistributionSourcePackage IS 'Representing a sourcepackage in a distribution across all distribution series.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on a particular a source package in a distribution.';
 COMMENT ON COLUMN DistributionSourcePackage.max_bug_heat IS 'The highest heat value across bugs for this source package.';
+COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 
 -- DistributionSourcePackageCache
 
@@ -624,6 +625,8 @@ COMMENT ON COLUMN Product.license_approved IS 'The Other/Open Source license has
 COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remote bug tracker.';
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
+COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -716,6 +719,8 @@ COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version o
 COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on products in this project.';
 COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Project.max_bug_heat IS 'The highest heat value across bugs for products in this project.';
+COMMENT ON COLUMN Project.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+
 
 -- ProjectRelationship
 COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the ''label'' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
@@ -980,6 +985,8 @@ COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether autom
 COMMENT ON COLUMN Distribution.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this distribution.';
 COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
+COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+
 
 -- DistroSeries
 
@@ -2373,3 +2380,10 @@ COMMENT ON TABLE DatabaseReplicationLag IS 'A cached snapshot of database replic
 COMMENT ON COLUMN DatabaseReplicationLag.node IS 'The Slony node number identifying the slave database.';
 COMMENT ON COLUMN DatabaseReplicationLag.lag IS 'lag time.';
 COMMENT ON COLUMN DatabaseReplicationLag.updated IS 'When this value was updated.';
+
+-- DatabaseTableStats
+COMMENT ON TABLE DatabaseTableStats IS 'Snapshots of pg_stat_user_tables to let us calculate arbitrary deltas';
+
+-- DatabaseCpuStats
+COMMENT ON TABLE DatabaseCpuStats IS 'Snapshots of CPU utilization per database username.';
+COMMENT ON COLUMN DatabaseCpuStats.cpu IS '% CPU utilization * 100, as reported by ps -o cp';

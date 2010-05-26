@@ -42,6 +42,8 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
+from canonical.launchpad.webapp.authorization import (
+    precache_permission_for_objects)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, ContextMenu, Link, NavigationMenu)
@@ -229,6 +231,13 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         for task in tasks:
             if task.getConjoinedMaster(bugs_and_tasks[task.bug]) is None:
                 non_conjoined_slaves.append(task)
+        # Checking bug permissions is expensive. We know from the query that
+        # the user has at least launchpad.View on the bugtasks and their bugs.
+        precache_permission_for_objects(
+            self.request, 'launchpad.View', non_conjoined_slaves)
+        precache_permission_for_objects(
+            self.request, 'launchpad.View',
+            [task.bug for task in non_conjoined_slaves])
         return non_conjoined_slaves
 
     @cachedproperty
