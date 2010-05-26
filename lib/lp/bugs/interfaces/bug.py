@@ -163,20 +163,10 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     id = exported(
         Int(title=_('Bug ID'), required=True, readonly=True))
     datecreated = exported(
-        Datetime(title=_('Date Created'),
-                 description=_("The date on which this bug was created."),
-                 required=True, readonly=True),
+        Datetime(title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created')
     date_last_updated = exported(
-        Datetime(title=_('Date Last Updated'),
-                 description=_("The date when anything is changed or "
-                               "added to the bug or its bugtasks.  This "
-                               "includes adding comments, adding tasks, "
-                               "adding watches, changing bug visibility or "
-                               "security, setting as duplicate, attaching "
-                               "files and so on.  However, subscribing or "
-                               "unsubscribing does not change this value."),
-                 required=True, readonly=True))
+        Datetime(title=_('Date Last Updated'), required=True, readonly=True))
     name = exported(
         BugNameField(
             title=_('Nickname'), required=False,
@@ -194,48 +184,38 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Reference(IPerson, title=_("Owner"),
-                  description=_("The bug reporter's IPerson object. "
-                                "May return None such as if account "
-                                "has been removed."),
-                  readonly=True))
+        Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
     duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
     readonly_duplicateof = exported(
-        DuplicateBug(title=_('Duplicate Of'),
-                     description=_("The IBug object this bug duplicates."),
-                     required=False, readonly=True),
+        DuplicateBug(title=_('Duplicate Of'), required=False, readonly=True),
         exported_as='duplicate_of')
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by setPrivate().
     private = exported(
-        Bool(title=_("Private"), required=False,
-             description=_("If set to True, this bug report is visible only "
-                           "to its subscribers."),
+        Bool(title=_("This bug report should be private"), required=False,
+             description=_("Private bug reports are visible only to "
+                           "their subscribers."),
              default=False,
              readonly=True))
     date_made_private = exported(
-        Datetime(title=_('Date Made Private'),
-                 description=_("The date on which the bug was most recently "
-                               "set to private."),
-                 required=False, readonly=True))
+        Datetime(title=_('Date Made Private'), required=False, readonly=True))
     who_made_private = exported(
         PublicPersonChoice(
             title=_('Who Made Private'), required=False,
             vocabulary='ValidPersonOrTeam',
-            description=_("The person who most recently set bug private."),
+            description=_("The person who set this bug private."),
             readonly=True))
     security_related = exported(
-        Bool(title=_("Security Related"),
-             description=_("This bug is a security vulnerability."),
+        Bool(title=_("This bug is a security vulnerability."),
              required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     initial_message = Attribute(
-        "The message that was specified when creating the bug.")
+        "The message that was specified when creating the bug")
     bugtasks = exported(
         CollectionField(
-            title=_('BugTasks on this bug, sorted by upstream, then '
+            title=_('BugTasks on this bug, sorted upstream, then '
                     'by ubuntu, then by other distroseries.'),
             value_type=Reference(schema=IBugTask),
             readonly=True),
@@ -260,32 +240,27 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     subscriptions = exported(
         doNotSnapshot(CollectionField(
             title=_('Subscriptions'),
-            description=_("List of persons directly subscribed to the bug."),
             value_type=Reference(schema=Interface),
             readonly=True)))
     duplicates = exported(
         CollectionField(
-            title=_("Duplicates"),
-            description=_("MultiJoin of bugs which are dupes of this one."),
+            title=_("MultiJoin of bugs which are dupes of this one."),
             value_type=BugField(), readonly=True))
     attachments = exported(
         CollectionField(
-            title=_("Attachments"),
-            description=_("List of bug attachments."),
+            title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
             readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     linked_branches = exported(
         CollectionField(
-            title=_("Linked Branches"),
-            description=_("Branches associated with this bug, usually "
+            title=_("Branches associated with this bug, usually "
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
             readonly=True))
     tags = exported(
-        List(title=_("Tags"),
-             description=_("List of tag strings applied to this bug."),
+        List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
@@ -304,31 +279,22 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         readonly=True)
     can_expire = exported(
         Bool(
-            title=_("Can Expire?"),
-            description=_(
-                "Can the Incomplete bug expire if it becomes inactive? "
+            title=_("Can the Incomplete bug expire if it becomes inactive? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
             readonly=True))
     date_last_message = exported(
         Datetime(title=_("Date of last bug message"),
-                 description=_("Date corresponds to the last comment made "
-                               "in launchpad or in linked bug tracker.  "
-                               "Does not include non-comment changes to "
-                               "bug status."),
                  required=False, readonly=True))
     number_of_duplicates = exported(
-        Int(title=_("Number of Duplicates"),
-            description=_("Number of bugs marked duplicates of this bug"),
+        Int(title=_('The number of bugs marked as duplicates of this bug'),
             required=True, readonly=True))
     message_count = exported(
-        Int(title=_("The number of comments on this bug, including "
-                    "comments imported from a linked watch."),
+        Int(title=_('The number of comments on this bug'),
         required=True, readonly=True))
     users_affected_count = exported(
-        Int(title=_("Users Affected Count"),
-            description=_("The number of users affected by this bug "
-                    "(not including duplicates)"),
+        Int(title=_('The number of users affected by this bug '
+                    '(not including duplicates)'),
             required=True, readonly=True))
     users_unaffected_count = exported(
         # We don't say "(not including duplicates)" here because
@@ -340,7 +306,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         Int(title=_('The number of users unaffected by this bug'),
             required=True, readonly=True))
     users_affected = exported(doNotSnapshot(CollectionField(
-            title=_('Users affected (not including duplicates)'),
+            title=_('The number of users affected by this bug '
+                    '(not including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True)))
     users_unaffected = exported(doNotSnapshot(CollectionField(
@@ -359,12 +326,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
-            description=_("Heat is a composite score taking into "
-                          "account the number of users/subscribers/ "
-                          "duplicates, privacy, security, and age.  "
-                          "See https://help.launchpad.net/Bugs/BugHeat "
-                          "for complete information."),
-            required=False, readonly=True))
+        required=False, readonly=True))
     heat_last_updated = Datetime(
         title=_('Heat Last Updated'), required=False, readonly=True)
 
