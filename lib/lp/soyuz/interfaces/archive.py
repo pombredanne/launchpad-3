@@ -507,11 +507,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
             description=_("The pocket into which this entry is published"),
             # Really PackagePublishingPocket, circular import fixed below.
             vocabulary=DBEnumeratedType,
-            required=False, readonly=True),
+            required=True),
         strict_component=Bool(
             title=_("Strict component"), required=False)
         )
-    @export_operation_as("checkUpload")
     @export_read_operation()
     def checkUpload(person, distroseries, sourcepackagename, component, 
                     pocket, strict_component=True):

@@ -440,6 +440,18 @@ queues in a particular component.
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
 
+We can use ``checkUpload`` to verify that a person can upload a 
+suitesourcepackage.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload',
+    ...     sourcepackagename='mozilla-firefox', pocket='release',
+    ...     component='main', person=name12['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    true
+
 deleteQueueAdmin removes that permission.
 
     >>> print webservice.named_post(
@@ -456,7 +468,6 @@ And we can see that it's gone:
     Queue Administration Rights ...~name12 multiverse None
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
-
 
 == Malformed archive permission URLs ==
 
