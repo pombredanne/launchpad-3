@@ -18,7 +18,7 @@ import cgi
 import re
 
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 
 
 def extract_bug_numbers(text):
