@@ -40,12 +40,14 @@ class TestBuilderEditView(TestCaseWithFactory):
         # Stub out the slaveStatusSentence() method with a fake one that
         # records if it's been called.
         def fake_slaveStatusSentence():
-            self.builder.is_available_called = True
+            self.builder.slave_called = True
             dummy = 0
             return [dummy]
         view.context.slaveStatusSentence = fake_slaveStatusSentence
 
-        self.builder.is_available_called = False
+        self.builder.slave_called = False
         view.initialize()
 
-        self.assertFalse(self.builder.is_available_called)
+        # If the dummy slaveStatusSentence() was called, slave_called
+        # would be True.
+        self.assertFalse(self.builder.slave_called)
