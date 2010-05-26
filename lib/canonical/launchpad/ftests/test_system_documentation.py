@@ -31,7 +31,7 @@ from lp.testing.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing.layers import (
-    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
+    AppServerLayer, BaseLayer, FunctionalLayer,
     GoogleLaunchpadFunctionalLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer)
 
@@ -136,8 +136,8 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
     login(ANONYMOUS)
-    # Remove the notifcations for the newly created question.
-    notifications = pop_notifications()
+    # Remove the notifications for the newly created question.
+    pop_notifications()
     return ubuntu_bugtask.id
 
 def bugLinkedToQuestionSetUp(test):
@@ -165,20 +165,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.commit()
     uploadQueueSetUp(test)
     login(ANONYMOUS)
-
-# XXX BarryWarsaw 2007-08-15 bug=132784: as a placeholder for improving
-# the harness for the mailinglist-xmlrpc.txt tests, or improving things so
-# that all this cruft isn't necessary.
-
-def updateRemoteProductSetup(test):
-    """Setup to use the 'updateremoteproduct' db user."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
-
-def updateRemoteProductTeardown(test):
-    # Mark the DB as dirty, since we run a script in a sub process.
-    DatabaseLayer.force_dirty_database()
-    tearDown(test)
 
 
 # Files that have special needs can construct their own suite
@@ -254,18 +240,6 @@ special = {
     #         '../doc/google-service-stub.txt',
     #         layer=GoogleServiceLayer,
     #         ),
-    'product-update-remote-product.txt': LayeredDocFileSuite(
-            '../doc/product-update-remote-product.txt',
-            setUp=updateRemoteProductSetup,
-            tearDown=updateRemoteProductTeardown,
-            layer=LaunchpadZopelessLayer
-            ),
-    'product-update-remote-product-script.txt': LayeredDocFileSuite(
-            '../doc/product-update-remote-product-script.txt',
-            setUp=updateRemoteProductSetup,
-            tearDown=updateRemoteProductTeardown,
-            layer=LaunchpadZopelessLayer
-            ),
     'canonical_url.txt': LayeredDocFileSuite(
             '../doc/canonical_url.txt',
             setUp=setUp,

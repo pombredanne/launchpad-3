@@ -519,7 +519,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         candidate = removeSecurityProxy(candidate)
         expected_email = '%s <%s>' % (
             candidate.displayname, candidate.preferredemail.email)
-        self.assertEqual(expected_email, mails[0]['To'])
+        self.assertEmailHeadersEqual(expected_email, mails[0]['To'])
 
 
 def test_suite():

@@ -83,11 +83,11 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches

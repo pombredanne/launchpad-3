@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = ["SecurityContactEditView"]
 
-from canonical.launchpad.interfaces.launchpad import IHasSecurityContact
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadFormView, action)
 

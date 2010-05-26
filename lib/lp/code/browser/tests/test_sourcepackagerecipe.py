@@ -75,7 +75,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
@@ -115,7 +115,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
@@ -415,7 +415,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Needs building
@@ -444,7 +444,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Successfully built
