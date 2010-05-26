@@ -344,9 +344,9 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         blob_uuid = self._create_blob_and_job_using_storeblob()
         blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
 
-        self.assertTrue(
+        self.assertFalse(
             blob.hasBeenProcessed(),
-            "BLOB has not been processed yet.")
+            "BLOB should not be processed, but indicates it has.")
 
     def test_blob_get_processed_data(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
@@ -357,8 +357,8 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
         blob_meta = blob.getProcessedData()
 
         self.assertEqual(
-            blob_meta, job._apport_job.metadata,
-            "BLOB metadata is inconsistent.")
+            blob_meta, job.metadata,
+            "BLOB metadata: %s" %(str(blob_meta)))
 
     def test_adding_blob_adds_job(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
