@@ -1,6 +1,6 @@
 SET client_min_messages=ERROR;
 
-CREATE OR REPLACE FUNCTION calculate_bug_heat(bug_id integer)  RETURNS integer
+CREATE OR REPLACE FUNCTION calculate_bug_heat(bug_id integer) RETURNS integer
 LANGUAGE plpythonu AS $$
     from datetime import datetime
 
@@ -146,7 +146,7 @@ LANGUAGE plpythonu AS $$
         if max_heat is not None and days_since_created > 0:
             return total_heat + (max_heat * 0.25 / days_since_created)
 
-    return total_heat
+    return int(total_heat)
 $$;
 
--- INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
