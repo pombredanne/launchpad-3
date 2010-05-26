@@ -20,22 +20,28 @@ LANGUAGE plpythonu AS $$
         for bug_task in bug_tasks:
             if bug_task['product'] is not None:
                 product = plpy.execute(
-                    "SELECT * FROM Product WHERE id = %s" %
+                    "SELECT max_bug_heat FROM Product WHERE id = %s" %
                     bug_task['product'])[0]
                 max_heats.append(product['max_bug_heat'])
-            elif bug_task['productseries'] is not None:
-                product_series = plpy.execute(
-                    "SELECT * FROM ProductSeries WHERE id = %s" %
-                    bug_task['productseries'])[0]
-                max_heats.append(product_series['max_bug_heat'])
             elif bug_task['distribution']:
                 distribution = plpy.execute(
-                    "SELECT * FROM Distribution WHERE id = %s" %
+                    "SELECT max_bug_heat FROM Distribution WHERE id = %s" %
                     bug_task['distribution'])[0]
                 max_heats.append(distribution['max_bug_heat'])
+            elif bug_task['productseries'] is not None:
+                product_series = plpy.execute("""
+                    SELECT Product.max_bug_heat
+                      FROM ProductSeries, Product
+                     WHERE ProductSeries.Product = Product.id
+                       AND ProductSeries.id = %s"""%
+                    bug_task['productseries'])[0]
+                max_heats.append(product_series['max_bug_heat'])
             elif bug_task['distroseries']:
-                distro_series = plpy.execute(
-                    "SELECT * FROM DistroSeries WHERE id = %s" %
+                distro_series = plpy.execute("""
+                    SELECT Distribution.max_bug_heat
+                      FROM DistroSeries, Distribution
+                     WHERE DistroSeries.Distribution = Distribution.id
+                       AND DistroSeries.id = %s"""%
                     bug_task['distroseries'])[0]
                 max_heats.append(distro_series['max_bug_heat'])
             else:
@@ -44,8 +50,26 @@ LANGUAGE plpythonu AS $$
         return max(max_heats)
 
 
+    # It would be nice to be able to just SELECT * here, but we need to
+    # format the timestamps so that datetime.strptime() won't choke on
+    # them.
     bug_data = plpy.execute("""
-        SELECT * FROM Bug WHERE id = %s""" % bug_id)
+        SELECT
+            duplicateof,
+            private,
+            security_related,
+            number_of_duplicates,
+            users_affected_count,
+            TO_CHAR(datecreated, '%(date_format)s')
+                AS formatted_date_created,
+            TO_CHAR(date_last_updated, '%(date_format)s')
+                AS formatted_date_last_updated,
+            TO_CHAR(date_last_message, '%(date_format)s')
+                AS formatted_date_last_message
+        FROM Bug WHERE id = %(bug_id)s""" % {
+            'bug_id': bug_id,
+            'date_format': 'YYYY-MM-DD HH24:MI:SS',
+            })
 
     if bug_data.nrows() == 0:
         return 0
@@ -96,9 +120,9 @@ LANGUAGE plpythonu AS $$
 
     # Bugs decay over time. Every day the bug isn't touched its heat
     # decreases by 1%.
-    pg_datetime_fmt = "%Y-%m-%d %H:%M:%S.%f"
+    pg_datetime_fmt = "%Y-%m-%d %H:%M:%S"
     date_last_updated = datetime.strptime(
-        bug['date_last_updated'], pg_datetime_fmt)
+        bug['formatted_date_last_updated'], pg_datetime_fmt)
     days_since_last_update = (datetime.utcnow() - date_last_updated).days
     total_heat = int(total_heat * (0.99 ** days_since_last_update))
 
@@ -106,11 +130,11 @@ LANGUAGE plpythonu AS $$
         # Bug heat increases by a quarter of the maximum bug heat
         # divided by the number of days since the bug's creation date.
         date_created = datetime.strptime(
-            bug['datecreated'], pg_datetime_fmt)
+            bug['formatted_date_created'], pg_datetime_fmt)
 
-        if bug['date_last_message'] is not None:
+        if bug['formatted_date_last_message'] is not None:
             date_last_message = datetime.strptime(
-                bug['date_last_message'], pg_datetime_fmt)
+                bug['formatted_date_last_message'], pg_datetime_fmt)
             oldest_date = max(date_last_updated, date_last_message)
         else:
             date_last_message = None
