@@ -29,26 +29,56 @@ Its heat_last_updated will also have been set.
     datetime.datetime(..., tzinfo=<UTC>)
 
 
-Adjusting bug heat in transaction
----------------------------------
+Updating bug heat on-the-fly
+----------------------------
 
-Sometimes, when a bug changes, we want to see the changes reflected in the bug's
-heat value immidiately, without waiting for heat to be recalculated. Currently
-we adjust heat immidiately for bug privacy and security.
+The IBug.updateHeat() method updates a Bug's heat using data already in
+the database. Where setHeat() can be used for setting bug heat to a
+specific value, updateHeat() uses a stored procedure in the database to
+calculate the heat overall.
 
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
     >>> bug.heat
     0
+
+Calling updateHeat() will update the bug's heat. Since this new bug has
+two subscribers (the bug owner and the product owner) and one affected
+user (the bug owner) its heat after update will be 8.
+
+    >>> bug.updateHeat()
+    >>> bug.heat
+    8
+
+Adding another subscriber will increase the bug's heat further.
+
+
+Adjusting bug heat in transaction
+---------------------------------
+
+Sometimes, when a bug changes, we want to see the changes reflected in
+the bug's heat value immediately, without waiting for heat to be
+recalculated. Currently we adjust heat immediately for bug privacy and
+security.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> bug = factory.makeBug(owner=bug_owner)
+    >>> bug.updateHeat()
+    >>> bug.heat
+    8
+
     >>> changed = bug.setPrivate(True, bug_owner)
     >>> bug.heat
-    150
+    158
+
     >>> changed = bug.setSecurityRelated(True)
     >>> bug.heat
-    400
+    408
+
     >>> changed = bug.setPrivate(False, bug_owner)
     >>> bug.heat
-    250
+    258
 
 
 Getting bugs whose heat is outdated

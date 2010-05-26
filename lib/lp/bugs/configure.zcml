@@ -691,7 +691,8 @@
                     unlinkHWSubmission
                     linkBranch
                     unlinkBranch
-                    linkAttachment"
+                    linkAttachment
+                    updateHeat"
                 set_attributes="
                     activity initial_message
                     activityscore

@@ -35,7 +35,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -1355,11 +1355,7 @@ class Bug(SQLBase):
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
-            if private:
-                self.setHeat(self.heat + BugHeatConstants.PRIVACY)
-            else:
-                self.setHeat(self.heat - BugHeatConstants.PRIVACY)
-
+            self.updateHeat()
             return True # Changed.
         else:
             return False # Not changed.
@@ -1371,10 +1367,7 @@ class Bug(SQLBase):
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
-            if security_related:
-                self.setHeat(self.heat + BugHeatConstants.SECURITY)
-            else:
-                self.setHeat(self.heat - BugHeatConstants.SECURITY)
+            self.updateHeat()
 
             return True # Changed
         else:
@@ -1486,7 +1479,7 @@ class Bug(SQLBase):
             # this bug's heat to 0 (since it's a duplicate, it shouldn't
             # have any heat at all).
             getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
-            self.setHeat(0)
+            self.updateHeat()
         else:
             # Otherwise, create a job to recalculate this bug's heat,
             # since it will be 0 from having been a duplicate.
@@ -1572,6 +1565,16 @@ class Bug(SQLBase):
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
+
+    def updateHeat(self):
+        """See `IBug`."""
+        # We need to flush the store first to ensure that changes are
+        # reflected in the new bug heat total.
+        store = Store.of(self)
+        store.flush()
+
+        self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
+        self.heat_last_updated = UTC_NOW
 
     @property
     def attachments(self):
