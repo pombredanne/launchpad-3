@@ -198,6 +198,8 @@ bin/buildout: download-cache eggs
 		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
+build_eggs: $(BUILDOUT_BIN) clean_buildout
+
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
 # updates the timestamp.
@@ -321,7 +323,15 @@ clean_js:
 	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
-clean: clean_js
+clean_buildout:
+	$(RM) -r bin
+	$(RM) -r parts
+	$(RM) -r develop-eggs
+	$(RM) .installed.cfg
+	$(RM) -r build
+	$(RM) _pythonpath.py
+
+clean: clean_js clean_buildout
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -334,11 +344,6 @@ clean: clean_js
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r bin
-	$(RM) -r parts
-	$(RM) -r develop-eggs
-	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
@@ -346,7 +351,6 @@ clean: clean_js
 	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
-	$(RM) _pythonpath.py
 	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
@@ -464,5 +468,5 @@ pydoctor:
 	check check_merge ec2_check \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild jsbuild_lazr clean_js buildonce_eggs \
+	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
 	sprite_css sprite_image css_combine compile check_schema pydoctor
