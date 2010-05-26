@@ -112,7 +112,8 @@ LANGUAGE plpythonu AS $$
         GROUP BY Bug.duplicateof""" % bug_id)
     if subs_from_dupes.nrows() > 0:
         heat['subcribers_from_dupes'] = (
-            BugHeatConstants.SUBSCRIBER * sub_count[0]['dupe_sub_count'])
+            BugHeatConstants.SUBSCRIBER
+            * subs_from_dupes[0]['dupe_sub_count'])
 
     total_heat = sum(heat.values())
 
