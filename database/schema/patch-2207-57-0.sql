@@ -225,4 +225,4 @@ SELECT (libraryfilealias.id::text || '.'::text) || securebinarypackagepublishing
    JOIN component ON securebinarypackagepublishinghistory.component = component.id
    WHERE securebinarypackagepublishinghistory.dateremoved IS NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 57, 0);
