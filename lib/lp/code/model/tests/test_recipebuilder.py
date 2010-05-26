@@ -25,6 +25,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building)
 from lp.soyuz.model.processor import ProcessorFamilySet
@@ -98,6 +99,28 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.buffer.getvalue())
+
+    def test_verifyBuildRequest_non_virtual(self):
+        # verifyBuildRequest will raise if a non-virtual builder is proposed.
+        job = self.makeJob()
+        builder = MockBuilder('non-virtual builder', OkSlave())
+        builder.virtualized = False
+        job.setBuilder(builder)
+        logger = BufferLogger()
+        e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
+        self.assertEqual(
+            'Attempt to build virtual item on a non-virtual builder.', str(e))
+
+    def test_verifyBuildRequest_bad_pocket(self):
+        # verifyBuildRequest will raise if a bad pocket is proposed.
+        build = self.factory.makeSourcePackageRecipeBuild(
+            pocket=PackagePublishingPocket.SECURITY)
+        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        job = IBuildFarmJobBehavior(job.specific_job)
+        job.setBuilder(MockBuilder("bob-de-bouwer", OkSlave()))
+        e = self.assertRaises(
+            AssertionError, job.verifyBuildRequest, BufferLogger())
+        self.assertIn('invalid pocket due to the series status of', str(e))
 
     def test__extraBuildArgs(self):
         # _extraBuildArgs will return a sane set of additional arguments
