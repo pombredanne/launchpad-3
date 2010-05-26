@@ -38,6 +38,8 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
@@ -51,7 +53,7 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasSecurityContact, ILaunchpadUsage)
+    IHasLogo, IHasMugshot, ILaunchpadUsage)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
@@ -725,9 +727,10 @@ class IProductPublic(
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
-               IProductDriverRestricted, IProductPublic, IRootContext,
-               IStructuralSubscriptionTarget):
+class IProduct(
+    IHasBugSupervisor, IProductEditRestricted, 
+    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups

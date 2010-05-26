@@ -94,10 +94,23 @@ class LoopTuner:
         else:
             self.log = log
 
+    # True if this task has timed out. Set by _isTimedOut().
+    _has_timed_out = False
+
     def _isTimedOut(self, extra_seconds=0):
-        """Return True if the task will be timed out in extra_seconds."""
-        return self.abort_time is not None and (
-            self._time() + extra_seconds >= self.start_time + self.abort_time)
+        """Return True if the task will be timed out in extra_seconds.
+
+        If this method returns True, all future calls will also return
+        True.
+        """
+        if self.abort_time is None:
+            return False
+        if self._has_timed_out:
+            return True
+        if self._time() + extra_seconds >= self.start_time + self.abort_time:
+            self._has_timed_out = True
+            return True
+        return False
 
     def run(self):
         """Run the loop to completion."""
@@ -221,24 +234,21 @@ class DBLoopTuner(LoopTuner):
         """When database replication lag is high, block until it drops."""
         # Lag is most meaningful on the master.
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        msg_counter = 0
         while not self._isTimedOut():
             lag = store.execute("SELECT replication_lag()").get_one()[0]
-            if lag is None:
-                lag = timedelta(seconds=0)
-            if lag <= self.acceptable_replication_lag:
+            if lag is None or lag <= self.acceptable_replication_lag:
                 return
 
-            # Minimum 2 seconds, max 5 minutes.
-            time_to_sleep = int(min(
-                5*60, max(2, timedelta_to_seconds(
-                    lag - self.acceptable_replication_lag))))
-
-            self.log.info(
-                "Database replication lagged. Sleeping %d seconds"
-                % time_to_sleep)
+            # Report just once every 10 minutes to avoid log spam.
+            msg_counter += 1
+            if msg_counter % 60 == 1:
+                self.log.info(
+                    "Database replication lagged %s. "
+                    "Sleeping up to 10 minutes." % lag)
 
             transaction.abort() # Don't become a long running transaction!
-            self._sleep(time_to_sleep)
+            self._sleep(10)
 
     def _blockForLongRunningTransactions(self):
         """If there are long running transactions, block to avoid making
@@ -258,21 +268,22 @@ class DBLoopTuner(LoopTuner):
                 FROM activity()
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
                     AND datname = current_database()
+                ORDER BY xact_start LIMIT 4
                 """ % self.long_running_transaction).get_all())
             if not results:
                 break
 
-            # Check for long running transactions every 30 seconds, but
+            # Check for long running transactions every 10 seconds, but
             # only report every 10 minutes to avoid log spam.
             msg_counter += 1
-            if msg_counter % 20 == 1:
+            if msg_counter % 60 == 1:
                 for runtime, procpid, usename, datname, query in results:
                     self.log.info(
                         "Blocked on %s old xact %s@%s/%d - %s."
                         % (runtime, usename, datname, procpid, query))
                 self.log.info("Sleeping for up to 10 minutes.")
             transaction.abort() # Don't become a long running transaction!
-            self._sleep(30)
+            self._sleep(10)
 
     def _coolDown(self, bedtime):
         """As per LoopTuner._coolDown, except we always wait until there
@@ -282,8 +293,8 @@ class DBLoopTuner(LoopTuner):
         self._blockWhenLagged()
         if self.cooldown_time is not None and self.cooldown_time > 0.0:
             remaining_nap = self._time() - bedtime + self.cooldown_time
-            if remaining_nap > 0.0 and not self._is_timed_out(remaining_nap):
-                time.sleep(remaining_nap)
+            if remaining_nap > 0.0:
+                self._sleep(remaining_nap)
         return self._time()
 
 

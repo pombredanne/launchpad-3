@@ -611,11 +611,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             title=_("List of valid OpenPGP keys ordered by ID"),
             readonly=False, required=False,
             value_type=Reference(schema=IGPGKey)))
-    pending_gpg_keys = exported(
-        CollectionField(
-            title=_("Set of fingerprints pending confirmation"),
-            readonly=False, required=False,
-            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = CollectionField(
+        title=_("Set of fingerprints pending confirmation"),
+        readonly=False, required=False,
+        value_type=Reference(schema=IGPGKey))
     inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
