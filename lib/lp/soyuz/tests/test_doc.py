@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the doctests and pagetests.
 """
@@ -197,6 +199,17 @@ special = {
         '../doc/build-estimated-dispatch-time.txt',
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
+        ),
+    'package-arch-specific.txt': LayeredDocFileSuite(
+        '../doc/package-arch-specific.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        ),
+    'queuebuilder.txt': LayeredDocFileSuite(
+        '../doc/queuebuilder.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        stdout_logging_level=logging.WARNING,
         ),
     }
 

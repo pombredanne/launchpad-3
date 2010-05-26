@@ -4,8 +4,8 @@ This test will check the upload of dist-upgrade tarballs
 
   >>> from lp.registry.interfaces.distribution import IDistributionSet
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger)
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -162,7 +162,7 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from lp.soyuz.interfaces.package import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
   ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
@@ -279,7 +279,7 @@ files in the respective PPA location.
   >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
   >>> admin = getUtility(ILaunchpadCelebrities).admin
   >>> name16 = getUtility(IPersonSet).getByName("name16")
-  >>> beta_testers.addMember(name16, admin)
+  >>> ignored = beta_testers.addMember(name16, admin)
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
   ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
@@ -297,7 +297,6 @@ files in the respective PPA location.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Don't verify signer ACL for PPA
   DEBUG: Finished checking upload.
 
   >>> success = ppa_upload.do_accept()

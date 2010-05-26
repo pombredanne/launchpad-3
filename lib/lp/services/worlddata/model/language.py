@@ -1,19 +1,29 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Language', 'LanguageSet']
+__all__ = [
+    'Language',
+    'LanguageSet',
+    ]
 
-from zope.interface import implements
 
 from sqlobject import (
-    BoolCol, IntCol, SQLObjectNotFound, SQLRelatedJoin, StringCol)
+    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound, SQLRelatedJoin,
+    StringCol)
+from storm.locals import Or
+from zope.interface import implements
 
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
+from canonical.cachedproperty import cachedproperty
+
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.interfaces import ISlaveStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.worlddata.interfaces.language import (
-    ILanguageSet, ILanguage, TextDirection)
+    ILanguage, ILanguageSet, TextDirection)
 
 
 class Language(SQLBase):
@@ -60,6 +70,10 @@ class Language(SQLBase):
         """See `ILanguage`."""
         return '%s (%s)' % (self.englishname, self.code)
 
+    def __repr__(self):
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.englishname, self.code)
+
     @property
     def alt_suggestion_language(self):
         """See `ILanguage`.
@@ -70,7 +84,7 @@ class Language(SQLBase):
         Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
         and may provide suggestions for each other.
         """
-        if self.code in ['pt_BR',]:
+        if self.code == 'pt_BR':
             return None
         elif self.code == 'nn':
             return Language.byCode('nb')
@@ -123,15 +137,48 @@ class Language(SQLBase):
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
+    @property
+    def translators_count(self):
+        """See `ILanguage`."""
+        return self.translators.count()
+
+    def getFullCode(self, variant=None):
+        """See `ILanguage`."""
+        if variant:
+            return '%s@%s' % (self.code, variant)
+        else:
+            return self.code
+
+    def getFullEnglishName(self, variant=None):
+        """See `ILanguage`."""
+        if variant:
+            return '%s ("%s" variant)' % (self.englishname, variant)
+        else:
+            return self.englishname
+
 
 class LanguageSet:
     implements(ILanguageSet)
 
     @property
-    def common_languages(self):
-        return iter(Language.select(
+    def _visible_languages(self):
+        return Language.select(
             'visible IS TRUE',
-            orderBy='englishname'))
+            orderBy='englishname')
+
+    @property
+    def common_languages(self):
+        """See `ILanguageSet`."""
+        return iter(self._visible_languages)
+
+    def getDefaultLanguages(self):
+        """See `ILanguageSet`."""
+        return self._visible_languages
+
+    def getAllLanguages(self):
+        """See `ILanguageSet`."""
+        return ISlaveStore(Language).find(Language).order_by(
+            Language.englishname)
 
     def __iter__(self):
         """See `ILanguageSet`."""
@@ -142,7 +189,7 @@ class LanguageSet:
         language = self.getLanguageByCode(code)
 
         if language is None:
-            raise NotFoundError, code
+            raise NotFoundError(code)
 
         return language
 
@@ -222,11 +269,11 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
-            results = Language.select('''
-                code ILIKE '%%' || %(pattern)s || '%%' OR
-                englishname ILIKE '%%' || %(pattern)s || '%%'
-                ''' % { 'pattern': quote_like(text) },
-                orderBy='englishname')
+            results = ISlaveStore(Language).find(
+                Language, Or(
+                    CONTAINSSTRING(Language.code.lower(), text.lower()),
+                    CONTAINSSTRING(Language.englishname.lower(), text.lower())
+                    )).order_by(Language.englishname)
         else:
             results = None
 

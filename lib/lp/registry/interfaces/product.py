@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -8,7 +10,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductCommercialRestricted',
+    'IProductProjectReviewRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -22,33 +24,37 @@ __all__ = [
 
 
 import re
-import sets
 
 from textwrap import dedent
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Date, Datetime, Int, List, Object, Set, Text, TextLine)
+    Bool, Choice, Date, Datetime, Int, Object, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ProductBugTracker, ProductNameField, PublicPersonChoice,
-    Summary, Title, URIField)
-from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, BranchMergeProposalStatus)
+    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PublicPersonChoice, Summary, Title, URIField)
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import (
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasCodeImports, IHasMergeProposals)
+from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMugshot, IHasOwner, IHasSecurityContact,
-    ILaunchpadUsage)
+    IHasLogo, IHasMugshot, ILaunchpadUsage)
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly, IHasMilestones)
 from lp.registry.interfaces.announcement import IMakesAnnouncements
@@ -58,17 +64,16 @@ from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
-    IHasTranslationGroup)
+from lp.translations.interfaces.translationgroup import (
+    ITranslationPolicy)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, collection_default_content,
     export_as_webservice_collection, export_as_webservice_entry,
@@ -168,36 +173,100 @@ class LicenseStatus(DBEnumeratedType):
         40, "Unspecified",
         u"This project&rsquo;s license has not been specified.")
 
+
 class License(DBEnumeratedType):
     """Licenses under which a project's code can be released."""
 
+    # Sort licenses alphabetically by their description.
     sort_order = (
-        'ACADEMIC', 'APACHE', 'ARTISTIC', 'BSD', 'COMMON_PUBLIC', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2','GNU_GPL_V3',
-        'GNU_LGPL_V2_1','GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
+        'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
+        'BSD', 'COMMON_PUBLIC',
+        'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GPL_V2', 'GNU_GPL_V3',
+        'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT', 'MPL', 'OPEN_SOFTWARE', 'PERL',
         'PHP', 'PUBLIC_DOMAIN', 'PYTHON', 'ZPL',
-        'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
+        'DONT_KNOW', 'OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE')
 
-    ACADEMIC = DBItem(10, "Academic Free License")
-    AFFERO = DBItem(20, "GNU Affero GPL v3")
-    APACHE = DBItem(30, "Apache License")
-    ARTISTIC = DBItem(40, "Artistic License")
-    BSD = DBItem(50, "BSD License (revised)")
-    COMMON_PUBLIC = DBItem(80, "Common Public License")
-    ECLIPSE = DBItem(90, "Eclipse Public License")
-    EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
-    GNU_GPL_V2 = DBItem(130, "GNU GPL v2")
-    GNU_GPL_V3 = DBItem(135, "GNU GPL v3")
-    GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1")
-    GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3")
-    MIT = DBItem(160, "MIT / X / Expat License")
-    MPL = DBItem(170, "Mozilla Public License")
-    OPEN_SOFTWARE = DBItem(190, "Open Software License")
-    PERL = DBItem(200, "Perl License")
-    PHP = DBItem(210, "PHP License")
-    PUBLIC_DOMAIN = DBItem(220, "Public Domain")
-    PYTHON = DBItem(230, "Python License")
-    ZPL = DBItem(280, "Zope Public License")
+    ACADEMIC = DBItem(
+        10, "Academic Free License",
+        url='http://www.opensource.org/licenses/afl-3.0.php')
+    AFFERO = DBItem(
+        20, "GNU Affero GPL v3",
+        url='http://www.opensource.org/licenses/agpl-v3.html')
+    APACHE = DBItem(
+        30, "Apache License",
+        url='http://www.opensource.org/licenses/apache2.0.php')
+    ARTISTIC = DBItem(
+        40, "Artistic License 1.0",
+        url='http://opensource.org/licenses/artistic-license-1.0.php')
+    ARTISTIC_2_0 = DBItem(
+        45, 'Artistic License 2.0',
+        url='http://www.opensource.org/licenses/artistic-license-2.0.php')
+    BSD = DBItem(
+        50, "Simplified BSD License",
+        url='http://www.opensource.org/licenses/bsd-license.php')
+    COMMON_PUBLIC = DBItem(
+        80, "Common Public License",
+        url='http://www.opensource.org/licenses/cpl1.0.php')
+    ECLIPSE = DBItem(
+        90, "Eclipse Public License",
+        url='http://www.opensource.org/licenses/eclipse-1.0.php')
+    EDUCATIONAL_COMMUNITY = DBItem(
+        100, "Educational Community License",
+        url='http://www.opensource.org/licenses/ecl2.php')
+    GNU_GPL_V2 = DBItem(
+        130, "GNU GPL v2",
+        url='http://www.opensource.org/licenses/gpl-2.0.php')
+    GNU_GPL_V3 = DBItem(
+        135, "GNU GPL v3",
+        url='http://www.opensource.org/licenses/gpl-3.0.html')
+    GNU_LGPL_V2_1 = DBItem(
+        150, "GNU LGPL v2.1",
+        url='http://www.opensource.org/licenses/lgpl-2.1.php')
+    GNU_LGPL_V3 = DBItem(
+        155, "GNU LGPL v3",
+        url='http://www.opensource.org/licenses/lgpl-3.0.html')
+    MIT = DBItem(
+        160, "MIT / X / Expat License",
+        url='http://www.opensource.org/licenses/mit-license.php')
+    MPL = DBItem(
+        170, "Mozilla Public License",
+        url='http://www.opensource.org/licenses/mozilla1.1.php')
+    OPEN_SOFTWARE = DBItem(
+        190, "Open Software License v 3.0",
+        url='http://www.opensource.org/licenses/osl-3.0.php')
+    # XXX BarryWarsaw 2009-06-10 There is really no such thing as the "Perl
+    # License".  See bug 326308 for details.  We can't remove this option
+    # because of the existing data in production, however the plan is to hide
+    # this choice from users during project creation as part of bug 333932.
+    PERL = DBItem(
+        200, "Perl License")
+    PHP = DBItem(
+        210, "PHP License",
+        url='http://www.opensource.org/licenses/php.php')
+    PUBLIC_DOMAIN = DBItem(
+        220, "Public Domain",
+        url='https://answers.launchpad.net/launchpad/+faq/564')
+    PYTHON = DBItem(
+        230, "Python License",
+        url='http://www.opensource.org/licenses/PythonSoftFoundation.php')
+    ZPL = DBItem(
+        280, "Zope Public License",
+        url='http://www.opensource.org/licenses/zpl.php')
+    CC_BY = DBItem(
+        300, 'Creative Commons - Attribution',
+        url='http://creativecommons.org/about/licenses')
+    CC_BY_SA = DBItem(
+        310, 'Creative Commons - Attribution Share Alike',
+        url='http://creativecommons.org/about/licenses')
+    CC_0 = DBItem(
+        320, 'Creative Commons - No Rights Reserved',
+        url='http://creativecommons.org/about/cc0')
+    # This is a placeholder "license" for users who know they want something
+    # open source but haven't yet chosen a license for their project.  We do
+    # not want to block them from registering their project, but this choice
+    # will allow us to nag them later.
+    DONT_KNOW = DBItem(3000, "I don't know yet")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
@@ -206,16 +275,31 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
+    @call_with(owner=REQUEST_USER)
+    @rename_parameters_as(releasefileglob="release_url_pattern")
+    @export_factory_operation(
+        IProductSeries, ['name', 'summary', 'branch', 'releasefileglob'])
+    @export_operation_as('newSeries')
+    def newSeries(owner, name, summary, branch=None, releasefileglob=None):
+        """Creates a new `IProductSeries` for this `IProduct`.
+
+        :param owner: The registrant of this series.
+        :param name: The unique name of this series.
+        :param summary: The summary of the purpose and focus of development
+            of this series.
+        :param branch: The bazaar branch that contains the code for
+            this series.
+        :param releasefileglob: The public URL pattern where release files can
+            be automatically downloaded from and linked to this series.
+        """
 
 
-class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
+class IProductEditRestricted(IOfficialBugTagTargetRestricted):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductCommercialRestricted(Interface):
-    """`IProduct` properties which require launchpad.Commercial permission."""
+class IProductProjectReviewRestricted(Interface):
+    """`IProduct` properties which require launchpad.ProjectReview."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -231,7 +315,7 @@ class IProductCommercialRestricted(Interface):
             required=False,
             description=_(
                 "Notes on the project's license, editable only by reviewers "
-                "(Admins & Commercial Admins).")))
+                "(Admins and Commercial Admins).")))
 
     is_permitted = exported(
         Bool(
@@ -244,27 +328,27 @@ class IProductCommercialRestricted(Interface):
 
     license_reviewed = exported(
         Bool(
-            title=_('License reviewed'),
-            description=_("Whether or not this project's license has been "
-                          "reviewed. Editable only by reviewers (Admins & "
-                          "Commercial Admins).")))
+            title=_('Project reviewed'),
+            description=_("Whether or not this project has been reviewed. "
+                          "If you looked at the project and how it uses "
+                          "Launchpad, you reviewed it.")))
 
     license_approved = exported(
         Bool(
-            title=_("License approved"),
+            title=_("Project approved"),
             description=_(
-                "Whether a license is manually approved for free "
-                "hosting after automatic approval fails.  May only "
-                "be applied to licenses of 'Other/Open Source'.")))
+                "The project is legitimate and its license appears valid. "
+                "Not applicable to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
-    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
+    IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
-    IPillar, ISpecificationTarget):
+    IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
+    IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
+    IHasCodeImports):
     """Public IProduct properties."""
 
     # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
@@ -276,11 +360,10 @@ class IProductPublic(
         ReferenceChoice(
             title=_('Part of'),
             required=False,
-            vocabulary='Project',
-            schema=IProject,
+            vocabulary='ProjectGroup',
+            schema=IProjectGroup,
             description=_(
-                'Super-project. In Launchpad, we can setup a special '
-                '"project group" that is an overarching initiative that '
+                'Project group. This is an overarching initiative that '
                 'includes several related projects. For example, the Mozilla '
                 'Project produces Firefox, Thunderbird and Gecko. This '
                 'information is used to group those projects in a coherent '
@@ -290,7 +373,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -307,7 +390,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -329,8 +412,7 @@ class IProductPublic(
             description=_(
                 "At least one lowercase letter or number, followed by "
                 "letters, numbers, dots, hyphens or pluses. "
-                "Keep this name short; it is used in URLs as shown above."
-                )))
+                "Keep this name short; it is used in URLs as shown above.")))
 
     displayname = exported(
         TextLine(
@@ -347,14 +429,17 @@ class IProductPublic(
     summary = exported(
         Summary(
             title=_('Summary'),
-            description=_("The summary should be a single short paragraph.")))
+            description=_(
+                "A short paragraph to introduce the project's work.")))
 
     description = exported(
         Description(
             title=_('Description'),
             required=False,
-            description=_("""Include information on how to get involved with
-                development. Don't repeat anything from the Summary.""")))
+            description=_(
+                "Details about the project's work, highlights, goals, and "
+                "how to contribute. Use plain text, paragraphs are preserved "
+                "and URLs are linked in pages. Don't repeat the Summary.")))
 
     datecreated = exported(
         Datetime(
@@ -488,12 +573,21 @@ class IProductPublic(
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
+    date_next_suggest_packaging = exported(
+        Datetime(
+            title=_('Next suggest packaging date'),
+            description=_(
+                "The date when Launchpad can resume suggesting Ubuntu "
+                "packages that the project provides. The default value is "
+                "one year after a user states the project is not packaged "
+                "in Ubuntu."),
+            required=False))
+
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)),
-        exported_as='series')
+    series = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)))
 
     development_focus = exported(
         ReferenceChoice(
@@ -512,14 +606,13 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
-    branches = exported(
-        CollectionField(
-            title=_("An iterator over the Bazaar branches that are "
-                    "related to this product."),
-            readonly=True,
-            value_type=Reference(schema=IBranch)))
-
-    bounties = Attribute(_("The bounties that are related to this product."))
+    translation_focus = exported(
+        ReferenceChoice(
+            title=_("Translation Focus"), required=False,
+            vocabulary='FilteredProductSeries',
+            schema=IProductSeries,
+            description=_(
+                'The ProductSeries where translations are focused.')))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
@@ -583,7 +676,8 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
-        :param current_datetime: Current time.  Will be datetime.now() if not specified.
+        :param current_datetime: Current time.  Will be datetime.now() if not
+            specified.
         :return: None
         """
 
@@ -607,34 +701,11 @@ class IProductPublic(
     def getRelease(version):
         """Return the release for this product that has the version given."""
 
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
+
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
-
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this product. Return None.
-        """
-
-    def getCustomLanguageCode(language_code):
-        """Look up `ICustomLanguageCode` for `language_code`, if any.
-
-        Products may override language code definitions for translation
-        import purposes.
-        """
-
-    @operation_parameters(
-        status=List(
-            title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary=BranchMergeProposalStatus)))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(IBranchMergeProposal)
-    @export_read_operation()
-    def getMergeProposals(status=None, visible_by_user=None):
-        """Returns all merge proposals of a given status.
-
-        :param status: A list of statuses to filter with.
-        :param visible_by_user: Normally the user who is asking.
-        :returns: A list of `IBranchMergeProposal`.
-        """
 
     def userCanEdit(user):
         """Can the user edit this product?"""
@@ -647,13 +718,23 @@ class IProductPublic(
         this Product.
         """
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
+    @export_read_operation()
+    @export_operation_as('get_timeline')
+    def getTimeline(include_inactive):
+        """Return basic timeline data useful for creating a diagram."""
 
-class IProduct(IProductEditRestricted, IProductCommercialRestricted,
-               IProductDriverRestricted, IProductPublic):
+
+class IProduct(
+    IHasBugSupervisor, IProductEditRestricted, 
+    IProductProjectReviewRestricted, IProductDriverRestricted, 
+    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
     """A Product.
 
-    The Launchpad Registry describes the open source world as Projects and
-    Products. Each Project may be responsible for several Products.
+    The Launchpad Registry describes the open source world as ProjectGroups
+    and Products. Each ProjectGroup may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
     """
@@ -661,15 +742,8 @@ class IProduct(IProductEditRestricted, IProductCommercialRestricted,
     export_as_webservice_entry('project')
 
 # Fix cyclic references.
-IProject['products'].value_type = Reference(IProduct)
+IProjectGroup['products'].value_type = Reference(IProduct)
 IProductRelease['product'].schema = IProduct
-
-# Patch the official_bug_tags field to make sure that it's
-# writable from the API, and not readonly like its definition
-# in IHasBugs.
-writable_obt_field = copy_field(IProduct['official_bug_tags'])
-writable_obt_field.readonly = False
-IProduct._v_attrs['official_bug_tags'] = writable_obt_field
 
 
 class IProductSet(Interface):
@@ -757,8 +831,7 @@ class IProductSet(Interface):
         subscription_modified_after=Date(
             title=_("Subscription modified after")),
         subscription_modified_before=Date(
-            title=_("Subscription modified before"))
-        )
+            title=_("Subscription modified before")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
     @export_operation_as('licensing_search')
@@ -788,7 +861,6 @@ class IProductSet(Interface):
         description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
-
 
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)
@@ -830,10 +902,6 @@ class IProductSet(Interface):
     def count_translatable():
         """Return a count of the number of products that have
         upstream-oriented translations configured in Rosetta."""
-
-    def count_bounties():
-        """Return a number of products that have bounties registered in the
-        Launchpad for them."""
 
     def count_buggy():
         """Return the number of products that have bugs associated with them
@@ -886,22 +954,24 @@ class IProductReviewSearch(Interface):
         required=False, default=True)
 
     license_reviewed = Choice(
-        title=_('License Reviewed'), values=[True, False],
+        title=_('Project Reviewed'), values=[True, False],
+        required=False, default=False)
+
+    license_approved = Choice(
+        title=_('Project Approved'), values=[True, False],
         required=False, default=False)
 
     license_info_is_empty = Choice(
         title=_('Description of additional licenses'),
         description=_('Either this field or any one of the selected licenses'
                       ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=False)
+        vocabulary=emptiness_vocabulary, required=False, default=None)
 
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        # Zope requires sets.Set() instead of the builtin set().
-        default=sets.Set(
-            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+        default=set())
 
     has_zero_licenses = Choice(
         title=_('Or has no license specified'),
@@ -935,7 +1005,7 @@ class InvalidProductName(LaunchpadValidationError):
     def __init__(self, name):
         self.name = name
         LaunchpadValidationError.__init__(
-            self, "Invalid name for product: %s." % (name,))
+            self, "Invalid name for product: %s." % (name, ))
 
 
 # Fix circular imports.

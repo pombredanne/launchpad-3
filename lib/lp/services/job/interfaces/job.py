@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213,E0211
 
 """Interfaces including and related to IJob."""
@@ -7,12 +9,14 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IJobSource',
+    'IRunnableJob',
     'JobStatus',
     'LeaseHeld',
     ]
 
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, Text
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -53,6 +57,12 @@ class JobStatus(DBEnumeratedType):
         The job was run, but failed.  Will not be run again.
         """)
 
+    SUSPENDED = DBItem(4, """
+        Suspended
+
+        The job is suspended, so should not be run.
+        """)
+
 
 class IJob(Interface):
     """Basic attributes of a job."""
@@ -80,6 +90,9 @@ class IJob(Interface):
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
+    def getTimeout():
+        """Determine how long this job can run before timing out."""
+
     def start():
         """Mark the job as started."""
 
@@ -94,3 +107,51 @@ class IJob(Interface):
 
     def queue():
         """Mark the job as queued for processing."""
+
+    def suspend():
+        """Mark the job as suspended.
+
+        Only waiting jobs can be suspended."""
+
+    def resume():
+        """Mark the job as waiting.
+
+        Only suspended jobs can be resumed."""
+
+
+class IRunnableJob(IJob):
+    """Interface for jobs that can be run via the JobRunner."""
+
+    def notifyOops(oops):
+        """Notify interested parties that this job produced an OOPS.
+
+        :param oops: The oops produced by this Job.
+        """
+
+    def getOopsVars():
+        """Return a list of variables to appear in the OOPS.
+
+        These vars should help determine why the jobs OOPsed.
+        """
+
+    user_error_types = Attribute(
+        'A tuple of exception classes which result from user error.')
+
+    def notifyUserError(e):
+        """Notify interested parties that this job encountered a user error.
+
+        :param e: The exception encountered by this job.
+        """
+
+    def run():
+        """Run this job."""
+
+
+class IJobSource(Interface):
+    """Interface for creating and getting jobs."""
+
+    def iterReady():
+        """Iterate through all jobs."""
+
+    def contextManager():
+        """Get a context for running this kind of job in."""

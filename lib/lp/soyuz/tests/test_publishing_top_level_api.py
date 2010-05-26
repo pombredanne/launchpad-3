@@ -1,13 +1,17 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test top-level publication API in Soyuz."""
 
 from unittest import TestLoader
 
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
     def _createLinkedPublication(self, name, pocket):
@@ -163,7 +167,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         Publication to UPDATES pocket (post-release pockets) are ignored
         """
         self.assertEqual(
-            self.breezy_autotest.status, DistroSeriesStatus.EXPERIMENTAL)
+            self.breezy_autotest.status, SeriesStatus.EXPERIMENTAL)
         self.assertEqual(self.breezy_autotest.isUnstable(), True)
         self.checkPublicationsAreConsidered(PackagePublishingPocket.RELEASE)
         self.checkPublicationsAreIgnored(PackagePublishingPocket.UPDATES)
@@ -175,11 +179,11 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         Publications to UPDATES pocket are considered.
         """
         # Release ubuntu/breezy-autotest.
-        self.breezy_autotest.status = DistroSeriesStatus.CURRENT
+        self.breezy_autotest.status = SeriesStatus.CURRENT
         self.layer.commit()
 
         self.assertEqual(
-            self.breezy_autotest.status, DistroSeriesStatus.CURRENT)
+            self.breezy_autotest.status, SeriesStatus.CURRENT)
         self.assertEqual(self.breezy_autotest.isUnstable(), False)
         self.checkPublicationsAreConsidered(PackagePublishingPocket.UPDATES)
         self.checkPublicationsAreIgnored(PackagePublishingPocket.RELEASE)
@@ -190,11 +194,11 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         Publications to both, RELEASE and UPDATES, pockets are considered.
         """
         # Release ubuntu/breezy-autotest.
-        self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+        self.breezy_autotest.status = SeriesStatus.FROZEN
         self.layer.commit()
 
         self.assertEqual(
-            self.breezy_autotest.status, DistroSeriesStatus.FROZEN)
+            self.breezy_autotest.status, SeriesStatus.FROZEN)
         self.assertEqual(
             self.breezy_autotest.isUnstable(), True)
         self.checkPublicationsAreConsidered(PackagePublishingPocket.UPDATES)
@@ -245,7 +249,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             self._createDefaulSourcePublications())
 
         # Release 'breezy-autotest'.
-        self.breezy_autotest.status = DistroSeriesStatus.CURRENT
+        self.breezy_autotest.status = SeriesStatus.CURRENT
         self.layer.commit()
 
         # Since the distroseries is stable, nothing is returned because
@@ -278,7 +282,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
         # Freeze 'breezy-autotest'.
-        self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+        self.breezy_autotest.status = SeriesStatus.FROZEN
         self.layer.commit()
 
         # Usual publication procedure for a distroseries in development
@@ -357,7 +361,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             self._createDefaulBinaryPublications())
 
         # Release 'breezy-autotest'
-        self.breezy_autotest.status = DistroSeriesStatus.CURRENT
+        self.breezy_autotest.status = SeriesStatus.CURRENT
         self.layer.commit()
 
         # Since the distroseries is stable, nothing is returned because
@@ -390,7 +394,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
         # Freeze 'breezy-autotest'
-        self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+        self.breezy_autotest.status = SeriesStatus.FROZEN
         self.layer.commit()
 
         # Usual publication procedure for a distroseries in development

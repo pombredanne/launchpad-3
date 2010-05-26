@@ -72,7 +72,7 @@ architectures, compilers used for the Python interpreter, etc.
     ...         self.clock = 0
     ...
     ...     def isDone(self):
-    ...         done = (self.iteration > len(self.timings)+1)
+    ...         done = self.iteration >= len(self.timings)
     ...         if done:
     ...             print "done"
     ...         return done
@@ -80,6 +80,8 @@ architectures, compilers used for the Python interpreter, etc.
     ...     def __call__(self, chunk_size):
     ...         print_change(self.last_chunk_size, chunk_size)
     ...         self.last_chunk_size = chunk_size
+    ...         self.clock += self.timings[self.iteration]
+    ...         self.iteration += 1
 
 
 In combination with that, we tweak LoopTuner to simulate the timings we gave
@@ -88,12 +90,7 @@ subclass the LoopTuner.
 
     >>> class TestTuner(LoopTuner):
     ...     def _time(self):
-    ...         clock_now = float(self.operation.clock)
-    ...         if self.operation.iteration < len(self.operation.timings):
-    ...             next = self.operation.timings[self.operation.iteration]
-    ...             self.operation.clock += next
-    ...         self.operation.iteration += 1
-    ...         return clock_now
+    ...         return float(self.operation.clock)
 
 
 === Trivial Case ===
@@ -103,7 +100,6 @@ If there's nothing to do, nothing happens.
     >>> body = PlannedLoop([])
     >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
-    start
     done
 
 
@@ -131,7 +127,6 @@ variations, it keeps oscillating a bit.
     increased (0.0)
     same (0.0)
     decreased (-0.0)
-    same (0.0)
     done
 
 
@@ -144,7 +139,6 @@ minimum chunk size.
     >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
-    same (0.0)
     same (0.0)
     same (0.0)
     same (0.0)
@@ -176,7 +170,6 @@ in performance was a fluke, the next chunk falls well short of its time goal.
     increased (0.0)
     decreased (-0.1)
     increased (0.1)
-    same (0.0)
     same (0.0)
     done
 
@@ -445,3 +438,18 @@ time is returned.
     >>> new_time = no_cooldown_loop._coolDown(old_time)
     >>> print new_time == old_time
     True
+
+== Abort Timeout ==
+
+LoopTuner allows a timeout to be specified. If the loop runs for longer
+than this timeout, it is aborted and a WARNING logged.
+
+    >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
+    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20)
+    >>> loop.run()
+    start
+    same (0.0)
+    same (0.0)
+    WARNING:root:Task aborted after 20 seconds.
+
+

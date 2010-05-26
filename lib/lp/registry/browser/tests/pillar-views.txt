@@ -1,0 +1,199 @@
+Pillar views
+============
+
+Pillar views are used to display IPillar objects link distributions and
+products in a consistent fashion.
+
+The +get-involved presentation creates a portlet of links to encourage
+project involvement. Only links to official applications are rendered.
+
+
+    >>> distribution = factory.makeDistribution(name='umbra')
+    >>> login_person(distribution.owner)
+    >>> view = create_view(
+    ...     distribution, '+get-involved', principal=distribution.owner)
+
+The has_involvement property is used to determine if the portlet should
+be rendered. The newly created pillar does not use any launchpad applications.
+
+    >>> view.has_involvement
+    False
+
+    >>> print view.render()
+    <BLANKLINE>
+
+Pillars that do use launchpad applications have an involvement menu.
+
+    >>> distribution.official_answers = True
+    >>> distribution.official_malone = True
+    >>> view = create_view(
+    ...     distribution, '+get-involved', principal=distribution.owner)
+    >>> view.has_involvement
+    True
+
+    >>> view.official_malone
+    True
+    >>> view.official_answers
+    True
+    >>> view.official_rosetta
+    False
+    >>> view.official_blueprints
+    False
+    >>> view.official_codehosting
+    False
+
+The view provides a list of enabled links that is rendered by the template.
+
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    report_bug ask_question
+
+    >>> print view.render()
+    <div id="involvement" class="portlet">
+      <h2>Get Involved</h2>
+      <ul class="involvement">
+        <li>
+          <a href=... class="...bugs">Report a bug</a>
+        </li>
+        <li>
+          <a href=... class="...answers">Ask a question</a>
+        </li>
+      </ul>
+    ...
+
+Products are supported.
+
+    >>> product = factory.makeProduct(name='bread')
+    >>> login_person(product.owner)
+    >>> product.official_blueprints = True
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_blueprints
+    True
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    register_blueprint
+
+Products subclass the view to display disabled links to encourage
+configuring that service in Launchpad for the project. The project
+also has configuration links that make it easy to figure out where
+to configure each service.
+
+    >>> for link in view.visible_disabled_links:
+    ...     print link.name
+    submit_code
+    >>> for link in view.configuration_links:
+    ...     print link.name
+    configure_answers
+    configure_bugtracker
+    configure_translations
+    set_branch
+
+Project groups are supported too, but they only display the applications used by
+their products.
+
+    >>> project_group = factory.makeProject(name='box', owner=product.owner)
+    >>> product.project = project_group
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> view.official_blueprints
+    True
+
+The offical_codehosting for a project is based on whether the project's
+development focus series has a branch.
+
+    >>> print product.development_focus.branch
+    None
+    >>> product.official_codehosting
+    False
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_codehosting
+    False
+
+    >>> product.development_focus.branch = factory.makeBranch(
+    ...     product=product)
+    >>> product.official_codehosting
+    True
+    >>> view = create_view(product, '+get-involved')
+    >>> view.official_codehosting
+    True
+
+Project groups cannot make links to register a branch, so
+official_codehosting is always false.
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> view.official_codehosting
+    False
+
+DistroSeries can use this view. The distribution is used to set the links.
+
+    >>> series = factory.makeDistroRelease(distribution=distribution)
+    >>> view = create_view(series, '+get-involved')
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    report_bug
+
+DistributionSourcePackages can use this view. The distribution is used to
+set the links.  Despite the fact that the distribution uses blueprints,
+and translations those links are not enabled for DistributionSourcePackages.
+
+    >>> login_person(distribution.owner)
+    >>> distribution.official_blueprints = True
+    >>> distribution.official_rosetta = True
+    >>> package = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename="box",
+    ...     distribution=distribution)
+    >>> view = create_view(package, '+get-involved')
+    >>> for link in view.enabled_links:
+    ...     print link.name
+    report_bug ask_question
+
+
+Involvement links
+-----------------
+
+The pillar involvement view uses the InvolvedMenu when rendering links.
+
+    >>> from operator import attrgetter
+    >>> from canonical.launchpad.webapp.tales import MenuAPI
+
+The menu when viewed from a product page.
+
+    >>> view = create_view(product, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     print link.url
+    http://bugs.launchpad.dev/bread/+filebug
+    http://answers.launchpad.dev/bread/+addquestion
+    http://translations.launchpad.dev/bread
+    http://code.launchpad.dev/bread/+addbranch
+    http://blueprints.launchpad.dev/bread/+addspec
+
+    >>> from lp.testing.menu import check_menu_links
+    >>> from lp.registry.browser.pillar import InvolvedMenu
+    >>> check_menu_links(InvolvedMenu(product))
+    True
+
+The menu when viewed from a distribution page.
+
+    >>> view = create_view(distribution, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     if link.enabled:
+    ...         print link.url
+    http://bugs.launchpad.dev/umbra/+filebug
+    http://answers.launchpad.dev/umbra/+addquestion
+    http://translations.launchpad.dev/umbra
+    http://blueprints.launchpad.dev/umbra/+addspec
+
+The menu when viewed from a distribution source package page.
+
+    >>> view = create_view(package, '+get-involved')
+    >>> menuapi = MenuAPI(view)
+    >>> for link in sorted(
+    ...     menuapi.navigation.values(), key=attrgetter('sort_key')):
+    ...     if link.enabled:
+    ...         print link.url
+    http://bugs.launchpad.dev/umbra/+source/box/+filebug
+    http://answers.launchpad.dev/umbra/+source/box/+addquestion

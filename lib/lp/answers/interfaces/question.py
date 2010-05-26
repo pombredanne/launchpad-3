@@ -1,4 +1,6 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for a Question."""
@@ -19,7 +21,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.questionenums import (
@@ -484,7 +486,7 @@ class IQuestionLinkFAQForm(Interface):
     message = Text(
         title=_('Answer Message'),
         description=_(
-            'Enter a message that will be added as the question answer. '
+            'Enter a comment that will be added as the question comments. '
             'The title of the FAQ will be automatically appended to this '
             'message.'),
         required=True)

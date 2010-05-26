@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for Answer Tracker related unit tests.
 
@@ -12,11 +13,11 @@ import unittest
 
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(LayeredDocFileSuite('questioncontextmenu.txt'))
     suite.addTest(LayeredDocFileSuite('question-subscribe_me.txt',
                   setUp=setUp, tearDown=tearDown,
                   layer=DatabaseFunctionalLayer))
@@ -25,7 +26,7 @@ def test_suite():
                   layer=DatabaseFunctionalLayer))
     suite.addTest(LayeredDocFileSuite('faq-views.txt',
                   setUp=setUp, tearDown=tearDown,
-                  layer=DatabaseFunctionalLayer))
+                  layer=LaunchpadFunctionalLayer))
     return suite
 
 if __name__ == '__main__':

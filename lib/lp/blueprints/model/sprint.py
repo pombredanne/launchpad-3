@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -263,16 +265,18 @@ class Sprint(SQLBase):
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance
-    def attend(self, person, time_starts, time_ends):
+    def attend(self, person, time_starts, time_ends, is_physical):
         """See `ISprint`."""
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
                 attendance.time_starts = time_starts
                 attendance.time_ends = time_ends
+                attendance.is_physical = is_physical
                 return attendance
         # since no previous attendance existed, create a new one
-        return SprintAttendance(sprint=self, attendee=person,
+        return SprintAttendance(
+            sprint=self, attendee=person, is_physical=is_physical,
             time_starts=time_starts, time_ends=time_ends)
 
     def removeAttendance(self, person):
@@ -333,7 +337,7 @@ class SprintSet:
         return Sprint.select(orderBy='-time_starts')
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-            summary=None, address=None, driver=None, home_page=None,
+            summary, address=None, driver=None, home_page=None,
             mugshot=None, logo=None, icon=None):
         """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,

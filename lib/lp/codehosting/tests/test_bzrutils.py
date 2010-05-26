@@ -1,19 +1,31 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for bzrutils."""
 
 __metaclass__ = type
 
 import gc
+import sys
 
-from bzrlib import errors
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import format_registry
+from lazr.uri import URI
+
+from bzrlib import errors, trace
+from bzrlib.branch import Branch, BranchReferenceFormat
+from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.remote import RemoteBranch
+from bzrlib.smart import server
 from bzrlib.tests import (
-    TestCaseWithTransport, TestLoader, TestNotApplicable)
-from bzrlib.tests.branch_implementations import TestCaseWithBzrDir
+    multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
+    TestNotApplicable)
+from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
+from bzrlib.transport import chroot
+
 from lp.codehosting.bzrutils import (
-    DenyingServer, get_branch_stacked_on_url, is_branch_stackable)
+    DenyingServer, UnsafeUrlSeen, _install_checked_open_hook,
+    add_exception_logging_hook, checked_open, get_branch_stacked_on_url,
+    get_vfs_format_classes, is_branch_stackable,
+    remove_exception_logging_hook, safe_open)
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -40,7 +52,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
 
     def testGetBranchStackedOnUrl(self):
         # get_branch_stacked_on_url returns the URL of the stacked-on branch.
-        stacked_on_branch = self.make_branch('stacked-on')
+        self.make_branch('stacked-on')
         stacked_branch = self.make_branch('stacked')
         try:
             stacked_branch.set_stacked_on_url('../stacked-on')
@@ -119,11 +131,162 @@ class TestDenyingServer(TestCaseWithTransport):
             branch.base.startswith('file://'),
             "make_branch() didn't make branch with file:// URL")
         file_denier = DenyingServer(['file://'])
-        file_denier.setUp()
+        file_denier.start_server()
         self.assertRaises(AssertionError, Branch.open, branch.base)
-        file_denier.tearDown()
+        file_denier.stop_server()
         # This is just "assertNotRaises":
         Branch.open(branch.base)
+
+
+class TestExceptionLoggingHooks(TestCase):
+
+    def logException(self, exception):
+        """Log exception with Bazaar's exception logger."""
+        try:
+            raise exception
+        except exception.__class__:
+            trace.log_exception_quietly()
+
+    def test_calls_hook_when_added(self):
+        # add_exception_logging_hook adds a hook function that's called
+        # whenever Bazaar logs an exception.
+        exceptions = []
+        def hook():
+            exceptions.append(sys.exc_info()[:2])
+        add_exception_logging_hook(hook)
+        self.addCleanup(remove_exception_logging_hook, hook)
+        exception = RuntimeError('foo')
+        self.logException(exception)
+        self.assertEqual([(RuntimeError, exception)], exceptions)
+
+    def test_doesnt_call_hook_when_removed(self):
+        # remove_exception_logging_hook removes the hook function, ensuring
+        # it's not called when Bazaar logs an exception.
+        exceptions = []
+        def hook():
+            exceptions.append(sys.exc_info()[:2])
+        add_exception_logging_hook(hook)
+        remove_exception_logging_hook(hook)
+        self.logException(RuntimeError('foo'))
+        self.assertEqual([], exceptions)
+
+
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `lp.codehosting.bzrutils.get_vfs_format_classes`.
+    """
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        gc.collect()
+        TestCaseWithTransport.tearDown(self)
+
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        vfs_branch = self.make_branch('.')
+        smart_server = server.SmartTCPServer_for_testing()
+        smart_server.start_server(self.get_vfs_only_server())
+        self.addCleanup(smart_server.stop_server)
+        remote_branch = Branch.open(smart_server.get_url())
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
+        self.assertEqual(
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
+
+
+
+class TestCheckedOpen(TestCaseWithTransport):
+    """Tests for `checked_open`."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        _install_checked_open_hook()
+
+    def test_simple(self):
+        # Opening a branch with checked_open checks the branches url.
+        url = self.make_branch('branch').base
+        seen_urls = []
+        checked_open(seen_urls.append, url)
+        self.assertEqual([url], seen_urls)
+
+    def test_stacked(self):
+        # Opening a stacked branch with checked_open checks the branches url
+        # and then the stacked-on url.
+        stacked = self.make_branch('stacked')
+        stacked_on = self.make_branch('stacked_on')
+        stacked.set_stacked_on_url(stacked_on.base)
+        seen_urls = []
+        checked_open(seen_urls.append, stacked.base)
+        self.assertEqual([stacked.base, stacked_on.base], seen_urls)
+
+    def test_reference(self):
+        # Opening a branch reference with checked_open checks the branch
+        # references url and then the target of the reference.
+        target = self.make_branch('target')
+        reference_url = self.get_url('reference/')
+        BranchReferenceFormat().initialize(
+            BzrDir.create(reference_url), target_branch=target)
+        seen_urls = []
+        checked_open(seen_urls.append, reference_url)
+        self.assertEqual([reference_url, target.base], seen_urls)
+
+
+class TestSafeOpen(TestCaseWithTransport):
+    """Tests for `safe_open`."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        _install_checked_open_hook()
+
+    def get_chrooted_scheme(self, relpath):
+        """Create a server that is chrooted to `relpath`.
+
+        :return: ``(scheme, get_url)`` where ``scheme`` is the scheme of the
+            chroot server and ``get_url`` returns URLs on said server.
+        """
+        transport = self.get_transport(relpath)
+        chroot_server = chroot.ChrootServer(transport)
+        chroot_server.start_server()
+        self.addCleanup(chroot_server.stop_server)
+        def get_url(relpath):
+            return chroot_server.get_url() + relpath
+        return URI(chroot_server.get_url()).scheme, get_url
+
+    def test_stacked_within_scheme(self):
+        # A branch that is stacked on a URL of the same scheme is safe to
+        # open.
+        self.get_transport().mkdir('inside')
+        self.make_branch('inside/stacked')
+        self.make_branch('inside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            get_chrooted_url('stacked-on'))
+        safe_open(scheme, get_chrooted_url('stacked'))
+
+    def test_stacked_outside_scheme(self):
+        # A branch that is stacked on a URL that is not of the same scheme is
+        # not safe to open.
+        self.get_transport().mkdir('inside')
+        self.get_transport().mkdir('outside')
+        self.make_branch('inside/stacked')
+        self.make_branch('outside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            self.get_url('outside/stacked-on'))
+        self.assertRaises(
+            UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('stacked'))
 
 
 def load_tests(basic_tests, module, loader):
@@ -132,16 +295,16 @@ def load_tests(basic_tests, module, loader):
 
     get_branch_stacked_on_url_tests = loader.loadTestsFromTestCase(
         TestGetBranchStackedOnURL)
-
-    from bzrlib.tests import multiply_tests
-    from bzrlib.tests.branch_implementations import branch_scenarios
-
     scenarios = [scenario for scenario in branch_scenarios()
                  if scenario[0] != 'BranchReferenceFormat']
     multiply_tests(get_branch_stacked_on_url_tests, scenarios, result)
 
     result.addTests(loader.loadTestsFromTestCase(TestIsBranchStackable))
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
+    result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
+    result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
+    result.addTests(loader.loadTestsFromTestCase(TestSafeOpen))
+    result.addTests(loader.loadTestsFromTestCase(TestCheckedOpen))
     return result
 
 

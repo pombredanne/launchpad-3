@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
 
@@ -12,11 +13,14 @@ import pytz
 
 from storm.expr import And, Desc, LeftJoin, Select
 from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
+from storm.store import EmptyResultSet
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
@@ -64,7 +68,7 @@ class ArchiveSubscriber(Storm):
     @property
     def displayname(self):
         """See `IArchiveSubscriber`."""
-        return "%s's subscription to %s" % (
+        return "%s's access to %s" % (
             self.subscriber.displayname, self.archive.displayname)
 
     def cancel(self, cancelled_by):
@@ -83,7 +87,8 @@ class ArchiveSubscriber(Storm):
 
             # We want to get all participants who are themselves
             # individuals, not teams:
-            all_subscribers = store.find(Person,
+            all_subscribers = store.find(
+                Person,
                 TeamParticipation.teamID == self.subscriber_id,
                 TeamParticipation.personID == Person.id,
                 Person.teamowner == None)
@@ -91,7 +96,8 @@ class ArchiveSubscriber(Storm):
             # Then we get all the people who already have active
             # tokens for this archive (for example, through separate
             # subscriptions).
-            active_subscribers = store.find(Person,
+            active_subscribers = store.find(
+                Person,
                 Person.id == ArchiveAuthToken.person_id,
                 ArchiveAuthToken.archive_id == self.archive_id,
                 ArchiveAuthToken.date_deactivated == None)
@@ -102,10 +108,16 @@ class ArchiveSubscriber(Storm):
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
         else:
-            # The interface we are implementing says that the return
-            # value must be :rtype: `storm.store.ResultSet`, so just
-            # for consistency, create a ResultSet here instead of
-            # simply returning self.subscriber
+            # Subscriber is not a team.
+            token_set = getUtility(IArchiveAuthTokenSet)
+            if token_set.getActiveTokenForArchiveAndPerson(
+                self.archive, self.subscriber) is not None:
+                # There are active tokens, so return an empty result
+                # set.
+                return EmptyResultSet()
+
+            # Otherwise return a result set containing only the
+            # subscriber.
             return store.find(Person, Person.id == self.subscriber_id)
 
 

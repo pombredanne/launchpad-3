@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Implementation for the BranchVisibilityPolicy interfaces."""
@@ -20,13 +22,13 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (
-    BranchVisibilityRule, IBranchVisibilityTeamPolicy,
-    InvalidVisibilityPolicy)
+    IBranchVisibilityTeamPolicy, InvalidVisibilityPolicy)
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class BranchVisibilityTeamPolicy(SQLBase):
@@ -35,7 +37,7 @@ class BranchVisibilityTeamPolicy(SQLBase):
     implements(IBranchVisibilityTeamPolicy)
     _table = 'BranchVisibilityPolicy'
 
-    project = ForeignKey(dbName='project', foreignKey='Project')
+    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(
         dbName='team', foreignKey='Person',
@@ -57,13 +59,13 @@ class BranchVisibilityPolicyMixin:
 
     @cachedproperty
     def _policy_visibility_context(self):
-        if IProject.providedBy(self):
+        if IProjectGroup.providedBy(self):
             return dict(project=self, product=None)
         elif IProduct.providedBy(self):
             return dict(project=None, product=self)
         else:
             raise AssertionError(
-                "%s doesn't implement IProject nor IProduct." % self)
+                "%s doesn't implement IProjectGroup nor IProduct." % self)
 
     @property
     def _policy_items(self):

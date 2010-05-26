@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """ArchiveArch interfaces."""
@@ -60,3 +62,14 @@ class IArchiveArchSet(Interface):
 
         :return: A (potentially empty) result set of `IArchiveArch` instances.
         """
+
+    def getRestrictedfamilies(archive):
+        """All restricted processor families, paired with `ArchiveArch`
+        instances if associated with `archive`.
+
+        :return: A sequence containing a (`ProcessorFamily`, `ArchiveArch`)
+            2-tuple for each processor family.
+            The second value in the tuple will be None if the given `archive`
+            is not associated with the `ProcessorFamily` yet.
+        """
+

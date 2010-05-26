@@ -7,25 +7,24 @@ form again.
 
 === Double Post on the NewAccountView ===
 
-Using the +newaccount view on a token that was already confirmed should
+Using the +validateemail view on a token that was already consumed should
 redirect to the default token view. This would happen if for example the
-user tried to re-post the form after registering his or her account.
+user tried to re-post the form after validating one of their email addresses.
 
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces import (
     ...     ILoginTokenSet, LoginTokenType)
-    >>> from canonical.launchpad.browser import NewAccountView
+    >>> from canonical.launchpad.browser import ValidateEmailView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> token = getUtility(ILoginTokenSet).new(
-    ...     requester=None, requesteremail=None, 
-    ...     email='foo@barino.com', tokentype=LoginTokenType.NEWACCOUNT)
+    ...     requester=foo_bar, requesteremail='foo.bar@canonical.com', 
+    ...     email='foo@barino.com', tokentype=LoginTokenType.VALIDATEEMAIL)
     >>> token.consume()
-    >>> form = {'field.actions.continue':	'Continue',
-    ...         'field.displayname': 'Alex', 
-    ...         'field.hide_email_addresses': 'off',
-    ...         'field.password': '23-is-the-answer',
-    ...         'field.password_dupe': '23-is-the-answer'}
-    >>> view = NewAccountView(token, LaunchpadTestRequest(form=form))
+    >>> form = {'field.actions.continue': 'Continue'}
+    >>> view = ValidateEmailView(
+    ...     token, LaunchpadTestRequest(form=form, method='POST'))
     >>> view.initialize()
     
     >>> response = view.request.response

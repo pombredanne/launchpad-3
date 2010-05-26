@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 PostgreSQL specific helper functions, such as database introspection
 and table manipulation
@@ -479,7 +481,7 @@ class ConnectionString:
     Some PostgreSQL tools take libpq connection strings. Other tools
     need the components seperated out (such as pg_dump command line
     arguments). This class allows you to switch easily between formats.
-    
+
     >>> cs = ConnectionString('user=foo dbname=launchpad_dev')
     >>> cs.dbname
     'launchpad_dev'

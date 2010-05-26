@@ -18,11 +18,11 @@ permission to add a new ComponentSelection, so we temporarily switch to
 "launchpad" to handle this.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
+  ...     SeriesStatus, IComponentSet, IDistributionSet)
   >>> from canonical.launchpad.database import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = SeriesStatus.DEVELOPMENT
   >>> universe = getUtility(IComponentSet)['universe']
   >>> from canonical.testing import LaunchpadZopelessLayer
   >>> from canonical.database.sqlbase import commit
@@ -36,8 +36,8 @@ A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
 managed archive.
 
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
+  >>> from lp.archiveuploader.nascentupload import NascentUpload
+  >>> from lp.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> buildd_policy = getPolicy(
@@ -71,7 +71,7 @@ Otherwise a ChangesFile object is ready to use.
   ...     anything_policy, mock_logger_quiet)
 
   >>> quodlibet.changes
-  <canonical.archiveuploader.changesfile.ChangesFile ...>
+  <lp.archiveuploader.changesfile.ChangesFile ...>
 
 
 == NascentUpload Processing ==
@@ -635,7 +635,7 @@ simplicity and claim 'build from ACCEPTED' feature.
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)
@@ -717,7 +717,7 @@ to set hoary to CURRENT in order to do this because we're not allowed
 to upload to -UPDATES in a DEVELOPMENT series.
 
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> hoary.status = DistroSeriesStatus.CURRENT
+  >>> hoary.status = SeriesStatus.CURRENT
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
@@ -749,7 +749,7 @@ unapproved.
 And pop it back to development now that we're done
 
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = SeriesStatus.DEVELOPMENT
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
@@ -843,7 +843,7 @@ The second key of name16 person is used to sign uploads (the first gpgkey
 record is a placeholder one, we used the second key):
 
   >>> name16 = getUtility(IPersonSet).getByName('name16')
-  >>> uploader_key = name16.gpgkeys[1]
+  >>> uploader_key = name16.gpg_keys[1]
   >>> print uploader_key.fingerprint
   340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
@@ -856,12 +856,12 @@ Both, DSC and changesfile are signed with Name16's second key.
   340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
 Let's modify the current ACL rules for ubuntu, moving the upload
-rights to all components from 'ubuntu-team' to 'sabdfl':
+rights to all components from 'ubuntu-team' to 'mark':
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> from canonical.launchpad.database import ArchivePermission
-  >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
+  >>> new_uploader = getUtility(IPersonSet).getByName('mark')
   >>> for permission in ArchivePermission.select():
   ...     permission.person = new_uploader
   ...     permission.syncUpdate()
@@ -879,9 +879,8 @@ This time the upload will fail because the ACLs don't let
   >>> bar_failed.is_rejected
   True
   >>> print bar_failed.rejection_message
-  The signer of this package has no upload rights to this distribution's
-  primary archive.  Did you mean to upload to a PPA?
-
+  The signer of this package is lacking the upload rights for the source
+  package, component or package set in question.
 
 Even in a rejected upload using 'insecure' policy, the DSC signing key
 and the changesfile sigining key are stored in NascentUpload instance

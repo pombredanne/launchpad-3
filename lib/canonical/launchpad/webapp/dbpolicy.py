@@ -1,18 +1,25 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad database policies."""
 
 __metaclass__ = type
 __all__ = [
+    'BaseDatabasePolicy',
+    'DatabaseBlockedPolicy',
     'LaunchpadDatabasePolicy',
-    'SlaveDatabasePolicy',
-    'SSODatabasePolicy',
     'MasterDatabasePolicy',
+    'ReadOnlyLaunchpadDatabasePolicy',
+    'SlaveDatabasePolicy',
+    'SlaveOnlyDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
+import logging
 from textwrap import dedent
 
+from storm.cache import Cache, GenerationalCache
+from storm.exceptions import TimeoutError
 from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -20,11 +27,12 @@ from zope.interface import implements, alsoProvides
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.config import config, dbconfig
+from canonical.database.sqlbase import StupidCache
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, DEFAULT_FLAVOR, DisallowedStore,
-    IDatabasePolicy, IStoreSelector,
+    DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy, IStoreSelector,
     MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeDisallowedStore, SLAVE_FLAVOR)
 
 
@@ -38,6 +46,18 @@ def _now():
 
 # Can be tweaked by the test suite to simulate replication lag.
 _test_lag = None
+
+
+def storm_cache_factory():
+    """Return a Storm Cache of the type and size specified in dbconfig."""
+    if dbconfig.storm_cache == 'generational':
+        return GenerationalCache(int(dbconfig.storm_cache_size))
+    elif dbconfig.storm_cache == 'stupid':
+        return StupidCache(int(dbconfig.storm_cache_size))
+    elif dbconfig.storm_cache == 'default':
+        return Cache(int(dbconfig.storm_cache_size))
+    else:
+        assert False, "Unknown storm_cache %s." % dbconfig.storm_cache
 
 
 class BaseDatabasePolicy:
@@ -61,15 +81,25 @@ class BaseDatabasePolicy:
 
         config_section = self.config_section or dbconfig.getSectionName()
 
+        store_name = '%s-%s-%s' % (config_section, name, flavor)
         store = getUtility(IZStorm).get(
-            '%s-%s-%s' % (config_section, name, flavor),
-            'launchpad:%s-%s-%s' % (config_section, name, flavor))
+            store_name, 'launchpad:%s' % store_name)
+        if not getattr(store, '_lp_store_initialized', False):
+            # No existing Store. Create a new one and tweak its defaults.
 
-        # Attach our marker interfaces so our adapters don't lie.
-        if flavor == MASTER_FLAVOR:
-            alsoProvides(store, IMasterStore)
-        else:
-            alsoProvides(store, ISlaveStore)
+            # XXX stub 2009-06-25 bug=391996: The default Storm
+            # Cache is useless to a project like Launchpad. Because we
+            # are using ZStorm to manage our Stores there is no API
+            # available to change the default. Instead, we monkey patch.
+            store._cache = storm_cache_factory()
+
+            # Attach our marker interfaces so our adapters don't lie.
+            if flavor == MASTER_FLAVOR:
+                alsoProvides(store, IMasterStore)
+            else:
+                alsoProvides(store, ISlaveStore)
+
+            store._lp_store_initialized = True
 
         return store
 
@@ -80,6 +110,24 @@ class BaseDatabasePolicy:
     def uninstall(self):
         """See `IDatabasePolicy`."""
         pass
+
+    def __enter__(self):
+        """See `IDatabasePolicy`."""
+        getUtility(IStoreSelector).push(self)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """See `IDatabasePolicy`."""
+        policy = getUtility(IStoreSelector).pop()
+        assert policy is self, (
+            "Unexpected database policy %s returned by store selector"
+            % repr(policy))
+
+
+class DatabaseBlockedPolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that blocks all access to the database."""
+    def getStore(self, name, flavor):
+        """Raises `DisallowedStore`. No Database access is allowed."""
+        raise DisallowedStore(name, flavor)
 
 
 class MasterDatabasePolicy(BaseDatabasePolicy):
@@ -119,7 +167,15 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
 def LaunchpadDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if config.launchpad.read_only:
+    # We need to select a non-load balancing DB policy for +opstats so
+    # it doesn't query the DB for lag information (this page should not
+    # hit the database at all). We haven't traversed yet, so we have
+    # to sniff the request this way.  Even though PATH_INFO is always
+    # present in real requests, we need to tread carefully (``get``) because
+    # of test requests in our automated tests.
+    if request.get('PATH_INFO') == u'/+opstats':
+        return DatabaseBlockedPolicy(request)
+    elif is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
@@ -131,13 +187,21 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     Selects the DEFAULT_FLAVOR based on the request.
     """
     def __init__(self, request):
+        # The super constructor is a no-op.
+        # pylint: disable-msg=W0231
         self.request = request
-
-    def install(self):
-        """See `IDatabasePolicy`."""
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']
 
+    def _hasSession(self):
+        "Is there is already a session cookie hanging around?"
+        cookie_name = getUtility(IClientIdManager).namespace
+        return (
+            cookie_name in self.request.cookies or
+            self.request.response.getCookie(cookie_name) is not None)
+
+    def install(self):
+        """See `IDatabasePolicy`."""
         default_flavor = None
 
         # If this is a Retry attempt, force use of the master database.
@@ -160,8 +224,15 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 # slave allowing it to catch up quicker.
                 default_flavor = MASTER_FLAVOR
             else:
-                session_data = ISession(self.request)['lp.dbpolicy']
-                last_write = session_data.get('last_write', None)
+                # We don't want to even make a DB query to read the session
+                # if we can tell that it is not around.  This can be
+                # important for fast and reliable performance for pages like
+                # +opstats.
+                if self._hasSession():
+                    session_data = ISession(self.request)['lp.dbpolicy']
+                    last_write = session_data.get('last_write', None)
+                else:
+                    last_write = None
                 now = _now()
                 # 'recently' is  2 minutes plus the replication lag.
                 recently = timedelta(minutes=2)
@@ -189,28 +260,21 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         made have been propagated.
         """
         if not self.read_only:
-            # We need to further distinguish whether it's safe to write to
-            # the session, which will be true if the principal is
-            # authenticated or if there is already a session cookie hanging
-            # around.
-            if IUnauthenticatedPrincipal.providedBy(self.request.principal):
-                cookie_name = getUtility(IClientIdManager).namespace
-                session_available = (
-                    cookie_name in self.request.cookies or
-                    self.request.response.getCookie(cookie_name) is not None)
-            else:
-                session_available = True
-            if session_available:
-                # A non-readonly request has been made. Store this fact in the
-                # session. Precision is hard coded at 1 minute (so we don't
-                # update the timestamp if it is # no more than 1 minute out of
-                # date to avoid unnecessary and expensive write operations).
-                # Webservice and XMLRPC clients may not support cookies, so
-                # don't mess with their session. Feeds are always read only,
-                # and since they run over http, browsers won't send their
-                # session key that was set over https, so we don't want to
-                # access the session which will overwrite the cookie and log
-                # the user out.
+            # We need to further distinguish whether it's safe to write
+            # to the session. This will be true if the principal is
+            # authenticated or if there is already a session cookie
+            # hanging around.
+            if not IUnauthenticatedPrincipal.providedBy(
+                self.request.principal) or self._hasSession():
+                # A non-readonly request has been made. Store this fact
+                # in the session. Precision is hard coded at 1 minute
+                # (so we don't update the timestamp if it is no more
+                # than 1 minute out of date to avoid unnecessary and
+                # expensive write operations). Feeds are always read
+                # only, and since they run over http, browsers won't
+                # send their session key that was set over https, so we
+                # don't want to access the session which will overwrite
+                # the cookie and log the user out.
                 session_data = ISession(self.request)['lp.dbpolicy']
                 last_write = session_data.get('last_write', None)
                 now = _now()
@@ -220,7 +284,9 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                     session_data['last_write'] = now
 
     def getReplicationLag(self):
-        """Return the replication lag.
+        """Return the replication lag on the MAIN_STORE slave.
+
+        Lag to other replication sets is currently ignored.
 
         :returns: timedelta, or None if this isn't a replicated environment,
         """
@@ -228,33 +294,45 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         if _test_lag is not None:
             return _test_lag
 
-        # sl_status gives the best results on the origin node.
-        store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        return store.execute("SELECT replication_lag()").get_one()[0]
+        # We need to ask our slave what node it is. We can't cache this,
+        # as we might have reconnected to a different slave.
+        slave_store = self.getStore(MAIN_STORE, SLAVE_FLAVOR)
+        slave_node_id = slave_store.execute(
+            "SELECT getlocalnodeid()").get_one()[0]
+        if slave_node_id is None:
+            return None
+
+        # sl_status gives meaningful results only on the origin node.
+        master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
+
+        # Retrieve the cached lag.
+        lag = master_store.execute("""
+            SELECT lag + (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - updated)
+            FROM DatabaseReplicationLag WHERE node=%d
+            """ % slave_node_id).get_one()
+        if lag is None:
+            logging.error(
+                "No data in DatabaseReplicationLag for node %d"
+                % slave_node_id)
+            return timedelta(days=999) # A long, long time.
+        return lag[0]
 
 
-class SSODatabasePolicy(BaseDatabasePolicy):
-    """`IDatabasePolicy` for the single signon servie.
-
-    Only the auth Master and the main Slave are allowed. Requests for
-    other Stores raise DisallowedStore exceptions.
+def WebServiceDatabasePolicyFactory(request):
+    """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    config_section = 'sso'
-
-    def getStore(self, name, flavor):
-        """See `IDatabasePolicy`."""
-        if name == AUTH_STORE:
-            if flavor == SLAVE_FLAVOR:
-                raise DisallowedStore(name, flavor)
-            flavor = MASTER_FLAVOR
-        elif name == MAIN_STORE:
-            if flavor == MASTER_FLAVOR:
-                raise DisallowedStore(name, flavor)
-            flavor = SLAVE_FLAVOR
-        else:
-            raise DisallowedStore(name, flavor)
-
-        return super(SSODatabasePolicy, self).getStore(name, flavor)
+    if is_read_only():
+        return ReadOnlyLaunchpadDatabasePolicy(request)
+    else:
+        # If a session cookie was sent with the request, use the
+        # standard Launchpad database policy for load balancing to
+        # the slave databases. The javascript web service libraries
+        # send the session cookie for authenticated users.
+        cookie_name = getUtility(IClientIdManager).namespace
+        if cookie_name in request.cookies:
+            return LaunchpadDatabasePolicy(request)
+        # Otherwise, use the master only web service database policy.
+        return MasterDatabasePolicy(request)
 
 
 class ReadOnlyLaunchpadDatabasePolicy(BaseDatabasePolicy):

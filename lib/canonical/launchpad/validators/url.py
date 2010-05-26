@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -20,8 +21,14 @@ def valid_absolute_url(name):
     True
     >>> valid_absolute_url('http://www.example.com')
     True
-    >>> valid_absolute_url('whatever://example.com/blah')
+    >>> valid_absolute_url('whatever:/uxample.com/blah')
     False
+
+    # XXX: 2010-04-26, Salgado, bug=570244: This test only works against
+    # python2.6 but we still need to run on python2.5, so we should uncomment
+    # it only when we no longer need to run on 2.5.
+    >>> #valid_absolute_url('whatever://example.com/blah')
+    True
     """
     # Have to import urlparse locally since imports from helpers.py
     # causes this module to be imported, and we can't import stuff from

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Source package release interfaces."""
@@ -11,6 +13,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.fields import Reference
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
@@ -30,6 +33,7 @@ class ISourcePackageRelease(Interface):
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
+    changelog = Attribute("LibraryFileAlias containing debian/changelog.")
     changelog_entry = Attribute("Source Package Change Log Entry")
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "
@@ -123,12 +127,25 @@ class ISourcePackageRelease(Interface):
         "source package is published in.")
     upload_archive = Attribute(
         "The archive for which this package was first uploaded in Launchpad")
-    upload_changesfile = Attribute(
-        "The LibraryFileAlias for the changesfile this package was uploaded "
-        "with.")
 
-    def getQueueRecord(distroseries=None):
-        """Return the `PackageUpload` record for this source package."""
+    upload_changesfile = Attribute(
+        "The `LibraryFileAlias` object containing the changes file which "
+        "was originally uploaded with this source package release. It's "
+        "'None' if it is a source imported by Gina.")
+
+    package_upload = Attribute(
+        "The `PackageUpload` record corresponding to original upload of "
+        "this source package release. It's 'None' if it is a source "
+        "imported by Gina.")
+
+    # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
+    source_package_recipe_build = Reference(
+        schema=Interface,
+        description=_("The `SourcePackageRecipeBuild` which produced this "
+            "source package release, or None if it was created from a "
+            "traditional upload."),
+        title=_("Source package recipe build"),
+        required=False, readonly=True)
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
@@ -192,6 +209,15 @@ class ISourcePackageRelease(Interface):
             `PackageDiff` record matching the request being made.
 
         :return: the corresponding `IPackageDiff` record.
+        """
+
+    def getPackageSize():
+        """Get the size total (in KB) of files comprising this package.
+
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
+
+        :return: total size (in KB) of this package
         """
 
 

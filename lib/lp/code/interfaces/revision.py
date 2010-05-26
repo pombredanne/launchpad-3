@@ -1,4 +1,6 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Revision interfaces."""
@@ -177,10 +179,10 @@ class IRevisionSet(Interface):
             with the most recent revision_date first.
         """
 
-    def getPublicRevisionsForProject(project, day_limit=30):
-        """Get the public revisions for the project specified.
+    def getPublicRevisionsForProjectGroup(projectgroup, day_limit=30):
+        """Get the public revisions for the project group specified.
 
-        :param project: A valid `Project`.
+        :param projectgroup: A valid `ProjectGroup`.
         :param day_limit: Defines a time boundary for the revision_date, where
             (now - day_limit) < revision_date <= now.
         :return: ResultSet containing all revisions that are in a public
@@ -188,4 +190,21 @@ class IRevisionSet(Interface):
             project, where the revision_date is within `day_limit` number
             of days of now.  The results are ordered with the most recent
             revision_date first.
+        """
+
+    def updateRevisionCacheForBranch(branch):
+        """Update the RevisionCache table with the revisions from the branch.
+
+        Make sure that there is a reference in the RevisionCache table for all
+        revisions that are less than 30 days old that match the product or
+        source package for the branch.
+        """
+
+    def pruneRevisionCache(limit):
+        """Remove old rows from the RevisionCache.
+
+        All rows where the revision date is older than 30 days from now are
+        removed.
+
+        :param limit: Remove at most `limit` rows at once.
         """

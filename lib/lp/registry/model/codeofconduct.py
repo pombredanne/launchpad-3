@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """A module for CodeOfConduct (CoC) related classes.
 
@@ -45,9 +47,9 @@ class CodeOfConductConf:
 
     path = 'lib/lp/registry/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.0.1'
+    currentrelease = '1.1'
     # Set the datereleased to the date that 1.0 CoC was released,
-    # preserving everyone's Ubuntero status.
+    # preserving everyone's Ubuntu Code of Conduct signatory status.
     # https://launchpad.net/products/launchpad/+bug/48995
     datereleased = datetime(2005, 4, 12, tzinfo=pytz.timezone("UTC"))
 
@@ -187,11 +189,11 @@ class SignedCodeOfConduct(SQLBase):
 
         if self.signingkey:
             displayname += (': digitally signed by %s (%s)'
-                            % (self.owner.browsername,
+                            % (self.owner.displayname,
                                self.signingkey.displayname))
         else:
             displayname += (': paper submission accepted by %s'
-                            % self.recipient.browsername)
+                            % self.recipient.displayname)
 
         return displayname
 
@@ -203,7 +205,7 @@ class SignedCodeOfConduct(SQLBase):
         fromaddress = format_address(
             "Launchpad Code Of Conduct System",
             config.canonical.noreply_from_address)
-        replacements = {'user': self.owner.browsername,
+        replacements = {'user': self.owner.displayname,
                         'content': content}
         message = template % replacements
         simple_sendmail(
@@ -353,7 +355,7 @@ class SignedCodeOfConductSet:
         content = ('State: %s\n'
                    'Comment: %s\n'
                    'Modified by %s'
-                    % (state, admincomment, recipient.browsername))
+                    % (state, admincomment, recipient.displayname))
 
         sign.sendAdvertisementEmail(subject, content)
 
@@ -366,7 +368,7 @@ class SignedCodeOfConductSet:
                                    active=active)
 
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
-        content = 'Paper Submitted acknowledge by %s' % recipient.browsername
+        content = 'Paper Submitted acknowledge by %s' % recipient.displayname
 
         sign.sendAdvertisementEmail(subject, content)
 

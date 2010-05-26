@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Revisions."""
 
@@ -17,18 +18,21 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from lp.testing import TestCaseWithFactory, time_counter
-from lp.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.branch import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.revision import RevisionSet
+from lp.code.model.revision import RevisionCache, RevisionSet
 from lp.registry.model.karma import Karma
+from lp.testing import TestCaseWithFactory, time_counter
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -136,13 +140,27 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_junkBranchMovedToProductNeedsKarma(self):
         # A junk branch that moves to a product needs karma allocated.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author.preferredemail.email)
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
-        branch.product = self.factory.makeProduct()
+        project = self.factory.makeProduct()
+        branch.setTarget(user=branch.owner, project=project)
+        # The revision is now identified as needing karma allocated.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_junkBranchMovedToPackageNeedsKarma(self):
+        # A junk branch that moves to a package needs karma allocated.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePersonalBranch()
+        branch.createBranchRevision(1, rev)
+        # Once the branch is connected to the revision, we now specify
+        # a product for the branch.
+        source_package = self.factory.makeSourcePackage()
+        branch.setTarget(user=branch.owner, source_package=source_package)
         # The revision is now identified as needing karma allocated.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -163,7 +181,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # The person registers with Launchpad.
         author = self.factory.makePerson(email=email)
         # Garbo runs the RevisionAuthorEmailLinker job.
-        RevisionAuthorEmailLinker().run()
+        RevisionAuthorEmailLinker(log=MockLogger()).run()
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -173,16 +191,38 @@ class TestRevisionKarma(TestCaseWithFactory):
         # is set to be the time that the revision was created.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
-            author=author.preferredemail.email,
+            author=author,
             revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
         branch = self.factory.makeProductBranch()
-        branch.createBranchRevision(1, rev)
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == branch.product))
+        karma = rev.allocateKarma(branch)
         self.assertEqual(karma.datecreated, rev.date_created)
+
+    def test_allocateKarma_personal_branch(self):
+        # A personal branch gets no karma event.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePersonalBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertIs(None, karma)
+
+    def test_allocateKarma_package_branch(self):
+        # A revision on a package branch gets karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePackageBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertEqual(author, karma.person)
+        self.assertEqual(branch.distribution, karma.distribution)
+        self.assertEqual(branch.sourcepackagename, karma.sourcepackagename)
+
+    def test_allocateKarma_product_branch(self):
+        # A revision on a product branch gets karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makeProductBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertEqual(author, karma.person)
+        self.assertEqual(branch.product, karma.product)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
@@ -251,6 +291,15 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         # If allow_junk is set to False, then branches without products are
         # not returned.
         b1 = self.factory.makeProductBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makePersonalBranch(owner=self.author)
+        b2.createBranchRevision(1, self.revision)
+        self.assertEqual(
+            b1, self.revision.getBranch(allow_private=True, allow_junk=False))
+
+    def testGetBranchSourcePackage(self):
+        # Branches targetting source packages are not junk.
+        b1 = self.factory.makePackageBranch()
         b1.createBranchRevision(1, self.revision)
         b2 = self.factory.makePersonalBranch(owner=self.author)
         b2.createBranchRevision(1, self.revision)
@@ -423,9 +472,10 @@ class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
         self.assertEqual([rev1], self._getRevisions())
 
 
-class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
-                                       RevisionTestMixin):
-    """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
+class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
+                                            RevisionTestMixin):
+    """Test the `getPublicRevisionsForProjectGroup` method of `RevisionSet`.
+    """
 
     def setUp(self):
         GetPublicRevisionsTestCase.setUp(self)
@@ -434,7 +484,7 @@ class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
 
     def _getRevisions(self, day_limit=30):
         # Returns the revisions for the person.
-        return list(RevisionSet.getPublicRevisionsForProject(
+        return list(RevisionSet.getPublicRevisionsForProjectGroup(
                 self.project, day_limit))
 
     def testRevisionsMustBeInABranchOfProduct(self):
@@ -636,6 +686,211 @@ class TestOnlyPresent(TestCaseWithFactory):
         getUtility(IRevisionSet).onlyPresent([not_present])
         # This is just "assertNotRaises"
         getUtility(IRevisionSet).onlyPresent([not_present])
+
+
+class RevisionCacheTestCase(TestCaseWithFactory):
+    """Base class for RevisionCache tests."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Login as an admin as we don't care about permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self.store = getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR)
+        # There should be no RevisionCache entries in the test data.
+        assert self.store.find(RevisionCache).count() == 0
+
+    def _getRevisionCache(self):
+        return list(self.store.find(RevisionCache)
+                    .order_by(RevisionCache.revision_id))
+
+
+class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
+    """Tests for RevisionSet.updateRevisionCacheForBranch."""
+
+    def test_empty_branch(self):
+        # A branch with no revisions should add no revisions to the cache.
+        branch = self.factory.makeAnyBranch()
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        self.assertEqual(0, len(self._getRevisionCache()))
+
+    def test_adds_revisions(self):
+        # A branch with revisions should add the new revisions.
+        branch = self.factory.makeAnyBranch()
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertEqual(cached.revision, revision)
+        self.assertEqual(cached.revision_author, revision.revision_author)
+        self.assertEqual(cached.revision_date, revision.revision_date)
+
+    def test_old_revisions_not_added(self):
+        # Revisions older than the 30 day epoch are not added to the cache.
+
+        # Start 33 days ago.
+        epoch = datetime.now(pytz.UTC) - timedelta(days=30)
+        date_generator = time_counter(
+            epoch - timedelta(days=3), delta=timedelta(days=2))
+        # And add 4 revisions at 33, 31, 29, and 27 days ago
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(
+            branch, count=4, date_generator=date_generator)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        cached = self._getRevisionCache()
+        # Only two revisions are within the 30 day cutoff.
+        self.assertEqual(2, len(cached))
+        # And both the revisions stored are a date create after the epoch.
+        for rev in cached:
+            self.assertTrue(rev.revision_date > epoch)
+
+    def test_new_revisions_added(self):
+        # If there are already revisions in the cache for the branch, updating
+        # the branch again will only add the new revisions.
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=29),
+            delta=timedelta(days=1))
+        # Initially add in 4 revisions.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(
+            branch, count=4, date_generator=date_generator)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        # Now add two more revisions.
+        self.factory.makeRevisionsForBranch(
+            branch, count=2, date_generator=date_generator)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        # There will be only six revisions cached.
+        cached = self._getRevisionCache()
+        self.assertEqual(6, len(cached))
+
+    def test_revisions_for_public_branch_marked_public(self):
+        # If the branch is public, then the revisions in the cache will be
+        # marked public too.
+        branch = self.factory.makeAnyBranch()
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertFalse(branch.private)
+        self.assertFalse(cached.private)
+
+    def test_revisions_for_private_branch_marked_private(self):
+        # If the branch is private, then the revisions in the cache will be
+        # marked private too.
+        branch = self.factory.makeAnyBranch(private=True)
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertTrue(branch.private)
+        self.assertTrue(cached.private)
+
+    def test_product_branch_revisions(self):
+        # The revision cache knows the product for revisions in product
+        # branches.
+        branch = self.factory.makeProductBranch()
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertEqual(cached.product, branch.product)
+        self.assertIs(None, cached.distroseries)
+        self.assertIs(None, cached.sourcepackagename)
+
+    def test_personal_branch_revisions(self):
+        # If the branch is a personal branch, the revision cache stores NULL
+        # for the product, distroseries and sourcepackagename.
+        branch = self.factory.makePersonalBranch()
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertIs(None, cached.product)
+        self.assertIs(None, cached.distroseries)
+        self.assertIs(None, cached.sourcepackagename)
+
+    def test_package_branch_revisions(self):
+        # The revision cache stores the distroseries and sourcepackagename for
+        # package branches.
+        branch = self.factory.makePackageBranch()
+        revision = self.factory.makeRevision()
+        branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(branch)
+        [cached] = self._getRevisionCache()
+        self.assertIs(None, cached.product)
+        self.assertEqual(branch.distroseries, cached.distroseries)
+        self.assertEqual(branch.sourcepackagename, cached.sourcepackagename)
+
+    def test_same_revision_multiple_targets(self):
+        # If there are branches that have different targets that contain the
+        # same revision, the revision appears in the revision cache once for
+        # each different target.
+        b1 = self.factory.makeProductBranch()
+        b2 = self.factory.makePackageBranch()
+        revision = self.factory.makeRevision()
+        b1.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(b1)
+        b2.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(b2)
+        [rev1, rev2] = self._getRevisionCache()
+        # Both cached revisions point to the same underlying revisions, but
+        # for different targets.
+        self.assertEqual(rev1.revision, revision)
+        self.assertEqual(rev2.revision, revision)
+        # Make rev1 be the cached revision for the product branch.
+        if rev1.product is None:
+            rev1, rev2 = rev2, rev1
+        self.assertEqual(b1.product, rev1.product)
+        self.assertEqual(b2.distroseries, rev2.distroseries)
+        self.assertEqual(b2.sourcepackagename, rev2.sourcepackagename)
+
+    def test_existing_private_revisions_with_public_branch(self):
+        # If a revision is in both public and private branches, there is a
+        # revision cache row for both public and private.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        public_branch = self.factory.makeAnyBranch(private=False)
+        revision = self.factory.makeRevision()
+        private_branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(private_branch)
+        public_branch.createBranchRevision(1, revision)
+        RevisionSet.updateRevisionCacheForBranch(public_branch)
+        [rev1, rev2] = self._getRevisionCache()
+        # Both revisions point to the same underlying revision.
+        self.assertEqual(rev1.revision, revision)
+        self.assertEqual(rev2.revision, revision)
+        # But the privacy flags are different.
+        self.assertNotEqual(rev1.private, rev2.private)
+
+
+class TestPruneRevisionCache(RevisionCacheTestCase):
+    """Tests for RevisionSet.pruneRevisionCache."""
+
+    def test_old_revisions_removed(self):
+        # Revisions older than 30 days are removed.
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=33),
+            delta=timedelta(days=2))
+        for i in range(4):
+            revision = self.factory.makeRevision(
+                revision_date=date_generator.next())
+            cache = RevisionCache(revision)
+            self.store.add(cache)
+        RevisionSet.pruneRevisionCache(5)
+        self.assertEqual(2, len(self._getRevisionCache()))
+
+    def test_pruning_limit(self):
+        # The prune will only remove at most the parameter rows.
+        date_generator = time_counter(
+            datetime.now(pytz.UTC) - timedelta(days=33),
+            delta=timedelta(days=2))
+        for i in range(4):
+            revision = self.factory.makeRevision(
+                revision_date=date_generator.next())
+            cache = RevisionCache(revision)
+            self.store.add(cache)
+        RevisionSet.pruneRevisionCache(1)
+        self.assertEqual(3, len(self._getRevisionCache()))
 
 
 def test_suite():

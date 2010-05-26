@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the virtual filesystem presented by Launchpad codehosting."""
 
@@ -26,14 +27,15 @@ class TestFilesystem(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        endpoint = XMLRPCWrapper(frontend.getCodehostingEndpoint())
         self.requester = self.factory.makePerson()
         self._server = LaunchpadServer(
-            endpoint, self.requester.id, MemoryTransport(), MemoryTransport())
-        self._server.setUp()
-        self.addCleanup(self._server.tearDown)
+            endpoint, self.requester.id, MemoryTransport())
+        self._server.start_server()
+        self.addCleanup(self._server.stop_server)
 
     def getTransport(self, relpath=None):
         return get_transport(self._server.get_url()).clone(relpath)

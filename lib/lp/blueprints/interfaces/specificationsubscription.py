@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Specification subscription interfaces."""
@@ -24,8 +26,7 @@ class ISpecificationSubscription(Interface):
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(
             'The person you would like to subscribe to this blueprint. '
-            'They will be notified of the subscription by e-mail, if they '
-            'have an active Launchpad account.')
+            'They will be notified of the subscription by e-mail.')
             )
     specification = Int(title=_('Specification'), required=True,
         readonly=True)

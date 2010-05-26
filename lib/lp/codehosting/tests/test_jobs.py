@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Job-running facilities."""
 
@@ -8,14 +9,12 @@ from unittest import TestLoader
 from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.config import config
-from lp.services.job.runner import JobRunner
-from lp.code.model.branchjob import RevisionMailJob
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel,
+from lp.code.enums import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
-from canonical.launchpad.database.diff import StaticDiff
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionDiffSize,)
+from lp.code.model.branchjob import RevisionMailJob
+from lp.code.model.diff import StaticDiff
+from lp.services.job.runner import JobRunner
 from lp.testing import TestCaseWithFactory
 
 
@@ -26,7 +25,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
 
     def test_runJob_generates_diff(self):
         """Ensure that a diff is actually generated in this environment."""
-        self.useBzrBranches()
+        self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         branch.subscribe(branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,

@@ -1,4 +1,8 @@
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
+
 -- Create the standard session tables.
+
 \i session.sql
 
 -- Grant required permissions on these tables to the 'session' user.

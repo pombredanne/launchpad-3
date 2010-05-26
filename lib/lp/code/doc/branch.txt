@@ -26,10 +26,11 @@ ancestry of revisions, at least in Branch5 and older branches.
 == Interfaces ==
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
-    >>> from canonical.launchpad.database import (
-    ...     Branch, BranchSet, BranchSubscription,)
+    >>> from lp.code.enums import BranchType
+    >>> from lp.code.interfaces.branch import IBranch, IBranchSet
+    >>> from lp.code.interfaces.branchsubscription import IBranchSubscription
+    >>> from lp.code.model.branch import Branch, BranchSet
+    >>> from lp.code.model.branchsubscription import BranchSubscription
     >>> verifyObject(IBranchSet, BranchSet())
     True
     >>> verifyObject(IBranch, Branch.get(1))
@@ -72,7 +73,7 @@ The collection of all branches is represented by IBranchSet, which is
 registered as an utility.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> branchset = getUtility(IBranchSet)
     >>> branch_lookup = getUtility(IBranchLookup)
@@ -115,9 +116,9 @@ the branch, whereas the owner is the current owner of the branch.
     >>> print new_branch.owner.name
     registrant
 
-A user can create a branch where the owner is either themselves,
-or a team that they are a member of.  The registrant is not writable,
-whereas the owner is.
+A user can create a branch where the owner is either themselves, or a team
+that they are a member of.  Neither the owner nor the registrant are writable,
+but the owner can be set using the `setOwner` method.
 
     >>> login('admin@canonical.com')
     >>> new_branch.registrant = factory.makePerson()
@@ -125,7 +126,8 @@ whereas the owner is.
       ...
     ForbiddenAttribute: ('registrant', <Branch ...>)
 
-    >>> new_branch.owner = factory.makePerson(name='new-owner')
+    >>> team = factory.makeTeam(name='new-owner', owner=new_branch.owner)
+    >>> new_branch.setOwner(new_owner=team, user=new_branch.owner)
     >>> print new_branch.registrant.name
     registrant
     >>> print new_branch.owner.name
@@ -264,10 +266,10 @@ If no branch is found for the specified URL, getByUrl returns None.
 
 == Branch names ==
 
-Branches have a display name that is the unique_name otherwise.
+Branches have a display name that is the bzr_identity.
 
     >>> untitled_branch = factory.makeAnyBranch(title=None)
-    >>> untitled_branch.displayname == untitled_branch.unique_name
+    >>> untitled_branch.displayname == untitled_branch.bzr_identity
     True
 
 
@@ -296,9 +298,11 @@ Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    ...     CodeReviewNotificationLevel, IBranchSubscription)
+    ...     CodeReviewNotificationLevel)
+    >>> from lp.code.interfaces.branchsubscription import (
+    ...     IBranchSubscription)
     >>> subscriber = factory.makePerson(name='subscriber')
     >>> branch = factory.makeProductBranch(
     ...     owner=user, product=product, name='subscribed')
@@ -398,7 +402,7 @@ history, latest revisions first. All revision history items must implement the
 IBranchRevision interface. The Branch.revision_count attribute gives the length
 of the revision_history attribute but without building the list.
 
-    >>> from canonical.launchpad.interfaces import IBranchRevision
+    >>> from lp.code.interfaces.branchrevision import IBranchRevision
     >>> junk.revision_count
     6
     >>> [verifyObject(IBranchRevision, a) for a in junk.revision_history]
@@ -422,14 +426,14 @@ the history.
     >>> list(junk.latest_revisions(3)) == three_latest
     True
 
-Branch.revisions_since gives all the BranchRevisions for revisions comitted
-since a given timestamp. It may give suprising results if some committers had a
+Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
+since a given timestamp. It may give surprising results if some committers had a
 skewed clock.
 
     >>> from datetime import datetime
     >>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
     >>> two_latest = list(junk.revision_history)[:2]
-    >>> list(junk.revisions_since(timestamp)) == two_latest
+    >>> list(junk.getRevisionsSince(timestamp)) == two_latest
     True
 
 
@@ -468,7 +472,7 @@ foreign key, so existing parents and ghosts can be modelled in the same way.
 To try and retrieve a Revision given its globally unique id, you can use the
 RevisionSet utility.
 
-    >>> from canonical.launchpad.interfaces import IRevisionSet
+    >>> from lp.code.interfaces.revision import IRevisionSet
     >>> revisionset = getUtility(IRevisionSet)
     >>> [parent_id] = commit.parent_ids
     >>> parent = revisionset.getByRevisionId(parent_id)
@@ -595,8 +599,11 @@ The current references to the branch table are shown here.
     bugbranch.branch
     codeimport.branch
     productseries.branch
+    productseries.translations_branch
     seriessourcepackagebranch.branch
+    sourcepackagerecipedata.base_branch
+    sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
 
-(Unfortunately, references can form a graph-- note that codereviewcomments
+(Unfortunately, references can form a cycle-- note that codereviewcomments
  aren't shown.)

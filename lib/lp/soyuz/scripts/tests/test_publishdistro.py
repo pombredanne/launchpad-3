@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
 
@@ -14,7 +15,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archivepublisher.config import getPubConfig
+from lp.archivepublisher.config import getPubConfig
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from lp.soyuz.interfaces.archive import (
@@ -144,10 +145,10 @@ class TestPublishDistro(TestNativePublishingBase):
         self.getPubSource(filecontent="flangetrousers", archive=archive)
         self.layer.txn.commit()
         pubconf = getPubConfig(archive)
-        tmp_path = "/tmp/tmpdistroot"
+        tmp_path = os.path.join(pubconf.archiveroot, "tmpdistroot")
         if os.path.exists(tmp_path):
             shutil.rmtree(tmp_path)
-        os.mkdir(tmp_path)
+        os.makedirs(tmp_path)
         myargs = ['-R', tmp_path]
         if archive.purpose == ArchivePurpose.PARTNER:
             myargs.append('--partner')
@@ -238,17 +239,15 @@ class TestPublishDistro(TestNativePublishingBase):
 
         It should only publish private PPAs.
         """
-        # First, we'll make cprov's archive private.
+        # First, we'll make a private PPA and populate it with a
+        # publishing record.
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-        cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov_ppa = removeSecurityProxy(cprov.archive)
-        cprov_ppa.private = True
-        cprov_ppa.buildd_secret = "secret"
-        cprov_ppa.distribution = self.ubuntutest
+        private_ppa = self.factory.makeArchive(
+            private=True, distribution=ubuntutest)
 
-        # Publish something to cprov's PPA:
+        # Publish something to the private PPA:
         pub_source =  self.getPubSource(
-            sourcename='baz', filecontent='baz', archive=cprov.archive)
+            sourcename='baz', filecontent='baz', archive=private_ppa)
         self.layer.txn.commit()
 
         # Try a plain PPA run, to ensure the private one is NOT published.
@@ -290,7 +289,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.prepareBreezyAutotest()
         pub_binaries = self.getPubBinaries(format=BinaryPackageFormat.DDEB)
         for binary in pub_binaries:
-            binary.secure_record.archive = debug_archive
+            binary.archive = debug_archive
 
         # Commit setup changes, so the script can operate on them.
         self.layer.txn.commit()
@@ -306,6 +305,48 @@ class TestPublishDistro(TestNativePublishingBase):
             repo_path, 'dists/breezy-autotest/main/binary-i386/Packages')
         self.assertEqual(
             open(debug_index_path).readlines()[0], 'Package: foo-bin\n')
+
+    def testPublishCopyArchive(self):
+        """Run publish-distro in copy archive mode.
+
+        It should only publish copy archives.
+        """
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        copy_archive_name = 'test-copy-publish'
+
+        # The COPY repository path is not created yet.
+        repo_path = os.path.join(
+            config.archivepublisher.root,
+            ubuntutest.name + '-' + copy_archive_name,
+            ubuntutest.name)
+        self.assertNotExists(repo_path)
+
+        copy_archive = getUtility(IArchiveSet).new(
+            distribution=ubuntutest, owner=cprov, name=copy_archive_name,
+            purpose=ArchivePurpose.COPY, enabled=True)
+        # Save some test CPU cycles by avoiding logging in as the user
+        # necessary to alter the publish flag.
+        removeSecurityProxy(copy_archive).publish = True
+
+        # Publish something.
+        pub_source =  self.getPubSource(
+            sourcename='baz', filecontent='baz', archive=copy_archive)
+
+        # Try a plain PPA run, to ensure the copy archive is not published.
+        self.runPublishDistro(['--ppa'])
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+
+        # Now publish the copy archives and make sure they are really
+        # published.
+        self.runPublishDistro(['--copy-archive'])
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+
+        # Make sure that the files were published in the right place.
+        pool_path = os.path.join(repo_path, 'pool/main/b/baz/baz_666.dsc')
+        self.assertExists(pool_path)
 
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode
@@ -346,7 +387,8 @@ class TestPublishDistro(TestNativePublishingBase):
         """Test that some command line options are mutually exclusive."""
         self.assertRaises(
             LaunchpadScriptFailure,
-            self.runPublishDistro, ['--ppa', '--partner', '--primary-debug'])
+            self.runPublishDistro,
+            ['--ppa', '--partner', '--primary-debug', '--copy-archive'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--ppa', '--partner'])
@@ -358,10 +400,19 @@ class TestPublishDistro(TestNativePublishingBase):
             self.runPublishDistro, ['--ppa', '--primary-debug'])
         self.assertRaises(
             LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--copy-archive'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--private-ppa'])
         self.assertRaises(
             LaunchpadScriptFailure,
             self.runPublishDistro, ['--partner', '--primary-debug'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--partner', '--copy-archive'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--primary-debug', '--copy-archive'])
 
 
 def test_suite():

@@ -8,13 +8,13 @@ policy does not exist for a product, it uses the policy defined by its
 project (if it exists).
 
 The information is saved in the database table BranchVisibilityPolicy.
-This table effectively creates tuples of (Project or Product, Team,
+This table effectively creates tuples of (ProjectGroup or Product, Team,
 Policy).  Since there is no team that is used to define everyone, the
 non-specifying of a team means *everyone*.
 
 The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.launchpad.interfaces import BranchVisibilityRule
+    >>> from lp.code.enums import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.
@@ -38,14 +38,15 @@ There are currently four visibility policies:
 
 The interface IHasBranchVisibilityPolicy is used to define the public
 interface for modifying the branch visibility policy items.  Both
-IProject and IProduct inherit from this interface as both projects and
+IProjectGroup and IProduct inherit from this interface as both projects and
 products can set branch visibility policies.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectSet, IHasBranchVisibilityPolicy)
-    >>> project_set = getUtility(IProjectSet)
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.code.interfaces.branchvisibilitypolicy import (
+    ...     IHasBranchVisibilityPolicy)
+    >>> project_set = getUtility(IProjectGroupSet)
     >>> mozilla = project_set.getByName('mozilla')
     >>> IHasBranchVisibilityPolicy.providedBy(mozilla)
     True
@@ -62,11 +63,11 @@ products can set branch visibility policies.
 
 == Teams to work with ==
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> launchpad_team = person_set.getByName('launchpad')
     >>> ubuntu_gnome_team = person_set.getByName('name18')
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
 
@@ -315,7 +316,7 @@ and are subscribed to by the Ubuntu Gnome Team.
     ...     name="testing-2", owner=stevea, product=evolution)
     >>> branch.private
     True
-    >>> for name in sorted([subscriber.browsername for subscriber
+    >>> for name in sorted([subscriber.displayname for subscriber
     ...                     in branch.subscribers]):
     ...     print name
     Steve Alexander

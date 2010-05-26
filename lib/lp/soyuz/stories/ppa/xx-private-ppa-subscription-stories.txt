@@ -31,18 +31,22 @@ of a person:
 
 Given a private PPA for Celso,
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('admin@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> private_ppa = factory.makeArchive(
+    ...     owner=cprov, name="p3a", distribution=ubuntu, private=True)
+    >>> logout()
 
 and a browser for Celso currently navigated to the Manage Subscriptions page,
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
 
 and a client of Celso's who has a launchpad name of 'joesmith'
 
@@ -51,7 +55,9 @@ and a client of Celso's who has a launchpad name of 'joesmith'
     ...     password="test", email="joe@example.com")
     >>> logout()
 
-When Celso fills in the form with 'joesmith' as the subscriber, a blank subscription expiry, a description of "Joe is my friend" and clicks on the "Add subscriber" button,
+When Celso fills in the form with 'joesmith' as the subscriber, a blank
+subscription expiry, a description of "Joe is my friend" and clicks on the
+"Add subscriber" button,
 
     >>> cprov_browser.getControl(name='field.subscriber').value = 'joesmith'
     >>> cprov_browser.getControl(
@@ -74,7 +80,10 @@ Create a helper function to print subscriptions:
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have subscribed Joe Smith to PPA for Celso Providelo.
+    You have granted access for Joe Smith to install software from
+    PPA named p3a for Celso Providelo. Joe Smith will be notified of the
+    access via email.
+
 
 === Scenario 2: A team is added as a subscriber ===
 
@@ -85,7 +94,7 @@ a description of "Launchpad developer access." and clicks on the
 "Add subscriber" button,
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
     >>> cprov_browser.getControl(name='field.subscriber').value = 'launchpad'
     >>> cprov_browser.getControl(
     ...     name='field.date_expires').value = '2200-08-01'
@@ -104,8 +113,9 @@ new subscriber.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have subscribed Launchpad Developers to PPA for Celso
-    Providelo.
+    You have granted access for Launchpad Developers to install software
+    from PPA named p3a for Celso Providelo. Members of Launchpad Developers
+    will be notified of the access via email.
 
 == Story 2: An owner edits a subscription for his private archive ==
 
@@ -120,13 +130,13 @@ for the Launchpad Developers team and a browser for Celso currently
 navigated to the Manage Subscriptions page,
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
 
 when Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription,
 modifies the description field and clicks Update,
 
     >>> cprov_browser.getLink(
-    ...     url='/~cprov/+archive/ppa/+subscriptions/launchpad/+edit').click()
+    ...     url='/~cprov/+archive/p3a/+subscriptions/launchpad/+edit').click()
     >>> cprov_browser.getControl(name="field.description").value = (
     ...     "a different description")
     >>> cprov_browser.getControl(name="field.actions.update").click()
@@ -135,14 +145,14 @@ then the browser is redirected back to the subscriptions page, the updated subsc
 about the update.
 
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+    http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
     Launchpad Developers    2200-08-01    a different description
     ...
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    The subscription for Launchpad Developers has been updated.
+    The access for Launchpad Developers has been updated.
 
 === Scenario 2: Canceling a subscription ===
 
@@ -151,13 +161,13 @@ the Launchpad Developers team and a browser for Celso currently navigated
 to the Manage Subscriptions page,
 
     >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
+    ...     "http://launchpad.dev/~cprov/+archive/p3a/+subscriptions")
 
 when Celso clicks 'Edit/Cancel' for the Launchpad Developers subscription
 and clicks Cancel,
 
     >>> cprov_browser.getLink(
-    ...     url='/~cprov/+archive/ppa/+subscriptions/launchpad/+edit').click()
+    ...     url='/~cprov/+archive/p3a/+subscriptions/launchpad/+edit').click()
     >>> cprov_browser.getControl(name="field.actions.cancel").click()
 
 then the browser is redirected back to the subscriptions page, the canceled
@@ -165,15 +175,15 @@ subscription is no longer displayed and a notification about the
 cancellation is displayed.
 
     >>> print cprov_browser.url
-    http://launchpad.dev/~cprov/+archive/ppa/+subscriptions
+    http://launchpad.dev/~cprov/+archive/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
     Joe Smith                             Joe is my friend    Edit/Cancel
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have cancelled Launchpad Developers's subscription to PPA
-    for Celso Providelo.
+    You have revoked Launchpad Developers's access to PPA
+    named p3a for Celso Providelo.
 
 
 == Story 3: A subscriber activates a subscription ==
@@ -193,69 +203,64 @@ then he'll see a list of his current subscriptions.
     >>> joe_browser.open("http://launchpad.dev/~joesmith")
     >>> joe_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                             Status
-    PPA for Celso Providelo             Pending     Confirm
+    Archive        Owner
+    PPA named ...  Celso Providelo  View
 
-When Joe clicks on the 'Confirm' link for Celso's PPA then the
-details of the subscription are displayed with a request to confirm the
-subscription.
+When Joe clicks on the View button for Celso's PPA then the
+details of the subscription are displayed with the newly created
+access details.
 
-    >>> joe_browser.getLink('Confirm').click()
-    >>> print extract_text(find_main_content(joe_browser.contents))
-    Profile...
-    Joe Smith's subscription to PPA for Celso Providelo
-    ...
-    Confirm subscription
-
-When Joe clicks on the 'Confirm subscription' button then a sources.list
-snippet is displayed.as well as a notification message.
-
-    >>> joe_browser.getControl(name='activate').click()
+    >>> joe_browser.getControl(name="activate").click()
     >>> sources_list = find_tag_by_id(joe_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Joe Smith to PPA for Celso Providelo
-    deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    ...
-
-    >>> for msg in get_feedback_messages(joe_browser.contents):
-    ...     print msg
-    You have confirmed your subscription to the archive...
+    deb http://joesmith:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
+        hoary main #Personal access of Joe Smith
+        to PPA named p3a for Celso Providelo
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
+        hoary main #Personal access of Joe Smith
+        to PPA named p3a for Celso Providelo
 
 When Joe navigates back to his current archive subscriptions then the list of
-subscriptions reflects the confirmed subscription.
+subscriptions reflects the confirmed subscription, providing a normal
+link to view the details.
 
     >>> joe_browser.open(
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> print_subscriptions_for_person(joe_browser.contents)
-    Archive                      Status
-    PPA for Celso Providelo      Active     View
+    Archive        Owner
+    PPA named ...  Celso Providelo  View
+
+    >>> joe_browser.getLink('View').click()
+    >>> print(extract_text(joe_browser.contents))
+    Access to PPA named p3a for Celso Providelo...
 
 === Scenario 2: A user re-generates the token for a subscription ===
 
 Given an activated subscription to Celso's private PPA, when Joe visits
-his private archive subscriptions page and clicks on the 'view' link to view a subscription then information regarding the generation of a new personal
+his private archive subscriptions page and clicks on the 'view' link to view
+a subscription then information regarding the generation of a new personal
 subscription is displayed.
 
+    >>> joe_browser.open(
+    ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> joe_browser.getLink('View').click()
     >>> regeneration_info = find_tag_by_id(
     ...     joe_browser.contents, 'regenerate_token')
     >>> print(extract_text(regeneration_info))
-    Password security
+    Reset password
     If you believe...
     Note: after ...
-    Generate new password
 
 When Joe clicks on the 'Generate new personal subscription' link then
 the page is redisplayed with new sources.list entries and a notification.
 
-    >>> joe_browser.getControl(name='regenerate').click()
+    >>> joe_browser.getControl(name='regenerate_btn').click()
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
     Launchpad has generated the new password you requested for your
-    subscription to the archive PPA for Celso Providelo. Please
+    access to the archive PPA named p3a for Celso Providelo. Please
     follow the instructions below to update your custom "sources.list".
 
 
@@ -269,67 +274,58 @@ a user Mark who is a member of the Launchpad team,
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> launchpad = getUtility(IPersonSet).getByName('launchpad')
-    >>> ignore = cprov.archive.newSubscription(launchpad, cprov)
+    >>> ignore = private_ppa.newSubscription(launchpad, cprov)
     >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> launchpad.addMember(sabdfl, foobar)
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> ignored = launchpad.addMember(mark, foobar)
     >>> import transaction
     >>> transaction.commit()
     >>> logout()
 
-When Mark, a member of the Launchpad team, visits his profile and clicks 
+When Mark, a member of the Launchpad team, visits his profile and clicks
 'View your private PPA subscriptions', then he'll see a list of his current
 subscriptions.
 
-    >>> mark_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> mark_browser.open(
-    ...     "http://launchpad.dev/~sabdfl")
+    ...     "http://launchpad.dev/~mark")
 
     >>> mark_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(mark_browser.contents)
-    Archive                            Status
-    PPA for Celso Providelo            Pending    Confirm
+    Archive        Owner
+    PPA named ...  Celso Providelo  View
 
-When Marks clicks on the confirm link, then he is taken to the page for
-his personal subscription for Celso's private PPA and asked to confirm
-the subscription.
+When Mark clicks on the view button, then he is taken to the page for
+his personal subscription for Celso's private PPA and the newly-created
+access details are displayed.
 
-    >>> mark_browser.getLink('Confirm').click()
-    >>> print mark_browser.url
-    http://launchpad.dev/~sabdfl/+archivesubscriptions/9
-    >>> print extract_text(find_main_content(mark_browser.contents))
-    Profile...
-    Mark Shuttleworth's subscription to PPA for Celso Providelo
-    ...
-    Confirm subscription
-
-When Mark clicks on the 'Confirm subscription' button then a sources.list
-snippet is displayed.as well as a notification message.
-
-    >>> mark_browser.getControl(name='activate').click()
+    >>> mark_browser.getControl(name="activate").click()
     >>> sources_list = find_tag_by_id(mark_browser.contents, 'sources_list')
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    # Personal subscription of Mark Shuttleworth to PPA for Celso Providelo
-    deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    ...
-
-    >>> for msg in get_feedback_messages(mark_browser.contents):
-    ...     print msg
-    You have confirmed your subscription to the archive...
+    deb http://mark:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
+        hoary main #Personal access of
+        Mark Shuttleworth to PPA named p3a for Celso Providelo
+    deb-src http://mark:...@private-ppa.launchpad.dev/cprov/p3a/ubuntu
+        hoary main #Personal access of
+        Mark Shuttleworth to PPA named p3a for Celso Providelo
 
 When Mark navigates back to his current archive subscriptions then the list of
-subscriptions reflects the confirmed subscription.
+subscriptions reflects the confirmed subscription, providing a normal
+link to view the details.
 
     >>> mark_browser.open(
-    ...     "http://launchpad.dev/~sabdfl/+archivesubscriptions")
+    ...     "http://launchpad.dev/~mark/+archivesubscriptions")
     >>> print_subscriptions_for_person(mark_browser.contents)
-    Archive                             Status
-    PPA for Celso Providelo             Active    View
+    Archive        Owner
+    PPA named ...  Celso Providelo  View
+
+    >>> mark_browser.getLink('View').click()
+    >>> print(extract_text(mark_browser.contents))
+    Access to PPA named p3a for Celso Providelo...
 
 
 == Story 4: A user's subscription expires or is cancelled ==

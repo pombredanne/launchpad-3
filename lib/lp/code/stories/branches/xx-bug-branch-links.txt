@@ -1,10 +1,13 @@
-= Bug branch links =
+================
+Bug branch links
+================
 
 It is possible to link bugs and branches from both the bug page and the branch
 page.
 
 
-== From the branch page ==
+From the branch page
+====================
 
 There is a "Link to a bug report" item in the actions menu that is visible
 to everybody but which links to a page restricted with the
@@ -44,26 +47,24 @@ if the user is not logged in, they will be asked to log in.
     No bug branch links
 
     >>> browser.getLink('Link to a bug report').click()
-    >>> browser.title
-    'Link branch \xe2\x80\x9c~name12/gnome-terminal/klingon\xe2\x80\x9d to a bug report'
+    >>> print browser.title
+    Link branch...
 
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
 
-    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
-    Bug #9: Thunderbird crashes (Unknown &ndash; Unknown)
+    Bug #9: Thunderbird crashes Unknown Unknown
 
-Attempting to link to the same bug again gives an error.
+Attempting to link to the same bug again gives no error.
 
     >>> browser.getLink('Link to another bug report').click()
-    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-    There is 1 error.
-    Bug #9 is already linked to this branch
 
 The bug-branch link is also shown on the bug page.
 
@@ -72,7 +73,7 @@ The bug-branch link is also shown on the bug page.
     >>> browser.getLink('Thunderbird crashes').click()
 
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/klingon (Experimental)
+    lp://dev/~name12/gnome-terminal/klingon
 
 If the bug is private, then the bug branch link isn't shows on the
 branch page for people that are not able to see it.  Get an admin
@@ -90,7 +91,7 @@ Sample person can see it...
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> printBugBranchLinks(browser)
-    Bug #9: Thunderbird crashes (Unknown &ndash; Unknown)
+    Bug #9: Thunderbird crashes Unknown Unknown
 
 ... but an anonymous user cannot.
 
@@ -100,7 +101,8 @@ Sample person can see it...
     No bug branch links
 
 
-== From the bug page ==
+From the bug page
+=================
 
 The action link on the bug page is "Link a related branch".  Again this
 links to a page restricted with the launchpad.AnyPerson permission.
@@ -124,14 +126,15 @@ links to a page restricted with the launchpad.AnyPerson permission.
     >>> browser.getControl('Continue').click()
 
     >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
+    lp://dev/~name12/gnome-terminal/scanned
 
     >>> browser.getLink('~name12/gnome-terminal/scanned').click()
     >>> printBugBranchLinks(browser)
-    Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
+    Bug #11: Make Jokosher use autoaudiosink Undecided New
 
 
-=== Quick branch registration ===
+Quick branch registration
+=========================
 
 You can also register a branch at the same time as registering a bug-branch
 link. Instead of entering the unique name of a branch, you can enter a URL:
@@ -157,10 +160,10 @@ But we're here to register a branch:
 This registers a branch and links it to the bug:
 
     >>> print_notifications(browser)
-    Registered ~name12/thunderbird/branch
+    Registered lp://dev/~name12/thunderbird/branch
     ...
     >>> printBugBranchLinks(browser)
-    ~name12/thunderbird/branch (Development)
+    lp://dev/~name12/thunderbird/branch
 
 However, if the bug isn't on a project, we don't (can't!) register a branch.
 
@@ -184,40 +187,34 @@ No bug-branch link is registered:
     No bug branch links
 
 
-== Editing the bug-branch link ==
-
-Each bug-branch link has a whiteboard to give more details about the link.
-
-    >>> browser.open(
-    ...     'http://launchpad.dev/bugs/11')
-    >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
-
-The whiteboard contents are available on the (bug|branch) page.
-
-    >>> browser.getControl('Whiteboard').value = (
-    ...     'This is a fix for the problem and involved:\n'
-    ...     ' * Fixing the doodad\n'
-    ...     ' * Adjusting the lambda probe')
-    >>> browser.getControl('Update').click()
-    >>> printBugBranchLinks(browser)
-    ~name12/gnome-terminal/scanned (Development)
-      This is a fix for the problem and involved:
-       * Fixing the doodad
-       * Adjusting the lambda probe
-
-    >>> browser.getLink('~name12/gnome-terminal/scanne').click()
-    >>> printBugBranchLinks(browser)
-    Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
-
-
-== Deleting bug branch links ==
+Deleting bug branch links
+=========================
 
 The edit view for the bug branch also now has a delete button to unlink
 the bug from the branch.
 
     >>> browser.open('http://bugs.launchpad.dev/thunderbird/+bug/15')
 
-    >>> browser.getControl('Delete').click()
+    >>> browser.getLink(url="+delete").click()
     >>> printBugBranchLinks(browser)
     No bug branch links
+
+
+Deleting a branch with linked bugs
+==================================
+
+    >>> login('no-priv@canonical.com')
+    >>> grub = factory.makeAnyBranch()
+    >>> new_bug = factory.makeBug()
+    >>> grub_bug_link = grub.linkBug(new_bug, grub.owner)
+    >>> grub_url = canonical_url(grub)
+    >>> logout()
+
+    >>> admin_browser.open(grub_url)
+    >>> admin_browser.getLink('Delete branch').click()
+
+    >>> print find_tag_by_id(admin_browser.contents, 'deletion-items')
+    <ul ...
+    <a href="http://bugs.launchpad.dev/product-name.../+bug/..."
+    class="sprite bug-undecided">Bug #...: generic-string...</a>...
+

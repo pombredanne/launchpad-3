@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -24,40 +28,27 @@
     />
 
   <securedutility
-    class="canonical.launchpad.systemhomes.BranchPullerApplication"
-    provides="lp.code.interfaces.codehosting.IBranchPullerApplication">
-    <allow interface="lp.code.interfaces.codehosting.IBranchPullerApplication"/>
+    class="canonical.launchpad.systemhomes.CodehostingApplication"
+    provides="lp.code.interfaces.codehosting.ICodehostingApplication">
+    <allow interface="lp.code.interfaces.codehosting.ICodehostingApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="lp.code.interfaces.codehosting.IBranchPullerApplication"
-    interface="lp.code.interfaces.codehosting.IBranchPuller"
-    class="lp.code.xmlrpc.codehosting.BranchPuller"
-    permission="zope.Public"
-    />
-
-  <securedutility
-    class="canonical.launchpad.systemhomes.BranchFileSystemApplication"
-    provides="lp.code.interfaces.codehosting.IBranchFileSystemApplication">
-    <allow interface="lp.code.interfaces.codehosting.IBranchFileSystemApplication"/>
-  </securedutility>
-
-  <xmlrpc:view
-    for="lp.code.interfaces.codehosting.IBranchFileSystemApplication"
-    interface="lp.code.interfaces.codehosting.IBranchFileSystem"
-    class="lp.code.xmlrpc.codehosting.BranchFileSystem"
+    for="lp.code.interfaces.codehosting.ICodehostingApplication"
+    interface="lp.code.interfaces.codehosting.ICodehostingAPI"
+    class="lp.code.xmlrpc.codehosting.CodehostingAPI"
     permission="zope.Public"
     />
 
   <securedutility
     class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
-    provides="canonical.launchpad.interfaces.ICodeImportSchedulerApplication">
-    <allow interface="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"/>
+    provides="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication">
+    <allow interface="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"/>
   </securedutility>
 
   <xmlrpc:view
-    for="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"
-    interface="canonical.launchpad.interfaces.ICodeImportScheduler"
+    for="lp.code.interfaces.codeimportscheduler.ICodeImportSchedulerApplication"
+    interface="lp.code.interfaces.codeimportscheduler.ICodeImportScheduler"
     class="canonical.launchpad.xmlrpc.CodeImportSchedulerAPI"
     permission="zope.Public"
     />

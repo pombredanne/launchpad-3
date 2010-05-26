@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeQueues."""
 
@@ -13,12 +14,9 @@ from canonical.launchpad.ftests import login_person
 from lp.testing import TestCaseWithFactory
 from lp.code.model.branchmergequeue import (
     BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
-from lp.code.interfaces.branch import (
-    BranchMergeControlStatus)
+from lp.code.enums import BranchMergeControlStatus, BranchMergeProposalStatus
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
-from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
 from canonical.launchpad.webapp.testing import verifyObject
 
 from canonical.testing import DatabaseFunctionalLayer

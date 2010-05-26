@@ -145,9 +145,10 @@ publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingPocket)
+    ...    IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.model.publishing import (
-    ...     SecureBinaryPackagePublishingHistory)
+    ...     BinaryPackagePublishingHistory)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -162,7 +163,7 @@ as possible.
     >>> at_warty_i386 = warty['i386'].getBinaryPackage('at')
     >>> sample_bpr = at_warty_i386.currentrelease.binarypackagerelease
 
-    >>> SecureBinaryPackagePublishingHistory.selectBy(
+    >>> BinaryPackagePublishingHistory.selectBy(
     ...     distroarchseries=bt_i386, binarypackagerelease=sample_bpr).count()
     0
 
@@ -324,3 +325,76 @@ Let's activate ppa support for hoary/hppa and check if
     >>> print_architectures(hoary.virtualized_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+
+There is also `DistroSeries.enabled_architectures` which returns a
+`ResultSet` containing only the `DistroArchSeries` with available
+chroots tarballs (the ones for which we can build packages).
+
+In the sampledata, none of the hoary architectures have chroot
+tarballs. Once it is available the corresponding architecture is
+returned.
+
+    >>> hoary.enabled_architectures.count()
+    0
+
+    # Create a chroot tarball for hoary/hppa.
+    >>> chroot = factory.makeLibraryFileAlias()
+    >>> unused = hoary.getDistroArchSeries('hppa').addOrUpdateChroot(chroot)
+
+    >>> print_architectures(hoary.enabled_architectures)
+    The Hoary Hedgehog Release for hppa (hppa) (ppa)
+
+The architecture also has a 'chroot_url' attribute directly referencing
+the file.
+
+    >>> print hoary.getDistroArchSeries('hppa').chroot_url
+    http://localhost:58000/.../filename...
+    >>> hoary.getDistroArchSeries('hppa').chroot_url == \
+    ...     chroot.http_url
+    True
+
+If there is no chroot, chroot_url will be None.
+
+    >>> print hoary.getDistroArchSeries('i386').chroot_url
+    None
+
+`DistroSeries.enabled_architectures` results are ordered
+alphabetically by 'architecturetag'.
+
+    # Create a chroot tarball for hoary/i386.
+    >>> unused = hoary.getDistroArchSeries('i386').addOrUpdateChroot(chroot)
+
+    >>> print_architectures(hoary.enabled_architectures)
+    The Hoary Hedgehog Release for hppa (hppa) (ppa)
+    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+
+
+===========================
+DistroArchSeriesSet Methods
+===========================
+
+The `DistroArchSeriesSet` class provides a helper method
+getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet` 
+interface - which will filter an iterable of DistroArchSeries
+using an optional arch_tag and return a list of their IDs.
+
+    >>> architectures = [
+    ...     factory.makeDistroArchSeries(architecturetag='i986'),
+    ...     factory.makeDistroArchSeries(architecturetag='i986'),
+    ...     factory.makeDistroArchSeries(architecturetag='powerpc'),
+    ... ]
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeriesSet
+    >>> distroarchseries_set = DistroArchSeriesSet()
+
+    >>> arch_ids = distroarchseries_set.getIdsForArchitectures(architectures)
+    >>> len(arch_ids)
+    3
+    >>> isinstance(arch_ids[0], int)
+    True
+    >>> len(distroarchseries_set.getIdsForArchitectures(architectures,
+    ...                                                 arch_tag='i986'))
+    2
+    >>> len(distroarchseries_set.getIdsForArchitectures(architectures,
+    ...                                                 arch_tag='powerpc'))
+    1
+

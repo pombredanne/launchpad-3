@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interface for FAQ document."""
@@ -16,7 +18,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Title
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from lp.registry.interfaces.role import IHasOwner
 
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -36,7 +38,7 @@ class IFAQ(IHasOwner):
 
     title = Title(
         title=_('Title'),
-        description=_('The title describing the FAQ, often a question.'),
+        description=_('The title describing this FAQ, often a question.'),
         required=True)
 
     keywords = TextLine(
@@ -47,7 +49,7 @@ class IFAQ(IHasOwner):
     content = Text(
         title=_('Content'),
         description=_(
-            'The answer to the question in plain text. You may choose to '
+            'The answer for this FAQ in plain text. You may choose to '
             'include a URL to an external FAQ.'),
         required=True)
 

@@ -1,12 +1,13 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import gpgme
 import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.ftests import keys_for_tests
+from canonical.launchpad.ftests import (
+    ANONYMOUS, keys_for_tests, login, logout)
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -95,6 +96,28 @@ class TestImportKeyRing(unittest.TestCase):
             filter=secret_target_fpr[-8:], secret=True)
         [key] = filtered_keys
         self.assertEqual(key.fingerprint, secret_target_fpr)
+
+    def test_unicode_filter(self):
+        """Using a unicode filter works also.
+
+        XXX michaeln 2010-05-07 bug=576405
+        Recent versions of gpgme return unicode fingerprints, but
+        at the same time, gpgme.Context().keylist falls over if
+        it receives a unicode string.
+        """
+        self.populateKeyring()
+
+        target_fpr = u'340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
+
+        # Finding a key by its unicode fingerprint.
+        filtered_keys = self.gpg_handler.localKeys(target_fpr)
+        [key] = filtered_keys
+        self.assertEqual(key.fingerprint, target_fpr)
+
+    def test_non_ascii_filter(self):
+        """localKeys should not error if passed non-ascii unicode strings."""
+        filtered_keys = self.gpg_handler.localKeys(u'non-ascii \u8463')
+        self.failUnlessRaises(StopIteration, filtered_keys.next)
 
     def testTestkeyrings(self):
         """Do we have the expected test keyring files"""

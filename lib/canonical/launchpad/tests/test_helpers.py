@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
 
@@ -9,7 +10,7 @@ from zope.interface import implements
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from canonical.launchpad.translationformat import LaunchpadWriteTarFile
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 from lp.testing.factory import LaunchpadObjectFactory
 
@@ -54,8 +55,10 @@ def make_test_tarball_2():
 
     Check the expected files are in the archive.
 
-    >>> tarball.getnames()
-    ['test/', 'test/cy.po', 'test/es.po', 'test/test.pot']
+    # XXX: 2010-04-26, Salgado, bug=570244: This rstrip('/') is to make the
+    # test pass on python2.5 and 2.6.
+    >>> [name.rstrip('/') for name in tarball.getnames()]
+    ['test', 'test/cy.po', 'test/es.po', 'test/test.pot']
 
     Check the contents.
 

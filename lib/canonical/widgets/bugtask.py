@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
 
@@ -8,7 +9,6 @@ from xml.sax.saxutils import escape
 
 from zope.component import getUtility
 from zope.interface import implements, Interface
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
@@ -17,7 +17,8 @@ from zope.app.form.interfaces import (
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
-from zope.security.interfaces import Unauthorized
+
+from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
@@ -29,7 +30,7 @@ from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 class BugTaskAssigneeWidget(Widget):
@@ -50,7 +51,7 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-        self.assignee_chooser_widget = SinglePopupWidget(
+        self.assignee_chooser_widget = VocabularyPickerWidget(
             context, context.vocabulary, request)
         self.setUpNames()
 
@@ -418,7 +419,7 @@ class BugTaskBugWatchWidget(RadioWidget):
             contents='\n'.join(rendered_items))
 
 
-class BugTaskSourcePackageNameWidget(SinglePopupWidget):
+class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.
@@ -498,7 +499,7 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents="%s %s" % (person_img, escape(assignee.browsername)))
+                contents="%s %s" % (person_img, escape(assignee.displayname)))
         else:
             if bugtask.target_uses_malone:
                 return renderElement('i', contents='not assigned')

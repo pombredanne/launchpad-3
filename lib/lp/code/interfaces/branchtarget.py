@@ -1,4 +1,6 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Interface for branch targets.
@@ -19,6 +21,7 @@ __all__ = [
 from zope.interface import Attribute, Interface
 from zope.security.interfaces import Unauthorized
 
+from lp.code.enums import BranchType
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lazr.restful.fields import Reference
@@ -31,13 +34,13 @@ def check_default_stacked_on(branch):
     Branches that are *not* suitable include:
       - remote branches
       - branches the user cannot see
-      - branches that have not yet been successfully processed by the puller.
+      - branches that have no last revision information set (hosted branches
+        where a push hasn't completed or a mirrored branch that hasn't been
+        mirrored, etc).
 
     If the given branch is not suitable, return None. For convenience, also
     returns None if passed None. Otherwise, return the branch.
     """
-    # Import here to avoid circular imports.
-    from lp.code.interfaces.branch import BranchType
     if branch is None:
         return None
     try:
@@ -46,7 +49,7 @@ def check_default_stacked_on(branch):
         return None
     if branch_type == BranchType.REMOTE:
         return None
-    if branch.last_mirrored is None:
+    if branch.last_mirrored_id is None:
         return None
     return branch
 
@@ -81,6 +84,21 @@ class IBranchTarget(IPrimaryContext):
         description=_(
             'The branch that new branches will be stacked on by default.'))
 
+    default_merge_target = Attribute(
+        "The branch to merge other branches into for this target.")
+
+    supports_merge_proposals = Attribute(
+        "Does this target support merge proposals at all?")
+
+    supports_short_identites = Attribute(
+        "Does this target support shortened bazaar identities?")
+
+    supports_code_imports = Attribute(
+        "Does this target support code imports at all?")
+
+    def areBranchesMergeable(other_target):
+        """Are branches from other_target mergeable into this target."""
+
     def __eq__(other):
         """Is this target the same as another target?
 
@@ -98,3 +116,25 @@ class IBranchTarget(IPrimaryContext):
 
     collection = Attribute("An IBranchCollection for this target.")
 
+    def assignKarma(person, action_name, date_created=None):
+        """Assign karma to the person on the appropriate target."""
+
+    def getBugTask(bug):
+        """Get the BugTask for a given bug related to the branch target."""
+
+    def newCodeImport(registrant, branch_name, rcs_type, url=None,
+                      cvs_root=None, cvs_module=None, owner=None):
+        """Create a new code import for this target.
+
+        :param registrant: the `IPerson` who should be recorded as creating
+            the import and will own the resulting branch.
+        :param branch_name: the name the resulting branch should have.
+        :param rcs_type: the type of the foreign VCS.
+        :param url: the url to import from if the import isn't CVS.
+        :param cvs_root: if the import is from CVS the CVSROOT to import from.
+        :param cvs_module: if the import is from CVS the module to import.
+        :param owner: the `IPerson` to own the resulting branch, or None to
+            use registrant.
+        :returns: an `ICodeImport`.
+        :raises AssertionError: if supports_code_imports is False.
+        """

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,6 +8,8 @@ import time
 from unittest import TestLoader
 
 import pytz
+from zope.component import getUtility
+
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from storm.locals import Store
@@ -16,6 +19,8 @@ from lp.services.job.model.job import (
 from lp.services.job.interfaces.job import IJob, JobStatus
 from lp.testing import TestCase
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class TestJob(TestCase):
@@ -148,37 +153,105 @@ class TestJob(TestCase):
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.queue)
 
+    def test_suspend(self):
+        """A job that is in the WAITING state can be suspended."""
+        job = Job(_status=JobStatus.WAITING)
+        job.suspend()
+        self.assertEqual(
+            job.status,
+            JobStatus.SUSPENDED)
+
+    def test_suspend_when_running(self):
+        """When a job is running, attempting to suspend is invalid."""
+        job = Job(_status=JobStatus.RUNNING)
+        self.assertRaises(InvalidTransition, job.suspend)
+
+    def test_suspend_when_completed(self):
+        """When a job is completed, attempting to suspend is invalid."""
+        job = Job(_status=JobStatus.COMPLETED)
+        self.assertRaises(InvalidTransition, job.suspend)
+
+    def test_suspend_when_failed(self):
+        """When a job is failed, attempting to suspend is invalid."""
+        job = Job(_status=JobStatus.FAILED)
+        self.assertRaises(InvalidTransition, job.suspend)
+
+    def test_resume(self):
+        """A job that is suspended can be resumed."""
+        job = Job(_status=JobStatus.SUSPENDED)
+        job.resume()
+        self.assertEqual(
+            job.status,
+            JobStatus.WAITING)
+
+    def test_resume_when_running(self):
+        """When a job is running, attempting to resume is invalid."""
+        job = Job(_status=JobStatus.RUNNING)
+        self.assertRaises(InvalidTransition, job.resume)
+
+    def test_resume_when_completed(self):
+        """When a job is completed, attempting to resume is invalid."""
+        job = Job(_status=JobStatus.COMPLETED)
+        self.assertRaises(InvalidTransition, job.resume)
+
+    def test_resume_when_failed(self):
+        """When a job is failed, attempting to resume is invalid."""
+        job = Job(_status=JobStatus.FAILED)
+        self.assertRaises(InvalidTransition, job.resume)
+
 
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""
 
     layer = LaunchpadZopelessLayer
 
+    def _sampleData(self):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return list(store.execute(Job.ready_jobs))
+
     def test_ready_jobs(self):
         """Job.ready_jobs should include new jobs."""
+        preexisting = self._sampleData()
         job = Job()
         self.assertEqual(
-            [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
+            preexisting + [(job.id,)],
+            list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_started(self):
         """Job.ready_jobs should not jobs that have been started."""
+        preexisting = self._sampleData()
         job = Job(_status=JobStatus.RUNNING)
         self.assertEqual(
-            [], list(Store.of(job).execute(Job.ready_jobs)))
+            preexisting, list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_lease_expired(self):
         """Job.ready_jobs should include jobs with expired leases."""
+        preexisting = self._sampleData()
         UNIX_EPOCH = datetime.fromtimestamp(0, pytz.timezone('UTC'))
         job = Job(lease_expires=UNIX_EPOCH)
         self.assertEqual(
-            [(job.id,)], list(Store.of(job).execute(Job.ready_jobs)))
+            preexisting + [(job.id,)],
+            list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_ready_jobs_lease_in_future(self):
         """Job.ready_jobs should not include jobs with active leases."""
+        preexisting = self._sampleData()
         future = datetime.fromtimestamp(
             time.time() + 1000, pytz.timezone('UTC'))
         job = Job(lease_expires=future)
-        self.assertEqual([], list(Store.of(job).execute(Job.ready_jobs)))
+        self.assertEqual(
+            preexisting, list(Store.of(job).execute(Job.ready_jobs)))
+
+    def test_ready_jobs_not_jobs_scheduled_in_future(self):
+        """Job.ready_jobs does not included jobs scheduled for a time in the
+        future.
+        """
+        preexisting = self._sampleData()
+        future = datetime.fromtimestamp(
+            time.time() + 1000, pytz.timezone('UTC'))
+        job = Job(scheduled_start=future)
+        self.assertEqual(
+            preexisting, list(Store.of(job).execute(Job.ready_jobs)))
 
     def test_acquireLease(self):
         """Job.acquireLease should set job.lease_expires."""
@@ -197,6 +270,24 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-1)
         job.acquireLease()
+
+    def test_acquireLeaseTimeout(self):
+        """Test that getTimeout correctly calculates value from lease.
+
+        The imprecision is because leases are relative to the current time,
+        and the current time may have changed by the time we get to
+        job.getTimeout() <= 300.
+        """
+        job = Job()
+        job.acquireLease(300)
+        self.assertTrue(job.getTimeout() > 0)
+        self.assertTrue(job.getTimeout() <= 300)
+
+    def test_acquireLeaseTimeoutExpired(self):
+        """Expired leases don't produce negative timeouts."""
+        job = Job()
+        job.acquireLease(-300)
+        self.assertEqual(0, job.getTimeout())
 
 
 def test_suite():

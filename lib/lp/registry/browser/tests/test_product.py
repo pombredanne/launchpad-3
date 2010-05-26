@@ -1,144 +1,107 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for the product view classes and templates."""
+"""Tests for product views."""
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
 import unittest
 
-from mechanize import LinkNotFoundError
-import pytz
+from zope.security.proxy import removeSecurityProxy
 
-from zope.component import getMultiAdapter
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import login_person, TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
+from lp.testing.views import create_view
 
-from lp.testing import time_counter, TestCaseWithFactory
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.testing import login_person
-from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.interfaces.product import License
+from lp.registry.browser.product import ProductLicenseMixin
 
 
-class TestProductCodeIndexView(TestCaseWithFactory):
-    """Tests for the product code home page."""
+class TestProductLicenseMixin(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeProductAndDevelopmentFocusBranch(self, **branch_args):
-        """Make a product that has a development focus branch and return both.
-        """
-        email = self.factory.getUniqueEmailAddress()
-        owner = self.factory.makePerson(email=email)
-        product = self.factory.makeProduct(owner=owner)
-        branch = self.factory.makeProductBranch(
-            product=product, **branch_args)
-        login(email)
-        product.development_focus.branch = branch
-        return product, branch
+    def setUp(self):
+        # Setup an a view that implements ProductLicenseMixin.
+        super(TestProductLicenseMixin, self).setUp()
+        self.registrant = self.factory.makePerson(
+            name='registrant', email='registrant@launchpad.dev')
+        self.product = self.factory.makeProduct(
+            name='ball', owner=self.registrant)
+        self.view = create_view(self.product, '+edit')
+        self.view.product = self.product
+        login_person(self.registrant)
 
-    def getBranchSummaryBrowseLinkForProduct(self, product):
-        """Get the 'browse code' link from the product's code home.
-
-        :raises Something: if the branch is not found.
-        """
-        url = canonical_url(product, rootsite='code')
-        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
-        return browser.getLink('browse the source code')
-
-    def assertProductBranchSummaryDoesNotHaveBrowseLink(self, product):
-        """Assert there is not a browse code link on the product's code home.
-        """
-        try:
-            self.getBranchSummaryBrowseLinkForProduct(product)
-        except LinkNotFoundError:
-            pass
-        else:
-            self.fail("Browse link present when it should not have been.")
-
-    def test_browseable_branch_has_link(self):
-        # If the product's development focus branch is browseable, there is a
-        # 'browse code' link.
-        product, branch = self.makeProductAndDevelopmentFocusBranch()
-        branch.updateScannedDetails(self.factory.makeRevision(), 1)
-        self.assertTrue(branch.code_is_browseable)
-
-        link = self.getBranchSummaryBrowseLinkForProduct(product)
-        login(ANONYMOUS)
+    def verify_whiteboard(self):
+        # Verify that the review whiteboard was updated.
+        naked_product = removeSecurityProxy(self.product)
+        whiteboard, stamp = naked_product.reviewer_whiteboard.rsplit(' ', 1)
         self.assertEqual(
-            link.url, branch.codebrowse_url())
+            'User notified of license policy on', whiteboard)
 
-    def test_unbrowseable_branch_does_not_have_link(self):
-        # If the product's development focus branch is not browseable, there
-        # is not a 'browse code' link.
-        product, branch = self.makeProductAndDevelopmentFocusBranch()
-        self.assertFalse(branch.code_is_browseable)
+    def verify_user_email(self, notification):
+        # Verify that the user was sent an email about the license change.
+        self.assertEqual(
+            'License information for ball in Launchpad',
+            notification['Subject'])
+        self.assertEqual(
+            'Registrant <registrant@launchpad.dev>',
+            notification['To'])
+        self.assertEqual(
+            'Commercial <commercial@launchpad.net>',
+            notification['Reply-To'])
 
-        self.assertProductBranchSummaryDoesNotHaveBrowseLink(product)
+    def verify_commercial_email(self, notification):
+        # Verify that the commercial team was sent an email.
+        self.assertEqual(
+            'Project License Submitted for ball by registrant',
+            notification['Subject'])
+        self.assertEqual(
+            'Commercial <commercial@launchpad.net>',
+            notification['To'])
 
-    def test_product_code_page_visible_with_private_dev_focus(self):
-        # If a user cannot see the product's development focus branch but can
-        # see at least one branch for the product they can still see the
-        # +code-index page.
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True)
-        url = canonical_url(product, rootsite='code')
-        self.factory.makeProductBranch(product=product)
-        # This is just "assertNotRaises"
-        self.getUserBrowser(canonical_url(product, rootsite='code'))
+    def test_ProductLicenseMixin_instance(self):
+        # The object under test is an instance of ProductLicenseMixin.
+        self.assertTrue(isinstance(self.view, ProductLicenseMixin))
 
-    def test_initial_branches_contains_dev_focus_branch(self):
-        product, branch = self.makeProductAndDevelopmentFocusBranch()
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
-        self.assertIn(branch, view.initial_branches)
+    def test_notifyCommercialMailingList_known_license(self):
+        # A known license does not generate an email.
+        self.product.licenses = [License.GNU_GPL_V2]
+        self.view.notifyCommercialMailingList()
+        self.assertEqual(0, len(pop_notifications()))
 
-    def test_initial_branches_does_not_contain_private_dev_focus_branch(self):
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True)
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
-        self.assertNotIn(branch, view.initial_branches)
+    def test_notifyCommercialMailingList_other_dont_know(self):
+        # An Other/I don't know license sends one email.
+        self.product.licenses = [License.DONT_KNOW]
+        self.view.notifyCommercialMailingList()
+        self.verify_whiteboard()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.verify_user_email(notifications.pop())
 
-    def test_committer_count_with_revision_authors(self):
-        # Test that the code pathing for calling committer_count with
-        # valid revision authors is truly tested.
-        cthulu = self.factory.makePerson(email='cthulu@example.com')
-        product, branch = self.makeProductAndDevelopmentFocusBranch()
-        date_generator = time_counter(
-            datetime.now(pytz.UTC) - timedelta(days=30),
-            timedelta(days=1))
-        self.factory.makeRevisionsForBranch(
-            branch, author='cthulu@example.com',
-            date_generator=date_generator)
+    def test_notifyCommercialMailingList_other_open_source(self):
+        # An Other/Open Source license sends two emails.
+        self.product.licenses = [License.OTHER_OPEN_SOURCE]
+        self.product.license_info = 'http://www,boost.org/'
+        self.view.notifyCommercialMailingList()
+        self.verify_whiteboard()
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        self.verify_user_email(notifications.pop())
+        self.verify_commercial_email(notifications.pop())
 
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
-        self.assertEqual(view.committer_count, 1)
-
-    def test_committers_count_private_branch(self):
-        # Test that calling committer_count will return the proper value
-        # for a private branch.
-        fsm = self.factory.makePerson(email='flyingpasta@example.com')
-        product, branch = self.makeProductAndDevelopmentFocusBranch(
-            private=True, owner=fsm)
-        date_generator = time_counter(
-            datetime.now(pytz.UTC) - timedelta(days=30),
-            timedelta(days=1))
-        login_person(fsm)
-        self.factory.makeRevisionsForBranch(
-            branch, author='flyingpasta@example.com',
-            date_generator=date_generator)
-
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
-        self.assertEqual(view.committer_count, 1)
+    def test_notifyCommercialMailingList_other_proprietary(self):
+        # An Other/Proprietary license sends two emails.
+        self.product.licenses = [License.OTHER_PROPRIETARY]
+        self.product.license_info = 'All mine'
+        self.view.notifyCommercialMailingList()
+        self.verify_whiteboard()
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        self.verify_user_email(notifications.pop())
+        self.verify_commercial_email(notifications.pop())
 
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -1,4 +1,5 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing XML-RPC services."""
 
@@ -13,14 +14,12 @@ __all__ = [
     'print_actions',
     'print_dispositions',
     'print_info',
-    'print_review_table',
     'review_list',
     ]
 
 
 import xmlrpclib
 
-from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
@@ -125,37 +124,6 @@ def print_info(info, full=False):
                 print '    %-25s %-15s' % (address, realname), flags, status
 
 
-def print_review_table(content):
-    """Print a +mailinglists table in a nice format."""
-    table = BeautifulSoup(
-        content,
-        parseOnlyThese=SoupStrainer(attrs=dict(id='mailing-lists')))
-    for tr in table.findAll('tr'):
-        for index, thtd in enumerate(tr.findAll(['th', 'td'])):
-            if thtd.name == 'th':
-                # This is a heading.  To enable the page test to keep
-                # everything on one line with no wrapping, we'll abbreviate
-                # the first three headings.
-                if index < 3:
-                    print thtd.string[:3],
-                else:
-                    print thtd.string,
-            else:
-                # Either there's a radio button here, or a team name, or a
-                # person name.  In the former two cases, print a
-                # representation of whether the button is checked or not.  In
-                # the latter two cases, just print the text.
-                if thtd.input is None:
-                    text = thtd.a.contents[0]
-                    print '%s <%s>' % (text, thtd.a.get('href')),
-                else:
-                    if thtd.input.get('checked', None):
-                        print '(*)',
-                    else:
-                        print '( )',
-        print
-
-
 def print_dispositions(dispositions):
     """Pretty print `IMailingListAPIView.getMessageDispositions()`."""
     for message_id in sorted(dispositions):
@@ -209,7 +177,6 @@ def new_list_for_team(team):
     reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
-    team_list.review(reviewer, MailingListStatus.APPROVED)
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
     flush_database_updates()
@@ -234,9 +201,8 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
         browser.getControl(
             name='field.subscriptionpolicy').displayValue = ['Open Team']
     browser.getControl('Create').click()
-    # Apply for the team's mailing list'
-    browser.open(rooturl + '~%s' % team_name)
-    browser.getLink('Configure mailing list').click()
+    # Apply for the team's mailing list.
+    browser.open('%s~%s/+mailinglist' % (rooturl, team_name))
     browser.getControl('Apply for Mailing List').click()
 
 
@@ -264,14 +230,8 @@ def review_list(list_name, status=None):
     """
     if status is None:
         status = MailingListStatus.APPROVED
-    # Any Mailing List Expert will suffice for approving the registration.
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    lpadmin = list(experts.allmembers)[0]
-    # Review and approve the mailing list registration.
     list_set = getUtility(IMailingListSet)
-    mailing_list = list_set.get(list_name)
-    mailing_list.review(lpadmin, status)
-    return mailing_list
+    return list_set.get(list_name)
 
 
 class MailmanStub:

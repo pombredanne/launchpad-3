@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC APIs for mailing lists."""
 
@@ -7,6 +8,8 @@ __all__ = [
     'MailingListAPIView',
     ]
 
+
+import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -221,10 +224,17 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return person.personal_standing in (PersonalStanding.GOOD,
                                             PersonalStanding.EXCELLENT)
 
-    def holdMessage(self, team_name, text):
+    def holdMessage(self, team_name, bytes):
         """See `IMailingListAPIView`."""
+        # For testing purposes, accept both strings and Binary instances.  In
+        # production, and as tested by 'bin/test--layer=MailmanLayer' bytes
+        # will always be a Binary so that unencoded non-ascii characters in
+        # the message can be safely passed across XMLRPC.  For most tests
+        # though it's much more convenient to just pass 8-bit strings.
+        if isinstance(bytes, xmlrpclib.Binary):
+            bytes = bytes.data
         mailing_list = getUtility(IMailingListSet).get(team_name)
-        message = getUtility(IMessageSet).fromEmail(text)
+        message = getUtility(IMessageSet).fromEmail(bytes)
         mailing_list.holdMessage(message)
         return True
 

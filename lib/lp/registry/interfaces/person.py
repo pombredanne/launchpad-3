@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
@@ -9,11 +11,8 @@ __all__ = [
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INewPerson',
-    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
-    'IPersonChangePassword',
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
@@ -42,14 +41,15 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import (Bool, Choice, Datetime, Int, List, Object, Text,
-    TextLine)
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
+from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
@@ -60,38 +60,44 @@ from lazr.restful.declarations import (
     operation_returns_entry, rename_parameters_as, webservice_error)
 from lazr.restful.fields import CollectionField, Reference
 
-from canonical.launchpad import _
-
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
-    PublicPersonChoice, StrippedTextLine, is_private_membership,
-    is_valid_public_person)
+    MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
+    StrippedTextLine, is_private_membership_person, is_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
+from canonical.launchpad.interfaces.validation import validate_new_team_email
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import email_validator
+from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
+
+from lp.app.interfaces.headings import IRootContext
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications)
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.code.interfaces.hasbranches import (
+    IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
-from lp.services.worlddata.interfaces.language import ILanguage
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
+from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_team_email, validate_new_person_email)
 from lp.registry.interfaces.wikiname import IWikiName
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.worlddata.interfaces.language import ILanguage
+
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
@@ -122,15 +128,16 @@ def validate_person(obj, attr, value, validate_func):
 
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
+
     def validate(person):
-        return not is_valid_public_person(person)
+        return not is_public_person(person)
 
     return validate_person(obj, attr, value, validate)
 
 
 def validate_person_not_private_membership(obj, attr, value):
     """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership)
+    return validate_person(obj, attr, value, is_private_membership_person)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -290,6 +297,7 @@ class PersonCreationRationale(DBEnumeratedType):
         commented on.
         """)
 
+
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
@@ -364,7 +372,7 @@ class PersonVisibility(DBEnumeratedType):
         Private Membership
 
         Only Launchpad admins and team members can view the
-        membership list for this team.  The team is severely restricted in the
+        membership list for this team. The team is severely restricted in the
         roles it can assume.
         """)
 
@@ -425,32 +433,10 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-class IPersonChangePassword(Interface):
-    """The schema used by Person +changepassword form."""
-
-    currentpassword = PasswordField(
-        title=_('Current password'), required=True, readonly=False)
-
-    password = PasswordField(
-        title=_('New password'), required=True, readonly=False)
-
-
 class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
-
-
-class INewPerson(Interface):
-    """The schema used by IPersonSet's +newperson form."""
-
-    emailaddress = StrippedTextLine(
-        title=_('Email address'), required=True,
-        constraint=validate_new_person_email)
-    displayname = StrippedTextLine(title=_('Display name'), required=True)
-    creation_comment = Text(
-        title=_('Creation reason'), required=True,
-        description=_("The reason why you're creating this profile."))
 
 
 # This has to be defined here to avoid circular import problems.
@@ -470,8 +456,10 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
-                    IHasMugshot, IHasIcon, IHasLocation, IObjectWithLocation):
+class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
+                    IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IPrivacy, IHasBugs, IHasRecipes):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -484,9 +472,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
-             description=_(
-                 "The content of your home page. Edit this and it will be "
-                 "displayed for all the world to see.")))
+            description=_(
+                "The content of your profile page. Use plain text, "
+                "paragraphs are preserved and URLs are linked in pages.")))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -501,14 +489,15 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
 
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/person-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to you. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/person-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to you. Traditionally this "
+                "is a logo, a small picture or a personal mascot. It should "
+                "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
 
     mugshot = exported(MugshotImageUpload(
@@ -523,39 +512,31 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
 
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
-            description=_('Your address (Line 1)')
-            )
+            description=_('Your address (Line 1)'))
     addressline2 = TextLine(
             title=_('Address'), required=False, readonly=False,
-            description=_('Your address (Line 2)')
-            )
+            description=_('Your address (Line 2)'))
     city = TextLine(
             title=_('City'), required=True, readonly=False,
             description=_('The City/Town/Village/etc to where the CDs should '
-                          'be shipped.')
-            )
+                          'be shipped.'))
     province = TextLine(
             title=_('Province'), required=True, readonly=False,
             description=_('The State/Province/etc to where the CDs should '
-                          'be shipped.')
-            )
+                          'be shipped.'))
     country = Choice(
             title=_('Country'), required=True, readonly=False,
             vocabulary='CountryName',
-            description=_('The Country to where the CDs should be shipped.')
-            )
+            description=_('The Country to where the CDs should be shipped.'))
     postcode = TextLine(
             title=_('Postcode'), required=True, readonly=False,
-            description=_('The Postcode to where the CDs should be shipped.')
-            )
+            description=_('The Postcode to where the CDs should be shipped.'))
     phone = TextLine(
             title=_('Phone'), required=True, readonly=False,
-            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
-            )
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445'))
     organization = TextLine(
             title=_('Organization'), required=False, readonly=False,
-            description=_('The Organization requesting the CDs')
-            )
+            description=_('The Organization requesting the CDs'))
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),
@@ -588,18 +569,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     # which contains valid people but not teams, and we don't really need one
     # apart from here.
     registrant = Attribute('The user who created this profile.')
-    # bounty relations
-    ownedBounties = Attribute('Bounties issued by this person.')
-    reviewerBounties = Attribute('Bounties reviewed by this person.')
-    claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute(
-        'Bounties to which this person subscribes.')
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
     oauth_request_tokens = Attribute(_("Non-expired request tokens"))
 
-    sshkeys = Attribute(_('List of SSH keys'))
+    sshkeys = exported(
+             CollectionField(
+                title= _('List of SSH keys'),
+                readonly=False, required=False,
+                value_type=Reference(schema=ISSHKey)))
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -619,13 +598,24 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
+    is_probationary = exported(
+        Bool(title=_("Is this a probationary user?"), readonly=True))
+    is_ubuntu_coc_signer = exported(
+    Bool(title=_("Signed Ubuntu Code of Conduct"),
+            readonly=True))
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
-    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
-    inactivegpgkeys = Attribute(
+    gpg_keys = exported(
+        CollectionField(
+            title=_("List of valid OpenPGP keys ordered by ID"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = CollectionField(
+        title=_("Set of fingerprints pending confirmation"),
+        readonly=False, required=False,
+        value_type=Reference(schema=IGPGKey))
+    inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
         CollectionField(
@@ -762,8 +752,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             description=_("The PPA named 'ppa' owned by this person."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
-            schema=Interface)
-        )
+            schema=Interface))
 
     ppas = exported(
         CollectionField(
@@ -779,7 +768,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
 
-    visibility_consistency_warning = Attribute(
+    visibilityConsistencyWarning = Attribute(
         "Warning that a private team may leak membership info.")
 
     sub_teams = exported(
@@ -825,6 +814,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
     private = exported(Bool(
             title=_("This team is private"),
             readonly=True, required=False,
@@ -852,6 +843,33 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
         """
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        description=Text(),
+        distroseries=List(value_type=Reference(schema=Interface)),
+        name=TextLine(),
+        recipe_text=Text(),
+        sourcepackagename=TextLine(),
+        )
+    @export_factory_operation(Interface, [])
+    def createRecipe(name, description, recipe_text, distroseries,
+                     sourcepackagename, registrant):
+        """Create a SourcePackageRecipe owned by this person.
+
+        :param name: the name to use for referring to the recipe.
+        :param description: A description of the recipe.
+        :param recipe_text: The text of the recipe.
+        :param distroseries: The distroseries to use.
+        :param sourcepackagename: The name of the sourcepackage for the recipe.
+        :return: a SourcePackageRecipe.
+        """
+
+    @operation_parameters(name=TextLine(required=True))
+    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @export_read_operation()
+    def getRecipe(name):
+        """Return the person's recipe with the given name."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
@@ -923,21 +941,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         True if this Person is actually a Team, otherwise False.
         """
 
-    @operation_parameters(
-        status=List(
-            title=_("A list of merge proposal statuses to filter by."),
-            value_type=Choice(vocabulary='BranchMergeProposalStatus')))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal
-    @export_read_operation()
-    def getMergeProposals(status=None, visible_by_user=None):
-        """Returns all merge proposals of a given status.
-
-        :param status: A list of statuses to filter with.
-        :param visible_by_user: Normally the user who is asking.
-        :returns: A list of `IBranchMergeProposal`.
-        """
-
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
     # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
@@ -979,13 +982,16 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
         """
 
     def assignKarma(action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """Assign karma for the action named <action_name> to this person.
 
         This karma will be associated with the given product or distribution.
         If a distribution is given, then product must be None and an optional
         sourcepackagename may also be given. If a product is given, then
         distribution and sourcepackagename must be None.
+
+        If a datecreated is specified, the karma will be created with that
+        date.  This is how historic karma events can be created.
         """
 
     def latestKarma(quantity=25):
@@ -1020,18 +1026,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
 
         To be used when membership changes are enacted. Only meant to be
         used between TeamMembership and Person objects.
-        """
-
-    def searchTasks(search_params, *args):
-        """Search IBugTasks with the given search parameters.
-
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
-
-        If more than one BugTaskSearchParams is given, return the union of
-        IBugTasks which match any of them.
-
-        Return an iterable of matching results.
         """
 
     def getLatestMaintainedPackages():
@@ -1089,7 +1083,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers, IHasLogo,
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
-        privileges.
+        privileges.  It excludes teams which have been merged.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -1204,8 +1198,6 @@ class IPersonViewRestricted(Interface):
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
-    browsername = Attribute(
-        'Return a textual name suitable for display in a browser.')
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     active_member_count = Attribute(
@@ -1213,75 +1205,92 @@ class IPersonViewRestricted(Interface):
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
     activemembers = exported(
-        CollectionField(
-            title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of members with ADMIN or APPROVED status"),
+                value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
-        CollectionField(
-            title=_("List of this team's admins."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of this team's admins."),
+                value_type=Reference(schema=Interface))),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
     allmembers = exported(
-        CollectionField(
-            title=_("All participants of this team."),
-            description=_(
-                "List of all direct and indirect people and teams who, one "
-                "way or another, are a part of this team. If you want a "
-                "method to check if a given person is a member of a team, "
-                "you should probably look at IPerson.inTeam()."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All participants of this team."),
+                description=_(
+                    "List of all direct and indirect people and teams who, "
+                    "one way or another, are a part of this team. If you "
+                    "want a method to check if a given person is a member "
+                    "of a team, you should probably look at "
+                    "IPerson.inTeam()."),
+                value_type=Reference(schema=Interface))),
         exported_as='participants')
-    approvedmembers = Attribute("List of members with APPROVED status")
+    approvedmembers = doNotSnapshot(
+        Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
     deactivatedmembers = exported(
-        CollectionField(
-            title=_(
-                "All members whose membership is in the DEACTIVATED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_(
+                    "All members whose membership is in the "
+                    "DEACTIVATED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "EXPIRED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='expired_members')
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
+    inactivemembers = doNotSnapshot(
+        Attribute(
+            "List of members with EXPIRED or DEACTIVATED status"))
     inactive_member_count = Attribute("Number of inactive members")
     invited_members = exported(
-        CollectionField(
-            title=_("All members whose membership is in the INVITED state"),
-            value_type=Reference(schema=Interface)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is "
+                        "in the INVITED state"),
+                value_type=Reference(schema=Interface))))
+
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
-        CollectionField(
-            title=_("Active TeamMemberships for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            readonly=True, required=False,
-            value_type=Reference(schema=ITeamMembership)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("Active TeamMemberships for this object's members."),
+                description=_(
+                    "Active TeamMemberships are the ones with the ADMIN or "
+                    "APPROVED status.  The results are ordered using "
+                    "Person.sortingColumns."),
+                readonly=True, required=False,
+                value_type=Reference(schema=ITeamMembership))),
         exported_as='members_details')
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
+    pendingmembers = doNotSnapshot(
+        Attribute(
+            "List of members with INVITED or PROPOSED status"))
     proposedmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "PROPOSED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
     mapped_participants_count = Attribute(
         "The number of mapped participants")
-    unmapped_participants = CollectionField(
-        title=_("List of participants with no coordinates recorded."),
-        value_type=Reference(schema=Interface))
+    unmapped_participants = doNotSnapshot(
+        CollectionField(
+            title=_("List of participants with no coordinates recorded."),
+            value_type=Reference(schema=Interface)))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
 
@@ -1404,27 +1413,36 @@ class IPersonEditRestricted(Interface):
                   may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
+        :param person: If the given person is already a member of this
+            team we'll simply change its membership status. Otherwise a new
+            TeamMembership is created with the given status.
 
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
+        :param reviewer: The user who made the given person a member of this
+            team.
 
-        If the person is not a team, and may_subscribe_to_list
-        is True, then the person may be subscribed to the team's
-        mailing list, depending on the list status and the person's
-        auto-subscribe settings.
+        :param comment: String that will be assigned to the
+            proponent_comment, reviwer_comment, or acknowledger comment.
 
-        The given status must be either Approved, Proposed or Admin.
+        :param status: `TeamMembershipStatus` value must be either
+            Approved, Proposed or Admin.
+            If the new member is a team, the status will be changed to
+            Invited unless the user is also an admin of that team.
 
-        The reviewer is the user who made the given person a member of this
-        team.
+        :param force_team_add: If the person is actually a team and
+            force_team_add is False, the team will actually be invited to
+            join this one. Otherwise the team is added as if it were a
+            person.
+
+        :param may_subscribe_to_list: If the person is not a team, and
+            may_subscribe_to_list is True, then the person may be subscribed
+            to the team's mailing list, depending on the list status and the
+            person's auto-subscribe settings.
+
+        :return: A tuple containing a boolean indicating when the
+            membership status changed and the current `TeamMembershipStatus`.
+            This depends on the desired status passed as an argument, the
+            subscription policy and the user's priveleges.
         """
-
-    def deactivateAllMembers(comment, reviewer):
-        """Deactivate all the members of this team."""
 
     @operation_parameters(
         team=copy_field(ITeamMembership['team']),
@@ -1458,6 +1476,22 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    @export_read_operation()
+    def getArchiveSubscriptionURLs():
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
+
+class IPersonModerate(Interface):
+    """IPerson attributes that require launchpad.Moderate."""
+
+    def deactivateAllMembers(comment, reviewer):
+        """Deactivate all the members of this team."""
+
 
 class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
@@ -1465,11 +1499,10 @@ class IPersonCommAdminWriteRestricted(Interface):
     visibility = exported(
         Choice(title=_("Visibility"),
                description=_(
-                   "Public visibility is standard.  Private Membership"
-                   " means that a team's members are hidden."
+                   "Public visibility is standard.  Private Membership "
+                   "means that a team's members are hidden.  "
                    "Private means the team is completely "
-                   "hidden [experimental]."
-                   ),
+                   "hidden [experimental]."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC))
 
@@ -1509,25 +1542,14 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation):
+              IPersonModerate, IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
 
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
-PublicPersonChoice.schema = IPerson
-ParticipatingPersonChoice.schema = IPerson
-
-
-class INewPersonForm(IPerson):
-    """Interface used to create new Launchpad accounts.
-
-    The only change with `IPerson` is a customised Password field.
-    """
-
-    password = PasswordField(
-        title=_('Create password'), required=True, readonly=False)
+PersonChoice.schema = IPerson
 
 
 class ITeamPublic(Interface):
@@ -1560,7 +1582,10 @@ class ITeamPublic(Interface):
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_('Use plain text; URLs will be linkified')),
+             description=_(
+                "Details about the team's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages.")),
         exported_as='team_description')
 
     subscriptionpolicy = exported(
@@ -1649,7 +1674,7 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(self, name):
+    def isNameBlacklisted(name):
         """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
@@ -1714,6 +1739,10 @@ class IPersonSet(Interface):
 
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
+
+        If the email address is already registered and bound to an
+        `IAccount`, the created `IPerson` will have 'hide_email_addresses'
+        flag set to True.
 
         XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can
@@ -1793,11 +1822,18 @@ class IPersonSet(Interface):
         """
 
     @operation_parameters(
-        text=TextLine(title=_("Search text"), default=u""))
+        text=TextLine(
+            title=_("Search text"), default=u""),
+        created_after=Datetime(
+            title=_("Created after"), required=False),
+        created_before=Datetime(
+            title=_("Created before"), required=False),
+        )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", exclude_inactive_accounts=True,
-                   must_have_email=False):
+                   must_have_email=False,
+                   created_after=None, created_before=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1817,6 +1853,9 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
+
+        If created_before or created_after are not None, they are used to
+        restrict the search to the dates provided.
         """
 
     @operation_parameters(
@@ -1838,7 +1877,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person, deactivate_members=False, user=None):
+    def merge(from_person, to_person):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -1857,7 +1896,7 @@ class IPersonSet(Interface):
         develops. -- StuartBishop 20050812
         """
 
-    def getValidPersons(self, persons):
+    def getValidPersons(persons):
         """Get all the Persons that are valid.
 
         This method is more effective than looking at
@@ -1909,10 +1948,12 @@ class IPersonSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(
+    dupe_person = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account you found in Launchpad"))
+        description=_(
+            "The e-mail address or Launchpad ID of the account you want to "
+            "merge into yours."))
 
 
 class IAdminPeopleMergeSchema(Interface):
@@ -1920,12 +1961,12 @@ class IAdminPeopleMergeSchema(Interface):
 
     dupe_person = Choice(
         title=_('Duplicated Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The duplicated person found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The person to be merged on."))
 
 
@@ -1944,7 +1985,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
+    owner = PublicPersonChoice(title=_('New'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1952,7 +1993,7 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = PublicPersonChoice(
-        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+        title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveAuthToken."""
 
@@ -13,6 +14,7 @@ import pytz
 from lazr.uri import URI
 
 from storm.locals import DateTime, Int, Reference, Storm, Unicode
+from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -76,7 +78,7 @@ class ArchiveAuthTokenSet:
 
     def getByArchive(self, archive):
         """See `IArchiveAuthTokenSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(archive)
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.archive == archive,
@@ -84,7 +86,7 @@ class ArchiveAuthTokenSet:
 
     def getActiveTokenForArchiveAndPerson(self, archive, person):
         """See `IArchiveAuthTokenSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(archive)
         return store.find(
             ArchiveAuthToken,
             ArchiveAuthToken.archive == archive,

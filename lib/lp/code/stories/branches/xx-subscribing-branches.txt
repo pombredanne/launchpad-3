@@ -1,13 +1,15 @@
-= Helper Functions =
+Helper Functions
+================
 
 A quick helper function to list the subscribed people.
 
     >>> def print_subscribers(contents):
-    ...     subscriptions = find_tag_by_id(contents, 'subscriptions')
+    ...     subscriptions = find_tags_by_class(
+    ...         contents, 'branch-subscribers')[0]
     ...     if subscriptions == None:
     ...         print subscriptions
     ...         return
-    ...     for subscriber in subscriptions.fetch('dt'):
+    ...     for subscriber in subscriptions.fetch('div'):
     ...         print extract_text(subscriber.renderContents())
 
 Another to print the informational message.
@@ -18,7 +20,8 @@ Another to print the informational message.
     ...         print extract_text(message[0])
 
 
-= Subscribing to Branches =
+Subscribing to Branches
+=======================
 
 In order to subscribe to a branch, the user must be logged in.
 
@@ -38,7 +41,7 @@ link "Subscribe" from a branch's page.
 Initially there should be no subscribers.
 
     >>> print_subscribers(browser.contents)
-    None
+    No subscribers.
     >>> browser.getLink('Subscribe').click()
 
 At this stage the defaults that are set for subscriptions
@@ -111,7 +114,7 @@ shown to the user.
     >>> print_informational_message(browser.contents)
     You have unsubscribed from this branch.
     >>> print_subscribers(browser.contents)
-    None
+    No subscribers.
 
 Clicking the back button and then clicking on either Change or
 Unsubscribe will give a message that we are not subscribed.
@@ -127,7 +130,8 @@ Unsubscribe will give a message that we are not subscribed.
     You are not subscribed to this branch.
 
 
-== Subscribing someone else ==
+Subscribing someone else
+========================
 
 The 'Subscribe' action listed for branches is for subscribing the logged
 in user.  In order to be able to subscribe teams to branches there needs
@@ -163,7 +167,7 @@ specify the person to subscribe.  The person field is required.
     There is 1 error.
     Required input is missing.
 
-    >>> browser.getControl('Person').value = 'sabdfl'
+    >>> browser.getControl('Person').value = 'mark'
     >>> browser.getControl('Subscribe').click()
 
     >>> print_informational_message(browser.contents)
@@ -172,6 +176,7 @@ specify the person to subscribe.  The person field is required.
     and new revisions added to the branch.
     Limit the generated diff to 5000 lines.
     Send email about any code review activity for this branch.
+
     >>> print_subscribers(browser.contents)
     Mark Shuttleworth
 
@@ -225,7 +230,9 @@ Launchpad administrators can edit anyones branch subsription.
     Landscape Developers
     Mark Shuttleworth
 
-== Editing a team subscription ==
+
+Editing a team subscription
+===========================
 
 In order to edit a team subscription the logged in user needs to be
 a member of the team that is subscribed.  There is a link shown in
@@ -263,3 +270,44 @@ From this page the branch subscription can be altered...
     >>> print_subscribers(browser.contents)
     Mark Shuttleworth
 
+
+Private team exclusion
+======================
+
+If a private team is subscribed to the branch, it is excluded from the list of
+subscribers if the user is not an admin or a member of the team.
+
+    >>> from lp.testing import ANONYMOUS, login, logout
+    >>> login('admin@canonical.com')
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> private_team = factory.makeTeam(
+    ...     name='shh', displayname='Shh',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> member = factory.makePerson(
+    ...     email='shh@example.com', password='test')
+    >>> ignored = private_team.addMember(member, private_team.teamowner)
+    >>> owner = factory.makePerson(name='branch-owner')
+    >>> branch = factory.makeAnyBranch(owner=owner)
+    >>> from lp.code.enums import (
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
+    >>> ignored = branch.subscribe(
+    ...     private_team, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.NOEMAIL)
+    >>> url = canonical_url(branch)
+    >>> logout()
+
+No-priv is not a member of the private team, so the private team is not shown
+as a subscriber.
+
+    >>> browser.open(url)
+    >>> print_subscribers(browser.contents)
+    Branch-owner
+
+A team member looking at the branch will see the private team subscribed.
+
+    >>> private_browser = setupBrowser(auth='Basic shh@example.com:test')
+    >>> private_browser.open(url)
+    >>> print_subscribers(private_browser.contents)
+    Branch-owner
+    Shh

@@ -9,5 +9,5 @@ Check that the productseries RDF export works.
   Content-Type: application/rdf+xml
   Vary: ...
   <BLANKLINE>
-  <?xml version="1.0" encoding="utf-8"?>
+  <?xml version="1.0" encoding="utf-8"...?>
   <rdf:RDF ...

@@ -5,28 +5,20 @@
   omit-tag="">
 
 <table class="listing"
-  tal:condition="context/releases"
-  tal:attributes="id string:series_${context/name}">
+  tal:attributes="id context/name/fmt:css-id/series-;
+                  class view/milestone_table_class">
   <thead>
     <tr>
       <th>Version</th>
-      <th>Codename</th>
-      <th>Date Released</th>
+      <th>Expected</th>
+      <th tal:condition="view/milestone_can_release">Released</th>
+      <th>Summary</th>
     </tr>
   </thead>
-  <tbody>
-    <tr tal:repeat="release context/releases">
-      <td><a tal:content="release/version"
-             tal:attributes="href release/fmt:url">version</a></td> 
-      <td><span tal:replace="release/codename">code name</span></td>
-      <td>
-        <span
-          tal:attributes="title release/datereleased/fmt:datetime"
-          tal:content="release/datereleased/fmt:approximatedate">
-          2005-12-13
-        </span>
-      </td>
-    </tr>
+  <tbody id="milestone-rows">
+    <tal:row repeat="milestone context/all_milestones">
+      <tal:milestone replace="structure milestone/@@+productseries-table-row" />
+    </tal:row>
   </tbody>
 </table>
 </tal:root>

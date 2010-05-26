@@ -1,4 +1,7 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 """Vocabularies pulling stuff from the database.
 
@@ -13,10 +16,8 @@ __all__ = [
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
-    'sortkey_ordered_vocab_factory',
     'CountableIterator',
     'BatchedCountableIterator',
-    'vocab_factory'
 ]
 
 from sqlobject import AND, CONTAINSSTRING
@@ -25,7 +26,6 @@ from zope.interface import implements, Attribute, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import isinstance as zisinstance
-from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.database.sqlbase import SQLBase
 
@@ -70,6 +70,12 @@ class ICountableIterator(Interface):
         # work; we should probably change that to either check for the
         # presence of a count() method, or for a simpler interface than
         # ISelectResults, but I'm not going to do that today.
+
+    def __getslice__(argument):
+        """Return a slice of the collection."""
+        # Python will use __getitem__ if this method is not implemented,
+        # but it is convenient to define it in the interface for
+        # allowing access to the attributes through the security proxy.
 
 
 class CountableIterator:
@@ -352,39 +358,3 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
             clause = AND(clause, self._filter)
         results = self._table.select(clause, orderBy=self._orderBy)
         return self.iterator(results.count(), results, self.toTerm)
-
-
-# TODO: Make DBSchema classes provide an interface, so we can directly
-# adapt IDBSchema to IVocabulary
-def vocab_factory(schema, noshow=None):
-    """Factory for IDBSchema -> IVocabulary adapters.
-
-    This function returns a callable object that creates vocabularies
-    from dbschemas.
-
-    The items appear in value order, lowest first.
-    """
-    if noshow is None:
-        noshow = []
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        items = [(item.title, item) for item in schema.items
-                 if item not in noshow]
-        return SimpleVocabulary.fromItems(items)
-    return factory
-
-def sortkey_ordered_vocab_factory(schema, noshow=None):
-    """Another factory for IDBSchema -> IVocabulary.
-
-    This function returns a callable object that creates a vocabulary
-    from a dbschema ordered by that schema's sortkey.
-    """
-    if noshow is None:
-        noshow = []
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        items = [(item.title, item)
-                 for item in schema.items
-                 if item not in noshow]
-        return SimpleVocabulary.fromItems(items)
-    return factory

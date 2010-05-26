@@ -1,4 +1,5 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for creating BugBranch items based on Bazaar revisions."""
 
@@ -7,21 +8,20 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.revision import Revision
-# This non-standard import is necessary to hook up the event system.
-import zope.component.event
+from zope.event import notify
 from zope.component import getUtility
 
-from lp.codehosting.scanner.buglinks import (
-    got_new_revision, BugBranchLinker, set_bug_branch_status)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
-from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BugBranchStatus, IBugBranchSet, IBugSet, ILaunchpadCelebrities,
-    NotFoundError)
-from lp.testing import TestCase
-from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+    IBugBranchSet, IBugSet, NotFoundError)
+from canonical.testing.layers import LaunchpadZopelessLayer
+
+from lp.code.interfaces.revision import IRevisionSet
+from lp.codehosting.scanner import events
+from lp.codehosting.scanner.buglinks import BugBranchLinker
+from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class RevisionPropertyParsing(TestCase):
@@ -56,7 +56,7 @@ class RevisionPropertyParsing(TestCase):
         # Parsing a single line should give a dict with a single entry,
         # mapping the bug_id to the status.
         bugs = self.extractBugInfo("https://launchpad.net/bugs/9999 fixed")
-        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
+        self.assertEquals(bugs, {9999: 'fixed'})
 
     def test_multiple(self):
         # Information about more than one bug can be specified. Make sure that
@@ -64,8 +64,8 @@ class RevisionPropertyParsing(TestCase):
         bugs = self.extractBugInfo(
             "https://launchpad.net/bugs/9999 fixed\n"
             "https://launchpad.net/bugs/8888 fixed")
-        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
-                                 8888: BugBranchStatus.FIXAVAILABLE})
+        self.assertEquals(bugs, {9999: 'fixed',
+                                 8888: 'fixed'})
 
     def test_empty(self):
         # If the property is empty, then return an empty dict.
@@ -88,7 +88,7 @@ class RevisionPropertyParsing(TestCase):
         bugs = self.extractBugInfo(
             'https://launchpad.net/bugs/9999 fixed\n'
             'https://launchpad.net/bugs/9999 fixed')
-        self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
+        self.assertEquals(bugs, {9999: 'fixed'})
 
     def test_strict_url_checking(self):
         # Ignore URLs that look like a Launchpad bug URL but aren't.
@@ -97,111 +97,6 @@ class RevisionPropertyParsing(TestCase):
         bugs = self.extractBugInfo(
             'https://launchpad.net/bugs/foo/1234 fixed')
         self.assertEquals(bugs, {})
-
-
-class TestMakeBugBranch(TestCase):
-    """Tests for making a BugBranch link.
-
-    set_bug_branch_status(bug, branch, status) ensures that a link is created
-    between 'bug' and 'branch' and that the relationship is set to 'status'.
-
-    If no such link exists, it creates one. If such a link exists, it updates
-    the status.
-
-    There is an exception: if the status is already set to BESTFIX, then we
-    won't update it. We do this as a simple measure to avoid overwriting data
-    entered on the website.
-    """
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        TestCase.setUp(self)
-        factory = LaunchpadObjectFactory()
-        self.branch = factory.makeAnyBranch()
-        self.bug = factory.makeBug()
-        LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-
-    def assertStatusEqual(self, bug, branch, status):
-        """Assert that the BugBranch for `bug` and `branch` has `status`.
-
-        Raises an assertion error if there's no such bug.
-        """
-        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, branch)
-        if bug_branch is None:
-            self.fail('No BugBranch found for %r, %r' % (bug, branch))
-        self.assertEqual(bug_branch.status, status)
-
-    def test_makeNewLink(self):
-        """set_bug_branch_status makes a BugBranch link if one doesn't
-        exist.
-        """
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
-        self.assertStatusEqual(
-            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
-
-    def test_registrantIsBranchOwnerOnNewLink(self):
-        """When we make a new link, the registrant is the branch owner.
-
-        All BugBranch links have a registrant. When we are creating a
-        link based on data in a Bazaar branch, we don't know exactly who
-        created the link. The committer is a good option, but we don't
-        always have a Person record for that person. We use the Janitor,
-        since he represents Launchpad (i.e. the branch scanner) making
-        the link.
-        """
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
-        bug_branch = getUtility(IBugBranchSet).getBugBranch(
-            self.bug, self.branch)
-        self.assertEqual(
-            bug_branch.registrant, getUtility(ILaunchpadCelebrities).janitor)
-
-    def test_updateLinkStatus(self):
-        """If a link already exists, it updates the status."""
-        # Make the initial link.
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.INPROGRESS)
-        # Update the status.
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
-        self.assertStatusEqual(
-            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
-
-    def test_doesntDowngradeBestFix(self):
-        """set_bug_branch_status doesn't downgrade BESTFIX.
-
-        A BugBranch can have the status 'BESTFIX'. This is generally set on
-        the web ui by someone who has taken the time to review branches. We
-        don't want to override this status if it has been set.
-        """
-        # Make the initial link.
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.BESTFIX)
-        # Try to update the status.
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
-        self.assertStatusEqual(
-            self.bug, self.branch, BugBranchStatus.BESTFIX)
-
-    def test_addToActivityLog(self):
-        """Linking a branch to a bug gets recorded in the activity log."""
-        set_bug_branch_status(
-            self.bug, self.branch, BugBranchStatus.INPROGRESS)
-        added_activity = list(self.bug.activity)[-1]
-        # It's questionable whether we should use the committer as the
-        # person who linked the branch to a bug, since using --fixes
-        # could be seen as using an API to link the branch, but we say
-        # it's linked by the Janitor for now, since that's simplest. We
-        # don't always have a Person record for the committer.
-        self.assertEqual(
-            added_activity.person, getUtility(ILaunchpadCelebrities).janitor)
-        # Only do a basic check that the activity was added, the format
-        # of the activity text is tested elsewhere.
-        self.assertEqual(added_activity.whatchanged, 'branch linked')
-
 
 
 class TestBugLinking(BzrSyncTestCase):
@@ -213,9 +108,6 @@ class TestBugLinking(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(got_new_revision)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
 
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
@@ -232,15 +124,14 @@ class TestBugLinking(BzrSyncTestCase):
         """
         return 'https://launchpad.net/bugs/%s' % bug.id
 
-    def assertStatusEqual(self, bug, branch, status):
-        """Assert that the BugBranch for `bug` and `branch` has `status`.
+    def assertBugBranchLinked(self, bug, branch):
+        """Assert that the BugBranch for `bug` and `branch` exists.
 
         Raises an assertion error if there's no such bug.
         """
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, branch)
         if bug_branch is None:
             self.fail('No BugBranch found for %r, %r' % (bug, branch))
-        self.assertEqual(bug_branch.status, status)
 
     def test_newMainlineRevisionAddsBugBranch(self):
         """New mainline revisions with bugs properties create BugBranches."""
@@ -248,8 +139,7 @@ class TestBugLinking(BzrSyncTestCase):
             rev_id='rev1',
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
-        self.assertStatusEqual(
-            self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertBugBranchLinked(self.bug1, self.db_branch)
 
     def test_scanningTwiceDoesntMatter(self):
         """Scanning a branch twice is the same as scanning it once."""
@@ -258,8 +148,28 @@ class TestBugLinking(BzrSyncTestCase):
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
-        self.assertStatusEqual(
-            self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertBugBranchLinked(self.bug1, self.db_branch)
+
+    def makePackageBranch(self):
+        LaunchpadZopelessLayer.switchDbUser(self.lp_db_user)
+        try:
+            branch = self.factory.makePackageBranch()
+            branch.sourcepackage.setBranch(
+                PackagePublishingPocket.RELEASE, branch, branch.owner)
+            LaunchpadZopelessLayer.txn.commit()
+        finally:
+            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        return branch
+
+    def test_linking_bug_to_official_package_branch(self):
+        # We can link a bug to an official package branch. Test added to catch
+        # bug 391303.
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+        branch = self.makePackageBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, branch)
+        self.assertBugBranchLinked(self.bug1, branch)
 
     def test_knownMainlineRevisionsDoesntMakeLink(self):
         """Don't add BugBranches for known mainline revision."""
@@ -311,12 +221,12 @@ class TestBugLinking(BzrSyncTestCase):
     def test_ignoreNonExistentBug(self):
         """If the bug doesn't actually exist, we just ignore it."""
         self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
-        self.assertEqual([], list(self.db_branch.bug_branches))
+        self.assertEqual([], list(self.db_branch.linked_bugs))
         self.commitRevision(
             rev_id='rev1',
             revprops={'bugs': 'https://launchpad.net/bugs/99999 fixed'})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
-        self.assertEqual([], list(self.db_branch.bug_branches))
+        self.assertEqual([], list(self.db_branch.linked_bugs))
 
     def test_multipleBugsInProperty(self):
         """Create BugBranch links for *all* bugs in the property."""
@@ -326,10 +236,31 @@ class TestBugLinking(BzrSyncTestCase):
                     self.getBugURL(self.bug1), self.getBugURL(self.bug2))})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
 
-        self.assertStatusEqual(
-            self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
-        self.assertStatusEqual(
-            self.bug2, self.db_branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertBugBranchLinked(self.bug1, self.db_branch)
+        self.assertBugBranchLinked(self.bug2, self.db_branch)
+
+
+class TestSubscription(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_got_new_revision_subscribed(self):
+        """got_new_revision is subscribed to NewRevision."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        bug = self.factory.makeBug()
+        self.layer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        revision_id = tree.commit('fix revision',
+            revprops={'bugs': 'https://launchpad.net/bugs/%d fixed' % bug.id})
+        bzr_revision = tree.branch.repository.get_revision(revision_id)
+        revno = 1
+        revision_set = getUtility(IRevisionSet)
+        db_revision = revision_set.newFromBazaarRevision(bzr_revision)
+        notify(events.NewRevision(
+            db_branch, tree.branch, db_revision, bzr_revision, revno))
+        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
+        self.assertIsNot(None, bug_branch)
 
 
 def test_suite():

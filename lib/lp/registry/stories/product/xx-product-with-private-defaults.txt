@@ -39,17 +39,14 @@ The file-a-bug page uses Launchpad's standard "private" style.
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
     This report will be private, though you can disclose it later.
 
-And the same happens on the "advanced" bug-reporting page.
-
-    >>> user_browser.open("http://launchpad.dev/redfish/+filebug-advanced")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
-    This report will be private, though you can disclose it later.
 
 == Filing a new bug ==
 
 If we file a new bug in redfish:
 
     >>> user_browser.getControl(name="field.title").value = "a test summary"
+    >>> user_browser.getControl('Continue').click()
+
     >>> user_browser.getControl(name="field.comment").value = (
     ...     "a test description")
     >>> user_browser.getControl("Submit Bug Report").click()

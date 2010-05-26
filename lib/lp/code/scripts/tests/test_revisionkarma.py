@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the cron script that updates revision karma."""
 
@@ -10,6 +11,7 @@ from unittest import TestLoader
 
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
+from canonical.launchpad.ftests.logger import MockLogger
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -47,7 +49,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
-        branch.product = self.factory.makeProduct()
+        project = self.factory.makeProduct()
+        branch.setTarget(user=branch.owner, project=project)
         # Commit and switch to the script db user.
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
@@ -74,7 +77,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         author = self.factory.makePerson(email=email)
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
-        RevisionAuthorEmailLinker().run()
+        RevisionAuthorEmailLinker(log=MockLogger()).run()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)
         script = RevisionKarmaAllocator(
             'test', config.revisionkarma.dbuser, ['-q'])
@@ -106,7 +109,7 @@ class TestRevisionKarma(TestCaseWithFactory):
             EmailAddressSet().new(email, author, account=author.account))
         transaction.commit()
         # Run the RevisionAuthorEmailLinker garbo job.
-        RevisionAuthorEmailLinker().run()
+        RevisionAuthorEmailLinker(log=MockLogger()).run()
 
         # Now that the revision author is linked to the person, the revision
         # needs karma allocated.

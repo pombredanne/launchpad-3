@@ -50,6 +50,8 @@ Then, post the changes to the summary. Also add a trailing
 slash to the URL.
 
     >>> browser.getControl('Branch URL').value += '/'
+    >>> browser.getControl('Description').value = (
+    ...     'Klingon support for Gnome Terminal')
     >>> browser.getControl('Change Branch').click()
 
 We should be redirected to the branch page, check that our changes were taken
@@ -66,11 +68,16 @@ are no subscribers so there whould be no emails.
     http://code.launchpad.dev/~name12/gnome-terminal/klingon
 
     >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-details-table').tbody)
-    Project: GNOME Terminal (Unspecified)
+    ...     browser.contents, 'branch-info'))
+    Branch information...
+    Project: GNOME Terminal (Unspecified)...
     Status: Experimental
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
+
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...     'branch-description').p)
+    Klingon support for Gnome Terminal
 
 
 == Editing the Lifecycle Status ==
@@ -100,7 +107,7 @@ The branch page is displayed with the new status:
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
     >>> contents = browser.contents
     >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
-    >>> print status_tag.renderContents()
+    >>> print extract_text(status_tag)
     Merged
 
 Set the branch status back to its initial state.
@@ -202,15 +209,17 @@ by any user.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from lp.code.interfaces.branchsubscription import (
+    >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     CodeReviewNotificationLevel)
     >>> login('foo.bar@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> foogoo = factory.makeProduct(
     ...     name='foogoo', owner=sample_person)
-    >>> foogoo_svn = factory.makeImportBranch(
-    ...     name='foogoo-svn', product=foogoo, owner=sample_person)
+    >>> foogoo_svn_import = factory.makeProductCodeImport(
+    ...     svn_branch_url='http://foogoo.example.com',
+    ...     branch_name='foogoo-svn', product=foogoo, registrant=sample_person)
+    >>> foogoo_svn = foogoo_svn_import.branch
     >>> _unused = foogoo_svn.subscribe(sample_person,
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
@@ -257,11 +266,12 @@ details of the branch.
     New whiteboard value
     <BLANKLINE>
     --
+    lp://dev/~name12/foogoo/foogoo-svn
     http://code.launchpad.dev/~name12/foogoo/foogoo-svn
     <BLANKLINE>
     You are subscribed to branch lp://dev/~name12/foogoo/foogoo-svn.
     To unsubscribe from this branch go to http://code.launchpad.dev/~name12/foo=
-    goo/foogoo-svn/+edit-subscription.
+    goo/foogoo-svn/+edit-subscription
     <BLANKLINE>
 
 
@@ -289,7 +299,7 @@ to any valid person or team.
 
     >>> admin_browser.open('http://launchpad.dev/~name12/firefox/main')
     >>> admin_browser.getLink('Change branch details').click()
-    >>> admin_browser.getControl('Owner').value = 'sabdfl'
+    >>> admin_browser.getControl('Owner').value = 'mark'
     >>> admin_browser.getControl('Change Branch').click()
     >>> print admin_browser.url
-    http://code.launchpad.dev/~sabdfl/firefox/main
+    http://code.launchpad.dev/~mark/firefox/main

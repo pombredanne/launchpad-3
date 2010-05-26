@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,7 +8,7 @@ import weakref
 
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
-from zope.component.interfaces import IView
+from zope.browser.interfaces import IView
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy
@@ -20,11 +21,11 @@ from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from canonical.config import config
 from canonical.lazr.canonicalurl import nearest_adapter
 from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
@@ -122,7 +123,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # accidentally using cached results. This will be important when
         # Launchpad automatically fails over to read-only mode when the
         # master database is unavailable.
-        if config.launchpad.read_only:
+        if is_read_only():
             lp_permission = getUtility(ILaunchpadPermission, permission)
             if lp_permission.access_level != "read":
                 return False
@@ -209,6 +210,17 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 if cache is not None:
                     cache[permission] = result
                 return bool(result)
+
+
+def precache_permission_for_objects(participation, permission_name, objects):
+    """Precaches the permission for the objects into the policy cache."""
+    permission_cache = participation.annotations.setdefault(
+        LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+        weakref.WeakKeyDictionary())
+    for obj in objects:
+        naked_obj = removeSecurityProxy(obj)
+        obj_permission_cache = permission_cache.setdefault(naked_obj, {})
+        obj_permission_cache[permission_name] = True
 
 
 def check_permission(permission_name, context):

@@ -81,15 +81,15 @@ Bugs are associated to our pillars through their bug tasks, so a bug is
 said to be within any of its bugtasks' targets.
 
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_1 = getUtility(IBugSet).get(1)
     >>> bugtasks = bug_1.bugtasks
     >>> targets = [task.target for task in bug_1.bugtasks]
     >>> [(target.title, ILaunchpadContainer(bug_1).isWithin(target))
     ...  for target in sorted(targets, key=attrgetter('title'))]
     [(u'Mozilla Firefox', True),
-     (...mozilla-firefox... source package in Debian', True),
-     (...mozilla-firefox... source package in Ubuntu', True)]
+     (...mozilla-firefox... package in Debian', True),
+     (...mozilla-firefox... package in Ubuntu', True)]
 
 But it's not within anything other than its tasks' targets.
 

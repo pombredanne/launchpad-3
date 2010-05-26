@@ -1,6 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5 -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 # This script generates .htaccess files for private PPAs.
@@ -8,7 +10,7 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.archivepublisher.scripts.generate_ppa_htaccess import (
+from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator)
 
 

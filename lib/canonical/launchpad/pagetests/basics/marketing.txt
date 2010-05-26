@@ -25,7 +25,6 @@ back to the tour start.
     >>> take_the_tour()
     http://launchpad.dev/+tour/bugs
     http://launchpad.dev/+tour/branch-hosting-tracking
-    http://launchpad.dev/+tour/code-review
     http://launchpad.dev/+tour/translation
     http://launchpad.dev/+tour/community
     http://launchpad.dev/+tour/ppa
@@ -33,6 +32,7 @@ back to the tour start.
     http://launchpad.dev/+tour/api
     http://launchpad.dev/+tour/feature-tracking
     http://launchpad.dev/+tour/release-management
+    http://launchpad.dev/+tour/join-launchpad
     http://launchpad.dev/+tour/index
 
 The images from the tour are retrieved relative to +tour.
@@ -153,9 +153,9 @@ the user to the appropriate tour page.
 === Bugs ===
 
     >>> browser.open('http://bugs.launchpad.dev')
-    >>> tour_link = browser.getLink('Take a tour')
+    >>> tour_link = browser.getLink('take a tour')
     >>> print tour_link.url
-    http://launchpad.dev/+tour/bugs
+    http://bugs.launchpad.dev/+tour
     >>> tour_link.click()
 
 
@@ -184,4 +184,3 @@ the user to the appropriate tour page.
     >>> print tour_link.url
     http://launchpad.dev/+tour/community-support
     >>> tour_link.click()
-

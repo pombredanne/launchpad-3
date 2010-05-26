@@ -1,4 +1,6 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0222,W0231
 
 __metaclass__ = type
@@ -12,35 +14,35 @@ import unittest
 import pytz
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
+from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.urlutils import join as urljoin
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, reactor
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.webapp import errorlog
+from canonical.testing import (
+    reset_logging, TwistedLayer, TwistedAppServerLayer)
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.codehosting.puller import get_lock_id_for_branch_id, scheduler
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
-from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.testing.factory import ObjectFactory
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.xmlrpc import faults
-from canonical.testing import (
-    reset_logging, TwistedLayer, TwistedAppServerLayer)
-from canonical.twistedsupport.tests.test_processmonitor import (
+from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure, suppress_stderr, ProcessTestsMixin)
+from lp.testing.factory import ObjectFactory
 
 
-class FakePullerEndpointProxy:
+class FakeCodehostingEndpointProxy:
 
-    def __init__(self, branch_queues=None):
-        self.branch_queues = branch_queues
+    def __init__(self):
         self.calls = []
 
     def callRemote(self, method_name, *args):
@@ -55,71 +57,48 @@ class FakePullerEndpointProxy:
     def _default(self, *args):
         return defer.succeed(None)
 
-    def _remote_getBranchPullQueue(self, branch_type):
-        return defer.succeed(self.branch_queues[branch_type])
-
-    def _remote_setStackedOn(self, branch_id, stacked_on_location):
-        if stacked_on_location == 'raise-branch-not-found':
-            try:
-                raise faults.NoSuchBranch(stacked_on_location)
-            except faults.NoSuchBranch:
-                return defer.fail()
-        return defer.succeed(None)
+    def _remote_acquireBranchToPull(self, *args):
+        return defer.succeed(0)
 
 
-class TestJobScheduler(unittest.TestCase):
+class TestJobScheduler(TrialTestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         reset_logging()
-
-    def makeFakeClient(self, hosted, mirrored, imported):
-        return FakePullerEndpointProxy(
-            {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
-
-    def makeJobScheduler(self, branch_type, branch_tuples):
-        if branch_type == BranchType.HOSTED:
-            client = self.makeFakeClient(branch_tuples, [], [])
-        elif branch_type == BranchType.MIRRORED:
-            client = self.makeFakeClient([], branch_tuples, [])
-        elif branch_type == BranchType.IMPORTED:
-            client = self.makeFakeClient([], [], branch_tuples)
-        else:
-            self.fail("Unknown branch type: %r" % (branch_type,))
-        return scheduler.JobScheduler(
-            client, logging.getLogger(), branch_type)
-
-    def testManagerCreatesLocks(self):
-        try:
-            manager = self.makeJobScheduler(BranchType.HOSTED, [])
-            manager.lockfilename = self.masterlock
-            manager.lock()
-            self.failUnless(os.path.exists(self.masterlock))
-            manager.unlock()
-        finally:
-            self._removeLockFile()
-
-    def testManagerEnforcesLocks(self):
-        try:
-            manager = self.makeJobScheduler(BranchType.HOSTED, [])
-            manager.lockfilename = self.masterlock
-            manager.lock()
-            anothermanager = self.makeJobScheduler(BranchType.HOSTED, [])
-            anothermanager.lockfilename = self.masterlock
-            self.assertRaises(scheduler.LockError, anothermanager.lock)
-            self.failUnless(os.path.exists(self.masterlock))
-            manager.unlock()
-        finally:
-            self._removeLockFile()
-
-    def _removeLockFile(self):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
+
+    def makeJobScheduler(self, branch_type_names=()):
+        return scheduler.JobScheduler(
+            FakeCodehostingEndpointProxy(), logging.getLogger(),
+            branch_type_names)
+
+    def testManagerCreatesLocks(self):
+        manager = self.makeJobScheduler()
+        manager.lockfilename = self.masterlock
+        manager.lock()
+        self.failUnless(os.path.exists(self.masterlock))
+        manager.unlock()
+
+    def testManagerEnforcesLocks(self):
+        manager = self.makeJobScheduler()
+        manager.lockfilename = self.masterlock
+        manager.lock()
+        anothermanager = self.makeJobScheduler()
+        anothermanager.lockfilename = self.masterlock
+        self.assertRaises(scheduler.LockError, anothermanager.lock)
+        self.failUnless(os.path.exists(self.masterlock))
+        manager.unlock()
+
+    def test_run_calls_acquireBranchToPull(self):
+        manager = self.makeJobScheduler(('MIRRORED',))
+        manager.run()
+        self.assertEqual(
+            [('acquireBranchToPull', ('MIRRORED',))],
+            manager.codehosting_endpoint.calls)
 
 
 class TestPullerWireProtocol(TrialTestCase):
@@ -239,14 +218,14 @@ class TestPullerMonitorProtocol(
         def __init__(self):
             self.calls = []
 
-        def setStackedOn(self, stacked_on_location):
-            self.calls.append(('setStackedOn', stacked_on_location))
-
         def startMirroring(self):
             self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
+        def branchChanged(self, stacked_on_url, revid_before, revid_after,
+                          control_string, branch_string, repository_string):
+            self.calls.append(
+                ('branchChanged', stacked_on_url, revid_before, revid_after,
+                 control_string, branch_string, repository_string))
 
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
@@ -272,30 +251,15 @@ class TestPullerMonitorProtocol(
         self.assertEqual(['startMirroring'], self.listener.calls)
         self.assertProtocolSuccess()
 
-    def test_setStackedOn(self):
-        # Receiving a setStackedOn message notifies the listener.
-        self.protocol.do_setStackedOn('/~foo/bar/baz')
+    def test_branchChanged(self):
+        """Receiving a branchChanged message notifies the listener."""
+        self.protocol.do_startMirroring()
+        self.listener.calls = []
+        self.protocol.do_branchChanged('', 'rev1', 'rev2', '', '', '')
         self.assertEqual(
-            [('setStackedOn', '/~foo/bar/baz')], self.listener.calls)
+            [('branchChanged', '', 'rev1', 'rev2', '', '', '')],
+            self.listener.calls)
         self.assertProtocolSuccess()
-
-    def test_mirrorSucceeded(self):
-        """Receiving a mirrorSucceeded message notifies the listener."""
-        self.protocol.do_startMirroring()
-        self.listener.calls = []
-        self.protocol.do_mirrorSucceeded('1234')
-        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
-        self.assertProtocolSuccess()
-
-    def test_mirrorDeferred(self):
-        # Receiving a mirrorDeferred message finishes mirroring and doesn't
-        # notify the listener.
-        self.protocol.do_startMirroring()
-        self.listener.calls = []
-        self.protocol.do_mirrorDeferred()
-        self.assertProtocolSuccess()
-        self.assertEqual(True, self.protocol.reported_mirror_finished)
-        self.assertEqual([], self.listener.calls)
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
@@ -331,8 +295,8 @@ class TestPullerMonitorProtocol(
         """Receiving 'startMirroring' resets the timeout."""
         self.assertMessageResetsTimeout(self.protocol.do_startMirroring)
 
-    def test_mirrorSucceededDoesNotResetTimeout(self):
-        """Receiving 'mirrorSucceeded' doesn't reset the timeout.
+    def test_branchChangedDoesNotResetTimeout(self):
+        """Receiving 'branchChanged' doesn't reset the timeout.
 
         It's possible that in pathological cases, the worker process might
         hang around even after it has said that it's finished. When that
@@ -341,7 +305,7 @@ class TestPullerMonitorProtocol(
         """
         self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.protocol.do_mirrorSucceeded('rev1')
+        self.protocol.do_branchChanged('', '', '', '', '', '')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -444,12 +408,13 @@ class TestPullerMaster(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.status_client = FakePullerEndpointProxy()
+        self.status_client = FakeCodehostingEndpointProxy()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, None, logging.getLogger(), self.status_client,
             set(['oops-prefix']))
+        self.factory = ObjectFactory()
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
@@ -467,56 +432,39 @@ class TestPullerMaster(TrialTestCase):
                 self.eventHandler.unique_name), oops.url)
 
     def test_startMirroring(self):
-        deferred = self.eventHandler.startMirroring()
+        # startMirroring does not send a message to the endpoint.
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def checkMirrorStarted(ignored):
-            self.assertEqual(
-                [('startMirroring', self.arbitrary_branch_id)],
-                self.status_client.calls)
+            self.assertEqual([], self.status_client.calls)
 
         return deferred.addCallback(checkMirrorStarted)
 
-    def test_setStackedOn(self):
-        stacked_on_location = '/~foo/bar/baz'
-        deferred = self.eventHandler.setStackedOn(stacked_on_location)
+    def test_branchChanged(self):
+        (stacked_on_url, revid_before, revid_after, control_string,
+         branch_string, repository_string
+         ) = list(self.factory.getUniqueString() for i in range(6))
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
-        def checkSetStackedOn(ignored):
-            self.assertEqual(
-                [('setStackedOn', self.arbitrary_branch_id,
-                  stacked_on_location)],
-                self.status_client.calls)
-
-        return deferred.addCallback(checkSetStackedOn)
-
-    def test_setStackedOnBranchNotFound(self):
-        stacked_on_location = 'raise-branch-not-found'
-        deferred = self.eventHandler.setStackedOn(stacked_on_location)
-
-        def checkSetStackedOn(ignored):
-            self.assertEqual([], self.status_client.calls)
-
-        return deferred.addCallback(checkSetStackedOn)
-
-    def test_mirrorComplete(self):
-        arbitrary_revision_id = 'rev1'
-        deferred = self.eventHandler.startMirroring()
-
-        def mirrorSucceeded(ignored):
+        def branchChanged(*ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
-        deferred.addCallback(mirrorSucceeded)
+            return self.eventHandler.branchChanged(
+                stacked_on_url, revid_before, revid_after, control_string,
+                branch_string, repository_string)
+        deferred.addCallback(branchChanged)
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
-                [('mirrorComplete', self.arbitrary_branch_id,
-                  arbitrary_revision_id)],
+                [('branchChanged', LAUNCHPAD_SERVICES,
+                  self.arbitrary_branch_id, stacked_on_url, revid_after,
+                  control_string, branch_string, repository_string)],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
     def test_mirrorFailed(self):
         arbitrary_error_message = 'failed'
 
-        deferred = self.eventHandler.startMirroring()
+        deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
         def mirrorFailed(ignored):
             self.status_client.calls = []
@@ -537,21 +485,18 @@ class TestPullerMasterSpawning(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        from twisted.internet import reactor
         self.factory = ObjectFactory()
-        status_client = FakePullerEndpointProxy()
         self.available_oops_prefixes = set(['foo'])
         self.eventHandler = self.makePullerMaster(
-            BranchType.HOSTED, oops_prefixes=self.available_oops_prefixes)
+            'HOSTED', oops_prefixes=self.available_oops_prefixes)
         self._realSpawnProcess = reactor.spawnProcess
         reactor.spawnProcess = self.spawnProcess
         self.commands_spawned = []
 
     def tearDown(self):
-        from twisted.internet import reactor
         reactor.spawnProcess = self._realSpawnProcess
 
-    def makePullerMaster(self, branch_type, default_stacked_on_url=None,
+    def makePullerMaster(self, branch_type_name, default_stacked_on_url=None,
                          oops_prefixes=None):
         if default_stacked_on_url is None:
             default_stacked_on_url = self.factory.getUniqueURL()
@@ -561,10 +506,10 @@ class TestPullerMasterSpawning(TrialTestCase):
             branch_id=self.factory.getUniqueInteger(),
             source_url=self.factory.getUniqueURL(),
             unique_name=self.factory.getUniqueString(),
-            branch_type=branch_type,
+            branch_type_name=branch_type_name,
             default_stacked_on_url=default_stacked_on_url,
             logger=logging.getLogger(),
-            client=FakePullerEndpointProxy(),
+            client=FakeCodehostingEndpointProxy(),
             available_oops_prefixes=oops_prefixes)
 
     @property
@@ -582,8 +527,7 @@ class TestPullerMasterSpawning(TrialTestCase):
         # If a default_stacked_on_url is passed into the master then that
         # URL is sent to the command line.
         url = self.factory.getUniqueURL()
-        master = self.makePullerMaster(
-            BranchType.MIRRORED, default_stacked_on_url=url)
+        master = self.makePullerMaster('MIRRORED', default_stacked_on_url=url)
         master.run()
         self.assertEqual(
             [url], [arguments[-1] for arguments in self.commands_spawned])
@@ -591,8 +535,7 @@ class TestPullerMasterSpawning(TrialTestCase):
     def test_default_stacked_on_url_not_set(self):
         # If a default_stacked_on_url is passed into the master as '' then
         # the empty string is passed as an argument to the script.
-        master = self.makePullerMaster(
-            BranchType.MIRRORED, default_stacked_on_url='')
+        master = self.makePullerMaster('MIRRORED', default_stacked_on_url='')
         master.run()
         self.assertEqual(
             [''], [arguments[-1] for arguments in self.commands_spawned])
@@ -664,19 +607,23 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
     layer = TwistedAppServerLayer
 
+    # XXX: Hacky workaround for Trial. It interprets the skip method as a
+    # reason to skip the tests, but the default test result object doesn't
+    # support skipping, hence errors.
+    skip = None
+
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
-        self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
+        self.bzr_tree = self.make_branch_and_tree('src-branch')
+        url = urljoin(self.serveOverHTTP(), 'src-branch')
+        self.bzr_tree.commit('rev1')
         branch_id = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED).id
+            branch_type=BranchType.MIRRORED, url=url).id
         self.layer.txn.commit()
         self.db_branch = getUtility(IBranchLookup).get(branch_id)
-        self.bzr_tree = self.make_branch_and_tree('src-branch')
-        self.bzr_tree.commit('rev1')
-        self.pushToBranch(self.db_branch, self.bzr_tree)
-        self.client = FakePullerEndpointProxy()
+        self.client = FakeCodehostingEndpointProxy()
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
@@ -703,11 +650,10 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
             worker command line arguments, the destination branch and an
             instance of PullerWorkerProtocol.
         """
-        hosted_url = str('lp-hosted:///' + self.db_branch.unique_name)
         puller_master = cls(
-            self.db_branch.id, hosted_url,
-            self.db_branch.unique_name[1:], self.db_branch.branch_type, '',
-            logging.getLogger(), self.client,
+            self.db_branch.id, str(self.db_branch.url),
+            self.db_branch.unique_name[1:], self.db_branch.branch_type.name,
+            '', logging.getLogger(), self.client,
             set([config.error_reports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
         if script_text is not None:
@@ -728,10 +674,16 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         deferred = puller_master.mirror()
 
         def check_authserver_called(ignored):
+            default_format = format_registry.get('default')()
+            control_string = default_format.get_format_string()
+            branch_string = \
+                default_format.get_branch_format().get_format_string()
+            repository_string = \
+                default_format.repository_format.get_format_string()
             self.assertEqual(
-                [('startMirroring', self.db_branch.id),
-                 ('setStackedOn', 77, ''),
-                 ('mirrorComplete', self.db_branch.id, revision_id)],
+                [('branchChanged', LAUNCHPAD_SERVICES, self.db_branch.id, '',
+                  revision_id, control_string, branch_string,
+                  repository_string)],
                 self.client.calls)
             return ignored
         deferred.addCallback(check_authserver_called)
@@ -810,7 +762,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('b')
+        protocol.mirrorFailed('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
@@ -823,8 +775,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         # We need to create a branch at the destination_url, so that the
         # subprocess can actually create a lock.
-        destination_branch = BzrDir.create_branch_convenience(
-            puller_master.destination_url)
+        BzrDir.create_branch_convenience(puller_master.destination_url)
 
         deferred = puller_master.mirror().addErrback(self._dumpError)
 
@@ -933,8 +884,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         # We need to create a branch at the destination_url, so that the
         # subprocess can actually create a lock.
-        destination_branch = BzrDir.create_branch_convenience(
-            locking_puller_master.destination_url)
+        BzrDir.create_branch_convenience(locking_puller_master.destination_url)
 
         # Because when the deferred returned by 'func' is done we kill the
         # locking subprocess, we know that when the subprocess is done, the
@@ -975,7 +925,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         lower_timeout_script = """
         from bzrlib import lockdir
         lockdir._DEFAULT_TIMEOUT_SECONDS = 2.0
-        from canonical.launchpad.interfaces import BranchType
+        from lp.code.enums import BranchType
         from lp.codehosting.puller.worker import (
             PullerWorker, install_worker_ui_factory)
         branch_type = BranchType.items[branch_type_name]
@@ -990,16 +940,8 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
                 script_text=lower_timeout_script)
             deferred = puller_master.mirror()
             def check_mirror_failed(ignored):
-                self.assertEqual(len(self.client.calls), 3)
-                start_mirroring_call = self.client.calls[0]
-                set_stacked_on_call = self.client.calls[1]
-                mirror_failed_call = self.client.calls[2]
-                self.assertEqual(
-                    start_mirroring_call,
-                    ('startMirroring', self.db_branch.id))
-                self.assertEqual(
-                    set_stacked_on_call,
-                    ('setStackedOn', self.db_branch.id, ''))
+                self.assertEqual(len(self.client.calls), 1)
+                mirror_failed_call = self.client.calls[0]
                 self.assertEqual(
                     mirror_failed_call[:2],
                     ('mirrorFailed', self.db_branch.id))

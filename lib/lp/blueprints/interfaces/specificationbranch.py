@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces for linking Specifications and Branches."""
@@ -31,7 +33,6 @@ class ISpecificationBranch(IHasDateCreated):
     export_as_webservice_entry()
 
     id = Int(title=_("Specification Branch #"))
-
     specification = exported(
         ReferenceChoice(
             title=_("Blueprint"), vocabulary="Specification",
@@ -43,7 +44,6 @@ class ISpecificationBranch(IHasDateCreated):
             vocabulary="Branch",
             required=True,
             schema=IBranch))
-    summary = Summary(title=_("Summary"), required=False)
 
     registrant = exported(
         Reference(

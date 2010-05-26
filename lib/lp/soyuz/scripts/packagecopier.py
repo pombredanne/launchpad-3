@@ -1,303 +1,520 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """PackageCopier utilities."""
 
 __metaclass__ = type
 
 __all__ = [
-    'CannotCopy',
     'PackageCopier',
     'UnembargoSecurityPackage',
-    'check_copy',
+    'CopyChecker',
     'do_copy',
+    '_do_delayed_copy',
+    '_do_direct_copy',
+    're_upload_file',
+    'update_files_privacy',
     ]
 
 import apt_pkg
 import os
 import tempfile
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lp.soyuz.adapters.packagelocation import (
-    build_package_location)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import incomplete_building_status
+from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.soyuz.adapters.packagelocation import build_package_location
+from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    PackagePublishingStatus, active_publishing_status)
-from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from lp.soyuz.scripts.processaccepted import (
-    close_bugs_for_sourcepublication)
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackagePublishingHistory, active_publishing_status)
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload, IPackageUploadCustom, IPackageUploadSet)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
+from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
 
-def is_completely_built(source):
-    """Whether or not a source publication is completely built.
+# XXX cprov 2009-06-12: This function could be incorporated in ILFA,
+# I just don't see a clear benefit in doing that right now.
+def re_upload_file(libraryfile, restricted=False):
+    """Re-upload a librarian file to the public server.
 
-    Check if all builds have quiesced before copying.
-    :param source: context `ISourcePackagePublishingHistory`.
+    :param libraryfile: a `LibraryFileAlias`.
+    :param restricted: whether or not the new file should be restricted.
 
-    :return: False if there is, at least, one incomplete build, True
-        otherwise.
+    :return: A new `LibraryFileAlias`.
     """
-    for build in source.getBuilds():
-        if build.buildstate in incomplete_building_status:
-            return False
+    # Open the the libraryfile for reading.
+    libraryfile.open()
 
-    return True
+    # Make a temporary file to hold the download.  It's annoying
+    # having to download to a temp file but there are no guarantees
+    # how large the files are, so using StringIO would be dangerous.
+    fd, filepath = tempfile.mkstemp()
+    temp_file = os.fdopen(fd, 'wb')
 
+    # Read the old library file into the temp file.
+    copy_and_close(libraryfile, temp_file)
 
-def has_unpublished_binaries(source):
-    """Whether or not a source publication has unpublished binaries.
+    # Upload the file to the unrestricted librarian and make
+    # sure the publishing record points to it.
+    new_lfa = getUtility(ILibraryFileAliasSet).create(
+        libraryfile.filename, libraryfile.content.filesize,
+        open(filepath, "rb"), libraryfile.mimetype, restricted=restricted)
 
-    Check if there are binaries built from the source in the same
-    publication context. If there are none, return False since there is
-    nothing to be published.
+    # Junk the temporary file.
+    os.remove(filepath)
 
-    If there are built binaries, check if they match the ones published
-    for the source in its context.
+    return new_lfa
 
-    :param source: context `ISourcePackagePublishingHistory`.
+# XXX cprov 2009-06-12: this function should be incorporated in
+# IPublishing.
+def update_files_privacy(pub_record):
+    """Update file privacy according the publishing destination
 
-    :return: True if there are unpublished binaries, False otherwise.
+    :param pub_record: One of a SourcePackagePublishingHistory or
+        BinaryPackagePublishingHistory record.
+
+    :return: a list of re-uploaded `LibraryFileAlias` objects.
     """
-    # Binaries built from this source in the publishing context.
-    built_binaries = set()
-    for build in source.getBuilds():
-        if source.pocket != build.pocket:
-            continue
-        for binarypackagerelease in build.binarypackages:
-            built_binaries.add(binarypackagerelease)
-
-    # No binaries built, thus none unpublished.
-    if len(built_binaries) == 0:
-        return False
-
-    # Binaries have been published in the same publishing context,
-    # but are some not yet published?
-    candidate_binaries = set(
-        pub_binary.binarypackagerelease
-        for pub_binary in source.getBuiltBinaries())
-    if candidate_binaries != built_binaries:
-        return True
-
-    return False
-
-
-def compare_sources(source, ancestry):
-    """Compare `ISourcePackagePublishingHistory` records versions.
-
-    :param source: context `ISourcePackagePublishingHistory`;
-    :param ancestry: ancestry `ISourcePackagePublishingHistory`.
-
-    :return: `apt_pkg.VersionCompare(source_version, ancestry_version)`
-        which uses the behaviour as python cmp(); 1 if source_version >
-        ancestry_version, 0 if source_version == ancestry_version, -1 if
-        source_version < ancestry_version.
-    """
-    ancestry_version = ancestry.sourcepackagerelease.version
-    copy_version = source.sourcepackagerelease.version
-    apt_pkg.InitSystem()
-    return apt_pkg.VersionCompare(copy_version, ancestry_version)
-
-
-def get_ancestry_candidate(source, archive, series, pocket):
-    """Find a ancestry candidate in the give location.
-
-    Look for the newest active source publication in the location (archive,
-    series, pocket) with the same name as the given source.
-
-    :param source: context `ISourcePackagePublishingHistory`;
-    :param archive: destination `IArchive`;
-    :param series: destination `IDistroSeries`;
-    :param pocket: destination `PackagePublishingPocket`.
-
-    :return: the corresponding `ISourcePackagePublishingHistory` record if
-        it was found or None.
-    """
-    destination_series_ancestries = archive.getPublishedSources(
-        name=source.sourcepackagerelease.name, exact_match=True,
-        pocket=pocket, distroseries=series,
-        status=active_publishing_status)
-
-    if destination_series_ancestries.count() == 0:
-        return None
-
-    ancestry = destination_series_ancestries[0]
-    return ancestry
-
-
-def check_archive_conflicts(source, archive, series, include_binaries):
-    """Check for possible conflicts in the destination archive.
-
-    Check if there is a source with the same name and version published
-    in the destination archive. If it exists (regardless of the series
-    and pocket) and it has built or will build binaries, do not copy
-    without binaries. This is because the copied source will rebuild
-    binaries that conflict with existing ones. Even when the binaries
-    are included, they are checked for conflict.
-
-    :param source: context `ISourcePackagePublishingHistory`;
-    :param archive: destination `IArchive`.
-    :param series: destination `IDistroSeries`.
-    :param include_binaries: boolean indicating whether or not binaries
-        are considered in the copy.
-
-    :raise CannotCopy: when a copy is not allowed to be performed
-        containing the reason of the error.
-    """
-    destination_archive_conflicts = archive.getPublishedSources(
-        name=source.sourcepackagerelease.name,
-        version=source.sourcepackagerelease.version,
-        status=active_publishing_status,
-        exact_match=True)
-
-    if destination_archive_conflicts.count() == 0:
-        return
-
-    # Cache the conflicting publication because they will be iterated
-    # more than once.
-    destination_archive_conflicts = list(destination_archive_conflicts)
-
-    # Identify published binaries and incomplete builds or unpublished
-    # binaries from archive conflicts. Either will deny source-only copies,
-    # since a rebuild will result in binaries that cannot be published in
-    # the archive because they will conflict with the existent ones.
-    published_binaries = set()
-    for candidate in destination_archive_conflicts:
-
-        # If the candidate refers to a different sourcepackagerelease with
-        # the same name and version there is a high chance that they have
-        # conflicting files that cannot be published in the repository pool.
-        # So, we deny the copy until the existing source gets deleted (and
-        # removed from the archive).
-        if (source.sourcepackagerelease.id !=
-            candidate.sourcepackagerelease.id):
-            raise CannotCopy(
-                'a different source with the same version is published '
-                'in the destination archive')
-
-        # If the conflicting candidate (which we already know refer to the
-        # same sourcepackagerelease) was found in the copy destination
-        # series we don't have to check its building status, because it's
-        # not going to change in terms of new builds and the resulting
-        # binaries will match. See more details in
-        # `ISourcePackageRelease.getBuildsByArch`.
-        if candidate.distroseries.id == series.id:
-            continue
-
-        # Conflicting candidates building in a different series are a
-        # blocker for the copy. The copied source will certainly produce
-        # conflicting binaries.
-        if not is_completely_built(candidate):
-            raise CannotCopy(
-                "same version already building in the destination archive "
-                "for %s" % candidate.distroseries.displayname)
-
-        # If the set of built binaries does not match the set of published
-        # ones the copy should be denied and the user should wait for the
-        # next publishing cycle to happen before copying the package.
-        # The copy is only allowed when all built binaries are published,
-        # this way there is no chance of a conflict.
-        if has_unpublished_binaries(candidate):
-            raise CannotCopy(
-                "same version has unpublished binaries in the destination "
-                "archive for %s, please wait for them to be published "
-                "before copying" % candidate.distroseries.displayname)
-
-        # Update published binaries inventory for the conflicting candidates.
-        archive_binaries = set(
-            pub_binary.binarypackagerelease.id
-            for pub_binary in candidate.getPublishedBinaries())
-        published_binaries.update(archive_binaries)
-
-    if not include_binaries:
-        if len(published_binaries) > 0:
-            raise CannotCopy(
-                "same version already has published binaries in the "
-                "destination archive")
+    package_files = []
+    archive = None
+    if ISourcePackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
+        # Re-upload the package files files if necessary.
+        sourcepackagerelease = pub_record.sourcepackagerelease
+        package_files.extend(
+            [(source_file, 'libraryfile')
+             for source_file in sourcepackagerelease.files])
+        # Re-upload the package diff files if necessary.
+        package_files.extend(
+            [(diff, 'diff_content')
+             for diff in sourcepackagerelease.package_diffs])
+        # Re-upload the source upload changesfile if necessary.
+        package_upload = sourcepackagerelease.package_upload
+        package_files.append((package_upload, 'changesfile'))
+    elif IBinaryPackagePublishingHistory.providedBy(pub_record):
+        archive = pub_record.archive
+        # Re-upload the binary files if necessary.
+        binarypackagerelease = pub_record.binarypackagerelease
+        package_files.extend(
+            [(binary_file, 'libraryfile')
+             for binary_file in binarypackagerelease.files])
+        # Re-upload the upload changesfile file as necessary.
+        build = binarypackagerelease.build
+        package_upload = build.package_upload
+        package_files.append((package_upload, 'changesfile'))
+        # Re-upload the buildlog file as necessary.
+        package_files.append((build, 'buildlog'))
+    elif IPackageUploadCustom.providedBy(pub_record):
+        # Re-upload the custom files included
+        package_files.append((pub_record, 'libraryfilealias'))
+        # And set archive to the right attribute for PUCs
+        archive = pub_record.packageupload.archive
     else:
-        # Since DEB files are compressed with 'ar' (encoding the creation
-        # timestamp) and serially built by our infrastructure, it's correct
-        # to assume that the set of BinaryPackageReleases being copied can
-        # only be a superset of the set of BinaryPackageReleases published
-        # in the destination archive.
-        copied_binaries = set(
-            pub.binarypackagerelease.id for pub in source.getBuiltBinaries())
-        if not copied_binaries.issuperset(published_binaries):
-            raise CannotCopy("binaries conflicting with the existing ones")
+        raise AssertionError(
+            "pub_record is not one of SourcePackagePublishingHistory, "
+            "BinaryPackagePublishingHistory or PackageUploadCustom.")
+
+    re_uploaded_files = []
+    for obj, attr_name in package_files:
+        old_lfa = getattr(obj, attr_name, None)
+        # Only reupload restricted files published in public archives,
+        # not the opposite. We don't have a use-case for privatizing
+        # files yet.
+        if (old_lfa is None or
+            old_lfa.restricted == archive.private or
+            old_lfa.restricted == False):
+            continue
+        new_lfa = re_upload_file(
+            old_lfa, restricted=archive.private)
+        setattr(obj, attr_name, new_lfa)
+        re_uploaded_files.append(new_lfa)
+
+    return re_uploaded_files
 
 
-def check_privacy_mismatch(source, archive):
-    """Whether or not source files match the archive privacy.
-
-    Public source files can be copied to any archive, it does not
-    represent a 'privacy mismatch'.
-
-    On the other hand, private source files can be copied to private
-    archives where builders will fetch it directly from the repository
-    and not from the restricted librarian.
-    """
-    if archive.private:
-        return False
-
+# XXX cprov 2009-07-01: should be part of `ISourcePackagePublishingHistory`.
+def has_restricted_files(source):
+    """Whether or not a given source files has restricted files."""
     for source_file in source.sourcepackagerelease.files:
         if source_file.libraryfile.restricted:
             return True
 
+    for binary in source.getBuiltBinaries():
+        for binary_file in binary.binarypackagerelease.files:
+            if binary_file.libraryfile.restricted:
+                return True
+
     return False
 
 
-def check_copy(source, archive, series, pocket, include_binaries,
-               deny_privacy_mismatch=True):
-    """Check if the source can be copied to the given location.
+class CheckedCopy:
+    """Representation of a copy that was checked and approved.
 
-    Check possible conflicting publications in the destination archive.
-    See `check_archive_conflicts()`.
+    Decorates `ISourcePackagePublishingHistory`, tweaking
+    `getStatusSummaryForBuilds` to return `BuildSetStatus.NEEDSBUILD`
+    for source-only copies.
 
-    Also checks if the version of the source being copied is equal or higher
-    than any version of the same source present in the destination suite
-    (series + pocket).
-
-    :param source: context `ISourcePackagePublishingHistory`;
-    :param archive: destination `IArchive`;
-    :param series: destination `IDistroSeries`;
-    :param pocket: destination `PackagePublishingPocket`.
-    :param include_binaries: boolean indicating whether or not binaries
-        are considered in the copy.
-    :param deny_privacy_mismatch: boolean indicating whether or not private
-        sources can be copied to public archives. Defaults to True, only
-        set as False in the UnembargoPackage context.
-
-    :raise CannotCopy when a copy is not allowed to be performed
-        containing the reason of the error.
+    It also store the 'delayed' boolean, which controls the way this source
+    should be copied to the destionation archive (see `_do_delayed_copy` and
+    `_do_direct_copy`)
     """
-    if series is None:
-        series = source.distroseries
+    delegates(ISourcePackagePublishingHistory)
 
-    if deny_privacy_mismatch and check_privacy_mismatch(source, archive):
-        raise CannotCopy("Cannot copy private source into public archives.")
+    def __init__(self, context, include_binaries, delayed):
+        self.context = context
+        self.include_binaries = include_binaries
+        self.delayed = delayed
 
-    if include_binaries:
-        if len(source.getBuiltBinaries()) == 0:
-            raise CannotCopy("source has no binaries to be copied")
-
-    # Check if there is already a source with the same name and version
-    # published in the destination archive.
-    check_archive_conflicts(source, archive, series, include_binaries)
-
-    ancestry = get_ancestry_candidate(source, archive, series, pocket)
-    if ancestry is not None and compare_sources(source, ancestry) < 0:
-        raise CannotCopy(
-            "version older than the %s published in %s" %
-            (ancestry.displayname, ancestry.distroseries.name))
+    def getStatusSummaryForBuilds(self):
+        """Always `BuildSetStatus.NEEDSBUILD` for source-only copies."""
+        if self.include_binaries:
+            return self.context.getStatusSummaryForBuilds()
+        else:
+            return {'status': BuildSetStatus.NEEDSBUILD}
 
 
-def do_copy(sources, archive, series, pocket, include_binaries=False):
+class CopyChecker:
+    """Check copy candiates.
+
+    Allows the checker function to identify conflicting copy candidates
+    within the copying batch.
+    """
+    def __init__(self, archive, include_binaries, allow_delayed_copies=True):
+        self.archive = archive
+        self.include_binaries = include_binaries
+        self.allow_delayed_copies = allow_delayed_copies
+        self._inventory = {}
+
+    def _getInventoryKey(self, candidate):
+        """Return a key representing the copy candidate in the inventory.
+
+        :param candidate: a `ISourcePackagePublishingHistory` copy candidate.
+        :return: a tuple with the source (name, version) strings.
+        """
+        return (
+            candidate.source_package_name, candidate.source_package_version)
+
+    def addCopy(self, source, delayed):
+        """Story a copy in the inventory as a `CheckedCopy` instance."""
+        inventory_key = self._getInventoryKey(source)
+        checked_copy = CheckedCopy(source, self.include_binaries, delayed)
+        candidates = self._inventory.setdefault(inventory_key, [])
+        candidates.append(checked_copy)
+
+    def getCheckedCopies(self):
+        """Return a list of copies allowed to be performed."""
+        for copies in self._inventory.values():
+            for copy in copies:
+                yield copy
+
+    def getConflicts(self, candidate):
+        """Conflicting `CheckedCopy` objects in the inventory.
+
+        :param candidate: a `ISourcePackagePublishingHistory` copy candidate.
+        :return: a list of conflicting copies in the inventory, in case
+            of non-conflicting candidates an empty list is returned.
+        """
+        inventory_key = self._getInventoryKey(candidate)
+        return self._inventory.get(inventory_key, [])
+
+    def _checkArchiveConflicts(self, source, series):
+        """Check for possible conflicts in the destination archive.
+
+        Check if there is a source with the same name and version published
+        in the destination archive or in the inventory of copies already
+        approved. If it exists (regardless of the series and pocket) and
+        it has built or will build binaries, do not allow the copy without
+        binaries.
+
+        This is because the copied source will rebuild binaries that
+        conflict with existing ones.
+
+        Even when the binaries are included, they are checked for conflict.
+
+        :param source: copy candidate, `ISourcePackagePublishingHistory`.
+        :param series: destination `IDistroSeries`.
+
+        :raise CannotCopy: when a copy is not allowed to be performed
+            containing the reason of the error.
+        """
+        destination_archive_conflicts = self.archive.getPublishedSources(
+            name=source.sourcepackagerelease.name,
+            version=source.sourcepackagerelease.version,
+            exact_match=True)
+
+        inventory_conflicts = self.getConflicts(source)
+
+        # If there are no conflicts with the same version, we can skip the
+        # rest of the checks, but we still want to check conflicting files
+        if (destination_archive_conflicts.count() == 0 and
+            len(inventory_conflicts) == 0):
+            self._checkConflictingFiles(source)
+            return
+
+        # Cache the conflicting publications because they will be iterated
+        # more than once.
+        destination_archive_conflicts = list(destination_archive_conflicts)
+        destination_archive_conflicts.extend(inventory_conflicts)
+
+        # Identify published binaries and incomplete builds or unpublished
+        # binaries from archive conflicts. Either will deny source-only
+        # copies, since a rebuild will result in binaries that cannot be
+        # published in the archive because they will conflict with the
+        # existent ones.
+        published_binaries = set()
+        for candidate in destination_archive_conflicts:
+            # If the candidate refers to a different sourcepackagerelease
+            # with the same name and version there is a high chance that
+            # they have conflicting files that cannot be published in the
+            # repository pool. So, we deny the copy until the existing
+            # source gets deleted (and removed from the archive).
+            if (source.sourcepackagerelease.id !=
+                candidate.sourcepackagerelease.id):
+                raise CannotCopy(
+                    'a different source with the same version is published '
+                    'in the destination archive')
+
+            # If the conflicting candidate (which we already know refer to
+            # the same sourcepackagerelease) was found in the copy
+            # destination series we don't have to check its building status
+            # if binaries are included. It's not going to change in terms of
+            # new builds and the resulting binaries will match. See more
+            # details in `ISourcePackageRelease.getBuildsByArch`.
+            if (candidate.distroseries.id == series.id and
+                self.archive.id == source.archive.id and
+                self.include_binaries):
+                continue
+
+            # Conflicting candidates pending build or building in a different
+            # series are a blocker for the copy. The copied source will
+            # certainly produce conflicting binaries.
+            build_summary = candidate.getStatusSummaryForBuilds()
+            building_states = (
+                BuildSetStatus.NEEDSBUILD,
+                BuildSetStatus.BUILDING,
+                )
+            if build_summary['status'] in building_states:
+                raise CannotCopy(
+                    "same version already building in the destination "
+                    "archive for %s" % candidate.distroseries.displayname)
+
+            # If the set of built binaries does not match the set of published
+            # ones the copy should be denied and the user should wait for the
+            # next publishing cycle to happen before copying the package.
+            # The copy is only allowed when all built binaries are published,
+            # this way there is no chance of a conflict.
+            if build_summary['status'] == BuildSetStatus.FULLYBUILT_PENDING:
+                raise CannotCopy(
+                    "same version has unpublished binaries in the "
+                    "destination archive for %s, please wait for them to be "
+                    "published before copying" %
+                    candidate.distroseries.displayname)
+
+            # Update published binaries inventory for the conflicting
+            # candidates.
+            archive_binaries = set(
+                pub_binary.binarypackagerelease.id
+                for pub_binary in candidate.getBuiltBinaries())
+            published_binaries.update(archive_binaries)
+
+        if not self.include_binaries:
+            if len(published_binaries) > 0:
+                raise CannotCopy(
+                    "same version already has published binaries in the "
+                    "destination archive")
+        else:
+            # Since DEB files are compressed with 'ar' (encoding the creation
+            # timestamp) and serially built by our infrastructure, it's
+            # correct to assume that the set of BinaryPackageReleases being
+            # copied can only be a superset of the set of
+            # BinaryPackageReleases published in the destination archive.
+            copied_binaries = set(
+                pub.binarypackagerelease.id
+                for pub in source.getBuiltBinaries())
+            if not copied_binaries.issuperset(published_binaries):
+                raise CannotCopy(
+                    "binaries conflicting with the existing ones")
+        self._checkConflictingFiles(source)    
+
+    def _checkConflictingFiles(self, source):
+        # If both the source and destination archive are the same, we don't
+        # need to perform this test, since that guarantees the filenames
+        # do not conflict.
+        if source.archive.id == self.archive.id:
+            return None
+        source_files = [
+            sprf.libraryfile.filename for sprf in 
+            source.sourcepackagerelease.files]
+        destination_sha1s = self.archive.getFilesAndSha1s(source_files)
+        for lf in source.sourcepackagerelease.files:
+            if lf.libraryfile.filename in destination_sha1s:
+                sha1 = lf.libraryfile.content.sha1
+                if sha1 != destination_sha1s[lf.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % lf.libraryfile.filename)
+
+    def checkCopy(self, source, series, pocket):
+        """Check if the source can be copied to the given location.
+
+        Check possible conflicting publications in the destination archive.
+        See `_checkArchiveConflicts()`.
+
+        Also checks if the version of the source being copied is equal or
+        higher than any version of the same source present in the
+        destination suite (series + pocket).
+
+        :param source: copy candidate, `ISourcePackagePublishingHistory`.
+        :param series: destination `IDistroSeries`.
+        :param pocket: destination `PackagePublishingPocket`.
+
+        :raise CannotCopy when a copy is not allowed to be performed
+            containing the reason of the error.
+        """
+        if series not in self.archive.distribution.series:
+            raise CannotCopy(
+                "No such distro series %s in distribution %s." %
+                (series.name, source.distroseries.distribution.name))
+
+        format = SourcePackageFormat.getTermByToken(
+            source.sourcepackagerelease.dsc_format).value
+
+        if not series.isSourcePackageFormatPermitted(format):
+            raise CannotCopy(
+                "Source format '%s' not supported by target series %s." %
+                (source.sourcepackagerelease.dsc_format, series.name))
+
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
+
+        if self.include_binaries:
+            built_binaries = source.getBuiltBinaries()
+            if len(built_binaries) == 0:
+                raise CannotCopy("source has no binaries to be copied")
+            # Deny copies of binary publications containing files with
+            # expiration date set. We only set such value for immediate
+            # expiration of old superseded binaries, so no point in
+            # checking its content, the fact it is set is already enough
+            # for denying the copy.
+            for binary_pub in built_binaries:
+                for binary_file in binary_pub.binarypackagerelease.files:
+                    if binary_file.libraryfile.expires is not None:
+                        raise CannotCopy('source has expired binaries')
+
+        # Check if there is already a source with the same name and version
+        # published in the destination archive.
+        self._checkArchiveConflicts(source, series)
+
+        ancestry = source.getAncestry(
+            self.archive, series, pocket, status=active_publishing_status)
+        if ancestry is not None:
+            ancestry_version = ancestry.sourcepackagerelease.version
+            copy_version = source.sourcepackagerelease.version
+            apt_pkg.InitSystem()
+            if apt_pkg.VersionCompare(copy_version, ancestry_version) < 0:
+                raise CannotCopy(
+                    "version older than the %s published in %s" %
+                    (ancestry.displayname, ancestry.distroseries.name))
+
+        delayed = (
+            self.allow_delayed_copies and
+            not self.archive.private and
+            has_restricted_files(source))
+
+        if delayed:
+            upload_conflict = getUtility(IPackageUploadSet).findSourceUpload(
+                name=source.sourcepackagerelease.name,
+                version=source.sourcepackagerelease.version,
+                archive=self.archive, distribution=series.distribution)
+            if upload_conflict is not None:
+                raise CannotCopy(
+                    'same version already uploaded and waiting in '
+                    'ACCEPTED queue')
+
+        # Copy is approved, update the copy inventory.
+        self.addCopy(source, delayed)
+
+
+def do_copy(sources, archive, series, pocket, include_binaries=False,
+            allow_delayed_copies=True):
     """Perform the complete copy of the given sources incrementally.
+
+    Verifies if each copy can be performed using `CopyChecker` and
+    raises `CannotCopy` if one or more copies could not be performed.
+
+    When `CannotCopy`is raised call sites are in charge to rollback the
+    transaction or performed copies will be commited.
+
+    Wrapper for `do_direct_copy`.
+
+    :param: sources: a list of `ISourcePackagePublishingHistory`.
+    :param: archive: the target `IArchive`.
+    :param: series: the target `IDistroSeries`, if None is given the same
+        current source distroseries will be used as destination.
+    :param: pocket: the target `PackagePublishingPocket`.
+    :param: include_binaries: optional boolean, controls whether or
+        not the published binaries for each given source should be also
+        copied along with the source.
+    :param allow_delayed_copies: boolean indicating whether or not private
+        sources can be copied to public archives using delayed_copies.
+        Defaults to True, only set as False in the UnembargoPackage context.
+
+    :raise CannotCopy when one or more copies were not allowed. The error
+        will contain the reason why each copy was denied.
+
+    :return: a list of `ISourcePackagePublishingHistory` and
+        `BinaryPackagePublishingHistory` corresponding to the copied
+        publications.
+    """
+    copies = []
+    errors = []
+    copy_checker = CopyChecker(
+        archive, include_binaries, allow_delayed_copies)
+
+    for source in sources:
+        if series is None:
+            destination_series = source.distroseries
+        else:
+            destination_series = series
+        try:
+            copy_checker.checkCopy(source, destination_series, pocket)
+        except CannotCopy, reason:
+            errors.append("%s (%s)" % (source.displayname, reason))
+            continue
+
+    if len(errors) != 0:
+        raise CannotCopy("\n".join(errors))
+
+    for source in copy_checker.getCheckedCopies():
+        if series is None:
+            destination_series = source.distroseries
+        else:
+            destination_series = series
+        if source.delayed:
+            delayed_copy = _do_delayed_copy(
+                source, archive, destination_series, pocket, include_binaries)
+            sub_copies = [delayed_copy]
+        else:
+            sub_copies = _do_direct_copy(
+                source, archive, destination_series, pocket, include_binaries)
+
+        copies.extend(sub_copies)
+
+    return copies
+
+
+def _do_direct_copy(source, archive, series, pocket, include_binaries):
+    """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
     to the given destination if they are not yet available (previously
@@ -306,66 +523,125 @@ def do_copy(sources, archive, series, pocket, include_binaries=False):
     Also copy published binaries for each source if requested to. Again,
     only copy binaries that were not yet copied before.
 
-    :param: sources: a list of `ISourcePackagePublishingHistory`;
-    :param: archive: the target `IArchive`;
+    :param: source: an `ISourcePackagePublishingHistory`.
+    :param: archive: the target `IArchive`.
     :param: series: the target `IDistroSeries`, if None is given the same
-        current source distroseries will be used as destination;
-    :param: pocket: the target `PackagePublishingPocket`;
+        current source distroseries will be used as destination.
+    :param: pocket: the target `PackagePublishingPocket`.
     :param: include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
-        copied along with the source;
+        copied along with the source.
+
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
     copies = []
-    for source in sources:
-        if series is None:
-            destination_series = source.distroseries
-        else:
-            destination_series = series
 
-        # Copy source if it's not yet copied.
-        source_in_destination = archive.getPublishedSources(
-            name=source.sourcepackagerelease.name, exact_match=True,
-            version=source.sourcepackagerelease.version,
-            status=active_publishing_status,
-            distroseries=destination_series, pocket=pocket)
-        if source_in_destination.count() == 0:
-            source_copy = source.copyTo(destination_series, pocket, archive)
-            close_bugs_for_sourcepublication(source_copy)
-            copies.append(source_copy)
-            if not include_binaries:
-                source_copy.createMissingBuilds()
-                continue
-        else:
-            source_copy = source_in_destination[0]
+    # Copy source if it's not yet copied.
+    source_in_destination = archive.getPublishedSources(
+        name=source.sourcepackagerelease.name, exact_match=True,
+        version=source.sourcepackagerelease.version,
+        status=active_publishing_status,
+        distroseries=series, pocket=pocket)
+    if source_in_destination.count() == 0:
+        source_copy = source.copyTo(series, pocket, archive)
+        close_bugs_for_sourcepublication(source_copy)
+        copies.append(source_copy)
+    else:
+        source_copy = source_in_destination[0]
 
-        # Copy missing suitable binaries.
-        for binary in source.getBuiltBinaries():
-            try:
-                target_distroarchseries = destination_series[
-                    binary.distroarchseries.architecturetag]
-            except NotFoundError:
-                # It is not an error if the destination series doesn't
-                # support all the architectures originally built. We
-                # simply do not copy the binary and life goes on.
-                continue
-            binary_in_destination = archive.getAllPublishedBinaries(
-                name=binary.binarypackagerelease.name, exact_match=True,
-                version=binary.binarypackagerelease.version,
-                status=active_publishing_status, pocket=pocket,
-                distroarchseries=target_distroarchseries)
-            if binary_in_destination.count() == 0:
-                binary_copy = binary.copyTo(
-                        destination_series, pocket, archive)
-                copies.extend(binary_copy)
-
-        # Always ensure the needed builds exist in the copy destination
-        # after copying the binaries.
+    if not include_binaries:
         source_copy.createMissingBuilds()
+        return copies
+
+    # Copy missing binaries for the matching architectures in the
+    # destination series. ISPPH.getBuiltBinaries() return only
+    # unique publication per binary package releases (i.e. excludes
+    # irrelevant arch-indep publications) and IBPPH.copy is prepared
+    # to expand arch-indep publications.
+    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+        source.getBuiltBinaries(), series, pocket, archive)
+
+    copies.extend(binary_copies)
+
+    # Always ensure the needed builds exist in the copy destination
+    # after copying the binaries.
+    source_copy.createMissingBuilds()
 
     return copies
+
+
+class DelayedCopy:
+    """Decorates `IPackageUpload` with a more descriptive 'displayname'."""
+
+    delegates(IPackageUpload)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def displayname(self):
+        return 'Delayed copy of %s (%s)' % (
+            self.context.sourcepackagerelease.title,
+            self.context.displayarchs)
+
+
+def _do_delayed_copy(source, archive, series, pocket, include_binaries):
+    """Schedule the given source for copy.
+
+    Schedule the copy of each item of the given list of
+    `SourcePackagePublishingHistory` to the given destination.
+
+    Also include published builds for each source if requested to.
+
+    :param: source: an `ISourcePackagePublishingHistory`.
+    :param: archive: the target `IArchive`.
+    :param: series: the target `IDistroSeries`.
+    :param: pocket: the target `PackagePublishingPocket`.
+    :param: include_binaries: optional boolean, controls whether or
+        not the published binaries for each given source should be also
+        copied along with the source.
+
+    :return: a list of `IPackageUpload` corresponding to the publications
+        scheduled for copy.
+    """
+    # XXX cprov 2009-06-22 bug=385503: At some point we will change
+    # the copy signature to allow a user to be passed in, so will
+    # be able to annotate that information in delayed copied as well,
+    # by using the right key. For now it's undefined.
+    # See also the comment on acceptFromCopy()
+    delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+        archive, series, pocket, None)
+
+    # Include the source and any custom upload.
+    delayed_copy.addSource(source.sourcepackagerelease)
+    original_source_upload = source.sourcepackagerelease.package_upload
+    for custom in original_source_upload.customfiles:
+        delayed_copy.addCustom(
+            custom.libraryfilealias, custom.customformat)
+
+    # If binaries are included in the copy we include binary custom files.
+    if include_binaries:
+        for build in source.getBuilds():
+            if build.buildstate != BuildStatus.FULLYBUILT:
+                continue
+            delayed_copy.addBuild(build)
+            original_build_upload = build.package_upload
+            for custom in original_build_upload.customfiles:
+                delayed_copy.addCustom(
+                    custom.libraryfilealias, custom.customformat)
+
+    # XXX cprov 2009-06-22 bug=385503: when we have a 'user' responsible
+    # for the copy we can also decide whether a copy should be immediately
+    # accepted or moved to the UNAPPROVED queue, based on the user's
+    # permission to the destination context.
+
+    # Accept the delayed-copy, which implicitly verifies if it fits
+    # the destination context.
+    delayed_copy.acceptFromCopy()
+
+    return DelayedCopy(delayed_copy)
 
 
 class PackageCopier(SoyuzScript):
@@ -384,7 +660,7 @@ class PackageCopier(SoyuzScript):
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
-    deny_privacy_mismatch = True
+    allow_delayed_copies = True
 
     def add_my_options(self):
 
@@ -477,20 +753,19 @@ class PackageCopier(SoyuzScript):
         for candidate in to_copy:
             self.logger.info('\t%s' % candidate.displayname)
 
+        sources = [source_pub]
         try:
-            check_copy(
-                source_pub, self.destination.archive,
+            copies = do_copy(
+                sources, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, self.deny_privacy_mismatch)
-        except CannotCopy, reason:
-            self.logger.error(
-                "%s (%s)" % (source_pub.displayname, reason))
+                self.options.include_binaries, self.allow_delayed_copies)
+        except CannotCopy, error:
+            self.logger.error(str(error))
             return []
 
-        sources = [source_pub]
-        copies = do_copy(
-            sources, self.destination.archive, self.destination.distroseries,
-            self.destination.pocket, self.options.include_binaries)
+        self.logger.info("Copied:")
+        for copy in copies:
+            self.logger.info('\t%s' % copy.displayname)
 
         if len(copies) == 1:
             self.logger.info(
@@ -552,7 +827,7 @@ class UnembargoSecurityPackage(PackageCopier):
     description = ("Unembargo packages in a private PPA by copying to the "
                    "specified location and re-uploading any files to the "
                    "unrestricted librarian.")
-    deny_privacy_mismatch = False
+    allow_delayed_copies = False
 
     def add_my_options(self):
         """Add -d, -s, dry-run and confirmation options."""
@@ -608,146 +883,13 @@ class UnembargoSecurityPackage(PackageCopier):
         # Invoke the package copy operation.
         copies = PackageCopier.mainTask(self)
 
-        # Do an ancestry check to override the component.
-        self.overrideFromAncestry(copies)
-
-        # Now re-upload the files associated with the package.
+        # Fix copies by overriding them according the current ancestry
+        # and re-upload files with privacy mismatch.
         for pub_record in copies:
-            self.copyPublishedFiles(pub_record, False)
+            pub_record.overrideFromAncestry()
+            for new_file in update_files_privacy(pub_record):
+                self.logger.info(
+                    "Re-uploaded %s to librarian" % new_file.filename)
 
         # Return this for the benefit of the test suite.
         return copies
-
-    def copyPublishedFiles(self, pub_record, to_restricted):
-        """Move files for a publishing record between librarians.
-
-        :param pub_record: One of a SourcePackagePublishingHistory or
-            BinaryPackagePublishingHistory record.
-        :param to_restricted: True or False depending on whether the target
-            librarian to be used is the restricted one or not.
-        """
-        if ISourcePackagePublishingHistory.providedBy(pub_record):
-            files = pub_record.sourcepackagerelease.files
-            # Re-upload the changes file if necessary.
-            sourcepackagerelease = pub_record.sourcepackagerelease
-            queue_record = sourcepackagerelease.getQueueRecord(
-                distroseries=pub_record.distroseries)
-            if queue_record is not None:
-                changesfile = queue_record.changesfile
-            else:
-                changesfile = None
-            if changesfile is not None and changesfile.restricted:
-                new_lfa = self.reUploadFile(changesfile, False)
-                queue_record.changesfile = new_lfa
-            # Re-upload the package diff files if necessary.
-            diffs = sourcepackagerelease.package_diffs
-            for diff in diffs:
-                if diff.diff_content.restricted:
-                    new_lfa = self.reUploadFile(diff.diff_content, False)
-                    diff.diff_content = new_lfa
-        elif IBinaryPackagePublishingHistory.providedBy(pub_record):
-            files = pub_record.binarypackagerelease.files
-            # Re-upload the binary changes file as necessary.
-            upload = pub_record.binarypackagerelease.build.package_upload
-            changesfile = upload.changesfile
-            if changesfile is not None and changesfile.restricted:
-                new_lfa = self.reUploadFile(changesfile, False)
-                upload.changesfile = new_lfa
-            # Re-upload the buildlog file as necessary.
-            buildlog = pub_record.binarypackagerelease.build.buildlog
-            if buildlog is not None and buildlog.restricted:
-                new_lfa = self.reUploadFile(buildlog, False)
-                pub_record.binarypackagerelease.build.buildlog = new_lfa
-        else:
-            raise AssertionError(
-                "pub_record is not one of SourcePackagePublishingHistory "
-                "or BinaryPackagePublishingHistory")
-
-        for package_file in files:
-            libfile = package_file.libraryfile
-            # Check if the files are already in the right librarian
-            # instance.
-            if libfile.restricted == to_restricted:
-                continue
-            # Move the file to the appropriate librarian instance.
-            new_lfa = self.reUploadFile(libfile, to_restricted)
-            package_file.libraryfile = new_lfa
-
-    def reUploadFile(self, libfile, to_restricted):
-        """Re-upload a librarian file between librarians.
-
-        :param libfile: A LibraryFileAlias for the file.
-        :param to_restricted: True if copying to the restricted librarian.
-        :return: A new LibraryFileAlias that is not restricted.
-        """
-        libfile.open()
-
-        # Make a temporary file to hold the download.  It's annoying
-        # having to download to a temp file but there are no guarantees
-        # how large the files are, so using StringIO would be dangerous.
-        fd, filepath = tempfile.mkstemp()
-        temp_file = open(filepath, "w")
-
-        # Read the old library file into the temp file.
-        copy_and_close(libfile, temp_file)
-
-        # Upload the file to the unrestricted librarian and make
-        # sure the publishing record points to it.
-        librarian = getUtility(ILibraryFileAliasSet)
-        new_lfa = librarian.create(
-            libfile.filename, libfile.content.filesize,
-            open(filepath, "rb"), libfile.mimetype,
-            restricted=to_restricted)
-
-        self.logger.info(
-            "Re-uploaded %s to the unrestricted librarian with ID %d" % (
-                libfile.filename, new_lfa.id))
-
-        # Junk the temporary file.
-        os.remove(filepath)
-
-        return new_lfa
-
-    def overrideFromAncestry(self, pub_records):
-        """Set the right published component from publishing ancestry.
-
-        Start with the publishing records and fall back to the original
-        uploaded package if necessary.
-        """
-        for pub_record in pub_records:
-            archive = pub_record.archive
-            if ISourcePackagePublishingHistory.providedBy(pub_record):
-                is_source = True
-                source_package = pub_record.sourcepackagerelease
-                prev_published = archive.getPublishedSources(
-                    name=source_package.sourcepackagename.name,
-                    status=PackagePublishingStatus.PUBLISHED,
-                    distroseries=pub_record.distroseries,
-                    exact_match=True)
-            elif IBinaryPackagePublishingHistory.providedBy(pub_record):
-                is_source = False
-                binary_package = pub_record.binarypackagerelease
-                prev_published = archive.getAllPublishedBinaries(
-                    name=binary_package.binarypackagename.name,
-                    status=PackagePublishingStatus.PUBLISHED,
-                    distroarchseries=pub_record.distroarchseries,
-                    exact_match=True)
-            else:
-                raise AssertionError(
-                    "pub_records contains something that's not one of "
-                    "SourcePackagePublishingHistory or "
-                    "BinaryPackagePublishingHistory")
-
-            if prev_published.count() > 0:
-                # Use the first record (the most recently published).
-                component = prev_published[0].component
-            else:
-                # It's not been published yet, check the original package.
-                if is_source:
-                    component = pub_record.sourcepackagerelease.component
-                else:
-                    component = pub_record.binarypackagerelease.component
-
-            # We don't want to use changeOverride here because it
-            # creates a new publishing record.
-            pub_record.secure_record.component = component

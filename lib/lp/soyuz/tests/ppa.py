@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes to be used when testing Personal Package Archives.
 """
@@ -10,8 +11,8 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 
 from lp.soyuz.model.publishing import (
-    SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory)
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory)
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageRelease)
 from lp.soyuz.model.sourcepackagerelease import (
@@ -19,11 +20,11 @@ from lp.soyuz.model.sourcepackagerelease import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingPriority,
-    PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus)
 
 
 def publishToTeamPPA(team_name=None, distroseries_name=None,
@@ -83,12 +84,12 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             version=sourcepackage_version)
 
     person = getUtility(IPersonSet).getByName(person_name)
-    if person.gpgkeys:
+    if person.gpg_keys:
         # XXX: kiko 2007-10-25: oy, what a hack. I need to test with cprov
         # and he doesn't have a signing key in the database
-        sourcepackagerelease.dscsigningkey = person.gpgkeys[0]
+        sourcepackagerelease.dscsigningkey = person.gpg_keys[0]
     main_component = getUtility(IComponentSet)['main']
-    SecureSourcePackagePublishingHistory(
+    SourcePackagePublishingHistory(
         distroseries=distroseries,
         sourcepackagerelease=sourcepackagerelease,
         component=main_component,
@@ -96,7 +97,6 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
         status=publishing_status,
         datecreated=UTC_NOW,
         pocket=PackagePublishingPocket.RELEASE,
-        embargo=False,
         archive=archive)
 
     # Only publish binaries if the callsite specified a version.
@@ -107,7 +107,7 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             binarypackagenameID=binarypackagename.id,
             version=binarypackage_version)
         distroarchseries = distroseries[arch]
-        SecureBinaryPackagePublishingHistory(
+        BinaryPackagePublishingHistory(
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
             component=main_component,
@@ -116,5 +116,4 @@ def _publishToPPA(archive, person_name, distroseries_name, sourcepackage_name,
             status=publishing_status,
             datecreated=UTC_NOW,
             pocket=PackagePublishingPocket.RELEASE,
-            embargo=False,
             archive=archive)

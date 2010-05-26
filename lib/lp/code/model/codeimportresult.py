@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for the CodeImportResult table."""
 
@@ -13,9 +14,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportresult import (
-    CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
+    ICodeImportResult, ICodeImportResultSet)
 from lp.registry.interfaces.person import validate_public_person
+
 
 class CodeImportResult(SQLBase):
     """See `ICodeImportResult`."""

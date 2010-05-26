@@ -1,4 +1,5 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -16,7 +17,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.registry.interfaces.karma import IKarmaAction, IKarmaActionSet
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.distribution import IDistribution
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadView, Navigation)
@@ -33,16 +34,36 @@ class KarmaActionSetNavigation(Navigation):
         return self.context.getByName(name)
 
 
+class KarmaActionView(LaunchpadView):
+    """View class for the index of karma actions."""
+
+    page_title = 'Actions that give people karma'
+
+
 class KarmaActionEditView(LaunchpadEditFormView):
 
     schema = IKarmaAction
-    label = "Edit karma action"
     field_names = ["name", "category", "points", "title", "summary"]
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Edit %s karma action' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(getUtility(IKarmaActionSet))
 
     @action(_("Change"), name="change")
     def change_action(self, action, data):
         self.updateContextFromData(data)
-        self.next_url = canonical_url(getUtility(IKarmaActionSet))
+        self.next_url = self.cancel_url
 
 
 class KarmaContextContributor:
@@ -55,17 +76,21 @@ class KarmaContextContributor:
 class KarmaContextTopContributorsView(LaunchpadView):
     """List this KarmaContext's top contributors."""
 
+    @property
+    def page_title(self):
+        return "Top %s Contributors" % self.context.title
+
     def initialize(self):
         context = self.context
         if IProduct.providedBy(context):
             self.context_name = 'Project'
         elif IDistribution.providedBy(context):
             self.context_name = 'Distribution'
-        elif IProject.providedBy(context):
+        elif IProjectGroup.providedBy(context):
             self.context_name = 'Project Group'
         else:
             raise AssertionError(
-                "Context is not a Product, Project or Distribution: %r"
+                "Context is not a Product, Project group or Distribution: %r"
                 % context)
 
     def _getTopContributorsWithLimit(self, limit=None):

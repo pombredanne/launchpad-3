@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Views for Specification Goal Setting."""
 
 __metaclass__ = type
@@ -26,6 +28,9 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
     checkboxes, then process the selected items, which is not the usual
     add/edit metaphor.
     """
+
+    label = "Set feature goals"
+    page_title = "Feature goals"
 
     @cachedproperty
     def spec_filter(self):

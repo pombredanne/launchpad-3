@@ -4,7 +4,7 @@ safe_fix_maintainer() is a function used to sanitise the
 identification fields coming from the Debian control files (changes
 and dsc). It allows safe unicode and non-unicode inputs.
 
-  >>> from canonical.archiveuploader.utils import (
+  >>> from lp.archiveuploader.utils import (
   ...     safe_fix_maintainer)
 
   >>> maintainer_field = 'maintainer'

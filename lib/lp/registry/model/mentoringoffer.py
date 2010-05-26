@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -74,7 +76,7 @@ class MentoringOfferSet:
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
         from lp.blueprints.model.specification import Specification
-        from canonical.launchpad.database.bugtask import BugTask
+        from lp.bugs.model.bugtask import BugTask
         via_specs = MentoringOffer.select("""
             Specification.id = MentoringOffer.specification AND NOT
             (""" + Specification.completeness_clause +")",
@@ -94,7 +96,7 @@ class MentoringOfferSet:
         """See IHasMentoringOffers."""
         # import here to avoid circular imports
         from lp.blueprints.model.specification import Specification
-        from canonical.launchpad.database.bugtask import BugTask
+        from lp.bugs.model.bugtask import BugTask
         now = datetime.now(pytz.timezone('UTC'))
         yearago = now - timedelta(365)
         via_specs = MentoringOffer.select("""
@@ -102,14 +104,12 @@ class MentoringOfferSet:
             """ % sqlvalues(yearago) + """
             Specification.id = MentoringOffer.specification AND
             (""" + Specification.completeness_clause +")",
-            clauseTables=['Specification'],
-            distinct=True)
+            clauseTables=['Specification'])
         via_bugs = MentoringOffer.select("""
             MentoringOffer.date_created > %s AND
             """ % sqlvalues(yearago) + """
             BugTask.bug = MentoringOffer.bug AND (
             """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask'],
-            distinct=True)
-        return via_specs.union(via_bugs)
+            clauseTables=['BugTask'])
+        return via_specs.union(via_bugs).orderBy("id")
 

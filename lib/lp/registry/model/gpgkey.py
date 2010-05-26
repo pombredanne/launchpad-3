@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -55,6 +57,24 @@ class GPGKeySet:
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active,
                       can_encrypt=can_encrypt)
+
+    def activate(self, requester, key, can_encrypt):
+        """See `IGPGKeySet`."""
+        fingerprint = key.fingerprint
+        lp_key = self.getByFingerprint(fingerprint)
+        if lp_key:
+            # Then the key already exists, so let's reactivate it.
+            lp_key.active = True
+            lp_key.can_encrypt = can_encrypt
+            return lp_key, False
+        ownerID = requester.id
+        keyid = key.keyid
+        keysize = key.keysize
+        algorithm = GPGKeyAlgorithm.items[key.algorithm]
+        lp_key = self.new(
+            ownerID, keyid, fingerprint, keysize, algorithm,
+            can_encrypt=can_encrypt)
+        return lp_key, True
 
     def get(self, key_id, default=None):
         """See `IGPGKeySet`"""

@@ -11,7 +11,7 @@ Tests for the team '+join' page's raw view objects.
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def join_team(team):
-    ...     form = {'join': '1', 'mailinglist_subscribe': '1'}
+    ...     form = {'field.actions.join': '1', 'field.mailinglist_subscribe': u'on'}
     ...     request = LaunchpadTestRequest(method='POST', form=form)
     ...     view = getMultiAdapter((team, request), name='+join')
     ...     view.initialize()
@@ -32,9 +32,9 @@ Tests for the team '+join' page's raw view objects.
     >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> subscribers = getUtility(IMailingListSet)
 
-Posting a mailing list subscription request to a team that has no list
-results in an error notification.  (This is probably the result of
-mangled form data.)
+Attempting to post a mailing list subscription request to a team that has no list
+is thwarted by the view because it strips the checkbox from the form.
+Therefore no error message is seen.
 
     >>> sample_person = personset.getByName('name12')
     >>> login_person(sample_person)
@@ -43,7 +43,6 @@ mangled form data.)
 
     >>> join_team(no_list_team)
     You have successfully joined open-team-no-list.
-    Mailing list subscription failed.
 
 Someone subscribing to a moderated team's list will be shown an
 informative message regarding the delayed subscription.

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Librarian interfaces."""
@@ -10,7 +12,6 @@ __all__ = [
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
-    'IParsedApacheLog',
     'NEVER_EXPIRES',
     ]
 
@@ -54,11 +55,15 @@ class ILibraryFileAlias(Interface):
     hits = Int(
         title=_('Number of times this file has been downloaded'),
         required=False, readonly=True)
+    last_downloaded = Datetime(
+        title=_('When this file was last downloaded'),
+        required=False, readonly=True)
     restricted = Bool(
         title=_('Is this file alias restricted.'),
         required=True, readonly=True,
         description=_('If the file is restricted, it can only be '
                       'retrieved through the restricted librarian.'))
+    deleted = Attribute('Is this file deleted.')
 
     # XXX Guilherme Salgado, 2007-01-18 bug=80487:
     # We can't use TextLine here because they return
@@ -122,9 +127,6 @@ class ILibraryFileContent(Interface):
     datecreated = Datetime(
             title=_('Date created'), required=True, readonly=True
             )
-    datemirrored = Datetime(
-            title=_('Date mirrored'), required=True, readonly=True
-            )
     filesize = Int(
             title=_('File size'), required=True, readonly=True
             )
@@ -134,9 +136,7 @@ class ILibraryFileContent(Interface):
     md5 = TextLine(
             title=_('MD5 hash'), required=True, readonly=True
             )
-    deleted = Bool(
-            title=_('Deleted'), required=True, readonly=True
-            )
+
 
 class ILibraryFileAliasSet(Interface):
     def create(name, size, file, contentType, expires=None, debugID=None,
@@ -150,7 +150,7 @@ class ILibraryFileAliasSet(Interface):
         from the Librarian at this time. See LibrarianGarbageCollection.
 
         If restricted is True, the file will be created through the
-        IRestricteLibrarianClient utility.
+        IRestrictedLibrarianClient utility.
         """
 
     def __getitem__(key):
@@ -174,18 +174,3 @@ class ILibraryFileDownloadCount(Interface):
         title=_('The number of downloads'), required=True, readonly=False)
     country = Choice(
         title=_('Country'), required=False, vocabulary='CountryName')
-
-
-class IParsedApacheLog(Interface):
-    """An apache log file parsed to extract download counts of files.
-
-    This is used so that we don't parse log files more than once.
-    """
-
-    first_line = TextLine(
-        title=_("The log file's first line"), required=True,
-        readonly=True)
-    bytes_read = Int(
-        title=_('Number of bytes read'), required=True, readonly=False)
-    date_last_parsed = Datetime(
-        title=_('Date last parsed'), required=False, readonly=False)

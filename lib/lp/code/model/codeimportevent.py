@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes related to and including CodeImportEvent."""
@@ -20,12 +22,11 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from lp.code.enums import (
+    CodeImportEventDataType, CodeImportEventType,
+    CodeImportMachineOfflineReason, RevisionControlSystems)
 from lp.code.interfaces.codeimportevent import (
-    CodeImportEventDataType, CodeImportEventType, ICodeImportEvent,
-    ICodeImportEventSet, ICodeImportEventToken)
-from lp.code.interfaces.codeimportmachine import (
-    CodeImportMachineOfflineReason)
-from lp.code.interfaces.codeimport import RevisionControlSystems
+    ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken)
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -107,7 +108,6 @@ class CodeImportEventSet:
     def newModify(self, code_import, person, token):
         """See `ICodeImportEventSet`."""
         assert code_import is not None, "code_import must not be None"
-        assert person is not None, "person must not be None"
         assert token is not None, "token must not be None"
         items = self._findModifications(code_import, token)
         if items is None:
@@ -256,13 +256,14 @@ class CodeImportEventSet:
 
     def _iterSourceDetails(self, code_import):
         """Yield key-value tuples describing the source of the import."""
-        if code_import.rcs_type == RevisionControlSystems.SVN:
-            yield 'SVN_BRANCH_URL', code_import.svn_branch_url
+        if code_import.rcs_type in (RevisionControlSystems.SVN,
+                                    RevisionControlSystems.BZR_SVN,
+                                    RevisionControlSystems.GIT,
+                                    RevisionControlSystems.HG):
+            yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root
             yield 'CVS_MODULE', code_import.cvs_module
-        elif code_import.rcs_type == RevisionControlSystems.GIT:
-            yield 'GIT_REPO_URL', code_import.git_repo_url
         else:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))

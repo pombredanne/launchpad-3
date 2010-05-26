@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
     'TimezoneNameVocabulary',
@@ -18,15 +19,6 @@ from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
 _values = sorted(pytz.common_timezones)
 _values.remove('UTC')
 _values.insert(0, 'UTC')
-# The tzdata package may not contain all the timezone files that pytz
-# thinks exist.
-for timezone_name in _values:
-    try:
-        pytz.timezone(timezone_name)
-    except (pytz.UnknownTimeZoneError, IOError):
-        # XXX Edwin Grubbs 2008-07-03 bug=244681
-        # pytz.timezone() should not throw an IOError.
-        _values.remove(timezone_name)
 
 _timezone_vocab = SimpleVocabulary.fromValues(_values)
 alsoProvides(_timezone_vocab, ITimezoneNameVocabulary)

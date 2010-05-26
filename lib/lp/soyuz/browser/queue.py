@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
 
@@ -18,7 +19,7 @@ from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, UnexpectedFormData)
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.package import PackageUploadStatus
+from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from lp.soyuz.interfaces.queue import (
     IHasQueueItems, IPackageUpload, IPackageUploadSet,
@@ -27,6 +28,7 @@ from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -185,7 +187,12 @@ class QueueItemsView(LaunchpadView):
         if len(uploads) == 0:
             return None
 
-        upload_ids = [upload.id for upload in uploads]
+        # Operate only on upload and/or processed delayed-copies.
+        upload_ids = [
+            upload.id
+            for upload in uploads
+            if not (upload.is_delayed_copy and
+                    upload.status != PackageUploadStatus.DONE)]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
@@ -277,7 +284,7 @@ class QueueItemsView(LaunchpadView):
             self.error = "Invalid component: %s" % component_override
             return
 
-        # Get a list of components that the user has rights to accept and
+        # Get a list of components for which the user has rights to
         # override to or from.
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
@@ -415,7 +422,7 @@ class CompletePackageUpload:
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
     pocket = None
-    datecreated = None
+    date_created = None
     sources = None
     builds = None
     customfiles = None
@@ -428,7 +435,7 @@ class CompletePackageUpload:
     def __init__(self, packageupload, build_upload_files,
                  source_upload_files):
         self.pocket = packageupload.pocket
-        self.datecreated = packageupload.datecreated
+        self.date_created = packageupload.date_created
         self.context = packageupload
         self.sources = list(packageupload.sources)
         self.contains_source = len(self.sources) > 0
@@ -455,3 +462,32 @@ class CompletePackageUpload:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
         else:
             self.sourcepackagerelease = None
+
+    @property
+    def pending_delayed_copy(self):
+        """Whether the context is a delayed-copy pending processing."""
+        return (
+            self.is_delayed_copy and self.status != PackageUploadStatus.DONE)
+
+    @property
+    def changesfile(self):
+        """Return the upload changesfile object, even for delayed-copies.
+
+        If the context `PackageUpload` is a delayed-copy, which doesn't
+        have '.changesfile' by design, return the changesfile originally
+        used to upload the contained source.
+        """
+        if self.is_delayed_copy:
+            return self.sources[0].sourcepackagerelease.upload_changesfile
+        return self.context.changesfile
+
+    @property
+    def package_sets(self):
+        assert self.sourcepackagerelease, \
+            "Can only be used on a source upload."
+        return ' '.join(sorted(ps.name for ps in
+            getUtility(IPackagesetSet).setsIncludingSource(
+                self.sourcepackagerelease.sourcepackagename,
+                distroseries=self.distroseries,
+                direct_inclusion=True)))
+

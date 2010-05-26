@@ -1,5 +1,7 @@
-# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0231
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0231,E1002
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -24,7 +26,7 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import alsoProvides, implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
@@ -39,17 +41,18 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces.feed import IFeed
-from lazr.restful.interfaces import IWebServiceConfiguration
+from lazr.restful.interfaces import (
+    IWebServiceConfiguration, IWebServiceVersion)
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
-from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IPerson, IPersonSet,
-    IWebServiceApplication, IOAuthConsumerSet, NonceAlreadyUsed,
-    TimestampOrderingError, ClockSkew)
-from canonical.signon.interfaces.openidserver import IOpenIDApplication
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from canonical.launchpad.interfaces.launchpad import (
+    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew, IOAuthConsumerSet, IOAuthSignedRequest, NonceAlreadyUsed,
+    TimestampOrderingError)
 import canonical.launchpad.layers
-import canonical.signon.layers
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -58,10 +61,10 @@ from canonical.launchpad.webapp.authorization import (
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
+    IBasicLaunchpadRequest, IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
-    IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
-    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
-    IPlacelessLoginSource, OAuthPermission)
+    INotificationRequest, INotificationResponse, IPlacelessAuthUtility,
+    IPlacelessLoginSource, OAuthPermission, UnexpectedFormData)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
@@ -461,7 +464,10 @@ class NotFoundRequestPublicationFactory:
 
 
 def get_query_string_params(request):
-    """Return a dict of the query string params for a request.
+    """Return a dict of the decoded query string params for a request.
+
+    The parameter values will be decoded as unicodes, exactly as
+    `BrowserRequest` would do to build the request form.
 
     Defined here so that it can be used in both BasicLaunchpadRequest and
     the LaunchpadTestRequest (which doesn't inherit from
@@ -475,7 +481,14 @@ def get_query_string_params(request):
     if query_string is None:
         query_string = ''
 
-    return cgi.parse_qs(query_string, keep_blank_values=True)
+    parsed_qs = cgi.parse_qs(query_string, keep_blank_values=True)
+    # Use BrowserRequest._decode() for decoding the received parameters.
+    decoded_qs = {}
+    for key, values in parsed_qs.iteritems():
+        decoded_qs[key] = [
+            request._decode(value) for value in values]
+    return decoded_qs
+
 
 class BasicLaunchpadRequest:
     """Mixin request class to provide stepstogo."""
@@ -566,6 +579,10 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def isRedirectInhibited(self):
+        """Returns True if edge redirection has been inhibited."""
+        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     @cachedproperty
     def form_ng(self):
@@ -704,8 +721,13 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, temporary_if_possible=False):
+    def redirect(self, location, status=None, trusted=True,
+                 temporary_if_possible=False):
         """Do a redirect.
+
+        Unlike Zope's BrowserResponse.redirect(), consider all redirects to be
+        trusted. Otherwise we'd have to change all callsites that redirect
+        from lp.net to vhost.lp.net to pass trusted=True.
 
         If temporary_if_possible is True, then do a temporary redirect
         if this is a HEAD or GET, otherwise do a 303.
@@ -727,8 +749,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(
-                unicode(location).encode('UTF-8'), status=status
-                )
+            unicode(location).encode('UTF-8'), status=status, trusted=trusted)
 
 
 def adaptResponseToSession(response):
@@ -741,7 +762,8 @@ def adaptRequestToResponse(request):
     return request.response
 
 
-class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
+class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
+                           LaunchpadBrowserRequestMixin):
     """Mock request for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
@@ -776,6 +798,7 @@ class LaunchpadTestRequest(TestRequest, LaunchpadBrowserRequestMixin):
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar',
     ...     QUERY_STRING='a=1&b=2&c=3')
+    >>> request.charsets = ['utf-8']
     >>> request.query_string_params == {'a': ['1'], 'b': ['2'], 'c': ['3']}
     True
 
@@ -1047,8 +1070,6 @@ class AnswersBrowserRequest(LaunchpadBrowserRequest):
             'Vary', 'Cookie, Authorization, Accept-Language')
 
 
-# ---- openid
-
 class AccountPrincipalMixin:
     """Mixin for publication that works with person-less accounts."""
 
@@ -1065,30 +1086,6 @@ class AccountPrincipalMixin:
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal
-
-
-class IdPublication(AccountPrincipalMixin, LaunchpadBrowserPublication):
-    """The publication used for OpenID requests."""
-
-    def getApplication(self, request):
-        """Return the `IOpenIDApplication`."""
-        return getUtility(IOpenIDApplication)
-
-
-class IdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.signon.layers.IdLayer)
-
-
-# XXX sinzui 2008-09-04 bug=264783:
-# Remove OpenIDPublication and OpenIDBrowserRequest.
-class OpenIDPublication(IdPublication):
-    """The publication used for old OpenID requests."""
-
-    root_object_interface = IOpenIDApplication
-
-
-class OpenIDBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.signon.layers.OpenIDLayer)
 
 
 # ---- feeds
@@ -1130,6 +1127,17 @@ class FeedsPublication(LaunchpadBrowserPublication):
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(canonical.launchpad.layers.FeedsLayer)
+
+
+# ---- testopenid
+
+class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TestOpenIDLayer)
+
+
+class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = ITestOpenIDApplication
+
 
 # ---- web service
 
@@ -1187,10 +1195,43 @@ class WebServicePublication(WebServicePublicationMixin,
         form = get_oauth_authorization(request)
 
         consumer_key = form.get('oauth_consumer_key')
-        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
-        if consumer is None:
-            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        consumers = getUtility(IOAuthConsumerSet)
+        consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
+        anonymous_request = (token_key == '')
+        if consumer is None:
+            if consumer_key is None:
+                # Most likely the user is trying to make a totally
+                # unauthenticated request.
+                raise Unauthorized(
+                    'Request is missing an OAuth consumer key.')
+            if anonymous_request:
+                # This is the first time anyone has tried to make an
+                # anonymous request using this consumer
+                # name. Dynamically create the consumer.
+                #
+                # In the normal website this wouldn't be possible
+                # because GET requests have their transactions rolled
+                # back. But webservice requests always have their
+                # transactions committed so that we can keep track of
+                # the OAuth nonces and prevent replay attacks.
+                consumer = consumers.new(consumer_key, '')
+            else:
+                # An unknown consumer can never make a non-anonymous
+                # request, because access tokens are registered with a
+                # specific, known consumer.
+                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        if anonymous_request:
+            # Skip the OAuth verification step and let the user access the
+            # web service as an unauthenticated user.
+            #
+            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+            # auto-creating a token for the anonymous user the first
+            # time, passing it through the OAuth verification step,
+            # and using it on all subsequent anonymous requests.
+            alsoProvides(request, IOAuthSignedRequest)
+            auth_utility = getUtility(IPlacelessAuthUtility)
+            return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise Unauthorized('Unknown access token (%s).' % token_key)
@@ -1210,22 +1251,11 @@ class WebServicePublication(WebServicePublicationMixin,
         else:
             # Everything is fine, let's return the principal.
             pass
+        alsoProvides(request, IOAuthSignedRequest)
         principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.account.id, access_level=token.permission,
             scope=token.context)
 
-        # Make sure the principal is a member of the beta test team.
-        # XXX leonardr 2008-05-22 spec=api-bugs-remote:
-        # Once we launch the web service this code will be removed.
-        people = getUtility(IPersonSet)
-        webservice_beta_team_name = config.vhost.api.beta_test_team
-        if webservice_beta_team_name is not None:
-            webservice_beta_team = people.getByName(
-                webservice_beta_team_name)
-            person = IPerson(principal)
-            if not person.inTeam(webservice_beta_team):
-                raise Unauthorized(
-                    person.name + " is not a member of the beta test team.")
         return principal
 
 
@@ -1237,8 +1267,26 @@ class WebServiceClientRequest(WebServiceRequestTraversal,
     def __init__(self, body_instream, environ, response=None):
         super(WebServiceClientRequest, self).__init__(
             body_instream, environ, response)
-        # Web service requests use content negotiation.
-        self.response.setHeader('Vary', 'Cookie, Authorization, Accept')
+        # Web service requests use content negotiation, so we put
+        # 'Accept' in the Vary header. They don't use cookies, so
+        # there's no point in putting 'Cookie' in the Vary header, and
+        # putting 'Authorization' in the Vary header totally destroys
+        # caching because every web service request contains a
+        # distinct OAuth nonce in its Authorization header.
+        #
+        # Because 'Authorization' is not in the Vary header, a client
+        # that reuses a single cache for different OAuth credentials
+        # could conceivably leak private information to an
+        # unprivileged user via the cache. This won't happen for the
+        # web service root resource because the service root is the
+        # same for everybody. It won't happen for entry resources
+        # because if two users have a different representation of an
+        # entry, the ETag will also be different and a conditional
+        # request will fail.
+        #
+        # Once lazr.restful starts setting caching directives other
+        # than ETag, we may have to revisit this.
+        self.response.setHeader('Vary', 'Accept')
 
     def getRootURL(self, rootsite):
         """See IBasicLaunchpadRequest."""
@@ -1255,7 +1303,7 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
     """
     implements(canonical.launchpad.layers.WebServiceLayer)
 
-    def __init__(self, body_instream=None, environ=None, **kw):
+    def __init__(self, body_instream=None, environ=None, version=None, **kw):
         test_environ = {
             'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
@@ -1264,6 +1312,11 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
             test_environ.update(environ)
         super(WebServiceTestRequest, self).__init__(
             body_instream=body_instream, environ=test_environ, **kw)
+        if version is None:
+            version = getUtility(IWebServiceConfiguration).active_versions[-1]
+        self.version = version
+        version_marker = getUtility(IWebServiceVersion, name=version)
+        alsoProvides(self, version_marker)
 
 
 # ---- xmlrpc
@@ -1326,6 +1379,7 @@ class PrivateXMLRPCPublication(PublicXMLRPCPublication):
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
+
 
 # ---- Protocol errors
 
@@ -1424,15 +1478,16 @@ def register_launchpad_request_publication_factories():
                TranslationsPublication),
         VWSHRP('bugs', BugsBrowserRequest, BugsPublication),
         VWSHRP('answers', AnswersBrowserRequest, AnswersPublication),
-        VHRP('id', IdBrowserRequest, IdPublication),
-        # XXX sinzui 2008-09-04 bug=264783: Remove openid.
-        VHRP('openid', OpenIDBrowserRequest, OpenIDPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
         WebServiceRequestPublicationFactory(
             'api', WebServiceClientRequest, WebServicePublication),
         XMLRPCRequestPublicationFactory(
             'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication)
         ]
+
+    if config.launchpad.enable_test_openid_provider:
+        factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
+                              TestOpenIDBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

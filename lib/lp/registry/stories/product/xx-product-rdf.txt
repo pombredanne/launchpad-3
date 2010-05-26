@@ -4,14 +4,10 @@ We export DOAP RDF metadata for products from a link in the
   >>> anon_browser.open("http://launchpad.dev/firefox")
   >>> anon_browser.getLink("RDF metadata").click()
   >>> print anon_browser.contents
-  <?xml version="1.0" encoding="utf-8"?>
-  <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"
-           xmlns:foaf="http://xmlns.com/foaf/0.1/"
-           xmlns:lp="https://launchpad.net/rdf/launchpad#"
-           xmlns:wot="http://xmlns.com/wot/0.1/"
-           xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <?xml version="1.0" encoding="utf-8"...?>
+  <rdf:RDF ...xmlns:lp="https://launchpad.net/rdf/launchpad#"...>
     <lp:Product>
-      <lp:specifiedAt rdf:resource="/firefox/+rdf"/>
+      <lp:specifiedAt rdf:resource="/firefox/+rdf"...
       <lp:name>firefox</lp:name>
       <lp:displayName>Mozilla Firefox</lp:displayName>
       <lp:title>Mozilla Firefox</lp:title>

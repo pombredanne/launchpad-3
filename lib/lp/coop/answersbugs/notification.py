@@ -1,4 +1,5 @@
-# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notifications related to linking bugs and questions."""
 
@@ -9,7 +10,7 @@ import os
 
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from lp.services.mail.mailwrapper import MailWrapper
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import IBugTask
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.answers.notification import QuestionNotification

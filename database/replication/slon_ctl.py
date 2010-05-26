@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5 -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Startup and shutdown slon processes.
 
@@ -100,7 +102,7 @@ def start(log, nodes, lag=None):
         log.debug("Logging to %s" % logfile)
         log.debug("PID file %s" % pidfile)
         # Hard code suitable command line arguments for development.
-        slon_args = "-d 2 -s 10000 -t 30000"
+        slon_args = "-d 2 -s 2000 -t 10000"
         if lag is not None:
             slon_args = "%s -l '%s'" % (slon_args, lag)
         cmd = [

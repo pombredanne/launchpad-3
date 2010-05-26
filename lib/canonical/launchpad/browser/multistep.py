@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Multiple step views."""
 
@@ -56,6 +57,25 @@ class MultiStepView(LaunchpadView):
         """
         raise NotImplementedError
 
+    # A page title should not be needed here, but our auto generated
+    # breadcrumbs will expect it to exist, so it must be defined in
+    # subclasses.
+    @property
+    def page_title(self):
+        """Must override in subclasses for breadcrumbs to work."""
+        raise NotImplementedError
+
+    def getIsStepDict(self):
+        """Return a dict of step numbers with the current step set to True.
+
+        This is a path traversal friendly mechanism to ask:
+        <tal:x condition="view/is_step/2">
+        """
+        step_state = {}
+        for step in range(1, self.total_steps + 1):
+            step_state[str(step)] = step == self.step_number
+        return step_state
+
     def initialize(self):
         """Initialize the view and handle stepping through sub-views."""
         view = self.first_step(self.context, self.request)
@@ -71,6 +91,7 @@ class MultiStepView(LaunchpadView):
         view.initialize()
         view.step_number = self.step_number
         view.total_steps = self.total_steps
+        view.is_step = self.getIsStepDict()
         self.step_number += 1
         while view.next_step is not None:
             view = view.next_step(self.context, self.request)
@@ -78,6 +99,7 @@ class MultiStepView(LaunchpadView):
             view.initialize()
             view.step_number = self.step_number
             view.total_steps = self.total_steps
+            view.is_step = self.getIsStepDict()
             self.step_number += 1
             view.injectStepNameInRequest()
         self.view = view

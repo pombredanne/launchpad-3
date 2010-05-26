@@ -7,66 +7,108 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
-    >>> from datetime import datetime, timedelta
-    >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    # Create a 'mozilla-firefox' build in ubuntutest/breezy-autotest/i386.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> login('foo.bar@canonical.com')
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> source = test_publisher.getPubSource(
+    ...     sourcename='mozilla-firefox', version='0.9')
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     binaryname='firefox', pub_source=source)
+    >>> [firefox_build] = source.getBuilds()
+    >>> job = firefox_build.buildqueue_record.job
+    >>> removeSecurityProxy(job).start()
+    >>> removeSecurityProxy(job).complete()
+    >>> login(ANONYMOUS)
 
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> warty = ubuntu['warty']
-    >>> hoary = ubuntu['hoary']
-    >>> breezy = ubuntu['breezy-autotest']
+A build has a title which describes the context source version and in
+which series and architecture it is targeted for.
 
+    >>> print firefox_build.title
+    i386 build of mozilla-firefox 0.9 in ubuntutest breezy-autotest RELEASE
 
-First up, can we get the builds out of the sample data?
+A build directly links to the archive, distribution, distroseries,
+distroarchseries, pocket in its context and also the source version
+that generated it.
 
-    >>> firefox_build = getUtility(IBuildSet).getByBuildID(18)
-    >>> pmount_build = getUtility(IBuildSet).getByBuildID(19)
-    >>> pending_build = getUtility(IBuildSet).getByBuildID(11)
+    >>> print firefox_build.archive.displayname
+    Primary Archive for Ubuntu Test
 
-Let's check the complex properties of a build object.
+    >>> print firefox_build.distribution.displayname
+    ubuntutest
 
-    >>> firefox_build.distroseries.name
-    u'breezy-autotest'
+    >>> print firefox_build.distroseries.displayname
+    Breezy Badger Autotest
 
-    >>> firefox_build.title
-    u'i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest RELEASE'
+    >>> print firefox_build.distroarchseries.displayname
+    ubuntutest Breezy Badger Autotest i386
 
-    >>> firefox_build.was_built
-    True
+    >>> firefox_build.pocket
+    <DBItem PackagePublishingPocket.RELEASE, (0) Release>
 
-    >>> firefox_build.buildlog = 34
-    >>> print firefox_build.build_log_url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18/+files/evolution-2.2-test.pot
-
-    >>> firefox_build.changesfile
-    <LibraryFileAlias ...>
-
-    >>> firefox_build.calculated_buildstart
-    datetime.datetime(...)
+    >>> print firefox_build.arch_tag
+    i386
 
     >>> firefox_build.is_virtualized
     False
 
-    >>> firefox_build.arch_tag
-    u'i386'
+    >>> print firefox_build.sourcepackagerelease.title
+    mozilla-firefox - 0.9
+
+A build has an state that represents in which stage it is in a
+life-cycle that goes from PENDING to BUILDING until FULLYBUILT or one
+of the intermediate failed states (FAILEDTOBUILD, MANUALDEPWAIT,
+CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
+
+    >>> firefox_build.buildstate
+    <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
+
+Builds which were already processed also offer additional information
+about its process such as the time it was started and finished and its
+'buildlog' and 'upload_changesfile' as librarian files.
+
+    >>> firefox_build.was_built
+    True
+
+    >>> firefox_build.calculated_buildstart
+    datetime.datetime(...)
+
+    >>> firefox_build.datebuilt
+    datetime.datetime(...)
+
+    >>> firefox_build.buildduration
+    datetime.timedelta(...)
+
+    >>> print firefox_build.buildlog.filename
+    buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
+
+    >>> print firefox_build.build_log_url
+    http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
+
+    >>> print firefox_build.upload_changesfile.filename
+    firefox_0.9_i386.changes
 
 The 'firefox_build' is already finished and requesting the estimated build
 start time makes no sense. Hence an exception is raised.
 
-    >>> firefox_build.getEstimatedBuildStartTime()
+    >>> firefox_build.buildqueue_record.getEstimatedJobStartTime()
     Traceback (most recent call last):
     ...
-    AssertionError: The start time is only estimated for pending builds.
+    AssertionError: The start time is only estimated for pending jobs.
 
-The 'pending_build' record is a build job in state `NEEDSBUILD`. We can
-hence ask for its estimated build start time. The latter will be
-undefined however because the corresponding build pool is empty.
+On a build job in state `NEEDSBUILD` we can ask for its estimated
+build start time.
 
-    >>> pending_build.getEstimatedBuildStartTime() is None
-    True
+    # Create a brand new pending build.
+    >>> login('foo.bar@canonical.com')
+    >>> source = test_publisher.getPubSource(sourcename='pending-source')
+    >>> [pending_build] = source.createMissingBuilds()
+    >>> login(ANONYMOUS)
+
+    >>> pending_build.buildqueue_record.getEstimatedJobStartTime()
+    datetime.datetime(...)
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -89,16 +131,15 @@ property:
     >>> firefox_build.package_upload
     <PackageUpload ...>
 
-    Zope proxied package uploads do not give permission to see them if you
-    are not logged in, except for the status attribute.  Firefox's build
-    upload is in the NEW state:
-
     >>> firefox_build.package_upload.status
-    <DBItem PackageUploadStatus.NEW, (0) New>
+    <DBItem PackageUploadStatus.DONE, (3) Done>
 
 If the build does not have any uploads, None is returned:
 
-    >>> at_build = getUtility(IBuildSet).getByBuildID(15)
+    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> at_build = getUtility(IBinaryPackageBuildSet).getByBuildID(15)
     >>> print at_build.package_upload
     None
 
@@ -107,7 +148,7 @@ Test "retry" functionality:
     >>> firefox_build.can_be_retried
     False
 
-    >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> frozen_build = getUtility(IBinaryPackageBuildSet).getByBuildID(9)
     >>> frozen_build.title
     u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
     >>> frozen_build.buildstate.title
@@ -115,12 +156,12 @@ Test "retry" functionality:
     >>> frozen_build.can_be_retried
     False
 
-See section 'AssertionErrors in IBuild' for further documentation about
-consequences of an denied 'retry' action.
+See section 'AssertionErrors in IBinaryPackageBuild' for further
+documentation about consequences of an denied 'retry' action.
 
 Let's retrieve a build record that can be retried.
 
-    >>> active_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> active_build = getUtility(IBinaryPackageBuildSet).getByBuildID(9)
 
     >>> print active_build.title
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -181,8 +222,9 @@ Transforming ubuntu primary archive in a private archive makes
 storeUploadLog() upload the given content as a restricted file.
 
     >>> login('foo.bar@canonical.com')
-    >>> active_build.archive.buildd_secret = "secret"
-    >>> active_build.archive.private = True
+    >>> original_archive = active_build.archive
+    >>> private_ppa = factory.makeArchive(private=True)
+    >>> removeSecurityProxy(active_build).archive = private_ppa
     >>> login(ANONYMOUS)
 
 Simply changing the archive privacy after the 'upload_log' is stored
@@ -194,7 +236,7 @@ the next upload attempt only.
 
 In order to call storeUploadLog() again for the same build, we have to
 remove the previously stored 'upload_log'. See the check below in
-'AssertionErrors in IBuild' for more detail.
+'AssertionErrors in IBinaryPackageBuild' for more detail.
 
     >>> login('foo.bar@canonical.com')
     >>> active_build.upload_log = None
@@ -210,11 +252,11 @@ restricted librarian instance.
     >>> print active_build.upload_log.restricted
     True
 
-Restore ubuntu main archive state to not affect the rest of the tests.
+Restore ubuntu main archive as the target to not affect the rest of the
+tests.
 
     >>> login('foo.bar@canonical.com')
-    >>> active_build.archive.buildd_secret = ''
-    >>> active_build.archive.private = False
+    >>> removeSecurityProxy(active_build).archive = original_archive
     >>> login(ANONYMOUS)
 
 Since ubuntu/warty is already released the failed build can't be
@@ -226,9 +268,12 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')
-    >>> warty.status = DistroSeriesStatus.DEVELOPMENT
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty.status = SeriesStatus.DEVELOPMENT
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -239,15 +284,27 @@ Before we actually retry the build on hand let's set its start time.
 This will allow us to observe the fact that a build retry does not
 change the start time if it was set already.
 
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> time_now = datetime.now(UTC)
     >>> unsecured_build = removeSecurityProxy(active_build)
     >>> unsecured_build.date_first_dispatched = time_now
     >>> active_build.date_first_dispatched == time_now
     True
 
-Retry Build record in question:
+Re-trying builds requires the user to be logged in as an admin (including
+buildd admin) to gain launchpad.Edit on the build record.  As an anonymous
+user, retrying will fail:
 
+    >>> active_build.retry()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+Login as an admin and retry the Build record in question:
+
+    >>> login('foo.bar@canonical.com')
     >>> active_build.retry()
 
 The build was retried but its start time remains the same.
@@ -282,7 +339,7 @@ We will restore ubuntu/warty previously changes status, SUPPORTED, so
 it won't interfere in the next tests.
 
     >>> login('foo.bar@canonical.com')
-    >>> warty.status = DistroSeriesStatus.SUPPORTED
+    >>> warty.status = SeriesStatus.SUPPORTED
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -316,6 +373,9 @@ given build record entry.
 
 Invoke createBinaryPackageRelease with all required arguments.
 
+    # Load a build from the samepledata for creating binaries.
+    >>> pmount_build = getUtility(IBinaryPackageBuildSet).getByBuildID(19)
+
     >>> bin = pmount_build.createBinaryPackageRelease(
     ...     binarypackagename, version, summary, description,
     ...     binpackageformat, component, section, priority, shlibdeps,
@@ -324,11 +384,12 @@ Invoke createBinaryPackageRelease with all required arguments.
     ...     architecturespecific)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IBinaryPackageRelease, bin)
     True
 
-
 Commit previous transaction, data we want to preserve:
+
 XXX: flush_database_updates() shouldn't be needed. This seems to be
 Bug 3989 -- StuarBishop 20060713
 
@@ -393,7 +454,7 @@ Rollback transaction to no disturb the other tests:
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
 
-    >>> bs = getUtility(IBuildSet)
+    >>> bs = getUtility(IBinaryPackageBuildSet)
 
 We can find builds given a source package release and architecture tag.
 
@@ -401,11 +462,12 @@ We can find builds given a source package release and architecture tag.
     >>> i386_builds.count()
     4
 
-IHasBuildRecords uses a base method provided by IBuildSet,
+IHasBuildRecords uses a base method provided by IBinaryPackageBuildSet,
 getBuildsByArchIds():
 
 It receives list of architectures IDs:
 
+    >>> hoary = ubuntu.getSeries('hoary')
     >>> arch_ids = [arch.id for arch in hoary.architectures]
     >>> bs.getBuildsByArchIds(arch_ids).count()
     5
@@ -440,7 +502,7 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
 Checking optional 'pocket' restriction:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> bs.getBuildsByArchIds(arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
@@ -452,13 +514,14 @@ Checking optional 'pocket' restriction:
 getBuildsByArchIds will also return builds for archives other than the
 primary archive.
 
+    >>> breezy = ubuntu.getSeries('breezy-autotest')
     >>> arch_ids = [arch.id for arch in breezy.architectures]
     >>> [(build.archive.purpose.name, build.title) for build in
     ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
-`IBuildSet` also provides getStatusSummaryForBuilds which summarizes the
-build status of a set of builds:
+`IBinaryPackageBuildSet` also provides getStatusSummaryForBuilds which
+summarizes the build status of a set of builds:
 
 First we'll define a helper to print the build summary:
 
@@ -481,11 +544,12 @@ The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
     >>> from storm.expr import In
-    >>> from lp.soyuz.model.build import Build
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> results = list(store.find(Build, In(Build.id, (2,6,7,8))))
+    >>> results = list(store.find(
+    ...     BinaryPackageBuild, In(BinaryPackageBuild.id, (2,6,7,8))))
     >>> rset = removeSecurityProxy(bs)._prefetchBuildData(results)
     >>> def filename_or_none(item):
     ...     if item is not None:
@@ -514,12 +578,12 @@ data from the database for a given set of builds:
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
 
-We can find recent and pending builds for a given distroseries.
+XXX: Michael Nelson 20090701 bug=394276
+The documentation for IHasBuildRecords is now in
+lp/soyuz/doc/hasbuildrecords.txt. The following implementation tests should
+be converted to unit-tests in lib/soyuz/tests/test_hasbuildrecords.py.
 
-    >>> hoary.getBuildRecords().count()
-    5
-
-Or for a given distroarchseries.
+We can find recent and pending builds for a given distrarchoseries.
 
     >>> hoaryi386 = hoary['i386']
     >>> hoaryi386.title
@@ -545,60 +609,90 @@ Exercises IHasBuildRecords abilities for distroarchseriess
     0
 
 
-Same for distroseries:
-
-    >>> hoary.getBuildRecords().count()
-    5
-
-    >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-    2
-
-    >>> hoary.getBuildRecords(name='pm').count()
-    2
-
-    >>> hoary.getBuildRecords(
-    ...     pocket=PackagePublishingPocket.RELEASE).count()
-    5
-
-    >>> hoary.getBuildRecords(
-    ...     pocket=PackagePublishingPocket.UPDATES).count()
-    0
-
-
-For sourcepackage:
+For SourcePackages, getBuildRecords() returns all build records
+published in its context (distroseries and distribution main
+archives), independent of their corresponding source publishing
+status.
 
     >>> firefox = warty.getSourcePackage('mozilla-firefox')
 
     >>> firefox.getBuildRecords().count()
-    10
-
-    >>> firefox.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
     8
 
     >>> firefox.getBuildRecords(
+    ...     build_state=BuildStatus.FULLYBUILT).count()
+    6
+
+    >>> firefox.getBuildRecords(
     ...     pocket=PackagePublishingPocket.RELEASE).count()
-    10
+    8
 
     >>> firefox.getBuildRecords(
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
-getBuildRecords will return builds for packages that are no longer currently
-published. "pmount" is published twice in hoary, one is PUBLISHED and the
-other is SUPERSEDED.  The published package does not have any builds but
-the superseded one does.
+As mentioned above, SourcePackage.getBuildRecords() will return builds
+for packages that are no longer published. At first, there are no
+traces of the 'old-source' sourcepackage in ubuntutest/breezy-autotest
 
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
+    >>> breezy_autotest = ubuntutest.getSeries('breezy-autotest')
+    >>> print breezy_autotest.getSourcePackage('old-source')
+    None
+
+Once the SourcePackage exists and has builds, they will be returned by
+getBuildRecords() ordered by descending creation date.
+
+    # Create a DELETED and a SUPERSEDED source publication in
+    # ubuntutest/breezy-autotest.
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> hoary_pmount = removeSecurityProxy(hoary.getSourcePackage('pmount'))
-    >>> published_hoary_pmount = hoary_pmount._getPublishingHistory(
-    ...     include_status=[PackagePublishingStatus.PUBLISHED])
-    >>> published_hoary_pmount.count()
-    1
-    >>> published_hoary_pmount[0].sourcepackagerelease.builds.count()
-    0
-    >>> hoary_pmount.getBuildRecords().count()
-    5
+    >>> login('foo.bar@canonical.com')
+    >>> old_source_pub = test_publisher.getPubSource(
+    ...     sourcename='old-source', version='1.0',
+    ...     status=PackagePublishingStatus.SUPERSEDED)
+    >>> [superseded_build] = old_source_pub.createMissingBuilds()
+    >>> deleted_source_pub = test_publisher.getPubSource(
+    ...     sourcename='old-source', version='1.1',
+    ...     status=PackagePublishingStatus.DELETED)
+    >>> [deleted_build] = deleted_source_pub.createMissingBuilds()
+    >>> login(ANONYMOUS)
+
+    >>> old_source_sp = breezy_autotest.getSourcePackage('old-source')
+    >>> old_source_builds = old_source_sp.getBuildRecords()
+    >>> [deleted_build, superseded_build] == list(old_source_builds)
+    True
+
+    >>> deleted_build.datecreated > superseded_build.datecreated
+    True
+
+Builds records for the exactly the same `SourcePackageRelease`s may
+exist in a rebuild archive context, but they do not 'leak' to the
+domain of SourcePackage.
+
+    # Create a rebuild archive, copy the 'old-source' source
+    # publications to it and create builds in the rebuild archive
+    # context.
+    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> login('foo.bar@canonical.com')
+    >>> rebuild_archive = factory.makeArchive(
+    ...     ubuntutest, ubuntutest.owner, 'test-rebuild',
+    ...     ArchivePurpose.COPY)
+    >>> rebuild_old_pub = old_source_pub.copyTo(
+    ...     breezy_autotest, PackagePublishingPocket.RELEASE,
+    ...     rebuild_archive)
+    >>> [rebuild_old_build] = rebuild_old_pub.createMissingBuilds()
+    >>> rebuild_deleted_pub = deleted_source_pub.copyTo(
+    ...     breezy_autotest, PackagePublishingPocket.RELEASE,
+    ...     rebuild_archive)
+    >>> [rebuild_deleted_build] = rebuild_deleted_pub.createMissingBuilds()
+    >>> login(ANONYMOUS)
+
+    >>> rebuild_builds = rebuild_archive.getBuildRecords()
+    >>> [rebuild_deleted_build, rebuild_old_build] == list(rebuild_builds)
+    True
+
+    >>> old_source_sp.getBuildRecords().count()
+    2
 
 For a given distribution as well:
 
@@ -659,7 +753,7 @@ Using the optional name argument to filter build results:
 
 or using optional pocket argument:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> ubuntu.getBuildRecords(
     ...    build_state=BuildStatus.NEEDSBUILD,
@@ -676,42 +770,50 @@ and name.  A user can also be passed for security checks on private builds;
 if user is not passed then the query runs anonymously which means private
 builds are excluded from anything returned.
 
-Log in as admin to avoid security on IBuild for the moment.
+Log in as admin to avoid security on IBinaryPackageBuild for the moment.
 
     >>> login('foo.bar@canonical.com')
 
-Let's make cprov's archive private (and hence its builds become private):
+Let's create a private PPA for cprov (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True, name='p3a',
+    ...     distribution=cprov.archive.distribution)
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> bob = getUtility(IBuilderSet)['bob']
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     archive=cprov_private_ppa, builder=bob,
+    ...     binaryname='privacycheck-bin')
     >>> flush_database_updates()
 
 The default set of builds with no user specified excludes private builds:
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
-    >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob_builds = bob.getBuildRecords()
     >>> print_build_details(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
     RELEASE
-    
+
     >>> bob_builds.count()
-    13
+    16
 
 If we include an admin user, we can see all the builds.  Here, we get
-three additional private builds for cprov:
+an additional private build for cprov:
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> admin = getUtility(ILaunchpadCelebrities).admin
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -722,14 +824,15 @@ three additional private builds for cprov:
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
         RELEASE
-    
+
     >>> bob_builds.count()
-    16
+    17
 
 Cprov can also see his own builds of course:
 
     >>> bob_builds = bob.getBuildRecords(user=cprov)
     >>> print_build_details(bob_builds)
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -742,7 +845,7 @@ Cprov can also see his own builds of course:
         RELEASE
 
     >>> bob_builds.count()
-    16
+    17
 
 Buildd admins specifically are not allowed to see private builds, which will
 be filtered from the list returned:
@@ -750,19 +853,22 @@ be filtered from the list returned:
     >>> buildd_admin = factory.makePerson()
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName('launchpad-buildd-admins')
-    >>> buildd_admins.addMember(buildd_admin, buildd_admin)
+    >>> ignored = buildd_admins.addMember(buildd_admin, buildd_admin)
     >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
     >>> print_build_details(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
     RELEASE
-    
+
     >>> bob_builds.count()
-    13
+    16
 
 You can filter on build state:
 
@@ -784,24 +890,17 @@ You can filter on build state and package name:
     >>> bob_pmount_ok_builds.count()
     4
 
-Restore cprov to non-private:
 
-    >>> login('foo.bar@canonical.com')
-    >>> removeSecurityProxy(cprov).archive.private = False
-    >>> flush_database_updates()
-    >>> login(ANONYMOUS)
-
-
-== AssertionErrors in IBuild ==
+== AssertionErrors in IBinaryPackageBuild ==
 
 Build records inserted by gina don't provide calculated_buildstart
 value, since they miss fields used in its calculation.
 
-    >>> gina_build = getUtility(IBuildSet).getByBuildID(10)
+    >>> gina_build = getUtility(IBinaryPackageBuildSet).getByBuildID(10)
     >>> gina_build.title
     u'i386 build of cnews cr.g7-37 in ubuntu warty RELEASE'
 
-even if IBuild.was_built return true:
+even if IBinaryPackageBuild.was_built return true:
 
     >>> gina_build.was_built
     True
@@ -819,10 +918,10 @@ CHROOTWAIT) can be retried. We must check if Soyuz is able to accept
 its result in case of success, i.e., we should not be able to retry a
 build for a released pocket.
 
-All those conditions are controlled by IBuild.can_be_retried() property
-(see above).
+All those conditions are controlled by
+IBinaryPackageBuild.can_be_retried() property (see above).
 
-    >>> failed_build = getUtility(IBuildSet).getByBuildID(6)
+    >>> failed_build = getUtility(IBinaryPackageBuildSet).getByBuildID(6)
 
     >>> failed_build.title
     u'i386 build of foobar 1.0 in ubuntu warty RELEASE'
@@ -835,10 +934,13 @@ All those conditions are controlled by IBuild.can_be_retried() property
 
 Attempt to retry this build record will fail with an AssertionError:
 
+    >>> login('foo.bar@canonical.com')
     >>> failed_build.retry()
     Traceback (most recent call last):
     ...
     AssertionError: Build 6 cannot be retried
+
+    >>> login(ANONYMOUS)
 
 Partner archive builds are an exception to this rule; they can be retried
 in the release pocket for a released distro.  Let's turn build 9 into a
@@ -863,7 +965,7 @@ they will happen in another archive.
 storeUploadLog() refuses to override any previously stored
 'upload_log'.
 
-    >>> failedtoupload_build = getUtility(IBuildSet).getByBuildID(22)
+    >>> failedtoupload_build = getUtility(IBinaryPackageBuildSet).getByBuildID(22)
     >>> print failedtoupload_build.title
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
@@ -873,13 +975,15 @@ storeUploadLog() refuses to override any previously stored
     >>> failedtoupload_build.storeUploadLog('something')
     Traceback (most recent call last):
     ...
-    AssertionError: Upload log information already exist and cannot be
+    AssertionError: Upload log information already exists and cannot be
     overridden.
 
 It's only possible to store another 'upload_log' content once the
 build is retried.
 
+    >>> login('foo.bar@canonical.com')
     >>> failedtoupload_build.retry()
+    >>> login(ANONYMOUS)
     >>> print failedtoupload_build.upload_log
     None
 
@@ -891,17 +995,17 @@ build is retried.
 
 == Updating build-dependencies line ==
 
-The IBuild.dependencies field is only filled when a build job is
-collected as MANUALDEPWAIT, its content is informed by the
+The IBinaryPackageBuild.dependencies field is only filled when a build
+job is collected as MANUALDEPWAIT, its content is informed by the
 buildd-slave in the apt-dependencies format.
 
-    >>> depwait_build = getUtility(IBuildSet).getByBuildID(12)
+    >>> depwait_build = getUtility(IBinaryPackageBuildSet).getByBuildID(12)
     >>> print depwait_build.dependencies
     cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)
 
-IBuild.updateDependencies is designed to process this field and
-eliminate dependencies that can be satisfied. It is used as part of the
-auto-depwait processing where all builds marked as MANUALDEPWAIT are
+IBinaryPackageBuild.updateDependencies is designed to process this field
+and eliminate dependencies that can be satisfied. It is used as part of
+the auto-depwait processing where all builds marked as MANUALDEPWAIT are
 re-processed and the ones with empty dependencies are re-queued.
 
 If nothing has changed, which is the case of the current
@@ -918,6 +1022,7 @@ dependency available in the sample data but published in an unreachable
 component, we will see that the dependency is considered to be unsatisfied.
 See also bug 177827.
 
+    >>> login('foo.bar@canonical.com')
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()
 
@@ -952,12 +1057,12 @@ list.
     >>> login('foo.bar@canonical.com')
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
-    >>> pmount_pub.secure_record.component = main_component
+    >>> pmount_pub.component = main_component
+    >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
-    >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
     >>> flush_database_updates()
 
 Note that only the satisfied dependencies are removed the build
@@ -972,11 +1077,11 @@ even when it is published in a component not allowed in its current
 component domain ('ogre_components'). That's because PPAs implicitly
 depend on all components of its distribution PRIMARY archive.
 
-    >>> depwait_build.dependencies = 'biscuit, pmount'
 
     >>> login('foo.bar@canonical.com')
+    >>> depwait_build.dependencies = 'biscuit, pmount'
     >>> universe_component = getUtility(IComponentSet)['universe']
-    >>> pmount_pub.secure_record.component = universe_component
+    >>> pmount_pub.component = universe_component
     >>> removeSecurityProxy(depwait_build).archive = cprov.archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
@@ -994,8 +1099,8 @@ depend on all components of its distribution PRIMARY archive.
 Restore depwait_build previous state.
 
     >>> login('foo.bar@canonical.com')
-    >>> pmount_pub.secure_record.component = main_component
-    >>> removeSecurityProxy(depwait_build).archive = hoary.main_archive
+    >>> pmount_pub.component = main_component
+    >>> removeSecurityProxy(depwait_build).archive = ubuntu.main_archive
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
@@ -1004,7 +1109,7 @@ Restore depwait_build previous state.
 It depends on the callsite to decide whether or not to 'retry' a
 build after calling updateDependencies, to encapsulate such decision
 for performing the mentioned  auto-depwait procedure we have a utility
-in IBuildSet called retryDepWaiting().
+in IBinaryPackageBuildSet called retryDepWaiting().
 
     >>> print depwait_build.buildstate.name
     MANUALDEPWAIT
@@ -1014,13 +1119,15 @@ in IBuildSet called retryDepWaiting().
 In order to allow depwait_build to be retried we will forge a
 'fully-satisfiable' dependencies field.
 
+    >>> login('foo.bar@canonical.com')
     >>> depwait_build.dependencies = 'pmount'
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
 
 Then we can run the utility method for the target distroarchseries and
 expect depwait_build to be 'retried' and scored.
 
-    >>> getUtility(IBuildSet).retryDepWaiting(hoaryi386)
+    >>> getUtility(IBinaryPackageBuildSet).retryDepWaiting(hoaryi386)
 
     >>> print depwait_build.buildstate.name
     NEEDSBUILD
@@ -1034,34 +1141,49 @@ other buildd tasks because the procedure is 'atomic' enough, i.e.,
 after the commit the retried jobs are ready to be dispatched.
 
 
+== Build rescoring ==
+
+Some builds can be rescored, to determine if it's possible check the
+can_be_rescored property:
+
+    >>> depwait_build.can_be_rescored
+    True
+
+We need to be at least a buildd-admin to rescore:
+
+    >>> depwait_build.rescore(1000)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> login('celso.providelo@canonical.com')
+    >>> depwait_build.rescore(1000)
+    >>> print depwait_build.buildqueue_record.lastscore
+    1000
+
+If a callsite tries to rescore a build that is not in the NEEDSBUILD state,
+a CannotBeRescored exception is raised.
+
+    >>> depwait_build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> depwait_build.rescore(1000)
+    Traceback (most recent call last):
+    ...
+    CannotBeRescored: Build cannot be rescored.
+
+    >>> login(ANONYMOUS)
+
+
 == Build record security ==
 
-IBuild's content class is wrapped in a Zope security wrapper that prevents
-access to private builds for unauthorised users.
-
-cprov's archive is private which makes its builds private.  We'll add
-an extra build that is not published anywhere but in his PPA.
-
-    >>> login('foo.bar@canonical.com')
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...      SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> test_publisher.prepareBreezyAutotest()
-    >>> removeSecurityProxy(cprov).archive.private = True
-    >>> private_source_pub = test_publisher.getPubSource(
-    ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     sourcename='privacy-test',
-    ...     architecturehintlist='i386',
-    ...     archive=cprov.archive)
-    >>> [private_build] = private_source_pub.createMissingBuilds()
-    >>> private_build.builder = bob
-    >>> flush_database_updates()
+IBinaryPackageBuild's content class is wrapped in a Zope security
+wrapper that prevents access to private builds for unauthorised users.
 
 Accessing the cprov builds when logged in as admin will see the records:
 
+    >>> login('admin@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1073,7 +1195,7 @@ Likewise when logged in as cprov:
     >>> login('celso.providelo@canonical.com')
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
-    cprov: i386 build of privacy-test 666 in ubuntutest breezy-autotest...
+    cprov: i386 build of privacycheck 666 in ubuntutest breezy-autotest...
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
@@ -1110,10 +1232,49 @@ when accessing the builds:
     >>> print_builds_with_exception(bob_builds)
     Generated Unauthorized exception as expected
 
+There are other settable attributes declared in the zcml that require
+launchpad.Edit.
+
+    >>> def check_setting_property(build_rec, property, value, should_fail):
+    ...     try:
+    ...         setattr(build_rec, property, value)
+    ...         if should_fail:
+    ...             print "Should have failed setting %s" % property
+    ...     except Unauthorized:
+    ...         if not should_fail:
+    ...             print "Did not fail when expected setting %s" % property
+    >>> from canonical.database.constants import UTC_NOW
+    >>> properties = {
+    ...     'buildlog': 1,
+    ...     'datebuilt': UTC_NOW,
+    ...     'buildduration': None,
+    ...     'builder': bob,
+    ...     'buildstate': BuildStatus.FAILEDTOUPLOAD,
+    ...     'dependencies': 'whatever',
+    ...     'upload_log': 1,
+    ...     }
+
+Login as a non-privileged user and set the properties.  It will fail.
+
+    >>> login('no-priv@canonical.com')
+    >>> for property in properties:
+    ...     check_setting_property(
+    ...         depwait_build, property, properties[property],
+    ...         should_fail=True)
+
+As a buildd-admin it will work:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> for property in properties:
+    ...     check_setting_property(
+    ...         depwait_build, property, properties[property],
+    ...         should_fail=False)
+
 == Estimated Build Duration ==
 
-Newly created builds should have their 'estimated_build_duration' times
-set from previous builds' 'buildduration' values.
+Build records will have an 'estimated_duration' time in the associated
+BuildQueue record. The latter is set from a previous builds' 'buildduration'
+value.
 
 We will use SoyuzTestPublisher to generate coherent publications to
 test this behaviour.
@@ -1136,12 +1297,13 @@ Create oldest build instance.
     >>> oldest_build.buildduration = timedelta(minutes=72)
     >>> oldest_build.datebuilt = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
 
-Check that the oldest build instance's 'estimated_build_duration'
+Check that the oldest build instance's 'estimated_duration'
 is initialized based on its package size. Since the latter is very
-small (less than a KB) the 'estimated_build_duration' will be a
+small (less than a KB) the 'estimated_duration' will be a
 minute.
 
-    >>> oldest_build.estimated_build_duration
+    >>> bq = oldest_build.queueBuild()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 60)
 
 Create intermediate SourcePackageRelease instance.
@@ -1160,10 +1322,12 @@ Create intermediate build instance.
     >>> medium_build.buildduration = timedelta(minutes=60)
     >>> medium_build.datebuilt = datetime(2008, 4, 2, 11, 56, 33, tzinfo=UTC)
 
-Check whether the intermediate build instance's 'estimated_build_duration'
-value equals the oldest instance's 'buildduration'.
+Check whether the intermediate build instance's 'estimated_duration'
+value equals the oldest instance's 'buildduration' (72 minutes equals 4320
+seconds).
 
-    >>> medium_build.estimated_build_duration
+    >>> bq = medium_build.queueBuild()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 4320)
 
 Create most recent SourcePackageRelease instance.
@@ -1181,10 +1345,11 @@ NEEDSBUILD.
     ...         test_publisher.breezy_autotest.main_archive,
     ...         status=BuildStatus.NEEDSBUILD)
 
-Check whether the most recent build instance's 'estimated_build_duration'
+Check whether the most recent build instance's 'estimated_duration'
 value equals the intermediate instance's 'buildduration'.
 
-    >>> recent_build.estimated_build_duration
+    >>> bq = recent_build.queueBuild()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 
 Create a SourcePackageRelease instance in a PPA.
@@ -1201,15 +1366,16 @@ Create most recent build instance.
     ...         cprov.archive,
     ...         status=BuildStatus.NEEDSBUILD)
 
-Check whether the PPA build instance's 'estimated_build_duration'
+Check whether the PPA build instance's 'estimated_duration'
 value was set from the intermediate instance's 'buildduration' in
 the main archive.
 
-    >>> ppa_build.estimated_build_duration
+    >>> bq = ppa_build.queueBuild()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 
 
-== IBuildSet.getBuildsBySourcePackageRelease() ==
+== IBinaryPackageBuildSet.getBuildsBySourcePackageRelease() ==
 
 getBuildsBySourcePackageRelease() will return all the Build records for
 all the SourcePackageRelease IDs passed.
@@ -1275,10 +1441,10 @@ being returned.
 
 == Getting the build records for a particular builder ==
 
-The getBuildsForBuilder method returns all the builds for the 
+The getBuildsForBuilder method returns all the builds for the
 specified builder ID, ordered from most-recently built.
 
-    Create some source packages with which to test the 
+    Create some source packages with which to test the
     getBuildsForBuilder method:
 
     >>> src_pkg_earlier = test_publisher.getPubSource(
@@ -1288,7 +1454,7 @@ specified builder ID, ordered from most-recently built.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='laterbuildsrc',
     ...     architecturehintlist='hppa i386')
-    
+
     Create the builds based on the source packages, with the builds
     for 'earlierbuildsrc' built one day before the 'laterbuildsrc':
 
@@ -1303,10 +1469,10 @@ specified builder ID, ordered from most-recently built.
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
     ...     build.datebuilt = eg_build_date
-    
+
     Ensure that the i386 builds are created by the 'frog' builder,
     while the hppa builds are created by 'bob' the builder:
-    
+
     >>> builds = earlier_builds + later_builds
     >>> for build in builds:
     ...     if build.processor.name == u'386':
@@ -1316,8 +1482,8 @@ specified builder ID, ordered from most-recently built.
 
     A call to getBuildsForBuilder returns only those builds that were
     built by the specified builder, ordered by datebuilt DESC:
-    
-    >>> frog_builds = getUtility(IBuildSet).getBuildsForBuilder(
+
+    >>> frog_builds = getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
     ...     frog_builder.id)
     >>> print_build_details(frog_builds)
     ubuntu-team: i386 build of laterbuildsrc 666 in ubuntutest

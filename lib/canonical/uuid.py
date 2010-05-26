@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unique identifier generators"""
 
@@ -6,7 +7,7 @@ __metaclass__ = type
 
 __all__ = ['generate_uuid']
 
-import time, random, subprocess, thread, sha
+import time, random, subprocess, thread, hashlib
 
 from canonical.base import base
 
@@ -71,8 +72,8 @@ def generate_uuid():
             raise RuntimeError(
                     "Error running ifconfig -a (%d)" % ifconfig.returncode
                     )
-        _machine_secret = base(long(sha.new(blob).hexdigest(), 16), 62)
+        _machine_secret = base(long(hashlib.sha1(blob).hexdigest(), 16), 62)
 
-    return base(long(sha.new('%s.%s.%s.%s' % (
+    return base(long(hashlib.sha1('%s.%s.%s.%s' % (
         time.time(), random.random(), thread.get_ident(), _machine_secret
         )).hexdigest(), 16), 62)

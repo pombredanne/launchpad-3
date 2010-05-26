@@ -3,23 +3,18 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
       <h1>Administer code of conduct signatures</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
       <p>
         As an admin, you can
         approve or reject code of conduct signatures,
-        and also register signatures that were not submitted digitally.
+        and also
+        <a tal:attributes="href context/menu:overview/register/url">register
+          signatures</a> that were not submitted digitally.
       </p>
 
       <form name="search" action="." method="POST">
@@ -75,7 +70,7 @@
       <tal:results condition="view/search">
         <h2>Results</h2>
 
-     <ul tal:condition="view/results">
+     <ul id="matches" tal:condition="view/results">
        <li tal:repeat="code view/results">
            <a tal:replace="structure code/owner/fmt:link">OWNER</a>
            <a tal:attributes="href code/id"
@@ -90,7 +85,6 @@
         </p>
       </tal:results>
 
-</div>
-
-</body>
+    </div>
+  </body>
 </html>

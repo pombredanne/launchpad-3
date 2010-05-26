@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -8,6 +10,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
+from storm.locals import Bool
 
 from canonical.database.sqlbase import SQLBase
 
@@ -37,6 +40,12 @@ class ProcessorFamily(SQLBase):
     description = StringCol(dbName='description', notNull=True)
 
     processors = SQLMultipleJoin('Processor', joinColumn='family')
+    restricted = Bool(allow_none=False, default=False)
+
+    def addProcessor(self, name, title, description):
+        """See `IProcessorFamily`."""
+        return Processor(family=self, name=name, title=title,
+            description=description)
 
 
 class ProcessorFamilySet:
@@ -60,3 +69,8 @@ class ProcessorFamilySet:
         # but there is also the possibility that the user specified a name for
         # a non-existent processor.
         return rset.one()
+
+    def new(self, name, title, description, restricted=False):
+        """See `IProcessorFamily`."""
+        return ProcessorFamily(name=name, title=title,
+            description=description, restricted=restricted)

@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interface for a QuestionReopening."""
@@ -17,6 +19,7 @@ from lp.registry.interfaces.person import IPerson
 
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionenums import QuestionStatus
+
 
 class IQuestionReopening(Interface):
     """A record of the re-opening of a question.

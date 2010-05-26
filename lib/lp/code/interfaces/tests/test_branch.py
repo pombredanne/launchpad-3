@@ -1,17 +1,18 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of the branch interface."""
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.repository import format_registry as repo_format_registry
 
-from lp.code.interfaces.branch import (
-    BranchFormat, ControlFormat, RepositoryFormat)
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.testing import TestCase
 
 
 class TestFormatSupport(TestCase):

@@ -1,8 +1,9 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the doctests in the product module."""
 
-# XXX sinzui 2009-04-03 bug=354881: This test harness shold be removed
+# XXX sinzui 2009-04-03 bug=354881: This test harness should be removed
 # and the inline tests moved to docs/
 
 __metaclass__ = type

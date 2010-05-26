@@ -1,10 +1,12 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the error presentation in worker.py."""
 
 __metaclass__ = type
 
 import httplib
+import os
 import socket
 import tempfile
 import urllib2
@@ -15,10 +17,11 @@ from bzrlib.errors import (
     NotBranchError)
 
 from lp.codehosting.puller.worker import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh, BranchMirrorer,
-    BranchReferenceForbidden, BranchLoopError, PullerWorker,
-    PullerWorkerProtocol, StackedOnBranchNotFound)
-from canonical.launchpad.interfaces import BranchType
+    BranchMirrorer, BranchReferenceForbidden, BranchLoopError, PullerWorker,
+    PullerWorkerProtocol)
+from lp.codehosting.vfs.branchfs import (
+    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh)
+from lp.code.enums import BranchType
 from lazr.uri import InvalidURIError
 
 
@@ -109,14 +112,6 @@ class TestErrorCatching(unittest.TestCase):
             branch_type=BranchType.HOSTED)
         self.assertEqual(expected_msg, msg)
 
-    def testStackedOnBranchNotFound(self):
-        # If StackedOnBranchNotFound is raised then we send mirrorDeferred to
-        # the scheduler.
-        worker = self.makeRaisingWorker(StackedOnBranchNotFound())
-        worker.mirror()
-        self.assertEqual(
-            [('startMirroring',), ('mirrorDeferred',)], worker.protocol.calls)
-
     def testLocalURL(self):
         # A file:// branch reference for a mirror branch must cause an error.
         expected_msg = (
@@ -140,7 +135,7 @@ class TestErrorCatching(unittest.TestCase):
             urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED,
                 'Authorization Required', 'some headers',
-                open(tempfile.mkstemp()[1])))
+                os.fdopen(tempfile.mkstemp()[0])))
         self.assertEqual("Authentication required.", msg)
 
     def testSocketErrorHandling(self):

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email code for the branch scanner."""
 
@@ -8,14 +9,12 @@ __all__ = [
     'queue_tip_changed_email_jobs',
     ]
 
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 
-from lp.codehosting.scanner import events
 from canonical.config import config
+from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
     IRevisionsAddedJobSource, IRevisionMailJobSource)
-from lp.code.interfaces.branchsubscription import (
-    BranchSubscriptionNotificationLevel)
 
 
 def subscribers_want_notification(db_branch):
@@ -26,7 +25,6 @@ def subscribers_want_notification(db_branch):
     return subscriptions.count() > 0
 
 
-@adapter(events.RevisionsRemoved)
 def send_removed_revision_emails(revisions_removed):
     """Notify subscribers of removed revisions.
 
@@ -38,18 +36,20 @@ def send_removed_revision_emails(revisions_removed):
     if number_removed == 0:
         return
     if number_removed == 1:
-        contents = '1 revision was removed from the branch.'
+        count = '1 revision'
+        contents = '%s was removed from the branch.' % count
     else:
-        contents = ('%d revisions were removed from the branch.'
-                    % number_removed)
+        count = '%d revisions' % number_removed
+        contents = '%s were removed from the branch.' % count
     # No diff is associated with the removed email.
+    subject = "[Branch %s] %s removed" % (
+        revisions_removed.db_branch.unique_name, count)
     getUtility(IRevisionMailJobSource).create(
         revisions_removed.db_branch, revno='removed',
         from_address=config.canonical.noreply_from_address,
-        body=contents, perform_diff=False, subject=None)
+        body=contents, perform_diff=False, subject=subject)
 
 
-@adapter(events.TipChanged)
 def queue_tip_changed_email_jobs(tip_changed):
     if not subscribers_want_notification(tip_changed.db_branch):
         return
@@ -62,9 +62,11 @@ def queue_tip_changed_email_jobs(tip_changed):
         message = ('First scan of the branch detected %s'
                    ' in the revision history of the branch.' %
                    revisions)
+        subject = "[Branch %s] %s" % (
+            tip_changed.db_branch.unique_name, revisions)
         getUtility(IRevisionMailJobSource).create(
             tip_changed.db_branch, 'initial',
-            config.canonical.noreply_from_address, message, False, None)
+            config.canonical.noreply_from_address, message, False, subject)
     else:
         getUtility(IRevisionsAddedJobSource).create(
             tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,

@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IBranchLookup implementation."""
 
@@ -14,17 +15,18 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from lp.code.interfaces.branch import NoSuchBranch
 from lp.code.interfaces.branchlookup import (
-    CannotHaveLinkedBranch, IBranchLookup, ILinkedBranchTraverser,
-    ISourcePackagePocketFactory, NoLinkedBranch)
+    IBranchLookup, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, InvalidNamespace)
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, ICanHasLinkedBranch, NoLinkedBranch)
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
     InvalidProductName, NoSuchProduct)
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
 from lp.testing import run_with_login, TestCaseWithFactory
@@ -59,6 +61,49 @@ class TestGetByUniqueName(TestCaseWithFactory):
         branch = self.factory.makePackageBranch()
         found_branch = self.branch_set.getByUniqueName(branch.unique_name)
         self.assertEqual(branch, found_branch)
+
+
+class TestGetIdAndTrailingPath(TestCaseWithFactory):
+    """Tests for `IBranchLookup.getIdAndTrailingPath`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.branch_set = getUtility(IBranchLookup)
+
+    def test_not_found(self):
+        unused_name = self.factory.getUniqueString()
+        result = self.branch_set.getIdAndTrailingPath('/' + unused_name)
+        self.assertEqual((None, None), result)
+
+    def test_junk(self):
+        branch = self.factory.makePersonalBranch()
+        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_product(self):
+        branch = self.factory.makeProductBranch()
+        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_source_package(self):
+        branch = self.factory.makePackageBranch()
+        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_trailing_slash(self):
+        branch = self.factory.makeAnyBranch()
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name + '/')
+        self.assertEqual((branch.id, '/'), result)
+
+    def test_trailing_path(self):
+        branch = self.factory.makeAnyBranch()
+        path = self.factory.getUniqueString()
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name + '/' + path)
+        self.assertEqual((branch.id, '/' + path), result)
 
 
 class TestGetByPath(TestCaseWithFactory):
@@ -229,7 +274,7 @@ class TestGetByUrl(TestCaseWithFactory):
 
         This is because Launchpad doesn't currently support ftp.
         """
-        branch = self.makeProductBranch()
+        self.makeProductBranch()
         branch_set = getUtility(IBranchLookup)
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
@@ -238,7 +283,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """lp: URLs for the configured prefix are supported."""
         branch_set = getUtility(IBranchLookup)
         url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
-        self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
+        self.assertIs(None, branch_set.getByUrl(url))
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
         branch2 = branch_set.getByUrl(url)
@@ -263,6 +308,19 @@ class TestGetByUrl(TestCaseWithFactory):
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
+
+    def test_getByUrls(self):
+        # getByUrls returns a dictionary mapping branches to URLs.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        url3 = 'http://example.com/%s' % self.factory.getUniqueString()
+        branch_set = getUtility(IBranchLookup)
+        branches = branch_set.getByUrls(
+            [branch1.bzr_identity, branch2.bzr_identity, url3])
+        self.assertEqual(
+            {branch1.bzr_identity: branch1,
+             branch2.bzr_identity: branch2,
+             url3: None}, branches)
 
     def test_uriToUniqueName(self):
         """Ensure uriToUniqueName works.
@@ -310,7 +368,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # a non-existent series.
         self.assertRaises(
             NoSuchProduct, self.traverser.traverse, 'bb/dd')
-        product = self.factory.makeProduct(name='bb')
+        self.factory.makeProduct(name='bb')
         self.assertRaises(
             NoSuchProductSeries, self.traverser.traverse, 'bb/dd')
 
@@ -341,20 +399,24 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         # `traverse` resolves 'distro/series/package' to the release pocket of
         # that package in that series.
         package = self.factory.makeSourcePackage()
-        self.assertTraverses(
-            package.path,
-            getUtility(ISourcePackagePocketFactory).new(
-                package, PackagePublishingPocket.RELEASE))
+        ssp = package.getSuiteSourcePackage(PackagePublishingPocket.RELEASE)
+        self.assertTraverses(package.path, ssp)
+
+    def test_distribution_source_package(self):
+        # `traverse` resolves 'distro/package' to the distribution source
+        # package.
+        dsp = self.factory.makeDistributionSourcePackage()
+        path = '%s/%s' % (dsp.distribution.name, dsp.sourcepackagename.name)
+        self.assertTraverses(path, dsp)
 
     def test_traverse_source_package_pocket(self):
         # `traverse` resolves 'distro/series-pocket/package' to the official
         # branch for 'pocket' on that package.
         package = self.factory.makeSourcePackage()
         pocket = PackagePublishingPocket.BACKPORTS
-        path = package.getPocketPath(pocket)
-        sourcepackagepocket = getUtility(ISourcePackagePocketFactory).new(
-            package, pocket)
-        self.assertTraverses(path, sourcepackagepocket)
+        ssp = package.getSuiteSourcePackage(pocket)
+        package = self.factory.makeSourcePackage()
+        self.assertTraverses(ssp.path, ssp)
 
     def test_no_such_distribution(self):
         # `traverse` raises `NoSuchProduct` error if the distribution doesn't
@@ -368,7 +430,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_no_such_distro_series(self):
         # `traverse` raises `NoSuchDistroSeries` if the distro series doesn't
         # exist.
-        distro = self.factory.makeDistribution(name='distro')
+        self.factory.makeDistribution(name='distro')
         self.assertRaises(
             NoSuchDistroSeries, self.traverser.traverse,
             'distro/series/package')
@@ -379,6 +441,14 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
         distroseries = self.factory.makeDistroRelease()
         path = '%s/%s/doesntexist' % (
             distroseries.distribution.name, distroseries.name)
+        self.assertRaises(
+            NoSuchSourcePackageName, self.traverser.traverse, path)
+
+    def test_no_such_distribution_sourcepackage(self):
+        # `traverse` raises `NoSuchSourcePackageName` if the package in
+        # distro/package doesn't exist.
+        distribution = self.factory.makeDistribution()
+        path = '%s/doesntexist' % distribution.name
         self.assertRaises(
             NoSuchSourcePackageName, self.traverser.traverse, path)
 
@@ -399,10 +469,10 @@ class TestGetByLPPath(TestCaseWithFactory):
         # components are found.
         self.assertRaises(
             NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        owner = self.factory.makePerson(name='aa')
+        self.factory.makePerson(name='aa')
         self.assertRaises(
             NoSuchProduct, self.branch_lookup.getByLPPath, '~aa/bb/c')
-        product = self.factory.makeProduct(name='bb')
+        self.factory.makeProduct(name='bb')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/bb/c')
 
@@ -436,7 +506,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # doesn't match an existing branch.
         self.assertRaises(
             NoSuchPerson, self.branch_lookup.getByLPPath, '~aa/+junk/c')
-        owner = self.factory.makePerson(name='aa')
+        self.factory.makePerson(name='aa')
         self.assertRaises(
             NoSuchBranch, self.branch_lookup.getByLPPath, '~aa/+junk/c')
 
@@ -456,6 +526,24 @@ class TestGetByLPPath(TestCaseWithFactory):
         self.assertEqual(
             (branch, 'foo/bar/baz'),
             self.branch_lookup.getByLPPath(path))
+
+    def test_resolve_distro_package_branch(self):
+        # getByLPPath returns the branch associated with the distribution
+        # source package referred to by the path.
+        sourcepackage = self.factory.makeSourcePackage()
+        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
+        distro_package = sourcepackage.distribution_sourcepackage
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        registrant = ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
+        self.assertEqual(
+            (branch, None),
+            self.branch_lookup.getByLPPath(
+                '%s/%s' % (
+                    distro_package.distribution.name,
+                    distro_package.sourcepackagename.name)))
 
     def test_no_product_series_branch(self):
         # getByLPPath raises `NoLinkedBranch` if there's no branch registered
@@ -489,9 +577,9 @@ class TestGetByLPPath(TestCaseWithFactory):
         exception = self.assertRaises(
             NoLinkedBranch,
             self.branch_lookup.getByLPPath, sourcepackage.path)
-        sourcepackagepocket =  getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, PackagePublishingPocket.RELEASE)
-        self.assertEqual(sourcepackagepocket, exception.component)
+        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        self.assertEqual(suite_sourcepackage, exception.component)
 
     def test_distribution_linked_branch(self):
         # Distributions cannot have linked branches, so `getByLPPath` raises a
@@ -503,8 +591,14 @@ class TestGetByLPPath(TestCaseWithFactory):
             self.branch_lookup.getByLPPath, distribution.name)
         self.assertEqual(distribution, exception.component)
 
+    def test_distribution_with_no_series(self):
+        distro_package = self.factory.makeDistributionSourcePackage()
+        path = ICanHasLinkedBranch(distro_package).bzr_path
+        self.assertRaises(
+            NoLinkedBranch, self.branch_lookup.getByLPPath, path)
+
     def test_project_linked_branch(self):
-        # Projects cannot have linked branches, so `getByLPPath` raises a
+        # ProjectGroups cannot have linked branches, so `getByLPPath` raises a
         # `CannotHaveLinkedBranch` error if we try to get the linked branch
         # for a project.
         project = self.factory.makeProject()
@@ -562,50 +656,6 @@ class TestGetByLPPath(TestCaseWithFactory):
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, None), result)
-
-
-class TestSourcePackagePocket(TestCaseWithFactory):
-    """Tests for the SourcePackagePocket wrapper class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def makeSourcePackagePocket(self, sourcepackage=None, pocket=None):
-        if sourcepackage is None:
-            sourcepackage = self.factory.makeSourcePackage()
-        if pocket is None:
-            pocket = PackagePublishingPocket.RELEASE
-        return getUtility(ISourcePackagePocketFactory).new(
-            sourcepackage, pocket)
-
-    def test_branch(self):
-        # The 'branch' attribute is the linked branch for the pocket on that
-        # packet.
-        package = self.factory.makeSourcePackage()
-        branch = self.factory.makePackageBranch(sourcepackage=package)
-        registrant = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.setBranch,
-            PackagePublishingPocket.SECURITY, branch, registrant)
-        package_pocket = self.makeSourcePackagePocket(
-            sourcepackage=package, pocket=PackagePublishingPocket.SECURITY)
-        self.assertEqual(branch, package_pocket.branch)
-
-    def test_display_name(self):
-        # A SourcePackagePocket also has a display name, so we can use it in
-        # error messages.
-        package_pocket = self.makeSourcePackagePocket()
-        self.assertEqual(
-            package_pocket.sourcepackage.getPocketPath(package_pocket.pocket),
-            package_pocket.displayname)
-
-    def test_equality(self):
-        package = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.SECURITY
-        package_pocket1 = self.makeSourcePackagePocket(package, pocket)
-        package_pocket2 = self.makeSourcePackagePocket(package, pocket)
-        self.assertEqual(package_pocket1, package_pocket2)
 
 
 def test_suite():

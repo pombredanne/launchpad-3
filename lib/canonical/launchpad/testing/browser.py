@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A real, socket connecting browser.
 
@@ -27,7 +28,10 @@ import urllib2
 import weakref
 import transaction
 
-from zope.testbrowser.browser import Browser as _Browser
+from zope.testbrowser.browser import Browser as _Browser, fix_exception_name
+
+from canonical.launchpad.testing.pages import (
+    extract_text, find_main_content, find_tag_by_id, get_feedback_messages)
 
 
 class SocketClosingOnErrorHandler(urllib2.BaseHandler):
@@ -55,10 +59,10 @@ _live_browser_set = set()
 
 
 class Browser(_Browser):
-    """A browser subsclass that knows about basic auth."""
+    """A browser subclass that knows about basic auth."""
 
-    def __init__(self, auth=None):
-        super(Browser, self).__init__()
+    def __init__(self, auth=None, mech_browser=None):
+        super(Browser, self).__init__(mech_browser=mech_browser)
         # We have to add the error handler to the mechanize browser underlying
         # the Zope browser, because it's the former that's actually doing all
         # the work.
@@ -90,10 +94,35 @@ class Browser(_Browser):
         super(Browser, self)._changed()
         transaction.commit()
 
+    def _clickSubmit(self, form, control, coord):
+        # XXX gary 2010-03-08 bug=98437
+        # This change is taken from
+        # https://bugs.edge.launchpad.net/zope3/+bug/98437/comments/9 .  It
+        # should be pushed upstream, per that comment.
+        labels = control.get_labels()
+        if labels:
+            label = labels[0].text
+        else:
+            label = None
+        self.mech_browser.form = form
+        self._start_timer()
+        try:
+            self.mech_browser.submit(id=control.id, name=control.name,
+                label=label, coord=coord)
+        except Exception, e:
+            fix_exception_name(e)
+            raise
+        self._stop_timer()
+
 
 def setUp(test):
     """Set up appserver tests."""
     test.globs['Browser'] = Browser
+    test.globs['browser'] = Browser()
+    test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['find_main_content'] = find_main_content
+    test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_text'] = extract_text
 
 
 def tearDown(test):

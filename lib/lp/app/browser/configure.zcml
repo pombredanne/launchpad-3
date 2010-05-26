@@ -1,0 +1,103 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:lp="http://namespaces.canonical.com/lp"
+    i18n_domain="launchpad">
+    <browser:page
+        for="*"
+        name="+base-layout-macros"
+        template="../templates/base-layout-macros.pt"
+        permission="zope.Public"
+        />
+    <browser:page
+        for="*"
+        name="+main-template-macros"
+        template="../templates/base-layout-macros.pt"
+        permission="zope.Public"
+        />
+    <browser:page
+        for="*"
+        name="+related-pages"
+        class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+        template="../templates/navigationmenu-related-pages.pt"
+        permission="zope.Public"
+        />
+    <browser:page
+        for="*"
+        name="+global-actions"
+        class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+        template="../templates/navigationmenu-actions.pt"
+        permission="zope.Public"
+        />
+
+    <!-- Hierarchy -->
+    <browser:page
+        for="zope.interface.Interface"
+        name="+hierarchy"
+        class="canonical.launchpad.browser.launchpad.Hierarchy"
+        template="../templates/launchpad-hierarchy.pt"
+        permission="zope.Public"
+        />
+
+    <!-- This is an index.html view on the root object.
+        The root object is not ever published itself.  Only its views are.
+        -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="lp.app.browser.root.LaunchpadRootIndexView"
+        name="index.html"
+        template="../templates/root-index.pt"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="lp.registry.browser.featuredproject.FeaturedProjectsView"
+        name="+featuredprojects"
+        template="../templates/root-featuredprojects.pt"
+        permission="launchpad.Edit"
+        />
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      name="+search"
+      class="lp.app.browser.root.LaunchpadSearchView"
+      template="../templates/launchpad-search.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+search-form"
+      class="lp.app.browser.root.LaunchpadSearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+primary-search-form"
+      class="lp.app.browser.root.LaunchpadPrimarySearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
+  <!-- TALES watermark: namespace -->
+  <adapter
+      for="*"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.watermark.WatermarkTalesAdapter"
+      name="watermark"
+      />
+
+  <!-- TALES fmt: namespace for strings -->
+  <adapter
+      for="basestring"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.stringformatter.FormattersAPI"
+      name="fmt"
+      />
+
+</configure>

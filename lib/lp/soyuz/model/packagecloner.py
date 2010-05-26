@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Logic for bulk copying of source/binary publishing history data."""
 
@@ -94,14 +95,14 @@ class PackageCloner:
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.execute('''
-            INSERT INTO SecureBinaryPackagePublishingHistory (
+            INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
-                datepublished, pocket, embargo)
+                datepublished, pocket)
             SELECT bpph.binarypackagerelease, %s as distroarchseries,
                    bpph.status, bpph.component, bpph.section, bpph.priority,
                    %s as archive, %s as datecreated, %s as datepublished,
-                   %s as pocket, false as embargo
+                   %s as pocket
             FROM BinaryPackagePublishingHistory AS bpph
             WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
             AND
@@ -122,16 +123,15 @@ class PackageCloner:
         # Now copy the fresher or new packages.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.execute("""
-            INSERT INTO SecureSourcePackagePublishingHistory (
+            INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket,
-                embargo)
+                section, archive, datecreated, datepublished, pocket)
             SELECT
                 mcd.s_sourcepackagerelease AS sourcepackagerelease,
                 %s AS distroseries, mcd.s_status AS status,
                 mcd.s_component AS component, mcd.s_section AS section,
                 %s AS archive, %s AS datecreated, %s AS datepublished,
-                %s AS pocket, False AS embargo
+                %s AS pocket
             FROM tmp_merge_copy_data mcd
             WHERE mcd.obsoleted = True OR mcd.missing = True
             """ % sqlvalues(
@@ -141,7 +141,7 @@ class PackageCloner:
         # Finally set the publishing status for the packages obsoleted in the
         # target archive accordingly (i.e make them superseded).
         store.execute("""
-            UPDATE securesourcepackagepublishinghistory secsrc
+            UPDATE sourcepackagepublishinghistory secsrc
             SET
                 status = %s,
                 datesuperseded = %s,
@@ -172,7 +172,7 @@ class PackageCloner:
                 s_component = secsrc.component,
                 s_section = secsrc.section
             FROM
-                securesourcepackagepublishinghistory secsrc,
+                sourcepackagepublishinghistory secsrc,
                 sourcepackagerelease spr, sourcepackagename spn
             WHERE
                 secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
@@ -205,7 +205,7 @@ class PackageCloner:
                 True AS missing, secsrc.status AS s_status,
                 secsrc.component AS s_component, secsrc.section AS s_section
             FROM
-                securesourcepackagepublishinghistory secsrc,
+                sourcepackagepublishinghistory secsrc,
                 sourcepackagerelease spr, sourcepackagename spn
             WHERE
                 secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
@@ -276,7 +276,7 @@ class PackageCloner:
                 secsrc.sourcepackagerelease AS t_sourcepackagerelease,
                 spn.name AS sourcepackagerelease, spr.version AS t_version
             FROM
-                securesourcepackagepublishinghistory secsrc,
+                sourcepackagepublishinghistory secsrc,
                 sourcepackagerelease spr, sourcepackagename spn
             WHERE
                 secsrc.archive = %s AND secsrc.status IN (%s, %s) AND
@@ -306,14 +306,13 @@ class PackageCloner:
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.execute('''
-            INSERT INTO SecureSourcePackagePublishingHistory (
+            INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
-                section, archive, datecreated, datepublished, pocket,
-                embargo)
+                section, archive, datecreated, datepublished, pocket)
             SELECT spph.sourcepackagerelease, %s as distroseries,
                    spph.status, spph.component, spph.section, %s as archive,
                    %s as datecreated, %s as datepublished,
-                   %s as pocket, false as embargo
+                   %s as pocket
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
@@ -331,13 +330,13 @@ class PackageCloner:
         self._init_packageset_delta(destination)
         self._compute_packageset_delta(origin)
 
-        # Get the list of SecureSourcePackagePublishingHistory keys for
+        # Get the list of SourcePackagePublishingHistory keys for
         # source packages that are fresher in the origin archive.
         fresher_packages = store.execute("""
             SELECT s_sspph FROM tmp_merge_copy_data WHERE obsoleted = True;
         """)
 
-        # Get the list of SecureSourcePackagePublishingHistory keys for
+        # Get the list of SourcePackagePublishingHistory keys for
         # source packages that are new in the origin archive.
         new_packages = store.execute("""
             SELECT s_sspph FROM tmp_merge_copy_data WHERE missing = True;

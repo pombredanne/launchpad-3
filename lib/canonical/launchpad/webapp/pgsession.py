@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """PostgreSQL server side session storage for Zope3."""
 
@@ -53,10 +54,11 @@ class PGSessionDataContainer(PGSessionBase):
         pickle     bytea NOT NULL,
         CONSTRAINT sessiondata_key UNIQUE (client_id, product_id, key)
         );
+
+    Removing expired data needs to be done out of band.
     """
     implements(ISessionDataContainer)
 
-    timeout = 60 * DAYS
     # If we have a low enough resolution, we can determine active users
     # using the session data.
     resolution = 9 * MINUTES
@@ -66,7 +68,6 @@ class PGSessionDataContainer(PGSessionBase):
 
     def __getitem__(self, client_id):
         """See zope.session.interfaces.ISessionDataContainer"""
-        self._sweep()
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
@@ -74,23 +75,6 @@ class PGSessionDataContainer(PGSessionBase):
         # The SessionData / SessionPkgData objects know how to store
         # themselves.
         pass
-
-    _last_sweep = datetime.utcnow()
-    fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
-
-    def _sweep(self):
-        interval = timedelta(
-                seconds=self.resolution - self.fuzz + 2 * self.fuzz * random()
-                )
-        now = datetime.utcnow()
-        if self._last_sweep + interval > now:
-            return
-        self._last_sweep = now
-        query = """
-            DELETE FROM SessionData WHERE last_accessed
-                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '%d seconds'::interval
-            """ % self.timeout
-        self.store.execute(query, noresult=True)
 
 
 class PGSessionData(PGSessionBase):

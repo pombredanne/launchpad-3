@@ -7,7 +7,7 @@ page, together with the last failure message we got when mirroring.
     >>> login(ANONYMOUS)
     >>> eric = factory.makePerson(
     ...     name='eric', email='eric@example.com', password='test')
-    >>> from canonical.launchpad.interfaces import BranchType
+    >>> from lp.code.enums import BranchType
     >>> mirror_branch = factory.makeAnyBranch(
     ...     branch_type=BranchType.MIRRORED, owner=eric)
     >>> mirror_name = mirror_branch.unique_name
@@ -163,7 +163,9 @@ display any failure-related information.
     >>> login(ANONYMOUS)
     >>> mirror_branch = getUtility(IBranchLookup).getByUniqueName(mirror_name)
     >>> mirror_branch.startMirroring()
-    >>> mirror_branch.mirrorComplete('some-revision-id')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(mirror_branch).branchChanged(
+    ...     '', 'some-revision-id', None, None, None)
     >>> logout()
 
     >>> browser.open(branch_location)

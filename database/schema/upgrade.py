@@ -1,12 +1,15 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0403
+#!/usr/bin/python2.5 -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Apply all outstanding schema patches to an existing launchpad database
 """
 
 __metaclass__ = type
 
+# pylint: disable-msg=W0403
 import _pythonpath # Sort PYTHONPATH
 
 from cStringIO import StringIO
@@ -246,9 +249,10 @@ def apply_patches_replicated():
                     id=@holding_set,
                     provider=@master_node, receiver=@node%d_node, forward=yes);
                 echo 'Waiting for sync';
-                sync (id=1);
+                sync (id=@master_node);
                 wait for event (
-                    origin=ALL, confirmed=ALL, wait on=@master_node
+                    origin=@master_node, confirmed=ALL,
+                    wait on=@master_node, timeout=0
                     );
                 """ % (slave_node.node_id, slave_node.node_id))
 
@@ -278,7 +282,7 @@ def apply_patches_replicated():
         (fqn(nspname, relname), tab_id)
         for nspname, relname, tab_id in cur.fetchall())
 
-    # Generate a slonik script to remove tables from the replication set, 
+    # Generate a slonik script to remove tables from the replication set,
     # and a DROP TABLE/DROP SEQUENCE sql script to run after.
     if tabs_to_drop:
         log.info("Dropping tables: %s" % ', '.join(

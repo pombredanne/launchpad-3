@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -21,7 +22,7 @@ from canonical.launchpad.interfaces import (
         IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
+        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
         BugTaskStatus, UserCannotUnsubscribePerson)
 from lazr.lifecycle.event import (
     ObjectModifiedEvent, ObjectCreatedEvent)
@@ -135,8 +136,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            bug = getUtility(IBugSet).createBug(params)
-            return bug, ObjectCreatedEvent(bug)
+            return getUtility(IBugSet).createBugWithoutTarget(params)
         else:
             try:
                 bugid = int(bugid)
@@ -279,7 +279,7 @@ class SecurityEmailCommand(EmailCommand):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.security_related = security_related
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 
@@ -354,7 +354,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                         'user-cannot-unsubscribe.txt',
                         person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 
@@ -496,9 +496,9 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"
@@ -604,15 +604,19 @@ class AffectsEmailCommand(EmailCommand):
             # A series task has to have a corresponding
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:

@@ -1,4 +1,5 @@
-# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad XMLRPC faults."""
 
@@ -14,7 +15,6 @@ __all__ = [
     'BranchNameInUse',
     'BranchUniqueNameConflict',
     'CannotHaveLinkedBranch',
-    'check_fault',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchIdentifier',
@@ -26,6 +26,7 @@ __all__ = [
     'NoLinkedBranch',
     'NoSuchBranch',
     'NoSuchBug',
+    'NoSuchCodeImportJob',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -40,38 +41,8 @@ __all__ = [
     ]
 
 
-import xmlrpclib
-
-
-def check_fault(fault, *fault_classes):
-    """Check if 'fault's faultCode matches any of 'fault_classes'.
-
-    :param fault: An instance of `xmlrpclib.Fault`.
-    :param fault_classes: Any number of `LaunchpadFault` subclasses.
-    """
-    for cls in fault_classes:
-        if fault.faultCode == cls.error_code:
-            return True
-    return False
-
-
-class LaunchpadFault(xmlrpclib.Fault):
-    """Base class for a Launchpad XMLRPC fault.
-
-    Subclasses should define a unique error_code and a msg_template,
-    which will be interpolated with the given keyword arguments.
-    """
-
-    error_code = None
-    msg_template = None
-
-    def __init__(self, **kw):
-        assert self.error_code is not None, (
-            "Subclasses must define error_code.")
-        assert self.msg_template is not None, (
-            "Subclasses must define msg_template.")
-        msg = self.msg_template % kw
-        xmlrpclib.Fault.__init__(self, self.error_code, msg)
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.xmlrpc import LaunchpadFault
 
 
 class NoSuchProduct(LaunchpadFault):
@@ -308,12 +279,16 @@ class CannotHaveLinkedBranch(LaunchpadFault):
     error_code = 230
     msg_template = (
         "%(component_name)s is a %(component_type)s, and a "
-        "%(component_type)s doesn't have a default branch.")
+        "%(component_type)s cannot have a default branch.")
 
     def __init__(self, component):
+        if IProjectGroup.providedBy(component):
+            component_type = 'project group'
+        else:
+            component_type = component.__class__.__name__.lower()
         LaunchpadFault.__init__(
             self, component_name=component.displayname,
-            component_type=component.__class__.__name__.lower())
+            component_type=component_type)
 
 
 class InvalidProductIdentifier(LaunchpadFault):
@@ -466,3 +441,12 @@ class NoSuchSourcePackageName(LaunchpadFault):
         self.sourcepackagename = sourcepackagename
         LaunchpadFault.__init__(self, sourcepackagename=sourcepackagename)
 
+
+class NoSuchCodeImportJob(LaunchpadFault):
+    """Raised by `ICodeImportScheduler` methods when a job is not found."""
+
+    error_code = 360
+    msg_template = 'Job %(job_id)d not found.'
+
+    def __init__(self, job_id):
+        LaunchpadFault.__init__(self, job_id=job_id)
