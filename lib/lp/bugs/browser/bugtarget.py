@@ -34,10 +34,9 @@ from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 from zope import formlib
-from zope.interface import (
-    alsoProvides, implementer, implements, Interface)
+from zope.interface import alsoProvides, implements, Interface
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice
@@ -53,6 +52,7 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.browser.bugrole import BugRoleMixin
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin)
@@ -127,7 +127,7 @@ def product_to_productbugconfiguration(product):
     return product
 
 
-class ProductConfigureBugTrackerView(ProductConfigureBase):
+class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
     """View class to configure the bug tracker for a project."""
 
     label = "Configure bug tracker"
@@ -144,6 +144,8 @@ class ProductConfigureBugTrackerView(ProductConfigureBase):
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
+        self.validateBugSupervisor(data)
+        self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
         # is not 'In Launchpad'. The constraint is enforced here in case the
         # JavaScript fails to activate or run. Note that the bugtracker
@@ -152,6 +154,15 @@ class ProductConfigureBugTrackerView(ProductConfigureBase):
         bugtracker = data.get('bugtracker', None)
         if bugtracker is None or IBugTracker.providedBy(bugtracker):
             data['enable_bug_expiration'] = False
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        # bug_supervisor requires a transition method, so it must be
+        # handled separately and removed for the updateContextFromData
+        # to work as expected.
+        self.changeBugSupervisor(data['bug_supervisor'])
+        del data['bug_supervisor']
+        self.updateContextFromData(data)
 
 
 class FileBugViewBase(LaunchpadFormView):
