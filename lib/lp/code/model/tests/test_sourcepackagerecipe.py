@@ -13,6 +13,7 @@ import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
+from psycopg2 import IntegrityError
 from pytz import UTC
 from storm.locals import Store
 
@@ -23,18 +24,17 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
+from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.code.errors import SourcePackageRecipeExists
 from lp.code.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
     TooNewRecipeFormat, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
 from lp.code.model.sourcepackagerecipe import (
@@ -85,17 +85,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_creation_no_dupes(self):
         # The metadata supplied when a SourcePackageRecipe is created is
         # present on the new object.
+        owner = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
 
-        self.assertRaises(
-            SourcePackageRecipeExists,
-            SourcePackageRecipe.new,
-                recipe.registrant,
-                recipe.owner,
-                [],
-                recipe.name,
-                self.factory.makeRecipe(),
-                u'description')
+        dupe_recipe = getUtility(ISourcePackageRecipeSource).new(
+            recipe.registrant, recipe.owner, [], recipe.name,
+            self.factory.makeRecipe(), recipe.description)
+        store = IStore(dupe_recipe)
+
+        self.assertRaises(IntegrityError, store.flush)
 
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
