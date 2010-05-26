@@ -9,6 +9,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestBuilderEditView(TestCaseWithFactory):
@@ -39,15 +40,10 @@ class TestBuilderEditView(TestCaseWithFactory):
 
         # Stub out the slaveStatusSentence() method with a fake one that
         # records if it's been called.
-        def fake_slaveStatusSentence():
-            self.builder.slave_called = True
-            dummy = 0
-            return [dummy]
-        view.context.slaveStatusSentence = fake_slaveStatusSentence
+        view.context.slaveStatusSentence = FakeMethod(result=[0])
 
-        self.builder.slave_called = False
         view.initialize()
 
-        # If the dummy slaveStatusSentence() was called, slave_called
-        # would be True.
-        self.assertFalse(self.builder.slave_called)
+        # If the dummy slaveStatusSentence() was called the call count
+        # would not be zero.
+        self.assertTrue(view.context.slaveStatusSentence.call_count == 0 )
