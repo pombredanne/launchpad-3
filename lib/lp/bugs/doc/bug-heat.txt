@@ -5,25 +5,32 @@ Launchpad bugs each have a 'heat' rating. This is an indicator of how
 problematic a given bug is to the community and can be used to determine
 which bugs should be tackled first.
 
-A new bug will have a heat of zero.
+A bug's heat is calculated automatically when it is created.
 
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
     >>> bug.heat
-    0
+    6
 
-It will also have a heat_last_updated of None.
+Its heat_last_updated time will be the same as its datecreated attribute.
 
-    >>> print bug.heat_last_updated
-    None
+    >>> bug.heat_last_updated == bug.datecreated
+    True
 
-The bug's heat can be set by calling its setHeat() method.
+The bug's heat can be set by calling its setHeat() method. We'll commit
+the transaction first so that heat_last_updated gets changed.
+
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> bug.setHeat(42)
     >>> bug.heat
     42
 
-Its heat_last_updated will also have been set.
+Its heat_last_updated will also have been updated.
+
+    >>> bug.heat_last_updated == bug.datecreated
+    False
 
     >>> bug.heat_last_updated
     datetime.datetime(..., tzinfo=<UTC>)
@@ -37,18 +44,22 @@ the database. Where setHeat() can be used for setting bug heat to a
 specific value, updateHeat() uses a stored procedure in the database to
 calculate the heat overall.
 
+We'll create a new bug with a heat of 0 for the sake of testing.
+
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
+    >>> bug.setHeat(0)
+
     >>> bug.heat
     0
 
 Calling updateHeat() will update the bug's heat. Since this new bug has
-two subscribers (the bug owner and the product owner) and one affected
-user (the bug owner) its heat after update will be 8.
+one subscriber (the bug owner) and one affected user (ditto) its
+heat after update will be 6.
 
     >>> bug.updateHeat()
     >>> bug.heat
-    8
+    6
 
 
 Adjusting bug heat in transaction
@@ -62,9 +73,12 @@ security.
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> bug = factory.makeBug(owner=bug_owner)
-    >>> bug.updateHeat()
     >>> bug.heat
-    8
+    6
+
+When the bug is marked private it gains a subscriber - the owner of the
+product against which it's filed, whose subscription is converted from
+an indirect to a direct subscription.
 
     >>> changed = bug.setPrivate(True, bug_owner)
     >>> bug.heat
@@ -125,6 +139,11 @@ getBugsWithOutdatedHeat() also returns bugs whose heat has never been
 updated.
 
     >>> new_bug = factory.makeBug()
+
+We'll set the new bug's heat_last_updated to None manually.
+
+    >>> new_bug.heat_last_updated = None
+
     >>> outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(1)
     >>> outdated_bugs.count()
     2
@@ -163,7 +182,6 @@ jobs in the bug heat calculation queue.
 We need to commit here to ensure that the bugs we've created are
 available to the update_bug_heat script.
 
-    >>> import transaction
     >>> transaction.commit()
 
     >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()

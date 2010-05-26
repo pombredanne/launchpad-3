@@ -1722,6 +1722,9 @@ class BugSet:
         # Tell everyone.
         notify(event)
 
+        # Calculate the bug's initial heat.
+        bug.updateHeat()
+
         return bug
 
     def createBugWithoutTarget(self, bug_params):
