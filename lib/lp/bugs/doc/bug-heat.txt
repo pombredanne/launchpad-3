@@ -50,8 +50,6 @@ user (the bug owner) its heat after update will be 8.
     >>> bug.heat
     8
 
-Adding another subscriber will increase the bug's heat further.
-
 
 Adjusting bug heat in transaction
 ---------------------------------
