@@ -415,7 +415,6 @@ class LaunchpadBrowserPublication(
         # problems we encode it into ASCII.
         pageid = pageid.encode('US-ASCII')
 
-        # Set the pageid in the WSGI environment.
         request.setInWSGIEnvironment('launchpad.pageid', pageid)
 
         # And spit the pageid out to our tracelog.
