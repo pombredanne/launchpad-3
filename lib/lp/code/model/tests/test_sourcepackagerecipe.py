@@ -85,7 +85,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_creation_no_dupes(self):
         # The metadata supplied when a SourcePackageRecipe is created is
         # present on the new object.
-        owner = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
 
         dupe_recipe = getUtility(ISourcePackageRecipeSource).new(
