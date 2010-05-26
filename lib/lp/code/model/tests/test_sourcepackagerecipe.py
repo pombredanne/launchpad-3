@@ -242,6 +242,26 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
                 ppa.owner, distroseries, PackagePublishingPocket.RELEASE)
 
+    def test_requestBuildScore(self):
+        """Normal build requests have a relatively low queue score (900)."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(recipe.daily_build_archive,
+            recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(900, queue_record.lastscore)
+
+    def test_requestBuildManualScore(self):
+        """Normal build requests have a higher queue score (1000)."""
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = recipe.requestBuild(recipe.daily_build_archive,
+            recipe.owner, list(recipe.distroseries)[0],
+            PackagePublishingPocket.RELEASE, manual=True)
+        queue_record = build.buildqueue_record
+        queue_record.score()
+        self.assertEqual(1000, queue_record.lastscore)
+
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
         description = u'The whoozits and whatzits.'

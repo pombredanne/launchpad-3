@@ -175,7 +175,8 @@ class SourcePackageRecipe(Storm):
         store.remove(self._recipe_data)
         store.remove(self)
 
-    def requestBuild(self, archive, requester, distroseries, pocket):
+    def requestBuild(self, archive, requester, distroseries, pocket,
+                     manual=False):
         """See `ISourcePackageRecipe`."""
         if archive.purpose != ArchivePurpose.PPA:
             raise NonPPABuildRequest
@@ -191,6 +192,8 @@ class SourcePackageRecipe(Storm):
         build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
             self, requester, archive)
         build.queueBuild()
+        if manual:
+            build.buildqueue_record.manualScore(1000)
         return build
 
     def getBuilds(self, pending=False):
