@@ -299,3 +299,6 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
 
     def getName(self):
         return "%s-%s" % (self.id, self.build_id)
+
+    def score(self):
+        return 900

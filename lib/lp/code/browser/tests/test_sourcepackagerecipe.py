@@ -347,12 +347,15 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
+        builds = recipe.getBuilds(True)
         build_distros = [
-            build.distroseries.displayname for build in
-            recipe.getBuilds(True)]
+            build.distroseries.displayname for build in builds]
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+        self.assertEqual(
+            set([1000]),
+            set(build.buildqueue_record.lastscore for build in builds))
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):

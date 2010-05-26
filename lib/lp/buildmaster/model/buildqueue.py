@@ -87,6 +87,13 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
+    def __init__(self, job_type, job, virtualized, processor,
+            estimated_duration):
+        super(BuildQueue, self).__init__(job_type=job_type, job=job,
+            virtualized=virtualized, processor=processor,
+            estimated_duration=estimated_duration)
+        self.score()
+
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
