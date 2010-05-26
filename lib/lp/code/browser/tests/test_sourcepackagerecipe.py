@@ -66,13 +66,16 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
 
-    def test_create_new_recipe(self):
+    def makeBranch(self):
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
         self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        return branch
 
+    def test_create_new_recipe(self):
+        branch = self.makeBranch()
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
         browser.getLink('Create packaging recipe').click()
@@ -81,6 +84,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
+        browser.getControl('Build daily').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -91,9 +95,11 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
+            Build daily: True
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: 1.0
+            Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
             .*
 
@@ -107,11 +113,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
     def test_create_recipe_bad_text(self):
         # If a user tries to create source package recipe with bad text, they
         # should get an error.
-        product = self.factory.makeProduct(
-            name='ratatouille', displayname='Ratatouille')
-        branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        branch = self.makeBranch()
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -126,6 +128,18 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'The recipe text is not a valid bzr-builder recipe.')
+
+    def test_create_recipe_no_distroseries(self):
+        browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
+        browser.getControl(name='field.name').value = 'daily'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+
+        browser.getControl('Build daily').click()
+        browser.getControl('Create Recipe').click()
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'You must specify at least one series for daily builds.')
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
@@ -151,7 +165,11 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, registrant=self.chef,
             sourcepackagename=source_package.sourcepackagename,
             name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, branches=[veggie_branch])
+            distroseries=self.squirrel, branches=[veggie_branch],
+            daily_build_archive=self.ppa)
+        self.factory.makeArchive(
+            distribution=self.ppa.distribution, name='ppa2',
+            displayname="PPA 2", owner=self.chef)
 
         meat_path = meat_branch.bzr_identity
 
@@ -164,6 +182,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Mumbly Midget').click()
+        browser.getControl('PPA 2').click()
         browser.getControl('Update Recipe').click()
 
         pattern = """\
@@ -174,9 +193,12 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
+            Build daily: False
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: 1.0
+            Daily build archive:
+            PPA 2
             Distribution series: Mumbly Midget
             .*
 

@@ -112,7 +112,7 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             " build a source package for"),
         readonly=False)
     build_daily = Bool(
-        title=_("If true, the recipe should be built daily."))
+        title=_("Build daily"))
     sourcepackagename = Reference(
         ISourcePackageName, title=_("The name of the source package this "
                                     "recipe will build a source package"),

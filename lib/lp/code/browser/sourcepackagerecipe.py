@@ -46,6 +46,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
@@ -293,10 +294,13 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
+        'build_daily'
         ])
     sourcepackagename = Choice(
         title=u"Source Package Name", required=True,
         vocabulary='SourcePackageName')
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -305,10 +309,16 @@ class ISourcePackageAddEditSchema(Interface):
         description=u'The text of the recipe.')
 
 
+
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
     def validate(self, data):
+        if data['build_daily']:
+            if len(data['distros']) == 0:
+                self.setFieldError(
+                    'distros',
+                    'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
@@ -330,7 +340,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     def initial_values(self):
         return {
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
-            'owner': self.user}
+            'owner': self.user,
+            'build_daily': False}
 
     @property
     def cancel_url(self):
@@ -342,7 +353,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         recipe = parser.parse()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             self.user, self.user, data['sourcepackagename'],
-            data['name'], recipe, data['description'], data['distros'])
+            data['name'], recipe, data['description'], data['distros'],
+            data['daily_build_archive'], data['build_daily'])
         self.next_url = canonical_url(source_package_recipe)
 
 
