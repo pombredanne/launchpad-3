@@ -79,8 +79,6 @@ LANGUAGE plpythonu AS $$
         return 0
 
     heat = {}
-    heat['privacy'] = 0
-    heat['security'] = 0
     heat['dupes'] = (
         BugHeatConstants.DUPLICATE * bug['number_of_duplicates'])
     heat['affected_users'] = (
