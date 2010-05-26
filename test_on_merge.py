@@ -24,24 +24,40 @@ from select import select
 # This will set the timeout to 10 minutes.
 TIMEOUT = 60 * 10
 
+HERE = os.path.dirname(os.path.realpath(__file__))
+
 
 def main():
     """Call bin/test with whatever arguments this script was run with.
 
-    If the tests ran ok (last line of stderr is 'OK<return>') then suppress
-    output and exit(0).
+    Prior to running the tests this script checks the project files with
+    Python2.5's tabnanny and sets up the test database.
 
-    Otherwise, print output and exit(1).
+    Returns 1 on error, otherwise it returns the testrunner's exit code.
     """
-    here = os.path.dirname(os.path.realpath(__file__))
+    if run_tabnanny() != 0:
+        return 1
 
-    # Tabnanny
-    # NB. If tabnanny raises an exception, run
-    # python /usr/lib/python2.5/tabnanny.py -vv lib/canonical
-    # for more detailed output.
+    if setup_test_database() != 0:
+        return 1
+
+    return run_test_process()
+
+
+def run_tabnanny():
+    """Run the tabnanny, return its exit code.
+
+    If tabnanny raises an exception, run "python /usr/lib/python2.5/tabnanny.py
+    -vv lib/canonical for more detailed output.
+    """
+    # XXX mars 2010-05-26
+    # Tabnanny reports some of its errors on sys.stderr, so this code is
+    # already wrong.  subprocess.Popen.communicate() would work better.
+    print "Checking the source tree with tabnanny..."
     org_stdout = sys.stdout
     sys.stdout = StringIO()
-    tabnanny.check(os.path.join(here, 'lib', 'canonical'))
+    tabnanny.check(os.path.join(HERE, 'lib', 'canonical'))
+    tabnanny.check(os.path.join(HERE, 'lib', 'lp'))
     tabnanny_results = sys.stdout.getvalue()
     sys.stdout = org_stdout
     if len(tabnanny_results) > 0:
@@ -49,7 +65,16 @@ def main():
         print tabnanny_results
         print '---- end tabnanny bitching ----'
         return 1
+    else:
+        print "Done"
+        return 0
 
+
+def setup_test_database():
+    """Set up a test instance of our postgresql database.
+
+    Returns 0 for success, 1 for errors.
+    """
     # Sanity check PostgreSQL version. No point in trying to create a test
     # database when PostgreSQL is too old.
     con = psycopg2.connect('dbname=template1')
@@ -93,8 +118,7 @@ def main():
     con.close()
 
     # Build the template database. Tests duplicate this.
-    here = os.path.dirname(os.path.realpath(__file__))
-    schema_dir = os.path.join(here, 'database', 'schema')
+    schema_dir = os.path.join(HERE, 'database', 'schema')
     if os.system('cd %s; make test > /dev/null' % (schema_dir)) != 0:
         print 'Failed to create database or load sampledata.'
         return 1
@@ -136,8 +160,22 @@ def main():
     con.close()
     del con
 
+    return 0
+
+
+def run_test_process():
+    """Start the testrunner process and return its exit code."""
+    # Fork a child process so that we get a new process ID that we can
+    # guarantee is not currently in use as a process group leader. This
+    # addresses the case where this script has been started directly in the
+    # shell using "python foo.py" or "./foo.py".
+    pid = os.fork()
+    if pid != 0:
+        pid, exitstatus = os.waitpid(pid, os.P_WAIT)
+        return exitstatus
+
     print 'Running tests.'
-    os.chdir(here)
+    os.chdir(HERE)
 
     # Play shenanigans with our process group. We want to kill off our child
     # groups while at the same time not slaughtering ourselves!
@@ -156,7 +194,7 @@ def main():
         'xvfb-run',
         '-s',
         "'-screen 0 1024x768x24'",
-        os.path.join(here, 'bin', 'test')] + sys.argv[1:]
+        os.path.join(HERE, 'bin', 'test')] + sys.argv[1:]
 
     command_line = ' '.join(cmd)
     print "Running command:", command_line
