@@ -198,6 +198,11 @@ bin/buildout: download-cache eggs
 		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
+# This target is used by LOSAs to prepare a build to be pushed out to
+# destination machines.  We only want eggs: they are the expensive bits,
+# and the other bits might run into problems like bug 575037.  This
+# target runs buildout, and then removes everything created except for
+# the eggs.
 build_eggs: $(BUILDOUT_BIN) clean_buildout
 
 # This builds bin/py and all the other bin files except bin/buildout.
