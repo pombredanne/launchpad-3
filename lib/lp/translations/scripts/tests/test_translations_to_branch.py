@@ -27,7 +27,7 @@ from lp.translations.scripts.translations_to_branch import (
 
 
 class GruesomeException(Exception):
-    """CPU on fire.  Or some other kind of failure, like."""
+    """CPU on fire.  Or some other kind of failure."""
 
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):

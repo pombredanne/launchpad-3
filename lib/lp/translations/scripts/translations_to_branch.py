@@ -262,7 +262,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 items_done, items_failed, unpushed_branches))
 
     def _sendMail(self, sender, recipients, subject, text):
-        """Wrapper for `simple_sendmail`.  Fakeable for testing."""
+        """Wrapper for `simple_sendmail`.  Fakeable for easy testing."""
         simple_sendmail(sender, recipients, subject, text)
 
     def _handleUnpushedBranch(self, productseries):
