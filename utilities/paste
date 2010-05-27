@@ -14,7 +14,7 @@ import urllib
 import webbrowser
 from optparse import OptionParser
 from urlparse import urljoin
-from ClientCookie import Cookie, CookieJar
+from cookielib import Cookie, CookieJar
 from mechanize import HTTPRobotRulesProcessor
 
 from zope.testbrowser.browser import Browser
