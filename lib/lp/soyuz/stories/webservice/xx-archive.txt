@@ -450,19 +450,19 @@ sourcepackage.
     ...     sourcepackagename='mozilla-firefox', pocket='Release',
     ...     component='main', person=name12['self_link'])
     >>> print(response)
-    HTTP/1.1 200 Ok
+    HTTP/1.1 500 Internal Server Error
     ...
-	"The signer of this package is lacking the upload rights for the source package, component or package set in question."
+	InsufficientUploadRights: The signer of this package is lacking the upload rights for the source package, component or package set in question.
 
     >>> response = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'checkUpload', 
     ...     distroseries=grumpy['self_link'],
     ...     sourcepackagename='mozilla-firefox', pocket='Release',
-    ...     component='main', person=cjwatson['self_link'])
+    ...     component='restricted', person=name12['self_link'])
     >>> print(response)
-    HTTP/1.1 200 Ok
+    HTTP/1.1 500 Internal Server Error
     ...
-	"The signer of this package is lacking the upload rights for the source package, component or package set in question."
+	InsufficientUploadRights: The signer of this package is lacking the upload rights for the source package, component or package set in question.
 
 deleteQueueAdmin removes that permission.
 

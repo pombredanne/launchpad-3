@@ -1024,8 +1024,7 @@ class Archive(SQLBase):
         reason = self.checkUpload(person, distroseries, sourcepackagename, 
             component, pocket, strict_component)
         if reason is not None:
-            return str(reason)
-        return None
+            raise reason
 
     def checkUpload(self, person, distroseries, sourcepackagename, component, 
                     pocket, strict_component=True):
