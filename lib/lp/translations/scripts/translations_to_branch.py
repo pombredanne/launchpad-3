@@ -272,6 +272,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         no actual bzr branch behind this `IBranch` yet.
         """
         branch = productseries.translations_branch
+        self.logger.info("Notifying %s of unpushed branch %s." % (
+            branch.owner.name, branch.bzr_identity))
+
         template = get_email_template('unpushed-branch.txt', 'translations')
         text = template % {
             'productseries': productseries.title,
