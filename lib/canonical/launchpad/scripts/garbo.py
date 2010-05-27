@@ -30,6 +30,7 @@ from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
@@ -548,38 +549,20 @@ class BugHeatUpdater(TunableLoop):
 
         See `ITunableLoop`.
         """
-        # XXX 2010-01-08 gmb bug=198767:
-        #     We cast chunk_size to an integer to ensure that we're not
-        #     trying to slice using floats or anything similarly
-        #     foolish. We shouldn't have to do this.
-        chunk_size = int(chunk_size)
-        start = self.offset
-        end = self.offset + chunk_size
-
         transaction.begin()
-        bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)[start:end]
-
-        bug_count = bugs.count()
-        if bug_count > 0:
-            starting_id = bugs.first().id
-            self.log.debug(
-                "Adding CalculateBugHeatJobs for %i Bugs (starting id: %i)" %
-                (bug_count, starting_id))
-        else:
-            self.is_done = True
-
-        self.offset = None
-        for bug in bugs:
-            # We set the starting point of the next batch to the Bug
-            # id after the one we're looking at now. If there aren't any
-            # bugs this loop will run for 0 iterations and starting_id
-            # will remain set to None.
-            start += 1
-            self.offset = start
-            self.log.debug("Adding CalculateBugHeatJob for bug %s" % bug.id)
-            getUtility(ICalculateBugHeatJobSource).create(bug)
-            self.total_processed += 1
+        query = """
+            UPDATE Bug SET
+                heat = calculate_bug_heat(id),
+                heat_last_updated = now() at time zone 'utc'
+            WHERE
+                Bug.duplicateof IS NULL AND (
+                    heat_last_updated < (
+                        now() at time zone 'utc' - interval '%s days')
+                    OR heat_last_updated IS NULL)"""
+        store = IMasterStore(Bug)
+        results = store.execute(query % sqlvalues(self.max_heat_age))
+        self.log.debug("Updated heat for %s bugs" % results.rowcount)
+        self.is_done = True
         transaction.commit()
 
 

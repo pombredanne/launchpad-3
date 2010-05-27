@@ -253,52 +253,24 @@ bugs with out-of-date heat.
     >>> from canonical.launchpad.scripts.garbo import BugHeatUpdater
     >>> from canonical.launchpad.scripts import FakeLogger
 
+We'll commit the transaction so that the BugHeatUpdater updates the
+right bugs.
+
+    >>> transaction.commit()
     >>> update_bug_heat = BugHeatUpdater(FakeLogger(), max_heat_age=1)
 
 BugHeatUpdater implements ITunableLoop and as such is callable. Calling
-it as a method will add jobs to calculate the heat of for all the bugs
-whose heat is more than seven days old.
+it as a method will recalculate the heat for all the out-of-date bugs.
 
-Before update_bug_heat is called, we'll ensure that there are no waiting
-jobs in the bug heat calculation queue.
-
-    >>> from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
-    >>> for calc_job in getUtility(ICalculateBugHeatJobSource).iterReady():
-    ...     calc_job.job.start()
-    ...     calc_job.job.complete()
-
-    >>> ready_jobs = list(getUtility(ICalculateBugHeatJobSource).iterReady())
-    >>> len(ready_jobs)
-    0
-
-We need to commit here to ensure that the bugs we've created are
-available to the update_bug_heat script.
-
-    >>> transaction.commit()
+There are two bugs with heat more than a day old:
 
     >>> getUtility(IBugSet).getBugsWithOutdatedHeat(1).count()
     2
 
-We need to run update_bug_heat() twice to ensure that both the bugs are
-updated.
+Calling our BugHeatUpdater will update the heat of those bugs.
 
-    >>> update_bug_heat(chunk_size=2)
-    DEBUG Adding CalculateBugHeatJobs for 2 Bugs (starting id: ...)
-    DEBUG Adding CalculateBugHeatJob for bug ...
-    DEBUG Adding CalculateBugHeatJob for bug ...
-
-There will now be two CalculateBugHeatJobs in the queue.
-
-    >>> ready_jobs = list(getUtility(ICalculateBugHeatJobSource).iterReady())
-    >>> len(ready_jobs)
-    2
-
-Running them will update the bugs' heat.
-
-    >>> for calc_job in getUtility(ICalculateBugHeatJobSource).iterReady():
-    ...     calc_job.job.start()
-    ...     calc_job.run()
-    ...     calc_job.job.complete()
+    >>> update_bug_heat(chunk_size=1)
+    DEBUG Updated heat for 2 bugs
 
 IBugSet.getBugsWithOutdatedHeat() will now return an empty set since all
 the bugs have been updated.
