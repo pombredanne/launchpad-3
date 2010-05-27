@@ -13,6 +13,7 @@ import pytz
 import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -537,32 +538,39 @@ class BugHeatUpdater(TunableLoop):
             max_heat_age = config.calculate_bug_heat.max_heat_age
         self.max_heat_age = max_heat_age
 
+        self.store = IMasterStore(Bug)
+
+    @property
+    def _outdated_bugs(self):
+        outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+            self.max_heat_age)
+        # We remove the security proxy so that we can access the set()
+        # method of the result set.
+        return removeSecurityProxy(outdated_bugs)
+
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more Bugs to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.is_done
+        return self._outdated_bugs.is_empty()
 
     def __call__(self, chunk_size):
         """Retrieve a batch of Bugs and update their heat.
 
         See `ITunableLoop`.
         """
+        # We multiply chunk_size by 1000 for the sake of doing updates
+        # quickly.
+        chunk_size = chunk_size * 1000
+
         transaction.begin()
-        query = """
-            UPDATE Bug SET
-                heat = calculate_bug_heat(id),
-                heat_last_updated = now() at time zone 'utc'
-            WHERE
-                Bug.duplicateof IS NULL AND (
-                    heat_last_updated < (
-                        now() at time zone 'utc' - interval '%s days')
-                    OR heat_last_updated IS NULL)"""
-        store = IMasterStore(Bug)
-        results = store.execute(query % sqlvalues(self.max_heat_age))
-        self.log.debug("Updated heat for %s bugs" % results.rowcount)
-        self.is_done = True
+        outdated_bugs = self._outdated_bugs[:chunk_size]
+        self.log.debug("Updating heat for %s bugs" % outdated_bugs.count())
+        outdated_bugs.set(
+            heat=SQL('calculate_bug_heat(Bug.id)'),
+            heat_last_updated=datetime.now(pytz.utc))
+
         transaction.commit()
 
 
