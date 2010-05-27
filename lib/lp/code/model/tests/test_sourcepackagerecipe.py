@@ -13,7 +13,6 @@ import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
-from psycopg2 import IntegrityError
 from pytz import UTC
 from storm.locals import Store
 
@@ -24,7 +23,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
-from canonical.launchpad.interfaces import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
@@ -82,18 +80,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.name))
-
-    def test_creation_no_dupes(self):
-        # The metadata supplied when a SourcePackageRecipe is created is
-        # present on the new object.
-        recipe = self.factory.makeSourcePackageRecipe()
-
-        dupe_recipe = getUtility(ISourcePackageRecipeSource).new(
-            recipe.registrant, recipe.owner, [], recipe.name,
-            self.factory.makeRecipe(), recipe.description)
-        store = IStore(dupe_recipe)
-
-        self.assertRaises(IntegrityError, store.flush)
 
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
