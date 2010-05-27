@@ -441,7 +441,7 @@ queues in a particular component.
     Queue Administration Rights ...~name12 universe None
 
 We can use ``checkUpload`` to verify that a person can upload a 
-suitesourcepackage.
+sourcepackage.
 
     >>> grumpy = webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = webservice.named_get(
@@ -452,7 +452,17 @@ suitesourcepackage.
     >>> print(response)
     HTTP/1.1 200 Ok
     ...
-    true
+	"The signer of this package is lacking the upload rights for the source package, component or package set in question."
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Release',
+    ...     component='main', person=cjwatson['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+	"The signer of this package is lacking the upload rights for the source package, component or package set in question."
 
 deleteQueueAdmin removes that permission.
 

@@ -511,7 +511,12 @@ class IArchivePublic(IHasOwner, IPrivacy):
         strict_component=Bool(
             title=_("Strict component"), required=False)
         )
+    @export_operation_as("checkUpload")
     @export_read_operation()
+    def _checkUpload(person, distroseries, sourcepackagename, component, 
+            pocket, strict_component=True):
+        """Wrapper around checkUpload for the web service API."""
+
     def checkUpload(person, distroseries, sourcepackagename, component, 
                     pocket, strict_component=True):
         """Check if 'person' upload 'suitesourcepackage' to 'archive'.
