@@ -19,9 +19,9 @@ package subscribers, if there are any.
     >>> print browser.url.replace(bug_id, "BUG-ID")
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
 
-We should have six subscribers now. The bug reporter (also a package
-subscriber), mark, the distro bug supervisor, ubuntu-team, and carlos
-and foobar, who are subscribed to the distribution.
+We should have three subscribers now. The bug reporter (also a package
+subscriber), mark, the distro bug supervisor kamion, and foobar, who is
+subscribed to the distribution.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -36,8 +36,7 @@ and foobar, who are subscribed to the distribution.
 
     >>> bugset = getUtility(IBugSet)
     >>> subscriber_names(bugset.get(bug_id))
-    [u'carlos', u'kamion', u'mark', u'name16', u'ubuntu-team',
-    u'ubuntu-translators']
+    [u'kamion', u'mark', u'name16']
 
     >>> logout()
 

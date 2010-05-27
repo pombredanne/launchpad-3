@@ -192,7 +192,11 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
         The distroseries function as defaults for requesting a build.
         """
-        return {'distros': self.context.distroseries}
+        initial_values = {'distros': self.context.distroseries}
+        build = self.context.getLastBuild()
+        if build is not None:
+            initial_values['archive'] = build.archive
+        return initial_values
 
     class schema(Interface):
         """Schema for requesting a build."""
