@@ -136,7 +136,7 @@ class SourcePackageRecipe(Storm):
 
     @staticmethod
     def exists(owner, name):
-        """See `IsourcePackageRecipeSource.new`."""
+        """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         recipe = store.find(
             SourcePackageRecipe,
