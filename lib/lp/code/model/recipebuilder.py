@@ -153,7 +153,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """
         build = self.build
         assert not (not self._builder.virtualized and build.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
+            "Attempt to build virtual item on a non-virtual builder.")
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.

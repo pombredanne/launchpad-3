@@ -10,7 +10,8 @@ We'll start by adding some attachments to the bug:
     >>> import StringIO
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.database import Bug, Person
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.registry.model.person import Person
     >>> login("foo.bar@canonical.com")
     >>> mark = Person.selectOneBy(name="mark")
     >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
