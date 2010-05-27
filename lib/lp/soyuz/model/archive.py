@@ -1018,6 +1018,9 @@ class Archive(SQLBase):
         """See `IArchive`."""
         if isinstance(component, basestring):
             component = getUtility(IComponentSet)[component]
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
         reason = self.checkUploadToPocket(distroseries, pocket)
         if reason is not None:
             return reason

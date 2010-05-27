@@ -497,7 +497,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         distroseries=Reference(
             # Really IDistroSeries, avoiding a circular import here.
             Interface,
-            title=_("The distro series"), required=False),
+            title=_("The distro series"), required=True),
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
         component=TextLine(

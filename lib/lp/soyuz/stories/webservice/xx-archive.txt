@@ -443,9 +443,11 @@ queues in a particular component.
 We can use ``checkUpload`` to verify that a person can upload a 
 suitesourcepackage.
 
+    >>> grumpy = webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'checkUpload',
-    ...     sourcepackagename='mozilla-firefox', pocket='release',
+    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     distroseries=grumpy['self_link'],
+    ...     sourcepackagename='mozilla-firefox', pocket='Release',
     ...     component='main', person=name12['self_link'])
     >>> print(response)
     HTTP/1.1 200 Ok
