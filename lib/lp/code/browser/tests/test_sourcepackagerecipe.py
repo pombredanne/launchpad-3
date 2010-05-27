@@ -150,7 +150,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
-            'The recipe text is not a valid bzr-builder recipe.')
+            'There is already a recipe owned by Master Chef with this name.')
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
