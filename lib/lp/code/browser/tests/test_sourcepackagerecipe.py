@@ -20,7 +20,8 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeBuildView
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.soyuz.model.processor import ProcessorFamily
@@ -74,7 +75,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
@@ -114,7 +115,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
@@ -328,6 +329,16 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+
+    def test_request_builds_archive(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa2 = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef, name='ppa2')
+        view = SourcePackageRecipeRequestBuildsView(recipe, None)
+        self.assertIs(None, view.initial_values.get('archive'))
+        self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
+        self.assertEqual(ppa2, view.initial_values.get('archive'))
+
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):

@@ -17,7 +17,7 @@ from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import export_as_webservice_entry
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, Object
+from zope.schema import Bool, Datetime, Int, Object
 
 from canonical.launchpad import _
 
@@ -47,6 +47,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
+    # XXX michaeln 2010-05-18 bug=567922
+    # Temporarily alias distro_series until SPRecipeBuild is
+    # implementing IPackageBuild.
+    distro_series = distroseries
 
     sourcepackagename = Reference(
         ISourcePackageName,
@@ -64,6 +68,8 @@ class ISourcePackageRecipeBuild(IBuildBase):
     source_package_release = Reference(
         ISourcePackageRelease, title=_("The produced source package release"),
         readonly=True)
+
+    is_virtualized = Bool(title=_('If True, this build is virtualized.'))
 
     def getFileByName(filename):
         """Return the file under +files with specified name."""

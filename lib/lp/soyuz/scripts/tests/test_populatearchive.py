@@ -655,7 +655,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         def build_in_wrong_state(build):
             """True if the given build is not (pending and suspended)."""
             return not (
-                build.buildstate == BuildStatus.NEEDSBUILD and
+                build.status == BuildStatus.NEEDSBUILD and
                 build.buildqueue_record.job.status == JobStatus.SUSPENDED)
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 

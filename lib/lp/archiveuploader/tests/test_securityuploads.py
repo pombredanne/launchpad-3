@@ -131,7 +131,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         """Create a build record attached to the base source."""
         spr = self.source_queue.sources[0].sourcepackagerelease
         build = spr.createBuild(
-            distroarchseries=self.distroseries[archtag],
+            distro_arch_series=self.distroseries[archtag],
             pocket=self.pocket, archive=self.distroseries.main_archive)
         self.layer.txn.commit()
         return build
@@ -187,7 +187,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
         build_used = self._uploadBinary('amd64')
 
@@ -196,7 +196,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'amd64 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testBuildLookup(self):
         """Check if an available build gets used when it is appropriate.
@@ -219,7 +219,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testCorrectBuildPassedViaCommandLine(self):
         """Check if command-line build argument gets attached correctly.
@@ -244,7 +244,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.status.name)
 
     def testWrongBuildPassedViaCommandLine(self):
         """Check if a misapplied passed buildid is correctly identified.

@@ -150,7 +150,7 @@ class DistroSeriesBinaryPackage:
         if last_published is None:
             return None
 
-        src_pkg_release = last_published.build.sourcepackagerelease
+        src_pkg_release = last_published.build.source_package_release
 
         return DistroSeriesSourcePackageRelease(
             self.distroseries, src_pkg_release)
