@@ -785,6 +785,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -2512,21 +2518,6 @@ ALTER TABLE authtoken DISABLE TRIGGER ALL;
 ALTER TABLE authtoken ENABLE TRIGGER ALL;
 
 
-ALTER TABLE binarypackagename DISABLE TRIGGER ALL;
-
-INSERT INTO binarypackagename (id, name) VALUES (6, 'foobar');
-INSERT INTO binarypackagename (id, name) VALUES (8, 'mozilla-firefox');
-INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
-INSERT INTO binarypackagename (id, name) VALUES (14, 'linux-2.6.12');
-INSERT INTO binarypackagename (id, name) VALUES (15, 'at');
-INSERT INTO binarypackagename (id, name) VALUES (16, 'cdrkit');
-INSERT INTO binarypackagename (id, name) VALUES (17, 'commercialpackage');
-INSERT INTO binarypackagename (id, name) VALUES (18, 'mozilla-firefox-data');
-
-
-ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
-
-
 ALTER TABLE processor DISABLE TRIGGER ALL;
 
 INSERT INTO processor (id, family, name, title, description) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family');
@@ -2544,6 +2535,68 @@ INSERT INTO builder (id, processor, name, title, description, owner, speedindex,
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
+
+
+ALTER TABLE buildfarmjob DISABLE TRIGGER ALL;
+
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (2, 1, false, '2004-09-27 11:57:13', '2004-09-27 11:55:13', '2004-09-27 11:57:14', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (6, 1, false, '2006-12-01 00:00:00', '2006-12-01 00:00:00', '2006-12-01 00:00:01', NULL, 1, 2, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (7, 1, false, '2005-03-24 00:00:00', '2005-03-24 23:58:43', '2005-03-25 00:00:03', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (8, 1, false, '2005-09-30 00:00:00', NULL, NULL, NULL, NULL, 6, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (9, 1, false, '2005-10-01 00:00:00', '2005-10-01 23:56:41', '2005-10-02 00:00:01', NULL, 1, 2, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (10, 1, false, '2006-01-27 00:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (11, 1, false, '2006-02-14 00:00:00', NULL, NULL, NULL, NULL, 0, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (12, 1, false, '2006-02-28 00:00:00', '2006-02-27 23:53:59', '2006-02-28 00:00:01', NULL, 1, 3, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (13, 1, false, '2006-03-21 00:00:00', '2006-03-21 00:58:33', '2006-03-21 01:00:03', NULL, 1, 5, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (14, 1, false, '2006-03-22 00:00:00', '2006-03-21 00:58:32', '2006-03-21 01:00:02', NULL, 1, 5, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (15, 1, false, '2006-03-22 00:00:01', '2006-03-21 00:58:30', '2006-03-21 01:00:00', NULL, 1, 5, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (16, 1, false, '2005-03-24 00:00:01', '2005-03-24 23:58:42', '2005-03-25 00:00:02', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (18, 1, false, '2004-09-27 11:57:14', '2004-09-27 11:55:12', '2004-09-27 11:57:13', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (19, 1, false, '2005-03-24 00:00:02', '2005-03-24 23:58:41', '2005-03-25 00:00:01', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (21, 1, false, '2006-12-01 00:00:01', NULL, NULL, NULL, NULL, 2, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (22, 1, false, '2007-04-20 00:00:00', '2007-04-19 23:58:41', '2007-04-20 00:00:01', NULL, 1, 7, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (23, 1, false, '2006-04-11 12:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (24, 1, true, '2007-05-30 00:00:00', '2007-05-29 23:58:41', '2007-05-30 00:00:01', NULL, 1, 2, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (25, 1, true, '2007-07-08 12:00:00', NULL, NULL, NULL, NULL, 1, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (26, 1, true, '2007-07-08 00:00:00', '2007-07-07 23:58:41', '2007-07-08 00:00:01', NULL, 1, 2, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (27, 1, true, '2007-07-24 00:00:00', '2007-07-23 23:58:41', '2007-07-24 00:00:01', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (28, 3, true, '2007-08-10 00:00:00', '2007-08-10 00:00:00', '2007-08-10 00:00:13', NULL, 1, 1, 1, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (29, 1, false, '2007-08-09 21:54:18.553132', NULL, '2007-08-09 23:59:59', NULL, NULL, 1, NULL, 1);
+INSERT INTO buildfarmjob (id, processor, virtualized, date_created, date_started, date_finished, date_first_dispatched, builder, status, log, job_type) VALUES (30, 3, false, '2007-08-10 00:00:01', '2007-08-10 00:00:01', '2007-08-10 00:00:14', NULL, 1, 1, 1, 1);
+
+
+ALTER TABLE buildfarmjob ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagebuild DISABLE TRIGGER ALL;
+
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (1, 2, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (2, 6, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (3, 7, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (4, 8, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (5, 9, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (6, 10, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (7, 11, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (8, 12, 1, 0, NULL, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)');
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (9, 13, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (10, 14, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (11, 15, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (12, 16, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (13, 18, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (14, 19, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (15, 21, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (16, 22, 1, 0, 91, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (17, 23, 1, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (18, 24, 11, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (19, 25, 9, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (20, 26, 9, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (21, 27, 9, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (22, 28, 9, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (23, 29, 12, 0, NULL, NULL);
+INSERT INTO packagebuild (id, build_farm_job, archive, pocket, upload_log, dependencies) VALUES (24, 30, 1, 0, NULL, NULL);
+
+
+ALTER TABLE packagebuild ENABLE TRIGGER ALL;
 
 
 ALTER TABLE section DISABLE TRIGGER ALL;
@@ -2681,35 +2734,50 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
 
 
-ALTER TABLE build DISABLE TRIGGER ALL;
+ALTER TABLE binarypackagebuild DISABLE TRIGGER ALL;
 
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:14', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (6, '2006-12-01 00:00:00', 1, 1, 2, '2006-12-01 00:00:01', '00:00:01', 1, 1, 32, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:03', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (8, '2005-09-30 00:00:00', 1, 6, 6, NULL, NULL, NULL, NULL, 14, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 26, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (12, '2006-02-28 00:00:00', 1, 6, 3, '2006-02-28 00:00:01', '00:06:02', 1, 1, 27, 0, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)', 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (13, '2006-03-21 00:00:00', 1, 1, 5, '2006-03-21 01:00:03', '00:01:30', 1, 1, 17, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:02', '00:01:30', 1, 1, 28, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (15, '2006-03-22 00:00:01', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (16, '2005-03-24 00:00:01', 1, 11, 1, '2005-03-25 00:00:02', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (18, '2004-09-27 11:57:14', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (19, '2005-03-24 00:00:02', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (21, '2006-12-01 00:00:01', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1, NULL, NULL, 91);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (24, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (25, '2007-07-08 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 9, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (26, '2007-07-08 00:00:00', 1, 8, 2, '2007-07-08 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 9, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (27, '2007-07-24 00:00:00', 1, 1, 1, '2007-07-24 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 9, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (28, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 9, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (29, '2007-08-09 21:54:18.553132', 1, 8, 1, '2007-08-09 23:59:59', NULL, NULL, NULL, 36, 0, NULL, 12, NULL, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, build_warnings, date_first_dispatched, upload_log) VALUES (30, '2007-08-10 00:00:01', 3, 12, 1, '2007-08-10 00:00:14', '00:00:13', 1, 1, 14, 0, NULL, 1, NULL, NULL, NULL);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (2, 1, 1, 14);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (6, 2, 1, 32);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (7, 3, 6, 20);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (8, 4, 6, 14);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (9, 5, 1, 20);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (10, 6, 1, 26);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (11, 7, 6, 25);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (12, 8, 6, 27);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (13, 9, 1, 17);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (14, 10, 1, 28);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (15, 11, 1, 29);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (16, 12, 11, 20);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (18, 13, 8, 14);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (19, 14, 8, 20);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (21, 15, 1, 33);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (22, 16, 8, 33);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (23, 17, 1, 35);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (24, 18, 1, 33);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (25, 19, 1, 35);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (26, 20, 8, 33);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (27, 21, 1, 20);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (28, 22, 12, 14);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (29, 23, 8, 36);
+INSERT INTO binarypackagebuild (id, package_build, distro_arch_series, source_package_release) VALUES (30, 24, 12, 14);
 
 
-ALTER TABLE build ENABLE TRIGGER ALL;
+ALTER TABLE binarypackagebuild ENABLE TRIGGER ALL;
+
+
+ALTER TABLE binarypackagename DISABLE TRIGGER ALL;
+
+INSERT INTO binarypackagename (id, name) VALUES (6, 'foobar');
+INSERT INTO binarypackagename (id, name) VALUES (8, 'mozilla-firefox');
+INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
+INSERT INTO binarypackagename (id, name) VALUES (14, 'linux-2.6.12');
+INSERT INTO binarypackagename (id, name) VALUES (15, 'at');
+INSERT INTO binarypackagename (id, name) VALUES (16, 'cdrkit');
+INSERT INTO binarypackagename (id, name) VALUES (17, 'commercialpackage');
+INSERT INTO binarypackagename (id, name) VALUES (18, 'mozilla-firefox-data');
+
+
+ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
 
 
 ALTER TABLE binarypackagerelease DISABLE TRIGGER ALL;

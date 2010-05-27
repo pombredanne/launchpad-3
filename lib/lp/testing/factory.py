@@ -127,13 +127,13 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 from lp.testing import run_with_login, time_counter, login, logout
@@ -2177,13 +2177,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
-        binary_package_build = BinaryPackageBuild(
-            sourcepackagerelease=source_package_release,
+        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+            source_package_release=source_package_release,
             processor=processor,
-            distroarchseries=distroarchseries,
-            buildstate=BuildStatus.NEEDSBUILD,
+            distro_arch_series=distroarchseries,
+            status=BuildStatus.NEEDSBUILD,
             archive=archive,
-            datecreated=self.getUniqueDate())
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=self.getUniqueDate())
         binary_package_build_job = binary_package_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,

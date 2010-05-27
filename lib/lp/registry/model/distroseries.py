@@ -1047,8 +1047,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageRelease.build =
-            Build.id AND
-        Build.sourcepackagerelease =
+            BinaryPackageBuild.id AND
+        BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
@@ -1085,8 +1085,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = " AND ".join(query)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName']
+                        'BinaryPackageRelease', 'BinaryPackageName',
+                        'BinaryPackageBuild', 'SourcePackageRelease',
+                        'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
