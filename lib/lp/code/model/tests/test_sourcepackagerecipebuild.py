@@ -77,8 +77,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
 
-        # The processor for SourcePackageRecipeBuilds should not be None.  They
-        # do require specific environments.
+        # The processor for SourcePackageRecipeBuilds should not be None.
+        # They do require specific environments.
         self.assertNotEqual(None, bq.processor)
         self.assertEqual(
             spb.distroseries.nominatedarchindep.default_processor,
@@ -135,10 +135,17 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertFalse(check_permission('launchpad.View', build))
 
     def test_estimateDuration(self):
-        # The duration estimate is currently hard-coded as two minutes.
+        # If there are no successful builds, estimate 10 minutes.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(
-            datetime.timedelta(minutes=2), spb.estimateDuration())
+            datetime.timedelta(minutes=10), spb.estimateDuration())
+        for minutes in [20, 5, 1]:
+            build = removeSecurityProxy(
+                self.factory.makeSourcePackageRecipeBuild(recipe=spb.recipe))
+            build.buildduration = datetime.timedelta(minutes=minutes)
+        self.assertEqual(
+            datetime.timedelta(minutes=5), spb.estimateDuration())
+
 
     def test_datestarted(self):
         """Datestarted is taken from job if not specified in the build.

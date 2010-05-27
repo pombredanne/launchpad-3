@@ -1783,7 +1783,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
                                      requester=None, archive=None,
-                                     sourcename=None, distroseries=None):
+                                     sourcename=None, distroseries=None,
+                                     pocket=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
             recipe = self.makeSourcePackageRecipe(name=sourcename)
@@ -1798,7 +1799,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroseries=distroseries,
             recipe=recipe,
             archive=archive,
-            requester=requester)
+            requester=requester,
+            pocket=pocket)
 
     def makeSourcePackageRecipeBuildJob(
         self, score=9876, virtualized=True, estimated_duration=64,

@@ -920,7 +920,7 @@ class NascentUpload:
                 diff = to_sourcepackagerelease.requestDiffTo(
                     sourcepackagerelease.creator, sourcepackagerelease)
                 self.logger.debug(
-                    'Package diff for %s from %s requested' % (
+                    '%s %s requested' % (
                         diff.from_source.name, diff.title))
 
         if self.binaryful:
