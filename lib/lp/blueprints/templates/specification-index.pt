@@ -278,11 +278,11 @@
 
             <ul class="horizontal">
               <li tal:define="link context_menu/givefeedback"
-                   tal:condition="link/enabled">
+                  tal:condition="link/enabled">
                 <a tal:replace="structure link/fmt:link" />
               </li>
               <li tal:define="link context_menu/requestfeedback"
-                   tal:condition="link/enabled">
+                  tal:condition="link/enabled">
                 <a tal:replace="structure link/fmt:link" />
               </li>
             </ul>
@@ -293,14 +293,14 @@
     </div>
 
     <div class="portlet">
-          <h2>
-            Whiteboard
-            <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
-         </h2>
+      <h2>
+        Whiteboard
+        <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
+      </h2>
 
-          <div class="widetext"
-            tal:content="structure context/whiteboard/fmt:text-to-html"
-            tal:condition="context/whiteboard">Whiteboard.</div>
+      <div class="widetext"
+           tal:content="structure context/whiteboard/fmt:text-to-html"
+           tal:condition="context/whiteboard">Whiteboard.</div>
     </div>
 
     <div class="portlet">
