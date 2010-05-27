@@ -396,3 +396,92 @@ class POFileTranslationActions(WindmillTestCase):
             id=u'msgset_138_es_translation_0_new_select')
         client.asserts.assertNotChecked(
             id=u'msgset_139_es_translation_0_new_select')
+
+
+class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
+    """Tests for page behaviour in reviewer or translator mode."""
+
+    layer = TranslationsWindmillLayer
+    suite_name = 'POFile Translate'
+
+    test_user = lpuser.TRANSLATIONS_ADMIN
+
+    switch_working_mode = u'translation-switch-working-mode'
+    force_suggestion = u'msgset_1_force_suggestion'
+    new_translation = u'msgset_1_pt_BR_translation_0_new'
+    js_code = ("lookupNode({id: '%s'}).innerHTML.search('eviewer') > 0" %
+                switch_working_mode)
+
+    def test_pofile_reviewer_mode(self):
+        """Test for reviewer mode.
+
+        Adding new translations will force them as suggestions.
+        """
+
+        self.client.open(
+            url='http://translations.launchpad.dev:8085/'
+            'evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate')
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+
+        self._ensureTranslationMode(reviewer=True)
+
+        self.client.waits.forElement(
+            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
+        self.client.type(text=u'New translation', id=self.new_translation)
+        self.client.asserts.assertNotChecked(id=self.force_suggestion)
+
+    def test_pofile_translator_mode(self):
+        """Test for translator mode.
+
+        Adding new translations will not force them as suggestions.
+        """
+
+        self.client.open(
+            url='http://translations.launchpad.dev:8085'
+            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate')
+        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        self.test_user.ensure_login(self.client)
+
+        self._ensureTranslationMode(translator=True)
+
+        self.client.waits.forElement(
+            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
+        self.client.type(text=u'New translation', id=self.new_translation)
+        self.client.asserts.assertChecked(id=self.force_suggestion)
+
+        # The new translation will be forced only if the previous new
+        # translation field is empty. Othewise the force suggestion checkbox
+        # will remain unchecked.
+        self.client.click(id=self.force_suggestion)
+        self.client.keyPress(
+            id=self.new_translation,
+            options='a,true,false,false,false,false')
+        self.client.asserts.assertNotChecked(id=self.force_suggestion)
+
+    def _ensureTranslationMode(self, reviewer=False, translator=False):
+        """Ensure the specified mode is currently selected."""
+
+        if (reviewer is translator):
+            raise AssertionError("You must specify a single working mode.")
+
+        self.client.waits.forElement(
+            id=self.switch_working_mode, timeout=constants.FOR_ELEMENT)
+
+        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
+        need_to_switch_mode = (
+            reviewer and not current_is_reviewer or
+            translator and current_is_reviewer)
+        if need_to_switch_mode:
+            self.client.click(id=self.switch_working_mode)
+        else:
+            return
+
+        # We check that the mode was changed.
+        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
+
+        switch_done = (
+            reviewer and current_is_reviewer or
+            translator and not current_is_reviewer)
+        assert switch_done is True, "Could not switch working mode."
+

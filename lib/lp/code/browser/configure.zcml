@@ -392,6 +392,9 @@
             name="++branch-pending-merges"
             template="../templates/branch-pending-merges.pt" />
         <browser:page
+            name="++branch-recipes"
+            template="../templates/branch-recipes.pt" />
+        <browser:page
             name="++branch-import-details"
             template="../templates/branch-import-details.pt" />
         <browser:page

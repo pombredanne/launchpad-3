@@ -7,7 +7,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import textwrap
 import unittest
 
@@ -25,7 +25,8 @@ from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
+    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
+    InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -314,6 +315,25 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+    def test_getMedianBuildDuration(self):
+        recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
+        self.assertIs(None, recipe.getMedianBuildDuration())
+        build = removeSecurityProxy(
+            self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
+        build.buildduration = timedelta(minutes=10)
+        self.assertEqual(
+            timedelta(minutes=10), recipe.getMedianBuildDuration())
+        def addBuild(minutes):
+            build = removeSecurityProxy(
+                self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
+            build.buildduration = timedelta(minutes=minutes)
+        addBuild(20)
+        self.assertEqual(
+            timedelta(minutes=10), recipe.getMedianBuildDuration())
+        addBuild(11)
+        self.assertEqual(
+            timedelta(minutes=11), recipe.getMedianBuildDuration())
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):

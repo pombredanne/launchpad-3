@@ -118,6 +118,14 @@ packages matching (substring) the given text.
     http://.../ubuntu/+source/foobar
     http://.../ubuntu/+source/commercialpackage
 
+"getArchive" returns a distribution archive (not a PPA) with the given name.
+
+    >>> partner = webservice.named_get(
+    ...     ubuntu['self_link'], 'getArchive',
+    ...     name='partner').jsonBody()
+    >>> print partner['self_link']
+    http://.../ubuntu/+archive/partner
+
 "getMirrorByName" returns a mirror by its unique name.
 
     >>> canonical_releases = webservice.named_get(

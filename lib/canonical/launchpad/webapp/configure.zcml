@@ -286,13 +286,6 @@
         />
 
     <adapter
-        for="basestring"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.FormattersAPI"
-        name="fmt"
-        />
-
-    <adapter
         for="int"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
@@ -539,6 +532,12 @@
         for="lp.translations.interfaces.pofile.IPOFile"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.POFileFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.soyuz.interfaces.packagediff.IPackageDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PackageDiffFormatterAPI"
         name="fmt"
         />
     <adapter

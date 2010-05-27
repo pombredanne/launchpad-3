@@ -21,7 +21,7 @@ from pytz import utc
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 
 def referenced_oops():
     '''Return a set of OOPS codes that are referenced somewhere in the
