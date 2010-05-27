@@ -332,7 +332,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         origin = SQL(joins)
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC')
+        results = results.order_by('score DESC', SourcePackageName.name)
         return [{
                  'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
