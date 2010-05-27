@@ -186,9 +186,9 @@ class LaunchpadBrowserPublication(
             for name, store in list(zstorm.iterstores()):
                 zstorm.remove(store)
                 store.close()
-            # is_read_only() is cached for the entire request, so there
-            # is no race condition here.
-            self.thread_locals.was_read_only = is_read_only()
+        # is_read_only() is cached for the entire request, so there
+        # is no race condition here.
+        self.thread_locals.was_read_only = is_read_only()
 
         # Now we are logged in, install the correct IDatabasePolicy for
         # this request.
