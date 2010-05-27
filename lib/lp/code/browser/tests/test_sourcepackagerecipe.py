@@ -20,7 +20,8 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeBuildView
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.soyuz.model.processor import ProcessorFamily
@@ -332,6 +333,16 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([1000]),
             set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_builds_archive(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa2 = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef, name='ppa2')
+        view = SourcePackageRecipeRequestBuildsView(recipe, None)
+        self.assertIs(None, view.initial_values.get('archive'))
+        self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
+        self.assertEqual(ppa2, view.initial_values.get('archive'))
+
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
