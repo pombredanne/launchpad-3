@@ -32,8 +32,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
 
         self.recipe = self.factory.makeSourcePackageRecipe()
         self.build = getUtility(ISourcePackageRecipeBuildSource).new(
-            recipe=self.recipe, archive=self.factory.makeArchive(
-                distribution=self.ubuntu, owner=self.recipe.owner),
+            recipe=self.recipe,
             requester=self.recipe.owner)
 
         Store.of(self.build).flush()
