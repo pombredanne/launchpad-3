@@ -97,7 +97,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             getUtility(ISourcePackageRecipeSource).exists(
                 recipe.owner, u'daily'))
 
-
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
         self.assertProvides(
