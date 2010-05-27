@@ -851,10 +851,13 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         name=TextLine(),
         recipe_text=Text(),
         sourcepackagename=TextLine(),
+        daily_build_archive=Reference(schema=Interface),
+        build_daily=Bool(),
         )
     @export_factory_operation(Interface, [])
     def createRecipe(name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+                     sourcepackagename, registrant, daily_build_archive=None,
+                     build_daily=False):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.

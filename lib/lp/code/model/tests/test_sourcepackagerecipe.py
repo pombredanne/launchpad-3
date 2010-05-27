@@ -575,15 +575,18 @@ class TestWebservice(TestCaseWithFactory):
         db_distroseries = self.factory.makeDistroSeries()
         if recipe_text is None:
             recipe_text = self.makeRecipeText()
+        db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         launchpad = launchpadlib_for('test', user,
                 service_root="http://api.launchpad.dev:8085")
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)
+        ws_archive = ws_object(launchpad, db_archive)
         recipe = ws_owner.createRecipe(
             name='toaster-1', sourcepackagename='toaster',
             description='a recipe', recipe_text=recipe_text,
-            distroseries=[distroseries.self_link])
+            distroseries=[distroseries.self_link],
+            build_daily=True, daily_build_archive=ws_archive)
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
@@ -601,6 +604,8 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual('toaster-1', recipe.name)
         self.assertEqual(recipe_text, recipe.recipe_text)
         self.assertEqual('toaster', recipe.sourcepackagename)
+        self.assertTrue(recipe.build_daily)
+        self.assertEqual('recipe-ppa', recipe.daily_build_archive.name)
 
     def test_recipe_text(self):
         recipe_text2 = self.makeRecipeText()

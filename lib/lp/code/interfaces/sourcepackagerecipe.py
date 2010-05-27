@@ -88,8 +88,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     """
     export_as_webservice_entry()
 
-    daily_build_archive = Reference(
-        IArchive, title=_("The archive to use for daily builds."))
+    daily_build_archive = exported(Reference(
+        IArchive, title=_("The archive to use for daily builds.")))
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
@@ -111,8 +111,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
         readonly=False)
-    build_daily = Bool(
-        title=_("Build daily"))
+    build_daily = exported(Bool(
+        title=_("Build daily")))
     sourcepackagename = Reference(
         ISourcePackageName, title=_("The name of the source package this "
                                     "recipe will build a source package"),

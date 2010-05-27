@@ -193,6 +193,8 @@ patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 patch_entry_return_type(IPerson, 'createRecipe', ISourcePackageRecipe)
 patch_list_parameter_type(IPerson, 'createRecipe', 'distroseries',
                           Reference(schema=IDistroSeries))
+patch_plain_parameter_type(IPerson, 'createRecipe', 'daily_build_archive',
+                           IArchive)
 
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
