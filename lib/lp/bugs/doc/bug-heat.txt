@@ -131,7 +131,7 @@ If a user who wasn't affected by the bug marks themselve as explicitly
 unaffected, the bug's heat doesn't change.
 
     >>> unaffected_person = factory.makePerson()
-    >>> bug.markUserAffected(unaffected_person)
+    >>> bug.markUserAffected(unaffected_person, False)
     >>> bug.heat
     8
 

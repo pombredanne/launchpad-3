@@ -520,10 +520,8 @@ class Bug(SQLBase):
                 # flushed so that code running with implicit flushes
                 # disabled see the change.
                 store.flush()
+                self.updateHeat()
                 return
-
-        self._flushAndInvalidate()
-        self.updateHeat()
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
         """See `IBug`."""
@@ -1468,6 +1466,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         field = DuplicateBug()
         field.context = self
+        current_duplicateof = self.duplicateof
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
@@ -1476,15 +1475,17 @@ class Bug(SQLBase):
             raise InvalidDuplicateValue(validation_error)
 
         if duplicate_of is not None:
-            # Create a job to update the heat of the master bug and set
-            # this bug's heat to 0 (since it's a duplicate, it shouldn't
-            # have any heat at all).
+            # Update the heat of the master bug and set this bug's heat
+            # to 0 (since it's a duplicate, it shouldn't have any heat
+            # at all).
             self.setHeat(0)
             duplicate_of.updateHeat()
         else:
-            # Otherwise, create a job to recalculate this bug's heat,
-            # since it will be 0 from having been a duplicate.
+            # Otherwise, recalculate this bug's heat, since it will be 0
+            # from having been a duplicate. We also update the bug that
+            # was previously duplicated.
             self.updateHeat()
+            current_duplicateof.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
