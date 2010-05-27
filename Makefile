@@ -99,7 +99,7 @@ ec2_check: clean build
         # Yes, this is code duplication.  If you conceive of a better
         # solution in a less heated moment, then please replace this!
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
-		--layer='!WindmillLayer'
+		--layer='!\(MailmanLayer\|WindmillLayer\)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -197,6 +197,13 @@ bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
+
+# This target is used by LOSAs to prepare a build to be pushed out to
+# destination machines.  We only want eggs: they are the expensive bits,
+# and the other bits might run into problems like bug 575037.  This
+# target runs buildout, and then removes everything created except for
+# the eggs.
+build_eggs: $(BUILDOUT_BIN) clean_buildout
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
@@ -321,7 +328,15 @@ clean_js:
 	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
-clean: clean_js
+clean_buildout:
+	$(RM) -r bin
+	$(RM) -r parts
+	$(RM) -r develop-eggs
+	$(RM) .installed.cfg
+	$(RM) -r build
+	$(RM) _pythonpath.py
+
+clean: clean_js clean_buildout
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -334,11 +349,6 @@ clean: clean_js
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r bin
-	$(RM) -r parts
-	$(RM) -r develop-eggs
-	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
@@ -346,7 +356,6 @@ clean: clean_js
 	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
-	$(RM) _pythonpath.py
 	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
@@ -464,5 +473,5 @@ pydoctor:
 	check check_merge ec2_check \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild jsbuild_lazr clean_js buildonce_eggs \
+	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
 	sprite_css sprite_image css_combine compile check_schema pydoctor
