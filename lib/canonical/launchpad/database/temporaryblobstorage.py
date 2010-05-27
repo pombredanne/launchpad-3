@@ -66,17 +66,24 @@ class TemporaryBlobStorage(SQLBase):
             job_for_blob = getUtility(
                 IProcessApportBlobJobSource).getByBlobUUID(self.uuid)
         except SQLObjectNotFound:
-            return False
+            return None
 
         return job_for_blob
 
     def hasBeenProcessed(self):
         """See `ITemporaryBlobStorage`."""
-        return (self._apport_job.job.status == JobStatus.COMPLETED)
+        job_for_blob = self._apport_job
+        if job_for_blob:
+            return (job_for_blob.job.status == JobStatus.COMPLETED)
+        else:
+            return False
 
     def getProcessedData(self):
         """See `ITemporaryBlobStorage`."""
-        return self._apport_job.metadata
+        if not self._apport_job:
+            return None
+        else:
+            return self._apport_job.metadata
 
 
 class TemporaryStorageManager:
