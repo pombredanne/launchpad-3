@@ -342,7 +342,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_findStaleDailyBuilds_requires_build_daily(self):
         recipe = self.factory.makeSourcePackageRecipe()
-        self.assertContentEqual([], SourcePackageRecipe.findStaleDailyBuilds())
+        self.assertContentEqual(
+            [], SourcePackageRecipe.findStaleDailyBuilds())
         removeSecurityProxy(recipe).build_daily = True
         self.assertEqual([recipe],
             [sprd.sourcepackage_recipe for sprd
@@ -360,7 +361,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             distroseries=list(recipe.distroseries)[0],
             pocket=PackagePublishingPocket.RELEASE)
         removeSecurityProxy(build).datebuilt = now
-        self.assertContentEqual([], SourcePackageRecipe.findStaleDailyBuilds())
+        self.assertContentEqual(
+            [], SourcePackageRecipe.findStaleDailyBuilds())
         distro2 = self.factory.makeDistroSeries()
         distro3 = self.factory.makeDistroSeries()
         recipe.distroseries.add(distro2)
