@@ -181,7 +181,7 @@ class LaunchpadBrowserPublication(
         # are worker threads. We will be able to handle this better
         # when we have a connection pool.
         was_read_only = getattr(self.thread_locals, 'was_read_only', None)
-        if was_read_only != is_read_only():
+        if was_read_only is not None and was_read_only != is_read_only():
             zstorm = getUtility(IZStorm)
             for name, store in list(zstorm.iterstores()):
                 zstorm.remove(store)
