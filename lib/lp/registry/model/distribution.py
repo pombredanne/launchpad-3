@@ -516,6 +516,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def __iter__(self):
         return iter(self.series)
 
+    def getArchive(self, name):
+        """See `IDistribution.`"""
+        return getUtility(
+            IArchiveSet).getByDistroAndName(self, name)
+
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
         distroseries = DistroSeries.selectOneBy(
