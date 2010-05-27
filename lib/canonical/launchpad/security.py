@@ -1744,6 +1744,7 @@ class BranchSubscriptionEdit(AuthorizationBase):
         Launchpad Admins can also edit any branch subscription.
         """
         return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.subscribed_by) or
                 user.in_admin or
                 user.in_bazaar_experts)
 
