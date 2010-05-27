@@ -1588,7 +1588,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION calculate_bug_heat(bug_id integer) RETURNS integer
-LANGUAGE plpythonu AS $$
+LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
     from datetime import datetime
 
     class BugHeatConstants:
