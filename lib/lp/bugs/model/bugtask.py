@@ -948,6 +948,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def userCanSetAnyAssignee(self, user):
         """See `IBugTask`."""
+        celebrities = getUtility(ILaunchpadCelebrities)
         return user is not None and (
             user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
@@ -956,7 +957,8 @@ class BugTask(SQLBase, BugTaskMixin):
              user.inTeam(self.distroseries.driver)) or
             (self.productseries is not None and
              user.inTeam(self.productseries.driver)) or
-            user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+            user.inTeam(celebrities.admin)
+            or user == celebrities.bug_importer)
 
     def userCanUnassign(self, user):
         """True if user can set the assignee to None.
@@ -975,9 +977,10 @@ class BugTask(SQLBase, BugTaskMixin):
         # drivers and Launchpad admins can assign others.
         user = getUtility(ILaunchBag).user
         return (
-            user.inTeam(assignee) or
-            (assignee is None and self.userCanUnassign(user)) or
-            self.userCanSetAnyAssignee(user))
+            user is not None and (
+                user.inTeam(assignee) or
+                (assignee is None and self.userCanUnassign(user)) or
+                self.userCanSetAnyAssignee(user)))
 
     def transitionToAssignee(self, assignee):
         """See `IBugTask`."""

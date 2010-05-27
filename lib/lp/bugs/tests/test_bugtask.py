@@ -12,6 +12,7 @@ from zope.testing.doctestunit import DocTestSuite
 from lazr.lifecycle.snapshot import Snapshot
 
 from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import all, any
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
@@ -678,6 +679,24 @@ class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
         login_person(foo_bar)
         self.assertTrue(self.target_bugtask.userCanUnassign(foo_bar))
         self.assertTrue(self.series_bugtask.userCanUnassign(foo_bar))
+
+    def test_userCanSetAnyAssignee_bug_importer(self):
+        # The bug importer celebrity can assign anybody.
+        login_person(self.target_owner_member)
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        login_person(bug_importer)
+        self.assertTrue(
+            self.target_bugtask.userCanSetAnyAssignee(bug_importer))
+        self.assertTrue(
+            self.series_bugtask.userCanSetAnyAssignee(bug_importer))
+
+    def test_userCanUnassign_launchpad_bug_importer(self):
+        # The bug importer celebrity can unassign anybody.
+        login_person(self.target_owner_member)
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        login_person(bug_importer)
+        self.assertTrue(self.target_bugtask.userCanUnassign(bug_importer))
+        self.assertTrue(self.series_bugtask.userCanUnassign(bug_importer))
 
 
 class TestProductBugTaskPermissionsToSetAssignee(

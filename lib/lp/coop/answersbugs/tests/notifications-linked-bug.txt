@@ -49,12 +49,11 @@ of changes to the bug status:
 
 Only a change in status triggers a notification.
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToAssignee(sample_person)
+    >>> bugtask.transitionToAssignee(no_priv)
     >>> notify(ObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['assignee', 'dateassigned'],
-    ...     user=sample_person))
+    ...     user=no_priv))
 
     >>> len(pop_notifications())
     0
