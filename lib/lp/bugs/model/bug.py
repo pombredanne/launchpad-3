@@ -1569,6 +1569,11 @@ class Bug(SQLBase):
 
     def updateHeat(self):
         """See `IBug`."""
+        if self.duplicateof is not None:
+            # If this bug is a duplicate we don't try to calculate its
+            # heat.
+            return
+
         # We need to flush the store first to ensure that changes are
         # reflected in the new bug heat total.
         store = Store.of(self)
