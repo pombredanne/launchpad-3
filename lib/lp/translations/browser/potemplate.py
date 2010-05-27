@@ -763,8 +763,8 @@ class POTemplateSubsetNavigation(Navigation):
     def traverse(self, name):
         """Return the IPOTemplate associated with the given name."""
 
-        assert self.request.method in ['GET', 'HEAD', 'POST'], (
-            'We only know about GET, HEAD, and POST')
+        assert self.request.method in ['GET', 'HEAD', 'PATCH', 'POST'], (
+            'We only know about GET, HEAD, PATCH and POST')
 
         # Get the requested potemplate.
         potemplate = self.context.getPOTemplateByName(name)

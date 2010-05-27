@@ -862,8 +862,6 @@ virtual host.
             u'http://.../babadoo/foobadoo/active_milestones'
     all_milestones_collection_link:
             u'http://.../babadoo/foobadoo/all_milestones'
-    all_translation_templates_collection_link:
-            u'http://.../babadoo/foobadoo/all_translation_templates'
     branch_link: u'http://.../~babadoo-owner/babadoo/fooey'
     bug_reporting_guidelines: None
     date_created: u'...'

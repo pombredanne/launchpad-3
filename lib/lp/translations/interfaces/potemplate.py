@@ -9,7 +9,8 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    exported, export_as_webservice_entry)
+    exported, export_as_webservice_entry, export_read_operation,
+    operation_returns_collection_of)
 
 from canonical.launchpad.fields import ParticipatingPersonChoice
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -79,8 +80,8 @@ class IPOTemplate(IRosettaStats):
     """A translation template."""
 
     export_as_webservice_entry(
-        singular_name='potemplate',
-        plural_name='potemplates')
+        singular_name='translation_template',
+        plural_name='translation_templates')
 
     id = exported(Int(
         title=u"The translation template id.",
@@ -228,10 +229,10 @@ class IPOTemplate(IRosettaStats):
 
     pofiles = exported(
         CollectionField(
-            title=_("All `IPOFile` that exist for this template."),
+            title=_("All translation files that exist for this template."),
             # Really IPOFile, see _schema_circular_imports.py.
             value_type=Reference(schema=Interface)),
-        exported_as='all_pofiles')
+        exported_as='translation_files')
 
     relatives_by_name = Attribute(
         _('All `IPOTemplate` objects that have the same name asa this one.'))
@@ -709,12 +710,6 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
-    all_translation_templates = exported(
-        CollectionField(
-            title=_("All translation templates, either obsolete or current."),
-            # Really IPOTemplate, see _schema_circular_imports.py.
-            value_type=Reference(schema=IPOTemplate)))
-
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.
 
@@ -738,8 +733,10 @@ class IHasTranslationTemplates(Interface):
         are set to False.
         """
 
+    @export_read_operation()
+    @operation_returns_collection_of(IPOTemplate)
     def getTranslationTemplates():
-        """Return an iterator over all its translation templates.
+        """Return all translation templates for this entry.
 
         The returned templates are either obsolete or current.
         """

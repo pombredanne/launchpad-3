@@ -37,8 +37,8 @@ class IPOFile(IRosettaStats):
     """A translation file."""
 
     export_as_webservice_entry(
-        singular_name="pofile",
-        plural_name="pofiles")
+        singular_name="translation_file",
+        plural_name="translation_files")
 
     id = exported(Int(
         title=_('The translation file id.'), required=True, readonly=True))

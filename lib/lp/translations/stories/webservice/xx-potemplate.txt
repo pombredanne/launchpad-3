@@ -12,7 +12,6 @@ Anonymous users have read access to PO templates attributes.
     ...     '/ubuntu/hoary/+source/pmount/+pots/pmount').jsonBody()
     >>> pprint_entry(potemplate)
     active: True
-    all_pofiles_collection_link: u'http://.../pmount/+pots/pmount/all_pofiles'
     date_last_updated: u'2005-05-06T20:09:23.775993+00:00'
     description: None
     exported_in_languagepacks: True
@@ -24,25 +23,27 @@ Anonymous users have read access to PO templates attributes.
     owner_link: u'http://.../~rosetta-admins'
     path: u'po/template.pot'
     priority: 0
-    resource_type_link: u'http://.../#potemplate'
+    resource_type_link: u'http://.../#translation_template'
     self_link: u'http://.../ubuntu/hoary/+source/pmount/+pots/pmount'
     translation_domain: u'pmount'
+    translation_files_collection_link:
+        u'http://.../pmount/+pots/pmount/translation_files'
 
-"all_pofiles" will list all POFiles associated with this template.
+"translation_files" will list all POFiles associated with this template.
 
-    >>> all_pofiles = anon_webservice.get(
-    ...     potemplate['all_pofiles_collection_link']).jsonBody()
-    >>> print all_pofiles['total_size']
+    >>> translation_files = anon_webservice.get(
+    ...     potemplate['translation_files_collection_link']).jsonBody()
+    >>> print translation_files['total_size']
     9
-    >>> print(all_pofiles['entries'][0]['resource_type_link'])
-    http://.../#pofile
+    >>> print(translation_files['entries'][0]['resource_type_link'])
+    http://.../#translation_file
 
 
 Getting all potemplates for a distribution series
 -------------------------------------------------
 
-All templates associated to a distribution series are available as the
-'all_translation_templates' collection link attribute.
+All templates associated to a distribution series are available from the
+'getTranslationTemplates' GET method.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -53,20 +54,20 @@ All templates associated to a distribution series are available as the
     >>> templates = getUtility(IPOTemplateSet).getSubset(distroseries=hoary)
     >>> db_count = len(list(templates))
     >>> logout()
-    >>> all_translation_templates = anon_webservice.get(
-    ...     '/ubuntu/hoary/all_translation_templates').jsonBody()
+    >>> all_translation_templates = anon_webservice.named_get(
+    ...     '/ubuntu/hoary/', 'getTranslationTemplates').jsonBody()
     >>> api_count = all_translation_templates['total_size']
     >>> api_count == db_count
     True
     >>> print(all_translation_templates['entries'][0]['resource_type_link'])
-    http://.../#potemplate
+    http://.../#translation_template
 
 
 Getting all potemplates for a product series
 --------------------------------------------
 
-All translation templates for a product series are available as the
-'all_translation_templates' collection link attribute.
+All translation templates for a product series are available using the
+'getTranslationTemplates' GET method.
 
     >>> login('admin@canonical.com')
     >>> productseries = factory.makeProductSeries()
@@ -74,23 +75,24 @@ All translation templates for a product series are available as the
     >>> potemplate_2 = factory.makePOTemplate(productseries=productseries)
     >>> potemplate_count = 2
     >>> logout()
-    >>> all_translation_templates = anon_webservice.get(
-    ...     '/%s/%s/all_translation_templates' % (
+    >>> all_translation_templates = anon_webservice.named_get(
+    ...     '/%s/%s' % (
     ...         productseries.product.name,
-    ...         productseries.name)
+    ...         productseries.name),
+    ...     'getTranslationTemplates'
     ...     ).jsonBody()
     >>> api_count = all_translation_templates['total_size']
     >>> api_count == potemplate_count
     True
     >>> print(all_translation_templates['entries'][0]['resource_type_link'])
-    http://.../#potemplate
+    http://.../#translation_template
 
 
 Getting all translation templates for a source package
 ------------------------------------------------------
 
-All translation templates for a source package are available as the
-'all_translation_templates' collection link attribute.
+All translation templates for a source package are available using the
+'getTranslationTemplates' GET method.
 
 
     >>> from zope.component import getUtility
@@ -108,12 +110,12 @@ All translation templates for a source package are available as the
     ...         sourcepackagename=evolution_package)
     >>> db_count = len(list(templates))
     >>> logout()
-    >>> all_translation_templates = anon_webservice.get(
-    ...     '/ubuntu/hoary/+source/evolution'
-    ...     '/all_translation_templates').jsonBody()
+    >>> all_translation_templates = anon_webservice.named_get(
+    ...     '/ubuntu/hoary/+source/evolution',
+    ...     'getTranslationTemplates').jsonBody()
     >>> api_count = all_translation_templates['total_size']
     >>> api_count == db_count
     True
     >>> print(all_translation_templates['entries'][0]['resource_type_link'])
-    http://.../#potemplate
+    http://.../#translation_template
 

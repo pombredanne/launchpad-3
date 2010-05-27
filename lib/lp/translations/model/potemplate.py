@@ -1525,11 +1525,6 @@ class HasTranslationTemplatesMixin:
         raise NotImplementedError('This must be provided when subclassing.')
 
     @property
-    def all_translation_templates(self):
-        """See `IHasTranslationTemplates`."""
-        return self.getTranslationTemplates()
-
-    @property
     def has_current_translation_templates(self):
         """Does self have current translation templates?"""
         templates = self.getCurrentTranslationTemplates()
