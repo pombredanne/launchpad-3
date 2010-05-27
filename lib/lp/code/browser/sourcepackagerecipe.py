@@ -31,7 +31,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
@@ -44,7 +43,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
@@ -323,12 +321,8 @@ class RecipeTextValidatorMixin:
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
 
-        store = IMasterStore(self.context)
-        recipe = store.find(
-            SourcePackageRecipe,
-            SourcePackageRecipe.owner == self.user,
-            SourcePackageRecipe.name == data['name']).one()
-        if recipe:
+        if getUtility(ISourcePackageRecipeSource).exists(
+                                                    self.user, data['name']):
             self.setFieldError(
                 'name',
                 'There is already a recipe owned by %s with this name.' %
