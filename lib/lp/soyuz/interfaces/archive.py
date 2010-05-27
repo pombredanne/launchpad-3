@@ -143,6 +143,7 @@ class VersionRequiresName(Exception):
 
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
+    webservice_error(403) # Forbidden.
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
