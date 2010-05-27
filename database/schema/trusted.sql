@@ -1657,25 +1657,17 @@ LANGUAGE plpythonu AS $$
     if bug['security_related']:
         heat['security'] = BugHeatConstants.SECURITY
 
-    # Get the heat from subscribers.
-    sub_count = plpy.execute(
-        "SELECT COUNT(id) AS sub_count FROM BugSubscription WHERE bug = %s"
-        % bug_id)
-
-    heat['subscribers'] = (
-        BugHeatConstants.SUBSCRIBER * sub_count[0]['sub_count'])
-
-    # Get the heat from subscribers via duplicates.
+    # Get the heat from subscribers, both direct and via duplicates.
     subs_from_dupes = plpy.execute("""
-        SELECT COUNT(DISTINCT BugSubscription.person) AS dupe_sub_count
+        SELECT COUNT(DISTINCT BugSubscription.person) AS sub_count
         FROM BugSubscription, Bug
         WHERE Bug.id = BugSubscription.bug
             AND (Bug.id = %s OR Bug.duplicateof = %s)"""
         % (bug_id, bug_id))
 
-    heat['subcribers_from_dupes'] = (
+    heat['subcribers'] = (
         BugHeatConstants.SUBSCRIBER
-        * subs_from_dupes[0]['dupe_sub_count'])
+        * subs_from_dupes[0]['sub_count'])
 
     total_heat = sum(heat.values())
 
