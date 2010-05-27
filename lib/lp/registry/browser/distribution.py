@@ -51,7 +51,6 @@ from lp.blueprints.browser.specificationtarget import (
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.soyuz.browser.archive import traverse_distro_archive
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
@@ -161,7 +160,7 @@ class DistributionNavigation(
 
     @stepthrough('+archive')
     def traverse_archive(self, name):
-        return traverse_distro_archive(self.context, name)
+        return self.context.getArchive(name)
 
 
 class DistributionSetNavigation(Navigation):
