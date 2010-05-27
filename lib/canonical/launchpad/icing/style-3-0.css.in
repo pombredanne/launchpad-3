@@ -409,6 +409,10 @@ ol.subordinate {
     /* Keep the abilty to hide list entries. */
     display: none;
     }
+div.widetext p {
+    max-width: 60em;
+    margin-bottom: 1.0em;
+    }
 .portlet dd {
     margin-bottom: 0.5em;
     font-size: 85%;
