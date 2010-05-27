@@ -74,6 +74,7 @@ return True.
     ...     getUtility(ITemporaryStorageManager).fetch(blob_token))
     >>> job.job.start()
     >>> job.job.complete()
+    >>> job.metadata
     >>> logout()
 
     >>> print webservice.named_get(
