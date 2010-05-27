@@ -85,6 +85,19 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
              recipe.sourcepackagename, recipe.name))
 
+    def test_exists(self):
+        # Test ISourcePackageRecipeSource.exists
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        self.assertTrue(
+            getUtility(ISourcePackageRecipeSource).exists(
+                recipe.owner, recipe.name))
+
+        self.assertFalse(
+            getUtility(ISourcePackageRecipeSource).exists(
+                recipe.owner, u'daily'))
+
+
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
         self.assertProvides(
