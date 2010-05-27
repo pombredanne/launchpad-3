@@ -44,6 +44,7 @@ from zope.formlib import form
 from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Bool, Choice, Text
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -97,6 +98,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 
 
 def quote(text):
@@ -988,6 +990,27 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
+        else:
+            # For normal users, there is an edge case with package branches
+            # where the editor may not be in the team of the branch owner.  In
+            # these cases we need to extend the vocabulary connected to the
+            # owner field.
+            if not self.user.inTeam(self.context.owner):
+                vocab = UserTeamsParticipationPlusSelfVocabulary()
+                owner = self.context.owner
+                terms = [SimpleTerm(
+                    owner, owner.name, owner.unique_displayname)]
+                terms.extend([term for term in vocab])
+                owner_field = self.schema['owner']
+                owner_choice = Choice(
+                    __name__='owner', title=owner_field.title,
+                    description = owner_field.description,
+                    required=True, vocabulary=SimpleVocabulary(terms))
+                new_owner_field = form.Fields(
+                    owner_choice, render_context=self.render_context)
+                # Replace the normal owner field with a more permissive vocab.
+                self.form_fields = self.form_fields.omit('owner')
+                self.form_fields = new_owner_field + self.form_fields
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
