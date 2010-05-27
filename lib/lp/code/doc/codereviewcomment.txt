@@ -65,7 +65,7 @@ a notification is produced when the comment is created.
     >>> _unused = merge_proposal.source_branch.subscribe(source_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, source_subscriber)
     >>> from lp.testing.mail_helpers import (
     ...     pop_notifications, print_emails)
     >>> _unused = pop_notifications()
