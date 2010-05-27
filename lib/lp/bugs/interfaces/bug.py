@@ -99,7 +99,7 @@ class CreateBugParams:
         False in a boolean context, or an AssertionError will be raised.
 
         If distribution is specified, sourcepackagename may optionally
-        be provided. product must evaluate to False in a boolean
+        be provided. Product must evaluate to False in a boolean
         context, or an AssertionError will be raised.
         """
         assert product or distribution, (

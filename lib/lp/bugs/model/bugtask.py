@@ -1600,10 +1600,44 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            structural_subscriber_clause = ( """BugTask.product IN
-                (SELECT StructuralSubscription.product from
-                StructuralSubscription WHERE StructuralSubscription.subscriber
-                = %(personid)s)""" %
+            structural_subscriber_clause = ( """BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE BugTask.product = StructuralSubscription.product
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distribution = StructuralSubscription.distribution
+                    AND BugTask.sourcepackagename =
+                        StructuralSubscription.sourcepackagename
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distroseries = StructuralSubscription.distroseries
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.milestone = StructuralSubscription.milestone
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.productseries = StructuralSubscription.productseries
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
+                WHERE
+                    BugTask.product = Product.id
+                    AND Product.project = StructuralSubscription.project
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distribution = StructuralSubscription.distribution
+                    AND StructuralSubscription.sourcepackagename is NULL
+                    AND StructuralSubscription.subscriber = %(personid)s)""" %
                 sqlvalues(personid=params.structural_subscriber.id))
             extra_clauses.append(structural_subscriber_clause)
 
