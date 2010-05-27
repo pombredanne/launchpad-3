@@ -562,7 +562,7 @@ class BugHeatUpdater(TunableLoop):
         """
         # We multiply chunk_size by 1000 for the sake of doing updates
         # quickly.
-        chunk_size = chunk_size * 1000
+        chunk_size = int(chunk_size * 1000)
 
         transaction.begin()
         outdated_bugs = self._outdated_bugs[:chunk_size]
