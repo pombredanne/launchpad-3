@@ -28,8 +28,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuildfarmjob import (
-    PackageBuildFarmJobDerived)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -39,6 +38,7 @@ from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -63,7 +63,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.sourcepackagerelease==SourcePackageRelease.id,
+            BinaryPackageBuild.source_package_release==SourcePackageRelease.id,
             SourcePackageRelease.source_package_recipe_build==self.id)
 
     buildduration = TimeDelta(name='build_duration', default=None)
@@ -109,6 +109,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
+    distro_series = distroseries
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
@@ -241,7 +242,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             raise NotFoundError(filename)
 
 
-class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -269,6 +270,12 @@ class SourcePackageRecipeBuildJob(PackageBuildFarmJobDerived, Storm):
         self.build = build
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
+
+    def _set_build_farm_job(self):
+        """Setup the IBuildFarmJob delegate.
+
+        We override this to provide a delegate specific to package builds."""
+        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @classmethod
     def new(cls, build, job):
