@@ -154,7 +154,7 @@ class SourcePackageRecipe(Storm):
 
         build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
-        build.queueBuild()
+        build.queueBuild(build)
         return build
 
     def getBuilds(self, pending=False):
