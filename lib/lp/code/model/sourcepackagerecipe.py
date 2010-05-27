@@ -204,3 +204,24 @@ class SourcePackageRecipe(Storm):
             *clauses)
         result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
         return result
+
+    def getLastBuild(self):
+        """See `ISourcePackageRecipeBuild`."""
+        store = Store.of(self)
+        result = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result.first()
+
+    def getMedianBuildDuration(self):
+        """Return the median duration of builds of this recipe."""
+        store = IStore(self)
+        result = store.find(
+            SourcePackageRecipeBuild.buildduration,
+            SourcePackageRecipeBuild.recipe==self.id,
+            SourcePackageRecipeBuild.buildduration != None)
+        result.order_by(Desc(SourcePackageRecipeBuild.buildduration))
+        count = result.count()
+        if count == 0:
+            return None
+        return result[count/2]

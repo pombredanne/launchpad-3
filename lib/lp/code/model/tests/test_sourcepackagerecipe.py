@@ -25,7 +25,8 @@ from canonical.testing.layers import DatabaseFunctionalLayer, AppServerLayer
 
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archive import (
-    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive, InvalidPocketForPPA)
+    ArchiveDisabled, ArchivePurpose, CannotUploadToArchive,
+    InvalidPocketForPPA)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -347,6 +348,25 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertContentEqual(set([(recipe, distro2), (recipe, distro3)]),
             set((sprd.sourcepackage_recipe, sprd.distroseries) for sprd
                 in SourcePackageRecipe.findStaleDailyBuilds()))
+
+    def test_getMedianBuildDuration(self):
+        recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
+        self.assertIs(None, recipe.getMedianBuildDuration())
+        build = removeSecurityProxy(
+            self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
+        build.buildduration = timedelta(minutes=10)
+        self.assertEqual(
+            timedelta(minutes=10), recipe.getMedianBuildDuration())
+        def addBuild(minutes):
+            build = removeSecurityProxy(
+                self.factory.makeSourcePackageRecipeBuild(recipe=recipe))
+            build.buildduration = timedelta(minutes=minutes)
+        addBuild(20)
+        self.assertEqual(
+            timedelta(minutes=10), recipe.getMedianBuildDuration())
+        addBuild(11)
+        self.assertEqual(
+            timedelta(minutes=11), recipe.getMedianBuildDuration())
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
