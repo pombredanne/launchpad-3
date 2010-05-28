@@ -539,7 +539,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         team = getUtility(IPersonSet).newTeam(
             owner, name, displayname, subscriptionpolicy=subscription_policy)
         if visibility is not None:
-            team.visibility = visibility
+            # Visibility is normally restricted to launchpad.Commercial, so
+            # removing the security proxy as we don't care here.
+            removeSecurityProxy(team).visibility = visibility
         if email is not None:
             team.setContactAddress(
                 getUtility(IEmailAddressSet).new(email, team))
