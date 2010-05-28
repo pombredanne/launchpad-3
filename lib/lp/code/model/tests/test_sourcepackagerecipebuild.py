@@ -186,8 +186,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     def test_binary_builds(self):
         """The binary_builds property should be populated automatically."""
         spb = self.factory.makeSourcePackageRecipeBuild()
+        multiverse = self.factory.makeComponent(name='multiverse')
         spr = self.factory.makeSourcePackageRelease(
-            source_package_recipe_build=spb)
+            source_package_recipe_build=spb, component=multiverse)
         self.assertEqual([], list(spb.binary_builds))
         binary = self.factory.makeBinaryPackageBuild(spr)
         self.factory.makeBinaryPackageBuild()
