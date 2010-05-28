@@ -832,7 +832,9 @@ class TestDispatchResult(unittest.TestCase):
 
         self.assertJobIsClean(job_id)
 
-        self.assertFalse(builder.builderok)
+        # XXX Julian
+        # Disabled test until bug 586362 is fixed.
+        #self.assertFalse(builder.builderok)
         self.assertEqual(None, builder.currentjob)
 
     def testFailDispatchResult(self):

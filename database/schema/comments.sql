@@ -1348,7 +1348,6 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The 
 COMMENT ON TABLE SourcePackageRecipe IS 'A recipe for assembling a source package from branches.';
 COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this recipe.';
 COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
-COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
 COMMENT ON COLUMN SourcePackageRecipe.build_daily IS 'If true, this recipe should be built daily.';
 
@@ -1364,7 +1363,6 @@ COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The pr
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.sourcepackagename IS 'The name of the source package that was built.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS 'The state of the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS 'When the build record was processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS 'How long this build took to be processed.';
