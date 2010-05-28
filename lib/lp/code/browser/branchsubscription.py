@@ -12,10 +12,9 @@ __all__ = [
     'BranchSubscriptionPrimaryContext',
     ]
 
-from zope.component import getUtility
+
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView)
@@ -210,7 +209,8 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         subscription = self.context.getSubscription(person)
         if subscription is None:
             self.context.subscribe(
-                person, notification_level, max_diff_lines, review_level, self.user)
+                person, notification_level, max_diff_lines, review_level,
+                self.user)
 
             self.add_notification_message(
                 '%s has been subscribed to this branch with: '
