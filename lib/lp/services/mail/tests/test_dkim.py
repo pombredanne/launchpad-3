@@ -13,18 +13,16 @@ import logging
 from textwrap import dedent
 import unittest
 
+import dkim
+
 from zope.component import getUtility
 
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.mail.incoming import (
-    authenticateEmail, canonicalise_line_endings)
-from canonical.launchpad.ftests import (
-    import_public_test_keys, import_secret_test_key)
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+    authenticateEmail, )
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import GPGSigningContext
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 
@@ -45,7 +43,6 @@ class TestSignedMessage(TestCaseWithFactory):
         logger = logging.getLogger('mail-authenticate-dkim')
         logger.addHandler(handler)
         self.addCleanup(lambda: logger.removeHandler(handler))
-        import_public_test_keys()
 
     def test_dkim_message_invalid(self):
         # The message message has a syntactically valid DKIM signature that
