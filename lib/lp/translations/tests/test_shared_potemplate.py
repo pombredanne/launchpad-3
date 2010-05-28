@@ -252,8 +252,8 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             subset.getSharingPOTemplates(self.templatename))
 
     def test_getSharingPOTemplates_package_multiple_series(self):
-        # Sharing templates for a product include the same templates from
-        # a linked source package, even with multiple series.
+        # Sharing templates for a source package include the same templates 
+        # from a linked product, even with multiple series.
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
         warty_template = self.factory.makePOTemplate(
@@ -269,6 +269,29 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.assertContentEqual(
             [self.trunk_template, self.hoary_template,
              stable_template, warty_template],
+            subset.getSharingPOTemplates(self.templatename))
+
+    def test_getSharingPOTemplates_package_multiple_distros(self):
+        # Sharing templates for a product include the same templates from
+        # a linked source package, even with multiple distributions.
+        foobuntu = self.factory.makeDistribution(name='foobuntu')
+        footy = self.factory.makeDistroRelease(
+            distribution=foobuntu, name='footy')
+        footy_template = self.factory.makePOTemplate(
+            distroseries=footy, sourcepackagename=self.packagename,
+            name=self.templatename)
+        hoary_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.hoary)
+        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
+        footy_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, footy)
+        footy_sourcepackage.setPackaging(self.trunk, self.owner)
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template, footy_template],
             subset.getSharingPOTemplates(self.templatename))
 
     def test_getOrCreateSharedPOTMsgSet_product(self):
