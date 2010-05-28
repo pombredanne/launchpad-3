@@ -14,9 +14,9 @@ You'll need the bzr tool.  If all you want is an empty branch for the
 translations to go into, you can create one using the following command
 lines:
 
-    bzr launchpad-login LOGIN
+    bzr launchpad-login USERNAME
 
-Instead of LOGIN, type your Launchpad login name.  Then:
+Instead of USERNAME, type your Launchpad login name.  Then:
 
     bzr init translations-export
     cd translations-export
