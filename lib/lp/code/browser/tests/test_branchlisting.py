@@ -365,7 +365,7 @@ class TestPersonBranchesPage(BrowserTestCase):
     This is the default page shown for a person on the code subdomain.
     """
 
-    layer = DatabaseFunctionalLayer # may need to change this
+    layer = DatabaseFunctionalLayer
 
     def _make_branch_for_private_team(self):
         private_team = self.factory.makeTeam(
@@ -380,7 +380,7 @@ class TestPersonBranchesPage(BrowserTestCase):
 
     def test_private_team_membership_for_team_member(self):
         # If the logged in user can see the private teams, they are shown in
-        # the releated 'Branches owned by' section at the bottom of the page.
+        # the related 'Branches owned by' section at the bottom of the page.
         private_team, member, branch = self._make_branch_for_private_team()
         browser = self.getUserBrowser(
             canonical_url(member, rootsite='code'), member)
