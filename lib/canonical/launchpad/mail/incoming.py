@@ -15,6 +15,7 @@ import re
 import sys
 
 import dkim
+import dns.exception
 
 import transaction
 from zope.component import getUtility
@@ -79,7 +80,11 @@ def _authenticateDkim(mail):
     try:
         dkim_result = dkim.verify(mail.as_string(), dkim_log)
     except dkim.DKIMException, e:
-        log.warning('DKIM error: %s' % (e,))
+        log.warning('DKIM error: %r' % (e,))
+        dkim_result = False
+    except dns.exception.DNSException, e:
+        # many of them have lame messages, thus %r
+        log.warning('DNS exception: %r' % (e,))
         dkim_result = False
     else:
         log.info('DKIM verification result=%s' % (dkim_result,))
