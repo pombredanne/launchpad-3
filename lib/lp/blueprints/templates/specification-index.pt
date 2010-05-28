@@ -298,7 +298,7 @@
         <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
       </h2>
 
-      <div class="widetext"
+      <div class="wide"
            tal:content="structure context/whiteboard/fmt:text-to-html"
            tal:condition="context/whiteboard">Whiteboard.</div>
     </div>

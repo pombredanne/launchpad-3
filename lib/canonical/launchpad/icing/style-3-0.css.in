@@ -164,6 +164,10 @@ p, li, dt, dd, blockquote, .narrow, .narrow-listing {
     /* Wrap the text before the eye gets lost. */
     max-width: 45em;
     }
+.wide p {
+    max-width: 60em;
+    margin: 1em 0;
+    }
 pre, code, samp, tt, .console {
     font-size: 116%;
     margin-bottom: 0.8em;
@@ -408,10 +412,6 @@ ol.subordinate {
 .three-column-list li.unseen {
     /* Keep the abilty to hide list entries. */
     display: none;
-    }
-div.widetext p {
-    max-width: 60em;
-    margin-bottom: 1.0em;
     }
 .portlet dd {
     margin-bottom: 0.5em;
