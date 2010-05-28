@@ -9,6 +9,7 @@ __all__ = [
     'SFTPServer',
     ]
 
+import errno
 import logging
 import os
 import tempfile
@@ -126,7 +127,7 @@ class SFTPFile:
         except OSError, e:
             if e.errno != errno.EISDIR:
                 raise
-            raise FileIsADirectory(name)
+            raise FileIsADirectory(self.filename)
         os.lseek(chunk_file, offset, 0)
         os.write(chunk_file, data)
         os.close(chunk_file)

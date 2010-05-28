@@ -278,7 +278,13 @@ class TestPoppy(TestCaseWithFactory):
         self.server.disconnect(transport)
         self.server.waitForClose()
 
-        self.assertEqual(os.stat(self._uploadPath('')).st_mode, 042770)
+        upload_path = self._uploadPath('')
+        self.assertEqual(os.stat(upload_path).st_mode, 042770)
+        dir_name = upload_path.split('/')[-2]
+        if transport._user == 'joe':
+            self.assertEqual(dir_name.startswith('upload-sftp-2'), True)
+        elif transport._user == 'ubuntu':
+            self.assertEqual(dir_name.startswith('upload-2'), True)
         for upload in files:
             wanted_path = self._uploadPath(
                 "~ppa-user/ppa/ubuntu/%s" % upload)
