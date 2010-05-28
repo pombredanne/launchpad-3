@@ -133,8 +133,9 @@ class SFTPServer:
         pass
 
     def waitForClose(self):
-        # XXX: bug=586695 There has to be a better way to wait for the SFTP
-        # server to process our upload rather than sleeping for 10 seconds.
+        # XXX: Steve Kowalik 2010-05-24 bug=586695 There has to be a
+        # better way to wait for the SFTP server to process our upload
+        # rather than sleeping for 10 seconds.
         time.sleep(10)
 
     def getTransport(self):
