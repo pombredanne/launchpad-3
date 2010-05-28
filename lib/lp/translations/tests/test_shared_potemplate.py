@@ -7,13 +7,15 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
+from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 
-
-class TestTranslationSharingPOTemplate(unittest.TestCase):
+class TestTranslationSharingPOTemplate(TestCaseWithFactory):
     """Test behaviour of "sharing" PO templates."""
 
     layer = ZopelessDatabaseLayer
@@ -22,20 +24,19 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
         """Set up context to test in."""
         # Create a product with two series and sharing POTemplates
         # in different series ('devel' and 'stable').
-        factory = LaunchpadObjectFactory()
-        self.factory = factory
-        self.foo = factory.makeProduct()
-        self.foo_devel = factory.makeProductSeries(
+        super(TestTranslationSharingPOTemplate, self).setUp()
+        self.foo = self.factory.makeProduct()
+        self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
-        self.foo_stable = factory.makeProductSeries(
+        self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
         self.foo.official_rosetta = True
 
         # POTemplate is a 'sharing' one if it has the same name ('messages').
-        self.devel_potemplate = factory.makePOTemplate(
+        self.devel_potemplate = self.factory.makePOTemplate(
             productseries=self.foo_devel, name="messages")
-        self.stable_potemplate = factory.makePOTemplate(self.foo_stable,
-                                                        name="messages")
+        self.stable_potemplate = self.factory.makePOTemplate(
+            self.foo_stable, name="messages")
 
         # Create a single POTMsgSet that is used across all tests,
         # and add it to only one of the POTemplates.
@@ -175,6 +176,91 @@ class TestTranslationSharingPOTemplate(unittest.TestCase):
         shared_potmsgset = self.stable_potemplate.getOrCreateSharedPOTMsgSet(
             singular_text, None)
         self.assertEquals(potmsgset, shared_potmsgset)
+
+class TestMessageSharingProductPackage(TestCaseWithFactory):
+    """Test message sharing between a product and a package."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestMessageSharingProductPackage, self).setUp()
+
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.hoary = self.ubuntu['hoary']
+        self.warty = self.ubuntu['warty']
+        self.packagename = self.factory.makeSourcePackageName()
+
+        self.product = self.factory.makeProduct()
+        self.trunk = self.product.getSeries('trunk')
+        self.stable = self.factory.makeProductSeries(
+            product=self.product)
+
+        self.templatename = self.factory.getUniqueString()
+        self.trunk_template = self.factory.makePOTemplate(
+            productseries=self.trunk, name=self.templatename)
+        self.hoary_template = self.factory.makePOTemplate(
+            distroseries=self.hoary, sourcepackagename=self.packagename,
+            name=self.templatename)
+
+        self.owner = self.factory.makePerson()
+        self.potemplateset = getUtility(IPOTemplateSet)
+
+    def test_getSharingPOTemplates_product(self):
+        # Sharing templates for a product include the same templates from
+        # a linked source package.
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template],
+            subset.getSharingPOTemplates(self.templatename))
+
+    def test_getSharingPOTemplates_package(self):
+        # Sharing templates for a source package include the same templates 
+        # from a linked product.
+        sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.hoary)
+        sourcepackage.setPackaging(self.trunk, self.owner)
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template],
+            subset.getSharingPOTemplates(self.templatename))
+
+    def test_getOrCreateSharedPOTMsgSet_product(self):
+        # Trying to create an identical POTMsgSet in a product as exists
+        # in a linked sourcepackage will return the existing POTMsgset.
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        hoary_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.hoary_template, sequence=1)
+
+        trunk_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
+                singular_text=hoary_potmsgset.singular_text,
+                plural_text=hoary_potmsgset.plural_text)
+        self.assertEqual(hoary_potmsgset, trunk_potmsgset)
+
+    def test_getOrCreateSharedPOTMsgSet_package(self):
+        # Trying to create an identical POTMsgSet in a product as exists
+        # in a linked sourcepackage will return the existing POTMsgset.
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        hoary_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.hoary_template, sequence=1)
+
+        trunk_potmsgset = self.trunk_template.getOrCreateSharedPOTMsgSet(
+                singular_text=hoary_potmsgset.singular_text,
+                plural_text=hoary_potmsgset.plural_text)
+        self.assertEqual(hoary_potmsgset, trunk_potmsgset)
 
 
 def test_suite():

@@ -441,66 +441,6 @@ class TestGetPOFilesFor(TestCaseWithFactory):
         pofile = pofiles[0]
         self.assertTrue(isinstance(pofile, DummyPOFile))
 
-class TestMessageSharingProductPackage(TestCaseWithFactory):
-    """Test message sharing between a product and a package."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestMessageSharingProductPackage, self).setUp()
-
-        self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        self.hoary = self.ubuntu['hoary']
-        self.warty = self.ubuntu['warty']
-        self.packagename = self.factory.makeSourcePackageName()
-
-        self.product = self.factory.makeProduct()
-        self.trunk = self.product.getSeries('trunk')
-        self.stable = self.factory.makeProductSeries(
-            product=self.product)
-
-        self.owner = self.factory.makePerson()
-        self.potemplateset = getUtility(IPOTemplateSet)
-
-    def test_getSharingPOTemplates_product(self):
-        # Sharing templates for a product include the same templates from
-        # a linked source package.
-        templatename = self.factory.getUniqueString()
-        product_template = self.factory.makePOTemplate(
-            productseries=self.trunk, name=templatename)
-        package_template = self.factory.makePOTemplate(
-            distroseries=self.hoary, sourcepackagename=self.packagename,
-            name=templatename)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=self.packagename,
-            distroseries=self.hoary)
-        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
-        subset = self.potemplateset.getSharingSubset(product=self.product)
-
-        self.assertContentEqual(
-            [product_template, package_template],
-            subset.getSharingPOTemplates(templatename))
-
-    def test_getSharingPOTemplates_package(self):
-        # Sharing templates for a source package include the same templates 
-        # from a linked product.
-        templatename = self.factory.getUniqueString()
-        product_template = self.factory.makePOTemplate(
-            productseries=self.trunk, name=templatename)
-        package_template = self.factory.makePOTemplate(
-            distroseries=self.hoary, sourcepackagename=self.packagename,
-            name=templatename)
-        sourcepackage = self.factory.makeSourcePackage(
-            self.packagename, self.hoary)
-        sourcepackage.setPackaging(self.trunk, self.owner)
-        subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
-            sourcepackagename=self.packagename)
-
-        self.assertContentEqual(
-            [product_template, package_template],
-            subset.getSharingPOTemplates(templatename))
-
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
