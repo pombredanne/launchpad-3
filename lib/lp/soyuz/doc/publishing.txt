@@ -1314,12 +1314,12 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> pmount_diff = a_source.sourcepackagerelease.requestDiffTo(
     ...     cprov, to_source.sourcepackagerelease)
     >>> print pmount_diff.title
-    1.0 (in Ubuntu) to 0.1-1
+    diff from 1.0 (in Ubuntu) to 0.1-1
 
     >>> iceweasel_diff = to_source.sourcepackagerelease.requestDiffTo(
     ...     cprov, a_source.sourcepackagerelease)
     >>> print iceweasel_diff.title
-    0.1-1 (in Ubuntu) to 1.0
+    diff from 0.1-1 (in Ubuntu) to 1.0
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -1359,7 +1359,7 @@ containing:
     pmount 0.1-1 in warty
 
     >>> print diff.title
-    1.0 (in Ubuntu) to 0.1-1
+    diff from 1.0 (in Ubuntu) to 0.1-1
 
     >>> print file.filename
     netapplet-1.0.0.tar.gz
@@ -1378,7 +1378,7 @@ requests. On pending diffs, `LibraryFileAlias` and
     iceweasel 1.0 in warty
 
     >>> print diff.title
-    0.1-1 (in Ubuntu) to 1.0
+    diff from 0.1-1 (in Ubuntu) to 1.0
 
     >>> print file
     None
