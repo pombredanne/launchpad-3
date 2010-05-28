@@ -50,8 +50,12 @@ class ITemporaryBlobStorage(Interface):
         """Return True if this blob has been processed."""
 
     @export_read_operation()
+    def getJobStatus():
+        """Returns a dict with job status information."""
+
+    @export_read_operation()
     def getProcessedData():
-        """Returns metadata of the blob."""
+        """Returns a dict containing the processed blob data."""
 
 
 class ITemporaryStorageManager(Interface):

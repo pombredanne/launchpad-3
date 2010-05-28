@@ -350,14 +350,17 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
 
     def test_blob_get_processed_data(self):
         # Using the TemporaryBlobStorageAddView to upload a new BLOB
-        # will show blob as being processed
+        # should indicate there two attachments were processed.
         blob_uuid = self._create_blob_and_job_using_storeblob()
         blob = getUtility(ITemporaryStorageManager).fetch(blob_uuid)
         job = getUtility(IProcessApportBlobJobSource).getByBlobUUID(blob_uuid)
+        job.job.start()
+        job.job.complete()
+        job.run()
         blob_meta = blob.getProcessedData()
 
         self.assertEqual(
-            blob_meta, job.metadata,
+            len(blob_meta['attachments']), 2,
             "BLOB metadata: %s" %(str(blob_meta)))
 
     def test_adding_blob_adds_job(self):

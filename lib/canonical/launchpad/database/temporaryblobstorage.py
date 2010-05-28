@@ -73,18 +73,43 @@ class TemporaryBlobStorage(SQLBase):
     def hasBeenProcessed(self):
         """See `ITemporaryBlobStorage`."""
         job_for_blob = self._apport_job
-        if job_for_blob:
-            return (job_for_blob.job.status == JobStatus.COMPLETED)
-        else:
+        if not job_for_blob:
             return False
+        return (job_for_blob.job.status == JobStatus.COMPLETED)
+
+    def getJobStatus(self):
+        """See `ITemporaryBlobStorage`."""
+        job_for_blob = self._apport_job
+        if not job_for_blob:
+            return None
+
+        metadata = {
+            'job_id':           job_for_blob.id,
+            'scheduled_start':  job_for_blob.job.scheduled_start,
+            'date_created':     job_for_blob.job.date_created,
+            'date_started':     job_for_blob.job.date_started,
+            'date_finished':    job_for_blob.job.date_finished,
+            'lease_expires':    job_for_blob.job.lease_expires,
+            'log':              job_for_blob.job.log,
+            'status':           job_for_blob.job.status,
+            'attempt_count':    job_for_blob.job.attempt_count
+            }
+
+        oops_vars = job_for_blob.getOopsVars()
+        for v in oops_vars:
+            metadata[v[0]] = str(v[1])
+
+        return metadata
 
     def getProcessedData(self):
         """See `ITemporaryBlobStorage`."""
-        if not self._apport_job:
+        job_for_blob = self._apport_job
+        if not job_for_blob:
             return None
-        else:
-            return self._apport_job.metadata
-
+        if 'processed_data' not in job_for_blob.metadata:
+            return {}
+        
+        return job_for_blob.metadata['processed_data']
 
 class TemporaryStorageManager:
     """A tool to create temporary BLOB's in Launchpad."""
