@@ -567,7 +567,8 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, tm, [])
 
-    def test_current_None__new_shared__other_shared__identical_follows(self):
+    def test_current_None__new_shared__other_shared__identical__follows(
+        self):
         # As above, and 'share_with_other_side' is a no-op in this case.
         self.test_current_None__new_shared__other_shared__identical(True)
 
@@ -603,7 +604,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
                          tm_other.is_current_ubuntu)
         self.assertEquals(self.other_pofile.potemplate, tm_other.potemplate)
 
-    def test_current_None__new_shared__other_diverged_follows(self):
+    def test_current_None__new_shared__other_diverged__follows(self):
         # Current translation is None, and we have found a
         # shared existing TM matching new translations (a regular suggestion).
         # There is a current but diverged translation in "other" context.
@@ -952,3 +953,23 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
                          tm_other_diverged.is_current_ubuntu)
         self.assertEquals(self.other_pofile.potemplate,
                           tm_other_diverged.potemplate)
+
+    def test_current_None__new_diverged__other_diverged__identical(self):
+        # Converging to 'other' diverged translation.
+        pass
+
+    def test_current_None__new_diverged__other_diverged__identical__follows(self):
+        # Converging to 'other' diverged translation.
+        pass
+
+    def test_current_None__new_diverged__other_diverged_shared__identical(self):
+        # Converging to 'other' shared translation.
+        # Should be exactly the same as
+        # test_current_None__new_diverged__other_shared__identical().
+        pass
+
+    def test_current_None__new_diverged__other_diverged_shared__identical__follows(self):
+        # Converging to 'other' shared translation.
+        # Should be exactly the same as
+        # test_current_None__new_diverged__other_shared__identical__follows().
+        pass
