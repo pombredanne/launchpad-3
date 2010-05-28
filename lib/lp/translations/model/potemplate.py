@@ -184,6 +184,26 @@ class POTemplate(SQLBase, RosettaStats):
 
     _uses_english_msgids = None
 
+    # Cached value of the list of IDs of all sharing templates.
+    _sharing_ids_cache = None
+
+    @property
+    def _sharing_ids(self):
+        """Return the IDs of all sharing templates including this one.
+
+        Handles caching, so that this list is only generated once during the
+        life time of this object.
+        """
+        if self._sharing_ids_cache is None:
+            subset = getUtility(IPOTemplateSet).getSharingSubset(
+                product=self.product,
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename)
+            potemplates = subset.getSharingPOTemplates(self.name)
+            self._sharing_ids_cache = [
+                potemplate.id for potemplate in potemplates]
+        return self._sharing_ids_cache
+
     def __storm_invalidated__(self):
         self.clearPOFileCache()
         self._uses_english_msgids = None
@@ -560,31 +580,10 @@ class POTemplate(SQLBase, RosettaStats):
             ]
         clause_tables = ['TranslationTemplateItem']
         if sharing_templates:
-            clauses.extend([
-                'TranslationTemplateItem.potemplate = POTemplate.id',
-                'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-                'POTemplate.name = %s' % sqlvalues(self.name),
-                ])
-            product = None
-            distribution = None
-            clause_tables.append('POTemplate')
-            if self.productseries is not None:
-                product = self.productseries.product
-                clauses.extend([
-                    'POTemplate.productseries=ProductSeries.id',
-                    'ProductSeries.product %s' % self._null_quote(product)
-                    ])
-                clause_tables.append('ProductSeries')
-            elif self.distroseries is not None:
-                distribution = self.distroseries.distribution
-                clauses.extend([
-                    'POTemplate.distroseries=DistroSeries.id',
-                    'DistroSeries.distribution %s' % (
-                        self._null_quote(distribution)),
-                    'POTemplate.sourcepackagename %s' % self._null_quote(
-                        self.sourcepackagename),
-                    ])
-                clause_tables.append('DistroSeries')
+            clauses.append(
+                'TranslationTemplateItem.potemplate in %s' % sqlvalues(
+                    self._sharing_ids)
+                )
         else:
             clauses.append(
                 'TranslationTemplateItem.potemplate = %s' % sqlvalues(self))
