@@ -77,11 +77,7 @@ hasn't been processed because no job was created to process it.
     False
 
 However, since the blob has not been processed there will be no
-job status or processed data at this point.
-
-    >>> print webservice.named_get(
-    ...     blob['self_link'], 'getJobStatus').jsonBody()
-    None
+job processed data at this point.
 
     >>> print webservice.named_get(
     ...     blob['self_link'], 'getProcessedData').jsonBody()
@@ -103,23 +99,7 @@ return True.
     ...     blob['self_link'], 'hasBeenProcessed').jsonBody()
     True
 
-The job status now shows additional details about the job completion.
-
-    >>> job_status = webservice.named_get(
-    ...     blob['self_link'], 'getJobStatus').jsonBody()
-    >>> print job_status['status']
-    Completed
-
-    >>> print job_status['attempt_count']
-    1
-
-    >>> print job_status['apport_job_id']
-    1
-    
-    >>> print job_status['apport_job_type']
-    Process a BLOB and extract salient data from it.
-
-And at this point the blob's parsed-out metadata is now accessible.
+And now the blob's parsed-out metadata is now accessible.
 
     >>> metadata = webservice.named_get(
     ...     blob['self_link'], 'getProcessedData').jsonBody()
