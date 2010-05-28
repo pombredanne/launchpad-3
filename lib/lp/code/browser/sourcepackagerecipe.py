@@ -318,6 +318,13 @@ class RecipeTextValidatorMixin:
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
 
+        if getUtility(ISourcePackageRecipeSource).exists(
+                                                    self.user, data['name']):
+            self.setFieldError(
+                'name',
+                'There is already a recipe owned by %s with this name.' %
+                    self.user.displayname)
+
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""

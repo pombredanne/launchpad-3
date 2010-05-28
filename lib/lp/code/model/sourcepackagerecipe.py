@@ -129,6 +129,19 @@ class SourcePackageRecipe(Storm):
         store.add(sprecipe)
         return sprecipe
 
+    @staticmethod
+    def exists(owner, name):
+        """See `ISourcePackageRecipeSource.new`."""
+        store = IMasterStore(SourcePackageRecipe)
+        recipe = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == owner,
+            SourcePackageRecipe.name == name).one()
+        if recipe:
+            return True
+        else:
+            return False
+
     def destroySelf(self):
         store = Store.of(self)
         self.distroseries.clear()

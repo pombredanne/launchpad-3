@@ -125,6 +125,31 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'The recipe text is not a valid bzr-builder recipe.')
 
+    def test_create_dupe_recipe(self):
+        # You shouldn't be able to create a duplicate recipe owned by the same
+        # person with the same name.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = recipe.name
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Source Package Name').value = 'ratatouille'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'There is already a recipe owned by Master Chef with this name.')
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
