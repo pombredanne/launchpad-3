@@ -28,11 +28,11 @@ in a known state to perform the tests.
 Notification for a FAILEDTOBUILD (failed) build record:
 
   >>> failed_candidate = buildset.getByBuildID(9)
-  >>> failed_candidate.sourcepackagerelease.name
+  >>> failed_candidate.source_package_release.name
   u'pmount'
-  >>> failed_candidate.buildstate.name
+  >>> failed_candidate.status.name
   'FAILEDTOBUILD'
-  >>> failed_candidate.sourcepackagerelease.creator.name
+  >>> failed_candidate.source_package_release.creator.name
   u'mark'
 
   >>> failed_candidate.notify()
@@ -131,11 +131,11 @@ This same basic content applies to all types of notification.
 Notification for a pending (NEEDSBUILD) build record:
 
   >>> pending_candidate = buildset.getByBuildID(11)
-  >>> pending_candidate.sourcepackagerelease.name
+  >>> pending_candidate.source_package_release.name
   u'alsa-utils'
-  >>> pending_candidate.buildstate.name
+  >>> pending_candidate.status.name
   'NEEDSBUILD'
-  >>> pending_candidate.sourcepackagerelease.creator.name
+  >>> pending_candidate.source_package_release.creator.name
   u'mark'
 
   >>> pending_candidate.notify()
@@ -199,11 +199,11 @@ Check the notification content:
 Notification for a BUILDING build record:
 
   >>> building_candidate = buildset.getByBuildID(8)
-  >>> building_candidate.sourcepackagerelease.name
+  >>> building_candidate.source_package_release.name
   u'mozilla-firefox'
-  >>> building_candidate.buildstate.name
+  >>> building_candidate.status.name
   'BUILDING'
-  >>> building_candidate.sourcepackagerelease.creator.name
+  >>> building_candidate.source_package_release.creator.name
   u'mark'
 
   >>> building_candidate.notify()
@@ -267,11 +267,11 @@ Check the notification content:
 Notification for a SUPERSEDED build record:
 
   >>> superseded_candidate = buildset.getByBuildID(15)
-  >>> superseded_candidate.sourcepackagerelease.name
+  >>> superseded_candidate.source_package_release.name
   u'at'
-  >>> superseded_candidate.buildstate.name
+  >>> superseded_candidate.status.name
   'SUPERSEDED'
-  >>> superseded_candidate.sourcepackagerelease.creator.name
+  >>> superseded_candidate.source_package_release.creator.name
   u'mark'
 
   >>> superseded_candidate.notify()
@@ -428,7 +428,7 @@ in the main archive, the important differences are:
 Was this package copied?
 
     >>> (failed_candidate.archive !=
-    ... failed_candidate.sourcepackagerelease.upload_archive)
+    ... failed_candidate.source_package_release.upload_archive)
     True
 
 Since the package *was* copied, only the owner of the destination
@@ -483,7 +483,7 @@ we will change the 'failed_candidate' source, setting its
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> naked_candidate = removeSecurityProxy(failed_candidate)
-  >>> naked_sourcepackagerelease = naked_candidate.sourcepackagerelease
+  >>> naked_sourcepackagerelease = naked_candidate.source_package_release
   >>> naked_sourcepackagerelease.upload_archive = failed_candidate.archive
 
 We also make 'Foo Bar' the source signer.
@@ -500,7 +500,7 @@ We also make 'Foo Bar' the source signer.
 Since 'mark' is the 'creator' it makes the failed-to-build source
 look like a 'sponsored' upload.
 
-  >>> print failed_candidate.sourcepackagerelease.creator.name
+  >>> print failed_candidate.source_package_release.creator.name
   mark
 
 Finally we issue the notification.
@@ -531,13 +531,13 @@ he will be notified.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> team = factory.makeTeam(owner=cprov, email="team@example.com")
-  >>> mark = failed_candidate.sourcepackagerelease.creator
+  >>> mark = failed_candidate.source_package_release.creator
   >>> ignored = team.addMember(mark, mark)
   >>> discard = pop_notifications() # Discard team join email.
   >>> team_ppa = factory.makeArchive(owner=team)
   >>> naked_candidate = removeSecurityProxy(failed_candidate)
   >>> naked_candidate.archive = team_ppa
-  >>> naked_candidate.sourcepackagerelease.upload_archive = team_ppa
+  >>> naked_candidate.source_package_release.upload_archive = team_ppa
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 

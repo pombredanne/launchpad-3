@@ -507,8 +507,8 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="buildlog datebuilt buildduration builder
-                            buildstate dependencies upload_log"/>
+            set_attributes="log date_finished date_started builder
+                            status dependencies upload_log"/>
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -848,8 +848,6 @@
         class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
-        <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDerived"/>
     </class>
     <!--
         The registration below is used to discover all build farm job classes

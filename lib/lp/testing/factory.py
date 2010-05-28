@@ -127,13 +127,13 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily, ProcessorFamilySet
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 from lp.testing import run_with_login, time_counter, login, logout
@@ -1760,8 +1760,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return parser.parse()
 
     def makeSourcePackageRecipe(self, registrant=None, owner=None,
-                                distroseries=None, sourcepackagename=None,
-                                name=None, description=None, branches=()):
+                                distroseries=None, name=None, description=None,
+                                branches=()):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -1773,19 +1773,13 @@ class LaunchpadObjectFactory(ObjectFactory):
                 'i386', ProcessorFamily.get(1), False, owner,
                 supports_virtualized=True)
 
-        # Make sure we have a real sourcepackagename object.
-        if (sourcepackagename is None or
-            isinstance(sourcepackagename, basestring)):
-            sourcepackagename = self.getOrMakeSourcePackageName(
-                sourcepackagename)
         if name is None:
             name = self.getUniqueString().decode('utf8')
         if description is None:
             description = self.getUniqueString().decode('utf8')
         recipe = self.makeRecipe(*branches)
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant, owner, [distroseries], sourcepackagename, name,
-            recipe, description)
+            registrant, owner, [distroseries], name, recipe, description)
         IStore(source_package_recipe).flush()
         return source_package_recipe
 
@@ -1795,20 +1789,16 @@ class LaunchpadObjectFactory(ObjectFactory):
                                      pocket=None):
         """Make a new SourcePackageRecipeBuild."""
         if recipe is None:
-            recipe = self.makeSourcePackageRecipe(
-                sourcepackagename=self.makeSourcePackageName(sourcename))
+            recipe = self.makeSourcePackageRecipe(name=sourcename)
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-        if sourcepackage is None:
-            sourcepackage = distroseries.getSourcePackage(
-                recipe.sourcepackagename)
         if requester is None:
             requester = self.makePerson()
         return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=sourcepackage,
+            distroseries=distroseries,
             recipe=recipe,
             archive=archive,
             requester=requester,
@@ -2118,11 +2108,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if sourcepackagename is None:
-            if source_package_recipe_build is not None:
-                sourcepackagename = (
-                    source_package_recipe_build.sourcepackagename)
-            else:
-                sourcepackagename = self.makeSourcePackageName()
+            sourcepackagename = self.makeSourcePackageName()
 
         if component is None:
             component = self.makeComponent()
@@ -2193,13 +2179,14 @@ class LaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
                 processorfamily=processor.family)
-        binary_package_build = BinaryPackageBuild(
-            sourcepackagerelease=source_package_release,
+        binary_package_build = getUtility(IBinaryPackageBuildSet).new(
+            source_package_release=source_package_release,
             processor=processor,
-            distroarchseries=distroarchseries,
-            buildstate=BuildStatus.NEEDSBUILD,
+            distro_arch_series=distroarchseries,
+            status=BuildStatus.NEEDSBUILD,
             archive=archive,
-            datecreated=self.getUniqueDate())
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=self.getUniqueDate())
         binary_package_build_job = binary_package_build.makeJob()
         BuildQueue(
             job=binary_package_build_job.job,
