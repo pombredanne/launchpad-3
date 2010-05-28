@@ -10,7 +10,55 @@ __metaclass__ = type
 import unittest
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.errors import UserCannotUnsubscribePerson
+from lp.code.enums import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from lp.testing import TestCaseWithFactory, person_logged_in
+
+
+class TestBranchSubscriptions(TestCaseWithFactory):
+    """Tests relating to branch subscriptions in general."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subscribed_by_set(self):
+        """The user subscribing is recorded along the subscriber."""
+        subscriber = self.factory.makePerson()
+        subscribed_by = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch()
+        subscription = branch.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
+        self.assertEqual(subscriber, subscription.person)
+        self.assertEqual(subscribed_by, subscription.subscribed_by)
+
+    def test_unsubscribe(self):
+        """Test unsubscribing by the subscriber."""
+        subscription = self.factory.makeBranchSubscription()
+        subscriber = subscription.person
+        branch = subscription.branch
+        branch.unsubscribe(subscriber, subscriber)
+        self.assertFalse(branch.hasSubscription(subscriber))
+
+    def test_unsubscribe_by_subscriber(self):
+        """Test unsubscribing by the person who subscribed the user."""
+        subscribed_by = self.factory.makePerson()
+        subscription = self.factory.makeBranchSubscription(
+            subscribed_by=subscribed_by)
+        subscriber = subscription.person
+        branch = subscription.branch
+        branch.unsubscribe(subscriber, subscribed_by)
+        self.assertFalse(branch.hasSubscription(subscriber))
+
+    def test_unsubscribe_by_unauthorized(self):
+        """Test unsubscribing someone you shouldn't be able to."""
+        subscription = self.factory.makeBranchSubscription()
+        branch = subscription.branch
+        self.assertRaises(
+            UserCannotUnsubscribePerson,
+            branch.unsubscribe,
+            subscription.person,
+            self.factory.makePerson())
 
 
 class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):

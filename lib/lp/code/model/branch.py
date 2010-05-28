@@ -45,6 +45,7 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.code.bzr import (
     BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
     CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
@@ -705,9 +706,16 @@ class Branch(SQLBase, BzrIdentityMixin):
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
+        if subscription is None:
+            # Silent success seems order of the day (like bugs).
+            return
+        if not subscription.canBeUnsubscribedByUser(unsubscribed_by):
+            raise UserCannotUnsubscribePerson(
+                '%s does not have permission to unsubscribe %s.' % (
+                    unsubscribed_by.displayname,
+                    person.displayname))
         store = Store.of(subscription)
-        assert subscription is not None, "User is not subscribed."
-        BranchSubscription.delete(subscription.id)
+        store.remove(subscription)
         store.flush()
 
     def getBranchRevision(self, sequence=None, revision=None,
