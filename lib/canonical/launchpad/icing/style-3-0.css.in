@@ -164,9 +164,11 @@ p, li, dt, dd, blockquote, .narrow, .narrow-listing {
     /* Wrap the text before the eye gets lost. */
     max-width: 45em;
     }
-.wide p {
+.wide * {
     max-width: 60em;
-    margin: 1em 0;
+    }
+table.wide {
+    width: 60em;
     }
 pre, code, samp, tt, .console {
     font-size: 116%;
