@@ -66,6 +66,30 @@ class InactiveAccount(Exception):
     """The account for the person sending this email is inactive."""
 
 
+def _authenticateDkim(mail):
+    """"Attempt DKIM authentication of email; return True if known authentic"""
+
+    log = getLogger('mail-authenticate-dkim')
+
+    dkim_log = cStringIO()
+    log.info('Attempting DKIM authentication of message %s from %s'
+        % (mail['Message-ID'], mail['From']))
+    try:
+        dkim_result = dkim.verify(mail.as_string(), dkim_log)
+    except dkim.DKIMException, e:
+        log.warning('DKIM error: %s' % (e,))
+        dkim_result = False
+    else:
+        log.info('DKIM verification result=%s' % (dkim_result,))
+    log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
+
+    if mail.signature:
+        log.info('message has gpg signature, therefore not treating DKIM as conclusive')
+        return False
+    else:
+        return dkim_result
+
+
 def authenticateEmail(mail):
     """Authenticates an email by verifying the PGP signature.
 
@@ -74,8 +98,6 @@ def authenticateEmail(mail):
 
     signature = mail.signature
     signed_content = mail.signedContent
-
-    log = getLogger('mail-dkim')
 
     name, email_addr = parseaddr(mail['From'])
     authutil = getUtility(IPlacelessAuthUtility)
@@ -92,25 +114,10 @@ def authenticateEmail(mail):
         raise InactiveAccount(
             "Mail from a user with an inactive account.")
 
-    dkim_log = cStringIO()
-    log.info('Attempting DKIM authentication of message %s from %s'
-        % (mail['Message-ID'], email_addr))
-    try:
-        dkim_result = dkim.verify(mail.as_string(), dkim_log)
-    except dkim.DKIMException, e:
-        log.warning('DKIM error: %s' % (e,))
-        dkim_result = False
-    else:
-        log.info('DKIM verification result=%s' % (dkim_result,))
-    log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
+    dkim_result = _authenticateDkim(mail)
 
-    if signature:
-        log.info('message has gpg signature, therefore not treating DKIM as conclusive')
-    elif dkim_result:
-        # adequately verified by DKIM?
-        # TODO: check that the From address was included in the verification?
+    if dkim_result:
         setupInteraction(principal, email_addr)
-        log.info('accepted DKIM authentication as %s' % (email_addr,))
         return principal
 
     if signature is None:
