@@ -379,6 +379,8 @@ class TestPersonBranchesPage(BrowserTestCase):
         return private_team, member, branch
 
     def test_private_team_membership_for_team_member(self):
+        # If the logged in user can see the private teams, they are shown in
+        # the releated 'Branches owned by' section at the bottom of the page.
         private_team, member, branch = self._make_branch_for_private_team()
         browser = self.getUserBrowser(
             canonical_url(member, rootsite='code'), member)
@@ -388,12 +390,14 @@ class TestPersonBranchesPage(BrowserTestCase):
             'Branches owned by Shh', text)
 
     def test_private_team_membership_for_non_member(self):
+        # Make sure that private teams are not shown (or attempted to be
+        # shown) for people who can not see the private teams.
         private_team, member, branch = self._make_branch_for_private_team()
         browser = self.getUserBrowser(canonical_url(member, rootsite='code'))
         branches = find_tag_by_id(browser.contents, 'portlet-team-branches')
-        text = extract_text(branches)
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            'Branches owned by Shh', text)
+        # Since there are no teams with branches that the user can see, the
+        # portlet isn't shown.
+        self.assertIs(None, branches)
 
 
 def test_suite():
