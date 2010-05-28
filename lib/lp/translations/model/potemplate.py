@@ -1386,8 +1386,12 @@ class POTemplateSharingSubset(object):
                     DistributionSourcePackage)
                 distrosourcepackage = DistributionSourcePackage(
                     distribution, sourcepackagename)
-                self.distrosourcepackages = [distrosourcepackage]
                 self.product = distrosourcepackage.upstream_product
+                if self.product is None:
+                    self.distrosourcepackages = [distrosourcepackage]
+                else:
+                    self.distrosourcepackages = (
+                        self.product.distrosourcepackages)
         else:
             self.product = product
             self.distrosourcepackages = product.distrosourcepackages
