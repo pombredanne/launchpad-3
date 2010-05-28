@@ -435,7 +435,7 @@ The patches view for a person or team will also show patches to which a person
 or team is structurally subscribed.  Structural subscription searching is
 thoroughly tested in bugtask-search.txt so here a single structural
 subscription will be tested.
-    
+
     >>> from canonical.launchpad.ftests import login, logout
     >>> project_subscriber = factory.doAsUser(
     ...     'foo.bar@canonical.com', factory.makePerson,

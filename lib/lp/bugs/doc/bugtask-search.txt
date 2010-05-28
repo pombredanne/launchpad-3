@@ -1252,7 +1252,7 @@ Create a new product which will be a part of a project group.  A bug is
 created for the product which should then show up for structural subscribers
 of the project group.  Then a new person is created who is subscribed to all
 of the bug reports about the project. Search for bug tasks that this new
-person is subscribed.  
+person is subscribed.
 
     >>> product = factory.makeProduct()
     >>> bug = factory.makeBug(product=product)
@@ -1268,6 +1268,22 @@ person is subscribed.
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
     >>> found_bugtasks.count()
     1
+
+We will also subscribe this project subscriber to a product that is a part of
+the project and ensure that duplicate bug tasks do not appear in the search
+results.
+
+    >>> product2 = factory.makeProduct()
+    >>> bug = factory.makeBug(product=product2)
+    >>> product2.project = project
+    >>> product2.addBugSubscription(project_struct_subber,
+    ...     project_struct_subber)
+    <StructuralSubscription at ...>
+    >>> project_struct_sub_search = BugTaskSearchParams(
+    ...     user=None, structural_subscriber=project_struct_subber)
+    >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
+    >>> found_bugtasks.count()
+    2
 
 Create a new person and subscribe them to all of bug tasks targeted to a
 milestone.  We then test to see that they are subscribed to all of the
@@ -1299,7 +1315,7 @@ bugs with an Ubuntu bug task.
     >>> found_bugtasks.count()
     5
 
-Create a new person who will only be subscribed to a Ubuntu series, which is
+Create a new person who will only be subscribed to an Ubuntu series, which is
 something more reasonable than all of Ubuntu.  Test to ensure that this person
 is subscribed to all of the bug tasks about that distro series.
 
@@ -1320,7 +1336,7 @@ is subscribed to all of the bug tasks about that distro series.
 
 Create a new person and make them a subscriber to all Ubuntu Firefox (a
 distribution source package) bug reports.  Test to see that the new person is
-subscribed to all of the Ubuntu Firefox bug tasks. 
+subscribed to all of the Ubuntu Firefox bug tasks.
 
     >>> package_struct_subber = factory.makePerson(
     ...     name='package-struct-subber')
@@ -1347,4 +1363,4 @@ tasks.
     >>> combined_bugtasks_count = (ubuntu_firefox_bugs.count () +
     ...    series_tasks.count())
     >>> found_bugtasks.count() == combined_bugtasks_count
-    True    
+    True

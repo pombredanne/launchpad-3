@@ -1638,7 +1638,7 @@ class BugTaskSet:
                     BugTask.distribution = StructuralSubscription.distribution
                     AND StructuralSubscription.sourcepackagename is NULL
                     AND StructuralSubscription.subscriber = %(personid)s)""" %
-                sqlvalues(personid=params.structural_subscriber.id))
+                sqlvalues(personid=params.structural_subscriber))
             extra_clauses.append(structural_subscriber_clause)
 
         if params.component:
