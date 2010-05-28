@@ -1696,7 +1696,8 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
         days_since_created = (datetime.utcnow() - date_created).days
         max_heat = get_max_heat_for_bug(bug_id)
         if max_heat is not None and days_since_created > 0:
-            return total_heat + (max_heat * 0.25 / days_since_created)
+            total_heat = (
+                total_heat + (max_heat * 0.25 / days_since_created))
 
     return int(total_heat)
 $$;
