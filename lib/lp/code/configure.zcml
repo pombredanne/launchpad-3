@@ -11,6 +11,7 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
+  <authorizations module="lp.code.security" />
 
   <!-- Branch Merge Queue -->
 

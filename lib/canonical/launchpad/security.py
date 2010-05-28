@@ -24,8 +24,6 @@ from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    IBranchSubscription)
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
@@ -61,8 +59,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
-    IPersonRoles)
+    IHasBug, IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -1731,26 +1728,6 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
-
-
-class BranchSubscriptionEdit(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IBranchSubscription
-
-    def checkAuthenticated(self, user):
-        """Is the user able to edit a branch subscription?
-
-        Any team member can edit a branch subscription for their team.
-        Launchpad Admins can also edit any branch subscription.
-        """
-        return (user.inTeam(self.obj.person) or
-                user.inTeam(self.obj.subscribed_by) or
-                user.in_admin or
-                user.in_bazaar_experts)
-
-
-class BranchSubscriptionView(BranchSubscriptionEdit):
-    permission = 'launchpad.View'
 
 
 class BranchMergeProposalView(AuthorizationBase):
