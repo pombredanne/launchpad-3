@@ -273,6 +273,10 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
+    def setCurrentTranslation(pofile, submitter, translations, origin,
+                              share_with_other_side=False):
+        """Set a new current translation."""
+
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' or None after doing some sanitization.
 
