@@ -50,4 +50,4 @@ class TestSourcePackageReleaseFiles(TestCaseWithFactory):
         removeSecurityProxy(library_file).content = None
         view = create_initialized_view(self.source_package_release, "+files")
         html = view.__call__()
-        self.failUnless('test_file.dsc' in html)
+        self.failUnless('test_file.dsc (deleted)' in html)
