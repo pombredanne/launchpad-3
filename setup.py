@@ -29,7 +29,7 @@ setup(
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
-        'dkim',
+        # 'dkim',
         'feedvalidator',
         'funkload',
         'launchpadlib',
