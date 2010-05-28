@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="series-packaging" class="portlet"
   tal:define="overview_menu context/menu:overview"
-  tal:content="cache:public, 1 hour">
+  tal:content="cache:public, 3 hour">
   <h2>Upstream packaging</h2>
 
   <p id="packaging-summary"

@@ -494,8 +494,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def makeBuildAndRelease(self):
         """Make a build and release suitable for testing."""
         build = self.makeBuild()
+        multiverse = self.factory.makeComponent(name='multiverse')
         return self.factory.makeSourcePackageRelease(
-            source_package_recipe_build=build, version='3.14')
+            source_package_recipe_build=build, version='3.14',
+            component=multiverse)
 
     def test_render_sourcepackage_release(self):
         """SourcePackageReleases are shown if set."""

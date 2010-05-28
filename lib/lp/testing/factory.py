@@ -2189,7 +2189,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         else:
             archive = source_package_release.upload_archive
         if source_package_release is None:
-            source_package_release = self.makeSourcePackageRelease(archive)
+            multiverse = self.makeComponent(name='multiverse')
+            source_package_release = self.makeSourcePackageRelease(
+                archive, component=multiverse)
         processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
