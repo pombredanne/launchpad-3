@@ -4,6 +4,10 @@
 """Tests for `DistroSeriesBinaryPackage`."""
 
 __metaclass__ = type
+__all__ = [
+    'TestDistroSeriesBinaryPackage',
+    'test_suite',
+    ]
 
 import unittest
 import transaction
@@ -13,7 +17,7 @@ from lp.soyuz.model.distroseriesbinarypackage import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from canonical.config import config
-from canonical.launchpad.scripts.logger import FakeLogger
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -48,7 +52,7 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
             binaryname='foo-bin', summary='Foo is the best',
             archive=distro_archive_2)
 
-        logger = FakeLogger()
+        logger = QuietFakeLogger()
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
         self.distroseries.updatePackageCache(

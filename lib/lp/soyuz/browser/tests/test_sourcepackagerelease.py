@@ -3,7 +3,7 @@
 
 # pylint: disable-msg=F0401
 
-"""Unit tests for DistroSeriesSourcePackageReleaseView."""
+"""Unit tests for TestSourcePackageReleaseFiles."""
 
 __metaclass__ = type
 __all__ = [
