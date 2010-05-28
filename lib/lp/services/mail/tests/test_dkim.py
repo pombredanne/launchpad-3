@@ -71,8 +71,8 @@ To: 1@bugs.staging.launchpad.net
 Why isn't this fixed yet?"""
 
 
-class TestSignedMessage(TestCaseWithFactory):
-    """Test SignedMessage class correctly extracts and verifies the GPG signatures."""
+class TestDKIM(TestCaseWithFactory):
+    """Messages can be strongly authenticated by DKIM."""
 
     layer = DatabaseFunctionalLayer
 
