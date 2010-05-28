@@ -70,9 +70,10 @@ Foo Bar
 """)
         msg = signed_message_from_string(content)
         principal = authenticateEmail(msg)
-        self.assertTrue(principal.person.email, 'foo.bar@canonical.com')
+        self.assertTrue(principal.person.preferredemail.email,
+            'foo.bar@canonical.com')
         self.assertFalse(
-            IWeaklyAuthenticatedPrincipal.providedBy(principle))
+            IWeaklyAuthenticatedPrincipal.providedBy(principal))
 
 
 def test_suite():
