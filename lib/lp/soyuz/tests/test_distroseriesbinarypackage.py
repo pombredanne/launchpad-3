@@ -48,7 +48,7 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
         distro_archive_2 = self.distribution.all_distro_archives[1]
 
         # Publish the same binary in another distro archive.
-        binaries = self.publisher.getPubBinaries(
+        self.publisher.getPubBinaries(
             binaryname='foo-bin', summary='Foo is the best',
             archive=distro_archive_2)
 

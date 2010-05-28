@@ -11,6 +11,8 @@ __all__ = [
     'test_suite',
     ]
 
+import unittest
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -51,3 +53,7 @@ class TestSourcePackageReleaseFiles(TestCaseWithFactory):
         view = create_initialized_view(self.source_package_release, "+files")
         html = view.__call__()
         self.failUnless('test_file.dsc (deleted)' in html)
+
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
