@@ -72,10 +72,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
 
-    def new(sourcepackage, recipe, requester, date_created=None):
+    def new(distroseries, recipe, requester, archive, date_created=None):
         """Create an `ISourcePackageRecipeBuild`.
 
-        :param sourcepackage: The `ISourcePackage` that this is building.
+        :param distroseries: The `IDistroSeries` that this is building against.
         :param recipe: The `ISourcePackageRecipe` that this is building.
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
