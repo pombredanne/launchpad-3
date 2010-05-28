@@ -232,6 +232,45 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             [self.trunk_template, self.hoary_template],
             subset.getSharingPOTemplates(self.templatename))
 
+    def test_getSharingPOTemplates_product_multiple_series(self):
+        # Sharing templates for a product include the same templates from
+        # a linked source package, even with multiple series.
+        stable_template = self.factory.makePOTemplate(
+            productseries=self.stable, name=self.templatename)
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template,
+             stable_template, warty_template],
+            subset.getSharingPOTemplates(self.templatename))
+
+    def test_getSharingPOTemplates_package_multiple_series(self):
+        # Sharing templates for a product include the same templates from
+        # a linked source package, even with multiple series.
+        stable_template = self.factory.makePOTemplate(
+            productseries=self.stable, name=self.templatename)
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename)
+        sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.hoary)
+        sourcepackage.setPackaging(self.trunk, self.owner)
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template,
+             stable_template, warty_template],
+            subset.getSharingPOTemplates(self.templatename))
+
     def test_getOrCreateSharedPOTMsgSet_product(self):
         # Trying to create an identical POTMsgSet in a product as exists
         # in a linked sourcepackage will return the existing POTMsgset.
