@@ -54,6 +54,7 @@ class LoggingManager:
         handler.setFormatter(
             logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
         self._access_log.addHandler(handler)
+        self._access_log.setLevel(logging.INFO)
         # Make sure that our logging event handler is there, ready to receive
         # logging events.
         provideHandler(self._log_event)
