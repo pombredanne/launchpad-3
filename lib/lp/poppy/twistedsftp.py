@@ -11,7 +11,6 @@ __all__ = [
 
 import logging
 import os
-import stat
 import tempfile
 
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
@@ -19,6 +18,7 @@ from zope.component import adapter, provideHandler
 import zope.component.event
 from zope.interface import implements
 
+from lp.codehosting.sftp import FileIsADirectory
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.services.sshserver.events import SFTPClosed
@@ -36,9 +36,10 @@ class SFTPServer:
         self._fs_root = fsroot
         self.uploadfilesystem = UploadFileSystem(tempfile.mkdtemp())
         self._current_upload = self.uploadfilesystem.rootpath
-        os.chmod(self._current_upload, stat.S_IRWXU + stat.S_IRWXG)
+        os.chmod(self._current_upload, 0770)
         self._log = logging.getLogger("poppy-sftp")
-        self.hook = Hooks(self._fs_root, self._log, "ubuntu", perms='g+rws')
+        self.hook = Hooks(
+            self._fs_root, self._log, "ubuntu", perms='g+rws', prefix='-sftp')
         self.hook.new_client_hook(self._current_upload, 0, 0)
         self.hook.auth_verify_hook(self._current_upload, None, None)
 
@@ -103,6 +104,7 @@ class SFTPServer:
         if event.avatar is not self._avatar:
             return
         self.hook.client_done_hook(self._current_upload, 0, 0)
+
 
 class SFTPFile:
 

@@ -133,7 +133,7 @@ class SFTPServer:
         pass
 
     def waitForClose(self):
-        # XXX: Eww
+        # XXX: Eww bug=586695
         time.sleep(10)
 
     def getTransport(self):
