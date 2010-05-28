@@ -16,6 +16,7 @@ import unittest
 from StringIO import StringIO
 
 import dkim
+import dns.resolver
 
 from zope.component import getUtility
 
@@ -53,6 +54,12 @@ b/mPfjC0QJTocVBq6Za/PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQ==
 -----END PUBLIC KEY-----
 """
 
+sample_dns = """\
+k=rsa; \
+p=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANmBe10IgY+u7h3enWTukkqtUD5PR52T\
+b/mPfjC0QJTocVBq6Za/PlzfV+Py92VaCak19F4WrbVTK5Gg5tW220MCAwEAAQ=="""
+
+
 plain_content = """\
 From: Foo Bar <foo.bar@canonical.com>
 Date: Fri, 1 Apr 2010 00:00:00 +1000
@@ -62,15 +69,6 @@ To: 1@bugs.staging.launchpad.net
   importance critical
 
 Why isn't this fixed yet?"""
-
-
-def fake_signing(plain_message):
-    dkim_line = dkim.sign(plain_message,
-        selector='example', 
-        domain='canonical.com',
-        privkey=sample_privkey)
-    assert dkim_line[-1] == '\n'
-    return dkim_line + plain_message
 
 
 class TestSignedMessage(TestCaseWithFactory):
@@ -86,6 +84,33 @@ class TestSignedMessage(TestCaseWithFactory):
         logger = logging.getLogger('mail-authenticate-dkim')
         logger.addHandler(handler)
         self.addCleanup(lambda: logger.removeHandler(handler))
+        self.monkeypatch_dns()
+
+    def fake_signing(self, plain_message, canonicalize=None):
+        if canonicalize is None:
+            canonicalize = (dkim.Relaxed, dkim.Relaxed) 
+        dkim_line = dkim.sign(plain_message,
+            selector='example', 
+            domain='canonical.com',
+            privkey=sample_privkey,
+            debuglog=self._log_output,
+            canonicalize=canonicalize
+            )
+        assert dkim_line[-1] == '\n'
+        return dkim_line + plain_message
+
+    def monkeypatch_dns(self):
+        self._dns_responses = {}
+        def my_lookup(name):
+            try:
+                return self._dns_responses[name]
+            except KeyError:
+                raise dns.resolver.NXDOMAIN()
+        orig_dnstxt = dkim.dnstxt
+        dkim.dnstxt = my_lookup
+        def restore():
+            dkim.dnstxt = orig_dnstxt
+        self.addCleanup(restore)
 
     def get_dkim_log(self):
         return self._log_output.getvalue()
@@ -104,12 +129,55 @@ class TestSignedMessage(TestCaseWithFactory):
             self.fail('expected weak authentication; got strong:\n'
                 + self.get_dkim_log() + '\n\n' + signed_message)
 
+    def assertDkimLogContains(self, substring):
+        l = self.get_dkim_log()
+        if l.find(substring) == -1:
+            self.fail("didn't find %r in log: %s" % (substring, l))
+
+    def test_dkim_garbage_pubkey(self):
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            'aothuaonu'
+        principal = authenticateEmail(signed_message_from_string(signed_message))
+        self.assertWeaklyAuthenticated(principal, signed_message)
+        self.assertDkimLogContains('invalid format in _domainkey txt record')
+
+    def test_dkim_valid_strict(self):
+        # run the tests with no fake dns response; this will probably fail
+        # with a dns error of some kind; it should be handled decently
+        # 
+        # FIXME: this fails because some re-wrapping happens after the 
+        # message comes in (probably going too/from SignedMessage)
+        # and pydkim correctly complains about that: we would need to 
+        # validate against the raw bytes
+        signed_message = self.fake_signing(plain_content,
+            canonicalize=(dkim.Simple, dkim.Simple))
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns
+        principal = authenticateEmail(signed_message_from_string(signed_message))
+        self.assertStronglyAuthenticated(principal, signed_message)
+
+    def test_dkim_valid(self):
+        # run the tests with no fake dns response; this will probably fail
+        # with a dns error of some kind; it should be handled decently
+        signed_message = self.fake_signing(plain_content)
+        self._dns_responses['example._domainkey.canonical.com.'] = \
+            sample_dns
+        principal = authenticateEmail(signed_message_from_string(signed_message))
+        self.assertStronglyAuthenticated(principal, signed_message)
+
     def test_dkim_nxdomain(self):
         # run the tests with no fake dns response; this will probably fail
         # with a dns error of some kind; it should be handled decently
-        signed_message = fake_signing(plain_content)
+        signed_message = self.fake_signing(plain_content)
         principal = authenticateEmail(signed_message_from_string(signed_message))
         self.assertWeaklyAuthenticated(principal, signed_message)
+
+    def test_dkim_message_unsigned(self):
+        # degenerate case: no signature treated as weakly authenticated
+        principal = authenticateEmail(signed_message_from_string(plain_content))
+        self.assertWeaklyAuthenticated(principal, plain_content)
+        # the library doesn't log anything if there's no header at all
 
     def test_dkim_message_invalid(self):
         # The message message has a syntactically valid DKIM signature that
@@ -130,8 +198,7 @@ DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
 """ + plain_content
         principal = authenticateEmail(signed_message_from_string(content))
         self.assertWeaklyAuthenticated(principal, content)
-        if self.get_dkim_log().find('body hash mismatch') == -1:
-            self.fail("didn't find message in log")
+        self.assertDkimLogContains('body hash mismatch')
 
 
 def test_suite():
