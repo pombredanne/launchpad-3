@@ -7,10 +7,10 @@
 
 __metaclass__ = type
 
-from logging import getLogger
 from cStringIO import StringIO as cStringIO
 from email.utils import getaddresses, parseaddr
 import email.errors
+import logging
 import re
 import sys
 
@@ -69,7 +69,9 @@ class InactiveAccount(Exception):
 def _authenticateDkim(mail):
     """"Attempt DKIM authentication of email; return True if known authentic"""
 
-    log = getLogger('mail-authenticate-dkim')
+    log = logging.getLogger('mail-authenticate-dkim')
+    log.setLevel(logging.DEBUG)
+    # log.addHandler(logging.FileHandler('/tmp/dkim.log'))
 
     dkim_log = cStringIO()
     log.info('Attempting DKIM authentication of message %s from %s'

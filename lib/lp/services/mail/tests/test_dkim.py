@@ -9,6 +9,7 @@ from email.Message import Message
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.Utils import make_msgid, formatdate
+import logging
 from textwrap import dedent
 import unittest
 
@@ -26,6 +27,11 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+
+# reuse the handler that records log events
+from lp.services.sshserver.tests.test_events import ListHandler
+
+
 class TestSignedMessage(TestCaseWithFactory):
     """Test SignedMessage class correctly extracts and verifies the GPG signatures."""
 
@@ -34,16 +40,20 @@ class TestSignedMessage(TestCaseWithFactory):
     def setUp(self):
         # Login with admin roles as we aren't testing access here.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        self._logged_events = []
+        handler = ListHandler(self._logged_events)
+        logger = logging.getLogger('mail-authenticate-dkim')
+        logger.addHandler(handler)
+        self.addCleanup(lambda: logger.removeHandler(handler))
         import_public_test_keys()
 
-    def test_dkim_message_valid(self):
-        # The message doesn't have a GPG signature, but it does have a valid
-        # DKIM signature.
+    def test_dkim_message_invalid(self):
+        # The message message has a syntactically valid DKIM signature that
+        # doesn't actually correspond to the sender.  We log something about
+        # this but we don't want to drop the message.
         #
         # XXX: This test relies on having real DNS service to look up the
         # signing key.
-        #
-        # Must match a user declared in the sample data
         content = dedent("""\
 From foo.bar@canonical.com  Fri May 21 06:36:35 2010
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
@@ -72,7 +82,14 @@ Foo Bar
         principal = authenticateEmail(msg)
         self.assertTrue(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
-        self.assertFalse(
+        for m in self._logged_events:
+            if m.getMessage().find('body hash mismatch') >= 0:
+                break
+        else:
+            self.fail("didn't find message in log")
+        # dkim signature here can't be authenticated so we match to the user,
+        # but it's weak
+        self.assertTrue(
             IWeaklyAuthenticatedPrincipal.providedBy(principal))
 
 
