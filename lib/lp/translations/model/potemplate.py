@@ -1374,10 +1374,23 @@ class POTemplateSharingSubset(object):
         assert distribution or not sourcepackagename, (
             "Picking a source package only makes sense with a distribution.")
         self.potemplateset = potemplateset
-        self.distribution = distribution
-        self.sourcepackagename = sourcepackagename
-        self.product = product
+        self.distribution = None
+        self.product = None
+        self.distrosourcepackages = []
 
+        if distribution is not None:
+            if sourcepackagename is None:
+                self.distribution = distribution
+            else:
+                from lp.registry.model.distributionsourcepackage import (
+                    DistributionSourcePackage)
+                distrosourcepackage = DistributionSourcePackage(
+                    distribution, sourcepackagename)
+                self.distrosourcepackages = [distrosourcepackage]
+                self.product = distrosourcepackage.upstream_product
+        else:
+            self.product = product
+            self.distrosourcepackages = product.distrosourcepackages
 
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
@@ -1394,18 +1407,25 @@ class POTemplateSharingSubset(object):
         `Product`s and `Distribution`s rather than `ProductSeries` and
         `DistroSeries`.
         """
-        if self.product:
+        if self.distribution is not None:
             subsets = [
-                self.potemplateset.getSubset(productseries=series)
-                for series in self.product.series
-                ]
-        else:
-            subsets = [
-                self.potemplateset.getSubset(
-                    distroseries=series,
-                    sourcepackagename=self.sourcepackagename)
+                self.potemplateset.getSubset(distroseries=series)
                 for series in self.distribution.series
                 ]
+        else:
+            subsets = []
+            if self.product is not None:
+                subsets.extend([
+                    self.potemplateset.getSubset(productseries=series)
+                    for series in self.product.series
+                    ])
+            for dsp in self.distrosourcepackages:
+                subsets.extend([
+                    self.potemplateset.getSubset(
+                        distroseries=series,
+                        sourcepackagename=dsp.sourcepackagename)
+                    for series in dsp.distribution.series
+                    ])
         for subset in subsets:
             for template in subset:
                 if name_pattern is None or re.match(name_pattern,
