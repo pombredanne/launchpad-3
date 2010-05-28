@@ -7,4 +7,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE SourcePackageRecipe ADD CONSTRAINT
     sourcepackagerecipe__owner__name__key UNIQUE (owner, name);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 59, 0);
