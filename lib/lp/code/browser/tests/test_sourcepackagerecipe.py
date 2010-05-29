@@ -142,7 +142,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser.getControl(name='field.name').value = recipe.name
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
 
