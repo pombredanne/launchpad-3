@@ -800,6 +800,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
+    def updateHeat():
+        """Update the heat for the bug."""
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
