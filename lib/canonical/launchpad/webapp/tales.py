@@ -2460,3 +2460,16 @@ class POFileFormatterAPI(ObjectFormatterAPI):
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""
         return self._context.title
+
+
+class PackageDiffFormatterAPI(ObjectFormatterAPI):
+    def link(self, view_name, rootsite=None):
+        diff = self._context
+        if not diff.date_fulfilled:
+            return '%s (pending)' % cgi.escape(diff.title)
+        else:
+            file_size = NumberFormatterAPI(
+                diff.diff_content.content.filesize).bytes()
+            return '<a href="%s">%s</a> (%s)' % (
+                cgi.escape(diff.diff_content.http_url),
+                cgi.escape(diff.title), file_size)
