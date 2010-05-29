@@ -223,7 +223,7 @@ are available.
     File                  Size      MD5 Checksum
     testing-dspr_1.0.dsc  28 bytes  5913c3ad52c14a62e6ae7eef51f9ef42
     Available diffs
-    0.9 to 1.0 (7 bytes)
+    diff from 0.9 to 1.0 (7 bytes)
 
     >>> print anon_browser.getLink('0.9 to 1.0').url
     http://.../101/testing-dspr_0.9_1.0.diff.gz
@@ -303,5 +303,5 @@ The full change log can be viewed as follows:
     LP: #1234
     celso.providelo@canonical.com
     Available diffs
-    0.9 to 1.0
+    diff from 0.9 to 1.0
     (7 bytes)
