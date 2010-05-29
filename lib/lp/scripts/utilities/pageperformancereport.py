@@ -19,7 +19,7 @@ import time
 
 import numpy
 import simplejson as json
-from zc.zservertracelog.tracereport import Request, parsedt
+from zc.zservertracelog.tracereport import Request
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import log
@@ -193,7 +193,7 @@ def parse(tracefiles, categories, options):
         for line in smart_open(tracefile):
             line = line.rstrip()
             try:
-                record = line.split(' ',7)
+                record = line.split(' ', 7)
                 try:
                     record_type, request_id, date, time_ = record[:4]
                 except ValueError:
@@ -232,12 +232,19 @@ def parse(tracefiles, categories, options):
                 if request is None: # Just ignore partial records.
                     continue
 
-                if record_type == '-': # Extension record from Launchpad.
-                    # Launchpad outputs the full URL to the tracelog,
-                    # including protocol & hostname. Use this in favor of
-                    # the ZServer logged path.
-                    require_args(1)
+                # Old stype extension record from Launchpad. Just
+                # contains the URL.
+                if record_type == '-' and len(args) == 1:
                     request.url = args[0]
+
+                # New style extension record with a prefix.
+                elif record_type == '-':
+                    # Launchpad outputs several things as tracelog
+                    # extension records. We include a prefix to tell
+                    # them apart.
+                    require_args(2)
+
+                    parse_extension_record(request, args)
 
                 elif record_type == 'I': # Got request input.
                     require_args(1)
@@ -264,6 +271,18 @@ def parse(tracefiles, categories, options):
             except MalformedLine, x:
                 log.error(
                     "Malformed line %s %s (%s)" % (repr(line), repr(args), x))
+
+
+def parse_extension_record(self, request, args):
+    """Decode a ZServer extension records and annotate request."""
+    prefix = args[0]
+    if prefix == 'u':
+        request.url = args[1]
+    elif prefix == 'p':
+        request.pageid = args[1]
+    else:
+        raise MalformedLine(
+            "Unknown extension prefix %s" % prefix)
 
 
 def print_html_report(categories):
@@ -318,7 +337,7 @@ def print_html_report(categories):
         histograms.append(histogram)
         print dedent("""\
             <tr class="%s">
-            <th class="category-title">%s <div class="regexp">%s</span></th>
+            <th class="category-title">%s <span class="regexp">%s</span></th>
             <td class="mean">%.2f s</td>
             <td class="median">%.2f s</td>
             <td class="standard-deviation">%.2f s</td>
@@ -330,6 +349,9 @@ def print_html_report(categories):
                 row_class,
                 html_quote(category.title), html_quote(category.regexp),
                 mean, median, standard_deviation, i))
+
+    print "</tbody></table>"
+
 
     print dedent("""\
         <script language="javascript" type="text/javascript">
