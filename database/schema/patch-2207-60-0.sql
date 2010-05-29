@@ -15,4 +15,4 @@ ALTER TABLE BranchSubscription ALTER COLUMN subscribed_by SET NOT NULL;
 CREATE INDEX branchsubscription__subscribed_by__idx
    ON BranchSubscription(subscribed_by);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 60, 0);
