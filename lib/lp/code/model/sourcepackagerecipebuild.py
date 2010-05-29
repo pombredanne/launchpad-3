@@ -111,10 +111,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     distro_series = distroseries
 
-    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(
-        sourcepackagename_id, 'SourcePackageName.id')
-
     @property
     def distribution(self):
         """See `IBuildBase`."""
@@ -150,7 +146,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     def title(self):
         return '%s recipe build' % self.recipe.base_branch.unique_name
 
-    def __init__(self, distroseries, sourcepackagename, recipe, requester,
+    def __init__(self, distroseries, recipe, requester,
                  archive, pocket, date_created=None,
                  date_first_dispatched=None, date_built=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
@@ -169,10 +165,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.distroseries = distroseries
         self.recipe = recipe
         self.requester = requester
-        self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, pocket=None,
+    def new(cls, distroseries, recipe, requester, archive, pocket=None,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
@@ -181,8 +176,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         if date_created is None:
             date_created = UTC_NOW
         spbuild = cls(
-            sourcepackage.distroseries,
-            sourcepackage.sourcepackagename,
+            distroseries,
             recipe,
             requester,
             archive,

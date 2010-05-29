@@ -492,6 +492,9 @@ class Bug(SQLBase):
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
+        # In some cases, a subscription should be created without
+        # email notifications.  suppress_notify determines if
+        # notifications are sent.
         if suppress_notify is False:
             notify(ObjectCreatedEvent(sub, user=subscribed_by))
 

@@ -46,7 +46,7 @@ def find_job(test, name, processor='386'):
     for build in test.builds:
         bq = build.buildqueue_record
         source = None
-        for attr in ('source_package_release', 'sourcepackagename'):
+        for attr in ('source_package_release', 'recipe'):
             source = getattr(build, attr, None)
             if source is not None:
                 break
@@ -601,7 +601,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
         # The following job can only run on a native builder.
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename='xxr-gftp', score=1055,
+            estimated_duration=111, sourcename=u'xxr-gftp', score=1055,
             virtualized=False)
         self.builds.append(job.specific_job.build)
 
@@ -1003,11 +1003,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=22,
-            sourcename='xx-recipe-bash', score=1025)
+            sourcename=u'xx-recipe-bash', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=222,
-            sourcename='xx-recipe-zsh', score=1053)
+            sourcename=u'xx-recipe-zsh', score=1053)
         self.builds.append(job.specific_job.build)
 
         # Assign the same score to the '386' vim and apg build jobs.
@@ -1104,7 +1104,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
                 removeSecurityProxy(bq).virtualized = True
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=True, estimated_duration=332,
-            sourcename='xxr-openssh-client', score=1050)
+            sourcename=u'xxr-openssh-client', score=1050)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
         #   ...
@@ -1125,7 +1125,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # Now add a job with a NULL 'virtualized' flag. It should be treated
         # like jobs with virtualized=TRUE.
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename='xxr-gwibber', score=1051,
+            estimated_duration=111, sourcename=u'xxr-gwibber', score=1051,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         # print_build_setup(self.builds)
@@ -1195,32 +1195,32 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=332,
-            sourcename='xxr-aptitude', score=1025)
+            sourcename=u'xxr-aptitude', score=1025)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=443,
-            sourcename='xxr-auto-apt', score=1053)
+            sourcename=u'xxr-auto-apt', score=1053)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=554, sourcename='xxr-daptup', score=1051,
+            estimated_duration=554, sourcename=u'xxr-daptup', score=1051,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=665, sourcename='xxr-cron-apt', score=1043)
+            estimated_duration=665, sourcename=u'xxr-cron-apt', score=1043)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=776, sourcename='xxr-apt-build', score=1043)
+            estimated_duration=776, sourcename=u'xxr-apt-build', score=1043)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=887, sourcename='xxr-debdelta', score=1044,
+            estimated_duration=887, sourcename=u'xxr-debdelta', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=998, sourcename='xxr-apt', score=1044,
+            estimated_duration=998, sourcename=u'xxr-apt', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=1110, sourcename='xxr-cupt', score=1044,
+            estimated_duration=1110, sourcename=u'xxr-cupt', score=1044,
             virtualized=None)
         self.builds.append(job.specific_job.build)
 
