@@ -988,7 +988,8 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchSubscription(self, branch=None, person=None):
+    def makeBranchSubscription(self, branch=None, person=None,
+                               subscribed_by=None):
         """Create a BranchSubscription.
 
         :param branch_title: The title to use for the created Branch
@@ -998,9 +999,11 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch = self.makeBranch()
         if person is None:
             person = self.makePerson()
+        if subscribed_by is None:
+            subscribed_by = person
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, subscribed_by)
 
     def makeDiff(self, diff_text=DIFF):
         return Diff.fromFile(StringIO(diff_text), len(diff_text))

@@ -965,9 +965,10 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             title=_("The level of code review notification emails."),
             vocabulary=CodeReviewNotificationLevel))
     @operation_returns_entry(Interface) # Really IBranchSubscription
+    @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
     def subscribe(person, notification_level, max_diff_lines,
-                  code_review_level):
+                  code_review_level, subscribed_by):
         """Subscribe this person to the branch.
 
         :param person: The `Person` to subscribe.
@@ -977,6 +978,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
             appear in a notification.
         :param code_review_level: The kinds of code review activity that cause
             notification.
+        :param subscribed_by: The person who is subscribing the subscriber.
+            Most often the subscriber themselves.
         :return: new or existing BranchSubscription."""
 
     @operation_parameters(
@@ -995,9 +998,14 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals,
         person=Reference(
             title=_("The person to unsubscribe"),
             schema=IPerson))
+    @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
-    def unsubscribe(person):
-        """Remove the person's subscription to this branch."""
+    def unsubscribe(person, unsubscribed_by):
+        """Remove the person's subscription to this branch.
+
+        :param person: The person or team to unsubscribe from the branch.
+        :param unsubscribed_by: The person doing the unsubscribing.
+        """
 
     def getSubscriptionsByLevel(notification_levels):
         """Return the subscriptions that are at the given notification levels.

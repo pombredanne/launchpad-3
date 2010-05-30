@@ -3089,10 +3089,10 @@ ALTER TABLE branchrevision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL, 0);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236', 1, NULL, 0);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (4, 64, 29, '2007-05-28 02:41:07.938677', 1, NULL, 0);
-INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level) VALUES (5, 64, 30, '2007-05-28 02:41:07.938677', 1, NULL, 0);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level, subscribed_by) VALUES (1, 12, 20, '2006-10-16 18:31:43.079375', 1, NULL, 0, 12);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level, subscribed_by) VALUES (2, 12, 24, '2006-10-16 18:31:43.080236', 1, NULL, 0, 12);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level, subscribed_by) VALUES (4, 64, 29, '2007-05-28 02:41:07.938677', 1, NULL, 0, 64);
+INSERT INTO branchsubscription (id, person, branch, date_created, notification_level, max_diff_lines, review_level, subscribed_by) VALUES (5, 64, 30, '2007-05-28 02:41:07.938677', 1, NULL, 0, 64);
 
 
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;

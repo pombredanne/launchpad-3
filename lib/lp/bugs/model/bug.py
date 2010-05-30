@@ -64,12 +64,13 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from lp.bugs.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
-    InvalidDuplicateValue, UserCannotUnsubscribePerson)
+    InvalidDuplicateValue)
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
