@@ -67,14 +67,45 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
                                                     sequence=1)
 
-    def constructTranslationMessage(self, pofile, potmsgset=None,
-                                              current=True, other=False,
-                                              diverged=False,
-                                              translations=None):
+    def constructTranslationMessage(self, pofile=None, potmsgset=None,
+                                    current=True, other=False, diverged=False,
+                                    translations=None):
         """Creates a TranslationMessage directly for `pofile` context."""
+        if pofile is None:
+            pofile = self.pofile
+        if potmsgset is None:
+            potmsgset = self.potmsgset
         return make_translationmessage_for_context(
             self.factory, pofile, potmsgset,
             current, other, diverged, translations)
+
+    def constructOtherTranslationMessage(self, potmsgset=None, current=True,
+                                         other=False, diverged=False,
+                                         translations=None):
+        """Creates a TranslationMessage for self.other_pofile context."""
+        return self.constructTranslationMessage(
+            self.other_pofile, potmsgset, current, other, diverged,
+            translations)
+
+    def constructDivergingTranslationMessage(self, potmsgset=None,
+                                             current=True, other=False,
+                                             diverged=False,
+                                             translations=None):
+        """Creates a TranslationMessage for self.diverging_pofile context."""
+        return self.constructTranslationMessage(
+            self.diverging_pofile, potmsgset, current, other, diverged,
+            translations)
+
+    def setCurrentTranslation(self, translations, share_with_other_side=False):
+        """Helper method to call 'setCurrentTranslation' method.
+
+        It passes all the same parameters we use throughout all tests,
+        including self.potmsgset, self.pofile, self.pofile.owner and origin.
+        """
+        return self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=share_with_other_side)
 
     def assert_Current_Diverged_Other_DivergencesElsewhere_are(
         self, current, diverged, other_shared, divergences_elsewhere):
@@ -116,10 +147,8 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [])
 
-        translations = [self.factory.getUniqueString()]
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        new_translations = [self.factory.getUniqueString()]
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
@@ -134,11 +163,9 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [])
 
-        translations = [self.factory.getUniqueString()]
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        new_translations = [self.factory.getUniqueString()]
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with a shared current translation,
         # activated in other context as well.
@@ -151,15 +178,12 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # existing TM matching new translations.
         # There is a current translation in "other" context.
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [])
 
-        translations = [self.factory.getUniqueString()]
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        new_translations = [self.factory.getUniqueString()]
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with a shared current translation.
         # Current for other context one stays the same.
@@ -173,16 +197,13 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current translation in "other" context,
         # and we want it to "follow" the flag for this context.
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [])
 
-        translations = [self.factory.getUniqueString()]
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        new_translations = [self.factory.getUniqueString()]
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with a shared current translation which
         # is current for the other context as well.
@@ -197,16 +218,13 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_other])
 
-        translations = [self.factory.getUniqueString()]
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        new_translations = [self.factory.getUniqueString()]
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
@@ -225,17 +243,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_other])
 
-        translations = [self.factory.getUniqueString()]
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        new_translations = [self.factory.getUniqueString()]
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
@@ -256,16 +271,13 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
 
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with tm_suggestion being activated.
         self.assertTrue(tm is not None)
@@ -279,17 +291,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
 
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with tm_suggestion being activated in both contexts.
         self.assertTrue(tm is not None)
@@ -303,18 +312,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # tm_suggestion becomes current.
         # Current for other context one stays the same.
@@ -329,19 +334,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # tm_suggestion becomes current.
         # Current for other context one stays the same.
@@ -361,16 +362,13 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # also a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=follows)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=follows)
 
         # tm_other becomes current in this context as well,
         # and remains current for the other context.
@@ -390,18 +388,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_other])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
@@ -422,19 +416,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_other])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
@@ -455,16 +445,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
         tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            pofile=self.diverging_pofile,
             current=True, other=False, diverged=True,
             translations=new_translations)
 
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with tm_diverged being activated and converged.
         self.assertTrue(tm is not None)
@@ -477,18 +465,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
 
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with tm_diverged being activated and converged,
         # including the "other" context.
@@ -502,19 +487,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with tm_diverged being activated and converged,
         # and current for the other context stays the same.
@@ -528,20 +509,16 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with tm_diverged being activated and converged,
         # and current for the other context stays the same.
@@ -562,22 +539,18 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current translation in "other" context
         # which is identical to the found diverged TM.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False,
             translations=new_translations)
         tm_other_id = tm_other.id
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=follows)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=follows)
 
         # We end up with tm_diverged being activated and converged,
         # and current for the other context (otherwise identical)
@@ -606,19 +579,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_other, tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with tm_diverged being activated and converged,
         # and tm_other stays as it was.
@@ -640,20 +609,16 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_other, tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with tm_diverged being activated and converged,
         # and tm_other stays as it was.
@@ -676,22 +641,17 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is both a current diverged and current shared translation
         # in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other_shared = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_shared = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other_shared, [tm_diverged, tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with tm_diverged being activated and converged,
         # and tm_other stays as it was.
@@ -723,23 +683,18 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is both a current diverged and current shared translation
         # in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other_shared = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_shared = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other_shared, [tm_diverged, tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with tm_diverged being activated and converged,
         # and activated for the other context as well.  Diverged
@@ -769,19 +724,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is also an identical current diverged in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_diverged, tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # We end up with tm_diverged being activated and converged,
         # and other context stays untranslated.  Diverged
@@ -806,21 +757,17 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is also an identical current diverged in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         tm_diverged_id = tm_diverged.id
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, None, [tm_diverged, tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # We end up with tm_other_diverged being activated and converged,
         # and current for both other and this context.
@@ -840,14 +787,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is neither a translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.
@@ -866,15 +810,12 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is neither a translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current for both
         # active and "other" context.
@@ -893,17 +834,13 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a shared translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.  Current for "other" context is left
@@ -924,18 +861,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a shared translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current for
         # both active and "other" context.
@@ -958,18 +891,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is no translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.
@@ -989,19 +918,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is no translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current only for
         # the active context.
@@ -1021,15 +946,12 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is no translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.
@@ -1044,16 +966,13 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is no translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current for both contexts.
         self.assertTrue(tm is not None)
@@ -1067,21 +986,16 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a shared translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context. Translation for other context is untouched.
@@ -1101,22 +1015,17 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a shared translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
         tm_suggestion = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current for both
         # active and "other" context.
@@ -1140,19 +1049,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # also current for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=follows)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=follows)
 
         # New translation message is shared for both contexts.
         self.assertTrue(tm is not None)
@@ -1178,18 +1083,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # exactly the same as the new translation.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared for current context,
         # and identical divergence in other context is kept.
@@ -1211,19 +1112,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # exactly the same as the new translation.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared for both contexts,
         # and divergence on the other side is "converged".
@@ -1243,18 +1140,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is no translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.
@@ -1274,19 +1167,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is no translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current for
         # both contexts.
@@ -1306,21 +1195,16 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a shared translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.  "Other" translation is unchanged.
@@ -1341,22 +1225,17 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a shared translation for "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+        tm_diverged = self.constructDivergingTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [tm_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current only for
         # the active context.  "Other" translation is unchanged.
@@ -1380,21 +1259,16 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is also a shared translation for the "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.  "Other" translation is unchanged.
@@ -1416,22 +1290,17 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is also a shared translation for the "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, tm_other, [tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # Previously diverged in "other" context is now converged to
         # shared and current for both contexts.
@@ -1454,18 +1323,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # for the "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB)
+        tm = self.setCurrentTranslation(new_translations)
 
         # New translation message is shared and current only for
         # the active context.  "Other" translation is unchanged.
@@ -1486,19 +1351,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # for the "other" context.
         new_translations = [self.factory.getUniqueString()]
         tm_shared = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
+        tm_other_diverged = self.constructOtherTranslationMessage(
             current=True, other=False, diverged=True,
             translations=new_translations)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm_shared, None, None, [tm_other_diverged])
 
-        tm = self.potmsgset.setCurrentTranslation(
-            self.pofile, self.pofile.owner, new_translations,
-            origin=RosettaTranslationOrigin.ROSETTAWEB,
-            share_with_other_side=True)
+        tm = self.setCurrentTranslation(
+            new_translations, share_with_other_side=True)
 
         # New translation message is shared and current only for
         # the active context.  "Other" translation is unchanged.
