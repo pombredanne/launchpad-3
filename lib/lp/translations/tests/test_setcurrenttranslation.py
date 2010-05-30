@@ -33,7 +33,7 @@ from lp.translations.tests.helpers import (
 #     /setCurrentTranslation#Execution%20matrix
 
 class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
-    """Test discovery of translation suggestions."""
+    """Comprehensively test setting a current translation."""
 
     layer = ZopelessDatabaseLayer
 
@@ -109,6 +109,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
 
     def assert_Current_Diverged_Other_DivergencesElsewhere_are(
         self, current, diverged, other_shared, divergences_elsewhere):
+        """Assert that 'important' translations match passed-in values.
+
+        Takes four parameters:
+         * current: represents a current shared translation for this context.
+         * diverged: represents a diverged translation for this context.
+         * other_shared: represents a shared translation for "other" context.
+         * divergences_elsewhere: a list of other divergences in both contexts.
+        """
         new_current, new_diverged, new_other, new_divergences = (
             get_all_important_translations(self.pofile, self.potmsgset))
 
