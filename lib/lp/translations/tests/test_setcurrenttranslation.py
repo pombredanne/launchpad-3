@@ -1169,8 +1169,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self):
         # Since we are converging to the 'other' context anyway, it behaves
         # the same when 'share_with_other_side=True' is passed in.
-        self.test_current_shared__new_shared__other_shared__identical__follows(
-            True)
+        self.test_current_shared__new_shared__other_shared__identical(True)
 
     def test_current_shared__new_shared__other_diverged__identical(self):
         # Current translation is 'shared', and we have found
