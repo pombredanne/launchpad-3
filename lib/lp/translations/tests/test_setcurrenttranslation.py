@@ -11,7 +11,6 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -21,6 +20,11 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus)
 from lp.translations.model.translationmessage import (
     TranslationMessage)
+
+from lp.translations.tests.helpers import (
+    make_translationmessage_for_context,
+    make_translationmessage,
+    get_all_important_translations)
 
 
 # This test is based on the matrix described on:
@@ -67,220 +71,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
                                               current=True, other=False,
                                               diverged=False,
                                               translations=None):
-        """A low-level way of constructing TMs appropriate to `pofile` context.
-        """
-        assert pofile is not None, "You must pass in an existing POFile."
-
-        potemplate = pofile.potemplate
-        if potemplate.distroseries is not None:
-            ubuntu = current
-            upstream = other
-        else:
-            ubuntu = other
-            upstream = current
-        return self.constructTranslationMessage(
-            pofile, potmsgset, ubuntu, upstream, diverged, translations)
-
-    def constructTranslationMessage(self, pofile=None, potmsgset=None,
-                                    ubuntu=True, upstream=True,
-                                    diverged=False, translations=None):
-        """Creates a TranslationMessage directly and sets relevant parameters.
-
-        This is very low level function used to test core Rosetta
-        functionality such as setCurrentTranslation() method.  If not used
-        correctly, it will trigger unique constraints.
-        """
-        if pofile is None:
-            pofile = self.factory.makePOFile('sr')
-        if potmsgset is None:
-            potmsgset = self.factory.makePOTMsgSet(
-                potemplate=pofile.potemplate)
-        if translations is None:
-            translations = [self.factory.getUniqueString()]
-        if diverged:
-            potemplate = pofile.potemplate
-        else:
-            potemplate = None
-
-        # Parameters we don't care about are origin, submitter and
-        # validation_status.
-        origin = RosettaTranslationOrigin.SCM
-        submitter = pofile.owner
-        validation_status = TranslationValidationStatus.UNKNOWN
-
-        potranslations = removeSecurityProxy(
-            potmsgset)._findPOTranslations(translations)
-        new_message = TranslationMessage(
-            potmsgset=potmsgset,
-            potemplate=potemplate,
-            pofile=None,
-            language=pofile.language,
-            variant=pofile.variant,
-            origin=origin,
-            submitter=submitter,
-            msgstr0=potranslations[0],
-            msgstr1=potranslations[1],
-            msgstr2=potranslations[2],
-            msgstr3=potranslations[3],
-            msgstr4=potranslations[4],
-            msgstr5=potranslations[5],
-            validation_status=validation_status,
-            is_current_ubuntu=ubuntu,
-            is_current_upstream=upstream)
-        return new_message
-
-    def getAllUsedTranslationMessages(self, pofile, potmsgset):
-        """Get all translation messages on this POTMsgSet used anywhere."""
-        used_clause = ('(is_current_ubuntu IS TRUE OR '
-                       'is_current_upstream IS TRUE)')
-        template_clause = 'TranslationMessage.potemplate IS NOT NULL'
-        clauses = [
-            'potmsgset = %s' % sqlvalues(potmsgset),
-            used_clause,
-            template_clause,
-            'TranslationMessage.language = %s' % sqlvalues(pofile.language)]
-        if pofile.variant is None:
-            clauses.append('TranslationMessage.variant IS NULL')
-        else:
-            clauses.append(
-                'TranslationMessage.variant=%s' % sqlvalues(pofile.variant))
-
-        order_by = '-COALESCE(potemplate, -1)'
-
-        return TranslationMessage.select(
-            ' AND '.join(clauses), orderBy=[order_by])
-
-    def getAllImportantTranslations(self, pofile, potmsgset):
-        """Return all existing current translations.
-
-        Returns a tuple containing 4 elements:
-         * current, shared translation for `potmsgset`.
-         * diverged translation for `potmsgset` in `pofile` or None.
-         * shared translation for `potmsgset` in "other" context.
-         * list of all other diverged translations (not including the one
-           diverged in `pofile`) or an empty list if there are none.
-        """
-        current_shared = potmsgset.getCurrentTranslationMessage(
-            None, pofile.language, pofile.variant)
-        current_diverged = potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language, pofile.variant)
-        if (current_diverged is not None and
-            current_diverged.potemplate is None):
-            current_diverged = None
-
-        other_shared = potmsgset.getImportedTranslationMessage(
-            None, pofile.language, pofile.variant)
-        other_diverged = potmsgset.getImportedTranslationMessage(
-            pofile.potemplate, pofile.language, pofile.variant)
-        self.assertTrue(other_diverged is None or
-                        other_diverged.potemplate is None,
-                        "There is a diverged 'other' translation for "
-                        "this same template, which isn't impossible.")
-
-        all_used = self.getAllUsedTranslationMessages(
-            pofile, potmsgset)
-        diverged = []
-        for suggestion in all_used:
-            if ((suggestion.potemplate is not None and
-                 suggestion.potemplate != pofile.potemplate) and
-                (suggestion.is_current_ubuntu or
-                 suggestion.is_current_upstream)):
-                # It's diverged for another template and current somewhere.
-                diverged.append(suggestion)
-        return (
-            current_shared, current_diverged,
-            other_shared, diverged)
-
-    def test_getAllImportantTranslations(self):
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertIs(None, current_shared)
-        self.assertIs(None, current_diverged)
-        self.assertIs(None, other)
-        self.assertEquals([], divergences)
-
-    def test_getAllImportantTranslations_current_shared(self):
-        tm = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=False, diverged=False)
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertEquals(tm, current_shared)
-        self.assertIs(None, current_diverged)
-        self.assertIs(None, other)
-        self.assertEquals([], divergences)
-
-    def test_getAllImportantTranslations_current_both(self):
-        tm = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=True, diverged=False)
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertEquals(tm, current_shared)
-        self.assertIs(None, current_diverged)
-        self.assertEquals(tm, other)
-        self.assertEquals([], divergences)
-
-    def test_getAllImportantTranslations_current_both_same(self):
-        tm = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=True, diverged=False)
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertEquals(tm, current_shared)
-        self.assertIs(None, current_diverged)
-        self.assertEquals(tm, other)
-        self.assertEquals([], divergences)
-
-    def test_getAllImportantTranslations_current_two_different(self):
-        tm_this = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=False, upstream=True, diverged=False)
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertEquals(tm_this, current_shared)
-        self.assertIs(None, current_diverged)
-        self.assertEquals(tm_other, other)
-        self.assertEquals([], divergences)
-
-    def test_getAllImportantTranslations_current_three_different(self):
-        tm_this = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=False, diverged=False)
-        tm_other = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=False, upstream=True, diverged=False)
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=False, diverged=True)
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertEquals(tm_this, current_shared)
-        self.assertEquals(tm_diverged, current_diverged)
-        self.assertEquals(tm_other, other)
-        self.assertEquals([], divergences)
-
-    def test_getAllImportantTranslations_current_three_diverged_elsewhere(self):
-        tm_diverged = self.constructTranslationMessage(
-            pofile=self.other_pofile, potmsgset=self.potmsgset,
-            ubuntu=True, upstream=False, diverged=True)
-        self.assertTrue(tm_diverged.is_current_ubuntu)
-        self.assertEquals(tm_diverged.potemplate, self.other_pofile.potemplate)
-        self.assertEquals(tm_diverged.potmsgset, self.potmsgset)
-        current_shared, current_diverged, other, divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
-        self.assertIs(None, current_shared)
-        self.assertIs(None, current_diverged)
-        self.assertIs(None, other)
-        self.assertEquals([tm_diverged], divergences)
+        """Creates a TranslationMessage directly for `pofile` context."""
+        return make_translationmessage_for_context(
+            self.factory, pofile, potmsgset,
+            current, other, diverged, translations)
 
     def assert_Current_Diverged_Other_DivergencesElsewhere_are(
         self, current, diverged, other_shared, divergences_elsewhere):
         new_current, new_diverged, new_other, new_divergences = (
-            self.getAllImportantTranslations(self.pofile, self.potmsgset))
+            get_all_important_translations(self.pofile, self.potmsgset))
 
         if new_current is None:
             self.assertIs(new_current, current)
