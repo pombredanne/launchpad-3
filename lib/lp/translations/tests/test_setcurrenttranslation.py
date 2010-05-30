@@ -5,25 +5,19 @@
 
 __metaclass__ = type
 
-from datetime import datetime
-import pytz
-
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin,
-    TranslationValidationStatus)
+    RosettaTranslationOrigin)
 from lp.translations.model.translationmessage import (
     TranslationMessage)
 
 from lp.translations.tests.helpers import (
     make_translationmessage_for_context,
-    make_translationmessage,
     get_all_important_translations)
 
 
@@ -96,10 +90,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
             self.diverging_pofile, potmsgset, current, other, diverged,
             translations)
 
-    def setCurrentTranslation(self, translations, share_with_other_side=False):
+    def setCurrentTranslation(self, translations,
+                              share_with_other_side=False):
         """Helper method to call 'setCurrentTranslation' method.
 
-        It passes all the same parameters we use throughout all tests,
+        It passes all the same parameters we use throughout the tests,
         including self.potmsgset, self.pofile, self.pofile.owner and origin.
         """
         return self.potmsgset.setCurrentTranslation(
@@ -407,6 +402,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
+        self.assertEquals(tm_suggestion, tm)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, None, [tm_other])
 
@@ -436,6 +432,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
 
         # We end up with a shared current translation.
         self.assertTrue(tm is not None)
+        self.assertEquals(tm_suggestion, tm)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, tm, [tm_other])
 
