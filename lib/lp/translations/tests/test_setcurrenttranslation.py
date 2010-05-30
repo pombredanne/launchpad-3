@@ -833,3 +833,682 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # Previously diverged current is still diverged and current
         # in exactly one context.
         self.assertTranslationMessageDeleted(tm_diverged_id)
+
+    def test_current_shared__new_None__other_None(self):
+        # Current translation is 'shared', and we have found
+        # no existing TM matching new translations.
+        # There is neither a translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [])
+
+        # Previously current is not current anymore.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_None__other_None__follows(self):
+        # Current translation is 'shared', and we have found
+        # no existing TM matching new translations.
+        # There is neither a translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current for both
+        # active and "other" context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previously current is not current anymore.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_None__other_shared(self):
+        # Current translation is 'shared', and we have found
+        # no existing TM matching new translations.
+        # There is a shared translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.  Current for "other" context is left
+        # untouched.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm_other, [])
+
+        # Previously current is not current anymore.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_None__other_shared__follows(self):
+        # Current translation is 'shared', and we have found
+        # no existing TM matching new translations.
+        # There is a shared translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current for
+        # both active and "other" context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Current for other context is merely a suggestion now,
+        # just like a previous shared translation.
+        self.assertFalse(tm_other.is_current_ubuntu or
+                         tm_other.is_current_upstream)
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_shared__other_None(self):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations (a suggestion).
+        # There is no translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_suggestion = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=False, other=False, diverged=False,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_suggestion, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_shared__other_None__follows(self):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations (a suggestion).
+        # There is no translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_suggestion = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=False, other=False, diverged=False,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current only for
+        # the active context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_suggestion, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_shared__other_None__identical(self):
+        # Current translation is 'shared', and we are trying
+        # to change it to identical translations. NO-OP.
+        # There is no translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.
+        self.assertTrue(tm is not None)
+        self.assertEquals(tm_shared, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [])
+
+    def test_current_shared__new_shared__other_None__identical__follows(self):
+        # Current translation is 'shared', and we are trying
+        # to change it to identical translations.
+        # There is no translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current for both contexts.
+        self.assertTrue(tm is not None)
+        self.assertEquals(tm_shared, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+    def test_current_shared__new_shared__other_shared(self):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations (a suggestion).
+        # There is a shared translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_suggestion = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=False, other=False, diverged=False,
+            translations=new_translations)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context. Translation for other context is untouched.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_suggestion, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm_other, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_shared__other_shared__follows(self):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations (a suggestion).
+        # There is a shared translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_suggestion = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=False, other=False, diverged=False,
+            translations=new_translations)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current for both
+        # active and "other" context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_suggestion, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion, just like
+        # a shared translation in the other context.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+        self.assertFalse(tm_other.is_current_ubuntu or
+                         tm_other.is_current_upstream)
+
+    def test_current_shared__new_shared__other_shared__identical(
+        self, follows=False):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations that is
+        # also current for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=follows)
+
+        # New translation message is shared for both contexts.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_other, tm)
+        self.assert_Current_Diverged_Other_DivergetncesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_shared__other_shared__identical__follows(
+        self):
+        # Since we are converging to the 'other' context anyway, it behaves
+        # the same when 'share_with_other_side=True' is passed in.
+        self.test_current_shared__new_shared__other_shared__identical__follows(
+            True)
+
+    def test_current_shared__new_shared__other_diverged__identical(self):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations (a suggestion).
+        # There is a divergence in the 'other' context that is
+        # exactly the same as the new translation.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared for current context,
+        # and identical divergence in other context is kept.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [tm_other_diverged])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_shared__other_diverged__identical__follows(
+        self):
+        # Current translation is 'shared', and we have found
+        # a shared existing TM matching new translations (a suggestion).
+        # There is a divergence in the 'other' context that is
+        # exactly the same as the new translation.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared for both contexts,
+        # and divergence on the other side is "converged".
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergetncesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_None(self):
+        # Current translation is 'shared', and we have found
+        # a diverged (in this context) existing TM matching new translations.
+        # There is no translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_diverged = self.constructTranslationMessage(
+            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [tm_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_None__follows(self):
+        # Current translation is 'shared', and we have found
+        # a diverged (in this context) existing TM matching new translations.
+        # There is no translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_diverged = self.constructTranslationMessage(
+            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [tm_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current for
+        # both contexts.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_shared(self):
+        # Current translation is 'shared', and we have found
+        # a diverged (in this context) existing TM matching new translations.
+        # There is a shared translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_diverged = self.constructTranslationMessage(
+            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [tm_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.  "Other" translation is unchanged.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other, tm)
+        self.assertEquals(tm_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm_other, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_shared__follows(self):
+        # Current translation is 'shared', and we have found
+        # a diverged (in this context) existing TM matching new translations.
+        # There is a shared translation for "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_diverged = self.constructTranslationMessage(
+            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [tm_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current only for
+        # the active context.  "Other" translation is unchanged.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other, tm)
+        self.assertEquals(tm_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion,
+        # just like a previous shared translation in "other" context.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+        self.assertFalse(tm_other.is_current_ubuntu or
+                         tm_other.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_diverged_shared(self):
+        # Current translation is 'shared', and we have found
+        # a diverged (in other context) existing TM matching new translations.
+        # There is also a shared translation for the "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.  "Other" translation is unchanged.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other, tm)
+        self.assertNotEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm_other, [tm_other_diverged])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_diverged_shared__follows(
+        self):
+        # Current translation is 'shared', and we have found
+        # a diverged (in other context) existing TM matching new translations.
+        # There is also a shared translation for the "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, tm_other, [tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # Previously diverged in "other" context is now converged to
+        # shared and current for both contexts.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other, tm)
+        self.assertEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previously shared translations in both contexts are now suggestions.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+        self.assertFalse(tm_other.is_current_ubuntu or
+                         tm_other.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_diverged__identical(self):
+        # Current translation is 'shared', and we have found
+        # a diverged existing TM matching new translations
+        # for the "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
+
+        # New translation message is shared and current only for
+        # the active context.  "Other" translation is unchanged.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertNotEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [tm_other_diverged])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
+
+    def test_current_shared__new_diverged__other_diverged__identical__follows(
+        self):
+        # Current translation is 'shared', and we have found
+        # a diverged existing TM matching new translations
+        # for the "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_shared = self.constructTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=False)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm_shared, None, None, [tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # New translation message is shared and current only for
+        # the active context.  "Other" translation is unchanged.
+        self.assertTrue(tm is not None)
+        self.assertNotEquals(tm_shared, tm)
+        self.assertEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previous shared translation is now a suggestion.
+        self.assertFalse(tm_shared.is_current_ubuntu or
+                         tm_shared.is_current_upstream)
