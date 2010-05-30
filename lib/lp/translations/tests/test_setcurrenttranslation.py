@@ -67,7 +67,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
                                                     sequence=1)
 
-    def constructContextualTranslationMessage(self, pofile, potmsgset=None,
+    def constructTranslationMessage(self, pofile, potmsgset=None,
                                               current=True, other=False,
                                               diverged=False,
                                               translations=None):
@@ -95,6 +95,19 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
             self.assertEquals(new_other, other_shared)
 
         self.assertContentEqual(new_divergences, divergences_elsewhere)
+
+    def assertTranslationMessageDeleted(self, translationmessage_id):
+        """Assert that a translation message doesn't exist.
+
+        Until deletion of TMs is implemented, it just checks that
+        translation message is not current in any context.
+        """
+        # XXX DaniloSegan 20100528: we should assert that tm_other
+        # doesn't exist in the DB anymore instead.
+        tm = TranslationMessage.get(translationmessage_id)
+        self.assertFalse(tm.is_current_ubuntu)
+        self.assertFalse(tm.is_current_upstream)
+        self.assertIs(None, tm.potemplate)
 
     def test_current_None__new_None__other_None(self):
         # Current translation is None, and we have found no
@@ -137,7 +150,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
         # There is a current translation in "other" context.
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -159,7 +172,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # existing TM matching new translations.
         # There is a current translation in "other" context,
         # and we want it to "follow" the flag for this context.
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -184,7 +197,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -212,7 +225,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # Current translation is None, and we have found no
         # existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -242,7 +255,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations (a regular suggestion).
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
-        tm_suggestion = self.constructContextualTranslationMessage(
+        tm_suggestion = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
@@ -265,7 +278,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations (a regular suggestion).
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
-        tm_suggestion = self.constructContextualTranslationMessage(
+        tm_suggestion = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
@@ -289,11 +302,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations (a regular suggestion).
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_suggestion = self.constructContextualTranslationMessage(
+        tm_suggestion = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -315,11 +328,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations (a regular suggestion).
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_suggestion = self.constructContextualTranslationMessage(
+        tm_suggestion = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -347,7 +360,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations and it's
         # also a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False,
             translations=new_translations)
@@ -376,11 +389,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations (a regular suggestion).
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_suggestion = self.constructContextualTranslationMessage(
+        tm_suggestion = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -408,11 +421,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # shared existing TM matching new translations (a regular suggestion).
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_suggestion = self.constructContextualTranslationMessage(
+        tm_suggestion = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=False, diverged=False,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -441,7 +454,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
@@ -464,7 +477,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is neither 'other' current translation.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
@@ -489,11 +502,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -515,11 +528,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -549,14 +562,15 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is a current translation in "other" context
         # which is identical to the found diverged TM.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             current=False, other=True, diverged=False,
             translations=new_translations)
+        tm_other_id = tm_other.id
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, None, tm_other, [tm_diverged])
 
@@ -580,10 +594,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
             tm, None, tm, [])
         # Previously current and shared in other context is not
         # current in any context anymore.
-        # XXX DaniloSegan 20100528: we should assert that tm_other
-        # doesn't exist in the DB anymore instead.
-        self.assertFalse(tm_other.is_current_upstream or
-                         tm_other.is_current_ubuntu)
+        self.assertTranslationMessageDeleted(tm_other_id)
 
     def test_current_None__new_diverged__other_shared__identical__follows(
         self):
@@ -595,11 +606,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -629,11 +640,11 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # diverged existing TM matching new translations.
         # There is a current but diverged translation in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other = self.constructContextualTranslationMessage(
+        tm_other = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -665,14 +676,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is both a current diverged and current shared translation
         # in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other_shared = self.constructContextualTranslationMessage(
+        tm_other_shared = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructContextualTranslationMessage(
+        tm_other_diverged = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -712,14 +723,14 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         # There is both a current diverged and current shared translation
         # in "other" context.
         new_translations = [self.factory.getUniqueString()]
-        tm_diverged = self.constructContextualTranslationMessage(
+        tm_diverged = self.constructTranslationMessage(
             pofile=self.diverging_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True,
             translations=new_translations)
-        tm_other_shared = self.constructContextualTranslationMessage(
+        tm_other_shared = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=False)
-        tm_other_diverged = self.constructContextualTranslationMessage(
+        tm_other_diverged = self.constructTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.potmsgset,
             current=True, other=False, diverged=True)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -754,21 +765,71 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
                           tm_other_diverged.potemplate)
 
     def test_current_None__new_diverged__other_diverged__identical(self):
-        # Converging to 'other' diverged translation.
-        pass
+        # Current translation is None, and we have found a
+        # diverged existing TM matching new translations.
+        # There is also an identical current diverged in "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_diverged = self.constructTranslationMessage(
+            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            None, None, None, [tm_diverged, tm_other_diverged])
 
-    def test_current_None__new_diverged__other_diverged__identical__follows(self):
-        # Converging to 'other' diverged translation.
-        pass
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB)
 
-    def test_current_None__new_diverged__other_diverged_shared__identical(self):
-        # Converging to 'other' shared translation.
-        # Should be exactly the same as
-        # test_current_None__new_diverged__other_shared__identical().
-        pass
+        # We end up with tm_diverged being activated and converged,
+        # and other context stays untranslated.  Diverged
+        # translation in the other context stays as it was.
+        self.assertTrue(tm is not None)
+        self.assertEquals(tm_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, None, [tm_other_diverged])
 
-    def test_current_None__new_diverged__other_diverged_shared__identical__follows(self):
-        # Converging to 'other' shared translation.
-        # Should be exactly the same as
-        # test_current_None__new_diverged__other_shared__identical__follows().
-        pass
+        # Previously diverged current is still diverged and current
+        # in exactly one context.
+        self.assertFalse(tm_other_diverged.is_current_upstream and
+                         tm_other_diverged.is_current_ubuntu)
+        self.assertTrue(tm_other_diverged.is_current_upstream or
+                         tm_other_diverged.is_current_ubuntu)
+        self.assertEquals(self.other_pofile.potemplate,
+                          tm_other_diverged.potemplate)
+
+    def test_current_None__new_diverged__other_diverged__identical__follows(
+        self):
+        # Current translation is None, and we have found a
+        # diverged existing TM matching new translations.
+        # There is also an identical current diverged in "other" context.
+        new_translations = [self.factory.getUniqueString()]
+        tm_diverged = self.constructTranslationMessage(
+            pofile=self.diverging_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True,
+            translations=new_translations)
+        tm_diverged_id = tm_diverged.id
+        tm_other_diverged = self.constructTranslationMessage(
+            pofile=self.other_pofile, potmsgset=self.potmsgset,
+            current=True, other=False, diverged=True)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            None, None, None, [tm_diverged, tm_other_diverged])
+
+        tm = self.potmsgset.setCurrentTranslation(
+            self.pofile, self.pofile.owner, new_translations,
+            origin=RosettaTranslationOrigin.ROSETTAWEB,
+            share_with_other_side=True)
+
+        # We end up with tm_other_diverged being activated and converged,
+        # and current for both other and this context.
+        # Diverged translation in the this context is removed.
+        self.assertTrue(tm is not None)
+        self.assertEquals(tm_other_diverged, tm)
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
+            tm, None, tm, [])
+
+        # Previously diverged current is still diverged and current
+        # in exactly one context.
+        self.assertTranslationMessageDeleted(tm_diverged_id)
