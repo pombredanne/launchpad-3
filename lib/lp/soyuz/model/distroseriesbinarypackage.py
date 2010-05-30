@@ -61,14 +61,16 @@ class DistroSeriesBinaryPackage:
     @cachedproperty('_cache')
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
-        return DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND
-            archive IN %s AND
-            binarypackagename = %s
-            """ % sqlvalues(
-                self.distroseries,
-                self.distroseries.distribution.all_distro_archive_ids,
+        store = Store.of(self.distroseries)
+        archive_ids = (
+            self.distroseries.distribution.all_distro_archive_ids)
+        result = store.find(
+            DistroSeriesPackageCache,
+            DistroSeriesPackageCache.distroseries==self.distroseries,
+            DistroSeriesPackageCache.archiveID.is_in(archive_ids),
+            (DistroSeriesPackageCache.binarypackagename==
                 self.binarypackagename))
+        return result.any()
 
     @property
     def summary(self):
