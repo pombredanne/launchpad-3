@@ -25,6 +25,9 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin, TranslationConflict)
+from lp.translations.interfaces.translations import TranslationSide
+from lp.translations.model.potmsgset import (
+    make_translation_side_message_traits)
 from lp.translations.model.translationmessage import (
     DummyTranslationMessage)
 
@@ -1305,7 +1308,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
     def test_creation_pofile(self):
         # When a new pofile is created, dummy translations are created for
         # all translation credits messages.
-        
+
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
@@ -1570,6 +1573,124 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
 
         self.assertEqual([], karma_listener.karma_events)
+
+
+class TestSetCurrentTranslation(TestCaseWithFactory):
+    layer = ZopelessDatabaseLayer
+
+    def _makePOFileAndPOTMsgSet(self):
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        return pofile, potmsgset
+
+    def _makeTranslations(self, potmsgset, forms=1):
+        return removeSecurityProxy(potmsgset)._findPOTranslations([
+            self.factory.getUniqueString()
+            for counter in xrange(forms)
+            ])
+
+    def test_baseline(self):
+        # setCurrentTranslation sets the current upstream translation
+        # for a message.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+        origin = RosettaTranslationOrigin.SCM
+
+        message = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner, translations, origin,
+            TranslationSide.UPSTREAM)
+
+        self.assertEqual(message, potmsgset.getImportedTranslationMessage(
+            pofile.potemplate, pofile.language))
+        self.assertEqual(origin, message.origin)
+
+    def test_make_translation_side_message_traits(self):
+        # make_translation_side_message_traits is a factory for traits
+        # objects that help setCurrentTranslations deal with the
+        # dichotomy between upstream and Ubuntu translations.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        sides = (TranslationSide.UPSTREAM, TranslationSide.UBUNTU)
+        for side in sides:
+            traits = make_translation_side_message_traits(
+                side, potmsgset, pofile.potemplate, pofile.language)
+            self.assertEqual(side, traits.side)
+            self.assertNotEqual(side, traits.other_side.side)
+            self.assertIn(traits.other_side.side, sides)
+            self.assertIs(traits, traits.other_side.other_side)
+
+    def test_UpstreamSideTraits_upstream(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        message = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+
+        traits = make_translation_side_message_traits(
+            TranslationSide.UPSTREAM, potmsgset, pofile.potemplate,
+            pofile.language)
+
+        self.assertEqual('is_current_upstream', traits.flag_name)
+
+        self.assertFalse(traits.getFlag(message))
+        self.assertFalse(message.is_current_upstream)
+        self.assertEquals(None, traits.incumbent_message)
+
+        traits.setFlag(message, True)
+
+        self.assertTrue(traits.getFlag(message))
+        self.assertTrue(message.is_current_upstream)
+        self.assertEquals(message, traits.incumbent_message)
+
+    def test_UpstreamSideTraits_ubuntu(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        message = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        message.is_current_ubuntu = False
+
+        traits = make_translation_side_message_traits(
+            TranslationSide.UBUNTU, potmsgset, pofile.potemplate,
+            pofile.language)
+
+        self.assertEqual('is_current_ubuntu', traits.flag_name)
+
+        self.assertFalse(traits.getFlag(message))
+        self.assertFalse(message.is_current_ubuntu)
+        self.assertEquals(None, traits.incumbent_message)
+
+        traits.setFlag(message, True)
+
+        self.assertTrue(traits.getFlag(message))
+        self.assertTrue(message.is_current_ubuntu)
+        self.assertEquals(message, traits.incumbent_message)
+
+    def test_identical(self):
+        # Setting the same message twice leaves the original as-is.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+
+        first_message = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner, translations,
+            RosettaTranslationOrigin.ROSETTAWEB, TranslationSide.UPSTREAM)
+        second_message = potmsgset.setCurrentTranslation(
+            pofile, self.factory.makePerson(), translations,
+            RosettaTranslationOrigin.SCM, TranslationSide.UPSTREAM)
+
+        self.assertEqual(first_message, second_message)
+        message = first_message
+        self.assertEqual(pofile.potemplate.owner, message.submitter)
+        self.assertEqual(RosettaTranslationOrigin.ROSETTAWEB, message.origin)
+
+    def test_upstream_also_sets_initial_ubuntu(self):
+        # Setting an upstream translation also initializes the Ubuntu
+        # translation.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = self._makeTranslations(potmsgset)
+        origin = RosettaTranslationOrigin.ROSETTAWEB
+
+        message = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner, translations, origin,
+            TranslationSide.UPSTREAM)
+
+        self.assertEqual(message, potmsgset.getImportedTranslationMessage(
+            pofile.potemplate, pofile.language))
 
 
 def test_suite():
