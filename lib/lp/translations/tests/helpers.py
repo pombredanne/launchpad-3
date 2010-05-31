@@ -60,6 +60,9 @@ def make_translationmessage(factory, pofile=None, potmsgset=None,
     submitter = pofile.owner
     validation_status = TranslationValidationStatus.UNKNOWN
 
+    translations = dict(
+        [(i, translations[i]) for i in range(len(translations))])
+
     potranslations = removeSecurityProxy(
         potmsgset)._findPOTranslations(translations)
     new_message = TranslationMessage(

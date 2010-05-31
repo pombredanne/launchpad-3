@@ -47,6 +47,13 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             language_code=self.pofile.language.code,
             variant=self.pofile.variant)
 
+    def test_make_translationmessage(self):
+        translations = [u"testing"]
+        tm = make_translationmessage(self.factory, pofile=self.pofile,
+                                     potmsgset=self.potmsgset,
+                                     translations=translations)
+        self.assertEquals(translations, tm.translations)
+
     def test_get_all_important_translations(self):
         current_shared, current_diverged, other, divergences = (
             get_all_important_translations(self.pofile, self.potmsgset))

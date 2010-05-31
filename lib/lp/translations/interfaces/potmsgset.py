@@ -274,7 +274,7 @@ class IPOTMsgSet(Interface):
         """
 
     def setCurrentTranslation(pofile, submitter, translations, origin,
-                              share_with_other_side=False):
+                              translations_side, share_with_other_side=False):
         """Set a new current translation."""
 
     def applySanityFixes(unicode_text):

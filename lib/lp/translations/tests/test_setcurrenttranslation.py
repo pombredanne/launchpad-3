@@ -13,6 +13,8 @@ from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin)
+from lp.translations.interfaces.translations import (
+    TranslationSide)
 from lp.translations.model.translationmessage import (
     TranslationMessage)
 
@@ -97,9 +99,12 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         It passes all the same parameters we use throughout the tests,
         including self.potmsgset, self.pofile, self.pofile.owner and origin.
         """
+        translations = dict(
+            [(i, translations[i]) for i in range(len(translations))])
         return self.potmsgset.setCurrentTranslation(
             self.pofile, self.pofile.owner, translations,
             origin=RosettaTranslationOrigin.ROSETTAWEB,
+            translation_side=TranslationSide.UBUNTU,
             share_with_other_side=share_with_other_side)
 
     def assert_Current_Diverged_Other_DivergencesElsewhere_are(
@@ -1068,7 +1073,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.assertTrue(tm is not None)
         self.assertNotEquals(tm_shared, tm)
         self.assertEquals(tm_other, tm)
-        self.assert_Current_Diverged_Other_DivergetncesElsewhere_are(
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, tm, [])
 
         # Previous shared translation is now a suggestion.
@@ -1132,7 +1137,7 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
         self.assertTrue(tm is not None)
         self.assertNotEquals(tm_shared, tm)
         self.assertEquals(tm_other_diverged, tm)
-        self.assert_Current_Diverged_Other_DivergetncesElsewhere_are(
+        self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             tm, None, tm, [])
 
         # Previous shared translation is now a suggestion.
@@ -1422,10 +1427,6 @@ class TestPOTMsgSet_setCurrentTranslation(TestCaseWithFactory):
             current=True, other=False, diverged=False)
         self.assert_Current_Diverged_Other_DivergencesElsewhere_are(
             None, tm_diverged, tm_other, [])
-
-        # Previously current is not current anymore.
-        self.assertFalse(tm_diverged.is_current_ubuntu or
-                         tm_diverged.is_current_upstream)
 
         tm = self.setCurrentTranslation(
             new_translations, share_with_other_side=follows)
