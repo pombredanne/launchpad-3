@@ -173,8 +173,17 @@ def run_test_process():
     if pid != 0:
         # We are the parent process, so we'll wait for our child process to
         # do the heavy lifting for us.
-        pid, exitstatus = os.waitpid(pid, os.P_WAIT)
-        return exitstatus
+        pid, status = os.wait()
+
+        if os.WIFEXITED(status):
+            return os.WEXITSTATUS(status)
+        else:
+            # We should not reach this code unless something segfaulted in
+            # our child process, or it recieved a signal from some outside
+            # force.
+            raise RuntimeError(
+                "Oops!  The test watchdog was killed by signal %s" % (
+                    os.WTERMSIG(status)))
 
     print 'Running tests.'
     os.chdir(HERE)
