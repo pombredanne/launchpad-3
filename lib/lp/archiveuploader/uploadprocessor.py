@@ -183,7 +183,6 @@ class UploadProcessor:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                raise
                 info = sys.exc_info()
                 message = (
                     'Exception while processing upload %s' % upload_path)

@@ -67,6 +67,29 @@ class DistributionSourcePackageProperty:
         return getattr(obj._self_in_database, self.attrname, None)
 
     def __set__(self, obj, value):
+        if obj._self_in_database is None:
+            # Log an oops without raising an error.
+            exception = AssertionError(
+                "DistributionSourcePackage record should have been created "
+                "earlier in the database for distro=%s, sourcepackagename=%s"
+                % (obj.distribution.name, obj.sourcepackagename.name))
+            getUtility(IErrorReportingUtility).raising(
+                (exception.__class__, exception, None))
+            spph = Store.of(obj.distribution).find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id,
+                DistroSeries.distributionID == obj.distribution.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagenameID ==
+                    obj.sourcepackagename.id
+                ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
+            if spph is None:
+                section = getUtility(ISectionSet)['misc']
+            else:
+                section = spph.section
+            obj._new(obj.distribution, obj.sourcepackagename, section)
         setattr(obj._self_in_database, self.attrname, value)
 
 
@@ -142,34 +165,7 @@ class DistributionSourcePackage(BugTargetBase,
         # measure while DistributionSourcePackage is not yet hooked
         # into the database but we need access to some of the fields
         # in the database.
-        dsp_in_db = self._get(self.distribution, self.sourcepackagename)
-        if dsp_in_db is not None:
-            return dsp_in_db
-        else:
-            # Log an oops without raising an error.
-            exception = AssertionError(
-                "DistributionSourcePackage record should have been created "
-                "earlier in the database for distro=%s, sourcepackagename=%s"
-                % (self.distribution.name, self.sourcepackagename.name))
-            getUtility(IErrorReportingUtility).raising(
-                (exception.__class__, exception, None))
-
-            spph = Store.of(self.distribution).find(
-                SourcePackagePublishingHistory,
-                SourcePackagePublishingHistory.distroseriesID ==
-                    DistroSeries.id,
-                DistroSeries.distributionID == self.distribution.id,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagenameID ==
-                    self.sourcepackagename.id
-                ).order_by(Desc(SourcePackagePublishingHistory.id)).first()
-            if spph is None:
-                section = getUtility(ISectionSet)['misc']
-            else:
-                section = spph.section
-            return self._new(
-                self.distribution, self.sourcepackagename, section)
+        return self._get(self.distribution, self.sourcepackagename)
 
     @property
     def latest_overall_publication(self):
