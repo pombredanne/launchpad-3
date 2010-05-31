@@ -20,9 +20,11 @@ from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeView, SourcePackageRecipeBuildView
+    SourcePackageRecipeView, SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeBuildView
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, BrowserTestCase, login
 
 
@@ -40,6 +42,9 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret',
             distribution=self.ppa.distribution)
+        self.squirrel.nominatedarchindep = self.squirrel.newArch(
+            'i386', ProcessorFamily.get(1), False, self.chef,
+            supports_virtualized=True)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -66,15 +71,14 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        self.factory.makeSourcePackage()
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Create Recipe').click()
 
@@ -106,21 +110,44 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+        self.factory.makeSourcePackage()
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create source package recipe').click()
+        browser.getLink('Create packaging recipe').click()
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Recipe text').value = 'Foo bar baz'
         browser.getControl('Create Recipe').click()
 
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'The recipe text is not a valid bzr-builder recipe.')
+
+    def test_create_dupe_recipe(self):
+        # You shouldn't be able to create a duplicate recipe owned by the same
+        # person with the same name.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
+
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage(sourcepackagename='ratatouille')
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = recipe.name
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'There is already a recipe owned by Master Chef with this name.')
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
@@ -138,13 +165,9 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             owner=self.chef, product=product, name='veggies')
         meat_branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='meat')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='ratatouille')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename='sloppyjoe')
+        source_package = self.factory.makeSourcePackage()
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            sourcepackagename=source_package.sourcepackagename,
             name=u'things', description=u'This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
@@ -154,7 +177,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getLink('Edit recipe').click()
         browser.getControl(name='field.name').value = 'fings'
         browser.getControl('Description').value = 'This is stuff'
-        browser.getControl('Source Package Name').value = 'ratatouille'
         browser.getControl('Recipe text').value = (
             MINIMAL_RECIPE_TEXT % meat_path)
         browser.getControl('Secret Squirrel').click()
@@ -310,6 +332,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
+        woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+
         recipe = self.makeRecipe()
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
@@ -320,6 +346,16 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
+
+    def test_request_builds_archive(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa2 = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef, name='ppa2')
+        view = SourcePackageRecipeRequestBuildsView(recipe, None)
+        self.assertIs(None, view.initial_values.get('archive'))
+        self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
+        self.assertEqual(ppa2, view.initial_values.get('archive'))
+
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
@@ -338,7 +374,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         archive = self.factory.makeArchive(name='build',
             owner=self.user)
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.user, name=u'my-recipe', sourcepackagename='mypackage')
+            owner=self.user, name=u'my-recipe')
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
         build = self.factory.makeSourcePackageRecipeBuild(
@@ -396,7 +432,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the basic index page."""
         main_text = self.getMainText(self.makeBuild(), '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Needs building
@@ -425,7 +461,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Branches
+            Code
             my-recipe
             Build status
             Successfully built
@@ -439,9 +475,9 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             Archive:       PPA named build for Owner
             Series:        Squirrel
             Pocket:        Release
-            Result:        mypackage in ubuntu 3.14
+            Result:        .* in ubuntu 3.14
             Binary builds:
-            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE""",
+            itanic build of .* 3.14 in ubuntu squirrel RELEASE""",
             main_text)
 
     def makeBuildAndRelease(self):
@@ -456,7 +492,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Result: mypackage in ubuntu 3.14""", main_text)
+            Result: .* in ubuntu 3.14""", main_text)
 
     def makeBinaryBuild(self, release, architecturetag):
         """Make a binary build with specified release and architecturetag."""
@@ -476,8 +512,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Binary builds:
-            itanic build of mypackage 3.14 in ubuntu squirrel RELEASE
-            x87-64 build of mypackage 3.14 in ubuntu squirrel RELEASE$""",
+            itanic build of .* 3.14 in ubuntu squirrel RELEASE
+            x87-64 build of .* 3.14 in ubuntu squirrel RELEASE$""",
             main_text)
 
     def test_logtail(self):

@@ -9,9 +9,9 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
-from sqlobject import SQLObjectNotFound
 from storm.store import Store
 
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
@@ -20,7 +20,7 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmJobDerived)
+    IBuildFarmJobOld)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branch import IBranchSet
@@ -54,11 +54,10 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.specific_job = self.jobset.create(self.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
-        # TranslationTemplateBuildJob implements IBuildFarmJob,
-        # IBuildFarmJobDerived, and IBranchJob.
+        # TranslationTemplateBuildJob implements IBuildFarmJobOld,
+        # and IBranchJob.
         verifyObject(IBranchJob, self.specific_job)
-        verifyObject(IBuildFarmJobDerived, self.specific_job)
-        verifyObject(IBuildFarmJob, self.specific_job)
+        verifyObject(IBuildFarmJobOld, self.specific_job)
 
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)
@@ -82,6 +81,18 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertIsInstance(buildqueue, BuildQueue)
         self.assertEqual(job_id, get_job_id(buildqueue.job))
+
+    def test_BuildQueue_for_arch(self):
+        # BuildQueue entry is for i386 (default Ubuntu) architecture.
+        queueset = getUtility(IBuildQueueSet)
+        job_id = get_job_id(self.specific_job.job)
+        buildqueue = queueset.get(job_id)
+
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        expected_processor = (
+            ubuntu.currentseries.nominatedarchindep.default_processor)
+
+        self.assertEquals(expected_processor, buildqueue.processor)
 
     def test_getName(self):
         # Each job gets a unique name.

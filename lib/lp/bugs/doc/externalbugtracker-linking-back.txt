@@ -91,17 +91,13 @@ be called on our BackLinkingExternalBugTracker.
 
     >>> transaction.commit()
 
-    >>> from canonical.launchpad.scripts.logger import log
-    >>> from lp.bugs.scripts.checkwatches.base import (
-    ...     WorkingBase)
-    >>> from lp.bugs.scripts.checkwatches.bugwatchupdater import (
-    ...     BugWatchUpdater)
+    >>> from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
+    >>> from lp.bugs.scripts.checkwatches.tests.test_bugwatchupdater import (
+    ...     make_bug_watch_updater)
 
-    >>> working_base = WorkingBase()
-    >>> working_base.init(
-    ...     'bugwatch@bugs.launchpad.net', transaction, log)
-    >>> bug_watch_updater = BugWatchUpdater(
-    ...     working_base, bug_watch, external_bugtracker)
+    >>> bug_watch_updater = make_bug_watch_updater(
+    ...     CheckwatchesMaster(transaction), bug_watch,
+    ...     external_bugtracker)
     >>> bug_watch_updater.linkLaunchpadBug()
     Getting Launchpad id for bug 42
 

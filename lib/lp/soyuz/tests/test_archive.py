@@ -18,13 +18,16 @@ from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
+    ArchiveStatus, CannotSwitchPrivacy, InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA)
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet, ArchivePurpose, ArchiveStatus, CannotSwitchPrivacy)
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -321,8 +324,8 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
         # Collect the source package releases for reference.
         self.sourcepackagereleases = [
-            self.builds_foo[0].sourcepackagerelease,
-            self.builds_bar[0].sourcepackagerelease,
+            self.builds_foo[0].source_package_release,
+            self.builds_bar[0].source_package_release,
             ]
 
     def test_getSourcePackageReleases_with_no_params(self):
@@ -336,7 +339,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
         # Set the builds for one of the sprs to needs build.
         for build in self.builds_foo:
-            build.buildstate = BuildStatus.NEEDSBUILD
+            removeSecurityProxy(build).status = BuildStatus.NEEDSBUILD
 
         result = self.archive.getSourcePackageReleases(
             build_status=BuildStatus.NEEDSBUILD)
@@ -344,6 +347,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
         self.failUnlessEqual(1, result.count())
         self.failUnlessEqual(
             self.sourcepackagereleases[0], result[0])
+
 
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
@@ -462,19 +466,23 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
-            bq.estimated_duration = timedelta(seconds=duration)
+            removeSecurityProxy(bq).estimated_duration = timedelta(
+                seconds=duration)
 
     def _getBuildJobsByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
         query = """
             SELECT COUNT(Job.id)
-            FROM Build, BuildPackageJob, BuildQueue, Job
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job,
+                 PackageBuild, BuildFarmJob
             WHERE
-                Build.archive = %s
-                AND BuildPackageJob.build = Build.id
+                BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
-                AND Build.buildstate = %s
+                AND BinaryPackageBuild.package_build = PackageBuild.id
+                AND PackageBuild.archive = %s
+                AND PackageBuild.build_farm_job = BuildFarmJob.id
+                AND BuildFarmJob.status = %s
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 
@@ -520,6 +528,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
+
 class TestCollectLatestPublishedSources(TestCaseWithFactory):
     """Ensure that the private helper method works as expected."""
 
@@ -564,6 +573,70 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
             self.archive, ["foo"])
         self.assertEqual(1, len(pubs))
         self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+
+
+class TestArchiveCanUpload(TestCaseWithFactory):
+    """Test the various methods that verify whether uploads are allowed to 
+    happen."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_checkArchivePermission_by_PPA_owner(self):
+        # Uploading to a PPA should be allowed for a user that is the owner 
+        owner = self.factory.makePerson(name="somebody")
+        archive = self.factory.makeArchive(owner=owner)
+        self.assertEquals(True, archive.checkArchivePermission(owner))
+        someone_unrelated = self.factory.makePerson(name="somebody-unrelated")
+        self.assertEquals(False,
+            archive.checkArchivePermission(someone_unrelated))
+
+    def test_checkArchivePermission_distro_archive(self):
+        # Regular users can not upload to ubuntu
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
+                                           distribution=ubuntu)
+        main = getUtility(IComponentSet)["main"]
+        # A regular user doesn't have access
+        somebody = self.factory.makePerson(name="somebody")
+        self.assertEquals(False, 
+            archive.checkArchivePermission(somebody, main))
+        # An ubuntu core developer does have access
+        kamion = getUtility(IPersonSet).getByName('kamion')
+        self.assertEquals(True, archive.checkArchivePermission(kamion, main))
+
+    def test_checkArchivePermission_ppa(self):
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        owner = self.factory.makePerson(name="eigenaar")
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA, 
+                                           distribution=ubuntu,
+                                           owner=owner)
+        somebody = self.factory.makePerson(name="somebody")
+        # The owner has access
+        self.assertEquals(True, archive.checkArchivePermission(owner))
+        # Somebody unrelated does not
+        self.assertEquals(False, archive.checkArchivePermission(somebody))
+
+    def test_checkUpload_partner_invalid_pocket(self):
+        # Partner archives only have release and proposed pockets
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
+                                self.factory.makeDistroSeries(),
+                                self.factory.makeSourcePackageName(),
+                                self.factory.makeComponent(),
+                                PackagePublishingPocket.UPDATES),
+                                InvalidPocketForPartnerArchive)
+ 
+    def test_checkUpload_ppa_invalid_pocket(self):
+        # PPA archives only have release pockets
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(), 
+                                self.factory.makeDistroSeries(),
+                                self.factory.makeSourcePackageName(),
+                                self.factory.makeComponent(),
+                                PackagePublishingPocket.PROPOSED),
+                                InvalidPocketForPPA)
+
+    # XXX: JRV 20100511: IArchive.canUploadSuiteSourcePackage needs tests
 
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):

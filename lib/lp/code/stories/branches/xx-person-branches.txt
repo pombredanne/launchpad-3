@@ -9,7 +9,7 @@ First, check that the condensed branch listing page works:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> print browser.title
-    Branches : Sample Person
+    Code : Sample Person
 
 The heading in the main content is the same as the page title text.
 
@@ -54,7 +54,7 @@ There is also a link which points to the registered branches page.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('registered').click()
     >>> print browser.title
-    Registered : Branches : Sample Person
+    Registered : Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -71,7 +71,7 @@ branches.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getLink('subscribed').click()
     >>> print browser.title
-    Subscribed : Branches : Sample Person
+    Subscribed : Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -107,7 +107,7 @@ Now we'll create another branch, and unsubscribe the owner from it.
 
     >>> login(ANONYMOUS)
     >>> b2 = factory.makeAnyBranch(owner=eric)
-    >>> ignored = b2.unsubscribe(eric)
+    >>> ignored = b2.unsubscribe(eric, eric)
     >>> logout()
 
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
