@@ -11,10 +11,11 @@ from lazr.uri import URI
 
 from contrib import apachelog
 
-from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
+from canonical.config import config
 from canonical.launchpad.interfaces.geoip import IGeoIP
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 
 
 parser = apachelog.parser(apachelog.formats['extended'])
@@ -92,7 +93,14 @@ def parse_file(fd, start_position, logger, get_download_key):
     downloads = {}
     parsed_lines = 0
 
+    # Check for an optional max_parsed_lines config option.
+    max_parsed_lines = getattr(
+        config.launchpad, 'logparser_max_parsed_lines', None)
+
     while line:
+        if max_parsed_lines is not None and parsed_lines >= max_parsed_lines:
+            break
+
         # Always skip the last line as it may be truncated since we're rsyncing
         # live logs, unless there is only one line for us to parse, in
         # which case This probably means we're dealing with a logfile
