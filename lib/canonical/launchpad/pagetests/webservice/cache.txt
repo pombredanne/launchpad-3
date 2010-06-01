@@ -19,7 +19,6 @@ need one of those objects.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
-    >>> json_type = 'application/json'
     >>> person = getUtility(IPersonSet).getByName('salgado')
     >>> key = cache.key_for(person, 'application/json', 'devel')
     >>> logout()
