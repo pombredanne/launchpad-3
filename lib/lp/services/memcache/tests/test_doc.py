@@ -70,5 +70,6 @@ special = {
     'restful-cache.txt': suite_for_doctest('restful-cache.txt'),
     }
 
+
 def test_suite():
     return build_test_suite(here, special, layer=LaunchpadFunctionalLayer)
