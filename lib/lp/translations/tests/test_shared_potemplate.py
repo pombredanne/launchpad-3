@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from storm.store import Store
 import unittest
 
 from zope.component import getUtility
@@ -12,7 +13,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import (record_statements, run_with_storm_debug,
+    TestCaseWithFactory)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 class TestTranslationSharingPOTemplate(TestCaseWithFactory):
@@ -177,6 +179,7 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
             singular_text, None)
         self.assertEquals(potmsgset, shared_potmsgset)
 
+
 class TestMessageSharingProductPackage(TestCaseWithFactory):
     """Test message sharing between a product and a package."""
 
@@ -205,6 +208,11 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         self.potemplateset = getUtility(IPOTemplateSet)
 
+    def _count_statements(self, iter):
+        templates, statements = record_statements(list, iter)
+        print "\nNumber of statements:", len(statements)
+        return templates
+
     def test_getSharingPOTemplates_product(self):
         # Sharing templates for a product include the same templates from
         # a linked source package.
@@ -213,10 +221,11 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             distroseries=self.hoary)
         self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
         subset = self.potemplateset.getSharingSubset(product=self.product)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
-            [self.trunk_template, self.hoary_template],
-            subset.getSharingPOTemplates(self.templatename))
+            [self.trunk_template, self.hoary_template], templates)
 
     def test_getSharingPOTemplates_package(self):
         # Sharing templates for a source package include the same templates 
@@ -227,10 +236,11 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         subset = self.potemplateset.getSharingSubset(
             distribution=self.hoary.distribution,
             sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
-            [self.trunk_template, self.hoary_template],
-            subset.getSharingPOTemplates(self.templatename))
+            [self.trunk_template, self.hoary_template], templates)
 
     def test_getSharingPOTemplates_product_multiple_series(self):
         # Sharing templates for a product include the same templates from
@@ -245,11 +255,13 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             distroseries=self.hoary)
         self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
         subset = self.potemplateset.getSharingSubset(product=self.product)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
             [self.trunk_template, self.hoary_template,
              stable_template, warty_template],
-            subset.getSharingPOTemplates(self.templatename))
+            templates)
 
     def test_getSharingPOTemplates_package_multiple_series(self):
         # Sharing templates for a source package include the same templates 
@@ -265,11 +277,13 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         subset = self.potemplateset.getSharingSubset(
             distribution=self.hoary.distribution,
             sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
             [self.trunk_template, self.hoary_template,
              stable_template, warty_template],
-            subset.getSharingPOTemplates(self.templatename))
+            templates)
 
     def test_getSharingPOTemplates_package_multiple_distros(self):
         # Sharing templates for a product include the same templates from
@@ -289,10 +303,54 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         subset = self.potemplateset.getSharingSubset(
             distribution=self.hoary.distribution,
             sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
             [self.trunk_template, self.hoary_template, footy_template],
+            templates)
+
+    def test_getSharingPOTemplates_many_series(self):
+        # The number of queries for a call to getSharingPOTemplates must
+        # remain constant.
+
+        all_templates = [self.trunk_template, self.hoary_template]
+        # Add a greater number of series and sharing templates on either side.
+        for series_name in ('0.1', '0.2', '0.3', '0.4', '0.5', '0.6'):
+            series = self.factory.makeProductSeries(self.product, series_name)
+            all_templates.append(self.factory.makePOTemplate(
+                productseries=series, name=self.templatename))
+        distroseries_names = (
+            'feisty', 'gutsy', 'hardy', 'intrepid', 'jaunty', 'karmic')
+        for series_name in distroseries_names:
+            series = self.factory.makeDistroSeries(
+                self.ubuntu, name=series_name)
+            all_templates.append(self.factory.makePOTemplate(
+                distroseries=series, sourcepackagename=self.packagename,
+                name=self.templatename))
+        all_templates.append(self.factory.makePOTemplate(
+            productseries=self.stable, name=self.templatename))
+        all_templates.append(self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename))
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+
+        # Looking from the product side.
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
+        self.assertContentEqual(all_templates, templates)
+
+        # Looking from the sourcepackage side.
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+        self.assertContentEqual(all_templates, templates)
 
     def test_getOrCreateSharedPOTMsgSet_product(self):
         # Trying to create an identical POTMsgSet in a product as exists
