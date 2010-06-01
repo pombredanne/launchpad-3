@@ -38,7 +38,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
-    'ws_object'
+    'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
@@ -231,6 +231,15 @@ class TestCase(testtools.TestCase):
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+
+    def __str__(self):
+        """The string representation of a test is its id.
+
+        The most descriptive way of writing down a test is to write down its
+        id. It is usually the fully-qualified Python name, which is pretty
+        handy.
+        """
+        return self.id()
 
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
@@ -524,6 +533,8 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
+        # XXX: Extract the temporary environment blatting into a generic
+        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
         old_bzr_home = os.environ.get('BZR_HOME')
