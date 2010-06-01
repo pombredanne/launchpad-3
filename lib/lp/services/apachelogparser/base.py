@@ -84,20 +84,29 @@ def parse_file(fd, start_position, logger, get_download_key):
     """
     # Seek file to given position, read all lines.
     fd.seek(start_position)
-    lines = fd.readlines()
-    # Always skip the last line as it may be truncated since we're rsyncing
-    # live logs.
-    last_line = lines.pop(-1)
+    line = fd.readline()
+
     parsed_bytes = start_position
-    if len(lines) == 0:
-        # This probably means we're dealing with a logfile that has been
-        # rotated already, so it should be safe to parse its last line.
-        lines = [last_line]
 
     geoip = getUtility(IGeoIP)
     downloads = {}
-    for line in lines:
+    parsed_lines = 0
+
+    while line:
+        # Always skip the last line as it may be truncated since we're rsyncing
+        # live logs, unless there is only one line for us to parse, in
+        # which case This probably means we're dealing with a logfile
+        # that has been rotated already, so it should be safe to parse
+        # its last line.
+        next_line = ''
         try:
+            next_line = fd.next()
+        except StopIteration:
+            if parsed_lines > 0:
+                break
+
+        try:
+            parsed_lines += 1
             parsed_bytes += len(line)
             host, date, status, request = get_host_date_status_and_request(
                 line)
@@ -143,6 +152,8 @@ def parse_file(fd, start_position, logger, get_download_key):
             parsed_bytes -= len(line)
             logger.error('Error (%s) while parsing "%s"' % (e, line))
             break
+
+        line = next_line
     return downloads, parsed_bytes
 
 
