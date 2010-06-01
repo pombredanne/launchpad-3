@@ -101,11 +101,11 @@ def parse_file(fd, start_position, logger, get_download_key):
         if max_parsed_lines is not None and parsed_lines >= max_parsed_lines:
             break
 
-        # Always skip the last line as it may be truncated since we're rsyncing
-        # live logs, unless there is only one line for us to parse, in
-        # which case This probably means we're dealing with a logfile
-        # that has been rotated already, so it should be safe to parse
-        # its last line.
+        # Always skip the last line as it may be truncated since we're
+        # rsyncing live logs, unless there is only one line for us to
+        # parse, in which case This probably means we're dealing with a
+        # logfile that has been rotated already, so it should be safe to
+        # parse its last line.
         next_line = ''
         try:
             next_line = fd.next()
