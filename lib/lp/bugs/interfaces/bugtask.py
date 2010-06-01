@@ -158,6 +158,13 @@ class BugTaskStatus(DBEnumeratedType):
         the user was visiting when the bug occurred, etc.
         """)
 
+    OPINION = DBItem(16, """
+        Opinion
+
+        It is controversial if the bug affects this project or if the project
+        can or should fix the bug.
+        """)
+
     INVALID = DBItem(17, """
         Invalid
 
@@ -234,8 +241,8 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
-        'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
+        'INCOMPLETE',  'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
+        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
         Incomplete (with response)
@@ -311,6 +318,7 @@ UNRESOLVED_BUGTASK_STATUSES = (
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
+    BugTaskStatus.OPINION,
     BugTaskStatus.INVALID,
     BugTaskStatus.WONTFIX,
     BugTaskStatus.EXPIRED)
