@@ -17,7 +17,7 @@
     </utility>
 
     <utility
-        factory="canonical.launchpad.rest.configuration.MemcachedStormRepresentationCache"
+        factory="lp.services.memcache.restful.MemcachedStormRepresentationCache"
         provides="lazr.restful.interfaces.IRepresentationCache">
     </utility>
 

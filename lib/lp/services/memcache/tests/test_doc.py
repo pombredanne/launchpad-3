@@ -59,13 +59,16 @@ def memcacheSetUp(test):
     test.globs['MemcachedLayer'] = MemcachedLayer
 
 
-special = {
-    'tales-cache.txt': LayeredDocFileSuite(
-        '../doc/tales-cache.txt',
+def suite_for_doctest(filename):
+    return LayeredDocFileSuite(
+        '../doc/%s' % filename,
         setUp=memcacheSetUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer),
-    }
+        layer=LaunchpadFunctionalLayer)
 
+special = {
+    'tales-cache.txt': suite_for_doctest('tales-cache.txt'),
+    'restful-cache.txt': suite_for_doctest('restful-cache.txt'),
+    }
 
 def test_suite():
     return build_test_suite(here, special, layer=LaunchpadFunctionalLayer)

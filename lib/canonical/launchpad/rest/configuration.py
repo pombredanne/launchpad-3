@@ -8,13 +8,9 @@ __all__ = [
     'LaunchpadWebServiceConfiguration',
 ]
 
-import storm
-
 from zope.component import getUtility
 
-from lazr.restful.simple import (
-    BaseRepresentationCache, BaseWebServiceConfiguration)
-from lp.services.memcache.client import memcache_client_factory
+from lazr.restful.simple import BaseWebServiceConfiguration
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -22,31 +18,6 @@ from canonical.launchpad.webapp.servers import (
     WebServiceClientRequest, WebServicePublication)
 
 from canonical.launchpad import versioninfo
-
-
-class MemcachedStormRepresentationCache(BaseRepresentationCache):
-    """A way to cache representations of Storm objects in memcached."""
-
-    def __init__(self):
-        self.client = memcache_client_factory()
-
-    def key_for(self, obj, media_type, version):
-        storm_info = storm.info.get_obj_info(obj)
-        table_name = storm_info.cls_info.table
-        primary_key = tuple(var.get() for var in storm_info.primary_vars)
-
-        key = (table_name + repr(primary_key)
-                + ',' + media_type + ',' + str(version))
-        return key
-
-    def get_by_key(self, key, default=None):
-        return self.client.get(key) or default
-
-    def set_by_key(self, key, value):
-        self.client.set(key, value)
-
-    def delete_by_key(self, key):
-        self.client.delete(key)
 
 
 class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
@@ -93,7 +64,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     @property
     def default_batch_size(self):
-        return 80 #config.launchpad.default_batch_size
+        return config.launchpad.default_batch_size
 
     @property
     def max_batch_size(self):

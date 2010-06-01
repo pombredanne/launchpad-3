@@ -4,7 +4,7 @@
 """Launchpad Memcache client."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['memcache_client_factory']
 
 import memcache
 import re
