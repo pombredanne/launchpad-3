@@ -161,8 +161,9 @@ class BugTaskStatus(DBEnumeratedType):
     OPINION = DBItem(16, """
         Opinion
 
-        It is controversial if the bug affects this project or if the project
-        can or should fix the bug.
+        The bug remains open for discussion only. This status is usually
+        used where there is disagreement over whether the bug is relevant
+        to the current target and whether it should be fixed.
         """)
 
     INVALID = DBItem(17, """
