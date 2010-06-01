@@ -78,6 +78,13 @@
                tal:attributes="href dspr/fmt:url">firefox - 1.0</a>
           </dd>
       </dl>
+      <dl
+          tal:define="spr context/sourcepackagerelease"
+          tal:condition="spr/source_package_recipe_build">
+        <dt>Source package recipe build:</dt>
+        <dd tal:content="structure spr/source_package_recipe_build/fmt:link">
+        </dd>
+      </dl>
       <dl>
         <dt>Archive:</dt>
           <dd>
