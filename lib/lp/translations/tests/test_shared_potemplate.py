@@ -352,6 +352,47 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             subset.getSharingPOTemplates(self.templatename))
         self.assertContentEqual(all_templates, templates)
 
+    def test_getSharingPOTemplates_product_unrelated_templates(self):
+        # Sharing templates for a product must not include other templates
+        # from a linked source package.
+        self.factory.makePOTemplate(
+            distroseries=self.hoary, sourcepackagename=self.packagename,
+            name=self.factory.getUniqueString())
+        self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.factory.getUniqueString())
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template],
+            templates)
+
+    def test_getSharingPOTemplates_package_unrelated_template(self):
+        # Sharing templates for a source package must not include other
+        # templates from a linked product.
+        self.factory.makePOTemplate(
+            productseries=self.trunk, name=self.factory.getUniqueString())
+        self.factory.makePOTemplate(
+            productseries=self.stable, name=self.factory.getUniqueString())
+        sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.hoary)
+        sourcepackage.setPackaging(self.trunk, self.owner)
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template],
+            templates)
+
     def test_getOrCreateSharedPOTMsgSet_product(self):
         # Trying to create an identical POTMsgSet in a product as exists
         # in a linked sourcepackage will return the existing POTMsgset.
