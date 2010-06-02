@@ -21,7 +21,8 @@ from lp.bugs.model.bugnotification import BugNotification, BugNotificationSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
@@ -142,6 +143,25 @@ class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
             subject='subject', content='content')
         BugNotificationSet().addNotification(
             bug=bug, is_comment=False, message=message, recipients=[])
+
+
+class TestNotificationsForDuplicates(TestCaseWithFactory):
+    """Test who gets notified about actions on duplicate bugs."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestNotificationsForDuplicates, self).setUp(
+            user='test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.dupe_bug = self.factory.makeBug()
+        self.dupe_bug.duplicateof = self.bug
+        # Remove any notifications from bug creation and marking duplicate.
+        pop_notifications()
+
+    def test_notification_for_duplicates(self):
+        notices = pop_notifications()
+        self.assertEqual(len(notices), 0)
 
 
 def test_suite():
