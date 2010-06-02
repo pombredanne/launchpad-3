@@ -1271,17 +1271,11 @@ class TestBugChanges(unittest.TestCase):
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
         self.appendOldChanges()
-        # Save the initial bug created notifications before
+        # Save the initial "bug created" notifications before
         # marking this bug a duplicate, so that we don't get
         # extra notificationse by mistake.
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
-        duplicate_subscribers = (
-            duplicate_bug.getDirectSubscribers() +
-            duplicate_bug.getIndirectSubscribers())
-        self.assertEqual(
-            list(duplicate_bug_recipients).sort(),
-            list(duplicate_subscribers).sort())
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
@@ -1302,72 +1296,6 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=duplicate_bug)
-
-        # Ensure that only the people subscribed to the bug that
-        # gets marked as a duplicate are notified.
-        master_notifications = BugNotification.selectBy(
-            bug=self.bug, orderBy='id')
-        new_notifications = [
-            notification for notification in master_notifications
-            if notification.id not in self.old_notification_ids]
-        self.assertEqual(len(list(new_notifications)), 0)
-
-
-    def test_multiple_marked_as_duplicate(self):
-        # When two bugs are marked as duplicates, only the second bug's
-        # subscribers should be notified about the second bug.
-        bug_one = self.factory.makeBug()
-        bug_two = self.factory.makeBug()
-        self.saveOldChanges(bug_one)
-        self.appendOldChanges(bug_two)
-        self.appendOldChanges(self.bug)
-        duplicate_one_recipients = bug_one.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
-        duplicate_one_subscribers = (
-            bug_one.getDirectSubscribers() + bug_one.getIndirectSubscribers())
-        self.assertEqual(
-            list(duplicate_one_recipients).sort(),
-            list(duplicate_one_subscribers).sort())
-        duplicate_two_recipients = bug_two.getBugNotificationRecipients(
-            level=BugNotificationLevel.METADATA).getRecipients()
-        duplicate_two_subscribers = (
-            bug_two.getDirectSubscribers() + bug_two.getIndirectSubscribers())
-        self.assertEqual(
-            list(duplicate_two_recipients).sort(),
-            list(duplicate_two_subscribers).sort())
-        self.changeAttribute(bug_one, 'duplicateof', self.bug)
-        self.changeAttribute(bug_two, 'duplicateof', self.bug)
-
-        expected_activity = {
-            'person': self.user,
-            'whatchanged': 'marked as duplicate',
-            'oldvalue': None,
-            'newvalue': str(self.bug.id),
-            }
-
-        expected_notification = {
-            'person': self.user,
-            'text': ("** This bug has been marked a duplicate of bug %d\n"
-                     "   %s" % (self.bug.id, self.bug.title)),
-            'recipients': duplicate_one_recipients,
-            }
-
-        self.assertRecordedChange(
-            expected_activity=expected_activity,
-            expected_notification=expected_notification,
-            bug=bug_one)
-
-        expected_notification_two = {
-            'person': self.user,
-            'text': ("** This bug has been marked a duplicate of bug %d\n"
-                     "   %s" % (self.bug.id, self.bug.title)),
-            'recipients': duplicate_two_recipients,
-            }
-
-        self.assertRecordedChange(
-            expected_activity=expected_activity,
-            expected_notification=expected_notification_two,
-            bug=bug_two)
 
         # Ensure that only the people subscribed to the bug that
         # gets marked as a duplicate are notified.
