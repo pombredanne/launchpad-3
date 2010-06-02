@@ -1259,7 +1259,9 @@ class TestBugChanges(unittest.TestCase):
         duplicate_subscribers = (
             duplicate_bug.getDirectSubscribers() +
             duplicate_bug.getIndirectSubscribers())
-        self.assertEqual(duplicate_bug_recipients, duplicate_subscribers)
+        self.assertEqual(
+            list(duplicate_bug_recipients).sort(),
+            list(duplicate_subscribers).sort())
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
@@ -1280,6 +1282,41 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=duplicate_bug)
+
+    def test_multiple_marked_as_duplicate(self):
+        # When two bugs are marked as duplicates, only the second bug's
+        # subscribers should be notified about the second bug.
+        bug_one = self.factory.makeBug()
+        bug_two = self.factory.makeBug()
+        duplicate_two_recipients = bug_two.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
+        duplicate_subscribers = (
+            bug_two.getDirectSubscribers() + bug_two.getIndirectSubscribers())
+        self.assertEqual(
+            list(duplicate_two_recipients).sort(),
+            list(duplicate_subscribers).sort())
+        self.changeAttribute(bug_one, 'duplicateof', self.bug)
+        self.changeAttribute(bug_two, 'duplicateof', self.bug)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'marked as duplicate',
+            'oldvalue': None,
+            'newvalue': str(self.bug.id),
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': ("** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (self.bug.id, self.bug.title)),
+            'recipients': duplicate_two_recipients,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=bug_two)
+
 
     def test_unmarked_as_duplicate(self):
         # When a bug is unmarked as a duplicate, activity is recorded
