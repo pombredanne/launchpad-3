@@ -12,10 +12,9 @@ __all__ = [
     'BranchSubscriptionPrimaryContext',
     ]
 
-from zope.component import getUtility
+
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView)
@@ -118,7 +117,8 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
             review_level = data['review_level']
 
             self.context.subscribe(
-                self.user, notification_level, max_diff_lines, review_level)
+                self.user, notification_level, max_diff_lines, review_level,
+                self.user)
 
             self.add_notification_message(
                 'You have subscribed to this branch with: ',
@@ -171,7 +171,7 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
     def unsubscribe(self, action, data):
         # Be proactive in the checking to catch the stale post problem.
         if self.context.hasSubscription(self.user):
-            self.context.unsubscribe(self.user)
+            self.context.unsubscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have unsubscribed from this branch.")
         else:
@@ -209,7 +209,8 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         subscription = self.context.getSubscription(person)
         if subscription is None:
             self.context.subscribe(
-                person, notification_level, max_diff_lines, review_level)
+                person, notification_level, max_diff_lines, review_level,
+                self.user)
 
             self.add_notification_message(
                 '%s has been subscribed to this branch with: '
@@ -221,24 +222,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                 % person.displayname,
                 subscription.notification_level, subscription.max_diff_lines,
                 review_level)
-
-    def validate(self, data):
-        """Ensure that when a team is subscribed, the user is a member."""
-        celebs = getUtility(ILaunchpadCelebrities)
-        # An admin or bzr expert can subscribe anyone.
-        if self.user.inTeam(celebs.admin) or (
-            self.user.inTeam(celebs.bazaar_experts)):
-            return
-
-        person = data.get('person')
-        if (person is not None and
-            person.isTeam() and
-            not self.user.inTeam(person)):
-            # A person can only subscribe a team if they are members
-            # of that team.
-            self.setFieldError(
-                'person',
-                "You can only subscribe teams that you are a member of.")
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
@@ -273,7 +256,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     @action("Unsubscribe", name="unsubscribe")
     def unsubscribe_action(self, action, data):
         """Unsubscribe the team from the branch."""
-        self.branch.unsubscribe(self.person)
+        self.branch.unsubscribe(self.person, self.user)
         self.request.response.addNotification(
             "%s has been unsubscribed from this branch."
             % self.person.displayname)

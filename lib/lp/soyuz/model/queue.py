@@ -509,7 +509,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
         for queue_build in self.builds:
-            names.append(queue_build.build.sourcepackagerelease.name)
+            names.append(queue_build.build.source_package_release.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
@@ -526,7 +526,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             archs.append('source')
         for queue_build in self.builds:
-            archs.append(queue_build.build.distroarchseries.architecturetag)
+            archs.append(queue_build.build.distro_arch_series.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
         return ", ".join(archs)
@@ -537,7 +537,7 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
-            return self.builds[0].build.sourcepackagerelease.version
+            return self.builds[0].build.source_package_release.version
         if self.customfiles:
             return '-'
 
@@ -550,7 +550,7 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease
         elif self.builds:
-            return self.builds[0].build.sourcepackagerelease
+            return self.builds[0].build.source_package_release
         else:
             return None
 
@@ -570,7 +570,7 @@ class PackageUpload(SQLBase):
         if self.sources is not None and self.sources.count() > 0:
             return self.sources[0].sourcepackagerelease
         elif self.builds is not None and self.builds.count() > 0:
-            return self.builds[0].build.sourcepackagerelease
+            return self.builds[0].build.source_package_release
         else:
             return None
 
@@ -1413,7 +1413,7 @@ class PackageUploadBuild(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
-        build_archtag = self.build.distroarchseries.architecturetag
+        build_archtag = self.build.distro_arch_series.architecturetag
         # Determine the target arch series.
         # This will raise NotFoundError if anything odd happens.
         target_dar = self.packageupload.distroseries[build_archtag]

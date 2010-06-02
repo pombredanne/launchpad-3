@@ -350,5 +350,5 @@ The view provides the cached_unlinked_packages property to access a
     cnews
     libstdc++
     linux-source-2.6.15
-    thunderbird
     hot
+    thunderbird

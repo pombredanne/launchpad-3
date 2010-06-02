@@ -30,13 +30,13 @@ notification they would like to receive.
     >>> _unused = bmp.source_branch.subscribe(source_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.STATUS)
+    ...     CodeReviewNotificationLevel.STATUS, source_subscriber)
     >>> target_subscriber = factory.makePerson(
     ...     email='target@example.com', displayname='Target Subscriber')
     >>> target_subscription = bmp.target_branch.subscribe(target_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.FULL)
+    ...     CodeReviewNotificationLevel.FULL, target_subscriber)
 
 The owners of the branches are subscribed when the branches are created.
 
@@ -69,8 +69,8 @@ Only subscribers whose level is >= the minimum level are selected.
 
 Now we will unsubscribe the branch owners to simplify the rest of the test.
 
-    >>> bmp.source_branch.unsubscribe(source_owner)
-    >>> bmp.target_branch.unsubscribe(target_owner)
+    >>> bmp.source_branch.unsubscribe(source_owner, source_owner)
+    >>> bmp.target_branch.unsubscribe(target_owner, target_owner)
     >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.FULL)
 

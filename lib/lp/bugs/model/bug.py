@@ -35,7 +35,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQLRaw, Union)
+    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
 from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
@@ -64,16 +64,16 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
 
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
     BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
 from lp.bugs.interfaces.bug import (
     IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
-    InvalidDuplicateValue, UserCannotUnsubscribePerson)
+    InvalidDuplicateValue)
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -490,8 +490,6 @@ class Bug(SQLBase):
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
-
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
 
@@ -501,6 +499,7 @@ class Bug(SQLBase):
         if suppress_notify is False:
             notify(ObjectCreatedEvent(sub, user=subscribed_by))
 
+        self.updateHeat()
         return sub
 
     def unsubscribe(self, person, unsubscribed_by):
@@ -525,6 +524,7 @@ class Bug(SQLBase):
                 # flushed so that code running with implicit flushes
                 # disabled see the change.
                 store.flush()
+                self.updateHeat()
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -803,7 +803,7 @@ class Bug(SQLBase):
                 notification_data['text'], change.person, recipients,
                 when)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
+        self.updateHeat()
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -1358,11 +1358,7 @@ class Bug(SQLBase):
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
-            if private:
-                self.setHeat(self.heat + BugHeatConstants.PRIVACY)
-            else:
-                self.setHeat(self.heat - BugHeatConstants.PRIVACY)
-
+            self.updateHeat()
             return True # Changed.
         else:
             return False # Not changed.
@@ -1374,10 +1370,7 @@ class Bug(SQLBase):
 
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
-            if security_related:
-                self.setHeat(self.heat + BugHeatConstants.SECURITY)
-            else:
-                self.setHeat(self.heat - BugHeatConstants.SECURITY)
+            self.updateHeat()
 
             return True # Changed
         else:
@@ -1466,7 +1459,7 @@ class Bug(SQLBase):
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
 
-        getUtility(ICalculateBugHeatJobSource).create(self)
+        self.updateHeat()
 
     @property
     def readonly_duplicateof(self):
@@ -1477,6 +1470,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         field = DuplicateBug()
         field.context = self
+        current_duplicateof = self.duplicateof
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
@@ -1485,15 +1479,17 @@ class Bug(SQLBase):
             raise InvalidDuplicateValue(validation_error)
 
         if duplicate_of is not None:
-            # Create a job to update the heat of the master bug and set
-            # this bug's heat to 0 (since it's a duplicate, it shouldn't
-            # have any heat at all).
-            getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
+            # Update the heat of the master bug and set this bug's heat
+            # to 0 (since it's a duplicate, it shouldn't have any heat
+            # at all).
             self.setHeat(0)
+            duplicate_of.updateHeat()
         else:
-            # Otherwise, create a job to recalculate this bug's heat,
-            # since it will be 0 from having been a duplicate.
-            getUtility(ICalculateBugHeatJobSource).create(self)
+            # Otherwise, recalculate this bug's heat, since it will be 0
+            # from having been a duplicate. We also update the bug that
+            # was previously duplicated.
+            self.updateHeat()
+            current_duplicateof.updateHeat()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1575,6 +1571,21 @@ class Bug(SQLBase):
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
             task.target.recalculateMaxBugHeat()
+
+    def updateHeat(self):
+        """See `IBug`."""
+        if self.duplicateof is not None:
+            # If this bug is a duplicate we don't try to calculate its
+            # heat.
+            return
+
+        # We need to flush the store first to ensure that changes are
+        # reflected in the new bug heat total.
+        store = Store.of(self)
+        store.flush()
+
+        self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
+        self.heat_last_updated = UTC_NOW
 
     @property
     def attachments(self):
@@ -1722,6 +1733,9 @@ class BugSet:
         # Tell everyone.
         notify(event)
 
+        # Calculate the bug's initial heat.
+        bug.updateHeat()
+
         return bug
 
     def createBugWithoutTarget(self, bug_params):
@@ -1852,7 +1866,8 @@ class BugSet:
             Bug.heat_last_updated < last_updated_cutoff,
             Bug.heat_last_updated == None)
 
-        return store.find(Bug, last_updated_clause).order_by('id')
+        return store.find(
+            Bug, Bug.duplicateof==None, last_updated_clause).order_by('id')
 
 
 class BugAffectsPerson(SQLBase):
