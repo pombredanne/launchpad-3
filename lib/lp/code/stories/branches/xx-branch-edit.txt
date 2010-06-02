@@ -223,7 +223,7 @@ by any user.
     >>> _unused = foogoo_svn.subscribe(sample_person,
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, sample_person)
     >>> logout()
 
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')

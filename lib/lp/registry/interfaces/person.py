@@ -850,21 +850,16 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         distroseries=List(value_type=Reference(schema=Interface)),
         name=TextLine(),
         recipe_text=Text(),
-        sourcepackagename=TextLine(),
-        daily_build_archive=Reference(schema=Interface),
-        build_daily=Bool(),
         )
     @export_factory_operation(Interface, [])
     def createRecipe(name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant, daily_build_archive=None,
-                     build_daily=False):
+                     registrant, daily_build_archive=None, build_daily=False):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.
         :param description: A description of the recipe.
         :param recipe_text: The text of the recipe.
         :param distroseries: The distroseries to use.
-        :param sourcepackagename: The name of the sourcepackage for the recipe.
         :param registrant: The person who created this recipe.
         :param daily_build_archive: The archive to user for daily builds.
         :param build_daily: If True, build this recipe daily (if changed).

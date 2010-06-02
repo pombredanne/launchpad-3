@@ -84,10 +84,6 @@ class SourcePackageRecipe(Storm):
 
     build_daily = Bool()
 
-    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(
-        sourcepackagename_id, 'SourcePackageName.id')
-
     @property
     def _sourcepackagename_text(self):
         return self.sourcepackagename.name
@@ -123,16 +119,14 @@ class SourcePackageRecipe(Storm):
         return str(self.builder_recipe)
 
     @staticmethod
-    def new(registrant, owner, sourcepackagename, name,
-            builder_recipe, description, distroseries=None,
-            daily_build_archive=None, build_daily=False):
+    def new(registrant, owner, name, builder_recipe, description,
+            distroseries=None, daily_build_archive=None, build_daily=False):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
         SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
-        sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
         if distroseries is not None:
             for distroseries_item in distroseries:
@@ -162,6 +156,19 @@ class SourcePackageRecipe(Storm):
             Not(_SourcePackageRecipeDistroSeries.distroseries_id.is_in(
                 up_to_date_distroseries)))
 
+    @staticmethod
+    def exists(owner, name):
+        """See `ISourcePackageRecipeSource.new`."""
+        store = IMasterStore(SourcePackageRecipe)
+        recipe = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == owner,
+            SourcePackageRecipe.name == name).one()
+        if recipe:
+            return True
+        else:
+            return False
+
     def destroySelf(self):
         store = Store.of(self)
         self.distroseries.clear()
@@ -182,16 +189,13 @@ class SourcePackageRecipe(Storm):
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
         reject_reason = archive.checkUpload(
-            requester, self.distroseries, self.sourcepackagename,
-            component, pocket)
+            requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
 
-        sourcepackage = distroseries.getSourcePackage(
-            self.sourcepackagename)
-        build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
+        build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
-        build.queueBuild()
+        build.queueBuild(build)
         if manual:
             build.buildqueue_record.manualScore(1000)
         return build

@@ -39,10 +39,10 @@ that generated it.
     >>> print firefox_build.distribution.displayname
     ubuntutest
 
-    >>> print firefox_build.distroseries.displayname
+    >>> print firefox_build.distro_series.displayname
     Breezy Badger Autotest
 
-    >>> print firefox_build.distroarchseries.displayname
+    >>> print firefox_build.distro_arch_series.displayname
     ubuntutest Breezy Badger Autotest i386
 
     >>> firefox_build.pocket
@@ -54,7 +54,7 @@ that generated it.
     >>> firefox_build.is_virtualized
     False
 
-    >>> print firefox_build.sourcepackagerelease.title
+    >>> print firefox_build.source_package_release.title
     mozilla-firefox - 0.9
 
 A build has an state that represents in which stage it is in a
@@ -62,29 +62,29 @@ life-cycle that goes from PENDING to BUILDING until FULLYBUILT or one
 of the intermediate failed states (FAILEDTOBUILD, MANUALDEPWAIT,
 CHROOTWAIT, SUPERSEDED and FAILEDTOUPLOAD).
 
-    >>> firefox_build.buildstate
+    >>> firefox_build.status
     <DBItem BuildStatus.FULLYBUILT, (1) Successfully built>
 
 Builds which were already processed also offer additional information
 about its process such as the time it was started and finished and its
-'buildlog' and 'upload_changesfile' as librarian files.
+'log' and 'upload_changesfile' as librarian files.
 
     >>> firefox_build.was_built
     True
 
-    >>> firefox_build.calculated_buildstart
+    >>> firefox_build.date_started
     datetime.datetime(...)
 
-    >>> firefox_build.datebuilt
+    >>> firefox_build.date_finished
     datetime.datetime(...)
 
-    >>> firefox_build.buildduration
+    >>> firefox_build.duration
     datetime.timedelta(...)
 
-    >>> print firefox_build.buildlog.filename
+    >>> print firefox_build.log.filename
     buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
 
-    >>> print firefox_build.build_log_url
+    >>> print firefox_build.log_url
     http://launchpad.dev/ubuntutest/+source/mozilla-firefox/0.9/+build/.../+files/buildlog_ubuntutest-breezy-autotest-i386.mozilla-firefox_0.9_FULLYBUILT.txt.gz
 
     >>> print firefox_build.upload_changesfile.filename
@@ -119,7 +119,7 @@ publication of the source in question.
 
 It is not necessarily the same as:
 
-    >>> print firefox_build.sourcepackagerelease.component.name
+    >>> print firefox_build.source_package_release.component.name
     main
 
 which is the component the source was originally uploaded to, before
@@ -151,7 +151,7 @@ Test "retry" functionality:
     >>> frozen_build = getUtility(IBinaryPackageBuildSet).getByBuildID(9)
     >>> frozen_build.title
     u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
-    >>> frozen_build.buildstate.title
+    >>> frozen_build.status.title
     'Failed to build'
     >>> frozen_build.can_be_retried
     False
@@ -166,13 +166,13 @@ Let's retrieve a build record that can be retried.
     >>> print active_build.title
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
-    >>> print active_build.buildstate.name
+    >>> print active_build.status.name
     FAILEDTOBUILD
 
     >>> print active_build.builder.name
     bob
 
-    >>> print active_build.buildlog.filename
+    >>> print active_build.log.filename
     netapplet-1.0.0.tar.gz
 
 At this point, it's also convenient to test if any content can be
@@ -210,54 +210,7 @@ librarian, and we can retrieve its contents.
     sample upload log.
 
 The 'upload_log' library file privacy is set according to the build
-target archive.
-
-    >>> print active_build.archive.private
-    False
-
-    >>> print active_build.upload_log.restricted
-    False
-
-Transforming ubuntu primary archive in a private archive makes
-storeUploadLog() upload the given content as a restricted file.
-
-    >>> login('foo.bar@canonical.com')
-    >>> original_archive = active_build.archive
-    >>> private_ppa = factory.makeArchive(private=True)
-    >>> removeSecurityProxy(active_build).archive = private_ppa
-    >>> login(ANONYMOUS)
-
-Simply changing the archive privacy after the 'upload_log' is stored
-doesn't make it restricted. The archive privacy will be respected in
-the next upload attempt only.
-
-    >>> print active_build.upload_log.restricted
-    False
-
-In order to call storeUploadLog() again for the same build, we have to
-remove the previously stored 'upload_log'. See the check below in
-'AssertionErrors in IBinaryPackageBuild' for more detail.
-
-    >>> login('foo.bar@canonical.com')
-    >>> active_build.upload_log = None
-    >>> login(ANONYMOUS)
-
-Once targeted to a private archive the 'upload_log' gets stored in the
-restricted librarian instance.
-
-    >>> print active_build.archive.private
-    True
-
-    >>> active_build.storeUploadLog('private upload log.')
-    >>> print active_build.upload_log.restricted
-    True
-
-Restore ubuntu main archive as the target to not affect the rest of the
-tests.
-
-    >>> login('foo.bar@canonical.com')
-    >>> removeSecurityProxy(active_build).archive = original_archive
-    >>> login(ANONYMOUS)
+target archive. For an example, see lp.buildmaster.tests.test_packagebuild
 
 Since ubuntu/warty is already released the failed build can't be
 retried.
@@ -318,18 +271,18 @@ BuildQueue record was created.
     >>> print active_build.builder
     None
 
-    >>> print active_build.buildstate.name
+    >>> print active_build.status.name
     NEEDSBUILD
 
     >>> print active_build.buildqueue_record
     <...BuildQueue...>
 
-'buildlog' and 'upload_log' librarian references were removed when the
+'log' and 'upload_log' librarian references were removed when the
 build was retried. They will be garbage-collected later by
 'librariangc' and replaced by new ones when the build re-attempt
 finishes.
 
-    >>> print active_build.buildlog
+    >>> print active_build.log
     None
 
     >>> print active_build.upload_log
@@ -353,8 +306,8 @@ given build record entry.
     >>> description = 'Descripppppppption'
     >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
-    >>> component = firefox_build.sourcepackagerelease.component.id
-    >>> section = firefox_build.sourcepackagerelease.section.id
+    >>> component = firefox_build.source_package_release.component.id
+    >>> section = firefox_build.source_package_release.section.id
     >>> from canonical.launchpad.interfaces import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
     >>> shlibdeps = None
@@ -565,7 +518,8 @@ data from the database for a given set of builds:
     ...     return row[0].id
     >>> for row in sorted(rset, key=sort_result_key):
     ...     (sourcepackagerelease, buildlog,
-    ...      sourcepackagename, buildlog_content, builder) = row
+    ...      sourcepackagename, buildlog_content, builder,
+    ...      package_build, build_farm_job) = row
     ...     print(
     ...         'builder: %s, spr: %s, log: %s' %
     ...         (id_or_none(builder),
@@ -662,7 +616,7 @@ getBuildRecords() ordered by descending creation date.
     >>> [deleted_build, superseded_build] == list(old_source_builds)
     True
 
-    >>> deleted_build.datecreated > superseded_build.datecreated
+    >>> deleted_build.date_created > superseded_build.date_created
     True
 
 Builds records for the exactly the same `SourcePackageRelease`s may
@@ -699,9 +653,9 @@ For a given distribution as well:
     >>> ubuntu.getBuildRecords().count()
     17
 
-    >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
-    >>> for l in L:
-    ...     print l.datebuilt, l.id, l.buildstate.value
+    >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
+    >>> for build in builds:
+    ...     print build.date_finished, build.id, build.status.value
     2007-08-10 00:00:14+00:00 30 1
     2007-08-09 23:59:59+00:00 29 1
     2005-03-25 00:00:03+00:00 7 1
@@ -727,7 +681,7 @@ new BuildQueue record:
 Note that they are ordered by DESC lastscore, as expected:
 
     >>> for b in builds:
-    ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
+    ...     b.id, b.status.value, b.buildqueue_record.lastscore
     (9, 0, 2505)
     (11, 0, 10)
 
@@ -895,6 +849,7 @@ You can filter on build state and package name:
 
 Build records inserted by gina don't provide calculated_buildstart
 value, since they miss fields used in its calculation.
+TODO: check and update this based on the new model.
 
     >>> gina_build = getUtility(IBinaryPackageBuildSet).getByBuildID(10)
     >>> gina_build.title
@@ -904,14 +859,6 @@ even if IBinaryPackageBuild.was_built return true:
 
     >>> gina_build.was_built
     True
-
-this method is protected by an assertion on valid buildduration and
-datebuilt, it makes the diagnosis of problems in current DB easier.
-
-    >>> gina_build.calculated_buildstart
-    Traceback (most recent call last):
-    ...
-    AssertionError: value is not suitable for this build record (10)
 
 Only builds in failed_states (FAILEDTOBUILD, MANUALDEPWAIT and
 CHROOTWAIT) can be retried. We must check if Soyuz is able to accept
@@ -926,7 +873,7 @@ IBinaryPackageBuild.can_be_retried() property (see above).
     >>> failed_build.title
     u'i386 build of foobar 1.0 in ubuntu warty RELEASE'
 
-    >>> failed_build.buildstate.name
+    >>> failed_build.status.name
     'FAILEDTOBUILD'
 
     >>> failed_build.can_be_retried
@@ -1023,12 +970,12 @@ component, we will see that the dependency is considered to be unsatisfied.
 See also bug 177827.
 
     >>> login('foo.bar@canonical.com')
-    >>> depwait_build.dependencies = 'pmount'
+    >>> depwait_build.dependencies = u'pmount'
     >>> flush_database_updates()
 
 'pmount' in hoary/i386 is published in the 'universe' component:
 
-    >>> hoary_i386 = depwait_build.distroarchseries
+    >>> hoary_i386 = depwait_build.distro_arch_series
     >>> pmount_pub = hoary_i386[
     ...     'pmount'].currentrelease.current_publishing_record
     >>> print pmount_pub.component.name
@@ -1058,7 +1005,7 @@ list.
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
     >>> pmount_pub.component = main_component
-    >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
+    >>> depwait_build.dependencies = u'mozilla-firefox, pmount'
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
@@ -1079,7 +1026,7 @@ depend on all components of its distribution PRIMARY archive.
 
 
     >>> login('foo.bar@canonical.com')
-    >>> depwait_build.dependencies = 'biscuit, pmount'
+    >>> depwait_build.dependencies = u'biscuit, pmount'
     >>> universe_component = getUtility(IComponentSet)['universe']
     >>> pmount_pub.component = universe_component
     >>> removeSecurityProxy(depwait_build).archive = cprov.archive
@@ -1111,16 +1058,16 @@ build after calling updateDependencies, to encapsulate such decision
 for performing the mentioned  auto-depwait procedure we have a utility
 in IBinaryPackageBuildSet called retryDepWaiting().
 
-    >>> print depwait_build.buildstate.name
+    >>> print depwait_build.status.name
     MANUALDEPWAIT
-    >>> print depwait_build.distroarchseries.title
+    >>> print depwait_build.distro_arch_series.title
     The Hoary Hedgehog Release for i386 (x86)
 
 In order to allow depwait_build to be retried we will forge a
 'fully-satisfiable' dependencies field.
 
     >>> login('foo.bar@canonical.com')
-    >>> depwait_build.dependencies = 'pmount'
+    >>> depwait_build.dependencies = u'pmount'
     >>> login(ANONYMOUS)
     >>> flush_database_updates()
 
@@ -1129,7 +1076,7 @@ expect depwait_build to be 'retried' and scored.
 
     >>> getUtility(IBinaryPackageBuildSet).retryDepWaiting(hoaryi386)
 
-    >>> print depwait_build.buildstate.name
+    >>> print depwait_build.status.name
     NEEDSBUILD
 
     >>> depwait_build.buildqueue_record.lastscore
@@ -1164,7 +1111,7 @@ We need to be at least a buildd-admin to rescore:
 If a callsite tries to rescore a build that is not in the NEEDSBUILD state,
 a CannotBeRescored exception is raised.
 
-    >>> depwait_build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> depwait_build.status = BuildStatus.FAILEDTOUPLOAD
     >>> depwait_build.rescore(1000)
     Traceback (most recent call last):
     ...
@@ -1245,12 +1192,12 @@ launchpad.Edit.
     ...             print "Did not fail when expected setting %s" % property
     >>> from canonical.database.constants import UTC_NOW
     >>> properties = {
-    ...     'buildlog': 1,
-    ...     'datebuilt': UTC_NOW,
-    ...     'buildduration': None,
+    ...     'log': 1,
+    ...     'date_finished': UTC_NOW,
+    ...     'date_started': None,
     ...     'builder': bob,
-    ...     'buildstate': BuildStatus.FAILEDTOUPLOAD,
-    ...     'dependencies': 'whatever',
+    ...     'status': BuildStatus.FAILEDTOUPLOAD,
+    ...     'dependencies': u'whatever',
     ...     'upload_log': 1,
     ...     }
 
@@ -1294,8 +1241,8 @@ Create oldest build instance.
     ...         PackagePublishingPocket.UPDATES,
     ...         test_publisher.breezy_autotest.main_archive,
     ...         status=BuildStatus.FULLYBUILT)
-    >>> oldest_build.buildduration = timedelta(minutes=72)
-    >>> oldest_build.datebuilt = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
+    >>> oldest_build.date_finished = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
+    >>> oldest_build.date_started = oldest_build.date_finished - timedelta(minutes=72)
 
 Check that the oldest build instance's 'estimated_duration'
 is initialized based on its package size. Since the latter is very
@@ -1319,8 +1266,8 @@ Create intermediate build instance.
     ...         PackagePublishingPocket.UPDATES,
     ...         test_publisher.breezy_autotest.main_archive,
     ...         status=BuildStatus.FULLYBUILT)
-    >>> medium_build.buildduration = timedelta(minutes=60)
-    >>> medium_build.datebuilt = datetime(2008, 4, 2, 11, 56, 33, tzinfo=UTC)
+    >>> medium_build.date_finished = datetime(2008, 4, 2, 11, 56, 33, tzinfo=UTC)
+    >>> medium_build.date_started = medium_build.date_finished - timedelta(minutes=60)
 
 Check whether the intermediate build instance's 'estimated_duration'
 value equals the oldest instance's 'buildduration' (72 minutes equals 4320
@@ -1407,7 +1354,7 @@ Create some sources with builds:
     ...     source_ids)
     >>> import operator
     >>> for build in sorted(builds, key=operator.attrgetter("id")):
-    ...     print build.title, build.buildstate.name
+    ...     print build.title, build.status.name
     hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
         FULLYBUILT
     hppa build of sourcetwo 666 in ubuntutest breezy-autotest RELEASE
@@ -1418,7 +1365,7 @@ The results can also be filtered on build state:
     >>> builds = removeSecurityProxy(bs).getBuildsBySourcePackageRelease(
     ...     source_ids, buildstate=BuildStatus.FULLYBUILT)
     >>> for build in sorted(builds, key=operator.attrgetter("id")):
-    ...     print build.title, build.buildstate.name
+    ...     print build.title, build.status.name
     hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
         FULLYBUILT
 
@@ -1462,13 +1409,13 @@ specified builder ID, ordered from most-recently built.
     >>> bob_builder = getUtility(IBuilderSet)['bob']
 
     >>> earlier_builds = src_pkg_earlier.createMissingBuilds()
-    >>> eg_build_date = earlier_builds[0].datecreated
+    >>> eg_build_date = earlier_builds[0].date_created
     >>> for build in earlier_builds:
-    ...     build.datebuilt = eg_build_date - timedelta(1)
+    ...     build.date_finished = eg_build_date - timedelta(1)
 
     >>> later_builds = src_pkg_later.createMissingBuilds()
     >>> for build in later_builds:
-    ...     build.datebuilt = eg_build_date
+    ...     build.date_finished = eg_build_date
 
     Ensure that the i386 builds are created by the 'frog' builder,
     while the hppa builds are created by 'bob' the builder:

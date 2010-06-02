@@ -58,13 +58,11 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
         description = self.factory.getUniqueString(u'recipe-description')
         return getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
-            sourcepackagename=sourcepackagename, name=name,
-            description=description, builder_recipe=builder_recipe)
+            name=name, description=description, builder_recipe=builder_recipe)
 
     def test_creation(self):
         # The metadata supplied when a SourcePackageRecipe is created is
@@ -72,18 +70,28 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
         description = self.factory.getUniqueString(u'recipe-description')
         builder_recipe = self.factory.makeRecipe()
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
-            sourcepackagename=sourcepackagename, name=name,
-            description=description, builder_recipe=builder_recipe)
+            name=name, description=description, builder_recipe=builder_recipe)
         self.assertEquals(
-            (registrant, owner, set([distroseries]), sourcepackagename, name),
+            (registrant, owner, set([distroseries]), name),
             (recipe.registrant, recipe.owner, set(recipe.distroseries),
-             recipe.sourcepackagename, recipe.name))
+             recipe.name))
+
+    def test_exists(self):
+        # Test ISourcePackageRecipeSource.exists
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        self.assertTrue(
+            getUtility(ISourcePackageRecipeSource).exists(
+                recipe.owner, recipe.name))
+
+        self.assertFalse(
+            getUtility(ISourcePackageRecipeSource).exists(
+                recipe.owner, u'daily'))
 
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
@@ -411,13 +419,11 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.makeSourcePackageName()
         name = self.factory.getUniqueString(u'recipe-name')
         description = self.factory.getUniqueString(u'recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
-            sourcepackagename=sourcepackagename, name=name,
-            description=description, builder_recipe=builder_recipe)
+            name=name, description=description, builder_recipe=builder_recipe)
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
@@ -605,10 +611,9 @@ class TestWebservice(TestCaseWithFactory):
         ws_owner = ws_object(launchpad, owner)
         ws_archive = ws_object(launchpad, db_archive)
         recipe = ws_owner.createRecipe(
-            name='toaster-1', sourcepackagename='toaster',
-            description='a recipe', recipe_text=recipe_text,
-            distroseries=[distroseries.self_link],
-            build_daily=True, daily_build_archive=ws_archive)
+            name='toaster-1', description='a recipe', recipe_text=recipe_text,
+            distroseries=[distroseries.self_link], build_daily=True,
+            daily_build_archive=ws_archive)
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
         db_recipe = owner.getRecipe(name=u'toaster-1')
@@ -625,7 +630,6 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(team.teamowner.name, recipe.registrant.name)
         self.assertEqual('toaster-1', recipe.name)
         self.assertEqual(recipe_text, recipe.recipe_text)
-        self.assertEqual('toaster', recipe.sourcepackagename)
         self.assertTrue(recipe.build_daily)
         self.assertEqual('recipe-ppa', recipe.daily_build_archive.name)
 

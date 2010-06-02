@@ -56,14 +56,14 @@
             </div>
             <div tal:condition="build/was_built">
               Build started
-              <tal:soyuz_record condition="build/buildduration">
+              <tal:soyuz_record condition="build/duration">
                  <span
                    tal:attributes="
-                     title build/calculated_buildstart/fmt:datetime"
+                     title build/date_started/fmt:datetime"
                    tal:content="
-                   build/calculated_buildstart/fmt:displaydate" />
+                   build/date_started/fmt:displaydate" />
               </tal:soyuz_record>
-              <tal:gina_record condition="not: build/buildduration">
+              <tal:gina_record condition="not: build/duration">
                   <i>at an unknown time</i>
               </tal:gina_record>
               <tal:show_builder_info condition="view/show_builder_info">
@@ -77,17 +77,17 @@
                    <i>an unknown build machine</i>
                 </tal:unknown_builder>
               </tal:show_builder_info>
-              <tal:date_built condition="build/datebuilt">
+              <tal:date_built condition="build/date_finished">
                 and finished
                 <span
-                  tal:attributes="title build/datebuilt/fmt:datetime"
-                  tal:content="build/datebuilt/fmt:displaydate" />
+                  tal:attributes="title build/date_finished/fmt:datetime"
+                  tal:content="build/date_finished/fmt:displaydate" />
                 taking
                 <tal:time
-                  content="build/buildduration/fmt:approximateduration" />
-                <tal:log condition="build/buildlog">
+                  content="build/duration/fmt:approximateduration" />
+                <tal:log condition="build/log">
                   &mdash;
-                  <a tal:attributes="href build/build_log_url"
+                  <a tal:attributes="href build/log_url"
                     >see the log</a>
                 </tal:log>
               </tal:date_built>
