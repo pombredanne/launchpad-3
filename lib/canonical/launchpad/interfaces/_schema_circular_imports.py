@@ -276,6 +276,8 @@ IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
 patch_entry_return_type(
+    IDistribution, 'getArchive', IArchive)
+patch_entry_return_type(
     IDistribution, 'getSeries', IDistroSeries)
 patch_collection_return_type(
     IDistribution, 'getDevelopmentSeries', IDistroSeries)

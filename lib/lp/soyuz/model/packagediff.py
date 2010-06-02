@@ -123,7 +123,7 @@ class PackageDiff(SQLBase):
             ancestry_identifier = "%s (in %s)" % (
                 self.from_source.version,
                 ancestry_archive.distribution.name.capitalize())
-        return '%s to %s' % (ancestry_identifier, self.to_source.version)
+        return 'diff from %s to %s' % (ancestry_identifier, self.to_source.version)
 
     @property
     def private(self):

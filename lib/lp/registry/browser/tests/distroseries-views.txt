@@ -155,6 +155,9 @@ Editing distro series
 The distroseries edit view allows the editor to change series. The form
 uses the displayname, title, and description fields.
 
+    >>> driver = factory.makePerson(name='ubuntu-driver')
+    >>> hoary.driver = driver
+    >>> login_person(driver)
     >>> view = create_initialized_view(hoary, '+edit')
     >>> print view.label
     Edit The Hoary Hedgehog Release details
@@ -167,6 +170,13 @@ uses the displayname, title, and description fields.
 
     >>> [field.__name__ for field in view.form_fields]
     ['displayname', 'title', 'summary', 'description']
+
+Admins can see the status field for full functionality distributions.
+
+    >>> login('admin@canonical.com')
+    >>> view = create_initialized_view(hoary, '+edit')
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description', 'status']
 
 Series that belong to derivative distributions also contain the status field.
 

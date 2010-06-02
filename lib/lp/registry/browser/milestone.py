@@ -130,9 +130,11 @@ class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
 
 class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     """Overview  menus for `IMilestone` objects."""
+    # This menu must not contain 'subscribe' because the link state is too
+    # costly to calculate when this menu is used with a list of milestones.
     usedfor = IMilestone
     facet = 'overview'
-    links = ('create_release', )
+    links = ('edit', 'create_release')
 
 
 class IMilestoneInline(Interface):
