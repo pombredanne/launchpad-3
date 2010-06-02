@@ -73,25 +73,6 @@ class TestBugChanges(unittest.TestCase):
             notification.id for notification in (
                 BugNotification.selectBy(bug=bug)))
 
-    def appendOldChanges(self, bug=None):
-        """Add to the saved activity and notifications for a test.
-
-        This method should be called after setup.  It can be used
-        in conjunction with saveOldChanges to remove initial
-        bug-created activity and notification messages on a
-        second bug, which is useful when testing duplicate
-        notifications.
-        """
-        if bug is None:
-            bug = self.bug
-        self.old_activities = set(
-            list(self.old_activities) +
-            list(bug.activity))
-        self.old_notification_ids = set(
-            list(self.old_notification_ids) +
-            [notification.id for notification in
-                BugNotification.selectBy(bug=bug)])
-
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
 
@@ -1270,7 +1251,6 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
-        self.appendOldChanges()
         # Save the initial "bug created" notifications before
         # marking this bug a duplicate, so that we don't get
         # extra notificationse by mistake.
@@ -1299,6 +1279,7 @@ class TestBugChanges(unittest.TestCase):
 
         # Ensure that only the people subscribed to the bug that
         # gets marked as a duplicate are notified.
+        self.saveOldChanges(self.bug)
         master_notifications = BugNotification.selectBy(
             bug=self.bug, orderBy='id')
         new_notifications = [
