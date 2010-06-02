@@ -1256,6 +1256,10 @@ class TestBugChanges(unittest.TestCase):
         # unimportant bug notifications.
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
+        duplicate_subscribers = (
+            duplicate_bug.getDirectSubscribers() +
+            duplicate_bug.getIndirectSubscribers())
+        self.assertEqual(duplicate_bug_recipients, duplicate_subscribers)
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
         expected_activity = {
