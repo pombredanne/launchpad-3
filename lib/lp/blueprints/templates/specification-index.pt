@@ -271,22 +271,22 @@
               </ul>
             </div>
 
-          <div style="margin-top: 1.5em;">
-            <h2 tal:condition="not:context/feedbackrequests">Feedback requests</h2>
+            <div class="portlet" style="border-top: none;">
+              <h2 tal:condition="not:context/feedbackrequests">Feedback requests</h2>
 
-            <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+              <div tal:replace="structure context/@@+portlet-feedbackqueue" />
 
-            <ul class="horizontal">
-              <li tal:define="link context_menu/givefeedback"
-                  tal:condition="link/enabled">
-                <a tal:replace="structure link/fmt:link" />
-              </li>
-              <li tal:define="link context_menu/requestfeedback"
-                  tal:condition="link/enabled">
-                <a tal:replace="structure link/fmt:link" />
-              </li>
-            </ul>
-          </div>
+              <ul class="horizontal">
+                <li tal:define="link context_menu/givefeedback"
+                    tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+                <li tal:define="link context_menu/requestfeedback"
+                    tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+              </ul>
+            </div>
 
         </div>
       </div>
