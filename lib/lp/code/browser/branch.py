@@ -356,18 +356,6 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
-        self._add_subscription_notice()
-
-    def _add_subscription_notice(self):
-        """Add the appropriate notice after posting the subscription form."""
-        if self.user and self.request.method == 'POST':
-            newsub = self.request.form.get('subscribe', None)
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this branch.")
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this branch.")
 
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""

@@ -19,7 +19,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
@@ -42,7 +41,6 @@ from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 
 
