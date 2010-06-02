@@ -19,7 +19,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-from storm.expr import Desc, SQL
+from storm.expr import SQL
 from storm.store import EmptyResultSet, Store
 
 from canonical.config import config
@@ -613,25 +613,6 @@ class POTMsgSet(SQLBase):
                 potranslations[pluralform] = None
         return potranslations
 
-    def _findIdenticalTranslationMessages(self, pofile, potranslations):
-        """Find `TranslationMessage`s with the given translations.
-
-        A shared message, if it exists, is returned before any diverged
-        ones.
-        """
-        translation_matches = [
-            getattr(TranslationMessage, 'msgstr%d' % form) == text
-            for form, text in potranslations.iteritems()
-                ]
-        # Storm doesn't support "NULLS FIRST" ordering, so abuse
-        # descending order on POTemplate.
-        return Store.of(self).find(TranslationMessage,
-            TranslationMessage.potmsgset == self,
-            TranslationMessage.language == pofile.language,
-            TranslationMessage.variant == pofile.variant,
-            *translation_matches).order_by(
-                Desc(TranslationMessage.potemplateID))
-
     def _findTranslationMessage(self, pofile, potranslations,
                                 prefer_shared=True):
         """Find a matching message in this `pofile`.
@@ -1139,12 +1120,8 @@ class POTMsgSet(SQLBase):
             variant=pofile.variant)
 
         incumbent_message = traits.incumbent_message
-        twins = list(
-            self._findIdenticalTranslationMessages(pofile, translations))
-        if twins == []:
-            twin = None
-        else:
-            twin = twins[0]
+        twin = self._findTranslationMessage(
+            pofile, translations, prefer_shared=False)
 
         decision_matrix = {
             'incumbent_none': {
