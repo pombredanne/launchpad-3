@@ -79,10 +79,6 @@ class SourcePackageRecipe(Storm):
 
     build_daily = Bool()
 
-    sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(
-        sourcepackagename_id, 'SourcePackageName.id')
-
     @property
     def _sourcepackagename_text(self):
         return self.sourcepackagename.name
@@ -118,21 +114,33 @@ class SourcePackageRecipe(Storm):
         return str(self.builder_recipe)
 
     @staticmethod
-    def new(registrant, owner, distroseries, sourcepackagename, name,
-            builder_recipe, description):
+    def new(registrant, owner, distroseries, name, builder_recipe,
+            description):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
         SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
-        sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
         for distroseries_item in distroseries:
             sprecipe.distroseries.add(distroseries_item)
         sprecipe.description = description
         store.add(sprecipe)
         return sprecipe
+
+    @staticmethod
+    def exists(owner, name):
+        """See `ISourcePackageRecipeSource.new`."""
+        store = IMasterStore(SourcePackageRecipe)
+        recipe = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == owner,
+            SourcePackageRecipe.name == name).one()
+        if recipe:
+            return True
+        else:
+            return False
 
     def destroySelf(self):
         store = Store.of(self)
@@ -153,16 +161,13 @@ class SourcePackageRecipe(Storm):
             raise NonPPABuildRequest
         component = getUtility(IComponentSet)["multiverse"]
         reject_reason = archive.checkUpload(
-            requester, self.distroseries, self.sourcepackagename,
-            component, pocket)
+            requester, self.distroseries, None, component, pocket)
         if reject_reason is not None:
             raise reject_reason
 
-        sourcepackage = distroseries.getSourcePackage(
-            self.sourcepackagename)
-        build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
+        build = getUtility(ISourcePackageRecipeBuildSource).new(distroseries,
             self, requester, archive)
-        build.queueBuild()
+        build.queueBuild(build)
         return build
 
     def getBuilds(self, pending=False):
@@ -176,6 +181,14 @@ class SourcePackageRecipe(Storm):
             *clauses)
         result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
         return result
+
+    def getLastBuild(self):
+        """See `ISourcePackageRecipeBuild`."""
+        store = Store.of(self)
+        result = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
+        result.order_by(Desc(SourcePackageRecipeBuild.datebuilt))
+        return result.first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""

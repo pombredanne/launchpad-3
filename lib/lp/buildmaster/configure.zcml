@@ -8,7 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
-
+    <include package=".browser"/>
 
     <!-- Builder -->
     <class
@@ -42,6 +42,40 @@
         permission="zope.Public"/>
 
 
+    <!-- BuildFarmJob -->
+    <class
+        class="lp.buildmaster.model.buildfarmjob.BuildFarmJob">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="status"/>
+    </class>
+    <securedutility
+        component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource">
+
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobSource" />
+    </securedutility>
+
+    <!-- PackageBuild -->
+    <class
+        class="lp.buildmaster.model.packagebuild.PackageBuild">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuild" />
+        <require
+            permission="launchpad.Edit"
+            set_attributes="dependencies"/>
+    </class>
+
+    <securedutility
+        component="lp.buildmaster.model.packagebuild.PackageBuild"
+        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource">
+        <allow
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource" />
+    </securedutility>
+
     <!-- BuildQueue -->
     <class
         class="lp.buildmaster.model.buildqueue.BuildQueue">
@@ -53,7 +87,7 @@
         <!-- Grant permissions to write on BuildQueue and Build. -->
         <require
             permission="zope.Public"
-            set_attributes="lastscore builder logtail date_started"/>
+            set_attributes="lastscore estimated_duration builder logtail date_started"/>
     </class>
 
 
@@ -64,4 +98,6 @@
         <allow
             interface="lp.buildmaster.interfaces.buildqueue.IBuildQueueSet"/>
     </securedutility>
+
+
 </configure>
