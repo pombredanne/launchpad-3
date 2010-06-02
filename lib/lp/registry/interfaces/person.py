@@ -850,6 +850,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         distroseries=List(value_type=Reference(schema=Interface)),
         name=TextLine(),
         recipe_text=Text(),
+        daily_build_archive=Reference(schema=Interface),
+        build_daily=Bool(),
+
         )
     @export_factory_operation(Interface, [])
     def createRecipe(name, description, recipe_text, distroseries,
