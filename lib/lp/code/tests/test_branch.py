@@ -134,7 +134,7 @@ class TestAccessBranch(PermissionTest):
         removeSecurityProxy(branch).subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, person)
         self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchAnyoneElse(self):

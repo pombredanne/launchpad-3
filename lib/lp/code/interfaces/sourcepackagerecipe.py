@@ -39,7 +39,6 @@ from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
@@ -113,13 +112,6 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         readonly=False)
     build_daily = Bool(
         title=_("Build daily"))
-    sourcepackagename = Reference(
-        ISourcePackageName, title=_("The name of the source package this "
-                                    "recipe will build a source package"),
-        readonly=True)
-
-    _sourcepackagename_text = exported(
-        TextLine(), exported_as='sourcepackagename')
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -183,6 +175,9 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name,
+    def new(registrant, owner, distroseries, name,
             builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""
+
+    def exists(owner, name):
+        """Check to see if a recipe by the same name and owner exists."""

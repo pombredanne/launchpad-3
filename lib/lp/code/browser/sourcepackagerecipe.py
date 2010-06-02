@@ -299,9 +299,6 @@ class ISourcePackageAddEditSchema(Interface):
         'owner',
         'build_daily'
         ])
-    sourcepackagename = Choice(
-        title=u"Source Package Name", required=True,
-        vocabulary='SourcePackageName')
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive')
     distros = List(
@@ -330,6 +327,13 @@ class RecipeTextValidatorMixin:
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
 
+        if getUtility(ISourcePackageRecipeSource).exists(
+                                                    self.user, data['name']):
+            self.setFieldError(
+                'name',
+                'There is already a recipe owned by %s with this name.' %
+                    self.user.displayname)
+
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
@@ -355,9 +359,8 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['sourcepackagename'],
-            data['name'], recipe, data['description'], data['distros'],
-            data['daily_build_archive'], data['build_daily'])
+            self.user, self.user, data['name'], recipe, data['description'],
+            data['distros'], data['daily_build_archive'], data['build_daily'])
         self.next_url = canonical_url(source_package_recipe)
 
 
