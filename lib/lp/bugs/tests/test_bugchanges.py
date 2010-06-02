@@ -70,6 +70,22 @@ class TestBugChanges(unittest.TestCase):
             notification.id for notification in (
                 BugNotification.selectBy(bug=bug)))
 
+    def appendOldChanges(self, bug=None):
+        """Save the old changes to a bug, alongside other saved changes.
+
+
+        This method should be called after all the setup is done.
+        """
+        if bug is None:
+            bug = self.bug
+        self.old_activities = set(
+            list(self.old_activities) +
+            list(bug.activity))
+        self.old_notification_ids = set(
+            list(self.old_notification_ids) +
+            [notification.id for notification in
+                BugNotification.selectBy(bug=bug)])
+
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
 
@@ -1248,6 +1264,7 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
+        self.appendOldChanges()
         # Save the people that are notified about the bug before it's
         # made a duplicate, so that we don't get extra people by
         # mistake. Only the people subscribed to the bug that gets marked
@@ -1282,6 +1299,14 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=duplicate_bug)
+
+        master_notifications = BugNotification.selectBy(
+            bug=self.bug, orderBy='id')
+        new_notifications = [
+            notification for notification in master_notifications
+            if notification.id not in self.old_notification_ids]
+        self.assertEqual(len(list(new_notifications)), 0)
+
 
     def test_multiple_marked_as_duplicate(self):
         # When two bugs are marked as duplicates, only the second bug's
