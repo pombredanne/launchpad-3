@@ -156,12 +156,18 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
         self.dupe_bug.duplicateof = self.bug
-        # Remove any notifications from bug creation and marking duplicate.
-        pop_notifications()
 
     def test_notification_for_duplicates(self):
-        notices = pop_notifications()
-        self.assertEqual(len(notices), 0)
+        self.dupe_bug.newMessage(
+            self.dupe_bug.owner, subject='subject', content='content')
+        dupe_subscribers = set(
+            self.dupe_bug.getDirectSubscribers() +
+            self.dupe_bug.getIndirectSubscribers())
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        recipients = set(
+            recipient.person
+            for recipient in latest_notification.recipients)
+        self.assertEqual(dupe_subscribers, recipients)
 
 
 def test_suite():
