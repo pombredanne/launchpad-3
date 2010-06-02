@@ -132,7 +132,6 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Source Package Name').value = 'ratatouille'
 
         browser.getControl('Build daily').click()
         browser.getControl('Create Recipe').click()
