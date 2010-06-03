@@ -133,7 +133,7 @@ permits it to be re-tried.  FAILEDTOBUILD is one of those states:
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='sourceone')
     >>> [failed_build] = test_source.createMissingBuilds()
-    >>> failed_build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> failed_build.status = BuildStatus.FAILEDTOBUILD
 
     >>> failed_build.can_be_retried
     True
@@ -172,9 +172,9 @@ So, create a user, a team, and the packageset:
     >>> desktop = factory.makeTeam(name='desktop', owner=joe)
     >>> main_archive = test_publisher.distroseries.main_archive
     >>> rebuild_ps = getUtility(IPackagesetSet).new(
-    ...     u'rebuild', u'Test package set', desktop, 
+    ...     u'rebuild', u'Test package set', desktop,
     ...     distroseries=test_publisher.distroseries)
-    >>> rebuild_spn = (failed_build.sourcepackagerelease.sourcepackagename,)
+    >>> rebuild_spn = (failed_build.source_package_release.sourcepackagename,)
     >>> rebuild_ps.add(rebuild_spn)
 
 Joe will not have permission to retry the build until we grant it:
@@ -215,7 +215,7 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
     ...     PackagePublishingPocket)
     >>> from lp.soyuz.model.queue import PackageUploadBuild
     >>> build = cprov_failed_build_view.context
-    >>> package_upload = build.distroseries.createQueueEntry(
+    >>> package_upload = build.distro_series.createQueueEntry(
     ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
     ...     build.archive)
     >>> package_upload_build = PackageUploadBuild(
@@ -416,7 +416,7 @@ been suspended.
     >>> view = create_initialized_view(pending_build, name="+index")
     >>> view.dispatch_time_estimate_available
     True
-    >>> view.context.buildstate == BuildStatus.NEEDSBUILD
+    >>> view.context.status == BuildStatus.NEEDSBUILD
     True
     >>> view.context.buildqueue_record.job.status == JobStatus.WAITING
     True

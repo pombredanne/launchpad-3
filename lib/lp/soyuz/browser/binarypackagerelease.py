@@ -32,7 +32,7 @@ class BinaryPackageView:
         Define apt_pkg.ParseDep as a relationship 'parser' and
         IDistroArchSeries.getBinaryPackage as 'getter'.
         """
-        getter = self.context.build.distroarchseries.getBinaryPackage
+        getter = self.context.build.distro_arch_series.getBinaryPackage
         parser = ParseDepends
         return relationship_builder(content, parser=parser, getter=getter)
 

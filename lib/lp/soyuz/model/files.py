@@ -50,12 +50,12 @@ class BinaryPackageFileSet:
         return BinaryPackageFile.select("""
             PackageUploadBuild.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND
-            Build.id = PackageUploadBuild.build AND
-            BinaryPackageRelease.build = Build.id AND
+            BinaryPackageBuild.id = PackageUploadBuild.build AND
+            BinaryPackageRelease.build = BinaryPackageBuild.id AND
             BinaryPackageFile.binarypackagerelease = BinaryPackageRelease.id
             """ % sqlvalues(package_upload_ids),
-            clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
-                          "BinaryPackageRelease"],
+            clauseTables=["PackageUpload", "PackageUploadBuild",
+                          "BinaryPackageBuild", "BinaryPackageRelease"],
             prejoins=["binarypackagerelease", "binarypackagerelease.build",
                       "libraryfile", "libraryfile.content",
                       "binarypackagerelease.binarypackagename"])

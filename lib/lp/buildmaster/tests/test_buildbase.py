@@ -3,8 +3,13 @@
 
 from __future__ import with_statement
 
-"""Tests for `IBuildBase`."""
+"""Tests for `IBuildBase`.
 
+   XXX 2010-04-26 michael.nelson bug=567922.
+   These tests should be moved into test_packagebuild when buildbase is
+   deleted. For the moment, test_packagebuild inherits these tests to
+   ensure the new classes pass too.
+"""
 __metaclass__ = type
 
 from datetime import datetime
@@ -24,28 +29,37 @@ from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 
 
-class TestBuildBase(TestCase):
+class TestBuildBaseMixin:
     """Tests for `IBuildBase`."""
 
-    def test_getUploadLeaf(self):
-        # getUploadLeaf returns the current time, followed by the build id.
-        build_base = BuildBase()
+    def test_getUploadDirLeaf(self):
+        # getUploadDirLeaf returns the current time, followed by the build
+        # cookie.
         now = datetime.now()
-        build_id = self.factory.getUniqueInteger()
-        upload_leaf = build_base.getUploadLeaf(build_id, now=now)
+        build_cookie = self.factory.getUniqueString()
+        upload_leaf = self.package_build.getUploadDirLeaf(
+            build_cookie, now=now)
         self.assertEqual(
-            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id), upload_leaf)
+            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
+            upload_leaf)
 
     def test_getUploadDir(self):
         # getUploadDir is the absolute path to the directory in which things
         # are uploaded to.
-        build_base = BuildBase()
-        build_id = self.factory.getUniqueInteger()
-        upload_leaf = build_base.getUploadLeaf(build_id)
-        upload_dir = build_base.getUploadDir(upload_leaf)
+        build_cookie = self.factory.getUniqueInteger()
+        upload_leaf = self.package_build.getUploadDirLeaf(build_cookie)
+        upload_dir = self.package_build.getUploadDir(upload_leaf)
         self.assertEqual(
             os.path.join(config.builddmaster.root, 'incoming', upload_leaf),
             upload_dir)
+
+
+class TestBuildBase(TestCase, TestBuildBaseMixin):
+
+    def setUp(self):
+        """Create the package build for testing."""
+        super(TestBuildBase, self).setUp()
+        self.package_build = BuildBase()
 
 
 class TestBuildBaseWithDatabase(TestCaseWithFactory):
@@ -83,8 +97,8 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
     def test_getUploaderCommand(self):
         build_base = BuildBase()
         upload_leaf = self.factory.getUniqueString('upload-leaf')
-        build_base.distroseries = self.factory.makeDistroSeries()
-        build_base.distribution = build_base.distroseries.distribution
+        build_base.distro_series = self.factory.makeDistroSeries()
+        build_base.distribution = build_base.distro_series.distribution
         build_base.pocket = self.factory.getAnyPocket()
         build_base.id = self.factory.getUniqueInteger()
         build_base.policy_name = self.factory.getUniqueString('policy-name')
@@ -93,7 +107,7 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         config_args.extend(
             ['--log-file', log_file,
              '-d', build_base.distribution.name,
-             '-s', (build_base.distroseries.name
+             '-s', (build_base.distro_series.name
                     + pocketsuffix[build_base.pocket]),
              '-b', str(build_base.id),
              '-J', upload_leaf,
@@ -101,7 +115,7 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
              os.path.abspath(config.builddmaster.root),
              ])
         uploader_command = build_base.getUploaderCommand(
-            upload_leaf, log_file)
+            build_base, upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
 
 
@@ -136,8 +150,9 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
 
         # We stub out our builds getUploaderCommand() method so
         # we can check whether it was called.
-        self.build.getUploaderCommand = FakeMethod(
+        self.fake_getUploaderCommand = FakeMethod(
             result=['echo', 'noop'])
+        self.build.getUploaderCommand = self.fake_getUploaderCommand
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
@@ -147,8 +162,8 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
                 'filemap': { 'myfile.py': 'test_file_hash'},
                 })
 
-        self.assertEqual(BuildStatus.FULLYBUILT, self.build.buildstate)
-        self.assertEqual(1, self.build.getUploaderCommand.call_count)
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
+        self.assertEqual(1, self.fake_getUploaderCommand.call_count)
 
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
@@ -156,8 +171,8 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         self.build.handleStatus('OK', None, {
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
-        self.assertEqual(0, self.build.getUploaderCommand.call_count)
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+        self.assertEqual(0, self.fake_getUploaderCommand.call_count)
 
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
@@ -165,8 +180,8 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         self.build.handleStatus('OK', None, {
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.buildstate)
-        self.assertEqual(0, self.build.getUploaderCommand.call_count)
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+        self.assertEqual(0, self.fake_getUploaderCommand.call_count)
 
 
 def test_suite():
