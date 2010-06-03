@@ -235,7 +235,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             self.packagename, self.hoary)
         sourcepackage.setPackaging(self.trunk, self.owner)
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -276,7 +276,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             self.packagename, self.hoary)
         sourcepackage.setPackaging(self.trunk, self.owner)
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -301,7 +301,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             changed_name, self.warty)
         warty_sourcepackage.setPackaging(self.stable, self.owner)
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -346,7 +346,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
 
         # Looking from the sourcepackage side.
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -430,7 +430,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             self.packagename, self.hoary)
         sourcepackage.setPackaging(self.trunk, self.owner)
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -438,6 +438,40 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.assertContentEqual(
             [self.trunk_template, self.hoary_template],
             templates)
+
+    def test_getSharingPOTemplates_package_unrelated_template_linked(self):
+        # Sharing templates for a source package must not include templates
+        # from sourcepackages of the same name that are linked to a different
+        # product.
+        other_productseries = self.factory.makeProductSeries()
+        other_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.warty)
+        other_sourcepackage.setPackaging(other_productseries, self.owner)
+        other_template = self.factory.makePOTemplate(
+            productseries=other_productseries, name=self.templatename)
+
+        sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.hoary)
+        sourcepackage.setPackaging(self.trunk, self.owner)
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.ubuntu,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template], templates)
+
+        # The behavior is controlled by the translation focus of the 
+        # distribution. The series in focus will be selected.
+        self.ubuntu.translation_focus = self.warty
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.ubuntu,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual([other_template], templates)
 
     def test_getSharingPOTemplates_package_only(self):
         # Sharing templates for a source package only, is done by the 
@@ -450,7 +484,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             distroseries=other_series, sourcepackagename=self.packagename,
             name=self.templatename)
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -474,9 +508,9 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             self.templatename, self.hoary)
         hoary_sourcepackage.setPackaging(self.trunk, self.owner)
 
-        # The sharing subset for the linked package.
+        # The sharing subset for the linked package shares with the product.
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.hoary.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
@@ -484,9 +518,9 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.assertContentEqual(
             [self.hoary_template, self.trunk_template], templates)
 
-        # The subset for the not linked package. No sharing templates.
+        # The sharing subset for the not linked package. No sharing templates.
         subset = self.potemplateset.getSharingSubset(
-            distribution=self.warty.distribution,
+            distribution=self.ubuntu,
             sourcepackagename=self.packagename)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
