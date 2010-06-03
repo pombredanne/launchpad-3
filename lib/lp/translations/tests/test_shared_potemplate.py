@@ -191,6 +191,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.hoary = self.ubuntu['hoary']
         self.warty = self.ubuntu['warty']
+        self.ubuntu.translation_focus = self.hoary
         self.packagename = self.factory.makeSourcePackageName()
 
         self.product = self.factory.makeProduct()
@@ -285,21 +286,20 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
              stable_template, warty_template],
             templates)
 
-    def test_getSharingPOTemplates_package_multiple_distros(self):
-        # Sharing templates for a product include the same templates from
-        # a linked source package, even with multiple distributions.
-        foobuntu = self.factory.makeDistribution(name='foobuntu')
-        footy = self.factory.makeDistroRelease(
-            distribution=foobuntu, name='footy')
-        footy_template = self.factory.makePOTemplate(
-            distroseries=footy, sourcepackagename=self.packagename,
+    def test_getSharingPOTemplates_package_name_changed(self):
+        # When the name of a package changes (but not the name of the
+        # template), it will still share translations if it is linked
+        # to the same product.
+        changed_name = self.factory.makeSourcePackageName()
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=changed_name,
             name=self.templatename)
         hoary_sourcepackage = self.factory.makeSourcePackage(
             self.packagename, self.hoary)
         hoary_sourcepackage.setPackaging(self.trunk, self.owner)
-        footy_sourcepackage = self.factory.makeSourcePackage(
-            self.packagename, footy)
-        footy_sourcepackage.setPackaging(self.trunk, self.owner)
+        warty_sourcepackage = self.factory.makeSourcePackage(
+            changed_name, self.warty)
+        warty_sourcepackage.setPackaging(self.stable, self.owner)
         subset = self.potemplateset.getSharingSubset(
             distribution=self.hoary.distribution,
             sourcepackagename=self.packagename)
@@ -307,7 +307,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
-            [self.trunk_template, self.hoary_template, footy_template],
+            [self.trunk_template, self.hoary_template, warty_template],
             templates)
 
     def test_getSharingPOTemplates_many_series(self):
@@ -373,6 +373,52 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             [self.trunk_template, self.hoary_template],
             templates)
 
+    def test_getSharingPOTemplates_product_different_names_and_series(self):
+        # A product may be packaged into differently named packages in
+        # different distroseries.
+        warty_packagename = self.factory.makeSourcePackageName()
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=warty_packagename,
+            name=self.templatename)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=warty_packagename,
+            distroseries=self.warty)
+        self.trunk.setPackaging(self.warty, warty_packagename, self.owner)
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template, warty_template],
+            templates)
+
+    def test_getSharingPOTemplates_product_different_names_same_series(self):
+        # A product may be packaged into differently named packages even in
+        # the same distroseries.
+        other_packagename = self.factory.makeSourcePackageName()
+        other_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=other_packagename,
+            name=self.templatename)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=other_packagename,
+            distroseries=self.hoary)
+        self.trunk.setPackaging(self.hoary, other_packagename, self.owner)
+        subset = self.potemplateset.getSharingSubset(product=self.product)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.trunk_template, self.hoary_template, other_template],
+            templates)
+
     def test_getSharingPOTemplates_package_unrelated_template(self):
         # Sharing templates for a source package must not include other
         # templates from a linked product.
@@ -392,6 +438,60 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.assertContentEqual(
             [self.trunk_template, self.hoary_template],
             templates)
+
+    def test_getSharingPOTemplates_package_only(self):
+        # Sharing templates for a source package only, is done by the 
+        # sourcepackagename.
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename)
+        other_series = self.factory.makeDistroSeries(self.ubuntu)
+        other_template = self.factory.makePOTemplate(
+            distroseries=other_series, sourcepackagename=self.packagename,
+            name=self.templatename)
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.hoary_template, other_template, warty_template], templates)
+
+    def test_getSharingPOTemplates_package_one_linked(self):
+        # Once one sourcepackage is linked to a product, no sharing by name
+        # is possible anymore. Only the linked package will share with the
+        # product.
+        warty_template = self.factory.makePOTemplate(
+            distroseries=self.warty, sourcepackagename=self.packagename,
+            name=self.templatename)
+        other_series = self.factory.makeDistroSeries(self.ubuntu)
+        other_template = self.factory.makePOTemplate(
+            distroseries=other_series, sourcepackagename=self.packagename,
+            name=self.templatename)
+
+        hoary_sourcepackage = self.factory.makeSourcePackage(
+            self.templatename, self.hoary)
+        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
+
+        # The sharing subset for the linked package.
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.hoary.distribution,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertContentEqual(
+            [self.hoary_template, self.trunk_template], templates)
+
+        # The subset for the not linked package. No sharing templates.
+        subset = self.potemplateset.getSharingSubset(
+            distribution=self.warty.distribution,
+            sourcepackagename=self.packagename)
+        templates = self._count_statements(
+            subset.getSharingPOTemplates(self.templatename))
+
+        self.assertEqual([], templates)
 
     def test_getOrCreateSharedPOTMsgSet_product(self):
         # Trying to create an identical POTMsgSet in a product as exists
