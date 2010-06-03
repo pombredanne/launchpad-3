@@ -183,6 +183,14 @@ class BranchJobDerived(BaseRunnableJob):
     def __init__(self, branch_job):
         self.context = branch_job
 
+    def __repr__(self):
+        branch = self.branch
+        return '<%(job_type)s branch job (%(id)s) for %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'id': self.context.id,
+            'branch': branch.unique_name,
+            }
+
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
@@ -928,6 +936,12 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
     classProvides(IReclaimBranchSpaceJobSource)
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
+
+    def __repr__(self):
+        return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
+            'id': self.context.id,
+            'branch': self.branch_id,
+            }
 
     @classmethod
     def create(cls, branch_id):

@@ -44,6 +44,7 @@ from zope.formlib import form
 from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
 from zope.schema import Bool, Choice, Text
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -97,6 +98,7 @@ from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 
 
 def quote(text):
@@ -197,7 +199,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_whiteboard', 'delete', 'create_recipe')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -224,11 +226,6 @@ class BranchEditMenu(NavigationMenu):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
-    def create_recipe(self):
-        enabled = config.build_from_branch.enabled
-        text = 'Create source package recipe'
-        return Link('+new-recipe', text, enabled=enabled, icon='add')
-
 
 class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     """Context menu for branches."""
@@ -236,7 +233,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'add_subscriber', 'browse_revisions', 'link_bug',
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
 
@@ -322,6 +319,11 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link(
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
+    def create_recipe(self):
+        enabled = config.build_from_branch.enabled
+        text = 'Create packaging recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
+
 
 class DecoratedBug:
     """Provide some additional attributes to a normal bug."""
@@ -354,18 +356,6 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.notices = []
-        self._add_subscription_notice()
-
-    def _add_subscription_notice(self):
-        """Add the appropriate notice after posting the subscription form."""
-        if self.user and self.request.method == 'POST':
-            newsub = self.request.form.get('subscribe', None)
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this branch.")
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this branch.")
 
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""
@@ -468,6 +458,16 @@ class BranchView(LaunchpadView, FeedsMixin):
         candidates = self.context.landing_candidates
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
+
+    @property
+    def recipe_count_text(self):
+        count = self.context.getRecipes().count()
+        if count == 0:
+            return 'No recipes'
+        elif count == 1:
+            return '1 recipe'
+        else:
+            return '%s recipes' % count
 
     @property
     def is_import_branch_with_no_landing_candidates(self):
@@ -978,6 +978,27 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
+        else:
+            # For normal users, there is an edge case with package branches
+            # where the editor may not be in the team of the branch owner.  In
+            # these cases we need to extend the vocabulary connected to the
+            # owner field.
+            if not self.user.inTeam(self.context.owner):
+                vocab = UserTeamsParticipationPlusSelfVocabulary()
+                owner = self.context.owner
+                terms = [SimpleTerm(
+                    owner, owner.name, owner.unique_displayname)]
+                terms.extend([term for term in vocab])
+                owner_field = self.schema['owner']
+                owner_choice = Choice(
+                    __name__='owner', title=owner_field.title,
+                    description = owner_field.description,
+                    required=True, vocabulary=SimpleVocabulary(terms))
+                new_owner_field = form.Fields(
+                    owner_choice, render_context=self.render_context)
+                # Replace the normal owner field with a more permissive vocab.
+                self.form_fields = self.form_fields.omit('owner')
+                self.form_fields = new_owner_field + self.form_fields
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk

@@ -50,7 +50,7 @@ the pending job.
     ...     hoary.main_archive)
     >>> alsa_bqueue = alsa_build.queueBuild()
     >>> alsa_bqueue.lastscore = 500
-    >>> alsa_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> alsa_build.status = BuildStatus.NEEDSBUILD
 
 Access the currently building job via the builder.
 
@@ -64,7 +64,7 @@ Access the currently building job via the builder.
 
 Make sure the job at hand is currently being built.
 
-    >>> cur_build.buildstate == BuildStatus.BUILDING
+    >>> cur_build.status == BuildStatus.BUILDING
     True
 
 The start time estimation mechanism for a pending job N depends on
@@ -124,7 +124,7 @@ We first add a build for the 'pmount' source package to cprov's PPA.
     >>> pmount_bqueue.lastscore = 66
     >>> removeSecurityProxy(pmount_bqueue).estimated_duration = (
     ...     timedelta(minutes=12))
-    >>> pmount_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> pmount_build.status = BuildStatus.NEEDSBUILD
 
 Followed by another build for the 'iceweasel' source package that is added
 to mark's PPA.
@@ -142,7 +142,7 @@ to mark's PPA.
     >>> removeSecurityProxy(iceweasel_bqueue).estimated_duration = (
     ...     timedelta(minutes=48))
     >>> iceweasel_bqueue.lastscore = 666
-    >>> iceweasel_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> iceweasel_build.status = BuildStatus.NEEDSBUILD
 
 Since the 'iceweasel' build has a higher score (666) than the 'pmount'
 build (66) its estimated dispatch time is essentially "now".

@@ -35,7 +35,7 @@ class TestRecipientReason(TestCaseWithFactory):
             source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, subscriber)
         return merge_proposal, subscription
 
     def test_forBranchSubscriber(self):

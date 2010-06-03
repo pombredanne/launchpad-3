@@ -1851,24 +1851,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return 'Check for duplicate projects'
         return 'Registration details'
 
-    def isVCSImport(self):
-        """Is the the user vcs-imports."""
-        if self.user is None:
-            return False
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.user.inTeam(vcs_imports)
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProjectAddStepTwo, self).setUpFields()
-        if not self.isVCSImport():
-            # vcs-imports members get it easy and are able to change
-            # the owner and reviewed status during the edit process;
-            # this saves time wasted on getting to product/+admin.
-            # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit(
-                'owner', 'license_reviewed')
-
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpWidgets()
@@ -1941,14 +1923,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     def main_action(self, data):
         """See `MultiStepView`."""
-        if not self.isVCSImport():
-            # Zope makes sure these are never set, since they are not in
-            # self.form_fields
-            assert "owner" not in data, 'Unexpected form data'
-            assert "license_reviewed" not in data, 'Unexpected form data'
-            data['owner'] = self.user
-            data['license_reviewed'] = False
-
         self.product = self.create_product(data)
         self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
