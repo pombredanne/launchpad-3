@@ -214,6 +214,7 @@ def main():
         subscribe set (
             id=%d, provider=@master_node, receiver=@new_node, forward=yes);
         echo 'Waiting for subscribe to start processing.';
+        echo 'This will block on long running transactions.';
         sync (id = @master_node);
         wait for event (
             origin = @master_node, confirmed = ALL,
