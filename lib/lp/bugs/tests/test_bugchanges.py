@@ -74,7 +74,7 @@ class TestBugChanges(unittest.TestCase):
                 BugNotification.selectBy(bug=bug)))
 
         # append can be used to save activity/notifications for
-        # more than one test.  Useful for clearing "bug created"
+        # more than one bug.  Useful for clearing "bug created"
         # notifications when dealing with duplicates.
         if append:
             self.old_activities.update(old_activities)
