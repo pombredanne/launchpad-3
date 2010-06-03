@@ -58,7 +58,7 @@ class TestBugChanges(unittest.TestCase):
         subscription.bug_notification_level = level
         return subscriber
 
-    def saveOldChanges(self, bug=None):
+    def saveOldChanges(self, bug=None, append=False):
         """Save old activity and notifications for a test.
 
         This method should be called after setup.  Removing the
@@ -68,10 +68,20 @@ class TestBugChanges(unittest.TestCase):
         """
         if bug is None:
             bug = self.bug
-        self.old_activities = set(bug.activity)
-        self.old_notification_ids = set(
+        old_activities = set(bug.activity)
+        old_notification_ids = set(
             notification.id for notification in (
                 BugNotification.selectBy(bug=bug)))
+
+        # append can be used to save activity/notifications for
+        # more than one test.  Useful for clearing "bug created"
+        # notifications when dealing with duplicates.
+        if append:
+            self.old_activities.update(old_activities)
+            self.old_notification_ids.update(old_notification_ids)
+        else:
+            self.old_activities = old_activities
+            self.old_notification_ids = old_notification_ids
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
@@ -1251,6 +1261,7 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
+        self.saveOldChanges(self.bug, append=True)
         # Save the initial "bug created" notifications before
         # marking this bug a duplicate, so that we don't get
         # extra notificationse by mistake.
@@ -1279,7 +1290,6 @@ class TestBugChanges(unittest.TestCase):
 
         # Ensure that only the people subscribed to the bug that
         # gets marked as a duplicate are notified.
-        self.saveOldChanges(self.bug)
         master_notifications = BugNotification.selectBy(
             bug=self.bug, orderBy='id')
         new_notifications = [
