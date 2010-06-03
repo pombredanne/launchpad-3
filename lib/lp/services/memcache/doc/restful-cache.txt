@@ -100,3 +100,36 @@ shouldn't put such representations into the cache.)
 
     >>> print cache.get(person, "media/type", "1.0")
     This is a representation for a strange media type.
+
+Expiration time
+===============
+
+Objects will automatically be purged from the cache after a
+configurable time. The default is 4 hours (14400 seconds)
+
+    >>> from canonical.config import config
+    >>> print config.vhost.api.representation_cache_expiration_time
+    14400
+
+Let's change that.
+
+    >>> from canonical.config import config
+    >>> config.push('short expiration time', """\
+    ... [vhost.api]
+    ... representation_cache_expiration_time: 1
+    ... """)
+
+    >>> cache.set(person, "some/type", "version", "Some representation")
+    >>> print cache.get(person, "some/type", "version")
+    Some representation
+
+Now objects are purged from the cache after one second.
+
+    >>> import time
+    >>> time.sleep(2)
+    >>> print cache.get(person, "some/type", "version")
+    None
+
+Cleanup.
+
+    >>> ignore = config.pop("short expiration time")

@@ -5,6 +5,7 @@
 
 import storm
 
+from canonical.config import config
 from lp.services.memcache.client import memcache_client_factory
 from lazr.restful.simple import BaseRepresentationCache
 
@@ -33,7 +34,9 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
         return self.client.get(key) or default
 
     def set_by_key(self, key, value):
-        self.client.set(key, value)
+        self.client.set(
+            key, value,
+            time=config.vhost.api.representation_cache_expiration_time)
 
     def delete_by_key(self, key):
         self.client.delete(key)
