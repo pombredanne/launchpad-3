@@ -157,7 +157,7 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
         self.dupe_bug = self.factory.makeBug()
         self.dupe_bug.duplicateof = self.bug
 
-    def test_notification_for_duplicates(self):
+    def test_comment_notifications(self):
         # Only subscribers to a duplicate should be notified
         # about new activity on the duplicate.  Subscribers
         # to the master bug should not be notified.
