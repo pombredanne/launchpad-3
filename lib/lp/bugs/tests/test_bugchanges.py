@@ -65,6 +65,10 @@ class TestBugChanges(unittest.TestCase):
         initial bug-created activity and notification messages
         allows for a more accurate check of new activity and
         notifications.
+
+        The append parameter can be used to save activity/notifications
+        for more than one bug in a single test, as when dealing
+        with duplicates.
         """
         if bug is None:
             bug = self.bug
@@ -73,9 +77,6 @@ class TestBugChanges(unittest.TestCase):
             notification.id for notification in (
                 BugNotification.selectBy(bug=bug)))
 
-        # append can be used to save activity/notifications for
-        # more than one bug.  Useful for clearing "bug created"
-        # notifications when dealing with duplicates.
         if append:
             self.old_activities.update(old_activities)
             self.old_notification_ids.update(old_notification_ids)
