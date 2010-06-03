@@ -206,6 +206,14 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
 
+    @classmethod
+    def getRecentBuilds(cls, requester, recipe, distroseries, _now):
+        store = IMasterStore(SourcePackageRecipeBuild)
+        old_threshold = _now - datetime.timedelta(days=1)
+        return store.find(cls, cls.distroseries_id == distroseries.id,
+            cls.requester_id == requester.id, cls.recipe_id == recipe.id,
+            cls.datecreated > old_threshold)
+
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""
         store = Store.of(self)

@@ -26,7 +26,7 @@ from lazr.restful.declarations import (
     operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -87,6 +87,8 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     debianized source tree.
     """
     export_as_webservice_entry()
+
+    id = Int()
 
     daily_build_archive = Reference(
         IArchive, title=_("The archive to use for daily builds."))
