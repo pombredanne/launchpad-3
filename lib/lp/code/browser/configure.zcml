@@ -1139,7 +1139,7 @@
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
-            permission="zope.Public"
+            permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
             template="../../app/templates/generic-edit.pt"/>
