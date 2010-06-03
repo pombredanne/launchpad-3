@@ -185,6 +185,20 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             for recipient in latest_notification.recipients)
         self.assertEqual(self.dupe_subscribers, recipients)
 
+    def test_branch_linked_notification(self):
+        # Notices for branches linked to a duplicate are sent only
+        # to subscribers of the duplicate.
+        #
+        # No one should really do this, but this case covers notices
+        # provided by the Bug.addChange mechanism.
+        branch = self.factory.makeBranch(owner=self.dupe_bug.owner)
+        self.dupe_bug.linkBranch(branch, self.dupe_bug.owner)
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        recipients = set(
+            recipient.person
+            for recipient in latest_notification.recipients)
+        self.assertEqual(self.dupe_subscribers, recipients)
+
 
 def test_suite():
     """Return the test suite for the tests in this module."""
