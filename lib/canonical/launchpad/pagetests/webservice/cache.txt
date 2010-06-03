@@ -47,9 +47,27 @@ corresponding object.
     >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
     Fake representation
 
+If there's a problem with the cache or the invalidation code, we can
+disable the cache by setting a configuration variable.
+
+    >>> from canonical.config import config
+    >>> config.push('disable cache', """\
+    ... [vhost.api]
+    ... enable_server_side_representation_cache: False
+    ... """)
+
+Documents are never served from a disabled cache.
+
+    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
+    {...}
+
+    >>> ignore = config.pop('disable cache')
+
+    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
+    Fake representation
+
 Cleanup.
 
     >>> cache.delete(person)
-
-    >>> webservice.get("/~salgado", api_version="devel").jsonBody()
+    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
     {...}
