@@ -171,6 +171,20 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             for recipient in latest_notification.recipients)
         self.assertEqual(self.dupe_subscribers, recipients)
 
+    def test_duplicate_edit_notifications(self):
+        # Bug edits for a duplicate are sent to duplicate subscribers only.
+        bug_before_modification = Snapshot(
+            self.dupe_bug, providing=providedBy(self.dupe_bug))
+        self.dupe_bug.description = 'A changed description'
+        notify(ObjectModifiedEvent(
+            self.dupe_bug, bug_before_modification, ['description'],
+            user=self.dupe_bug.owner))
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        recipients = set(
+            recipient.person
+            for recipient in latest_notification.recipients)
+        self.assertEqual(self.dupe_subscribers, recipients)
+
 
 def test_suite():
     """Return the test suite for the tests in this module."""
