@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'build_yui_unittest_suite',
+    'BrowserTestCase',
     'capture_events',
     'FakeTime',
     'get_lsb_information',

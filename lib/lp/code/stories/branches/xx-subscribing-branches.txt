@@ -190,25 +190,8 @@ Subscribing a team is as simple as putting in the team name.
     >>> browser.getControl('Person').value = 'landscape-developers'
     >>> browser.getControl('Subscribe').click()
 
-The user can only subscribe teams that they are members of.
+The user does not have to be in the team to subscribe them.
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
-    There is 1 error.
-    You can only subscribe teams that you are a member of.
-
-Sample Person is a member of Landscape Developers.
-
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> browser.getLink('Subscribe someone else').click()
-    >>> browser.getControl('Notification Level').displayValue = [
-    ...     'Branch attribute and revision notifications']
-    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
-    ...     '1000 lines']
-    >>> browser.getControl('Person').value = 'landscape-developers'
-    >>> browser.getControl('Subscribe').click()
     >>> print_informational_message(browser.contents)
     Landscape Developers has been subscribed to this branch with:
     Send notifications for both branch attribute updates
@@ -234,10 +217,10 @@ Launchpad administrators can edit anyones branch subsription.
 Editing a team subscription
 ===========================
 
-In order to edit a team subscription the logged in user needs to be
-a member of the team that is subscribed.  There is a link shown in
-the subscriptions portlet to edit the subscription of a team that
-the logged in user is a member of.
+In order to edit a team subscription the logged in user needs to be a member
+of the team that is subscribed, or must the the person who subscribed the team
+to the branch.  There is a link shown in the subscriptions portlet to edit the
+subscription of a team that the logged in user is a member of.
 
 XXX: thumper 2007-06-11
 There should be a central user subscriptions page.  This could then
@@ -293,7 +276,7 @@ subscribers if the user is not an admin or a member of the team.
     ...     CodeReviewNotificationLevel)
     >>> ignored = branch.subscribe(
     ...     private_team, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
+    ...     CodeReviewNotificationLevel.NOEMAIL, private_team.teamowner)
     >>> url = canonical_url(branch)
     >>> logout()
 

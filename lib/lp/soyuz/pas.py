@@ -96,7 +96,7 @@ class BuildDaemonPackagesArchSpecific:
             return None
 
         # The source produces a single binary, so it can be restricted.
-        source_name = build.sourcepackagerelease.name
+        source_name = build.source_package_release.name
 
         # The arch-independent builder /must/ be included in the
         # arch_tags, regardless of whether the binary PAS line allows
