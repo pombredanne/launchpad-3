@@ -23,7 +23,7 @@ We'll start by adding some attachments to the bug:
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
     ...     "file with space.txt",
     ...     content_type='text/plain;\n  name="file with space.txt"')
-    >>> content = StringIO.StringIO("Yes we can !")
+    >>> content = StringIO.StringIO("Yes we can!")
     >>> a3 = bug.addAttachment(mark, content, "comment for patch",
     ...      "bug-patch.diff", is_patch=True, content_type='text/plain',
     ...      description="a patch")
