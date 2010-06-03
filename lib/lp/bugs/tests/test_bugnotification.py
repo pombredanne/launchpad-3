@@ -156,21 +156,20 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
         self.dupe_bug.duplicateof = self.bug
-
-    def test_comment_notifications(self):
-        # Only subscribers to a duplicate should be notified
-        # about new activity on the duplicate.  Subscribers
-        # to the master bug should not be notified.
-        self.dupe_bug.newMessage(
-            self.dupe_bug.owner, subject='subject', content='content')
-        dupe_subscribers = set(
+        self.dupe_subscribers = set(
             self.dupe_bug.getDirectSubscribers() +
             self.dupe_bug.getIndirectSubscribers())
+
+    def test_comment_notifications(self):
+        # New comments are only sent to subscribers of the duplicate
+        # bug, not to subscribers of the master bug.
+        self.dupe_bug.newMessage(
+            self.dupe_bug.owner, subject='subject', content='content')
         latest_notification = BugNotification.selectFirst(orderBy='-id')
         recipients = set(
             recipient.person
             for recipient in latest_notification.recipients)
-        self.assertEqual(dupe_subscribers, recipients)
+        self.assertEqual(self.dupe_subscribers, recipients)
 
 
 def test_suite():
