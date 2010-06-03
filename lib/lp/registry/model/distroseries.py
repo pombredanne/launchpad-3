@@ -1886,7 +1886,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        return result
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""

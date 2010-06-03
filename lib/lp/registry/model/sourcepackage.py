@@ -602,7 +602,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         result = POTemplate.selectBy(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        return result.orderBy(['-priority', 'name'])
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""

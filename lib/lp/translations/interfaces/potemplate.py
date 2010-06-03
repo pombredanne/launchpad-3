@@ -736,7 +736,7 @@ class IHasTranslationTemplates(Interface):
     @export_read_operation()
     @operation_returns_collection_of(IPOTemplate)
     def getTranslationTemplates():
-        """Return all translation templates for this entry.
+        """Return an iterator over all its translation templates.
 
         The returned templates are either obsolete or current.
         """

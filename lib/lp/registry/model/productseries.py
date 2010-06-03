@@ -427,7 +427,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(
             productseries=self, orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return result
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
