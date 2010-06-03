@@ -727,7 +727,7 @@ class Bug(SQLBase):
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
