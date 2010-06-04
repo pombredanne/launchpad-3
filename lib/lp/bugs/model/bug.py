@@ -83,7 +83,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.scripts.bugheat import BugHeatConstants
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -727,7 +726,7 @@ class Bug(SQLBase):
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
