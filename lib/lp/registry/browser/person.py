@@ -1942,7 +1942,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=critical_bugs_params)
 
     def getHighBugsURL(self, distributionsourcepackage):
-        """Return URL for high importance bugs on distributionsourcepackage."""
+        """Return URL for high bugs on distributionsourcepackage."""
         high_bugs_params = {
             'field.status': [], 'field.importance': "High"}
 
@@ -2503,7 +2503,7 @@ class PersonKarmaView(LaunchpadView):
         if self.user == self.context:
             return 'Your Launchpad Karma'
         else:
-            return 'Launchpad Karma for %s' %  self.context.displayname
+            return 'Launchpad Karma for %s' % self.context.displayname
 
     @cachedproperty
     def has_karma(self):

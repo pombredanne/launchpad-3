@@ -30,7 +30,7 @@
           <li>
             <tal:configure_mailing_list
               replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
-          <li>
+          </li>
         </ul>
       </tal:no_mailing_list>
     </div>
