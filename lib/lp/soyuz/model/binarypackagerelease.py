@@ -84,17 +84,17 @@ class BinaryPackageRelease(SQLBase):
             import DistributionSourcePackageRelease
         return DistributionSourcePackageRelease(
             distribution=self.build.distribution,
-            sourcepackagerelease=self.build.sourcepackagerelease)
+            sourcepackagerelease=self.build.source_package_release)
 
     @property
     def sourcepackagename(self):
         """See `IBinaryPackageRelease`."""
-        return self.build.sourcepackagerelease.sourcepackagename.name
+        return self.build.source_package_release.sourcepackagename.name
 
     @property
     def is_new(self):
         """See `IBinaryPackageRelease`."""
-        distroarchseries = self.build.distroarchseries
+        distroarchseries = self.build.distro_arch_series
         distroarchseries_binary_package = distroarchseries.getBinaryPackage(
             self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None

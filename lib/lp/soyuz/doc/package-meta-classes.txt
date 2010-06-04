@@ -108,7 +108,7 @@ Create a helper for printing builds:
 
     >>> def print_builds(builds):
     ...     for build in builds:
-    ...         print "%s in %s" % (build.sourcepackagerelease.name,
+    ...         print "%s in %s" % (build.source_package_release.name,
     ...                             build.archive.displayname)
 
 Now we can query the builds:
