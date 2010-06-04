@@ -183,8 +183,8 @@ class BuildFarmJobBehaviorBase:
 
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
 
-        queueItem.specific_job.build.handleStatus(
-            build_status, librarian, slave_status)
+        build = queueItem.specific_job.build
+        build.handleStatus(build_status, librarian, slave_status)
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):

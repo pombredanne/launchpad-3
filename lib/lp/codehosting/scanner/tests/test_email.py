@@ -41,7 +41,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             test_user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.FIVEKLINES,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            test_user)
         LaunchpadZopelessLayer.txn.commit()
         return branch
 
@@ -151,7 +152,8 @@ class TestScanBranches(TestCaseWithFactory):
             db_branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
         self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
         notify(events.TipChanged(db_branch, tree.branch, True))
         self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
@@ -164,7 +166,8 @@ class TestScanBranches(TestCaseWithFactory):
             db_branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
         self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
         notify(events.RevisionsRemoved(db_branch, tree.branch, ['x']))
         self.assertEqual(1, len(list(RevisionMailJob.iterReady())))

@@ -230,9 +230,6 @@ class IBugWatch(IHasBug):
     def destroySelf():
         """Delete this bug watch."""
 
-    def getLastErrorMessage():
-        """Return a string describing the contents of last_error_type."""
-
     def hasComment(comment_id):
         """Return True if a comment has been imported for the BugWatch.
 
