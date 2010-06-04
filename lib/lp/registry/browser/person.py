@@ -3208,7 +3208,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
-                _("This team does not have a mailing list."))
+                _("This team does not use Launchpad to host a mailing list."))
         if not self.user:
             raise Unauthorized(
                 _("You must be logged in to unsubscribe."))
