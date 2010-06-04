@@ -220,7 +220,6 @@ class BuilderCategory:
             else:
                 grouped_builders[builder.processor] = [builder]
 
-        builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
             virt_str = 'virt' if self.virtualized else 'nonvirt'
             queue_size, duration = build_queue_sizes[virt_str].get(
