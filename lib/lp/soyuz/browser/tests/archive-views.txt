@@ -361,7 +361,7 @@ Let's set some builds appropriately to see the results.
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
     >>> source = view.filtered_sources[0]
     >>> ignore = source.sourcepackagerelease.createBuild(
-    ...     distroarchseries=warty_hppa, archive=view.context,
+    ...     distro_arch_series=warty_hppa, archive=view.context,
     ...     pocket=source.pocket)
     >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
     ...     view.context)
@@ -374,9 +374,9 @@ Let's set some builds appropriately to see the results.
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
-    >>> builds[1].buildstate = BuildStatus.BUILDING
-    >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> builds[0].status = BuildStatus.NEEDSBUILD
+    >>> builds[1].status = BuildStatus.BUILDING
+    >>> builds[2].status = BuildStatus.BUILDING
     >>> login(ANONYMOUS)
 
     >>> view.num_pkgs_building
@@ -386,7 +386,7 @@ Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> builds[4].status = BuildStatus.NEEDSBUILD
     >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
@@ -395,7 +395,7 @@ But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
     >>> login('foo.bar@canonical.com')
-    >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> builds[4].status = BuildStatus.BUILDING
     >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}

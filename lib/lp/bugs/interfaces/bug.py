@@ -20,7 +20,6 @@ __all__ = [
     'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
-    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
@@ -28,7 +27,6 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -444,7 +442,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -454,7 +452,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         canonical.launchpad.interfaces.BugNotificationRecipients for
         details of this implementation.
         If this bug is a dupe, set include_master_dupe_subscribers to
-        False to not include the master bug's subscribers.
+        True to include the master bug's subscribers as recipients.
         """
 
     def addChangeNotification(text, person, recipients=None, when=None):
@@ -800,14 +798,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
 
+    def updateHeat():
+        """Update the heat for the bug."""
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
-
-
-class UserCannotUnsubscribePerson(Unauthorized):
-    """User does not have persmisson to unsubscribe person or team."""
-    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.

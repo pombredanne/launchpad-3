@@ -3,21 +3,22 @@
 
 __metaclass__ = type
 __all__ = [
-    'PackageBuildFarmJob',
-    'PackageBuildFarmJobDerived',
+    'BuildFarmBuildJob',
     ]
 
+
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 
 from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJob, BuildFarmJobDerived)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
+from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 
 
-class PackageBuildFarmJob(BuildFarmJob):
-    """An implementation of `IBuildFarmJob` for package builds."""
-
+class BuildFarmBuildJob(BuildFarmJobOld):
+    """See `IBuildFaramBuildJob`."""
+    implements(IBuildFarmBuildJob)
     def __init__(self, build):
         """Store the build for this package build farm job.
 
@@ -26,7 +27,7 @@ class PackageBuildFarmJob(BuildFarmJob):
         itself a concrete class. This class (PackageBuildFarmJob)
         will also be renamed PackageBuild and turned into a concrete class.
         """
-        super(PackageBuildFarmJob, self).__init__()
+        super(BuildFarmBuildJob, self).__init__()
         self.build = build
 
     def getTitle(self):
@@ -35,24 +36,16 @@ class PackageBuildFarmJob(BuildFarmJob):
 
     def jobStarted(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.status = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
+        self.build.date_started = UTC_NOW
         if self.build.date_first_dispatched is None:
             self.build.date_first_dispatched = UTC_NOW
 
     def jobReset(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.build.status = BuildStatus.NEEDSBUILD
 
     def jobAborted(self):
         """See `IBuildFarmJob`."""
-        self.build.buildstate = BuildStatus.NEEDSBUILD
-
-
-class PackageBuildFarmJobDerived(BuildFarmJobDerived):
-    """Override the base delegate.
-
-    Ensure that we use a build farm job specific to packages.
-    """
-    def _set_build_farm_job(self):
-        self._build_farm_job = PackageBuildFarmJob(self.build)
+        self.build.status = BuildStatus.NEEDSBUILD

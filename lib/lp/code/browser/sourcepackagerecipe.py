@@ -309,9 +309,6 @@ class ISourcePackageAddEditSchema(Interface):
         'description',
         'owner',
         ])
-    sourcepackagename = Choice(
-        title=u"Source Package Name", required=True,
-        vocabulary='SourcePackageName')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -331,6 +328,13 @@ class RecipeTextValidatorMixin:
             self.setFieldError(
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
+
+        if getUtility(ISourcePackageRecipeSource).exists(
+                                                    self.user, data['name']):
+            self.setFieldError(
+                'name',
+                'There is already a recipe owned by %s with this name.' %
+                    self.user.displayname)
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
@@ -356,7 +360,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['distros'], data['sourcepackagename'],
+            self.user, self.user, data['distros'],
             data['name'], recipe, data['description'])
         self.next_url = canonical_url(source_package_recipe)
 

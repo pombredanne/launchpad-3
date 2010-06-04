@@ -20,6 +20,7 @@ from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -113,6 +114,14 @@ class BuildStatus(DBEnumeratedType):
 
 class IBuildBase(Interface):
     """Common interface shared by farm jobs that build a package."""
+    # XXX 2010-04-21 michael.nelson bug=567922. This interface
+    # can be removed once all *Build classes inherit from
+    # IBuildFarmJob/IPackageBuild.
+
+    build_farm_job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
 
     # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
     # are bad.
@@ -216,7 +225,7 @@ class IBuildBase(Interface):
             executable.
         """
 
-    def handleStatus(status, librarian, slave_status):
+    def handleStatus(build, status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.
@@ -229,7 +238,7 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def queueBuild(suspended=False):
+    def queueBuild(build, suspended=False):
         """Create a BuildQueue entry for this build.
 
         :param suspended: Whether the associated `Job` instance should be
@@ -239,7 +248,7 @@ class IBuildBase(Interface):
     def estimateDuration():
         """Estimate the build duration."""
 
-    def storeBuildInfo(librarian, slave_status):
+    def storeBuildInfo(build, librarian, slave_status):
         """Store available information for the build job.
 
         Subclasses can override this as needed, and call it from custom status
