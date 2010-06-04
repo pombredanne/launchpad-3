@@ -52,7 +52,8 @@ class TestScanBranches(TestCaseWithFactory):
             db_branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
         transaction.commit()
 
         self.run_script_and_assert_success()

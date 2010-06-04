@@ -537,7 +537,10 @@ can_be_rescheduled will be False.
 If the watch's updates have failed less than 60% of the time,
 can_be_rescheduled will be True
 
+    >>> import transaction
     >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
+
+    >>> transaction.commit()
     >>> schedulable_watch.addActivity(
     ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> schedulable_watch.can_be_rescheduled
@@ -558,9 +561,30 @@ can_be_rescheduled will be False, since it's assumed that the watch
 needs attention in order for it to be able to work again.
 
     >>> schedulable_watch.next_check = None
+    >>> transaction.commit()
     >>> schedulable_watch.addActivity(
     ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> schedulable_watch.can_be_rescheduled
+    False
+
+If the watch has run and failed only once, can_be_rescheduled will be
+true.
+
+    >>> from datetime import timedelta
+    >>> run_once_failed_once_watch = factory.makeBugWatch()
+    >>> run_once_failed_once_watch.next_check = (
+    ...     datetime.now(utc) + timedelta(days=7))
+    >>> run_once_failed_once_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
+    >>> run_once_failed_once_watch.can_be_rescheduled
+    True
+
+If the most recent update on the watch succeded, can_be_rescheduled will
+be False, regardless of the ratio of failures to successes.
+
+    >>> transaction.commit()
+    >>> run_once_failed_once_watch.addActivity()
+    >>> run_once_failed_once_watch.can_be_rescheduled
     False
 
 
@@ -575,6 +599,8 @@ sets next_check directly because it has admin privileges).
 The schedulable_watch that we used in the previous test cannot currently
 be rescheduled.
 
+    >>> schedulable_watch = factory.makeBugWatch()
+    >>> schedulable_watch.next_check = None
     >>> schedulable_watch.can_be_rescheduled
     False
 
@@ -589,7 +615,8 @@ BugWatchCannotBeRescheduled, to be raised.
 If we add some activity to the watch, to make its can_be_rescheduled
 property become True, setNextCheck() will succeed.
 
-    >>> schedulable_watch.addActivity()
+    >>> schedulable_watch.addActivity(
+    ...     result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> schedulable_watch.can_be_rescheduled
     True
 

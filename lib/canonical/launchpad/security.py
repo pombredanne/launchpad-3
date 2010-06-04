@@ -12,8 +12,6 @@ from zope.interface import implements, Interface
 from zope.component import getAdapter, getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import (
-    can_upload_to_archive, check_upload_to_archive)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -26,8 +24,6 @@ from lp.code.interfaces.branch import (
     IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import (
-    IBranchSubscription)
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild)
@@ -39,7 +35,9 @@ from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, IBuildFarmJobOld)
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -63,8 +61,7 @@ from lp.hardwaredb.interfaces.hwdb import (
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
-    IPersonRoles)
+    IHasBug, IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -1126,7 +1123,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
 class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
-    Access is restricted to members of ~vcs-imports and Launchpad admins.
+    Access is restricted to members of ~bazaar-experts and Launchpad admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
@@ -1433,10 +1430,29 @@ class EditBuilder(AdminByBuilddAdmin):
 
 
 class AdminBuildRecord(AdminByBuilddAdmin):
-    usedfor = IBinaryPackageBuild
+    usedfor = IBuildFarmJob
 
 
-class EditBuildRecord(AdminByBuilddAdmin):
+class EditBuildFarmJob(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuildFarmJob
+
+
+class EditPackageBuild(EditBuildFarmJob):
+    usedfor = IPackageBuild
+
+    def checkAuthenticated(self, user):
+        """Check if the user has access to edit the archive."""
+        if EditBuildFarmJob.checkAuthenticated(self, user):
+            return True
+
+        # If the user is in the owning team for the archive,
+        # then they have access to edit the builds.
+        # If it's a PPA or a copy archive only allow its owner.
+        return (self.obj.archive.owner and
+                user.inTeam(self.obj.archive.owner))
+
+class EditBinaryPackageBuild(EditPackageBuild):
     permission = 'launchpad.Edit'
     usedfor = IBinaryPackageBuild
 
@@ -1449,28 +1465,23 @@ class EditBuildRecord(AdminByBuilddAdmin):
             * users with upload permissions (for the respective distribution)
               otherwise.
         """
-        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+        if EditPackageBuild.checkAuthenticated(self, user):
             return True
-
-        # If it's a PPA or a copy archive only allow its owner.
-        if self.obj.archive.is_ppa or self.obj.archive.is_copy:
-            return (self.obj.archive.owner and
-                    user.inTeam(self.obj.archive.owner))
 
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component, packageset or package? Allow
         # user to retry build if so.
         # strict_component is True because the source package already exists,
         # otherwise, how can they give it back?
-        check_perms = check_upload_to_archive(
-            user.person, self.obj.distroseries,
-            self.obj.sourcepackagerelease.sourcepackagename, self.obj.archive,
+        check_perms = self.obj.archive.checkUpload(
+            user.person, self.obj.distro_series,
+            self.obj.source_package_release.sourcepackagename,
             self.obj.current_component, self.obj.pocket,
             strict_component=True)
         return check_perms == None
 
 
-class ViewBuildRecord(EditBuildRecord):
+class ViewBinaryPackageBuild(EditBinaryPackageBuild):
     permission = 'launchpad.View'
 
     # This code MUST match the logic in
@@ -1495,7 +1506,7 @@ class ViewBuildRecord(EditBuildRecord):
         # privacy since the source package is published publicly.
         # This happens when copy-package is used to re-publish a private
         # package in the primary archive.
-        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         if auth_spr.checkAuthenticated(user):
             return True
 
@@ -1508,18 +1519,18 @@ class ViewBuildRecord(EditBuildRecord):
             return True
 
         # See comment above.
-        auth_spr = ViewSourcePackageRelease(self.obj.sourcepackagerelease)
+        auth_spr = ViewSourcePackageRelease(self.obj.source_package_release)
         return auth_spr.checkUnauthenticated()
 
 
-class ViewBuildFarmJob(AuthorizationBase):
-    """Permission to view an `IBuildFarmJob`.
+class ViewBuildFarmJobOld(AuthorizationBase):
+    """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
     associated `IBinaryPackageBuild` and/or `IBranch`.
     """
     permission = 'launchpad.View'
-    usedfor = IBuildFarmJob
+    usedfor = IBuildFarmJobOld
 
     def _getBranch(self):
         """Get `IBranch` associated with this job, if any."""
@@ -1537,7 +1548,7 @@ class ViewBuildFarmJob(AuthorizationBase):
 
     def _checkBuildPermission(self, user=None):
         """Check access to `IBuildBase` for this job."""
-        permission = ViewBuildRecord(self.obj.build)
+        permission = ViewBinaryPackageBuild(self.obj.build)
         if user is None:
             return permission.checkUnauthenticated()
         else:
@@ -1705,7 +1716,8 @@ def can_upload_linked_package(person_role, branch):
     # one combination that allows us to upload the corresponding source
     # package.
     for ssp in ssp_list:
-        if can_upload_to_archive(person_role.person, ssp):
+        archive = ssp.sourcepackage.get_default_archive()
+        if archive.canUploadSuiteSourcePackage(person_role.person, ssp):
             return True
     return False
 
@@ -1732,25 +1744,6 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
 
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
-
-
-class BranchSubscriptionEdit(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IBranchSubscription
-
-    def checkAuthenticated(self, user):
-        """Is the user able to edit a branch subscription?
-
-        Any team member can edit a branch subscription for their team.
-        Launchpad Admins can also edit any branch subscription.
-        """
-        return (user.inTeam(self.obj.person) or
-                user.in_admin or
-                user.in_bazaar_experts)
-
-
-class BranchSubscriptionView(BranchSubscriptionEdit):
-    permission = 'launchpad.View'
 
 
 class BranchMergeProposalView(AuthorizationBase):
@@ -2034,7 +2027,7 @@ class ViewArchive(AuthorizationBase):
             return True
 
         # Uploaders can view private PPAs.
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         return False
@@ -2049,7 +2042,7 @@ class AppendArchive(AuthorizationBase):
 
     No one can upload to disabled archives.
 
-    PPA upload rights are managed via `IArchive.canUpload`;
+    PPA upload rights are managed via `IArchive.checkArchivePermission`;
 
     Appending to PRIMARY, PARTNER or COPY archives is restricted to owners.
 
@@ -2066,7 +2059,7 @@ class AppendArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        if self.obj.is_ppa and self.obj.canUpload(user.person):
+        if self.obj.is_ppa and self.obj.checkArchivePermission(user.person):
             return True
 
         celebrities = getUtility(ILaunchpadCelebrities)

@@ -691,7 +691,8 @@
                     unlinkHWSubmission
                     linkBranch
                     unlinkBranch
-                    linkAttachment"
+                    linkAttachment
+                    updateHeat"
                 set_attributes="
                     activity initial_message
                     activityscore
@@ -720,7 +721,8 @@
                 permission="launchpad.Admin"
                 attributes="
                     setCommentVisibility
-                    setHeat"/>
+                    setHeat"
+                set_attributes="heat_last_updated" />
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
@@ -852,7 +854,6 @@
                     can_be_rescheduled
                     datecreated
                     failed_activity
-                    getLastErrorMessage
                     hasComment
                     unpushed_comments
                     id
@@ -965,18 +966,6 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- CalculateBugHeatJobs -->
-    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
-        <allow interface="lp.bugs.interfaces.bugjob.IBugJob" />
-        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
-    </class>
-    <securedutility
-        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
-        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
-        <allow
-            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
-    </securedutility>
 
     <!-- ProcessApportBlobJobs -->
     <class class="lp.bugs.model.apportjob.ProcessApportBlobJob">

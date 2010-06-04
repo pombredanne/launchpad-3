@@ -223,13 +223,14 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, FormattersAPI, PersonFormatterAPI)
+    DateTimeFormatterAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
 
 from canonical.lazr.utils import smartquote
 
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 
@@ -729,7 +730,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def branches(self):
-        text = 'Branches'
+        text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.displayname)
         return Link('', text, summary)
@@ -1732,7 +1733,7 @@ class PersonSpecWorkloadView(LaunchpadView):
         assert self.context.isTeam, (
             "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
-        batch_nav = BatchNavigator(members, self.request)
+        batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
 
 
@@ -1941,7 +1942,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=critical_bugs_params)
 
     def getHighBugsURL(self, distributionsourcepackage):
-        """Return the URL for high importance bugs on distributionsourcepackage."""
+        """Return URL for high importance bugs on distributionsourcepackage."""
         high_bugs_params = {
             'field.status': [], 'field.importance': "High"}
 
@@ -3566,6 +3567,8 @@ class PersonEditSSHKeysView(LaunchpadView):
         return canonical_url(self.context, view_name="+edit")
 
     def add_ssh(self):
+        # XXX: JonathanLange 2010-05-13: This should hella not be in browser
+        # code. Move this to ISSHKeySet (bonus! tests become easier to write).
         sshkey = self.request.form.get('sshkey')
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
@@ -3658,13 +3661,17 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
-        permitted_actions = ['claim_gpg', 'deactivate_gpg',
-                             'remove_gpgtoken', 'reactivate_gpg']
+        permitted_actions = [
+            'claim_gpg',
+            'deactivate_gpg',
+            'remove_gpgtoken',
+            'reactivate_gpg',
+            ]
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
-        if action and (action not in permitted_actions):
-            raise UnexpectedFormData("Action was not defined")
+        if action not in permitted_actions:
+            raise UnexpectedFormData("Action not permitted: %s" % action)
         getattr(self, action)()
 
     def claim_gpg(self):
@@ -5185,14 +5192,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
             builds_by_package[package] = []
             needs_build_by_package[package] = False
         for build in all_builds:
-            if build.buildstate == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.sourcepackagerelease].append(build)
-            needs_build = build.buildstate in [
+            if build.status == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.source_package_release].append(build)
+            needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.sourcepackagerelease] = needs_build
+            needs_build_by_package[build.source_package_release] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 

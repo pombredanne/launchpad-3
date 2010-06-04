@@ -36,12 +36,9 @@ from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
 from lp.soyuz.interfaces.archive import IArchive
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
-from lp.soyuz.interfaces.archive import IArchive
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
@@ -115,13 +112,6 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         readonly=False)
     build_daily = Bool(
         title=_("If true, the recipe should be built daily."))
-    sourcepackagename = Reference(
-        ISourcePackageName, title=_("The name of the source package this "
-                                    "recipe will build a source package"),
-        readonly=True)
-
-    _sourcepackagename_text = exported(
-        TextLine(), exported_as='sourcepackagename')
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -170,6 +160,9 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
+    def getLastBuild(self):
+        """Return the the most recent build of this recipe."""
+
     def destroySelf():
         """Remove this SourcePackageRecipe from the database.
 
@@ -182,6 +175,9 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name,
+    def new(registrant, owner, distroseries, name,
             builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""
+
+    def exists(owner, name):
+        """Check to see if a recipe by the same name and owner exists."""
