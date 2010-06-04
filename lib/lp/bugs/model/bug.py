@@ -1468,11 +1468,6 @@ class Bug(SQLBase):
 
         getUtility(ICalculateBugHeatJobSource).create(self)
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
