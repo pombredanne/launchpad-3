@@ -3,6 +3,7 @@
 
 """Tests for bug duplicate validation."""
 
+from textwrap import dedent
 import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
@@ -24,10 +25,21 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
         self.dupe_bug.duplicateof = self.bug
         self.possible_dupe = self.factory.makeBug()
 
+    def assertDuplicateError(self, bug, duplicateof, msg):
+        try:
+            bug.markAsDuplicate(duplicateof)
+        except InvalidDuplicateValue, err:
+            self.assertEqual(err.message.doc(), msg)
+
     def test_already_has_duplicate_error(self):
-        self.assertRaises(
-            InvalidDuplicateValue, self.possible_dupe.markAsDuplicate,
-            self.dupe_bug)
+        msg = dedent(u"""
+            Bug %s is already a duplicate of bug %s. You
+            can only mark a bug report as duplicate of one that
+            isn't a duplicate itself.
+            """ % (
+                self.dupe_bug.id, self.dupe_bug.duplicateof.id))
+        self.assertDuplicateError(
+            self.possible_dupe, self.dupe_bug, msg)
 
 
 def test_suite():
