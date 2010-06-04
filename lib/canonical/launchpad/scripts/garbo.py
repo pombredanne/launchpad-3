@@ -33,7 +33,6 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
-from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
