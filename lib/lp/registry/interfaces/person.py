@@ -11,11 +11,8 @@ __all__ = [
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INewPerson',
-    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
-    'IPersonChangePassword',
     'IPersonClaim',
     'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
@@ -44,7 +41,8 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -72,8 +70,7 @@ from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_person_email, validate_new_team_email)
+from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
@@ -86,6 +83,7 @@ from lp.blueprints.interfaces.specificationtarget import (
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches, IHasMergeProposals, IHasRequestedReviews)
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -94,6 +92,7 @@ from lp.registry.interfaces.location import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
+from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership, ITeamParticipation, TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName
@@ -434,35 +433,10 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-# XXX: salgado, 2010/03/05, bug=532688: This is currently used by c-i-p, so it
-# can't be removed yet.  As soon as we stop using c-i-p, though, we'll be able
-# to remove this.
-class IPersonChangePassword(Interface):
-    """The schema used by Person +changepassword form."""
-
-    currentpassword = PasswordField(
-        title=_('Current password'), required=True, readonly=False)
-
-    password = PasswordField(
-        title=_('New password'), required=True, readonly=False)
-
-
 class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
-
-
-class INewPerson(Interface):
-    """The schema used by IPersonSet's +newperson form."""
-
-    emailaddress = StrippedTextLine(
-        title=_('Email address'), required=True,
-        constraint=validate_new_person_email)
-    displayname = StrippedTextLine(title=_('Display name'), required=True)
-    creation_comment = Text(
-        title=_('Creation reason'), required=True,
-        description=_("The reason why you're creating this profile."))
 
 
 # This has to be defined here to avoid circular import problems.
@@ -485,7 +459,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs):
+                    IPrivacy, IHasBugs, IHasRecipes):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -600,7 +574,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
     oauth_request_tokens = Attribute(_("Non-expired request tokens"))
 
-    sshkeys = Attribute(_('List of SSH keys'))
+    sshkeys = exported(
+             CollectionField(
+                title= _('List of SSH keys'),
+                readonly=False, required=False,
+                value_type=Reference(schema=ISSHKey)))
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -633,11 +611,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             title=_("List of valid OpenPGP keys ordered by ID"),
             readonly=False, required=False,
             value_type=Reference(schema=IGPGKey)))
-    pending_gpg_keys = exported(
-        CollectionField(
-            title=_("Set of fingerprints pending confirmation"),
-            readonly=False, required=False,
-            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = CollectionField(
+        title=_("Set of fingerprints pending confirmation"),
+        readonly=False, required=False,
+        value_type=Reference(schema=IGPGKey))
     inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
@@ -866,6 +843,30 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
         """
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        description=Text(),
+        distroseries=List(value_type=Reference(schema=Interface)),
+        name=TextLine(),
+        recipe_text=Text(),
+        )
+    @export_factory_operation(Interface, [])
+    def createRecipe(name, description, recipe_text, distroseries, registrant):
+        """Create a SourcePackageRecipe owned by this person.
+
+        :param name: the name to use for referring to the recipe.
+        :param description: A description of the recipe.
+        :param recipe_text: The text of the recipe.
+        :param distroseries: The distroseries to use.
+        :return: a SourcePackageRecipe.
+        """
+
+    @operation_parameters(name=TextLine(required=True))
+    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @export_read_operation()
+    def getRecipe(name):
+        """Return the person's recipe with the given name."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
@@ -1472,6 +1473,15 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    @export_read_operation()
+    def getArchiveSubscriptionURLs():
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
 
 class IPersonModerate(Interface):
     """IPerson attributes that require launchpad.Moderate."""
@@ -1537,16 +1547,6 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
 PersonChoice.schema = IPerson
-
-
-class INewPersonForm(IPerson):
-    """Interface used to create new Launchpad accounts.
-
-    The only change with `IPerson` is a customised Password field.
-    """
-
-    password = PasswordField(
-        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeamPublic(Interface):

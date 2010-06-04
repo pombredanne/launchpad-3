@@ -28,7 +28,7 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, IPublishingSet,
     ISourcePackagePublishingHistory, active_publishing_status)
@@ -110,7 +110,7 @@ def update_files_privacy(pub_record):
         package_upload = build.package_upload
         package_files.append((package_upload, 'changesfile'))
         # Re-upload the buildlog file as necessary.
-        package_files.append((build, 'buildlog'))
+        package_files.append((build, 'log'))
     elif IPackageUploadCustom.providedBy(pub_record):
         # Re-upload the custom files included
         package_files.append((pub_record, 'libraryfilealias'))
@@ -251,8 +251,11 @@ class CopyChecker:
 
         inventory_conflicts = self.getConflicts(source)
 
+        # If there are no conflicts with the same version, we can skip the
+        # rest of the checks, but we still want to check conflicting files
         if (destination_archive_conflicts.count() == 0 and
             len(inventory_conflicts) == 0):
+            self._checkConflictingFiles(source)
             return
 
         # Cache the conflicting publications because they will be iterated
@@ -338,6 +341,25 @@ class CopyChecker:
             if not copied_binaries.issuperset(published_binaries):
                 raise CannotCopy(
                     "binaries conflicting with the existing ones")
+        self._checkConflictingFiles(source)
+
+    def _checkConflictingFiles(self, source):
+        # If both the source and destination archive are the same, we don't
+        # need to perform this test, since that guarantees the filenames
+        # do not conflict.
+        if source.archive.id == self.archive.id:
+            return None
+        source_files = [
+            sprf.libraryfile.filename for sprf in
+            source.sourcepackagerelease.files]
+        destination_sha1s = self.archive.getFilesAndSha1s(source_files)
+        for lf in source.sourcepackagerelease.files:
+            if lf.libraryfile.filename in destination_sha1s:
+                sha1 = lf.libraryfile.content.sha1
+                if sha1 != destination_sha1s[lf.libraryfile.filename]:
+                    raise CannotCopy(
+                        "%s already exists in destination archive with "
+                        "different contents." % lf.libraryfile.filename)
 
     def checkCopy(self, source, series, pocket):
         """Check if the source can be copied to the given location.
@@ -368,6 +390,12 @@ class CopyChecker:
             raise CannotCopy(
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))
+
+        # Deny copies of source publications containing files with an
+        # expiration date set.
+        for source_file in source.sourcepackagerelease.files:
+            if source_file.libraryfile.expires is not None:
+                raise CannotCopy('source contains expired files')
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()
@@ -596,7 +624,7 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
-            if build.buildstate != BuildStatus.FULLYBUILT:
+            if build.status != BuildStatus.FULLYBUILT:
                 continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload

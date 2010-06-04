@@ -21,6 +21,7 @@ from zope.interface import alsoProvides, implements
 from lp.archivepublisher.debversion import Version
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
+
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -39,7 +40,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase, HasBugHeatMixin, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.build import Build
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -81,7 +82,7 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.distribution import (
     IBaseDistribution, IDerivativeDistribution, IDistribution,
@@ -184,8 +185,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     max_bug_heat = Int()
 
     def __repr__(self):
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
         return "<%s '%s' (%s)>" % (
-            self.__class__.__name__, self.displayname, self.name)
+            self.__class__.__name__, displayname, self.name)
 
     def _init(self, *args, **kw):
         """Initialize an `IBaseDistribution` or `IDerivativeDistribution`."""
@@ -242,16 +244,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @cachedproperty
     def main_archive(self):
         """See `IDistribution`."""
-        return Archive.selectOneBy(distribution=self,
-                                   purpose=ArchivePurpose.PRIMARY)
+        return Store.of(self).find(Archive, distribution=self,
+            purpose=ArchivePurpose.PRIMARY).one()
 
     @cachedproperty
     def all_distro_archives(self):
         """See `IDistribution`."""
-        return Archive.select("""
-            Distribution = %s AND
-            Purpose IN %s""" % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES)
-            )
+        return Store.of(self).find(
+            Archive,
+            Archive.distribution == self,
+            Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
     @cachedproperty
     def all_distro_archive_ids(self):
@@ -272,35 +274,50 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def archive_mirrors(self):
         """See `IDistribution`."""
-        return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.ARCHIVE, enabled=True,
-            status=MirrorStatus.OFFICIAL, official_candidate=True)
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            content=MirrorContent.ARCHIVE,
+            enabled=True,
+            status=MirrorStatus.OFFICIAL,
+            official_candidate=True)
 
     @property
     def cdimage_mirrors(self):
         """See `IDistribution`."""
-        return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.RELEASE, enabled=True,
-            status=MirrorStatus.OFFICIAL, official_candidate=True)
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            content=MirrorContent.RELEASE,
+            enabled=True,
+            status=MirrorStatus.OFFICIAL,
+            official_candidate=True)
 
     @property
     def disabled_mirrors(self):
         """See `IDistribution`."""
-        return DistributionMirror.selectBy(
-            distribution=self, status=MirrorStatus.OFFICIAL,
-            official_candidate=True, enabled=False)
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            enabled=False,
+            status=MirrorStatus.OFFICIAL,
+            official_candidate=True)
 
     @property
     def unofficial_mirrors(self):
         """See `IDistribution`."""
-        return DistributionMirror.selectBy(
-            distribution=self, status=MirrorStatus.UNOFFICIAL)
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            status=MirrorStatus.UNOFFICIAL)
 
     @property
     def pending_review_mirrors(self):
         """See `IDistribution`."""
-        return DistributionMirror.selectBy(
-            distribution=self, status=MirrorStatus.PENDING_REVIEW,
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            status=MirrorStatus.PENDING_REVIEW,
             official_candidate=True)
 
     @property
@@ -337,7 +354,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @cachedproperty('_cached_series')
     def series(self):
         """See `IDistribution`."""
-        ret = DistroSeries.selectBy(distribution=self)
+        ret = Store.of(self).find(
+            DistroSeries,
+            distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
     @property
@@ -400,7 +419,19 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
-        return DistributionMirror.selectOneBy(distribution=self, name=name)
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            name=name).one()
+
+    def getCountryMirror(self, country, mirror_type):
+        """See `IDistribution`."""
+        return Store.of(self).find(
+            DistributionMirror,
+            distribution=self,
+            country=country,
+            content=mirror_type,
+            country_dns_mirror=True).one()
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
@@ -430,7 +461,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         orig_name = name
         count = 1
-        while DistributionMirror.selectOneBy(name=name) is not None:
+        while self.getMirrorByName(name=name) is not None:
             count += 1
             name = '%s%s' % (orig_name, count)
 
@@ -485,6 +516,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def __iter__(self):
         return iter(self.series)
 
+    def getArchive(self, name):
+        """See `IDistribution.`"""
+        return getUtility(
+            IArchiveSet).getByDistroAndName(self, name)
+
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
         distroseries = DistroSeries.selectOneBy(
@@ -498,7 +534,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDevelopmentSeries(self):
         """See `IDistribution`."""
-        return DistroSeries.selectBy(
+        return Store.of(self).find(
+            DistroSeries,
             distribution=self,
             status=SeriesStatus.DEVELOPMENT)
 
@@ -769,8 +806,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
     def getSourcePackageCaches(self, archive=None):
@@ -914,10 +952,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             if spr.changelog_entry is not None:
                 sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
-                BinaryPackageRelease.build = Build.id AND
-                Build.sourcepackagerelease = %s
+                BinaryPackageRelease.build = BinaryPackageBuild.id AND
+                BinaryPackageBuild.source_package_release = %s
                 """ % sqlvalues(spr.id),
-                clauseTables=['Build'])
+                clauseTables=['BinaryPackageBuild'])
             for binpkg in binpkgs:
                 log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
@@ -1028,9 +1066,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            Build.distroarchseries == DistroArchSeries.id,
-            BinaryPackageRelease.build == Build.id,
-            Build.sourcepackagerelease == SourcePackageRelease.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
+            BinaryPackageRelease.build == BinaryPackageBuild.id,
+            (BinaryPackageBuild.source_package_release ==
+                SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
@@ -1207,8 +1246,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     # already too long and complicated.
     def getAllPPAs(self):
         """See `IDistribution`"""
-        return Archive.selectBy(
-            purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
+        return Store.of(self).find(
+            Archive,
+            distribution=self,
+            purpose=ArchivePurpose.PPA).order_by('id')
 
     def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
@@ -1495,7 +1536,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
-            subscription = self.addBugSubscription(bug_supervisor, user)
+            self.addBugSubscription(bug_supervisor, user)
 
     def userCanEdit(self, user):
         """See `IDistribution`."""
@@ -1599,6 +1640,6 @@ class DistributionSet:
             mugshot=mugshot,
             logo=logo,
             icon=icon)
-        archive = getUtility(IArchiveSet).new(distribution=distro,
+        getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro

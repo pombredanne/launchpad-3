@@ -43,6 +43,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -397,9 +398,12 @@ class PackageUpload(SQLBase):
 
         self.setAccepted()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We explicitly allow unsigned uploads here since the .changes file
+        # is pulled from the librarian which are stripped of their
+        # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -430,9 +434,11 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         self.setRejected()
         changes_file_object = StringIO.StringIO(self.changesfile.read())
+        # We allow unsigned uploads since they come from the librarian,
+        # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, allow_unsigned=True)
         self.syncUpdate()
 
     @property
@@ -503,7 +509,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
         for queue_build in self.builds:
-            names.append(queue_build.build.sourcepackagerelease.name)
+            names.append(queue_build.build.source_package_release.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
@@ -520,7 +526,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             archs.append('source')
         for queue_build in self.builds:
-            archs.append(queue_build.build.distroarchseries.architecturetag)
+            archs.append(queue_build.build.distro_arch_series.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
         return ", ".join(archs)
@@ -531,7 +537,7 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
-            return self.builds[0].build.sourcepackagerelease.version
+            return self.builds[0].build.source_package_release.version
         if self.customfiles:
             return '-'
 
@@ -544,7 +550,7 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease
         elif self.builds:
-            return self.builds[0].build.sourcepackagerelease
+            return self.builds[0].build.source_package_release
         else:
             return None
 
@@ -564,7 +570,7 @@ class PackageUpload(SQLBase):
         if self.sources is not None and self.sources.count() > 0:
             return self.sources[0].sourcepackagerelease
         elif self.builds is not None and self.builds.count() > 0:
-            return self.builds[0].build.sourcepackagerelease
+            return self.builds[0].build.source_package_release
         else:
             return None
 
@@ -699,11 +705,10 @@ class PackageUpload(SQLBase):
             unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
-        if self.isPPA():
-            # Leaving the PGP signature on a package uploaded to a PPA
-            # leaves the possibility of someone hijacking the notification
-            # and uploading to the Ubuntu archive as the signer.
-            changes_lines = self._stripPgpSignature(changes_lines)
+        # Leaving the PGP signature on a package uploaded
+        # leaves the possibility of someone hijacking the notification
+        # and uploading to any archive as the signer.
+        changes_lines = self._stripPgpSignature(changes_lines)
 
         return changes, changes_lines
 
@@ -1370,7 +1375,7 @@ class PackageUploadBuild(SQLBase):
         foreignKey='PackageUpload'
         )
 
-    build = ForeignKey(dbName='build', foreignKey='Build')
+    build = ForeignKey(dbName='build', foreignKey='BinaryPackageBuild')
 
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
@@ -1408,7 +1413,7 @@ class PackageUploadBuild(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
-        build_archtag = self.build.distroarchseries.architecturetag
+        build_archtag = self.build.distro_arch_series.architecturetag
         # Determine the target arch series.
         # This will raise NotFoundError if anything odd happens.
         target_dar = self.packageupload.distroseries[build_archtag]
@@ -1701,9 +1706,11 @@ class PackageUploadCustom(SQLBase):
         """See `IPackageUploadCustom`."""
         sourcepackagerelease = self.packageupload.sourcepackagerelease
 
-        # Ignore translation coming from PPA.
-        if self.packageupload.isPPA():
-            debug(logger, "Skipping translations since it is a PPA.")
+        # Ignore translations not with main distribution purposes.
+        if self.packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
+            debug(logger,
+                  "Skipping translations since its purpose is not "
+                  "in MAIN_ARCHIVE_PURPOSES.")
             return
 
         valid_pockets = (

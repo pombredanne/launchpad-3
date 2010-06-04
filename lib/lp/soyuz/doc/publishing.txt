@@ -144,7 +144,7 @@ augments the IBuildSet.getStatusSummaryForBuilds() method to include the
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
-    ...     build.buildstate = BuildStatus.FULLYBUILT
+    ...     build.status = BuildStatus.FULLYBUILT
 
 Create a helper for printing the build status summary:
 
@@ -162,7 +162,8 @@ Create a helper for printing the build status summary:
 
 The underlying method being used here is getUnpublishedBuilds():
 
-    >>> for build in spph.getUnpublishedBuilds():
+    >>> unpublished_builds = spph.getUnpublishedBuilds()
+    >>> for build in sorted(unpublished_builds, key=lambda b:b.title):
     ...     print build.title
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
@@ -202,7 +203,7 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].buildstate = BuildStatus.SUPERSEDED
+    >>> builds[1].status = BuildStatus.SUPERSEDED
     >>> for build in spph.getUnpublishedBuilds():
     ...     print build.title
 
@@ -217,7 +218,7 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    >>> builds[1].status = BuildStatus.FULLYBUILT
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
@@ -256,8 +257,8 @@ that build:
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='def', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
-    >>> builds[0].buildstate = BuildStatus.SUPERSEDED
-    >>> builds[1].buildstate = BuildStatus.FULLYBUILT
+    >>> builds[0].status = BuildStatus.SUPERSEDED
+    >>> builds[1].status = BuildStatus.FULLYBUILT
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
@@ -410,7 +411,7 @@ test this feature. We will create a publication for a source (foo) and
 two architecture-specific binaries in ubuntu/breezy-autotest.
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> source = test_publisher.getPubSource( 
+    >>> source = test_publisher.getPubSource(
     ...     sourcename='ghi',
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
@@ -949,6 +950,54 @@ Generating respective "Packages" stanzas:
     >>> [pub_file.archive_url for pub_file in bpph.files]
     [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
+Binary publishing records also have a download count, which contains
+the number of downloads of this binary package release in this archive.
+
+    >>> print bpph.getDownloadCount()
+    0
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+    >>> uk = getUtility(ICountrySet)['GB']
+
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 19), None, 2)
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), australia, 10)
+    >>> bpph.archive.updatePackageDownloadCount(
+    ...     bpph.binarypackagerelease, date(2010, 2, 21), uk, 4)
+
+    >>> print bpph.getDownloadCount()
+    16
+
+We can also use getDownloadCounts to find the raw download counts per
+day and country.
+
+    >>> [(b.day, b.country.name if b.country is not None else None)
+    ...   for b in bpph.getDownloadCounts()]
+    [(datetime.date(2010, 2, 21), u'Australia'),
+     (datetime.date(2010, 2, 21), u'United Kingdom'),
+     (datetime.date(2010, 2, 19), None)]
+
+getDownloadCounts lets us filter by date.
+
+    >>> [b.day for b in bpph.getDownloadCounts(start_date=date(2010, 2, 21))]
+    [datetime.date(2010, 2, 21), datetime.date(2010, 2, 21)]
+    >>> [b.day for b in bpph.getDownloadCounts(end_date=date(2010, 2, 20))]
+    [datetime.date(2010, 2, 19)]
+    >>> [b.day for b in bpph.getDownloadCounts(
+    ...     start_date=date(2010, 2, 20), end_date=date(2010, 2, 20))]
+    []
+
+We can also get a dict of totals for each day. The keys are strings to
+work around lazr.restful's dict limitations. This too has a date filter.
+
+    >>> bpph.getDailyDownloadTotals()
+    {'2010-02-21': 14L, '2010-02-19': 2L}
+    >>> bpph.getDailyDownloadTotals(start_date=date(2010, 2, 20))
+    {'2010-02-21': 14L}
+
 
 IPublishingSet
 ==============
@@ -1100,7 +1149,7 @@ The associated builds and binaries will be created in the context of the
 other PPA.
 
     >>> build = binaries[0].binarypackagerelease.build
-    >>> source_pub = build.sourcepackagerelease.publishings[0]
+    >>> source_pub = build.source_package_release.publishings[0]
     >>> print build.archive.name
     otherppa
 
@@ -1136,7 +1185,7 @@ is correct:
     ...     sourcename='stu', architecturehintlist='any')
     ...     missing_builds = spph.createMissingBuilds()
     ...     for build in missing_builds:
-    ...         build.buildstate = BuildStatus.FULLYBUILT
+    ...         build.status = BuildStatus.FULLYBUILT
     ...         builds.append(build)
     ...     sources.append(spph)
     >>> len(builds)
@@ -1266,12 +1315,12 @@ For testing purposes we will create a `PackageDiff` for Celso's
     >>> pmount_diff = a_source.sourcepackagerelease.requestDiffTo(
     ...     cprov, to_source.sourcepackagerelease)
     >>> print pmount_diff.title
-    1.0 (in Ubuntu) to 0.1-1
+    diff from 1.0 (in Ubuntu) to 0.1-1
 
     >>> iceweasel_diff = to_source.sourcepackagerelease.requestDiffTo(
     ...     cprov, a_source.sourcepackagerelease)
     >>> print iceweasel_diff.title
-    0.1-1 (in Ubuntu) to 1.0
+    diff from 0.1-1 (in Ubuntu) to 1.0
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -1311,7 +1360,7 @@ containing:
     pmount 0.1-1 in warty
 
     >>> print diff.title
-    1.0 (in Ubuntu) to 0.1-1
+    diff from 1.0 (in Ubuntu) to 0.1-1
 
     >>> print file.filename
     netapplet-1.0.0.tar.gz
@@ -1330,7 +1379,7 @@ requests. On pending diffs, `LibraryFileAlias` and
     iceweasel 1.0 in warty
 
     >>> print diff.title
-    0.1-1 (in Ubuntu) to 1.0
+    diff from 0.1-1 (in Ubuntu) to 1.0
 
     >>> print file
     None

@@ -12,7 +12,7 @@ bugtask_heat_html is used to render the flames.
     >>> def print_flames(bugtask, target=None):
     ...     html = bugtask_heat_html(bugtask, target=target)
     ...     soup = BeautifulSoup(html)
-    ...     for img in soup.span.contents:
+    ...     for img in soup.span.a.contents:
     ...         print img['src']
     ...         print img['alt']
     ...         print img['title']

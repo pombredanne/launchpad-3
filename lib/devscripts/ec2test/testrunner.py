@@ -109,7 +109,7 @@ class EC2TestRunner:
     message = image = None
     _running = False
 
-    def __init__(self, branch, email=False, file=None, test_options='-vv',
+    def __init__(self, branch, email=False, file=None, test_options=None,
                  headless=False, branches=(),
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
@@ -289,12 +289,15 @@ class EC2TestRunner:
         # Email configuration.
         if email is not None or pqm_message is not None:
             self._smtp_server = config.get_user_option('smtp_server')
+            # Refuse localhost, because there's no SMTP server _on the actual
+            # EC2 instance._
             if self._smtp_server is None or self._smtp_server == 'localhost':
                 raise ValueError(
                     'To send email, a remotely accessible smtp_server (and '
                     'smtp_username and smtp_password, if necessary) must be '
                     'configured in bzr.  See the SMTP server information '
-                    'here: https://wiki.canonical.com/EmailSetup .')
+                    'here: https://wiki.canonical.com/EmailSetup .'
+                    'This server must be reachable from the EC2 instance.')
             self._smtp_username = config.get_user_option('smtp_username')
             self._smtp_password = config.get_user_option('smtp_password')
             self._from_email = config.username()
@@ -321,11 +324,11 @@ class EC2TestRunner:
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir .bazaar')
+            as_user('[ -d .bazaar ] || mkdir .bazaar')
             bazaar_conf_file = user_connection.sftp.open(
                 ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(
-                'email = %s\n' % (self._from_email,))
+                'email = %s\n' % (self._from_email.encode('utf-8'),))
             bazaar_conf_file.write(
                 'smtp_server = %s\n' % (self._smtp_server,))
             if self._smtp_username:
@@ -336,10 +339,10 @@ class EC2TestRunner:
                     'smtp_password = %s\n' % (self._smtp_password,))
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
-        self.log('Copying ec2test-remote.py to remote machine.\n')
+        self.log('Copying remote.py to remote machine.\n')
         user_connection.sftp.put(
-            os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                         'ec2test-remote.py'),
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), 'remote.py'),
             '/var/launchpad/ec2test-remote.py')
         # Set up launchpad login and email
         as_user('bzr launchpad-login %s' % (self._launchpad_login,))
@@ -483,7 +486,7 @@ class EC2TestRunner:
             cmd.append('--public-branch-revno=%d' % branch_revno)
 
         # Add any additional options for ec2test-remote.py
-        cmd.extend(self.get_remote_test_options())
+        cmd.extend(['--', self.test_options])
         self.log(
             'Running tests... (output is available on '
             'http://%s/)\n' % self._instance.hostname)
@@ -519,17 +522,3 @@ class EC2TestRunner:
                     'Writing abridged test results to %s.\n' % self.file)
                 user_connection.sftp.get('/var/www/summary.log', self.file)
         user_connection.close()
-
-    def get_remote_test_options(self):
-        """Return the test command that will be passed to ec2test-remote.py.
-
-        Returns a tuple of command-line options and switches.
-        """
-        if '--jscheck' in self.test_options:
-            # We want to run the JavaScript test suite.
-            return ('--jscheck',)
-        else:
-            # Run the normal testsuite with our Zope testrunner options.
-            # ec2test-remote.py wants the extra options to be after a double-
-            # dash.
-            return ('--', self.test_options)

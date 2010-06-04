@@ -125,7 +125,7 @@ translation_import_queue_entry_age = {
     RosettaImportStatus.DELETED: timedelta(days=3),
     RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
     RosettaImportStatus.IMPORTED: timedelta(days=3),
-    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=DAYS_IN_HALF_YEAR),
+    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=14),
     RosettaImportStatus.NEEDS_REVIEW: timedelta(days=DAYS_IN_HALF_YEAR),
 }
 
@@ -376,14 +376,15 @@ class ITranslationImportQueue(Interface):
         :arg potemplate: is the link of this import with an IPOTemplate.
         :arg pofile: is the link of this import with an IPOFile.
         :arg format: a TranslationFileFormat.
+        :return: the entry, or None if processing failed.
 
-        sourcepackagename + distroseries and productseries are exclusive, we
-        must have only one combination of them.
+        The entry is either for a sourcepackage or a productseries, so
+        only one of them can be specified.
         """
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None):
+        potemplate=None, filename_filter=None, approver_factory=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
@@ -395,11 +396,14 @@ class ITranslationImportQueue(Interface):
         :arg distroseries: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
+        :arg approver_factory: is a factory that can be called to create an
+            approver.  The method invokes the approver on any queue entries
+            that it creates. If this is None, no approval is performed.
+        :return: A tuple of the number of successfully processed files and a
+            list of those filenames that could not be processed correctly.
 
-        sourcepackagename + distroseries and productseries are exclusive, we
-        must have only one combination of them.
-
-        Return the number of files attached.
+        The entries are either for a sourcepackage or a productseries, so
+        only one of them can be specified.
         """
 
     def get(id):

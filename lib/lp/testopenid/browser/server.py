@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'PersistentIdentityView',
     'TestOpenIDApplicationNavigation',
-    'TestOpenIDIndexView'
+    'TestOpenIDIndexView',
     'TestOpenIDLoginView',
     'TestOpenIDRootUrlData',
     'TestOpenIDView',
@@ -21,8 +21,10 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
+from openid import oidutil
 from openid.server.server import CheckIDRequest, Server
 from openid.store.memstore import MemoryStore
+from openid.extensions.sreg import SRegRequest, SRegResponse
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -40,11 +42,16 @@ from lp.services.openid.browser.openiddiscovery import (
 from lp.testopenid.interfaces.server import (
     get_server_url, ITestOpenIDApplication, ITestOpenIDLoginForm,
     ITestOpenIDPersistentIdentity)
+from lp.registry.interfaces.person import IPerson
 
 
 OPENID_REQUEST_SESSION_KEY = 'testopenid.request'
 SESSION_PKG_KEY = 'TestOpenID'
 openid_store = MemoryStore()
+
+
+# Shut up noisy OpenID library
+oidutil.log = lambda message, level=0: None
 
 
 class TestOpenIDRootUrlData:
@@ -190,6 +197,12 @@ class OpenIDMixin:
                 True, identity=self.user_identity_url)
         else:
             response = self.openid_request.answer(True)
+
+        sreg_fields = dict(nickname=IPerson(self.account).name)
+        sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+        sreg_response = SRegResponse.extractResponse(
+            sreg_request, sreg_fields)
+        response.addExtension(sreg_response)
 
         return response
 

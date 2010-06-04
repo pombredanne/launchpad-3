@@ -4,7 +4,7 @@
 """Test harness for running tests agains IBugTarget implementations.
 
 This module runs the interface test against the Product, ProductSeries
-Project, DistributionSourcePackage, and DistroSeries implementations
+ProjectGroup, DistributionSourcePackage, and DistroSeries implementations
 IBugTarget. It runs the bugtarget-bugcount.txt, and
 bugtarget-questiontarget.txt tests.
 """

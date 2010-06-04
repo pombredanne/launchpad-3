@@ -38,7 +38,8 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
-from lp.code.interfaces.branch import BranchExists, IBranch
+from lp.code.interfaces.branch import (
+    BranchExists, IBranch, user_has_special_branch_access)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
@@ -202,6 +203,7 @@ class CodeImportBaseView(LaunchpadFormView):
 class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
+    use_template(IBranch, ['owner'])
     use_template(
         ICodeImport,
         ['rcs_type', 'cvs_root', 'cvs_module'])
@@ -209,10 +211,11 @@ class NewCodeImportForm(Interface):
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
         description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
+            "The URL of a Subversion branch, starting with svn:// or "
+            "http(s)://.   You can include a username and password as part "
+            "of the url, but this will be displayed on the branch page."),
         allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False,
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
@@ -266,10 +269,13 @@ class CodeImportNewView(CodeImportBaseView):
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
 
-    initial_values = {
-        'rcs_type': RevisionControlSystems.BZR_SVN,
-        'branch_name': 'trunk',
-        }
+    @property
+    def initial_values(self):
+        return {
+            'owner': self.user,
+            'rcs_type': RevisionControlSystems.BZR_SVN,
+            'branch_name': 'trunk',
+            }
 
     @property
     def context_is_product(self):
@@ -291,6 +297,21 @@ class CodeImportNewView(CodeImportBaseView):
         CodeImportBaseView.setUpFields(self)
         if self.context_is_product:
             self.form_fields = self.form_fields.omit('product')
+
+        # If the user can administer branches, then they should be able to
+        # assign the ownership of the branch to any valid person or team.
+        if user_has_special_branch_access(self.user):
+            owner_field = self.schema['owner']
+            any_owner_choice = Choice(
+                __name__='owner', title=owner_field.title,
+                description = _("As an administrator you are able to reassign"
+                                " this branch to any person or team."),
+                required=True, vocabulary='ValidPersonOrTeam')
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit('owner')
+            self.form_fields = any_owner_field + self.form_fields
 
     def setUpWidgets(self):
         CodeImportBaseView.setUpWidgets(self)
@@ -334,6 +355,7 @@ class CodeImportNewView(CodeImportBaseView):
         cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
+            owner=data['owner'],
             target=IBranchTarget(product),
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
@@ -370,7 +392,8 @@ class CodeImportNewView(CodeImportBaseView):
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            self.user)
 
         self.next_url = canonical_url(code_import.branch)
 
@@ -410,12 +433,13 @@ class CodeImportNewView(CodeImportBaseView):
         """See `LaunchpadFormView`."""
         # Make sure that the user is able to create branches for the specified
         # namespace.
-        celebs = getUtility(ILaunchpadCelebrities)
         product = self.getProduct(data)
-        if product is not None:
-            namespace = get_branch_namespace(celebs.vcs_imports, product)
+        # 'owner' in data may be None if it failed validation.
+        owner = data.get('owner')
+        if product is not None and owner is not None:
+            namespace = get_branch_namespace(owner, product)
             policy = IBranchNamespacePolicy(namespace)
-            if not policy.canCreateBranches(celebs.vcs_imports):
+            if not policy.canCreateBranches(self.user):
                 self.setFieldError(
                     'product',
                     "You are not allowed to register imports for %s."

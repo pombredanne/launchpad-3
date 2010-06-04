@@ -20,7 +20,6 @@ __all__ = [
     'IProjectGroupBugAddForm',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
-    'UserCannotUnsubscribePerson',
     ]
 
 from zope.component import getUtility
@@ -28,7 +27,6 @@ from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -207,7 +205,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability"),
-             required=False, default=False))
+             required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -288,9 +286,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     number_of_duplicates = exported(
         Int(title=_('The number of bugs marked as duplicates of this bug'),
             required=True, readonly=True))
-    message_count = Int(
-        title=_('The number of comments on this bug'),
-        required=True, readonly=True)
+    message_count = exported(
+        Int(title=_('The number of comments on this bug'),
+        required=True, readonly=True))
     users_affected_count = exported(
         Int(title=_('The number of users affected by this bug '
                     '(not including duplicates)'),
@@ -325,6 +323,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     heat = exported(
         Int(title=_("The 'heat' of the bug"),
         required=False, readonly=True))
+    heat_last_updated = Datetime(
+        title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
@@ -372,11 +372,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
-    def subscribe(person, subscribed_by):
+    def subscribe(person, subscribed_by, suppress_notify=True):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
+        :param suppress_notify: a flag to suppress notify call.
         :return: an `IBugSubscription`.
         """
 
@@ -441,7 +442,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
-                                     include_master_dupe_subscribers=True):
+                                     include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
 
         The INotificationRecipientSet instance will contain details of
@@ -451,7 +452,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         canonical.launchpad.interfaces.BugNotificationRecipients for
         details of this implementation.
         If this bug is a dupe, set include_master_dupe_subscribers to
-        False to not include the master bug's subscribers.
+        True to include the master bug's subscribers as recipients.
         """
 
     def addChangeNotification(text, person, recipients=None, when=None):
@@ -702,6 +703,17 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         Return True if a change is made, False otherwise.
         """
 
+    @mutator_for(security_related)
+    @operation_parameters(security_related=copy_field(security_related))
+    @export_write_operation()
+    def setSecurityRelated(security_related):
+        """Set bug security.
+
+            :security_related: True/False.
+
+        Return True if a change is made, False otherwise.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -783,17 +795,15 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat):
+    def setHeat(heat, timestamp=None):
         """Set the heat for the bug."""
+
+    def updateHeat():
+        """Update the heat for the bug."""
 
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
-
-
-class UserCannotUnsubscribePerson(Unauthorized):
-    """User does not have persmisson to unsubscribe person or team."""
-    webservice_error(401)
 
 
 # We are forced to define these now to avoid circular import problems.
@@ -1036,6 +1046,14 @@ class IBugSet(Interface):
         # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
+
+    def getBugsWithOutdatedHeat(max_heat_age):
+        """Return the set of bugs whose heat is out of date.
+
+        :param max_heat_age: The maximum age, in days, that a bug's heat
+                             can be before it is included in the
+                             returned set.
+        """
 
 
 class IFileBugData(Interface):

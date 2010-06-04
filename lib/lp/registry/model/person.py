@@ -32,6 +32,7 @@ import random
 import re
 import weakref
 
+from bzrlib.plugins.builder import RecipeParser
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import alsoProvides, implementer, implements
 from zope.component import adapter, getUtility
@@ -80,6 +81,7 @@ from canonical.launchpad.interfaces.account import (
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from lp.code.model.hasbranches import (
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin)
@@ -119,12 +121,13 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort)
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
 from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus)
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
-from canonical.launchpad.webapp.interfaces import (
-    AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
@@ -260,25 +263,10 @@ class Person(
                      storm_validator=_validate_name)
 
     def __repr__(self):
-        return '<Person at 0x%x %s (%s)>' % (
-            id(self), self.name, self.displayname)
+        displayname = self.displayname.encode('ASCII', 'backslashreplace')
+        return '<Person at 0x%x %s (%s)>' % (id(self), self.name, displayname)
 
-    def _sync_displayname(self, attr, value):
-        """Update any related Account.displayname.
-
-        We can't do this in a DB trigger as soon the Account table will
-        in a separate database to the Person table.
-        """
-        if self.accountID is not None:
-            auth_store = getUtility(IStoreSelector).get(
-                AUTH_STORE, MASTER_FLAVOR)
-            account = auth_store.get(Account, self.accountID)
-            if account.displayname != value:
-                account.displayname = value
-        return value
-
-    displayname = StringCol(dbName='displayname', notNull=True,
-                            storm_validator=_sync_displayname)
+    displayname = StringCol(dbName='displayname', notNull=True)
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -289,12 +277,6 @@ class Person(
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
-    # XXX StuartBishop 2008-05-13 bug=237280: The password,
-    # account_status and account_status_comment properties should go. Note
-    # that they override the current strict controls on Account, allowing
-    # access via Person to use the less strict controls on that interface.
-    # Part of the process of removing these methods from Person will be
-    # loosening the permissions on Account or fixing the callsites.
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
@@ -866,12 +848,19 @@ class Person(
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
         contributions = []
-        results = self._getProjectsWithTheMostKarma(limit=limit)
+        # Pillars names have no concept of active. Extra pillars names are
+        # requested because deactivated pillars will be filtered out.
+        extra_limit = limit + 5
+        results = self._getProjectsWithTheMostKarma(limit=extra_limit)
         for pillar_name, karma in results:
-            pillar = getUtility(IPillarNameSet).getByName(pillar_name)
-            contributions.append(
-                {'project': pillar,
-                 'categories': self._getContributedCategories(pillar)})
+            pillar = getUtility(IPillarNameSet).getByName(
+                pillar_name, ignore_inactive=True)
+            if pillar is not None:
+                contributions.append(
+                    {'project': pillar,
+                     'categories': self._getContributedCategories(pillar)})
+            if len(contributions) == limit:
+                break
         return contributions
 
     def _getProjectsWithTheMostKarma(self, limit=10):
@@ -1177,11 +1166,8 @@ class Person(
                 "You need to specify a reviewer when a team joins another.")
             requester = self
 
-        expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
@@ -1276,7 +1262,7 @@ class Person(
                 comment=comment)
             # Accessing the id attribute ensures that the team
             # creation has been flushed to the database.
-            tm_id = tm.id
+            tm.id
             notify(event(person, self))
         else:
             # We can't use tm.setExpirationDate() here because the reviewer
@@ -2073,6 +2059,19 @@ class Person(
             self._unsetPreferredEmail()
         else:
             self._setPreferredEmail(email)
+        # A team can have up to two addresses, the preferred one and one used
+        # by the team mailing list.
+        if self.mailing_list is not None:
+            mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
+                self.mailing_list.address)
+            mailing_list_email = IMasterObject(mailing_list_email)
+        else:
+            mailing_list_email = None
+        all_addresses = IMasterStore(self).find(
+            EmailAddress, EmailAddress.personID == self.id)
+        for address in all_addresses :
+            if address not in (email, mailing_list_email):
+                address.destroySelf()
 
     def _unsetPreferredEmail(self):
         """Change the preferred email address to VALIDATED."""
@@ -2090,17 +2089,6 @@ class Person(
         if email is None:
             self._unsetPreferredEmail()
             return
-        if (self.preferredemail is None
-            and self.account_status != AccountStatus.ACTIVE):
-            # XXX sinzui 2008-07-14 bug=248518:
-            # This is a hack to preserve this function's behaviour before
-            # Account was split from Person. This can be removed when
-            # all the callsites ensure that the account is ACTIVE first.
-            account = IMasterStore(Account).get(Account, self.accountID)
-            account.activate(
-                "Activated when the preferred email was set.",
-                password=self.password,
-                preferred_email=email)
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2127,6 +2115,7 @@ class Person(
 
         email = removeSecurityProxy(email)
         IMasterObject(email).status = EmailAddressStatus.PREFERRED
+        IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
         self._preferredemail_cached = email
@@ -2273,6 +2262,21 @@ class Person(
 
         return rset
 
+    def createRecipe(self, name, description, recipe_text, distroseries,
+                     registrant):
+        """See `IPerson`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        builder_recipe = RecipeParser(recipe_text).parse()
+        spnset = getUtility(ISourcePackageNameSet)
+        return SourcePackageRecipe.new(
+            registrant, self, distroseries, name, builder_recipe, description)
+
+    def getRecipe(self, name):
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        return Store.of(self).find(
+            SourcePackageRecipe, SourcePackageRecipe.owner == self,
+            SourcePackageRecipe.name == name).one()
+
     def isUploader(self, distribution):
         """See `IPerson`."""
         permissions = getUtility(IArchivePermissionSet).componentsForUploader(
@@ -2307,6 +2311,14 @@ class Person(
     def archive(self):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
+
+    def getArchiveSubscriptionURLs(self):
+        """See `IPerson`."""
+        subscriptions = getUtility(
+            IArchiveSubscriberSet).getBySubscriberWithActiveToken(
+                subscriber=self)
+        return [token.archive_url for (subscription, token) in subscriptions
+                if token is not None]
 
     @property
     def ppas(self):
@@ -2374,6 +2386,14 @@ class Person(
         """See `IPerson`."""
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
+
+    def getRecipes(self):
+        """See `IHasRecipes`."""
+        from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+        store = Store.of(self)
+        return store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.owner == self)
 
 
 class PersonSet:
@@ -3326,7 +3346,7 @@ class PersonSet:
             # from being merged.
             ('mailinglist', 'team'),
             # I don't think we need to worry about the votecast and vote
-            # tables, because a real human should never have two accounts
+            # tables, because a real human should never have two profiles
             # in Launchpad that are active members of a given team and voted
             # in a given poll. -- GuilhermeSalgado 2005-07-07
             # We also can't afford to change poll results after they are
@@ -3479,7 +3499,7 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
-        # Append a -merged suffix to the account's name.
+        # Append a -merged suffix to the person's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
         cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
@@ -3494,6 +3514,16 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+
+        # Change the merged Account's OpenID identifier so that it cannot be
+        # used to lookup the merged Person; Launchpad will instead select the
+        # remaining Person based on the email address.
+        if from_person.account is not None:
+            account = IMasterObject(from_person.account)
+            # This works because dashes do not occur in SSO identifiers.
+            merge_identifier = 'merged-%s' % removeSecurityProxy(
+                account).openid_identifier
+            removeSecurityProxy(account).openid_identifier = merge_identifier
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():

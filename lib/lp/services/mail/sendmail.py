@@ -16,7 +16,9 @@ messaging settings -- stub 2004-10-21
 
 __all__ = [
     'append_footer',
+    'do_paranoid_envelope_to_validation',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
@@ -44,10 +46,10 @@ from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
-from canonical.lp import isZopeless
-from canonical.launchpad.helpers import is_ascii_only
-from lp.services.mail.stub import TestMailer
 from canonical.launchpad import versioninfo
+from canonical.launchpad.helpers import is_ascii_only
+from canonical.lp import isZopeless
+from lp.services.mail.stub import TestMailer
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -145,6 +147,11 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    return format_address(person.displayname, person.preferredemail.email)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,

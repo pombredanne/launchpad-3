@@ -11,8 +11,8 @@ from zope.testing.doctestunit import DocTestSuite
 
 from lazr.lifecycle.snapshot import Snapshot
 
-from canonical.launchpad.ftests import login
 from lp.hardwaredb.interfaces.hwdb import HWBus, IHWDeviceSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import all, any
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
@@ -20,7 +20,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus)
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.testing import TestCase, normalize_whitespace, TestCaseWithFactory
+from lp.registry.interfaces.person import IPersonSet
+from lp.testing import (
+    ANONYMOUS, TestCase, TestCaseWithFactory, login, login_person, logout,
+    normalize_whitespace)
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -498,10 +501,231 @@ class TestBugTaskHardwareSearch(TestCaseWithFactory):
             [bugtask.bug.id for bugtask in bugtasks])
 
 
+class TestBugTaskPermissionsToSetAssigneeBase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        """Crate the test setup.
+
+        We need
+        - bug task targets (a product and a product series, or
+          a distribution and distoseries, see classes derived from
+          this one)
+        - persons and team with special roles: product and distribution,
+          owners, bug supervisors, drivers
+        - bug tasks for the targets
+        """
+        super(TestBugTaskPermissionsToSetAssigneeBase, self).setUp()
+        self.target_owner_member = self.factory.makePerson()
+        self.target_owner_team = self.factory.makeTeam(
+            owner=self.target_owner_member)
+        self.regular_user = self.factory.makePerson()
+
+        login_person(self.target_owner_member)
+        self.makeTarget()
+
+        self.supervisor_team = self.factory.makeTeam(
+            owner=self.target_owner_member)
+        self.supervisor_member = self.factory.makePerson()
+        self.supervisor_team.addMember(
+            self.supervisor_member, self.target_owner_member)
+        self.target.setBugSupervisor(
+            self.supervisor_team, self.target_owner_member)
+
+        self.driver_team = self.factory.makeTeam(
+            owner=self.target_owner_member)
+        self.driver_member = self.factory.makePerson()
+        self.driver_team.addMember(
+            self.driver_member, self.target_owner_member)
+        self.target.driver = self.driver_team
+
+        self.series_driver_team = self.factory.makeTeam(
+            owner=self.target_owner_member)
+        self.series_driver_member = self.factory.makePerson()
+        self.series_driver_team.addMember(
+            self.series_driver_member, self.target_owner_member)
+        self.series.driver = self.series_driver_team
+
+        self.series_bugtask = self.factory.makeBugTask(target=self.series)
+        self.series_bugtask.transitionToAssignee(self.regular_user)
+        bug = self.series_bugtask.bug
+        # If factory.makeBugTask() is called with a series target, it
+        # creates automatically another bug task for the main target.
+        self.target_bugtask = bug.getBugTask(self.target)
+        self.target_bugtask.transitionToAssignee(self.regular_user)
+        logout()
+
+    def test_userCanSetAnyAssignee_anonymous_user(self):
+        # Anonymous users cannot set anybody as an assignee.
+        login(ANONYMOUS)
+        self.assertFalse(self.target_bugtask.userCanSetAnyAssignee(None))
+        self.assertFalse(self.series_bugtask.userCanSetAnyAssignee(None))
+
+    def test_userCanUnassign_anonymous_user(self):
+        # Anonymous users cannot unassign anyone.
+        login(ANONYMOUS)
+        self.assertFalse(self.target_bugtask.userCanUnassign(None))
+        self.assertFalse(self.series_bugtask.userCanUnassign(None))
+
+    def test_userCanSetAnyAssignee_regular_user(self):
+        # Ordinary users cannot set others as an assignee.
+        login_person(self.regular_user)
+        self.assertFalse(
+            self.target_bugtask.userCanSetAnyAssignee(self.regular_user))
+        self.assertFalse(
+            self.series_bugtask.userCanSetAnyAssignee(self.regular_user))
+
+    def test_userCanUnassign_regular_user(self):
+        # Ordinary users can unassign themselves...
+        login_person(self.regular_user)
+        self.assertEqual(self.target_bugtask.assignee, self.regular_user)
+        self.assertEqual(self.series_bugtask.assignee, self.regular_user)
+        self.assertTrue(
+            self.target_bugtask.userCanUnassign(self.regular_user))
+        self.assertTrue(
+            self.series_bugtask.userCanUnassign(self.regular_user))
+        # ...but not other assignees.
+        login_person(self.target_owner_member)
+        other_user = self.factory.makePerson()
+        self.series_bugtask.transitionToAssignee(other_user)
+        self.target_bugtask.transitionToAssignee(other_user)
+        login_person(self.regular_user)
+        self.assertFalse(
+            self.target_bugtask.userCanUnassign(self.regular_user))
+        self.assertFalse(
+            self.series_bugtask.userCanUnassign(self.regular_user))
+
+    def test_userCanSetAnyAssignee_target_owner(self):
+        # The bug task target owner can assign anybody.
+        login_person(self.target_owner_member)
+        self.assertTrue(
+            self.target_bugtask.userCanSetAnyAssignee(self.target.owner))
+        self.assertTrue(
+            self.series_bugtask.userCanSetAnyAssignee(self.target.owner))
+
+    def test_userCanUnassign_target_owner(self):
+        # The target owner can unassign anybody.
+        login_person(self.target_owner_member)
+        self.assertTrue(
+            self.target_bugtask.userCanUnassign(self.target_owner_member))
+        self.assertTrue(
+            self.series_bugtask.userCanUnassign(self.target_owner_member))
+
+    def test_userCanSetAnyAssignee_bug_supervisor(self):
+        # A bug supervisor can assign anybody.
+        login_person(self.supervisor_member)
+        self.assertTrue(
+            self.target_bugtask.userCanSetAnyAssignee(self.supervisor_member))
+        self.assertTrue(
+            self.series_bugtask.userCanSetAnyAssignee(self.supervisor_member))
+
+    def test_userCanUnassign_bug_supervisor(self):
+        # A bug supervisor can unassign anybody.
+        login_person(self.supervisor_member)
+        self.assertTrue(
+            self.target_bugtask.userCanUnassign(self.supervisor_member))
+        self.assertTrue(
+            self.series_bugtask.userCanUnassign(self.supervisor_member))
+
+    def test_userCanSetAnyAssignee_driver(self):
+        # A project driver can assign anybody.
+        login_person(self.driver_member)
+        self.assertTrue(
+            self.target_bugtask.userCanSetAnyAssignee(self.driver_member))
+        self.assertTrue(
+            self.series_bugtask.userCanSetAnyAssignee(self.driver_member))
+
+    def test_userCanUnassign_driver(self):
+        # A project driver can unassign anybody.
+        login_person(self.driver_member)
+        self.assertTrue(
+            self.target_bugtask.userCanUnassign(self.driver_member))
+        self.assertTrue(
+            self.series_bugtask.userCanUnassign(self.driver_member))
+
+    def test_userCanSetAnyAssignee_series_driver(self):
+        # A series driver can assign anybody to series bug tasks.
+        login_person(self.driver_member)
+        self.assertTrue(
+            self.series_bugtask.userCanSetAnyAssignee(
+                self.series_driver_member))
+        # But he cannot assign anybody to bug tasks of the main target.
+        self.assertFalse(
+            self.target_bugtask.userCanSetAnyAssignee(
+                self.series_driver_member))
+
+    def test_userCanUnassign_series_driver(self):
+        # The target owner can unassign anybody from series bug tasks...
+        login_person(self.series_driver_member)
+        self.assertTrue(
+            self.series_bugtask.userCanUnassign(self.series_driver_member))
+        # ...but not from tasks of the main product/distribution.
+        self.assertFalse(
+            self.target_bugtask.userCanUnassign(self.series_driver_member))
+
+    def test_userCanSetAnyAssignee_launchpad_admins(self):
+        # Launchpad admins can assign anybody.
+        login_person(self.target_owner_member)
+        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        login_person(foo_bar)
+        self.assertTrue(self.target_bugtask.userCanSetAnyAssignee(foo_bar))
+        self.assertTrue(self.series_bugtask.userCanSetAnyAssignee(foo_bar))
+
+    def test_userCanUnassign_launchpad_admins(self):
+        # Launchpad admins can unassign anybody.
+        login_person(self.target_owner_member)
+        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        login_person(foo_bar)
+        self.assertTrue(self.target_bugtask.userCanUnassign(foo_bar))
+        self.assertTrue(self.series_bugtask.userCanUnassign(foo_bar))
+
+    def test_userCanSetAnyAssignee_bug_importer(self):
+        # The bug importer celebrity can assign anybody.
+        login_person(self.target_owner_member)
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        login_person(bug_importer)
+        self.assertTrue(
+            self.target_bugtask.userCanSetAnyAssignee(bug_importer))
+        self.assertTrue(
+            self.series_bugtask.userCanSetAnyAssignee(bug_importer))
+
+    def test_userCanUnassign_launchpad_bug_importer(self):
+        # The bug importer celebrity can unassign anybody.
+        login_person(self.target_owner_member)
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        login_person(bug_importer)
+        self.assertTrue(self.target_bugtask.userCanUnassign(bug_importer))
+        self.assertTrue(self.series_bugtask.userCanUnassign(bug_importer))
+
+
+class TestProductBugTaskPermissionsToSetAssignee(
+    TestBugTaskPermissionsToSetAssigneeBase):
+
+    def makeTarget(self):
+        """Create a product and a product series."""
+        self.target = self.factory.makeProduct(owner=self.target_owner_team)
+        self.series = self.factory.makeProductSeries(self.target)
+
+
+class TestDistributionBugTaskPermissionsToSetAssignee(
+    TestBugTaskPermissionsToSetAssigneeBase):
+
+    def makeTarget(self):
+        """Create a distribution and a distroseries."""
+        self.target = self.factory.makeDistribution(
+            owner=self.target_owner_team)
+        self.series = self.factory.makeDistroSeries(self.target)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestBugTaskDelta))
     suite.addTest(unittest.makeSuite(TestBugTaskTagSearchClauses))
     suite.addTest(unittest.makeSuite(TestBugTaskHardwareSearch))
+    suite.addTest(unittest.makeSuite(
+        TestProductBugTaskPermissionsToSetAssignee))
+    suite.addTest(unittest.makeSuite(
+        TestDistributionBugTaskPermissionsToSetAssignee))
     suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
     return suite

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -121,6 +121,12 @@ def main():
             build_state=target_state, pocket=pocket)
 
         for build in target_builds:
+            # Skip builds for superseded sources; they won't ever
+            # actually build.
+            if not build.current_source_publication:
+                log.debug(
+                    'Skipping superseded %s (%s)' % (build.title, build.id))
+                continue
 
             if not build.can_be_retried:
                 log.warn('Can not retry %s (%s)' % (build.title, build.id))

@@ -50,6 +50,8 @@ class IHasBugs(Interface):
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute(
         "A list of in-progress bugTasks for this target.")
+    high_bugtasks = Attribute(
+        "A list of high importance BugTasks for this target.")
     critical_bugtasks = Attribute(
         "A list of critical BugTasks for this target.")
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
@@ -154,12 +156,12 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug=Bool(
             title=(
                 u"Search for bugs which are linked to hardware reports "
-                "wich contain the given device or whcih contain a device"
-                "contolled by the given driver."),
+                "which contain the given device or whcih contain a device"
+                "controlled by the given driver."),
             required=False),
         linked_branches=Choice(
             title=(
-                u"Search for bugs that are linked to branches or for bugs"
+                u"Search for bugs that are linked to branches or for bugs "
                 "that are not linked to branches."),
             vocabulary=BugBranchSearch, required=False))
     @operation_returns_collection_of(IBugTask)

@@ -11,6 +11,10 @@ from textwrap import dedent
 
 from zope.security.proxy import removeSecurityProxy
 
+from bzrlib.errors import NotBranchError
+
+from canonical.config import config
+
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import ZopelessAppServerLayer
@@ -23,7 +27,7 @@ from lp.translations.scripts.translations_to_branch import (
 
 
 class GruesomeException(Exception):
-    """CPU on fire.  Or some other kind of failure, like."""
+    """CPU on fire.  Or some other kind of failure."""
 
 
 class TestExportTranslationsToBranch(TestCaseWithFactory):
@@ -40,7 +44,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # End-to-end test of the script doing its work.
 
         # Set up a server for hosted branches.
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches(direct_database=False)
 
         # Set up a product and translatable series.
         product = self.factory.makeProduct(name='committobranch')
@@ -48,8 +52,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         series = product.getSeries('trunk')
 
         # Set up a translations_branch for the series.
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, product=product)
+        db_branch, tree = self.create_branch_and_tree(product=product)
         removeSecurityProxy(db_branch).last_scanned_id = 'null:'
         product.official_rosetta = True
         series.translations_branch = db_branch
@@ -77,17 +80,20 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual('', stdout)
         self.assertEqual(
-            'INFO    creating lockfile\n'
+            'INFO    '
+            'Creating lockfile: '
+            '/var/lock/launchpad-translations-export-to-branch.lock\n'
             'INFO    Exporting to translations branches.\n'
             'INFO    Exporting Committobranch trunk series.\n'
-            'INFO    Processed 1 item(s); 0 failure(s).',
+            'INFO    '
+            'Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).',
             self._filterOutput(stderr))
         self.assertIn('No previous translations commit found.', stderr)
         self.assertEqual(0, retcode)
 
         # The branch now contains a snapshot of the translation.  (Only
         # one file: the Dutch translation we set up earlier).
-        branch_contents = map_branch_contents(db_branch.getPullURL())
+        branch_contents = map_branch_contents(db_branch.getBzrBranch())
         expected_contents = {
             'po/nl.po': """
                 # Dutch translation for .*
@@ -124,7 +130,9 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             ['-vvv', '--no-fudge'])
         self.assertEqual(0, retcode)
         self.assertIn('Last commit was at', stderr)
-        self.assertIn("Processed 1 item(s); 0 failure(s).", stderr)
+        self.assertIn(
+            "Processed 1 item(s); 0 failure(s), 0 unpushed branch(es).",
+            stderr)
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
 
@@ -145,6 +153,61 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertTrue(message.startswith("ERROR"))
         self.assertTrue("GruesomeException" in message)
 
+    def test_exportToBranches_handles_unpushed_branches(self):
+        # bzrlib raises NotBranchError when accessing a nonexistent
+        # branch.  The exporter deals with that by calling
+        # _handleUnpushedBranch.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        productseries.translations_branch = self.factory.makeBranch()
+
+        # _handleUnpushedBranch is called if _exportToBranch raises
+        # NotBranchError.
+        exporter._handleUnpushedBranch = FakeMethod()
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("No!"))
+        exporter._exportToBranches([productseries])
+        self.assertEqual(1, exporter._handleUnpushedBranch.call_count)
+
+        # This does not happen if the export succeeds.
+        exporter._handleUnpushedBranch = FakeMethod()
+        exporter._exportToBranch = FakeMethod()
+        exporter._exportToBranches([productseries])
+        self.assertEqual(0, exporter._handleUnpushedBranch.call_count)
+
+        # Nor does it happen if the export fails in some other way.
+        exporter._handleUnpushedBranch = FakeMethod()
+        exporter._exportToBranch = FakeMethod(failure=IndexError("Ayyeee!"))
+        exporter._exportToBranches([productseries])
+        self.assertEqual(0, exporter._handleUnpushedBranch.call_count)
+
+    def test_handleUnpushedBranch_mails_branch_owner(self):
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        email = self.factory.getUniqueEmailAddress()
+        branch_owner = self.factory.makePerson(email=email)
+        productseries.translations_branch = self.factory.makeBranch(
+            owner=branch_owner)
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
+        exporter._sendMail = FakeMethod()
+
+        exporter._exportToBranches([productseries])
+
+        self.assertEqual(1, exporter._sendMail.call_count)
+        (sender, recipients, subject, text), kwargs = (
+            exporter._sendMail.calls[-1])
+        self.assertIn(config.canonical.noreply_from_address, sender)
+        self.assertIn(email, recipients)
+        self.assertEqual(
+            "Launchpad: translations branch has not been set up.", subject)
+
+        self.assertIn(
+            "problem with translations branch synchronization", text)
+        self.assertIn(productseries.title, text)
+        self.assertIn(productseries.translations_branch.bzr_identity, text)
+        self.assertIn('bzr push lp://', text)
+
 
 class TestExportToStackedBranch(TestCaseWithFactory):
     """Test workaround for bzr bug 375013."""
@@ -163,11 +226,11 @@ class TestExportToStackedBranch(TestCaseWithFactory):
         self.useBzrBranches()
 
         base_branch, base_tree = self.create_branch_and_tree(
-            'base', name='base', hosted=True)
+            'base', name='base')
         self._setUpBranch(base_branch, base_tree, "Base branch.")
 
         stacked_branch, stacked_tree = self.create_branch_and_tree(
-            'stacked', name='stacked', hosted=True)
+            'stacked', name='stacked')
         stacked_tree.branch.set_stacked_on_url('/' + base_branch.unique_name)
         stacked_branch.stacked_on = base_branch
         self._setUpBranch(stacked_branch, stacked_tree, "Stacked branch.")

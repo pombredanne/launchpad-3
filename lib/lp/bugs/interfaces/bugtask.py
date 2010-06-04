@@ -39,6 +39,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -171,6 +172,12 @@ class BugTaskStatus(DBEnumeratedType):
         fixing, or it might not be fixed in this release.
         """)
 
+    EXPIRED = DBItem(19, """
+        Expired
+
+        This bug is expired. There was no activity since a longer time.
+        """)
+
     CONFIRMED = DBItem(20, """
         Confirmed
 
@@ -228,7 +235,7 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
+        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
         'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
@@ -306,10 +313,12 @@ UNRESOLVED_BUGTASK_STATUSES = (
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
     BugTaskStatus.INVALID,
-    BugTaskStatus.WONTFIX)
+    BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED)
 
 BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED,
     BugTaskStatus.TRIAGED)
 
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
@@ -353,6 +362,15 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
 
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
+class UserCannotEditBugTaskAssignee(Unauthorized):
+    """User not permitted to change bugtask assignees.
+
+    Raised when a user with insufficient prilieges tries to set
+    the assignee of a bug task.
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
@@ -461,7 +479,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Fix Committed or Fix Released."),
+                               "either Won't Fix, Invalid or Fix Released."),
                  readonly=True,
                  required=False))
     date_left_new = exported(
@@ -483,7 +501,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                  readonly=True,
                  required=False))
     date_fix_released = exported(
-        Datetime(title=_("Date Fix Relesaed"),
+        Datetime(title=_("Date Fix Released"),
                  description=_("The date on which this task was marked "
                                "Fix Released."),
                  readonly=True,
@@ -547,7 +565,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     is_complete = exported(
         Bool(description=_(
                 "True or False depending on whether or not there is more "
-                " work required on this bug task."),
+                "work required on this bug task."),
              readonly=True))
 
     @operation_returns_collection_of(Interface) # Actually IBug.
@@ -651,6 +669,21 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
 
         Some status transitions require extra conditions to be met.
         See `canTransitionToStatus` for more details.
+        """
+
+    def userCanSetAnyAssignee(user):
+        """Check if the current user can set anybody sa a bugtask assignee.
+
+        Return True for project owner, project drivers, series drivers,
+        bug supervisors and Launchpad admins; return False for other users.
+        """
+
+    def userCanUnassign(user):
+        """Check if the current user can set assignee to None.
+
+        Project owner, project drivers, series drivers, bug supervisors
+        and Launchpad admins can do this always; other users can do this
+        only if they or their reams are the assignee.
         """
 
     @mutator_for(assignee)
@@ -766,9 +799,11 @@ UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
 
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
-    searchtext = TextLine(title=_("Bug ID or text:"), required=False)
+    searchtext = TextLine(title=_("Bug ID or search text."), required=False)
     status = List(
         title=_('Status'),
+        description=_('Show only bugs with the given status value '
+                      'or list of values.'),
         value_type=Choice(
             title=_('Status'),
             vocabulary=BugTaskStatusSearch,
@@ -777,14 +812,20 @@ class IBugTaskSearchBase(Interface):
         required=False)
     importance = List(
         title=_('Importance'),
+        description=_('Show only bugs with the given importance'
+                      'or list of importances.'),
         value_type=IBugTask['importance'],
         required=False)
     assignee = Choice(
-        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
+        title=_('Assignee'),
+        description=_('Person entity assigned for this bug.'),
+        vocabulary='ValidAssignee', required=False)
     bug_reporter = Choice(
-        title=_('Bug Reporter'), vocabulary='ValidAssignee', required=False)
+        title=_('Bug reporter'),
+        description=_('Person entity that filed the bug report.'),
+        vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
-        title=_('Omit duplicate bugs'), required=False,
+        title=_('Omit bugs marked as duplicate,'), required=False,
         default=True)
     omit_targeted = Bool(
         title=_('Omit bugs targeted to series'), required=False,
@@ -792,7 +833,7 @@ class IBugTaskSearchBase(Interface):
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
-        title=_('Show only bugs with patches available'), required=False,
+        title=_('Show only bugs with patches available.'), required=False,
         default=False)
     has_no_package = Bool(
         title=_('Exclude bugs with packages specified'),
@@ -800,24 +841,38 @@ class IBugTaskSearchBase(Interface):
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
-        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+        title=_('Milestone'),
+        description=_('Show only bug tasks targeted to this milestone.'),
+        value_type=IBugTask['milestone'], required=False)
     component = List(
-        title=_('Component'), value_type=IComponent['name'], required=False)
+        title=_('Component'),
+        description=_('Distribution package archive grouping. '
+                      'E.g. main, universe, multiverse'),
+        value_type=IComponent['name'], required=False)
     tag = List(title=_("Tag"), value_type=SearchTag(), required=False)
     status_upstream = List(
-        title=_('Status Upstream'),
+        title=_('Status upstream'),
+        description=_('Indicates the status of any remote watches '
+                      'associated with the bug.  Possible values '
+                      'include: pending_bugwatch, hide_upstream, '
+                      'resolved_upstream, and open_upstream.'),
         value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_supervisor = Choice(
         title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs in packages this person or team '
+                      'is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs commented on by this person.'),
         required=False)
     subscriber = Choice(
         title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs this person or team '
+                      'is directly subscribed to.'),
         required=False)
     affects_me = Bool(
         title=_('Show only bugs affecting me'), required=False)
@@ -839,7 +894,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     one value can be selected.)
     """
     tag = List(
-        title=_("Tags"), description=_("Separated by whitespace."),
+        title=_("Tags"),
+        description=_("String or list of strings for tags to search. "
+                      "To exclude, prepend a '-', e.g. '-unwantedtag'"),
         value_type=SearchTag(), required=False)
     tags_combinator = Choice(
         title=_("Tags combination"),
@@ -881,7 +938,7 @@ class IFrontPageBugTaskSearch(IBugTaskSearchBase):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
-        vocabulary="DistributionOrProductOrProject")
+        vocabulary="DistributionOrProductOrProjectGroup")
 
 
 class IBugTaskDelta(Interface):

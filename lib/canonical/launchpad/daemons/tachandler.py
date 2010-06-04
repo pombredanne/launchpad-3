@@ -70,7 +70,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
         pass
 
 
-def kill_by_pidfile(pidfile_path):
+def kill_by_pidfile(pidfile_path, poll_interval=0.1, num_polls=50):
     """Kill a process identified by the pid stored in a file.
 
     The pid file is removed from disk.
@@ -115,7 +115,7 @@ class TacTestSetup:
 
     You can override setUpRoot to set up a root directory for the daemon.
     """
-    def setUp(self, spew=False):
+    def setUp(self, spew=False, umask=None):
         # Before we run, we want to make sure that we have cleaned up any
         # previous runs. Although tearDown() should have been called already,
         # we can't guarantee it.
@@ -128,10 +128,18 @@ class TacTestSetup:
         remove_if_exists(self.logfile)
 
         self.setUpRoot()
-        args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
+        args = [sys.executable,
+                # XXX: 2010-04-26, Salgado, bug=570246: Deprecation warnings
+                # in Twisted are not our problem.  They also aren't easy to
+                # suppress, and cause test failures due to spurious stderr
+                # output.  Just shut the whole bloody mess up.
+                '-Wignore::DeprecationWarning',
+                twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
         if spew:
             args.append('--spew')
+        if umask is not None:
+            args.extend(('--umask', umask))
 
         # Run twistd, and raise an error if the return value is non-zero or
         # stdout/stderr are written to.
@@ -164,8 +172,8 @@ class TacTestSetup:
     def _waitForDaemonStartup(self):
         """ Wait for the daemon to fully start.
 
-        Times out after 20 seconds.  If that happens, the log file will
-        not be cleaned up so the user can post-mortem it.
+        Times out after 20 seconds.  If that happens, the log file content
+        will be included in the exception message for debugging purpose.
 
         :raises TacException: Timeout.
         """
@@ -178,8 +186,8 @@ class TacTestSetup:
             now = time.time()
 
         if now >= deadline:
-            raise TacException('Unable to start %s. Check %s.' % (
-                self.tacfile, self.logfile))
+            raise TacException('Unable to start %s. Content of %s:\n%s' % (
+                self.tacfile, self.logfile, open(self.logfile).read()))
 
     def tearDown(self):
         self.killTac()

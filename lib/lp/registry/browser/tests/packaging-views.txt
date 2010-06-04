@@ -74,55 +74,6 @@ attribute.
 
     >>> transaction.commit()
 
-Once a distro series sourcepackage is linked to a product series, no other
-product series can link to it.
-
-    >>> other_productseries = factory.makeProductSeries(
-    ...     product=product, name='hotest')
-    >>> form = {
-    ...     'field.distroseries': 'hoary',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Project',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     other_productseries, '+ubuntupkg', form=form)
-    >>> for error in view.errors:
-    ...     print error
-    The <a href=".../hoary/+source/hot">hot</a> package in Hoary is already
-    linked to another series.
-
-A source package name must be provided.
-
-    >>> form = {
-    ...     'field.distroseries': 'hoary',
-    ...     'field.sourcepackagename': '',
-    ...     'field.packaging': 'Primary Project',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+ubuntupkg', form=form)
-    >>> for error in view.errors:
-    ...     print error
-    ('sourcepackagename', u'Source Package Name', RequiredMissing())
-    You must choose the source package name.
-
-In the case of full functionality distributions like Ubuntu, the source
-package must be published in the distro series.
-
-    >>> vapor_spn = factory.makeSourcePackageName('vapor')
-    >>> form = {
-    ...     'field.distroseries': 'hoary',
-    ...     'field.sourcepackagename': 'vapor',
-    ...     'field.packaging': 'Primary Project',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+ubuntupkg', form=form)
-    >>> for error in view.errors:
-    ...     print error
-    The source package is not published in Hoary.
-
 
 Productseries linking Ubuntu packages
 -------------------------------------
@@ -399,5 +350,5 @@ The view provides the cached_unlinked_packages property to access a
     cnews
     libstdc++
     linux-source-2.6.15
-    thunderbird
     hot
+    thunderbird

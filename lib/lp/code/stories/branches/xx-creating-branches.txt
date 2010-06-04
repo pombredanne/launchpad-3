@@ -175,7 +175,7 @@ A user can register a branch from the project series page using the
     >>> browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> browser.getLink('registering a mirrored branch').click()
     >>> print browser.title
-    Register a branch : Series trunk : GNOME Terminal
+    Register a branch : GNOME Terminal
 
 The user sees that he is registering a branch for the series' project.
 
@@ -190,7 +190,7 @@ After posting the form, he sees the registered branch page.
     >>> browser.getControl('Experimental').click()
     >>> browser.getControl('Register Branch').click()
     >>> print browser.title
-    master : Branches : GNOME Terminal
+    master : Code : GNOME Terminal
 
 
 == Finding person/+addbranch ==

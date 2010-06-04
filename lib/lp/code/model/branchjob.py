@@ -51,14 +51,13 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
-    get_scanner_server)
+from lp.codehosting.vfs import (
+    branch_id_to_path, get_rw_server, get_ro_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
 from lp.registry.interfaces.productseries import IProductSeriesSet
-from lp.translations.model.translationbranchapprover import (
-    TranslationBranchApprover)
+from lp.translations.model.approver import TranslationBranchApprover
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel)
@@ -184,6 +183,14 @@ class BranchJobDerived(BaseRunnableJob):
     def __init__(self, branch_job):
         self.context = branch_job
 
+    def __repr__(self):
+        branch = self.branch
+        return '<%(job_type)s branch job (%(id)s) for %(branch)s>' % {
+            'job_type': self.context.job_type.name,
+            'id': self.context.id,
+            'branch': branch.unique_name,
+            }
+
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
@@ -285,7 +292,7 @@ class BranchScanJob(BranchJobDerived):
     def contextManager(cls):
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        cls.server = get_scanner_server()
+        cls.server = get_ro_server()
         cls.server.start_server()
         yield
         cls.server.stop_server()
@@ -314,7 +321,7 @@ class BranchUpgradeJob(BranchJobDerived):
     def contextManager():
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
-        server = get_multi_server(write_hosted=True)
+        server = get_rw_server()
         server.start_server()
         yield
         server.stop_server()
@@ -326,7 +333,8 @@ class BranchUpgradeJob(BranchJobDerived):
         try:
             upgrade_transport = get_transport(upgrade_branch_path)
             upgrade_transport.mkdir('.bzr')
-            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport = get_transport(
+                self.branch.getInternalBzrUrl())
             source_branch_transport.clone('.bzr').copy_tree_to_transport(
                 upgrade_transport.clone('.bzr'))
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
@@ -929,6 +937,12 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
+    def __repr__(self):
+        return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
+            'id': self.context.id,
+            'branch': self.branch_id,
+            }
+
     @classmethod
     def create(cls, branch_id):
         """See `IBranchDiffJobSource`."""
@@ -945,13 +959,8 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
         return self.metadata['branch_id']
 
     def run(self):
-        mirrored_path = os.path.join(
+        branch_path = os.path.join(
             config.codehosting.mirrored_branches_root,
             branch_id_to_path(self.branch_id))
-        hosted_path = os.path.join(
-            config.codehosting.hosted_branches_root,
-            branch_id_to_path(self.branch_id))
-        if os.path.exists(mirrored_path):
-            shutil.rmtree(mirrored_path)
-        if os.path.exists(hosted_path):
-            shutil.rmtree(hosted_path)
+        if os.path.exists(branch_path):
+            shutil.rmtree(branch_path)

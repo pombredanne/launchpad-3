@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python2.5 -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -44,7 +44,7 @@ if __name__ == '__main__':
         parser.error("Unhandled arguments %s" % repr(arguments))
     log = set_up_logging_for_script(options, 'supermirror_puller')
     manager = scheduler.JobScheduler(
-        LoggingProxy(config.codehosting.branch_puller_endpoint, log), log,
+        LoggingProxy(config.codehosting.codehosting_endpoint, log), log,
         options.branch_type)
 
     reactor.callWhenRunning(run_mirror, log, manager)

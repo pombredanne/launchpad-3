@@ -9,23 +9,6 @@
     i18n_domain="launchpad">
 
     <class
-        class=".model.openidrpconfig.OpenIDRPConfig">
-      <allow interface=".interfaces.openidrpconfig.IOpenIDRPConfig" />
-      <require
-          permission="launchpad.Admin"
-          attributes="destroySelf"
-          set_schema=".interfaces.openidrpconfig.IOpenIDRPConfig" />
-    </class>
-
-    <securedutility
-        class=".model.openidrpconfig.OpenIDRPConfigSet"
-        provides=".interfaces.openidrpconfig.IOpenIDRPConfigSet">
-      <allow
-          interface=".interfaces.openidrpconfig.IOpenIDRPConfigSet"
-          />
-    </securedutility>
-
-    <class
         class=".model.openidrpsummary.OpenIDRPSummary">
         <allow interface=".interfaces.openidrpsummary.IOpenIDRPSummary" />
     </class>
@@ -44,5 +27,4 @@
     <adapter factory=".adapters.openid.OpenIDPersistentIdentity" />
     <adapter factory=".adapters.openid.person_to_openidpersistentidentity" />
 
-    <include package=".browser" />
 </configure>

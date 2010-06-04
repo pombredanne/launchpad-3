@@ -85,6 +85,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         blob_data = blob_file.read()
 
         self.blob = self.factory.makeBlob(blob_data)
+        transaction.commit() # We need the blob available from the Librarian.
 
     def _assertFileBugDataMatchesDict(self, filebug_data, data_dict):
         """Asser that the data in a FileBugData object matches a dict."""
@@ -272,7 +273,7 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
-            'INFO    Ran 1 IProcessApportBlobJobSource jobs.\n', stderr)
+            'INFO    Ran 1 ProcessApportBlobJob jobs.\n', stderr)
 
     def test_getFileBugData(self):
         # The IProcessApportBlobJobSource.getFileBugData() method
