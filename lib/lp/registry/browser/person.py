@@ -1733,7 +1733,7 @@ class PersonSpecWorkloadView(LaunchpadView):
         assert self.context.isTeam, (
             "PersonSpecWorkloadView.members can only be called on a team.")
         members = self.context.allmembers
-        batch_nav = BatchNavigator(members, self.request)
+        batch_nav = BatchNavigator(members, self.request, size=20)
         return batch_nav
 
 
@@ -3567,6 +3567,8 @@ class PersonEditSSHKeysView(LaunchpadView):
         return canonical_url(self.context, view_name="+edit")
 
     def add_ssh(self):
+        # XXX: JonathanLange 2010-05-13: This should hella not be in browser
+        # code. Move this to ISSHKeySet (bonus! tests become easier to write).
         sshkey = self.request.form.get('sshkey')
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
@@ -5190,14 +5192,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
             builds_by_package[package] = []
             needs_build_by_package[package] = False
         for build in all_builds:
-            if build.buildstate == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.sourcepackagerelease].append(build)
-            needs_build = build.buildstate in [
+            if build.status == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.source_package_release].append(build)
+            needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.sourcepackagerelease] = needs_build
+            needs_build_by_package[build.source_package_release] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 

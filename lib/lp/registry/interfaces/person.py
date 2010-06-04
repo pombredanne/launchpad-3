@@ -850,18 +850,15 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         distroseries=List(value_type=Reference(schema=Interface)),
         name=TextLine(),
         recipe_text=Text(),
-        sourcepackagename=TextLine(),
         )
     @export_factory_operation(Interface, [])
-    def createRecipe(name, description, recipe_text, distroseries,
-                     sourcepackagename, registrant):
+    def createRecipe(name, description, recipe_text, distroseries, registrant):
         """Create a SourcePackageRecipe owned by this person.
 
         :param name: the name to use for referring to the recipe.
         :param description: A description of the recipe.
         :param recipe_text: The text of the recipe.
         :param distroseries: The distroseries to use.
-        :param sourcepackagename: The name of the sourcepackage for the recipe.
         :return: a SourcePackageRecipe.
         """
 

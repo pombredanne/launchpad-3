@@ -303,19 +303,31 @@ class TestRevisionMailJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """Ensure that BranchDiffJob implements IBranchDiffJob."""
+        """Ensure that RevisionMailJob implements IRevisionMailJob."""
         branch = self.factory.makeAnyBranch()
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
         verifyObject(IRevisionMailJob, job)
 
+    def test_repr(self):
+        """Ensure that the revision mail job as a reasonable repr."""
+        branch = self.factory.makeAnyBranch()
+        job = RevisionMailJob.create(
+            branch, 0, 'from@example.com', 'hello', False, 'subject')
+        self.assertEqual(
+            '<REVISION_MAIL branch job (%s) for %s>'
+            % (job.context.id, branch.unique_name),
+            repr(job))
+
     def test_run_sends_mail(self):
         """Ensure RevisionMailJob.run sends mail with correct values."""
         branch = self.factory.makeAnyBranch()
-        branch.subscribe(branch.registrant,
+        branch.subscribe(
+            branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            branch.registrant)
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
         job.run()
@@ -505,10 +517,12 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         product = self.factory.makeProduct(name='foo')
         branch = self.factory.makeProductBranch(
             name='bar', product=product, owner=jrandom)
-        branch.subscribe(branch.registrant,
+        branch.subscribe(
+            branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            branch.registrant)
         branch, tree = self.create_branch_and_tree(db_branch=branch)
         tree.branch.nick = 'nicholas'
         tree.lock_write()

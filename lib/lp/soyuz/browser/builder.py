@@ -335,7 +335,17 @@ class BuilderEditView(LaunchpadEditFormView):
     @action(_('Change'), name='update')
     def change_details(self, action, data):
         """Update the builder with the data from the form."""
-        builder_was_modified = self.updateContextFromData(data)
+        # notify_modified is set False here because it uses
+        # lazr.lifecycle.snapshot to store the state of the object
+        # before and after modification.  This is dangerous for the
+        # builder model class because it causes some properties to be
+        # queried that try and communicate with the slave, which cannot
+        # be done from the webapp (it's generally firewalled).  We could
+        # prevent snapshots for individual properties by defining the
+        # interface properties with doNotSnapshot() but this doesn't
+        # guard against future properties being created.
+        builder_was_modified = self.updateContextFromData(
+            data, notify_modified=False)
 
         if builder_was_modified:
             notification = 'The builder "%s" was updated successfully.' % (

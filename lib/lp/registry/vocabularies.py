@@ -290,8 +290,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        return SimpleTerm(
-            obj, obj.name, '%s (%s)' % (obj.displayname, obj.name))
+        return SimpleTerm(obj, obj.name, obj.unique_displayname)
 
     def __iter__(self):
         kw = {}

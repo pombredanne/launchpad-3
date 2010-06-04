@@ -16,6 +16,7 @@ messaging settings -- stub 2004-10-21
 
 __all__ = [
     'append_footer',
+    'do_paranoid_envelope_to_validation',
     'format_address',
     'format_address_for_person',
     'get_msgid',
