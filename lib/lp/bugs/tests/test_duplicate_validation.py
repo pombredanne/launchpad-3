@@ -7,6 +7,7 @@ import unittest
 
 from canonical.testing import DatabaseFunctionalLayer
 
+from lp.bugs.interfaces.bug import InvalidDuplicateValue
 from lp.testing import TestCaseWithFactory
 
 
@@ -15,8 +16,18 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_fail(self):
-        self.assertEqual(True, False)
+    def setUp(self):
+        super(TestMarkDuplicateValidation, self).setUp(
+            user='test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.dupe_bug = self.factory.makeBug()
+        self.dupe_bug.duplicateof = self.bug
+        self.possible_dupe = self.factory.makeBug()
+
+    def test_already_has_duplicate_error(self):
+        self.assertRaises(
+            InvalidDuplicateValue, self.possible_dupe.markAsDuplicate,
+            self.dupe_bug)
 
 
 def test_suite():
