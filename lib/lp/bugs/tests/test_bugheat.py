@@ -11,7 +11,6 @@ import unittest
 from storm.store import Store
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadZopelessLayer
@@ -215,17 +214,15 @@ class DistributionSourcePackageMultipleBugsRecalculateBugHeatCacheTest(
         # stored procedure. We will override them here to avoid
         # testing inconsitencies if those values are calculated
         # differently in the future.
-        bug1 = removeSecurityProxy(self.bugtask1.bug)
-        bug2 = removeSecurityProxy(self.bugtask2.bug)
-        bug1.heat = 7
-        bug2.heat = 19
+        # target.recalculateBugHeatCache() should be called
+        # automatically by bug.setHeat().
+        bug1 = self.bugtask1.bug
+        bug2 = self.bugtask2.bug
+        bug1.setHeat(7)
+        bug2.setHeat(19)
         Store.of(bug1).flush()
         self.max_heat = max(bug1.heat, bug2.heat)
         self.total_heat = sum([bug1.heat, bug2.heat])
-        # target.recalculateBugHeatCache() should be called
-        # automatically when makeBugTask() calls bug.addTask(), but we
-        # need to call it again, since we modified the bug heat value.
-        self.target.recalculateBugHeatCache()
 
     def test_max_bug_heat(self):
         self.assertEqual(self.max_heat, self.target.max_bug_heat)
