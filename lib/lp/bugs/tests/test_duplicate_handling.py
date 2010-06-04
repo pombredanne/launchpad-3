@@ -20,7 +20,7 @@ class TestDuplicateAttributes(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestDuplicateAttributes, self).setUp( user='test@canonical.com')
+        super(TestDuplicateAttributes, self).setUp(user='test@canonical.com')
 
     def setDuplicateofDirectly(self, bug, duplicateof):
         """Helper method to set duplicateof directly."""
@@ -78,7 +78,7 @@ class TestMoveDuplicates(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestMoveDuplicates, self).setUp( user='test@canonical.com')
+        super(TestMoveDuplicates, self).setUp(user='test@canonical.com')
 
     def test_duplicates_are_moved(self):
         # Confirm that a bug with two duplicates can be marked
