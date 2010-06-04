@@ -6,10 +6,32 @@
 from textwrap import dedent
 import unittest
 
+from zope.security.interfaces import ForbiddenAttribute
+
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.bugs.interfaces.bug import InvalidDuplicateValue
 from lp.testing import TestCaseWithFactory
+
+
+class TestDuplicateAttributes(TestCaseWithFactory):
+    """Test bug attributes related to duplicate handling."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDuplicateAttributes, self).setUp( user='test@canonical.com')
+
+    def setDuplicateofDirectly(self, bug, duplicateof):
+        """Helper method to set duplicateof directly."""
+        bug.duplicateof = duplicateof
+
+    def test_duplicateof_readonly(self):
+        # Test that no one can set duplicateof directly.
+        bug = self.factory.makeBug()
+        dupe_bug = self.factory.makeBug()
+        self.assertRaises(
+            ForbiddenAttribute, self.setDuplicateofDirectly, bug, dupe_bug)
 
 
 class TestMarkDuplicateValidation(TestCaseWithFactory):
