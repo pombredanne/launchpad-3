@@ -719,7 +719,6 @@ class BuilderSet(object):
             PackageBuild.archive == Archive.id,
             BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            # WHERE
             BuildFarmJob.status == BuildStatus.NEEDSBUILD,
             Archive._enabled == True).group_by(
                 Processor, Archive.require_virtualized)
