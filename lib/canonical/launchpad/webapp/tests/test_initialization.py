@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests post-zcml application initialization.
+
 As found in canonical.launchpad.webapp.initialization.py."""
 
 import unittest

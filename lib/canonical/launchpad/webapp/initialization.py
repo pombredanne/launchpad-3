@@ -11,9 +11,11 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.http import IHTTPRequest
 from zope.traversing.interfaces import ITraversable
 
+
 @implementer(Interface)
 def adapter_mask(*args):
     return None
+
 
 @adapter(IDatabaseOpened)
 def handle_process_start(ev):
@@ -29,6 +31,7 @@ def handle_process_start(ev):
     Python first starts.
     """
     fix_up_namespace_traversers()
+
 
 def fix_up_namespace_traversers():
     """Block namespace traversers from being found as normal views.
