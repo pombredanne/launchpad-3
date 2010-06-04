@@ -43,6 +43,8 @@ from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.pomsgid import POMsgID
@@ -1369,23 +1371,17 @@ class POTemplateSharingSubset(object):
         self.potemplateset = potemplateset
         self.distribution = None
         self.product = None
-        self.distrosourcepackages = []
 
         if distribution is not None:
             if sourcepackagename is None:
                 self.distribution = distribution
             else:
-                from lp.registry.model.distributionsourcepackage import (
-                    DistributionSourcePackage)
-                distrosourcepackage = DistributionSourcePackage(
+                product = self._findUpstreamProduct(
                     distribution, sourcepackagename)
-                self.product = distrosourcepackage.upstream_product
-                if self.product is None:
-                    self.distrosourcepackages = [distrosourcepackage]
-                else:
-                    self.distrosourcepackages = (
-                        self.product.distrosourcepackages)
-        else:
+                if product is None:
+                    self.share_by_name = self._canShareByName(
+                        distribution, sourcepackagename)
+        if product is not None:
             self.product = product
             self.distrosourcepackages = product.distrosourcepackages
 
@@ -1397,37 +1393,31 @@ class POTemplateSharingSubset(object):
             package = template.sourcepackagename.name
         return (template.name, package)
 
-    def _iterate_potemplates(self, name_pattern=None):
-        """Yield all templates matching the provided argument.
+    def _build_query(self, templatename):
+        ProductSeries1 = Alias(ProductSeries, 'productseries1')
+        Packed = Alias(
+            Join(
+                Packaging, ProductSeries,
+                Packaging.productseries == ProductSeries.id),
+            'packed')
 
-        This is much like a `IPOTemplateSubset`, except it operates on
-        `Product`s and `Distribution`s rather than `ProductSeries` and
-        `DistroSeries`.
-        """
-        if self.distribution is not None:
-            subsets = [
-                self.potemplateset.getSubset(distroseries=series)
-                for series in self.distribution.series
-                ]
-        else:
-            subsets = []
-            if self.product is not None:
-                subsets.extend([
-                    self.potemplateset.getSubset(productseries=series)
-                    for series in self.product.series
-                    ])
-            for dsp in self.distrosourcepackages:
-                subsets.extend([
-                    self.potemplateset.getSubset(
-                        distroseries=series,
-                        sourcepackagename=dsp.sourcepackagename)
-                    for series in dsp.distribution.series
-                    ])
-        for subset in subsets:
-            for template in subset:
-                if name_pattern is None or re.match(name_pattern,
-                                                    template.name):
-                    yield template
+        origin = LeftJoin(
+                LeftJoin(
+                    POTemplate, ProductSeries1,
+                    POTemplate.productseries == ProductSeries1.id), 
+                Packed,
+                And(
+                    Packed.distroseries == POTemplate.distroseries,
+                    Packed.sourcepackagename == POTemplate.sourcepackagename))
+        return Store.of(self.product).using(origin).find(
+            POTemplate,
+            And(
+                Or(
+                    ProductSeries1.product == self.product,
+                    Packed.product == self.product
+                    ),
+                POTemplate.name == templatename
+                ))
 
     def getSharingPOTemplates(self, potemplate_name):
         """See IPOTemplateSharingSubset."""
@@ -1435,8 +1425,14 @@ class POTemplateSharingSubset(object):
             assert self.sourcepackagename is not None, (
                    "Need sourcepackagename to select from distribution.")
 
-        escaped_potemplate_name = re.escape(potemplate_name)
-        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
+        return self._build_query(potemplate_name)
+#        escaped_potemplate_name = re.escape(potemplate_name)
+#        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
+
+    def getSharingPOTemplateIDs(self, potemplate_name):
+        """See IPOTemplateSharingSubset."""
+        return self.getSharingPOTemplates(potemplate_name).values(
+            POTemplate.id)
 
     def groupEquivalentPOTemplates(self, name_pattern=None):
         """See IPOTemplateSharingSubset."""
