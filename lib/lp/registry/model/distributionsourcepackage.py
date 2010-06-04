@@ -15,7 +15,7 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, In, Join, Lower
+from storm.expr import And, Count, Desc, In, Join, Lower, Max, Sum
 from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.component import getUtility
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
+from lp.bugs.model.bug import Bug, BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -166,6 +166,33 @@ class DistributionSourcePackage(BugTargetBase,
         # into the database but we need access to some of the fields
         # in the database.
         return self._get(self.distribution, self.sourcepackagename)
+
+    def recalculateBugHeatCache(self):
+        """See `IHasBugHeat`."""
+        self.max_bug_heat = IStore(Bug).find(
+            Max(Bug.heat),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+        if self.max_bug_heat is None:
+            # SELECT MAX(Bug.heat) returns NULL if zero rows match.
+            self.max_bug_heat = 0
+
+        self.total_bug_heat = IStore(Bug).find(
+            Sum(Bug.heat),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+        if self.total_bug_heat is None:
+            self.total_bug_heat = 0
+
+        self.bug_count = IStore(Bug).find(
+            Count(Bug.heat),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id).one()
+        if self.bug_count is None:
+            self.bug_count = 0
 
     @property
     def latest_overall_publication(self):
@@ -514,8 +541,8 @@ class DistributionSourcePackage(BugTargetBase,
         distribution = spph.distroseries.distribution
         section = spph.section
 
-        dsp = cls._get(distribution, sourcepackagename)
         if spph.archive.purpose == ArchivePurpose.PRIMARY:
+            dsp = cls._get(distribution, sourcepackagename)
             if dsp is None:
                 dsp = cls._new(distribution, sourcepackagename, section)
             elif spph.distroseries.status == SeriesStatus.CURRENT:
@@ -523,7 +550,6 @@ class DistributionSourcePackage(BugTargetBase,
                 # not override the section from a previously created
                 # SourcePackagePublishingHistory.
                 dsp.section = section
-        return dsp
 
 
 class DistributionSourcePackageInDatabase(Storm):

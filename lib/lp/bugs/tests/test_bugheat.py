@@ -5,17 +5,17 @@
 
 __metaclass__ = type
 
-import pytz
 import transaction
 import unittest
-from datetime import datetime
+
+from storm.store import Store
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadZopelessLayer
 
-from lp.bugs.adapters.bugchange import BugDescriptionChange
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugheat import CalculateBugHeatJob
 from lp.bugs.scripts.bugheat import BugHeatCalculator
@@ -158,6 +158,87 @@ class DistributionSourcePackageMaxHeatByTargetTest(
 
     def setUp(self):
         self.target = self.factory.makeDistributionSourcePackage()
+
+class DistributionSourcePackageNullBugHeatCacheTest(
+    TestCaseWithFactory):
+    """Ensure distro source package cache values start at None."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target = self.factory.makeDistributionSourcePackage()
+
+    def test_null_max_bug_heat(self):
+        self.assertEqual(None, self.target.max_bug_heat)
+
+    def test_null_total_bug_heat(self):
+        self.assertEqual(None, self.target.total_bug_heat)
+
+    def test_null_bug_count(self):
+        self.assertEqual(None, self.target.bug_count)
+
+
+class DistributionSourcePackageZeroRecalculateBugHeatCacheTest(
+    TestCaseWithFactory):
+    """Ensure distro source package cache values become zero properly."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target = self.factory.makeDistributionSourcePackage()
+        self.target.recalculateBugHeatCache()
+
+    def test_zero_max_bug_heat(self):
+        self.assertEqual(0, self.target.max_bug_heat)
+
+    def test_zero_total_bug_heat(self):
+        self.assertEqual(0, self.target.total_bug_heat)
+
+    def test_zero_bug_count(self):
+        self.assertEqual(0, self.target.bug_count)
+
+
+class DistributionSourcePackageMultipleBugsRecalculateBugHeatCacheTest(
+    TestCaseWithFactory):
+    """Ensure distro source package cache values are set properly."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.target = self.factory.makeDistributionSourcePackage()
+        self.bugtask1 = self.factory.makeBugTask(target=self.target)
+        self.bugtask2 = self.factory.makeBugTask(target=self.target)
+        # Bug heat gets calculated by complicated rules in a db
+        # stored procedure. We will override them here to avoid
+        # testing inconsitencies if those values are calculated
+        # differently in the future.
+        bug1 = removeSecurityProxy(self.bugtask1.bug)
+        bug2 = removeSecurityProxy(self.bugtask2.bug)
+        bug1.heat = 7
+        bug2.heat = 19
+        Store.of(bug1).flush()
+        self.max_heat = max(bug1.heat, bug2.heat)
+        self.total_heat = sum([bug1.heat, bug2.heat])
+        # target.recalculateBugHeatCache() should be called
+        # automatically when makeBugTask() calls bug.addTask(), but we
+        # need to call it again, since we modified the bug heat value.
+        self.target.recalculateBugHeatCache()
+
+    def test_max_bug_heat(self):
+        self.assertEqual(self.max_heat, self.target.max_bug_heat)
+
+    def test_total_bug_heat(self):
+        self.assertEqual(self.total_heat, self.target.total_bug_heat)
+        self.failUnless(
+            self.target.total_bug_heat > self.target.max_bug_heat,
+            "Total bug heat should be more than the max bug heat, "
+            "since we know that multiple bugs have nonzero heat.")
+
+    def test_bug_count(self):
+        self.assertEqual(2, self.target.bug_count)
 
 
 class SourcePackageMaxHeatByTargetTest(

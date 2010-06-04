@@ -38,7 +38,16 @@ class MailingListAPITestCase(unittest.TestCase):
     def _assertMembership(self, expected):
         """Assert that the named team has exactly the expected membership."""
         transaction.commit()
+
+        from canonical.database.testing import tracers
+        debug = tracers.StderrDebugTracer()
+        debug.install()
+        debug.trace = True
+
         all_info = self.api.getMembershipInformation([self.team.name])
+
+        debug.uninstall()
+
         team_info = all_info.get(self.team.name)
         self.failIf(team_info is None)
         team_info.sort()
