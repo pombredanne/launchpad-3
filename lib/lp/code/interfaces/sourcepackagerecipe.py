@@ -63,7 +63,8 @@ class TooManyBuilds(Exception):
         self.recipe = recipe
         self.distroseries = distroseries
         msg = (
-            'You have exceeded your quota for recipe %s for distroseries %s' % (self.recipe, distroseries))
+            'You have exceeded your quota for recipe %s for distroseries %s'
+            % (self.recipe, distroseries))
         Exception.__init__(self, msg)
 
 

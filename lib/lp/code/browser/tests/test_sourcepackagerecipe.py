@@ -13,7 +13,6 @@ from textwrap import dedent
 from pytz import utc
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_tags_by_class)
