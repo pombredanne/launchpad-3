@@ -22,7 +22,7 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
             user='test@canonical.com')
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
-        self.dupe_bug.duplicateof = self.bug
+        self.dupe_bug.markAsDuplicate(self.bug)
         self.possible_dupe = self.factory.makeBug()
 
     def assertDuplicateError(self, bug, duplicateof, msg):
@@ -48,6 +48,32 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
         msg = dedent(u"""
             You can't mark a bug as a duplicate of itself.""")
         self.assertDuplicateError( self.bug, self.bug, msg)
+
+
+class TestMoveDuplicates(TestCaseWithFactory):
+    """Test duplicates are moved when master bug is marked a duplicate."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMoveDuplicates, self).setUp( user='test@canonical.com')
+
+    def test_duplicates_are_moved(self):
+        # Confirm that a bug with two duplicates can be marked
+        # a duplicate of a new bug and that the duplicates will
+        # be re-marked as duplicates of the new bug, too.
+        bug = self.factory.makeBug()
+        dupe_one = self.factory.makeBug()
+        dupe_two = self.factory.makeBug()
+        dupe_one.markAsDuplicate(bug)
+        dupe_two.markAsDuplicate(bug)
+        self.assertEqual(dupe_one.duplicateof, bug)
+        self.assertEqual(dupe_two.duplicateof, bug)
+        new_bug = self.factory.makeBug()
+        bug.markAsDuplicate(new_bug)
+        self.assertEqual(bug.duplicateof, new_bug)
+        self.assertEqual(dupe_one.duplicateof, new_bug)
+        self.assertEqual(dupe_two.duplicateof, new_bug)
 
 
 def test_suite():
