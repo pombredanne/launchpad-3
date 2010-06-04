@@ -8,7 +8,7 @@ import unittest
 
 from lp.testing import TestCase
 from zope.interface import Interface
-from zope.component import getSiteManager, ComponentLookupError
+from zope.component import getSiteManager
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.traversing.interfaces import ITraversable
 

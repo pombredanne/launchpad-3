@@ -3,7 +3,7 @@
 
 """Initializes the application after ZCML has been processed."""
 
-from zope.interface import implements, implementer, Interface
+from zope.interface import implementer, Interface
 from zope.component import adapter, getSiteManager
 from zope.processlifetime import IDatabaseOpened
 from zope.publisher.interfaces import IRequest
