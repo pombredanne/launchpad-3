@@ -31,7 +31,7 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
         except InvalidDuplicateValue, err:
             self.assertEqual(err.message.doc(), msg)
 
-    def test_error_on_bug_itself_is_duplicate(self):
+    def test_error_on_duplicate_to_duplicate(self):
         # Test that a bug cannot be marked a duplicate of
         # a bug that is already itself a duplicate.
         msg = dedent(u"""
@@ -42,6 +42,12 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
                 self.dupe_bug.id, self.dupe_bug.duplicateof.id))
         self.assertDuplicateError(
             self.possible_dupe, self.dupe_bug, msg)
+
+    def test_error_duplicate_to_itself(self):
+        # Test that a bug cannot be marked its own duplicate
+        msg = dedent(u"""
+            You can't mark a bug as a duplicate of itself.""")
+        self.assertDuplicateError( self.bug, self.bug, msg)
 
 
 def test_suite():
