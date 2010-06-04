@@ -69,7 +69,7 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
         # Test that a bug cannot be marked its own duplicate
         msg = dedent(u"""
             You can't mark a bug as a duplicate of itself.""")
-        self.assertDuplicateError( self.bug, self.bug, msg)
+        self.assertDuplicateError(self.bug, self.bug, msg)
 
 
 class TestMoveDuplicates(TestCaseWithFactory):
