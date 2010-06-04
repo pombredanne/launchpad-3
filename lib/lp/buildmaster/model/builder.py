@@ -721,11 +721,13 @@ class BuilderSet(object):
             DistroArchSeries.processorfamilyID == Processor.familyID,
             # WHERE
             BuildFarmJob.status == BuildStatus.NEEDSBUILD,
-            Archive._enabled == True).group_by(Processor, Archive.require_virtualized)
+            Archive._enabled == True).group_by(
+                Processor, Archive.require_virtualized)
 
         result_dict = {'virt': {}, 'nonvirt': {}}
         for size, duration, processor, virtualized in results:
-            result_dict['virt' if virtualized else 'nonvirt'][processor.name] = (
+            virt_str = 'virt' if virtualized else 'nonvirt'
+            result_dict[virt_str][processor.name] = (
                 size, duration)
 
         return result_dict
