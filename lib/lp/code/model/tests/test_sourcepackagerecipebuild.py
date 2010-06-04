@@ -44,8 +44,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         distroseries.nominatedarchindep = distroseries_i386
 
         return getUtility(ISourcePackageRecipeBuildSource).new(
-            sourcepackage=self.factory.makeSourcePackage(
-                distroseries=distroseries),
+            distroseries=distroseries,
             recipe=self.factory.makeSourcePackageRecipe(
                 distroseries=distroseries),
             archive=self.factory.makeArchive(),
@@ -72,8 +71,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
 
     def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
+        bq = spb.queueBuild(spb)
 
-        bq = spb.queueBuild()
         self.assertProvides(bq, IBuildQueue)
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)

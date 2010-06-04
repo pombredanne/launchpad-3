@@ -256,6 +256,19 @@
 
 
   <securedutility
+    name="AllUserTeamsParticipation"
+    component="lp.registry.vocabularies.AllUserTeamsParticipationVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.AllUserTeamsParticipationVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
     name="ActiveMailingList"
     component="lp.registry.vocabularies.ActiveMailingListVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

@@ -47,8 +47,10 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch)
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue, specific_job_classes
+from lp.buildmaster.model.packagebuild import PackageBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.interfaces.job import JobStatus
@@ -704,6 +706,8 @@ class BuilderSet(object):
         origin = (
             Archive,
             BinaryPackageBuild,
+            PackageBuild,
+            BuildFarmJob,
             BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
@@ -713,10 +717,12 @@ class BuilderSet(object):
             BuildQueue,
             BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == BinaryPackageBuild.id,
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
-            BinaryPackageBuild.archive == Archive.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == Archive.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
-            BinaryPackageBuild.buildstate == BuildStatus.NEEDSBUILD,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
             Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,
