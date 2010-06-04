@@ -32,6 +32,8 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
             self.assertEqual(err.message.doc(), msg)
 
     def test_already_has_duplicate_error(self):
+        # Test that a bug cannot be marked a duplicate of
+        # a bug that is already itself a duplicate.
         msg = dedent(u"""
             Bug %s is already a duplicate of bug %s. You
             can only mark a bug report as duplicate of one that
