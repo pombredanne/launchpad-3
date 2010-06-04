@@ -170,6 +170,29 @@ Package sets from other series are not shown.
 
 == Queue item filelist ==
 
+First set up some additional data: a package diff to show in the listing.
+
+    >>> from StringIO import StringIO
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.soyuz.interfaces.packagediff import (
+    ...     PackageDiffStatus)
+    >>> login(ANONYMOUS)
+    >>> old = main_archive.getPublishedSources(
+    ...     name='alsa-utils', version='1.0.9a-4')[0].sourcepackagerelease
+    >>> new = main_archive.getPublishedSources(
+    ...     name='alsa-utils',
+    ...     version='1.0.9a-4ubuntu1')[0].sourcepackagerelease
+    >>> diff = removeSecurityProxy(old.requestDiffTo(
+    ...     requester=name12, to_sourcepackagerelease=new))
+    >>> diff.date_fulfilled = UTC_NOW
+    >>> diff.status = PackageDiffStatus.COMPLETED
+    >>> diff.diff_content = getUtility(ILibrarianClient).addFile(
+    ...     'alsa-utils.diff.gz', 11, StringIO('i am a diff'),
+    ...     'application/gzipped-patch')
+    >>> logout()
+
 Each queue item has a hidden 'filelist' section which is
 toggled via javascript by clicking in the 'expand' arrow
 image:
@@ -195,13 +218,16 @@ by its size, one file per line:
   >>> for row in filelist:
   ...     print extract_text(row)
   alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
+  diff from 1.0.9a-4 to 1.0.9a-4ubuntu1 (11 bytes)
 
 Each filename links to its respective librarian URL:
 
-  >>> print row.find('a')
-  <a href="http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc">
+  >>> for row in filelist:
+  ...     print row.find('a')
+  <a href="http://localhost:58000/.../alsa-utils_1.0.9a-4ubuntu1.dsc">
     alsa-utils_1.0.9a-4ubuntu1.dsc
   </a>
+  <a href="http://localhost:58000/.../alsa-utils.diff.gz">diff from 1.0.9a-4 to 1.0.9a-4ubuntu1</a>
 
 On binary queue items we also present the stamp 'NEW' for files never
 published in the archive (it helps archive admins when reviewing
