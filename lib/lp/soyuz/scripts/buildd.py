@@ -169,9 +169,9 @@ class QueueBuilder(LaunchpadCronScript):
 
         for build in builds:
             if not build.buildqueue_record:
-                name = build.sourcepackagerelease.name
-                version = build.sourcepackagerelease.version
-                tag = build.distroarchseries.architecturetag
+                name = build.source_package_release.name
+                version = build.source_package_release.version
+                tag = build.distro_arch_series.architecturetag
                 self.logger.debug(
                     "Creating buildqueue record for %s (%s) on %s"
                     % (name, version, tag))
@@ -195,7 +195,7 @@ class QueueBuilder(LaunchpadCronScript):
         for job in candidates:
             uptodate_build = getUtility(
                 IBinaryPackageBuildSet).getByQueueEntry(job)
-            if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
+            if uptodate_build.status != BuildStatus.NEEDSBUILD:
                 continue
             job.score()
 

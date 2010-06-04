@@ -305,8 +305,8 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
             'Privacy mismatch on %s' % build.upload_changesfile.filename)
         n_files += 1
         self.assertEquals(
-            build.buildlog.restricted, restricted,
-            'Privacy mismatch on %s' % build.buildlog.filename)
+            build.log.restricted, restricted,
+            'Privacy mismatch on %s' % build.log.filename)
         n_files += 1
         self.assertEquals(
             n_files, expected_n_files,
@@ -322,7 +322,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # update_files_privacy() called on a private binary
         # publication that was copied to a public location correctly
         # makes all its related files (deb file, upload changesfile
-        # and buildlog) public.
+        # and log) public.
 
         # Create a new private PPA and a private source publication.
         private_source = self.makeSource(private=True)
@@ -491,7 +491,7 @@ class CopyCheckerHarness:
 
     def test_cannot_copy_binaries_from_FTBFS(self):
         [build] = self.source.createMissingBuilds()
-        build.buildstate = BuildStatus.FAILEDTOBUILD
+        build.status = BuildStatus.FAILEDTOBUILD
         self.assertCannotCopyBinaries(
             'source has no binaries to be copied')
 
@@ -501,7 +501,7 @@ class CopyCheckerHarness:
         # retried anytime, but they will fail-to-upload if a copy
         # has built successfully.
         [build] = self.source.createMissingBuilds()
-        build.buildstate = BuildStatus.FAILEDTOBUILD
+        build.status = BuildStatus.FAILEDTOBUILD
         self.assertCanCopySourceOnly()
 
     def test_cannot_copy_binaries_from_binaries_pending_publication(self):
@@ -1156,7 +1156,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         changes_file_name = '%s_%s_%s.changes' % (
             lazy_bin.name, lazy_bin.version, build_i386.arch_tag)
         package_upload = self.test_publisher.addPackageUpload(
-            ppa, build_i386.distroarchseries.distroseries,
+            ppa, build_i386.distro_arch_series.distroseries,
             build_i386.pocket, changes_file_content='anything',
             changes_file_name=changes_file_name)
         package_upload.addBuild(build_i386)
@@ -1862,8 +1862,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
 
         # The i386 build is completed and the hppa one pending.
-        self.assertEqual(build_hppa.buildstate, BuildStatus.NEEDSBUILD)
-        self.assertEqual(build_i386.buildstate, BuildStatus.FULLYBUILT)
+        self.assertEqual(build_hppa.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(build_i386.status, BuildStatus.FULLYBUILT)
 
         # Commit to ensure librarian files are written.
         self.layer.txn.commit()
@@ -2249,7 +2249,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             'foo_source.buildlog', restricted=True)
 
         for build in ppa_source.getBuilds():
-            build.buildlog = fake_buildlog
+            build.log = fake_buildlog
 
         # Create ancestry environment in the primary archive, so we can
         # test unembargoed overrides.
@@ -2312,7 +2312,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
                 # Check build's upload changesfile
                 self.assertFalse(build.upload_changesfile.restricted)
                 # Check build's buildlog.
-                self.assertFalse(build.buildlog.restricted)
+                self.assertFalse(build.log.restricted)
             # Check that the pocket is -security as specified in the
             # script parameters.
             self.assertEqual(
