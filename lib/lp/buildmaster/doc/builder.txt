@@ -115,18 +115,18 @@ virtualization status, architecture, then name.
 Processor/virtualization.
 
     >>> queue_sizes = builderset.getBuildQueueSizes()
-    >>> queue_sizes['i386']['nonvirt']
-    (1, datetime.timedelta(0, 60))
+    >>> queue_sizes['nonvirt']['386']
+    (1L, datetime.timedelta(0, 60))
 
-The 'amd64' build queue is empty.
+There are no 'amd64' build queue entries.
 
-    >>> queue_sizes['amd64']['nonvirt']
-    (0, None)
+    >>> queue_sizes['nonvirt'].keys()
+    [u'386']
 
 The virtualized build queue for 386 is also empty.
 
-    >>> queue_sizes['i386']['virt']
-    (0, None)
+    >>> queue_sizes['virt'].keys()
+    []
 
 The queue size is not affect by builds target to disabled
 archives. Builds for disabled archive are not dispatched as well, this
@@ -138,25 +138,28 @@ We will temporarily disable the ubuntu primary archive.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.main_archive.disable()
+    >>> import transaction
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 That done, the non-virtualized queue for i386 becomes empty.
 
     >>> queue_sizes = builderset.getBuildQueueSizes()
-    >>> queue_sizes['i386']['nonvirt']
-    (0, None)
+    >>> queue_sizes['nonvirt'].keys()
+    []
 
 Let's re-enable the ubuntu primary archive.
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu.main_archive.enable()
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 The build for the ubuntu primary archive shows up again.
 
     >>> queue_sizes = builderset.getBuildQueueSizes()
-    >>> queue_sizes['i386']['nonvirt']
-    (1, datetime.timedelta(0, 60))
+    >>> queue_sizes['nonvirt']['386']
+    (1L, datetime.timedelta(0, 60))
 
 
 Resuming buildd slaves
