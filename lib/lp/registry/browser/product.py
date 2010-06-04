@@ -292,13 +292,19 @@ class ProductLicenseMixin:
 
     def _addLicenseChangeToReviewWhiteboard(self):
         """Update the whiteboard for the reviewer's benefit."""
-        now = datetime.now(tz=pytz.UTC).strftime('%Y-%M-%d')
+        now = self._formatDate()
         whiteboard = 'User notified of license policy on %s.' % now
         naked_product = removeSecurityProxy(self.product)
         if naked_product.reviewer_whiteboard is None:
             naked_product.reviewer_whiteboard = whiteboard
         else:
             naked_product.reviewer_whiteboard += '\n' + whiteboard
+
+    def _formatDate(self, now=None):
+        """Return the date formatted for messages."""
+        if now is None:
+            now = datetime.now(tz=pytz.UTC)
+        return now.strftime('%Y-%m-%d')
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
