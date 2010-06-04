@@ -1139,14 +1139,14 @@
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeAddView"
-            permission="zope.Public"
+            permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeEditView"
-            permission="zope.Public"
+            permission="launchpad.Edit"
             facet="branches"
             name="+edit"
             template="../../app/templates/generic-edit.pt"/>
