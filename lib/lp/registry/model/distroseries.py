@@ -217,6 +217,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
 
+    def __str__(self):
+        return '%s %s' % (self.distribution.name, self.name)
+
     def getDistroArchSeries(self, archtag):
         """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(

@@ -12,6 +12,8 @@ __all__ = [
 
 import datetime
 
+from pytz import utc
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
@@ -207,7 +209,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return store.find(cls, cls.id == build_id).one()
 
     @classmethod
-    def getRecentBuilds(cls, requester, recipe, distroseries, _now):
+    def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
+        if _now is None:
+            _now = datetime.datetime.now(utc)
         store = IMasterStore(SourcePackageRecipeBuild)
         old_threshold = _now - datetime.timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
