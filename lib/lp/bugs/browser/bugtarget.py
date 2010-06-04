@@ -41,6 +41,7 @@ from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice
 from zope.schema.vocabulary import SimpleVocabulary
+from zope.security.proxy import removeSecurityProxy
 
 from lazr.restful.interface import copy_field
 
@@ -123,7 +124,8 @@ class IProductBugConfiguration(Interface):
 
 def product_to_productbugconfiguration(product):
     """Adapts an `IProduct` into an `IProductBugConfiguration`."""
-    alsoProvides(IProduct, IProductBugConfiguration)
+    alsoProvides(
+        removeSecurityProxy(product), IProductBugConfiguration)
     return product
 
 
