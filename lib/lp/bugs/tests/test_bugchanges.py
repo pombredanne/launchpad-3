@@ -58,17 +58,31 @@ class TestBugChanges(unittest.TestCase):
         subscription.bug_notification_level = level
         return subscriber
 
-    def saveOldChanges(self, bug=None):
-        """Save the old changes to a bug.
+    def saveOldChanges(self, bug=None, append=False):
+        """Save old activity and notifications for a test.
 
-        This method should be called after all the setup is done.
+        This method should be called after setup.  Removing the
+        initial bug-created activity and notification messages
+        allows for a more accurate check of new activity and
+        notifications.
+
+        The append parameter can be used to save activity/notifications
+        for more than one bug in a single test, as when dealing
+        with duplicates.
         """
         if bug is None:
             bug = self.bug
-        self.old_activities = set(bug.activity)
-        self.old_notification_ids = set(
+        old_activities = set(bug.activity)
+        old_notification_ids = set(
             notification.id for notification in (
                 BugNotification.selectBy(bug=bug)))
+
+        if append:
+            self.old_activities.update(old_activities)
+            self.old_notification_ids.update(old_notification_ids)
+        else:
+            self.old_activities = old_activities
+            self.old_notification_ids = old_notification_ids
 
     def changeAttribute(self, obj, attribute, new_value):
         """Set the value of `attribute` on `obj` to `new_value`.
@@ -1248,12 +1262,10 @@ class TestBugChanges(unittest.TestCase):
         # and a notification is sent.
         duplicate_bug = self.factory.makeBug()
         self.saveOldChanges(duplicate_bug)
-        # Save the people that are notified about the bug before it's
-        # made a duplicate, so that we don't get extra people by
-        # mistake. Only the people subscribed to the bug that gets marked
-        # as a duplicate are notified. People who are subscribed to the
-        # master bug aren't, to avoid them getting spammed with
-        # unimportant bug notifications.
+        self.saveOldChanges(self.bug, append=True)
+        # Save the initial "bug created" notifications before
+        # marking this bug a duplicate, so that we don't get
+        # extra notificationse by mistake.
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
@@ -1276,6 +1288,15 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification,
             bug=duplicate_bug)
+
+        # Ensure that only the people subscribed to the bug that
+        # gets marked as a duplicate are notified.
+        master_notifications = BugNotification.selectBy(
+            bug=self.bug, orderBy='id')
+        new_notifications = [
+            notification for notification in master_notifications
+            if notification.id not in self.old_notification_ids]
+        self.assertEqual(len(list(new_notifications)), 0)
 
     def test_unmarked_as_duplicate(self):
         # When a bug is unmarked as a duplicate, activity is recorded
