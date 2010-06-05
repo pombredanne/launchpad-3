@@ -1019,6 +1019,20 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
+    def _checkUpload(self, person, distroseries, sourcepackagename, component, 
+                    pocket, strict_component=True):
+        """See `IArchive`."""
+        if isinstance(component, basestring):
+            component = getUtility(IComponentSet)[component]
+        if isinstance(sourcepackagename, basestring):
+            sourcepackagename = getUtility(
+                ISourcePackageNameSet)[sourcepackagename]
+        reason = self.checkUpload(person, distroseries, sourcepackagename, 
+            component, pocket, strict_component)
+        if reason is not None:
+            raise reason
+        return True
+
     def checkUpload(self, person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """See `IArchive`."""
