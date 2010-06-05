@@ -125,7 +125,7 @@ translation_import_queue_entry_age = {
     RosettaImportStatus.DELETED: timedelta(days=3),
     RosettaImportStatus.FAILED: timedelta(days=DAYS_IN_MONTH),
     RosettaImportStatus.IMPORTED: timedelta(days=3),
-    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=DAYS_IN_HALF_YEAR),
+    RosettaImportStatus.NEEDS_INFORMATION: timedelta(days=14),
     RosettaImportStatus.NEEDS_REVIEW: timedelta(days=DAYS_IN_HALF_YEAR),
 }
 
