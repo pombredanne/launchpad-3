@@ -469,6 +469,12 @@
         name="fmt"
         />
     <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SourcePackageRecipeBuildFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
