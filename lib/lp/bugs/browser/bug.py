@@ -791,7 +791,13 @@ class BugTextView(LaunchpadView):
 
         text.append('attachments: ')
         for attachment in bug.attachments:
-            text.append(' %s' % self.attachment_text(attachment))
+            if attachment.type != BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
+
+        text.append('patches: ')
+        for attachment in bug.attachments:
+            if attachment.type == BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
 
         text.append('tags: %s' % ' '.join(bug.tags))
 
