@@ -43,7 +43,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         # duplicates.
         for i in range(5):
             dupe = self.factory.makeBug()
-            dupe.duplicateof = self.bug
+            dupe.markAsDuplicate(self.bug)
 
         expected_heat = BugHeatConstants.DUPLICATE * 5
         actual_heat = self.calculator._getHeatFromDuplicates()
@@ -79,7 +79,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         # are included in _getHeatFromAffectedUsers() of the main bug.
         for i in range(3):
             dupe = self.factory.makeBug()
-            dupe.duplicateof = self.bug
+            dupe.markAsDuplicate(self.bug)
         # Each bug reporter is by default also marked as being affected
         # by the bug, so we have three additional affected users.
         expected_heat += BugHeatConstants.AFFECTED_USER * 3
@@ -121,7 +121,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         # Subscribers from duplicates are included in the heat returned
         # by _getHeatFromSubscribers()
         dupe = self.factory.makeBug()
-        dupe.duplicateof = self.bug
+        dupe.markAsDuplicate(self.bug)
         expected_heat = BugHeatConstants.SUBSCRIBER * 7
         actual_heat = self.calculator._getHeatFromSubscribers()
         self.assertEqual(
@@ -184,7 +184,7 @@ class TestBugHeatCalculator(TestCaseWithFactory):
         # Adding a duplicate and making the bug private and security
         # related will increase its heat.
         dupe = self.factory.makeBug()
-        dupe.duplicateof = self.bug
+        dupe.markAsDuplicate(self.bug)
         self.bug.setPrivate(True, self.bug.owner)
         self.bug.setSecurityRelated(True)
 
