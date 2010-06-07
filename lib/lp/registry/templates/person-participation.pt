@@ -15,7 +15,7 @@
       is a member of the following teams:
     </p>
 
-    <p tal:condition="not: view/has_participations">
+    <p id="no-participation" tal:condition="not: view/has_participations">
       <span tal:replace="context/title">Foo Bar</span>
        has not yet joined any teams.
     </p>
@@ -73,7 +73,7 @@
     <ul id="participation-actions" class="horizontal"
       tal:condition="context/required:launchpad.Edit">
       <li>
-        <a class="sprite add" href="/people/+newteam">Register a new team</a>
+        <a class="sprite add" href="/people/+newteam">Register a team</a>
       </li>
       <li>
         <a class="sprite edit"
