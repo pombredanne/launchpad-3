@@ -331,7 +331,16 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class EditProduct(EditByOwnersOrAdmins):
+class EditByOwnersRegistryExpertsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+
+    def checkAuthenticated(self, user):
+        return (user.isOwner(self.obj) or
+                user.in_registry_experts or
+                user.in_admin)
+
+
+class EditProduct(EditByOwnersRegistryExpertsOrAdmins):
     usedfor = IProduct
 
 
@@ -549,6 +558,10 @@ class AdminProductTranslations(AuthorizationBase):
                 user.in_admin)
 
 
+class EditProject(EditByOwnersRegistryExpertsOrAdmins):
+    usedfor = IProjectGroup
+
+
 class EditProjectMilestoneNever(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProjectGroupMilestone
@@ -661,16 +674,18 @@ class ViewTeamMembership(AuthorizationBase):
         return False
 
 
-class EditPersonBySelfOrAdmins(AuthorizationBase):
+class EditPersonBySelfRegistryExpertsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IPerson
 
     def checkAuthenticated(self, user):
-        """A user can edit the Person who is herself.
+        """A user can edit his or her own object.
 
-        The admin team can also edit any Person.
+        The registry experts or admin teams can also edit any Person.
         """
-        return self.obj.id == user.person.id or user.in_admin
+        return (self.obj.id == user.person.id or
+                user.in_registry_experts or
+                user.in_admin)
 
 
 class EditTranslationsPersonByPerson(AuthorizationBase):
@@ -767,16 +782,14 @@ class AdminDistribution(AdminByAdminsTeam):
     usedfor = IDistribution
 
 
-class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
+class EditDistroByOwnersRegistryExpertOrAdmins(
+    EditByOwnersRegistryExpertsOrAdmins):
     """The owner of a distribution should be able to edit its
     information; it is mainly administrative data, such as bug
     contacts. Note that creation of new distributions and distribution
     series is still protected with launchpad.Admin"""
     permission = 'launchpad.Edit'
     usedfor = IDistribution
-
-    def checkAuthenticated(self, user):
-        return user.isOwner(self.obj) or user.in_admin
 
 
 class AppendDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
@@ -1462,7 +1475,7 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # otherwise, how can they give it back?
         check_perms = self.obj.archive.checkUpload(
             user.person, self.obj.distroseries,
-            self.obj.sourcepackagerelease.sourcepackagename, 
+            self.obj.sourcepackagerelease.sourcepackagename,
             self.obj.current_component, self.obj.pocket,
             strict_component=True)
         return check_perms == None
