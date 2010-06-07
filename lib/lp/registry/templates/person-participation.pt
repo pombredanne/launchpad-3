@@ -21,42 +21,45 @@
        has not yet joined any teams.
     </p>
 
-    <div class="left" tal:condition="direct/count">
-      <div class="portlet">
-        <h2>Direct membership</h2>
-        <table id="participation">
-          <tal:loop repeat="membership context/myactivememberships">
-            <tr tal:replace="structure membership/@@+listing-simple"
-                tal:condition="membership/team/@@+restricted-membership/userCanViewMembership"
-                />
-          </tal:loop>
-        </table>
-      </div>
-    </div>
-
-    <div class="right" tal:condition="indirect/count">
-      <div class="portlet">
-        <h2>Indirect membership</h2>
-        <table id="indirect participation">
-          <tal:loop repeat="team_via view/indirect_teams_via">
-            <tr tal:condition="team_via/team/@@+restricted-membership/userCanViewMembership">
-              <td><img tal:replace="structure team_via/team/image:icon" />
-              </td>
-              <td>
-                <div>
-                  <a tal:replace="structure team_via/team/fmt:link"
-                    >Team name</a>
-                </div>
-                <div>
-                  Via
-                  <span tal:replace="team_via/via">guadamen</span>.
-                </div>
-              </td>
-            </tr>
-          </tal:loop>
-        </table>
-      </div>
-    </div>
+    <table id="participation" class="listing"
+      tal:condition="direct/count">
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th>Joined</th>
+          <th>Role</th>
+          <th>Via</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="participation view/active_participations">
+          <td>
+            <a tal:replace="structure participation/team/fmt:link">name</a>
+          </td>
+          <td>
+            <tal:date condition="not: participation/via"
+              tal:replace="participation/membership/datejoined/fmt:date">
+              2005-06-17
+            </tal:date>
+            <tal:no-date condition="participation/via">
+              &mdash;
+            </tal:no-date>
+          </td>
+          <td tal:content="participation/role">
+            Member
+          </td>
+          <td>
+            <tal:indirect condition="participation/via"
+              replace="participation/via">
+              a, b, c
+            </tal:indirect>
+            <tal:direct condition="not: participation/via">
+              &mdash;
+            </tal:direct>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </body>
 </html>
