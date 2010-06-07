@@ -161,6 +161,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         # Calling `IBinaryPackageBuild.updateDependencies` makes the build
         # record ready for dispatch.
         depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
 
@@ -203,6 +204,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         contrib = getUtility(IComponentSet).new('contrib')
         removeSecurityProxy(spr).component = contrib
 
+        self.layer.txn.commit()
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
 
