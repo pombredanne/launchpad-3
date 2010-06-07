@@ -324,8 +324,8 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
         # Collect the source package releases for reference.
         self.sourcepackagereleases = [
-            self.builds_foo[0].sourcepackagerelease,
-            self.builds_bar[0].sourcepackagerelease,
+            self.builds_foo[0].source_package_release,
+            self.builds_bar[0].source_package_release,
             ]
 
     def test_getSourcePackageReleases_with_no_params(self):
@@ -339,7 +339,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
 
         # Set the builds for one of the sprs to needs build.
         for build in self.builds_foo:
-            build.buildstate = BuildStatus.NEEDSBUILD
+            removeSecurityProxy(build).status = BuildStatus.NEEDSBUILD
 
         result = self.archive.getSourcePackageReleases(
             build_status=BuildStatus.NEEDSBUILD)
@@ -466,19 +466,23 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             duration += 60
             bq = build.buildqueue_record
             bq.lastscore = score
-            bq.estimated_duration = timedelta(seconds=duration)
+            removeSecurityProxy(bq).estimated_duration = timedelta(
+                seconds=duration)
 
     def _getBuildJobsByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
         query = """
             SELECT COUNT(Job.id)
-            FROM Build, BuildPackageJob, BuildQueue, Job
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job,
+                 PackageBuild, BuildFarmJob
             WHERE
-                Build.archive = %s
-                AND BuildPackageJob.build = Build.id
+                BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
-                AND Build.buildstate = %s
+                AND BinaryPackageBuild.package_build = PackageBuild.id
+                AND PackageBuild.archive = %s
+                AND PackageBuild.build_farm_job = BuildFarmJob.id
+                AND BuildFarmJob.status = %s
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 

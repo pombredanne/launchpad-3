@@ -35,9 +35,9 @@ Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
 The base method createBuild() is able to create a build to a given
-distroarchseries, pocket and archive.
+distro_arch_series, pocket and archive.
 
-Build.buildstate, by default is set to NEEDSBUILD, but you can
+Build.status, by default is set to NEEDSBUILD, but you can
 optionally provide another status.
 
     >>> hoary_evo_source = hoary.getSourcePackage('evolution')
@@ -48,10 +48,10 @@ optionally provide another status.
     ...     hoary_i386, pocket_release, ubuntu.main_archive,
     ...     status=BuildStatus.FULLYBUILT)
 
-    >>> print evo_build_i386.buildstate.name
+    >>> print evo_build_i386.status.name
     FULLYBUILT
 
-    >>> evo_build_i386.distroarchseries.architecturetag
+    >>> evo_build_i386.distro_arch_series.architecturetag
     u'i386'
 
     >>> print evo_build_i386.archive.displayname
@@ -191,7 +191,7 @@ contents at the time it was built.
     >>> evo_build_i386_ppa = copy.sourcepackagerelease.createBuild(
     ...     hoary_i386, pocket_release, cprov.archive)
 
-    >>> evo_build_i386_ppa.buildstate.name
+    >>> evo_build_i386_ppa.status.name
     'NEEDSBUILD'
 
     >>> print evo_build_i386_ppa.archive.displayname

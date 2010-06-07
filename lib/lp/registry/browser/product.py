@@ -292,13 +292,19 @@ class ProductLicenseMixin:
 
     def _addLicenseChangeToReviewWhiteboard(self):
         """Update the whiteboard for the reviewer's benefit."""
-        now = datetime.now(tz=pytz.UTC).strftime('%Y-%M-%d')
+        now = self._formatDate()
         whiteboard = 'User notified of license policy on %s.' % now
         naked_product = removeSecurityProxy(self.product)
         if naked_product.reviewer_whiteboard is None:
             naked_product.reviewer_whiteboard = whiteboard
         else:
             naked_product.reviewer_whiteboard += '\n' + whiteboard
+
+    def _formatDate(self, now=None):
+        """Return the date formatted for messages."""
+        if now is None:
+            now = datetime.now(tz=pytz.UTC)
+        return now.strftime('%Y-%m-%d')
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -1851,24 +1857,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return 'Check for duplicate projects'
         return 'Registration details'
 
-    def isVCSImport(self):
-        """Is the the user vcs-imports."""
-        if self.user is None:
-            return False
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        return self.user.inTeam(vcs_imports)
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProjectAddStepTwo, self).setUpFields()
-        if not self.isVCSImport():
-            # vcs-imports members get it easy and are able to change
-            # the owner and reviewed status during the edit process;
-            # this saves time wasted on getting to product/+admin.
-            # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit(
-                'owner', 'license_reviewed')
-
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpWidgets()
@@ -1941,14 +1929,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     def main_action(self, data):
         """See `MultiStepView`."""
-        if not self.isVCSImport():
-            # Zope makes sure these are never set, since they are not in
-            # self.form_fields
-            assert "owner" not in data, 'Unexpected form data'
-            assert "license_reviewed" not in data, 'Unexpected form data'
-            data['owner'] = self.user
-            data['license_reviewed'] = False
-
         self.product = self.create_product(data)
         self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))

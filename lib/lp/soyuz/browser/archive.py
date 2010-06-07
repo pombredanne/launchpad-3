@@ -23,7 +23,6 @@ __all__ = [
     'ArchiveView',
     'ArchiveViewBase',
     'make_archive_vocabulary',
-    'traverse_distro_archive',
     'traverse_named_ppa',
     ]
 
@@ -93,7 +92,7 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured, NavigationMenu
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 from canonical.widgets import (
     LabeledMultiCheckBoxWidget, PlainMultiCheckBoxWidget)
 from canonical.widgets.itemswidgets import (
@@ -109,21 +108,6 @@ class ArchiveBadges(HasBadgeBase):
     def getPrivateBadgeTitle(self):
         """Return private badge info useful for a tooltip."""
         return "This archive is private."
-
-
-def traverse_distro_archive(distribution, name):
-    """For distribution archives, traverse to the right place.
-
-    This traversal only applies to distribution archives, not PPAs.
-
-    :param name: The name of the archive, e.g. 'partner'
-    """
-    archive = getUtility(
-        IArchiveSet).getByDistroAndName(distribution, name)
-    if archive is None:
-        raise NotFoundError(name)
-
-    return archive
 
 
 def traverse_named_ppa(person_name, ppa_name):

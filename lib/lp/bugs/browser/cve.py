@@ -129,6 +129,9 @@ class CveSetView:
         if self.text:
             self.pre_search()
 
+    label = 'Launchpad CVE tracker'
+    page_title = label
+
     def getAllBatched(self):
         return BatchNavigator(self.context.getAll(), self.request)
 

@@ -193,7 +193,9 @@
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
-                    userCanEditMilestone"/>
+                    userCanEditMilestone
+                    userCanSetAnyAssignee
+                    userCanUnassign"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -691,7 +693,8 @@
                     unlinkHWSubmission
                     linkBranch
                     unlinkBranch
-                    linkAttachment"
+                    linkAttachment
+                    updateHeat"
                 set_attributes="
                     activity initial_message
                     activityscore
@@ -720,7 +723,8 @@
                 permission="launchpad.Admin"
                 attributes="
                     setCommentVisibility
-                    setHeat"/>
+                    setHeat"
+                set_attributes="heat_last_updated" />
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
@@ -852,7 +856,6 @@
                     can_be_rescheduled
                     datecreated
                     failed_activity
-                    getLastErrorMessage
                     hasComment
                     unpushed_comments
                     id

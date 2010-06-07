@@ -516,6 +516,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def __iter__(self):
         return iter(self.series)
 
+    def getArchive(self, name):
+        """See `IDistribution.`"""
+        return getUtility(
+            IArchiveSet).getByDistroAndName(self, name)
+
     def getSeries(self, name_or_version):
         """See `IDistribution`."""
         distroseries = DistroSeries.selectOneBy(
@@ -947,10 +952,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             if spr.changelog_entry is not None:
                 sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
-                BinaryPackageRelease.build = Build.id AND
-                Build.sourcepackagerelease = %s
+                BinaryPackageRelease.build = BinaryPackageBuild.id AND
+                BinaryPackageBuild.source_package_release = %s
                 """ % sqlvalues(spr.id),
-                clauseTables=['Build'])
+                clauseTables=['BinaryPackageBuild'])
             for binpkg in binpkgs:
                 log.debug("Considering binary '%s'" % binpkg.name)
                 binpkgnames.add(binpkg.name)
@@ -1061,9 +1066,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.status != SeriesStatus.OBSOLETE,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             DistroArchSeries.distroseries == DistroSeries.id,
-            BinaryPackageBuild.distroarchseries == DistroArchSeries.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageRelease.build == BinaryPackageBuild.id,
-            (BinaryPackageBuild.sourcepackagerelease ==
+            (BinaryPackageBuild.source_package_release ==
                 SourcePackageRelease.id),
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==

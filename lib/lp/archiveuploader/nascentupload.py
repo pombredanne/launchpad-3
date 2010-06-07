@@ -779,7 +779,7 @@ class NascentUpload:
                     # fine.
                     ancestry = self.getBinaryAncestry(
                         uploaded_file, try_other_archs=False)
-                    if (ancestry is not None and 
+                    if (ancestry is not None and
                         not self.policy.archive.is_copy):
                         # Ignore version checks for copy archives
                         # because the ancestry comes from the primary
@@ -920,7 +920,7 @@ class NascentUpload:
                 diff = to_sourcepackagerelease.requestDiffTo(
                     sourcepackagerelease.creator, sourcepackagerelease)
                 self.logger.debug(
-                    'Package diff for %s from %s requested' % (
+                    '%s %s requested' % (
                         diff.from_source.name, diff.title))
 
         if self.binaryful:
@@ -961,7 +961,7 @@ class NascentUpload:
                                    for build in self.queue_root.builds]
                 if considered_build.id in attached_builds:
                     continue
-                assert (considered_build.sourcepackagerelease.id ==
+                assert (considered_build.source_package_release.id ==
                         sourcepackagerelease.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)

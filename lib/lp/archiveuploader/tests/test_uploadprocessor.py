@@ -1014,7 +1014,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             build.title,
             'i386 build of foocomm 1.0-2 in ubuntu breezy RELEASE')
-        self.assertEqual(build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(build.status.name, 'NEEDSBUILD')
         self.assertTrue(build.buildqueue_record.lastscore is not None)
 
         # Upload the next binary version of the package.

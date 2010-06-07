@@ -10,7 +10,8 @@ We'll start by adding some attachments to the bug:
     >>> import StringIO
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.database import Bug, Person
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.registry.model.person import Person
     >>> login("foo.bar@canonical.com")
     >>> mark = Person.selectOneBy(name="mark")
     >>> mark.displayname = u"M\xe1rk Sh\xfattlew\xf2rth"
@@ -22,6 +23,10 @@ We'll start by adding some attachments to the bug:
     >>> a2 = bug.addAttachment(mark, content, "comment for file with space",
     ...     "file with space.txt",
     ...     content_type='text/plain;\n  name="file with space.txt"')
+    >>> content = StringIO.StringIO("Yes we can!")
+    >>> a3 = bug.addAttachment(mark, content, "comment for patch",
+    ...      "bug-patch.diff", is_patch=True, content_type='text/plain',
+    ...      description="a patch")
 
 Next, we'll cycle through all statuses so the dates are present:
 
@@ -67,6 +72,8 @@ all tasks related to that bug, presented in an easy-to-digest format:
     attachments:
         http://.../file_a.txt text/html
         http://.../file%20with%20space.txt text/plain; name="file with space.txt"
+    patches:
+        http://.../bug-patch.diff text/plain
     tags: 
     subscribers: 
         Steve Alexander (stevea)
@@ -291,6 +298,7 @@ When a bug is private, the textual description reflects this:
     private: yes
     security: yes
     attachments:
+    patches:
     tags: lunch-money
     subscribers:
         Karl Tilbury (karl)
