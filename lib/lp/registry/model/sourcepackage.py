@@ -54,7 +54,6 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -170,8 +169,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords,
-        IHasTranslationTemplates, IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords, IQuestionTarget)
 
     classProvides(ISourcePackageFactory)
 
@@ -518,16 +516,17 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                         'SourcePackagePublishingHistory']
 
         condition_clauses = ["""
-        Build.sourcepackagerelease = SourcePackageRelease.id AND
+        BinaryPackageBuild.source_package_release =
+            SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
             SourcePackageRelease.id AND
-        SourcePackagePublishingHistory.archive = Build.archive
+        SourcePackagePublishingHistory.archive = PackageBuild.archive
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distribution.all_distro_archive_ids)]
+                        list(self.distribution.all_distro_archive_ids))]
 
         # We re-use the optional-parameter handling provided by BuildSet
         # here, but pass None for the name argument as we've already
@@ -539,7 +538,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
-            "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+            "NOT (BuildFarmJob.status=%s AND "
+            "     BuildFarmJob.date_finished is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
@@ -550,13 +550,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildPackageJob')
-            condition_clauses.append('BuildPackageJob.build = Build.id')
+            condition_clauses.append(
+                'BuildPackageJob.build = BinaryPackageBuild.id')
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
-            orderBy = ["-Build.datecreated"]
+            orderBy = ["-BuildFarmJob.date_created"]
         else:
-            orderBy = ["-Build.datebuilt"]
+            orderBy = ["-BuildFarmJob.date_finished"]
 
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
@@ -604,7 +605,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         result = POTemplate.selectBy(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
-        return shortlist(result.orderBy(['-priority', 'name']), 300)
+        return result.orderBy(['-priority', 'name'])
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""

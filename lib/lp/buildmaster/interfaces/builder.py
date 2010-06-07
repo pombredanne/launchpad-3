@@ -327,14 +327,20 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueSizeForProcessor(processor, virtualized=False):
-        """Return the number of pending builds for a given processor.
+    def getBuildQueueSizes():
+        """Return the number of pending builds for each processor.
 
-        :param processor: IProcessor;
-        :param virtualized: boolean, controls which queue to check,
-            'virtualized' means PPA.
+        :return: a dict of tuples with the queue size and duration for
+            each processor and virtualisation. For example:
+            {
+                'virt': {
+                            '386': (1, datetime.timedelta(0, 60)),
+                            'amd64': (2, datetime.timedelta(0, 30)),
+                        },
+                'nonvirt':...
+            }
 
-        :return: a tuple containing the size of the queue, as an integer,
+            The tuple contains the size of the queue, as an integer,
             and the sum of the jobs 'estimated_duration' in queue,
             as a timedelta or None for empty queues.
         """

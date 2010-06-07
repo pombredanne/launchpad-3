@@ -39,6 +39,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -365,6 +366,15 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
 
+class UserCannotEditBugTaskAssignee(Unauthorized):
+    """User not permitted to change bugtask assignees.
+
+    Raised when a user with insufficient prilieges tries to set
+    the assignee of a bug task.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
     webservice_error(400) #Bad request.
@@ -659,6 +669,21 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
 
         Some status transitions require extra conditions to be met.
         See `canTransitionToStatus` for more details.
+        """
+
+    def userCanSetAnyAssignee(user):
+        """Check if the current user can set anybody sa a bugtask assignee.
+
+        Return True for project owner, project drivers, series drivers,
+        bug supervisors and Launchpad admins; return False for other users.
+        """
+
+    def userCanUnassign(user):
+        """Check if the current user can set assignee to None.
+
+        Project owner, project drivers, series drivers, bug supervisors
+        and Launchpad admins can do this always; other users can do this
+        only if they or their reams are the assignee.
         """
 
     @mutator_for(assignee)

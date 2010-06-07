@@ -29,6 +29,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
+from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
@@ -272,6 +273,14 @@ def handleMail(trans=transaction):
                 to = mail.get_all('to') or []
                 names_addresses = getaddresses(to + cc)
                 addresses = [addr for name, addr in names_addresses]
+
+                try:
+                    do_paranoid_envelope_to_validation(addresses)
+                except AssertionError, e:
+                    _handle_error(
+                        "Invalid email address: %s" % e,
+                        file_alias_url, notify=False)
+                    continue
 
                 handler = None
                 for email_addr in addresses:

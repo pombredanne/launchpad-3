@@ -111,6 +111,8 @@ class SFTPServer:
             os.path.join(os.path.dirname(__file__), 'poppy-sftp'),
             os.path.join(self._home_dir, '.ssh', 'id_rsa'))
         self._current_home = os.environ['HOME']
+        # We'd rather not have an agent interfere
+        os.environ.pop('SSH_AUTH_SOCK', None)
         os.environ['HOME'] = self._home_dir
         # XXX: Just blat over the BZR_SSH env var. Restoring env vars is a
         # little tricky, see lp.testing.TestCaseWithFactory.useTempBzrHome.
@@ -133,7 +135,9 @@ class SFTPServer:
         pass
 
     def waitForClose(self):
-        # XXX: Eww
+        # XXX: Steve Kowalik 2010-05-24 bug=586695 There has to be a
+        # better way to wait for the SFTP server to process our upload
+        # rather than sleeping for 10 seconds.
         time.sleep(10)
 
     def getTransport(self):
@@ -278,7 +282,13 @@ class TestPoppy(TestCaseWithFactory):
         self.server.disconnect(transport)
         self.server.waitForClose()
 
-        self.assertEqual(os.stat(self._uploadPath('')).st_mode, 042770)
+        upload_path = self._uploadPath('')
+        self.assertEqual(os.stat(upload_path).st_mode, 042770)
+        dir_name = upload_path.split('/')[-2]
+        if transport._user == 'joe':
+            self.assertEqual(dir_name.startswith('upload-sftp-2'), True)
+        elif transport._user == 'ubuntu':
+            self.assertEqual(dir_name.startswith('upload-2'), True)
         for upload in files:
             wanted_path = self._uploadPath(
                 "~ppa-user/ppa/ubuntu/%s" % upload)

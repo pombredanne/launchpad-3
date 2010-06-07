@@ -27,7 +27,6 @@ from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
@@ -47,11 +46,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
-
-    sourcepackagename = Reference(
-        ISourcePackageName,
-        title=_("The name of the source package being built"),
-        readonly=True)
+    # XXX michaeln 2010-05-18 bug=567922
+    # Temporarily alias distro_series until SPRecipeBuild is
+    # implementing IPackageBuild.
+    distro_series = distroseries
 
     requester = Object(
         schema=IPerson, required=False,
@@ -74,10 +72,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
 
-    def new(sourcepackage, recipe, requester, date_created=None):
+    def new(distroseries, recipe, requester, archive, date_created=None):
         """Create an `ISourcePackageRecipeBuild`.
 
-        :param sourcepackage: The `ISourcePackage` that this is building.
+        :param distroseries: The `IDistroSeries` that this is building against.
         :param recipe: The `ISourcePackageRecipe` that this is building.
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
