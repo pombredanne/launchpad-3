@@ -68,24 +68,29 @@ class TestBuildBase(TestCase, TestBuildBaseMixin):
 class TestBuildBaseWithDatabase(TestCaseWithFactory):
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildBaseWithDatabase, self).setUp()
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.prepareBreezyAutotest()
+        binaries = test_publisher.getPubBinaries()
+        self.build = binaries[0].binarypackagerelease.build
 
     def test_getUploadLogContent_nolog(self):
         """If there is no log file there, a string explanation is returned.
         """
         self.useTempDir()
-        build_base = BuildBase()
         self.assertEquals('Could not find upload log file',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploadLogContent_only_dir(self):
         """If there is a directory but no log file, expect the error string,
         not an exception."""
         self.useTempDir()
         os.makedirs("accepted/myleaf")
-        build_base = BuildBase()
         self.assertEquals('Could not find upload log file',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploadLogContent_readsfile(self):
         """If there is a log file, return its contents."""
@@ -93,32 +98,25 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         os.makedirs("accepted/myleaf")
         with open('accepted/myleaf/uploader.log', 'w') as f:
             f.write('foo')
-        build_base = BuildBase()
         self.assertEquals('foo',
-            build_base.getUploadLogContent(os.getcwd(), "myleaf"))
+            self.build.getUploadLogContent(os.getcwd(), "myleaf"))
 
     def test_getUploaderCommand(self):
-        build_base = BuildBase()
         upload_leaf = self.factory.getUniqueString('upload-leaf')
-        build_base.distro_series = self.factory.makeDistroSeries()
-        build_base.distribution = build_base.distro_series.distribution
-        build_base.pocket = self.factory.getAnyPocket()
-        build_base.id = self.factory.getUniqueInteger()
-        build_base.policy_name = self.factory.getUniqueString('policy-name')
         config_args = list(config.builddmaster.uploader.split())
         log_file = self.factory.getUniqueString('logfile')
         config_args.extend(
             ['--log-file', log_file,
-             '-d', build_base.distribution.name,
-             '-s', (build_base.distro_series.name
-                    + pocketsuffix[build_base.pocket]),
-             '-b', str(build_base.id),
+             '-d', self.build.distribution.name,
+             '-s', (self.build.distro_series.name
+                    + pocketsuffix[self.build.pocket]),
+             '-b', str(self.build.id),
              '-J', upload_leaf,
-             '--context=%s' % build_base.policy_name,
+             '--context=%s' % self.build.policy_name,
              os.path.abspath(config.builddmaster.root),
              ])
-        uploader_command = build_base.getUploaderCommand(
-            build_base, upload_leaf, log_file)
+        uploader_command = self.build.getUploaderCommand(
+            self.build, upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
 
 
@@ -146,9 +144,6 @@ class TestHandleStatus(TestCaseWithFactory):
         test_publisher.prepareBreezyAutotest()
         binaries = test_publisher.getPubBinaries()
         return binaries[0].binarypackagerelease.build
-
-    def assertBuildStatusEqual(self, status):
-        self.assertEqual(status, self.build.status)
 
     def setUp(self):
         super(TestHandleStatus, self).setUp()
@@ -188,7 +183,7 @@ class TestHandleStatus(TestCaseWithFactory):
                 'filemap': { 'myfile.py': 'test_file_hash'},
                 })
 
-        self.assertBuildStatusEqual(BuildStatus.FULLYBUILT)
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
         self.assertEqual(1, self.fake_getUploaderCommand.call_count)
 
     def test_handleStatus_OK_absolute_filepath(self):
@@ -197,7 +192,7 @@ class TestHandleStatus(TestCaseWithFactory):
         self.build.handleStatus('OK', None, {
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
-        self.assertBuildStatusEqual(BuildStatus.FAILEDTOUPLOAD)
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
         self.assertEqual(0, self.fake_getUploaderCommand.call_count)
 
     def test_handleStatus_OK_relative_filepath(self):
@@ -206,8 +201,26 @@ class TestHandleStatus(TestCaseWithFactory):
         self.build.handleStatus('OK', None, {
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
-        self.assertBuildStatusEqual(BuildStatus.FAILEDTOUPLOAD)
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
         self.assertEqual(0, self.fake_getUploaderCommand.call_count)
+
+    def test_handleStatus_OK_sets_build_log(self):
+        # The build log is set during handleStatus.
+        removeSecurityProxy(self.build).log = None
+        self.assertEqual(None, self.build.log)
+        self.build.handleStatus('OK', None, {
+                'filemap': { 'myfile.py': 'test_file_hash'},
+                })
+        self.assertNotEqual(None, self.build.log)
+
+    def test_date_finished_set(self):
+        # The date finished is updated during handleStatus_OK.
+        removeSecurityProxy(self.build).date_finished = None
+        self.assertEqual(None, self.build.date_finished)
+        self.build.handleStatus('OK', None, {
+                'filemap': { 'myfile.py': 'test_file_hash'},
+                })
+        self.assertNotEqual(None, self.build.date_finished)
 
 
 class TestHandleStatusForSPRBuild(TestHandleStatus):
@@ -226,10 +239,6 @@ class TestHandleStatusForSPRBuild(TestHandleStatus):
             status=BuildStatus.FULLYBUILT)
         build.queueBuild(build)
         return build
-
-    def assertBuildStatusEqual(self, status):
-        """Builds based on the old structure use buildstate."""
-        self.assertEqual(status, self.build.buildstate)
 
 
 def test_suite():

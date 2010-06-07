@@ -75,14 +75,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
     buildstate = DBEnum(enum=BuildStatus, name='build_state')
-    # buildstate is aliased to status for forwards compatibility
-    # with handleStatus() methods which assume the status attribute.
-    # TODO: there are more that will need to be aliased for
-    # the shared code in handleStatus to work as expected.
-    # log => buildlog
-    # datebuilt => date_finished
-    status = buildstate
-
     dependencies = Unicode(allow_none=True)
 
     upload_log_id = Int(name='upload_log', allow_none=True)
@@ -94,6 +86,21 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
     datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
+
+    # See `IBuildBase` - the following attributes are aliased until
+    # IBuildBase is removed to allow a shared implementation of
+    # handleStatus methods.
+    # buildstate is aliased to status for forwards compatibility
+    # with handleStatus() methods which assume the status attribute.
+    # TODO: there are more that will need to be aliased for
+    # the shared code in handleStatus to work as expected.
+    # build_log => log
+    # datebuilt => date_finished
+    # distroseries => distro_series
+    # build_duration? check
+    status = buildstate
+    date_finished = datebuilt
+    log = buildlog
 
     @property
     def datestarted(self):
