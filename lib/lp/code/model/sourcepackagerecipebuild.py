@@ -92,12 +92,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     # handleStatus methods.
     # buildstate is aliased to status for forwards compatibility
     # with handleStatus() methods which assume the status attribute.
-    # TODO: there are more that will need to be aliased for
-    # the shared code in handleStatus to work as expected.
-    # build_log => log
-    # datebuilt => date_finished
-    # distroseries => distro_series
-    # build_duration? check
     status = buildstate
     date_finished = datebuilt
     log = buildlog
