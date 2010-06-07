@@ -75,6 +75,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
     buildstate = DBEnum(enum=BuildStatus, name='build_state')
+    # buildstate is aliased to status for forwards compatibility
+    # with handleStatus() methods which assume the status attribute.
+    # TODO: there are more that will need to be aliased for
+    # the shared code in handleStatus to work as expected.
+    # log => buildlog
+    # datebuilt => date_finished
+    status = buildstate
 
     dependencies = Unicode(allow_none=True)
 

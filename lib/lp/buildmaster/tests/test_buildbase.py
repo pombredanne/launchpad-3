@@ -15,6 +15,8 @@ __metaclass__ = type
 from datetime import datetime
 import os
 import unittest
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -23,6 +25,7 @@ from canonical.testing.layers import (
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
@@ -119,18 +122,37 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         self.assertEqual(config_args, uploader_command)
 
 
-class TestBuildBaseHandleStatus(TestCaseWithFactory):
-    """Tests for `IBuildBase`s handleStatus method."""
+class TestHandleStatus(TestCaseWithFactory):
+    """Tests for `IBuildBase`s handleStatus method.
+
+    Note: these tests do *not* test the updating of the build
+    status to FULLYBUILT as this happens during the upload which
+    is stubbed out by a mock function.
+    """
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestBuildBaseHandleStatus, self).setUp()
+    def makeBuild(self):
+        """Allow subclasses to override the build with which the test runs.
+
+        XXX michaeln 2010-06-03 bug=567922
+        Until buildbase is removed, we need to ensure these tests
+        run against new IPackageBuild builds (BinaryPackageBuild)
+        and the IBuildBase builds (SPRecipeBuild). They assume the build
+        is successfully built and check that incorrect upload paths will
+        set the status to FAILEDTOUPLOAD.
+        """
         test_publisher = SoyuzTestPublisher()
         test_publisher.prepareBreezyAutotest()
         binaries = test_publisher.getPubBinaries()
-        self.build = binaries[0].binarypackagerelease.build
+        return binaries[0].binarypackagerelease.build
 
+    def assertBuildStatusEqual(self, status):
+        self.assertEqual(status, self.build.status)
+
+    def setUp(self):
+        super(TestHandleStatus, self).setUp()
+        self.build = self.makeBuild()
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
         builder = self.factory.makeBuilder()
@@ -149,10 +171,14 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         config.push('tmp_builddmaster_root', tmp_builddmaster_root)
 
         # We stub out our builds getUploaderCommand() method so
-        # we can check whether it was called.
+        # we can check whether it was called as well as
+        # verifySuccessfulUpload().
         self.fake_getUploaderCommand = FakeMethod(
             result=['echo', 'noop'])
-        self.build.getUploaderCommand = self.fake_getUploaderCommand
+        removeSecurityProxy(self.build).getUploaderCommand = (
+            self.fake_getUploaderCommand)
+        removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
+            result=True)
 
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
@@ -162,7 +188,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
                 'filemap': { 'myfile.py': 'test_file_hash'},
                 })
 
-        self.assertEqual(BuildStatus.FULLYBUILT, self.build.status)
+        self.assertBuildStatusEqual(BuildStatus.FULLYBUILT)
         self.assertEqual(1, self.fake_getUploaderCommand.call_count)
 
     def test_handleStatus_OK_absolute_filepath(self):
@@ -171,7 +197,7 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         self.build.handleStatus('OK', None, {
             'filemap': { '/tmp/myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+        self.assertBuildStatusEqual(BuildStatus.FAILEDTOUPLOAD)
         self.assertEqual(0, self.fake_getUploaderCommand.call_count)
 
     def test_handleStatus_OK_relative_filepath(self):
@@ -180,8 +206,30 @@ class TestBuildBaseHandleStatus(TestCaseWithFactory):
         self.build.handleStatus('OK', None, {
             'filemap': { '../myfile.py': 'test_file_hash'},
             })
-        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
+        self.assertBuildStatusEqual(BuildStatus.FAILEDTOUPLOAD)
         self.assertEqual(0, self.fake_getUploaderCommand.call_count)
+
+
+class TestHandleStatusForSPRBuild(TestHandleStatus):
+
+    def makeBuild(self):
+        """Overridden to create an SPRBuild."""
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
+        distroseries_i386 = distroseries.newArch(
+            'i386', processor_fam, False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries,
+            status=BuildStatus.FULLYBUILT)
+        build.queueBuild(build)
+        return build
+
+    def assertBuildStatusEqual(self, status):
+        """Builds based on the old structure use buildstate."""
+        self.assertEqual(status, self.build.buildstate)
 
 
 def test_suite():
