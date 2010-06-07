@@ -390,10 +390,13 @@ processor queue in the PPA category.
     >>> any_failed_build.retry()
     >>> removeSecurityProxy(
     ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
+    >>> transaction.commit()
     >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00

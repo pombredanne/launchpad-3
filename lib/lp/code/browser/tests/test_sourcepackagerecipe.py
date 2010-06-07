@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from textwrap import dedent
 
 from pytz import utc
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -25,7 +26,7 @@ from lp.code.browser.sourcepackagerecipe import (
 )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login
+from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
 
 
 class TestCaseForRecipe(BrowserTestCase):
@@ -65,6 +66,21 @@ class TestCaseForRecipe(BrowserTestCase):
 class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
+
+    def test_create_new_recipe_not_logged_in(self):
+        from canonical.launchpad.testing.pages import setupBrowser
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        branch_url = canonical_url(branch)
+        logout()
+
+        browser = setupBrowser()
+        browser.open(branch_url)
+
+        self.assertRaises(
+            Unauthorized, browser.getLink('Create packaging recipe').click)
 
     def test_create_new_recipe(self):
         product = self.factory.makeProduct(

@@ -39,6 +39,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
@@ -158,6 +159,14 @@ class BugTaskStatus(DBEnumeratedType):
         the user was visiting when the bug occurred, etc.
         """)
 
+    OPINION = DBItem(16, """
+        Opinion
+
+        The bug remains open for discussion only. This status is usually
+        used where there is disagreement over whether the bug is relevant
+        to the current target and whether it should be fixed.
+        """)
+
     INVALID = DBItem(17, """
         Invalid
 
@@ -234,8 +243,8 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'EXPIRED', 'CONFIRMED', 'TRIAGED',
-        'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
+        'INCOMPLETE',  'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
+        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
         Incomplete (with response)
@@ -311,6 +320,7 @@ UNRESOLVED_BUGTASK_STATUSES = (
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
+    BugTaskStatus.OPINION,
     BugTaskStatus.INVALID,
     BugTaskStatus.WONTFIX,
     BugTaskStatus.EXPIRED)
@@ -361,6 +371,15 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
 
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
+class UserCannotEditBugTaskAssignee(Unauthorized):
+    """User not permitted to change bugtask assignees.
+
+    Raised when a user with insufficient prilieges tries to set
+    the assignee of a bug task.
     """
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
@@ -659,6 +678,21 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
 
         Some status transitions require extra conditions to be met.
         See `canTransitionToStatus` for more details.
+        """
+
+    def userCanSetAnyAssignee(user):
+        """Check if the current user can set anybody sa a bugtask assignee.
+
+        Return True for project owner, project drivers, series drivers,
+        bug supervisors and Launchpad admins; return False for other users.
+        """
+
+    def userCanUnassign(user):
+        """Check if the current user can set assignee to None.
+
+        Project owner, project drivers, series drivers, bug supervisors
+        and Launchpad admins can do this always; other users can do this
+        only if they or their reams are the assignee.
         """
 
     @mutator_for(assignee)
