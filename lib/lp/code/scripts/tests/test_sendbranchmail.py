@@ -24,10 +24,12 @@ class TestSendbranchmail(TestCaseWithFactory):
 
     def createBranch(self):
         branch, tree = self.create_branch_and_tree()
-        branch.subscribe(branch.registrant,
+        branch.subscribe(
+            branch.registrant,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.WHOLEDIFF,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL,
+            branch.registrant)
         transport = tree.bzrdir.root_transport
         transport.put_bytes('foo', 'bar')
         tree.add('foo')

@@ -3,23 +3,26 @@
 
 """Test Build features."""
 
-from datetime import datetime, timedelta
-import pytz
 import unittest
 
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
-from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
@@ -27,25 +30,64 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestBuildInterface(TestCaseWithFactory):
+class TestBinaryPackageBuild(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_providesInterfaces(self):
-        # Build provides IBuildBase and IBuild.
+    def setUp(self):
+        super(TestBinaryPackageBuild, self).setUp()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
-        gedit_src_hist = publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        build = gedit_src_hist.createMissingBuilds()[0]
+        gedit_spr = publisher.getPubSource(
+            spr_only=True, sourcename="gedit",
+            status=PackagePublishingStatus.PUBLISHED)
+        self.build = gedit_spr.createBuild(
+            distro_arch_series=publisher.distroseries['i386'],
+            archive=gedit_spr.upload_archive,
+            pocket=gedit_spr.package_upload.pocket)
 
-        # The IBinaryPackageBuild.calculated_buildstart property asserts
-        # that both datebuilt and buildduration are set.
-        build.datebuilt = datetime.now(pytz.UTC)
-        build.buildduration = timedelta(0, 1)
+    def test_providesInterfaces(self):
+        # Build provides IPackageBuild and IBuild.
+        self.assertProvides(self.build, IPackageBuild)
+        self.assertProvides(self.build, IBinaryPackageBuild)
 
-        self.assertProvides(build, IBuildBase)
-        self.assertProvides(build, IBinaryPackageBuild)
+    def test_queueBuild(self):
+        # BinaryPackageBuild can create the queue entry for itself.
+        bq = self.build.queueBuild()
+        self.assertProvides(bq, IBuildQueue)
+        self.assertProvides(bq.specific_job, IBuildPackageJob)
+        self.failUnlessEqual(self.build.is_virtualized, bq.virtualized)
+        self.failIfEqual(None, bq.processor)
+        self.failUnless(bq, self.build.buildqueue_record)
+
+    def addFakeBuildLog(self):
+        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
+        removeSecurityProxy(self.build).log = lfa
+
+    def test_log_url(self):
+        # The log URL for a binary package build will use
+        # the distribution source package release when the context
+        # is not a PPA or a copy archive.
+        self.addFakeBuildLog()
+        self.failUnlessEqual(
+            'http://launchpad.dev/ubuntutest/+source/'
+            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
+                self.build.package_build.build_farm_job.id),
+            self.build.log_url)
+
+    def test_log_url_ppa(self):
+        # On the other hand, ppa or copy builds will have a url in the
+        # context of the archive.
+        self.addFakeBuildLog()
+        ppa_owner = self.factory.makePerson(name="joe")
+        removeSecurityProxy(self.build).archive = self.factory.makeArchive(
+            owner=ppa_owner, name="myppa")
+        self.failUnlessEqual(
+            'http://launchpad.dev/~joe/'
+            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
+                self.build.build_farm_job.id),
+            self.build.log_url)
+
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
 
@@ -68,8 +110,8 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
 
         [depwait_build] = depwait_source.createMissingBuilds()
-        depwait_build.buildstate = BuildStatus.MANUALDEPWAIT
-        depwait_build.dependencies = 'dep-bin'
+        depwait_build.status = BuildStatus.MANUALDEPWAIT
+        depwait_build.dependencies = u'dep-bin'
 
         return depwait_build
 
@@ -81,6 +123,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         """
         # Create a build in depwait.
         depwait_build = self._setupSimpleDepwaitContext()
+        depwait_build_id = depwait_build.id
 
         # Grab the relevant db records for later comparison.
         store = Store.of(depwait_build)
@@ -106,6 +149,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(
             store.find(BuildQueue, BuildQueue.id == build_queue_id).count(),
             0)
+        # But the build itself still exists.
+        self.assertEqual(
+            store.find(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == depwait_build_id).count(),
+            1)
+
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBinaryPackageBuild.updateDependencies` makes the build
@@ -126,17 +176,17 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             AssertionError, depwait_build.updateDependencies)
 
         # Missing 'name'.
-        depwait_build.dependencies = '(>> version)'
+        depwait_build.dependencies = u'(>> version)'
         self.assertRaises(
             AssertionError, depwait_build.updateDependencies)
 
         # Missing 'version'.
-        depwait_build.dependencies = 'name (>>)'
+        depwait_build.dependencies = u'name (>>)'
         self.assertRaises(
             AssertionError, depwait_build.updateDependencies)
 
         # Missing comman between dependencies.
-        depwait_build.dependencies = 'name1 name2'
+        depwait_build.dependencies = u'name1 name2'
         self.assertRaises(
             AssertionError, depwait_build.updateDependencies)
 
@@ -147,10 +197,11 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         # valid ubuntu component.
         depwait_build = self._setupSimpleDepwaitContext()
 
+        spr = depwait_build.source_package_release
         depwait_build.current_source_publication.requestDeletion(
-            depwait_build.sourcepackagerelease.creator)
+            spr.creator)
         contrib = getUtility(IComponentSet).new('contrib')
-        depwait_build.sourcepackagerelease.component = contrib
+        removeSecurityProxy(spr).component = contrib
 
         depwait_build.updateDependencies()
         self.assertEquals(depwait_build.dependencies, '')
@@ -206,7 +257,8 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
         # Results can be filtered by architecture tag.
         i386_builds = self.builds[:]
         hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+        removeSecurityProxy(hppa_build).distro_arch_series = (
+            self.publisher.distroseries['hppa'])
 
         builds = self.build_set.getBuildsForArchive(self.archive,
                                                     arch_tag="i386")
@@ -244,7 +296,8 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         # Results can be filtered by architecture tag.
         i386_builds = self.builds[:]
         hppa_build = i386_builds.pop()
-        hppa_build.distroarchseries = self.publisher.distroseries['hppa']
+        removeSecurityProxy(hppa_build).distro_arch_series = (
+            self.publisher.distroseries['hppa'])
 
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
@@ -271,25 +324,23 @@ class TestStoreBuildInfo(TestCaseWithFactory):
 
     def testDependencies(self):
         """Verify that storeBuildInfo sets any dependencies."""
-        self.build.storeBuildInfo(None, {'dependencies': 'somepackage'})
-        self.assertIsNot(None, self.build.buildlog)
+        self.build.storeBuildInfo(
+            self.build, None, {'dependencies': 'somepackage'})
+        self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertEqual(u'somepackage', self.build.dependencies)
-        self.assertIsNot(None, self.build.datebuilt)
-        self.assertIsNot(None, self.build.buildduration)
+        self.assertIsNot(None, self.build.date_finished)
 
     def testWithoutDependencies(self):
         """Verify that storeBuildInfo clears the build's dependencies."""
         # Set something just to make sure that storeBuildInfo actually
         # empties it.
         self.build.dependencies = u'something'
-
-        self.build.storeBuildInfo(None, {})
-        self.assertIsNot(None, self.build.buildlog)
+        self.build.storeBuildInfo(self.build, None, {})
+        self.assertIsNot(None, self.build.log)
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
-        self.assertIsNot(None, self.build.datebuilt)
-        self.assertIsNot(None, self.build.buildduration)
+        self.assertIsNot(None, self.build.date_finished)
 
 
 def test_suite():

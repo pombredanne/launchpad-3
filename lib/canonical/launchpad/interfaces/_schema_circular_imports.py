@@ -34,6 +34,8 @@ from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
@@ -265,11 +267,20 @@ patch_choice_parameter_type(
 patch_plain_parameter_type(
     IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
+    IArchive, '_checkUpload', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
+    IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
+
+
+# IBuildFarmJob
+IBuildFarmJob['status'].vocabulary = BuildStatus
+IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries

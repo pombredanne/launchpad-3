@@ -111,7 +111,7 @@ class DistroSeriesSourcePackageRelease:
 
         return (
             [build for build in distro_builds
-                if build.distroarchseries.distroseries == self.distroseries])
+                if build.distro_arch_series.distroseries == self.distroseries])
 
     @property
     def files(self):
@@ -124,26 +124,27 @@ class DistroSeriesSourcePackageRelease:
         clauseTables = [
             'BinaryPackageRelease',
             'DistroArchSeries',
-            'Build',
+            'BinaryPackageBuild',
             'BinaryPackagePublishingHistory'
         ]
 
         query = """
-        BinaryPackageRelease.build=Build.id AND
+        BinaryPackageRelease.build=BinaryPackageBuild.id AND
         DistroArchSeries.id =
             BinaryPackagePublishingHistory.distroarchseries AND
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
         DistroArchSeries.distroseries=%s AND
         BinaryPackagePublishingHistory.archive IN %s AND
-        Build.sourcepackagerelease=%s
+        BinaryPackageBuild.source_package_release=%s
         """ % sqlvalues(self.distroseries,
                         self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['Build'], orderBy=['-id'],
-                clauseTables=clauseTables, distinct=True)
+                query, prejoinClauseTables=['BinaryPackageBuild'],
+                orderBy=['-id'], clauseTables=clauseTables,
+                distinct=True)
 
     @property
     def meta_binaries(self):
@@ -170,7 +171,7 @@ class DistroSeriesSourcePackageRelease:
         # location.
         for binary in self.binaries:
             if binary.architecturespecific:
-                considered_arches = [binary.build.distroarchseries]
+                considered_arches = [binary.build.distro_arch_series]
             else:
                 considered_arches = self.distroseries.architectures
 

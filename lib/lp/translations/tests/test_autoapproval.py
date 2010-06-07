@@ -684,7 +684,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = True
-        
+
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
@@ -702,7 +702,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = False
-        
+
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
@@ -722,7 +722,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template.iscurrent = True
         credits = self.factory.makePOTMsgSet(template, "translator-credits",
                                              sequence=1)
-        
+
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
