@@ -3074,6 +3074,10 @@ class PersonParticipationView(LaunchpadView):
 
     def _asParticipation(self, membership, team_path=None):
         """Return a dict of participation information for the membership."""
+        if team_path is None:
+            via = None
+        else:
+            via = COMMASPACE.join(team.displayname for team in team_path)
         team = membership.team
         if membership.person == team.teamowner:
             role = 'Owner'
@@ -3081,13 +3085,17 @@ class PersonParticipationView(LaunchpadView):
             role = 'Admin'
         else:
             role = 'Member'
-        if team_path is None:
-            via = None
+        if team.mailing_list is not None and team.mailing_list.is_usable:
+            subscription = team.mailing_list.getSubscription(self.context)
+            if subscription is None:
+                subscribed = 'Not subscribed'
+            else:
+                subscribed = 'Subscribed'
         else:
-            via = COMMASPACE.join(team.displayname for team in team_path)
+            subscribed = None
         return dict(
             displayname=team.displayname, team=team, membership=membership,
-            role=role, via=via)
+            role=role, via=via, subscribed=subscribed)
 
     @cachedproperty
     def active_participations(self):
@@ -3106,22 +3114,9 @@ class PersonParticipationView(LaunchpadView):
                 self._asParticipation(membership, team_path=team_path[:-1]))
         return sorted(participations, key=itemgetter('displayname'))
 
-    @property
-    def indirect_teams_via(self):
-        """Information about indirect membership.
-
-        :return: A list of dictionaries, where each dictionary has a team in
-          which the person is an indirect member, and a path to membership in
-          that team.
-        :rtype: a list of dictionaries
-        """
-        indirect_teams = []
-        for team in self.context.teams_indirectly_participated_in:
-            via = COMMASPACE.join(viateam.displayname
-                                  for viateam
-                                  in self.context.findPathToTeam(team)[:-1])
-            indirect_teams.append(dict(team=team, via=via))
-        return indirect_teams
+    @cachedproperty
+    def has_participations(self):
+        return len(self.active_participations) > 0
 
 
 class EmailAddressVisibleState:

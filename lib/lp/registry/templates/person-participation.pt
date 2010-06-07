@@ -8,27 +8,27 @@
   >
 
 <body>
-  <div metal:fill-slot="main"
-       tal:define="direct context/myactivememberships;
-                   indirect context/teams_indirectly_participated_in">
+  <div metal:fill-slot="main">
 
-    <p tal:condition="direct/count">
+    <p tal:condition="view/has_participations">
       <span tal:replace="context/title">Foo Bar</span>
       is a member of the following teams:
     </p>
-    <p tal:condition="not: direct/count">
+
+    <p tal:condition="not: view/has_participations">
       <span tal:replace="context/title">Foo Bar</span>
        has not yet joined any teams.
     </p>
 
     <table id="participation" class="listing"
-      tal:condition="direct/count">
+      tal:condition="view/has_participations">
       <thead>
         <tr>
           <th>Team</th>
           <th>Joined</th>
           <th>Role</th>
           <th>Via</th>
+          <th>Mailing List</th>
         </tr>
       </thead>
       <tbody>
@@ -57,9 +57,30 @@
               &mdash;
             </tal:direct>
           </td>
+          <td>
+            <tal:subscribed condition="participation/team/mailing_list"
+              replace="participation/subscribed">
+              yes
+            </tal:subscribed>
+            <tal:no-list condition="not: participation/team/mailing_list">
+              &mdash;
+            </tal:no-list>
+          </td>
         </tr>
       </tbody>
     </table>
+
+    <ul id="participation-actions" class="horizontal"
+      tal:condition="context/required:launchpad.Edit">
+      <li>
+        <a class="sprite add" href="/people/+newteam">Register a new team</a>
+      </li>
+      <li>
+        <a class="sprite edit"
+          tal:attributes="href context/menu:overview/editemailaddresses/fmt:url"
+          >Change mailing list subscriptions</a>
+      </li>
+    </ul>
   </div>
 </body>
 </html>

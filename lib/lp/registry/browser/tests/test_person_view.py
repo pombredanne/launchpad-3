@@ -264,6 +264,33 @@ class TestPersonParticipationView(TestCaseWithFactory):
         [participation] = self.view.active_participations
         self.assertEqual('Member', participation['role'])
 
+    def test__asParticpation_without_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual(None, participation['subscribed'])
+
+    def test__asParticpation_unsubscribed_to_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        self.factory.makeMailingList(team, team.teamowner)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Not subscribed', participation['subscribed'])
+
+    def test__asParticpation_subscribed_to_mailing_list(self):
+        # The default team role is 'Member'.
+        team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(team, team.teamowner)
+        mailing_list.subscribe(self.user)
+        login_person(team.teamowner)
+        team.addMember(self.user, team.teamowner)
+        [participation] = self.view.active_participations
+        self.assertEqual('Subscribed', participation['subscribed'])
+
     def test_active_participations_with_private_team(self):
         # Users cannot see private teams that they are not members of.
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
@@ -294,9 +321,20 @@ class TestPersonParticipationView(TestCaseWithFactory):
         display_names = [
             participation['displayname'] for participation in participations]
         self.assertEqual(['A', 'B', 'C'], display_names)
-        self.assertEqual('', participations[0]['via'])
+        self.assertEqual(None, participations[0]['via'])
         self.assertEqual('A', participations[1]['via'])
         self.assertEqual('A, B', participations[2]['via'])
+
+    def test_has_participations_false(self):
+        participations = self.view.active_participations
+        self.assertEqual(0, len(participations))
+        self.assertEqual(False, self.view.has_participations)
+
+    def test_has_participations_true(self):
+        self.factory.makeTeam(owner=self.user)
+        participations = self.view.active_participations
+        self.assertEqual(1, len(participations))
+        self.assertEqual(True, self.view.has_participations)
 
 
 def test_suite():
