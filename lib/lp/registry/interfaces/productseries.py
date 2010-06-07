@@ -32,6 +32,7 @@ from lp.registry.interfaces.milestone import (
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
@@ -91,7 +92,8 @@ class IProductSeriesEditRestricted(Interface):
 
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags):
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
+    IHasTranslationTemplates):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly

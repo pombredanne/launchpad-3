@@ -113,8 +113,6 @@
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
-        <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
@@ -1325,8 +1323,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
@@ -1529,8 +1525,6 @@
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
-            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
 
         <!-- IQuestionTarget -->
 
