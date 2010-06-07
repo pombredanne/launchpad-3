@@ -67,6 +67,7 @@ $(API_INDEX): $(BZR_VERSION_INFO)
 
 apidoc: compile $(API_INDEX)
 
+# Run by PQM.
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -86,7 +87,19 @@ check_schema: build
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY)
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
+
+# A version of 'make check' that applies modifications specifically for the
+# ec2 environment.
+ec2_check: clean build
+        # XXX mars 2010-05-17 bug=570380
+        # Disable the windmill test suite to prevent the whole system from
+        # hanging.  See bug 570380.
+        #
+        # Yes, this is code duplication.  If you conceive of a better
+        # solution in a less heated moment, then please replace this!
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
+		--layer='!\(MailmanLayer\|WindmillLayer\)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -94,7 +107,7 @@ jscheck: build
 	@echo
 	@echo "Running the JavaScript integration test suite"
 	@echo
-	bin/test $(VERBOSITY) --layer=WindmillLayer
+	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
 
 jscheck_functest: build
     # Run the old functest Windmill integration tests.  The test runner
@@ -107,7 +120,8 @@ jscheck_functest: build
 check_mailman: build
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY) --layer=MailmanLayer
+	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
+		--layer=MailmanLayer
 
 lint: ${PY}
 	@bash ./bin/lint.sh
@@ -184,6 +198,13 @@ bin/buildout: download-cache eggs
 		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs
 
+# This target is used by LOSAs to prepare a build to be pushed out to
+# destination machines.  We only want eggs: they are the expensive bits,
+# and the other bits might run into problems like bug 575037.  This
+# target runs buildout, and then removes everything created except for
+# the eggs.
+build_eggs: $(BUILDOUT_BIN) clean_buildout
+
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
 # updates the timestamp.
@@ -242,7 +263,7 @@ run_codehosting: check_schema inplace stop hosted_branches
 	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
 
 
-start_librarian: build
+start_librarian: compile
 	bin/start_librarian
 
 stop_librarian:
@@ -307,7 +328,15 @@ clean_js:
 	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
-clean: clean_js
+clean_buildout:
+	$(RM) -r bin
+	$(RM) -r parts
+	$(RM) -r develop-eggs
+	$(RM) .installed.cfg
+	$(RM) -r build
+	$(RM) _pythonpath.py
+
+clean: clean_js clean_buildout
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -320,11 +349,6 @@ clean: clean_js
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) -r bin
-	$(RM) -r parts
-	$(RM) -r develop-eggs
-	$(RM) .installed.cfg
-	$(RM) -r build
 	$(RM) thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
@@ -332,7 +356,6 @@ clean: clean_js
 	$(RM) $(APIDOC_DIR)/wadl*.xml $(APIDOC_DIR)/*.html
 	$(RM) -rf $(APIDOC_DIR).tmp
 	$(RM) $(BZR_VERSION_INFO)
-	$(RM) _pythonpath.py
 	$(RM) +config-overrides.zcml
 	$(RM) -rf \
 			  /var/tmp/builddmaster \
@@ -436,11 +459,19 @@ lp-clustered.svg: lp-clustered.dot
 	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
 	mv lp-clustered.svg.tmp lp-clustered.svg
 
+PYDOCTOR = pydoctor
+PYDOCTOR_OPTIONS =
+
+pydoctor:
+	$(PYDOCTOR) --make-html --html-output=apidocs --add-package=lib/lp \
+		--add-package=lib/canonical --project-name=Launchpad \
+		--docformat restructuredtext --verbose-about epytext-summary \
+		$(PYDOCTOR_OPTIONS)
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge \
+	check check_merge ec2_check \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild jsbuild_lazr clean_js buildonce_eggs \
-	sprite_css sprite_image css_combine compile check_schema
+	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
+	sprite_css sprite_image css_combine compile check_schema pydoctor

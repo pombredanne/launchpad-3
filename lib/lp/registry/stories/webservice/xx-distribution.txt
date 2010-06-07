@@ -24,6 +24,7 @@ And for every distribution we publish most of its attributes.
     archive_mirrors_collection_link: u'http://.../ubuntu/archive_mirrors'
     archives_collection_link: u'http://.../ubuntu/archives'
     bug_reporting_guidelines: None
+    bug_supervisor_link: None
     cdimage_mirrors_collection_link: u'http://.../ubuntu/cdimage_mirrors'
     current_series_link: u'http://.../ubuntu/hoary'
     date_created: u'2006-10-16T18:31:43.415195+00:00'
@@ -41,6 +42,7 @@ And for every distribution we publish most of its attributes.
     official_bug_tags: []
     owner_link: u'http://.../~ubuntu-team'
     resource_type_link: u'http://.../#distribution'
+    security_contact_link: None
     self_link: u'http://.../ubuntu'
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'
@@ -115,6 +117,14 @@ packages matching (substring) the given text.
     http://.../ubuntu/+source/alsa-utils
     http://.../ubuntu/+source/foobar
     http://.../ubuntu/+source/commercialpackage
+
+"getArchive" returns a distribution archive (not a PPA) with the given name.
+
+    >>> partner = webservice.named_get(
+    ...     ubuntu['self_link'], 'getArchive',
+    ...     name='partner').jsonBody()
+    >>> print partner['self_link']
+    http://.../ubuntu/+archive/partner
 
 "getMirrorByName" returns a mirror by its unique name.
 

@@ -211,10 +211,11 @@ class NewCodeImportForm(Interface):
     svn_branch_url = URIField(
         title=_("Branch URL"), required=False,
         description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
+            "The URL of a Subversion branch, starting with svn:// or "
+            "http(s)://.   You can include a username and password as part "
+            "of the url, but this will be displayed on the branch page."),
         allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False,
+        allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
@@ -391,7 +392,8 @@ class CodeImportNewView(CodeImportBaseView):
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            self.user)
 
         self.next_url = canonical_url(code_import.branch)
 

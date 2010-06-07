@@ -29,22 +29,26 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
+from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, NavigationMenu)
+    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.soyuz.browser.archive import make_archive_vocabulary
 from lp.soyuz.interfaces.archive import (
     IArchiveSet)
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import JobStatus
 
 
 class IRecipesForPerson(Interface):
@@ -52,8 +56,7 @@ class IRecipesForPerson(Interface):
 
 
 class RecipesForPersonBreadcrumb(Breadcrumb):
-    """A Breadcrumb that will handle the "Recipes" link for recipe breadcrumbs.
-    """
+    """A Breadcrumb to handle the "Recipes" link for recipe breadcrumbs."""
 
     rootsite = 'code'
     text = 'Recipes'
@@ -89,6 +92,17 @@ class SourcePackageRecipeHierarchy(Hierarchy):
 
         for item in traversed:
             yield item
+
+
+class SourcePackageRecipeNavigation(Navigation):
+    """Navigation from the SourcePackageRecipe."""
+
+    usedfor = ISourcePackageRecipe
+
+    @stepthrough('+build')
+    def traverse_build(self, id):
+        """Traverse to this recipe's builds."""
+        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
@@ -152,9 +166,12 @@ class SourcePackageRecipeView(LaunchpadView):
 
 def buildable_distroseries_vocabulary(context):
     """Return a vocabulary of buildable distroseries."""
+    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
+    supported_distros = [ppa.distribution for ppa in ppas]
     dsset = getUtility(IDistroSeriesSet).search()
     terms = [SimpleTerm(distro, distro.id, distro.displayname)
-             for distro in dsset if distro.active]
+             for distro in dsset if (
+                 distro.active and distro.distribution in supported_distros)]
     return SimpleVocabulary(terms)
 
 def target_ppas_vocabulary(context):
@@ -174,7 +191,11 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
         The distroseries function as defaults for requesting a build.
         """
-        return {'distros': self.context.distroseries}
+        initial_values = {'distros': self.context.distroseries}
+        build = self.context.getLastBuild()
+        if build is not None:
+            initial_values['archive'] = build.archive
+        return initial_values
 
     class schema(Interface):
         """Schema for requesting a build."""
@@ -206,6 +227,11 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 PackagePublishingPocket.RELEASE)
 
 
+class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
+
+    usedfor = ISourcePackageRecipeBuild
+
+
 class SourcePackageRecipeBuildView(LaunchpadView):
     """Default view of a SourcePackageRecipeBuild."""
 
@@ -229,14 +255,26 @@ class SourcePackageRecipeBuildView(LaunchpadView):
 
     @property
     def eta(self):
-        """The datetime when the build job is estimated to begin."""
+        """The datetime when the build job is estimated to complete.
+
+        This is the BuildQueue.estimated_duration plus the
+        Job.date_started or BuildQueue.getEstimatedJobStartTime.
+        """
         if self.context.buildqueue_record is None:
             return None
-        return self.context.buildqueue_record.getEstimatedJobStartTime()
+        queue_record = self.context.buildqueue_record
+        if queue_record.job.status == JobStatus.WAITING:
+            start_time = queue_record.getEstimatedJobStartTime()
+            if start_time is None:
+                return None
+        else:
+            start_time = queue_record.job.date_started
+        duration = queue_record.estimated_duration
+        return start_time + duration
 
     @property
     def date(self):
-        """The date when the build complete or will begin."""
+        """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
         return self.context.datebuilt
@@ -244,7 +282,12 @@ class SourcePackageRecipeBuildView(LaunchpadView):
     @property
     def estimate(self):
         """If true, the date value is an estimate."""
-        return (self.context.datebuilt is None and self.eta is not None)
+        if self.context.datebuilt is not None:
+            return False
+        return self.eta is not None
+
+    def binary_builds(self):
+        return list(self.context.binary_builds)
 
 
 class ISourcePackageAddEditSchema(Interface):
@@ -255,9 +298,6 @@ class ISourcePackageAddEditSchema(Interface):
         'description',
         'owner',
         ])
-    sourcepackagename = Choice(
-        title=u"Source Package Name", required=True,
-        vocabulary='SourcePackageName')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
         title=u'Default Distribution series')
@@ -272,11 +312,18 @@ class RecipeTextValidatorMixin:
     def validate(self, data):
         try:
             parser = RecipeParser(data['recipe_text'])
-            recipe_text = parser.parse()
+            parser.parse()
         except RecipeParseError:
             self.setFieldError(
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
+
+        if getUtility(ISourcePackageRecipeSource).exists(
+                                                    self.user, data['name']):
+            self.setFieldError(
+                'name',
+                'There is already a recipe owned by %s with this name.' %
+                    self.user.displayname)
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
@@ -302,7 +349,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         parser = RecipeParser(data['recipe_text'])
         recipe = parser.parse()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['distros'], data['sourcepackagename'],
+            self.user, self.user, data['distros'],
             data['name'], recipe, data['description'])
         self.next_url = canonical_url(source_package_recipe)
 

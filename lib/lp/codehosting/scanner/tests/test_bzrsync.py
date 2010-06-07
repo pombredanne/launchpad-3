@@ -59,13 +59,15 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
     LOG = "Log message"
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        TestCaseWithFactory.setUp(self)
+        super(BzrSyncTestCase, self).setUp()
         self.disable_directory_isolation()
         self.useBzrBranches(direct_database=True)
         self.lp_db_user = config.launchpad.dbuser
         self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+
+    def tearDown(self):
+        super(BzrSyncTestCase, self).tearDown()
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
@@ -83,7 +85,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         LaunchpadZopelessLayer.txn.begin()
         new_branch = self.factory.makeAnyBranch(*args, **kwargs)
         # Unsubscribe the implicit owner subscription.
-        new_branch.unsubscribe(new_branch.owner)
+        new_branch.unsubscribe(new_branch.owner, new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
 

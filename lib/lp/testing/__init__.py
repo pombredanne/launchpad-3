@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'build_yui_unittest_suite',
+    'BrowserTestCase',
     'capture_events',
     'FakeTime',
     'get_lsb_information',
@@ -38,6 +39,7 @@ __all__ = [
     'validate_mock_class',
     'WindmillTestCase',
     'with_anonymous_login',
+    'ws_object',
     'YUIUnitTestCase',
     'ZopeTestInSubProcess',
     ]
@@ -56,7 +58,6 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
 from bzrlib.transport import get_transport
 
@@ -72,15 +73,17 @@ from twisted.python.util import mergeFunctionMetadata
 
 from windmill.authoring import WindmillTestClient
 
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.windmill.testing import constants
@@ -95,6 +98,7 @@ from lp.testing._login import (
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+from lp.testing.fixture import ZopeEventHandlerFixture
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -228,6 +232,15 @@ class TestCase(testtools.TestCase):
         """
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
+
+    def __str__(self):
+        """The string representation of a test is its id.
+
+        The most descriptive way of writing down a test is to write down its
+        id. It is usually the fully-qualified Python name, which is pretty
+        handy.
+        """
+        return self.id()
 
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
@@ -382,6 +395,14 @@ class TestCase(testtools.TestCase):
         testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+        # Record the oopses generated during the test run.
+        self.oopses = []
+        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+
+    @adapter(ErrorReportEvent)
+    def _recordOops(self, event):
+        """Add the oops to the testcase's list."""
+        self.oopses.append(event.object)
 
     def assertStatementCount(self, expected_count, function, *args, **kwargs):
         """Assert that the expected number of SQL statements occurred.
@@ -402,6 +423,19 @@ class TestCase(testtools.TestCase):
         os.chdir(tempdir)
         self.addCleanup(os.chdir, cwd)
 
+    def _unfoldEmailHeader(self, header):
+        """Unfold a multiline e-mail header."""
+        header = ''.join(header.splitlines())
+        return header.replace('\t', ' ')
+
+    def assertEmailHeadersEqual(self, expected, observed):
+        """Assert that two e-mail headers are equal.
+
+        The headers are unfolded before being compared.
+        """
+        return self.assertEqual(
+            self._unfoldEmailHeader(expected),
+            self._unfoldEmailHeader(observed))
 
 class TestCaseWithFactory(TestCase):
 
@@ -500,6 +534,8 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
+        # XXX: Extract the temporary environment blatting into a generic
+        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
         old_bzr_home = os.environ.get('BZR_HOME')
@@ -543,6 +579,10 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+    def setUp(self):
+        """Provide useful defaults."""
+        super(BrowserTestCase, self).setUp()
+        self.user = self.factory.makePerson(password='test')
 
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
@@ -553,6 +593,11 @@ class BrowserTestCase(TestCaseWithFactory):
             normalise_whitespace(regular_expression_txt), re.S)
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
+
+    def getViewBrowser(self, context, view_name=None):
+        login(ANONYMOUS)
+        url = canonical_url(context, view_name=view_name)
+        return self.getUserBrowser(url, self.user)
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -918,6 +963,20 @@ def validate_mock_class(mock_class):
                             name, mock_args, real_args))
                     else:
                         break
+
+
+def ws_object(launchpad, obj):
+    """Convert an object into its webservice version.
+
+    :param launchpad: The Launchpad instance to convert from.
+    :param obj: The object to convert.
+    :return: A launchpadlib Entry object.
+    """
+    api_request = WebServiceTestRequest()
+    obj_url = canonical_url(obj, request=api_request)
+    return launchpad.load(
+        obj_url.replace('http://api.launchpad.dev/',
+        str(launchpad._root_uri)))
 
 def unlink_source_packages(product):
     """Remove all links between the product and source packages.

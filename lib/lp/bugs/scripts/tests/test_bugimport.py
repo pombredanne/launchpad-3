@@ -12,22 +12,25 @@ import unittest
 
 import transaction
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from lp.bugs.externalbugtracker import (
-    ExternalBugTracker)
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+
+from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
-from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+from lp.bugs.scripts.checkwatches import CheckwatchesMaster, core
+from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
@@ -762,6 +765,8 @@ class TestBugWatch:
     This bug watch is guaranteed to trigger a DB failure when `updateStatus`
     is called if its `failing` attribute is True."""
 
+    implements(IBugWatch)
+
     lastchecked = None
     unpushed_comments = FakeResultSet()
 
@@ -888,20 +893,17 @@ class TestExternalBugTracker(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
 
+class TestRemoteBugUpdater(RemoteBugUpdater):
 
-class TestCheckwatchesMaster(CheckwatchesMaster):
-    """A mock `CheckwatchesMaster` object."""
+    def __init__(self, parent, external_bugtracker, remote_bug,
+                 bug_watch_ids, unmodified_remote_ids, server_time,
+                 bugtracker):
+        super(TestRemoteBugUpdater, self). __init__(
+            parent, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids, server_time)
+        self.bugtracker = bugtracker
 
-    def _updateBugTracker(self, bug_tracker):
-        # Save the current bug tracker, so _getBugWatch can reference it.
-        self.bugtracker = bug_tracker
-        super(TestCheckwatchesMaster, self)._updateBugTracker(bug_tracker)
-
-    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
-        """See `CheckwatchesMaster`."""
-        return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
-
-    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+    def _getBugWatchesForRemoteBug(self):
         """Returns a list of fake bug watch objects.
 
         We override this method so that we always return bug watches
@@ -910,19 +912,43 @@ class TestCheckwatchesMaster(CheckwatchesMaster):
         return [
             bug_watch for bug_watch in (
                 self.bugtracker.watches_needing_update)
-            if (bug_watch.remotebug == remote_bug_id and
-                bug_watch.id in bug_watch_ids)
+            if (bug_watch.remotebug == self.remote_bug and
+                bug_watch.id in self.bug_watch_ids)
             ]
 
 
-class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
+class TestCheckwatchesMaster(CheckwatchesMaster):
+    """A mock `CheckwatchesMaster` object."""
+
+    def _updateBugTracker(self, bug_tracker):
+        # Save the current bug tracker, so _getBugWatch can reference it.
+        self.bugtracker = bug_tracker
+        reload = core.reload
+        try:
+            core.reload = lambda objects: objects
+            super(TestCheckwatchesMaster, self)._updateBugTracker(bug_tracker)
+        finally:
+            core.reload = reload
+
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
+        """See `CheckwatchesMaster`."""
+        return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
+
+    def remote_bug_updater_factory(self, parent, external_bugtracker,
+                                   remote_bug, bug_watch_ids,
+                                   unmodified_remote_ids, server_time):
+        return TestRemoteBugUpdater(
+            self, external_bugtracker, remote_bug, bug_watch_ids,
+            unmodified_remote_ids, server_time, self.bugtracker)
+
+
+class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
     """Test that errors in the bugwatch import process don't
     invalidate the entire run.
     """
     layer = LaunchpadZopelessLayer
 
-    def test_checkbugwatches_error_recovery(self):
-
+    def test_checkwatches_error_recovery(self):
         firefox = getUtility(IProductSet).get(4)
         foobar = getUtility(IPersonSet).get(16)
         params = CreateBugParams(

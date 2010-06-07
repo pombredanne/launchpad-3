@@ -13,6 +13,7 @@ import pytz
 import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -30,8 +31,8 @@ from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
-from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -536,50 +537,39 @@ class BugHeatUpdater(TunableLoop):
             max_heat_age = config.calculate_bug_heat.max_heat_age
         self.max_heat_age = max_heat_age
 
+        self.store = IMasterStore(Bug)
+
+    @property
+    def _outdated_bugs(self):
+        outdated_bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
+            self.max_heat_age)
+        # We remove the security proxy so that we can access the set()
+        # method of the result set.
+        return removeSecurityProxy(outdated_bugs)
+
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more Bugs to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.is_done
+        return self._outdated_bugs.is_empty()
 
     def __call__(self, chunk_size):
         """Retrieve a batch of Bugs and update their heat.
 
         See `ITunableLoop`.
         """
-        # XXX 2010-01-08 gmb bug=198767:
-        #     We cast chunk_size to an integer to ensure that we're not
-        #     trying to slice using floats or anything similarly
-        #     foolish. We shouldn't have to do this.
-        chunk_size = int(chunk_size)
-        start = self.offset
-        end = self.offset + chunk_size
+        # We multiply chunk_size by 1000 for the sake of doing updates
+        # quickly.
+        chunk_size = int(chunk_size * 1000)
 
         transaction.begin()
-        bugs = getUtility(IBugSet).getBugsWithOutdatedHeat(
-            self.max_heat_age)[start:end]
+        outdated_bugs = self._outdated_bugs[:chunk_size]
+        self.log.debug("Updating heat for %s bugs" % outdated_bugs.count())
+        outdated_bugs.set(
+            heat=SQL('calculate_bug_heat(Bug.id)'),
+            heat_last_updated=datetime.now(pytz.utc))
 
-        bug_count = bugs.count()
-        if bug_count > 0:
-            starting_id = bugs.first().id
-            self.log.debug(
-                "Adding CalculateBugHeatJobs for %i Bugs (starting id: %i)" %
-                (bug_count, starting_id))
-        else:
-            self.is_done = True
-
-        self.offset = None
-        for bug in bugs:
-            # We set the starting point of the next batch to the Bug
-            # id after the one we're looking at now. If there aren't any
-            # bugs this loop will run for 0 iterations and starting_id
-            # will remain set to None.
-            start += 1
-            self.offset = start
-            self.log.debug("Adding CalculateBugHeatJob for bug %s" % bug.id)
-            getUtility(ICalculateBugHeatJobSource).create(bug)
-            self.total_processed += 1
         transaction.commit()
 
 

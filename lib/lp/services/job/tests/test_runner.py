@@ -76,6 +76,37 @@ class RaisingJob(NullJob):
         raise RaisingJobException(self.message)
 
 
+class RaisingJobUserError(NullJob):
+    """A job that raises a user error when it runs."""
+
+    user_error_types = (RaisingJobException, )
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+
+class RaisingJobRaisingNotifyOops(NullJob):
+    """A job that raises when it runs, and when calling notifyOops."""
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+    def notifyOops(self, oops):
+        raise RaisingJobException('oops notifying oops')
+
+
+class RaisingJobRaisingNotifyUserError(NullJob):
+    """A job that raises when it runs, and when notifying user errors."""
+
+    user_error_types = (RaisingJobException, )
+
+    def run(self):
+        raise RaisingJobException(self.message)
+
+    def notifyUserError(self, error):
+        raise RaisingJobException('oops notifying users')
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -253,6 +284,38 @@ class TestJobRunner(TestCaseWithFactory):
         # has been committed.
         transaction.abort()
         self.assertEqual(JobStatus.FAILED, job.job.status)
+
+    def test_runJobHandleErrors_oops_generated(self):
+        """The handle errors method records an oops for raised errors."""
+        job = RaisingJob('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
+
+    def test_runJobHandleErrors_user_error_no_oops(self):
+        """If the job raises a user error, there is no oops."""
+        job = RaisingJobUserError('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(0, len(self.oopses))
+
+    def test_runJobHandleErrors_oops_generated_notify_fails(self):
+        """A second oops is logged if the notification of the oops fails."""
+        job = RaisingJobRaisingNotifyOops('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(2, len(self.oopses))
+
+    def test_runJobHandleErrors_oops_generated_user_notify_fails(self):
+        """A second oops is logged if the notification of the oops fails.
+
+        In this test case the error is a user expected error, so the
+        notifyUserError is called, and in this case the notify raises too.
+        """
+        job = RaisingJobRaisingNotifyUserError('boom')
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
 
 
 class StuckJob(BaseRunnableJob):

@@ -21,19 +21,24 @@ __all__ = [
 
 from textwrap import dedent
 
+from lazr.restful.declarations import (
+    call_with, export_as_webservice_entry, export_write_operation, exported,
+    operation_parameters, REQUEST_USER)
 from lazr.restful.fields import CollectionField, Reference
 from zope.interface import Attribute, Interface
-from zope.schema import Bool, Datetime, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
+from canonical.launchpad.fields import (
+    ParticipatingPersonChoice, PublicPersonChoice
+)
 from canonical.launchpad.validators.name import name_validator
 
 from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
+from lp.soyuz.interfaces.archive import IArchive
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
@@ -80,31 +85,38 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
     More precisely, it describes how to combine a number of branches into a
     debianized source tree.
     """
+    export_as_webservice_entry()
+
+    daily_build_archive = Reference(
+        IArchive, title=_("The archive to use for daily builds."))
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
 
-    registrant = Reference(
-        IPerson, title=_("The person who created this recipe"), readonly=True)
-    owner = ParticipatingPersonChoice(
-        title=_('Owner'), required=True, readonly=False,
-        vocabulary='UserTeamsParticipationPlusSelf',
-        description=_("The person or team who can edit this recipe."))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The person who created this recipe."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
+
+    owner = exported(
+        ParticipatingPersonChoice(
+            title=_('Owner'),
+            required=True, readonly=False,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("The person or team who can edit this recipe.")))
+
     distroseries = CollectionField(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
         readonly=False)
     build_daily = Bool(
         title=_("If true, the recipe should be built daily."))
-    sourcepackagename = Reference(
-        ISourcePackageName, title=_("The name of the source package this "
-                                    "recipe will build a source package"),
-        readonly=True)
 
-    name = TextLine(
+    name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
-            description=_("The name of this recipe."))
+            description=_("The name of this recipe.")))
 
     description = Text(
         title=_('Description'), required=True,
@@ -117,6 +129,20 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         IBranch, title=_("The base branch used by this recipe."),
         required=True, readonly=True)
 
+    @operation_parameters(recipe_text=Text())
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
+
+    recipe_text = exported(Text())
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=IArchive),
+        distroseries=Reference(schema=IDistroSeries),
+        pocket=Choice(vocabulary=PackagePublishingPocket,)
+        )
+    @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.
 
@@ -134,6 +160,9 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             False, select all builds that are not pending.
         """
 
+    def getLastBuild(self):
+        """Return the the most recent build of this recipe."""
+
     def destroySelf():
         """Remove this SourcePackageRecipe from the database.
 
@@ -146,6 +175,9 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name,
+    def new(registrant, owner, distroseries, name,
             builder_recipe, description):
         """Create an `ISourcePackageRecipe`."""
+
+    def exists(owner, name):
+        """Check to see if a recipe by the same name and owner exists."""

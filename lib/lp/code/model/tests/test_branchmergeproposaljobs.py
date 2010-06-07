@@ -23,7 +23,11 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob, IBranchMergeProposalJobSource,
-    IMergeProposalCreatedJob, IUpdatePreviewDiffJobSource,
+    ICodeReviewCommentEmailJob, ICodeReviewCommentEmailJobSource,
+    IMergeProposalCreatedJob, IMergeProposalUpdatedEmailJob,
+    IMergeProposalUpdatedEmailJobSource,
+    IReviewRequestedEmailJob, IReviewRequestedEmailJobSource,
+    IUpdatePreviewDiffJob, IUpdatePreviewDiffJobSource,
     )
 from lp.code.model.branchmergeproposaljob import (
      BranchMergeProposalJob, BranchMergeProposalJobDerived,
@@ -87,6 +91,13 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         verifyObject(IMergeProposalCreatedJob, job)
         verifyObject(IBranchMergeProposalJob, job)
 
+    def test_getOperationDescription(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(bmp)
+        self.assertTrue(
+            job.getOperationDescription().startswith(
+                'notifying people about the proposal to merge'))
+
     def checkDiff(self, diff):
         self.assertNotIn('+bar', diff.diff.text)
         self.assertIn('+qux', diff.diff.text)
@@ -143,6 +154,20 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     def test_implement_interface(self):
         """UpdatePreviewDiffJob implements IUpdatePreviewDiffJobSource."""
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
+
+    def test_providesInterface(self):
+        """MergeProposalCreatedJob provides the expected interfaces."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = UpdatePreviewDiffJob.create(bmp)
+        verifyObject(IUpdatePreviewDiffJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_getOperationDescription(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = UpdatePreviewDiffJob.create(bmp)
+        self.assertEqual(
+            'generating the diff for a merge proposal',
+            job.getOperationDescription())
 
     def test_run(self):
         self.useBzrBranches(direct_database=True)
@@ -343,6 +368,78 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
         self.assertIsInstance(job, MergeProposalUpdatedEmailJob)
+
+
+class TestCodeReviewCommentEmailJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_implement_interface(self):
+        """UpdatePreviewDiffJob implements IUpdatePreviewDiffJobSource."""
+        verifyObject(
+            ICodeReviewCommentEmailJobSource, CodeReviewCommentEmailJob)
+
+    def test_providesInterface(self):
+        """CodeReviewCommentEmailJob provides the expected interfaces."""
+        comment = self.factory.makeCodeReviewComment()
+        job = CodeReviewCommentEmailJob.create(comment)
+        verifyObject(ICodeReviewCommentEmailJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_getOperationDescription(self):
+        comment = self.factory.makeCodeReviewComment()
+        job = CodeReviewCommentEmailJob.create(comment)
+        self.assertEqual(
+            'emailing a code review comment',
+            job.getOperationDescription())
+
+
+class TestReviewRequestedEmailJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_implement_interface(self):
+        """UpdatePreviewDiffJob implements IUpdatePreviewDiffJobSource."""
+        verifyObject(IReviewRequestedEmailJobSource, ReviewRequestedEmailJob)
+
+    def test_providesInterface(self):
+        """MergeProposalCreatedJob provides the expected interfaces."""
+        request = self.factory.makeCodeReviewVoteReference()
+        job = ReviewRequestedEmailJob.create(request)
+        verifyObject(IReviewRequestedEmailJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_getOperationDescription(self):
+        request = self.factory.makeCodeReviewVoteReference()
+        job = ReviewRequestedEmailJob.create(request)
+        self.assertEqual(
+            'emailing a reviewer requesting a review',
+            job.getOperationDescription())
+
+
+class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_class_implements_interface(self):
+        verifyObject(
+            IMergeProposalUpdatedEmailJobSource, MergeProposalUpdatedEmailJob)
+
+    def test_providesInterface(self):
+        """MergeProposalUpdatedEmailJob provides the expected interfaces."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalUpdatedEmailJob.create(
+            bmp, 'change', bmp.registrant)
+        verifyObject(IMergeProposalUpdatedEmailJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_getOperationDescription(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalUpdatedEmailJob.create(
+            bmp, 'change', bmp.registrant)
+        self.assertEqual(
+            'emailing subscribers about merge proposal changes',
+            job.getOperationDescription())
 
 
 def test_suite():

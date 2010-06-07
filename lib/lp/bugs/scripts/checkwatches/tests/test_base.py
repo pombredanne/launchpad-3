@@ -48,7 +48,8 @@ class TestWorkingBase(TestCaseWithFactory):
     def test_interaction(self):
         # The WorkingBase.interaction context manager will begin an
         # interaction on entry and end it on exit.
-        base = WorkingBase(self.email, transaction.manager, self.logger)
+        base = WorkingBase()
+        base.init(self.email, transaction.manager, self.logger)
         endInteraction()
         self.assertIs(None, queryInteraction())
         with base.interaction:
@@ -59,7 +60,8 @@ class TestWorkingBase(TestCaseWithFactory):
         # If an interaction is already in progress, the interaction
         # context manager will not begin a new interaction on entry,
         # nor will it end the interaction on exit.
-        base = WorkingBase(self.email, transaction.manager, self.logger)
+        base = WorkingBase()
+        base.init(self.email, transaction.manager, self.logger)
         endInteraction()
         self.assertIs(None, queryInteraction())
         with base.interaction:
@@ -74,7 +76,8 @@ class TestWorkingBase(TestCaseWithFactory):
         # transaction is in progress on entry, commits on a successful
         # exit, or aborts the transaction on failure.
         transaction_manager = StubTransactionManager()
-        base = WorkingBase(self.email, transaction_manager, self.logger)
+        base = WorkingBase()
+        base.init(self.email, transaction_manager, self.logger)
         transaction.commit()
         with base.transaction:
             self.assertFalse(is_transaction_in_progress())
@@ -88,7 +91,8 @@ class TestWorkingBase(TestCaseWithFactory):
         # On entry, WorkingBase.transaction will raise an exception if
         # a transaction is in progress.
         transaction_manager = StubTransactionManager()
-        base = WorkingBase(self.email, transaction_manager, self.logger)
+        base = WorkingBase()
+        base.init(self.email, transaction_manager, self.logger)
         self.assertTrue(is_transaction_in_progress())
         self.assertRaises(TransactionInProgress, base.transaction.__enter__)
 
@@ -97,7 +101,8 @@ class TestWorkingBase(TestCaseWithFactory):
         # manager is active, the transaction will be aborted and the
         # exception re-raised.
         transaction_manager = StubTransactionManager()
-        base = WorkingBase(self.email, transaction_manager, self.logger)
+        base = WorkingBase()
+        base.init(self.email, transaction_manager, self.logger)
         transaction.commit()
         try:
             with base.transaction:
@@ -111,7 +116,8 @@ class TestWorkingBase(TestCaseWithFactory):
     def test_statement_logging(self):
         # The WorkingBase.statement_logging context manager starts
         # statement logging on entry and stops it on exit.
-        base = WorkingBase(self.email, transaction.manager, self.logger)
+        base = WorkingBase()
+        base.init(self.email, transaction.manager, self.logger)
         self.factory.makeEmail('numpty1@example.com', self.person)
         self.assertEqual(
             0, len(get_request_statements()),
@@ -130,6 +136,13 @@ class TestWorkingBase(TestCaseWithFactory):
             "SQL statement log not cleared on exit "
             "from base.statement_logging.")
 
+    def test_initFromParent(self):
+        base1 = WorkingBase()
+        base1.init(self.email, transaction.manager, self.logger)
+        base2 = WorkingBase()
+        base2.initFromParent(base1)
+        self.failUnlessEqual(base1.__dict__, base2.__dict__)
+
 
 class TestWorkingBaseErrorReporting(TestCaseWithFactory):
 
@@ -140,7 +153,8 @@ class TestWorkingBaseErrorReporting(TestCaseWithFactory):
         person = self.factory.makePerson()
         email = person.preferredemail.email
         logger = QuietFakeLogger()
-        base = WorkingBase(email, transaction.manager, logger)
+        base = WorkingBase()
+        base.init(email, transaction.manager, logger)
         with base.statement_logging:
             self.factory.makeEmail('numpty@example.com', person)
             self.assertTrue(

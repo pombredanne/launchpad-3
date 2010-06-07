@@ -13,6 +13,7 @@ __all__ = [
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
+    'ProductSeriesInvolvedMenu',
     'ProductSeriesInvolvementView',
     'ProductSeriesLinkBranchView',
     'ProductSeriesLinkBranchFromCodeView',
@@ -165,7 +166,7 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     def branches(self):
         """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
-        text = 'Branches'
+        text = 'Code'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
@@ -181,11 +182,18 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     links = [
         'report_bug', 'help_translate', 'submit_code', 'register_blueprint']
 
+    @property
+    def view(self):
+        return self.context
+
+    @property
+    def pillar(self):
+        return self.view.context.product
+
     def submit_code(self):
-        product = self.context.context.product
         target = canonical_url(
-            product, view_name='+addbranch', rootsite='code')
-        enabled = product.official_codehosting
+            self.pillar, view_name='+addbranch', rootsite='code')
+        enabled = self.view.official_codehosting
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
@@ -1029,7 +1037,6 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
                     if branch is None:
-                        self.errors_in_action = True
                         return
 
                     self.context.branch = branch
@@ -1060,6 +1067,10 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         self._setBranchExists(e.existing_branch,
                                               'branch_name')
                         self.errors_in_action = True
+                        # Abort transaction. This is normally handled
+                        # by LaunchpadFormView, but we are already in
+                        # the success handler.
+                        self._abort()
                         return
                     self.context.branch = code_import.branch
                     self.request.response.addInfoNotification(
@@ -1089,6 +1100,11 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 self.context.displayname)
         except BranchExists, e:
             self._setBranchExists(e.existing_branch, 'branch_name')
+        if branch is None:
+            self.errors_in_action = True
+            # Abort transaction. This is normally handled by
+            # LaunchpadFormView, but we are already in the success handler.
+            self._abort()
         return branch
 
 

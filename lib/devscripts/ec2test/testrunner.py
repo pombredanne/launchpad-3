@@ -289,12 +289,15 @@ class EC2TestRunner:
         # Email configuration.
         if email is not None or pqm_message is not None:
             self._smtp_server = config.get_user_option('smtp_server')
+            # Refuse localhost, because there's no SMTP server _on the actual
+            # EC2 instance._
             if self._smtp_server is None or self._smtp_server == 'localhost':
                 raise ValueError(
                     'To send email, a remotely accessible smtp_server (and '
                     'smtp_username and smtp_password, if necessary) must be '
                     'configured in bzr.  See the SMTP server information '
-                    'here: https://wiki.canonical.com/EmailSetup .')
+                    'here: https://wiki.canonical.com/EmailSetup .'
+                    'This server must be reachable from the EC2 instance.')
             self._smtp_username = config.get_user_option('smtp_username')
             self._smtp_password = config.get_user_option('smtp_password')
             self._from_email = config.username()
@@ -336,10 +339,10 @@ class EC2TestRunner:
                     'smtp_password = %s\n' % (self._smtp_password,))
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
-        self.log('Copying ec2test-remote.py to remote machine.\n')
+        self.log('Copying remote.py to remote machine.\n')
         user_connection.sftp.put(
-            os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                         'ec2test-remote.py'),
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), 'remote.py'),
             '/var/launchpad/ec2test-remote.py')
         # Set up launchpad login and email
         as_user('bzr launchpad-login %s' % (self._launchpad_login,))

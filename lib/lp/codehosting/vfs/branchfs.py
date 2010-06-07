@@ -66,9 +66,7 @@ import xmlrpclib
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.config import TransportConfig
-from bzrlib.errors import (
-    NoSuchFile, NotStacked, PermissionDenied, TransportNotPossible,
-    UnstackableBranchFormat)
+from bzrlib.errors import NoSuchFile, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
@@ -83,6 +81,7 @@ from twisted.python import failure, log
 from zope.component import getUtility
 from zope.interface import implements, Interface
 
+from lp.codehosting.bzrutils import get_stacked_on_url
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient)
 from lp.codehosting.vfs.transport import (
@@ -674,7 +673,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
 
 
 def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
-                  seen_new_branch_hook=None):
+                  seen_new_branch_hook=None, branch_transport=None):
     """Create a Launchpad server.
 
     :param user_id: A unique database ID of the user whose branches are
@@ -689,22 +688,21 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
     if codehosting_endpoint_url is None:
         codehosting_endpoint_url = config.codehosting.codehosting_endpoint
     if branch_url is None:
-        branch_url = config.codehosting.mirrored_branches_root
+        if branch_transport is None:
+            branch_url = config.codehosting.mirrored_branches_root
+            branch_transport = get_chrooted_transport(branch_url)
+    else:
+        if branch_transport is None:
+            branch_transport = get_chrooted_transport(branch_url)
+        else:
+            raise AssertionError(
+                "can't supply both branch_url and branch_transport!")
 
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
-    branch_transport = get_chrooted_transport(branch_url)
     lp_server = LaunchpadServer(
         BlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
-
-
-def get_stacked_on_url(branch):
-    """Get the stacked-on URL for 'branch', or `None` if not stacked."""
-    try:
-        return branch.get_stacked_on_url()
-    except (NotStacked, UnstackableBranchFormat):
-        return None
 
 
 class BranchPolicy:
