@@ -1158,6 +1158,11 @@ class AdminDistributionTranslations(AuthorizationBase):
                         self.obj).checkAuthenticated(user))
 
 
+class ViewPOTemplates(AnonymousAuthorization):
+    """Anyone can view an IPOTemplate."""
+    usedfor = IPOTemplate
+
+
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     """Controls administration of an `IPOTemplate`.
 
@@ -1208,6 +1213,11 @@ class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
     usedfor = IProductSeries
+
+
+class ViewPOFile(AnonymousAuthorization):
+    """Anyone can view an IPOFile."""
+    usedfor = IPOFile
 
 
 class EditPOFileDetails(EditByOwnersOrAdmins):

@@ -51,6 +51,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.registry.model.pillar import pillar_sort_key
 from canonical.launchpad.helpers import shortlist
@@ -64,8 +65,8 @@ from lp.bugs.interfaces.bugtask import (
     IDistroBugTask, IDistroSeriesBugTask, INullBugTask, IProductSeriesBugTask,
     IUpstreamBugTask, IllegalRelatedBugTasksParams, IllegalTarget,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskImportance, UserCannotEditBugTaskMilestone,
-    UserCannotEditBugTaskStatus)
+    UserCannotEditBugTaskAssignee, UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone, UserCannotEditBugTaskStatus)
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution, IDistributionSet)
@@ -946,11 +947,53 @@ class BugTask(SQLBase, BugTaskMixin):
         if new_status < BugTaskStatus.FIXRELEASED:
             self.date_fix_released = None
 
+    def userCanSetAnyAssignee(self, user):
+        """See `IBugTask`."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return user is not None and (
+            user.inTeam(self.pillar.bug_supervisor) or
+            user.inTeam(self.pillar.owner) or
+            user.inTeam(self.pillar.driver) or
+            (self.distroseries is not None and
+             user.inTeam(self.distroseries.driver)) or
+            (self.productseries is not None and
+             user.inTeam(self.productseries.driver)) or
+            user.inTeam(celebrities.admin)
+            or user == celebrities.bug_importer)
+
+    def userCanUnassign(self, user):
+        """True if user can set the assignee to None.
+
+        This option not shown for regular users unless they or their teams
+        are the assignees. Project owners, drivers, bug supervisors and
+        Launchpad admins can always unassign.
+        """
+        return user is not None and (
+            user.inTeam(self.assignee) or self.userCanSetAnyAssignee(user))
+
+    def canTransitionToAssignee(self, assignee):
+        """See `IBugTask`."""
+        # All users can assign and unassign themselves and their teams,
+        # but only project owners, bug supervisors, project/distribution
+        # drivers and Launchpad admins can assign others.
+        user = getUtility(ILaunchBag).user
+        return (
+            user is not None and (
+                user.inTeam(assignee) or
+                (assignee is None and self.userCanUnassign(user)) or
+                self.userCanSetAnyAssignee(user)))
+
     def transitionToAssignee(self, assignee):
         """See `IBugTask`."""
         if assignee == self.assignee:
             # No change to the assignee, so nothing to do.
             return
+
+        if not self.canTransitionToAssignee(assignee):
+            raise UserCannotEditBugTaskAssignee(
+                'Regular users can assign and unassign only themselves and '
+                'their teams. Only project onwers, bug supervisors, drivers '
+                'and release managers can assign others.')
 
         now = datetime.datetime.now(pytz.UTC)
         if self.assignee and not assignee:

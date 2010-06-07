@@ -111,6 +111,8 @@ class SFTPServer:
             os.path.join(os.path.dirname(__file__), 'poppy-sftp'),
             os.path.join(self._home_dir, '.ssh', 'id_rsa'))
         self._current_home = os.environ['HOME']
+        # We'd rather not have an agent interfere
+        os.environ.pop('SSH_AUTH_SOCK', None)
         os.environ['HOME'] = self._home_dir
         # XXX: Just blat over the BZR_SSH env var. Restoring env vars is a
         # little tricky, see lp.testing.TestCaseWithFactory.useTempBzrHome.

@@ -220,6 +220,17 @@ def run_with_storm_debug(function, *args, **kwargs):
 
 class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
+    def becomeDbUser(self, dbuser):
+        """Commit, then log into the database as `dbuser`.
+        
+        For this to work, the test must run in a layer.
+        
+        Try to test every code path at least once under a realistic db
+        user, or you'll hit privilege violations later on.
+        """
+        assert self.layer, "becomeDbUser requires a layer."
+        transaction.commit()
+        self.layer.switchDbUser(dbuser)
 
     def installFixture(self, fixture):
         """Install 'fixture', an object that has a `setUp` and `tearDown`.
@@ -436,6 +447,7 @@ class TestCase(testtools.TestCase):
         return self.assertEqual(
             self._unfoldEmailHeader(expected),
             self._unfoldEmailHeader(observed))
+
 
 class TestCaseWithFactory(TestCase):
 
