@@ -72,12 +72,22 @@ def get_table_stats(cur, options):
 
 
 def get_cpu_stats(cur, options):
+    # This query calculates the averate cpu utilization from the
+    # samples. It assumes samples are taken at regular intervals over
+    # the period.
     query = """
-        SELECT avg(cpu), username FROM DatabaseCpuStats
+        SELECT (
+            CAST(SUM(cpu) AS float) / (
+                SELECT COUNT(DISTINCT date_created) FROM DatabaseCpuStats
+                WHERE
+                    date_created >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+                    - CAST (%s AS interval))
+            ) AS avg_cpu, username
+        FROM DatabaseCpuStats
         WHERE date_created >= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - CAST(%s AS interval))
         GROUP BY username
-        """ % sqlvalues(options.since_interval)
+        """ % sqlvalues(options.since_interval, options.since_interval)
 
     cur.execute(query)
 
@@ -138,7 +148,7 @@ def main():
     print "== Most Active Users =="
     print
     for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
-        print "%40s || %6.2f%% CPU" % (username, float(cpu) / 100)
+        print "%40s || %6.2f%% CPU" % (username, float(cpu) / 10)
 
 
 if __name__ == '__main__':
