@@ -15,17 +15,14 @@ __metaclass__ = type
 from datetime import datetime
 import os
 import unittest
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
@@ -120,7 +117,7 @@ class TestBuildBaseWithDatabase(TestCaseWithFactory):
         self.assertEqual(config_args, uploader_command)
 
 
-class TestHandleStatus(TestCaseWithFactory):
+class TestHandleStatusMixin:
     """Tests for `IBuildBase`s handleStatus method.
 
     Note: these tests do *not* test the updating of the build
@@ -131,7 +128,7 @@ class TestHandleStatus(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def makeBuild(self):
-        """Allow subclasses to override the build with which the test runs.
+        """Allow classes to override the build with which the test runs.
 
         XXX michaeln 2010-06-03 bug=567922
         Until buildbase is removed, we need to ensure these tests
@@ -140,13 +137,10 @@ class TestHandleStatus(TestCaseWithFactory):
         is successfully built and check that incorrect upload paths will
         set the status to FAILEDTOUPLOAD.
         """
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
-        binaries = test_publisher.getPubBinaries()
-        return binaries[0].binarypackagerelease.build
+        raise NotImplemented
 
     def setUp(self):
-        super(TestHandleStatus, self).setUp()
+        super(TestHandleStatusMixin, self).setUp()
         self.build = self.makeBuild()
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
@@ -221,24 +215,6 @@ class TestHandleStatus(TestCaseWithFactory):
                 'filemap': { 'myfile.py': 'test_file_hash'},
                 })
         self.assertNotEqual(None, self.build.date_finished)
-
-
-class TestHandleStatusForSPRBuild(TestHandleStatus):
-
-    def makeBuild(self):
-        """Overridden to create an SPRBuild."""
-        person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
-        distroseries_i386 = distroseries.newArch(
-            'i386', processor_fam, False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
-        build = self.factory.makeSourcePackageRecipeBuild(
-            distroseries=distroseries,
-            status=BuildStatus.FULLYBUILT)
-        build.queueBuild(build)
-        return build
 
 
 def test_suite():

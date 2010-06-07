@@ -17,6 +17,7 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.tests.test_buildbase import TestHandleStatusMixin
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
@@ -341,6 +342,16 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
         self.assertIsNot(None, self.build.date_finished)
+
+
+class TestHandleStatusForBinaryPackageBuild(
+    TestHandleStatusMixin, TestCaseWithFactory):
+
+    def makeBuild(self):
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.prepareBreezyAutotest()
+        binaries = test_publisher.getPubBinaries()
+        return binaries[0].binarypackagerelease.build
 
 
 def test_suite():
