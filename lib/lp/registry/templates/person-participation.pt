@@ -20,7 +20,7 @@
        has not yet joined any teams.
     </p>
 
-    <table id="participation" class="listing"
+    <table id="participation" class="listing sortable"
       tal:condition="view/has_participations">
       <thead>
         <tr>
