@@ -781,7 +781,7 @@ class AdminDistribution(AdminByAdminsTeam):
     usedfor = IDistribution
 
 
-class EditDistroByOwnersRegistryExpertOrAdmins(
+class EditDistributionByOwnersRegistryExpertsOrAdmins(
     EditByOwnersRegistryExpertsOrAdmins):
     """The owner of a distribution should be able to edit its
     information; it is mainly administrative data, such as bug
@@ -1167,7 +1167,7 @@ class AdminDistributionTranslations(AuthorizationBase):
             return True
         else:
             return (user.in_rosetta_experts or
-                    EditDistributionByDistroOwnersOrAdmins(
+                    EditByOwnersOrAdmins(
                         self.obj).checkAuthenticated(user))
 
 
