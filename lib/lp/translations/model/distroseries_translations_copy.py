@@ -44,7 +44,7 @@ def copy_active_translations(child, transaction, logger):
     copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
     # Incremental copy of updates is no longer supported
-    assert child.getTranslationTemplates().is_empty(), (
+    assert len(list(child.getTranslationTemplates())) == 0, (
            "The child series must not yet have any translation templates.")
 
     logger.info(
