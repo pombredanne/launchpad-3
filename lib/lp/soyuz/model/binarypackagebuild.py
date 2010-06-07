@@ -380,7 +380,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             return False
 
         if not self._checkDependencyVersion(
-            dep_candidate.binarypackageversion, version, relation):
+            dep_candidate.binarypackagerelease.version, version, relation):
             return False
 
         # Only PRIMARY archive build dependencies should be restricted
@@ -391,7 +391,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # only contains packages in 'main' component.
         ogre_components = get_components_for_building(self)
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
-            dep_candidate.component not in ogre_components):
+            dep_candidate.component.name not in ogre_components):
             return False
 
         return True
@@ -947,6 +947,7 @@ class BinaryPackageBuildSet:
         logger = logging.getLogger('retry-depwait')
 
         # Get the MANUALDEPWAIT records for all archives.
+        # XXX should be using the slave
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         candidates = store.find(
@@ -956,7 +957,11 @@ class BinaryPackageBuildSet:
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.status == BuildStatus.MANUALDEPWAIT)
 
-        candidates_count = candidates.count()
+        # Materialise the results right away to avoid hitting the
+        # database multiple times.
+        candidates = list(candidates)
+
+        candidates_count = len(candidates)
         if candidates_count == 0:
             logger.info("No MANUALDEPWAIT record found.")
             return
