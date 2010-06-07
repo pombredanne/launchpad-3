@@ -111,6 +111,10 @@ def main():
 
     print "== Most Read Tables =="
     print
+    # These match the pg_user_table_stats view. schemaname is the
+    # namespace (normally 'public'), relname is the table (relation)
+    # name. total_tup_red is the total number of rows read.
+    # idx_tup_fetch is the number of rows looked up using an index.
     tables_sort = ['total_tup_read', 'idx_tup_fetch', 'schemaname', 'relname']
     most_read_tables = sorted(
         tables, key=attrgetter(*tables_sort), reverse=True)
