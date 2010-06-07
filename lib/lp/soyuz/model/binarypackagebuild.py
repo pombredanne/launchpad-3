@@ -33,6 +33,7 @@ from canonical.launchpad.helpers import (
      get_contact_email_addresses, get_email_template)
 from canonical.launchpad.interfaces.launchpad import (
     NotFoundError, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject, ISlaveStore
 from canonical.launchpad.mail import (
     simple_sendmail, format_address)
 from canonical.launchpad.webapp import canonical_url
@@ -947,8 +948,7 @@ class BinaryPackageBuildSet:
         logger = logging.getLogger('retry-depwait')
 
         # Get the MANUALDEPWAIT records for all archives.
-        # XXX should be using the slave
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = ISlaveStore(BinaryPackageBuild)
 
         candidates = store.find(
             BinaryPackageBuild,
@@ -972,6 +972,9 @@ class BinaryPackageBuildSet:
         for build in candidates:
             if not build.can_be_retried:
                 continue
+            # We're changing 'build' so make sure we have an object from
+            # the master store.
+            build = IMasterObject(build)
             build.updateDependencies()
             if build.dependencies:
                 logger.debug(
