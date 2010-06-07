@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.tests.test_buildbase import TestHandleStatusMixin
+from lp.buildmaster.tests.test_buildbase import (
+    TestGetUploadMethodsMixin, TestHandleStatusMixin)
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
@@ -193,6 +194,24 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.factory.makeBinaryPackageBuild()
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
+
+
+class TestGetUploadMethodsForSPRecipeBuild(
+    TestGetUploadMethodsMixin, TestCaseWithFactory):
+
+    def makeBuild(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
+        distroseries_i386 = distroseries.newArch(
+            'i386', processor_fam, False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries,
+            status=BuildStatus.FULLYBUILT)
+        build.queueBuild(build)
+        return build
 
 
 class TestHandleStatusForSPRBuild(TestHandleStatusMixin, TestCaseWithFactory):

@@ -15,6 +15,7 @@ __metaclass__ = type
 from datetime import datetime
 import os
 import unittest
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -23,6 +24,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase, TestCaseWithFactory
@@ -62,17 +64,26 @@ class TestBuildBase(TestCase, TestBuildBaseMixin):
         self.package_build = BuildBase()
 
 
-class TestBuildBaseWithDatabase(TestCaseWithFactory):
+class TestGetUploadMethodsMixin:
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
     layer = LaunchpadZopelessLayer
 
+    def makeBuild(self):
+        """Allow classes to override the build with which the test runs.
+
+        XXX michaeln 2010-06-03 bug=567922
+        Until buildbase is removed, we need to ensure these tests
+        run against new IPackageBuild builds (BinaryPackageBuild)
+        and the IBuildBase builds (SPRecipeBuild). They assume the build
+        is successfully built and check that incorrect upload paths will
+        set the status to FAILEDTOUPLOAD.
+        """
+        raise NotImplemented
+
     def setUp(self):
-        super(TestBuildBaseWithDatabase, self).setUp()
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
-        binaries = test_publisher.getPubBinaries()
-        self.build = binaries[0].binarypackagerelease.build
+        super(TestGetUploadMethodsMixin, self).setUp()
+        self.build = self.makeBuild()
 
     def test_getUploadLogContent_nolog(self):
         """If there is no log file there, a string explanation is returned.
