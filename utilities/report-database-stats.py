@@ -117,7 +117,7 @@ def main():
     tables = get_table_stats(cur, options)
     arbitrary_table = list(tables)[0]
     interval = arbitrary_table.date_end - arbitrary_table.date_start
-    per_minute = interval.days * 24 * 60 + interval.seconds / 60.0
+    per_second = float(interval.days * 24 * 60 + interval.seconds)
 
     print "== Most Read Tables =="
     print
@@ -129,8 +129,8 @@ def main():
     most_read_tables = sorted(
         tables, key=attrgetter(*tables_sort), reverse=True)
     for table in most_read_tables[:options.limit]:
-        print "%40s || %10.2f tuples/min" % (
-            table.relname, table.total_tup_read / per_minute)
+        print "%40s || %10.2f tuples/sec" % (
+            table.relname, table.total_tup_read / per_second)
     print
 
     print "== Most Written Tables =="
@@ -140,15 +140,15 @@ def main():
     most_written_tables = sorted(
         tables, key=attrgetter(*tables_sort), reverse=True)
     for table in most_written_tables[:options.limit]:
-        print "%40s || %10.2f tuples/min" % (
-            table.relname, table.total_tup_written / per_minute)
+        print "%40s || %10.2f tuples/sec" % (
+            table.relname, table.total_tup_written / per_second)
     print
 
     user_cpu = get_cpu_stats(cur, options)
     print "== Most Active Users =="
     print
     for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
-        print "%40s || %6.2f%% CPU" % (username, float(cpu) / 10)
+        print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
 
 
 if __name__ == '__main__':
