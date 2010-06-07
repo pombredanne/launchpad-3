@@ -267,6 +267,10 @@ patch_choice_parameter_type(
 patch_plain_parameter_type(
     IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
+    IArchive, '_checkUpload', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
+    IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)

@@ -322,3 +322,11 @@ def print_bugfilters_portlet_filled(browser, target):
         '/%s/+bugtarget-portlet-bugfilters-stats' % target)
     table = BeautifulSoup('<table>%s</table>' % browser.contents)
     print_table(table)
+
+
+def print_bug_tag_anchors(anchors):
+    """The the bug tags in the iterable of anchors."""
+    for anchor in anchors:
+        href = anchor['href']
+        if href != '+edit' and '/+help/tag-help.html' not in href:
+            print anchor['class'], anchor.contents[0]

@@ -372,7 +372,7 @@ does not show either link.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Mailing list'))
     Mailing list
-    This team does not have a mailing list.
+    This team does not use Launchpad to host a mailing list.
     Create a mailing list
 
     >>> browser.getLink('Subscribe')
