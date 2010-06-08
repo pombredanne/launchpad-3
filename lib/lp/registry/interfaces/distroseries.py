@@ -361,7 +361,7 @@ class IDistroSeriesPublic(
         given architecturetag.
         """
 
-    def __str__(self):
+    def __str__():
         """Return the name of the distroseries."""
 
     def getDistroArchSeriesByProcessor(processor):
