@@ -1265,7 +1265,7 @@ class TestBugChanges(unittest.TestCase):
         self.saveOldChanges(self.bug, append=True)
         # Save the initial "bug created" notifications before
         # marking this bug a duplicate, so that we don't get
-        # extra notificationse by mistake.
+        # extra notifications by mistake.
         duplicate_bug_recipients = duplicate_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
@@ -1371,7 +1371,7 @@ class TestBugChanges(unittest.TestCase):
 
         # Save the initial "bug created" notifications before
         # marking this bug a duplicate, so that we don't get
-        # extra notificationse by mistake.
+        # extra notifications by mistake.
         public_bug_recipients = public_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(public_bug, 'duplicateof', private_bug)
@@ -1414,7 +1414,7 @@ class TestBugChanges(unittest.TestCase):
 
         # Save the initial "bug created" notifications before
         # marking this bug a duplicate, so that we don't get
-        # extra notificationse by mistake.
+        # extra notifications by mistake.
         public_bug_recipients = public_bug.getBugNotificationRecipients(
             level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(public_bug, 'duplicateof', private_bug)
