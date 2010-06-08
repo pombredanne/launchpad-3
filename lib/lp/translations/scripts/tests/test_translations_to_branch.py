@@ -139,12 +139,15 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
     def test_exportToBranches_handles_nonascii_exceptions(self):
         # There's an exception handler in _exportToBranches that must
         # cope well with non-ASCII exception strings.
+        productseries = self.factory.makeProductSeries()
         exporter = ExportTranslationsToBranch(test_args=[])
         exporter.logger = QuietFakeLogger()
         boom = u'\u2639'
         exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
 
-        exporter._exportToBranches([self.factory.makeProductSeries()])
+        self.becomeDbUser('translationstobranch')
+
+        exporter._exportToBranches([productseries])
 
         self.assertEqual(1, exporter._exportToBranch.call_count)
 
@@ -161,6 +164,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         exporter.logger = QuietFakeLogger()
         productseries = self.factory.makeProductSeries()
         productseries.translations_branch = self.factory.makeBranch()
+
+        self.becomeDbUser('translationstobranch')
 
         # _handleUnpushedBranch is called if _exportToBranch raises
         # NotBranchError.
@@ -192,6 +197,8 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
         exporter._sendMail = FakeMethod()
 
+        self.becomeDbUser('translationstobranch')
+
         exporter._exportToBranches([productseries])
 
         self.assertEqual(1, exporter._sendMail.call_count)
@@ -207,6 +214,26 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertIn(productseries.title, text)
         self.assertIn(productseries.translations_branch.bzr_identity, text)
         self.assertIn('bzr push lp://', text)
+
+    def test_handleUnpushedBranch_has_required_privileges(self):
+        # Dealing with an unpushed branch is a special code path that
+        # was not exercised by the full-script test.  Ensure that it has
+        # the database privileges that it requires.
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = QuietFakeLogger()
+        productseries = self.factory.makeProductSeries()
+        email = self.factory.getUniqueEmailAddress()
+        branch_owner = self.factory.makePerson(email=email)
+        productseries.translations_branch = self.factory.makeBranch(
+            owner=branch_owner)
+        exporter._exportToBranch = FakeMethod(failure=NotBranchError("Ow"))
+
+        self.becomeDbUser('translationstobranch')
+
+        exporter._handleUnpushedBranch(productseries)
+
+        # This completes successfully.
+        transaction.commit()
 
 
 class TestExportToStackedBranch(TestCaseWithFactory):
