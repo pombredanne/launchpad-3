@@ -25,8 +25,13 @@
         </tal:no-subscribers>
       </tal:has-mailinglist>
       <tal:no_mailing_list condition="not: context/mailing_list">
-        <p>This team does not have a mailing list.</p>
-        <p><a href="+mailinglist">Configure</a> the team's mailing list.</p>
+        <p>This team does not use Launchpad to host a mailing list.</p>
+        <ul class="horizontal">
+          <li>
+            <tal:configure_mailing_list
+              replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
+          </li>
+        </ul>
       </tal:no_mailing_list>
     </div>
 
