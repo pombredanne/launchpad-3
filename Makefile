@@ -88,18 +88,6 @@ check: clean build
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
 
-# A version of 'make check' that applies modifications specifically for the
-# ec2 environment.
-ec2_check: clean build
-        # XXX mars 2010-05-17 bug=570380
-        # Disable the windmill test suite to prevent the whole system from
-        # hanging.  See bug 570380.
-        #
-        # Yes, this is code duplication.  If you conceive of a better
-        # solution in a less heated moment, then please replace this!
-	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
-		--layer='!\(MailmanLayer\|WindmillLayer\)'
-
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
 	# setting up the test environment.
