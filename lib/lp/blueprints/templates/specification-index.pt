@@ -270,43 +270,37 @@
                 </li>
               </ul>
             </div>
+
+            <div class="portlet" style="border-top: none;">
+              <h2 tal:condition="not:context/feedbackrequests">Feedback requests</h2>
+
+              <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+
+              <ul class="horizontal">
+                <li tal:define="link context_menu/givefeedback"
+                    tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+                <li tal:define="link context_menu/requestfeedback"
+                    tal:condition="link/enabled">
+                  <a tal:replace="structure link/fmt:link" />
+                </li>
+              </ul>
+            </div>
+
         </div>
       </div>
     </div>
 
-    <div class="yui-g">
-      <div class="yui-u first">
-        <div class="portlet">
-          <h2>
-            Whiteboard
-            <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
-         </h2>
+    <div class="portlet">
+      <h2>
+        Whiteboard
+        <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
+      </h2>
 
-          <div
-            tal:content="structure context/whiteboard/fmt:text-to-html"
-            tal:condition="context/whiteboard">Whiteboard.</div>
-        </div>
-      </div>
-
-      <div class="yui-u">
-        <div class="portlet">
-          <h2
-            tal:condition="not:context/feedbackrequests">Feedback requests</h2>
-
-          <div tal:replace="structure context/@@+portlet-feedbackqueue" />
-
-          <ul class="horizontal">
-            <li tal:define="link context_menu/givefeedback"
-                 tal:condition="link/enabled">
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-            <li tal:define="link context_menu/requestfeedback"
-                 tal:condition="link/enabled">
-              <a tal:replace="structure link/fmt:link" />
-            </li>
-          </ul>
-        </div>
-      </div>
+      <div class="wide"
+           tal:content="structure context/whiteboard/fmt:text-to-html"
+           tal:condition="context/whiteboard">Whiteboard.</div>
     </div>
 
     <div class="portlet">

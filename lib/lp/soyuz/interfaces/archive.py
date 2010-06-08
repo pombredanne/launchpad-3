@@ -143,6 +143,7 @@ class VersionRequiresName(Exception):
 
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
+    webservice_error(403) # Forbidden.
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
@@ -491,6 +492,31 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param pocket: A `PackagePublishingPocket`
         :return: Reason why uploading is not possible or None
         """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("The distro series"), required=True),
+        sourcepackagename=TextLine(
+            title=_("Source package name"), required=True),
+        component=TextLine(
+            title=_("Component"), required=True),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        strict_component=Bool(
+            title=_("Strict component"), required=False)
+        )
+    @export_operation_as("checkUpload")
+    @export_read_operation()
+    def _checkUpload(person, distroseries, sourcepackagename, component, 
+            pocket, strict_component=True):
+        """Wrapper around checkUpload for the web service API."""
 
     def checkUpload(person, distroseries, sourcepackagename, component, 
                     pocket, strict_component=True):
