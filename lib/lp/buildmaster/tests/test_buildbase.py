@@ -15,7 +15,6 @@ __metaclass__ = type
 from datetime import datetime
 import os
 import unittest
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -24,10 +23,8 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 
 
