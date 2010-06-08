@@ -1360,6 +1360,128 @@ class TestBugChanges(unittest.TestCase):
             expected_activity=expected_activity,
             expected_notification=expected_notification)
 
+    def test_duplicate_private_bug(self):
+        # When a bug is marked as the duplicate of a private bug the
+        # private bug's summary won't be included in the notification.
+        private_bug = self.factory.makeBug()
+        private_bug.setPrivate(True, self.user)
+        public_bug = self.factory.makeBug()
+        self.saveOldChanges(private_bug)
+        self.saveOldChanges(public_bug)
+
+        # Save the initial "bug created" notifications before
+        # marking this bug a duplicate, so that we don't get
+        # extra notificationse by mistake.
+        public_bug_recipients = public_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
+        self.changeAttribute(public_bug, 'duplicateof', private_bug)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'marked as duplicate',
+            'oldvalue': None,
+            'newvalue': str(private_bug.id),
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': (
+                "** This bug has been marked a duplicate of private bug %d"
+                % private_bug.id),
+            'recipients': public_bug_recipients,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=public_bug)
+
+        # Ensure that only the people subscribed to the bug that
+        # gets marked as a duplicate are notified.
+        master_notifications = BugNotification.selectBy(
+            bug=self.bug, orderBy='id')
+        new_notifications = [
+            notification for notification in master_notifications
+            if notification.id not in self.old_notification_ids]
+        self.assertEqual(len(list(new_notifications)), 0)
+
+    def test_unmarked_as_duplicate_of_private_bug(self):
+        # When a bug is unmarked as a duplicate of a private bug,
+        # the private bug's summary isn't sent in the notification.
+        private_bug = self.factory.makeBug()
+        private_bug.setPrivate(True, self.user)
+        public_bug = self.factory.makeBug()
+
+        # Save the initial "bug created" notifications before
+        # marking this bug a duplicate, so that we don't get
+        # extra notificationse by mistake.
+        public_bug_recipients = public_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
+        self.changeAttribute(public_bug, 'duplicateof', private_bug)
+
+        self.saveOldChanges(private_bug)
+        self.saveOldChanges(public_bug)
+
+        self.changeAttribute(public_bug, 'duplicateof', None)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'removed duplicate marker',
+            'oldvalue': str(private_bug.id),
+            'newvalue': None,
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': (
+                "** This bug is no longer a duplicate of private bug %d"
+                % private_bug.id),
+            'recipients': public_bug_recipients,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=public_bug)
+
+    def test_changed_private_duplicate(self):
+        # When a bug is change from being the duplicate of a private bug
+        # to being the duplicate of a public bug, the private bug's
+        # summary won't be sent in the notification.
+        private_bug = self.factory.makeBug()
+        private_bug.setPrivate(True, self.user)
+        duplicate_bug = self.factory.makeBug()
+        public_bug = self.factory.makeBug()
+        bug_recipients = duplicate_bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.METADATA).getRecipients()
+
+        self.changeAttribute(duplicate_bug, 'duplicateof', private_bug)
+        self.saveOldChanges(duplicate_bug)
+
+        self.changeAttribute(duplicate_bug, 'duplicateof', public_bug)
+
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'changed duplicate marker',
+            'oldvalue': str(private_bug.id),
+            'newvalue': str(public_bug.id),
+            }
+
+        expected_notification = {
+            'person': self.user,
+            'text': (
+                "** This bug is no longer a duplicate of private bug %d\n"
+                "** This bug has been marked a duplicate of bug %d\n"
+                "   %s" % (private_bug.id, public_bug.id,
+                           public_bug.title)),
+            'recipients': bug_recipients,
+            }
+
+        self.assertRecordedChange(
+            expected_activity=expected_activity,
+            expected_notification=expected_notification,
+            bug=duplicate_bug)
+
     def test_convert_to_question_no_comment(self):
         # When a bug task is converted to a question, its status is
         # first set to invalid, which causes the normal notifications for
