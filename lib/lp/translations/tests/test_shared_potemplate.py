@@ -500,32 +500,20 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             [self.hoary_template, other_template, warty_template], templates)
 
     def test_getSharingPOTemplates_package_one_linked(self):
-        # Once one sourcepackage is linked to a product, no sharing by name
-        # is possible anymore. Only the linked package will share with the
-        # product.
-        warty_template = self.factory.makePOTemplate(
+        # Once one a sourcepackage in a distroseries that is neither the
+        # translation focus nor the current series is linked to a product,
+        # no sharing by name is possible anymore.
+        self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename)
         other_series = self.factory.makeDistroSeries(self.ubuntu)
-        other_template = self.factory.makePOTemplate(
+        self.factory.makePOTemplate(
             distroseries=other_series, sourcepackagename=self.packagename,
             name=self.templatename)
+        other_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, other_series)
+        other_sourcepackage.setPackaging(self.trunk, self.owner)
 
-        hoary_sourcepackage = self.factory.makeSourcePackage(
-            self.templatename, self.hoary)
-        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
-
-        # The sharing subset for the linked package shares with the product.
-        subset = self.potemplateset.getSharingSubset(
-            distribution=self.ubuntu,
-            sourcepackagename=self.packagename)
-        templates = self._count_statements(
-            subset.getSharingPOTemplates(self.templatename))
-
-        self.assertContentEqual(
-            [self.hoary_template, self.trunk_template], templates)
-
-        # The sharing subset for the not linked package. No sharing templates.
         subset = self.potemplateset.getSharingSubset(
             distribution=self.ubuntu,
             sourcepackagename=self.packagename)
