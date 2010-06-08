@@ -375,6 +375,8 @@ patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'owner', IPerson)
 patch_plain_parameter_type(
     IHasBugs, 'searchTasks', 'affected_user', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'structural_subscriber', IPerson)
 
 # IBugTask
 patch_reference_property(IBugTask, 'owner', IPerson)
