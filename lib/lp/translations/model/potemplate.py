@@ -1395,6 +1395,8 @@ class POTemplateSharingSubset(object):
         if distroseries is None:
             distroseries = distribution.currentseries
         sourcepackage = SourcePackage(sourcepackagename, distroseries)
+        if sourcepackage.productseries is None:
+            return None
         return sourcepackage.productseries.product
 
     def _canShareByName(self, distribution, sourcepackagename):
@@ -1427,27 +1429,25 @@ class POTemplateSharingSubset(object):
     def _build_query(self, templatename):
         from lp.registry.model.productseries import ProductSeries
 
-        ProductSeries1 = Alias(ProductSeries, 'productseries1')
-        Packed = Alias(
-            Join(
-                Packaging, ProductSeries,
-                Packaging.productseries == ProductSeries.id),
-            'packed')
-
+        ProductSeries1 = ClassAlias(ProductSeries, 'productseries1')
         origin = LeftJoin(
-                LeftJoin(
-                    POTemplate, ProductSeries1,
-                    POTemplate.productseries == ProductSeries1.id), 
-                Packed,
-                And(
-                    Packed.distroseries == POTemplate.distroseries,
-                    Packed.sourcepackagename == POTemplate.sourcepackagename))
+            LeftJoin(
+                POTemplate, ProductSeries,
+                POTemplate.productseriesID == ProductSeries.id), 
+            Join(
+                Packaging, ProductSeries1,
+                Packaging.productseriesID == ProductSeries1.id),
+            And(
+                Packaging.distroseriesID == POTemplate.distroseriesID,
+                Packaging.sourcepackagenameID == POTemplate.sourcepackagenameID
+                )
+            )
         return Store.of(self.product).using(origin).find(
             POTemplate,
             And(
                 Or(
-                    ProductSeries1.product == self.product,
-                    Packed.product == self.product
+                    ProductSeries.productID == self.product.id,
+                    ProductSeries1.productID == self.product.id
                     ),
                 POTemplate.name == templatename
                 ))
@@ -1458,6 +1458,8 @@ class POTemplateSharingSubset(object):
             assert self.sourcepackagename is not None, (
                    "Need sourcepackagename to select from distribution.")
 
+        if self.product is None:
+            return []
         return self._build_query(potemplate_name)
 #        escaped_potemplate_name = re.escape(potemplate_name)
 #        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
