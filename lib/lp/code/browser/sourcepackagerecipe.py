@@ -318,9 +318,10 @@ class RecipeTextValidatorMixin:
                 'recipe_text',
                 'The recipe text is not a valid bzr-builder recipe.')
 
-        if data.get('name', None):
-            if getUtility(ISourcePackageRecipeSource).exists(
-                                                self.user, data['name']):
+        name = data.get('name', None)
+        if name:
+            SourcePackageRecipeSource = getUtility(ISourcePackageRecipeSource)
+            if SourcePackageRecipeSource.exists(self.user, name):
                 self.setFieldError(
                     'name',
                     'There is already a recipe owned by %s with this name.' %
