@@ -43,9 +43,7 @@ from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
-from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.translations.model.pofile import POFile, DummyPOFile
 from lp.translations.model.pomsgid import POMsgID
@@ -1406,6 +1404,7 @@ class POTemplateSharingSubset(object):
         determined by their name. This is only (fairly) safe if none of these
         is packaged elsewhere.
         """
+        from lp.registry.model.distroseries import DistroSeries
         origin = Join(
             Packaging, DistroSeries,
             Packaging.distroseries == DistroSeries.id)
@@ -1426,6 +1425,8 @@ class POTemplateSharingSubset(object):
         return (template.name, package)
 
     def _build_query(self, templatename):
+        from lp.registry.model.productseries import ProductSeries
+
         ProductSeries1 = Alias(ProductSeries, 'productseries1')
         Packed = Alias(
             Join(
