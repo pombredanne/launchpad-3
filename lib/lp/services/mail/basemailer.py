@@ -187,3 +187,9 @@ class RecipientReason:
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
         return (self.reason_template % self._getTemplateValues())
+
+    @classmethod
+    def forBuildRequester(cls, requester):
+        header = cls.makeRationale('Requester', requester)
+        reason = '%(entity_is)s the requester of the build.'
+        return cls(requester, requester, header, reason)

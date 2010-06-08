@@ -34,12 +34,36 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
+from lp.services.mail.basemailer import BaseMailer, RecipientReason
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+
+class SourcePackageRecipeBuildMailer(BaseMailer):
+
+    def __init__(self, build):
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        BaseMailer.__init__(
+            self, '%(status)s: %(recipe)s for %(distroseries)s',
+            'build-request.txt', recipients, 'from_address')
+        self.build = build
+
+    def _getTemplateParams(self, email):
+        params = super(
+            SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
+        params.update({
+            'status': str(self.build.buildstate),
+            'distroseries': self.build.distroseries.name,
+            'recipe': self.build.recipe.name,
+            'recipe_owner': self.build.recipe.owner.name,
+            'archive': self.build.archive.name,
+        })
+        return params
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
@@ -222,8 +246,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
-        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
-        return
+        mailer = SourcePackageRecipeBuildMailer(self)
+        mailer.sendAll()
 
     def getFileByName(self, filename):
         """See `ISourcePackageRecipeBuild`."""

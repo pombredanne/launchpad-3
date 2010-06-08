@@ -8,6 +8,7 @@ from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
+import re
 import unittest
 
 from pytz import utc
@@ -20,13 +21,15 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.buildmaster.interfaces.buildbase import IBuildBase
+from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
+from lp.services.mail.sendmail import format_address
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import ANONYMOUS, login, person_logged_in, TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestSourcePackageRecipeBuild(TestCaseWithFactory):
@@ -146,7 +149,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(
             datetime.timedelta(minutes=5), spb.estimateDuration())
 
-
     def test_datestarted(self):
         """Datestarted is taken from job if not specified in the build.
 
@@ -192,6 +194,27 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         Store.of(binary).flush()
         self.assertEqual([binary], list(spb.binary_builds))
 
+    def test_notify(self):
+        chef = self.factory.makePerson(name='person')
+        cake = self.factory.makeSourcePackageRecipe(name=u'recipe', owner=chef)
+        pantry = self.factory.makeArchive(name='ppa')
+        secret = self.factory.makeDistroSeries(name=u'distroseries')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=cake, distroseries=secret, archive=pantry)
+        removeSecurityProxy(build).buildstate = BuildStatus.FULLYBUILT
+        build.notify()
+        (message,) = pop_notifications()
+        requester = build.requester
+        requester_address = format_address(
+            requester.displayname, requester.preferredemail.email)
+        self.assertEqual(
+            requester_address, re.sub(r'\n\t+', ' ', message['To']))
+        self.assertEqual('Successfully built: recipe for distroseries',
+            message['Subject'])
+        self.assertEqual(
+            'Build person/recipe into ppa for distroseries: Successfully'
+            ' built.\n',
+            message.get_payload(decode=True))
 
 
 def test_suite():
