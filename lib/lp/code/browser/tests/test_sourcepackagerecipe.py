@@ -120,8 +120,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             pattern, main_text)
 
     def test_create_new_recipe_empty_name(self):
-        # Leave off the name and make sure that the widgets validate before the
-        # content validates.
+        # Leave off the name and make sure that the widgets validate before
+        # the content validates.
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
