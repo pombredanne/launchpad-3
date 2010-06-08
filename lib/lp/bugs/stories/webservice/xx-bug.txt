@@ -1660,7 +1660,7 @@ bugs:
     owner_link: u'http://api.launchpad.dev/beta/~testuser1'
     ...
 
-`testuser2` is subscribed to `testbugs2`, so this bug is related to this
+`testuser2` is subscribed to `testbug2`, so this bug is related to this
 user:
 
     >>> related = webservice.named_get(
@@ -1682,15 +1682,16 @@ empty:
     total_size: 0
     ---
 
-You are not allowed to overwrite all user related parameter in the same
-query, because in this case this bug will no be related to the person
-anymore. In this case a `400 Bad Request`-Error will be returned
+You are not allowed to overwrite all user related parameters in the same
+query, because this bug will not be related to the person anymore. In this
+case a `400 Bad Request`-Error will be returned.
 
     >>> name12 = webservice.get("/~name12").jsonBody()
     >>> print webservice.named_get(
     ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
     ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
-    ...     bug_commenter=name12['self_link']
+    ...     bug_commenter=name12['self_link'],
+    ...     structural_subscriber=name12['self_link']
     ...     )
     HTTP/1.1 400 Bad Request...
 

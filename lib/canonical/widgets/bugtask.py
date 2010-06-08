@@ -224,6 +224,29 @@ class BugTaskAssigneeWidget(Widget):
             else:
                 return self.assigned_to
 
+    def showUnassignOption(self):
+        """Should the "unassign bugtask" option be shown?
+
+        To avoid user confusion, we show this option only if the user
+        can set the bug task assignee to None or if there is currently
+        no assignee set.
+        """
+        user = getUtility(ILaunchBag).user
+        context = self.context.context
+        return context.userCanUnassign(user) or context.assignee is None
+
+    def showPersonChooserWidget(self):
+        """Should the person chooser widget bw shown?
+
+        The person chooser is shown only if the user can assign at least
+        one other person or team in addition to himself.
+        """
+        user = getUtility(ILaunchBag).user
+        context = self.context.context
+        return user is not None and (
+            context.userCanSetAnyAssignee(user) or
+            user.teams_participated_in.count() > 0)
+
 
 class BugWatchEditForm(Interface):
     """Form field definition for the bug watch widget.
