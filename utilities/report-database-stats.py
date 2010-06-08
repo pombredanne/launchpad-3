@@ -117,7 +117,7 @@ def main():
     tables = get_table_stats(cur, options)
     arbitrary_table = list(tables)[0]
     interval = arbitrary_table.date_end - arbitrary_table.date_start
-    per_second = float(interval.days * 24 * 60 + interval.seconds)
+    per_second = float(interval.days * 24 * 60 * 60 + interval.seconds)
 
     print "== Most Read Tables =="
     print
