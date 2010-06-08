@@ -322,28 +322,40 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         # remain constant.
 
         all_templates = [self.trunk_template, self.hoary_template]
+        hoary_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.hoary)
+        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
         # Add a greater number of series and sharing templates on either side.
-        for series_name in ('0.1', '0.2', '0.3', '0.4', '0.5', '0.6'):
-            series = self.factory.makeProductSeries(self.product, series_name)
+        seriesnames = (
+            ('0.1', 'feisty'),
+            ('0.2', 'gutsy'),
+            ('0.3', 'hardy'),
+            ('0.4', 'intrepid'),
+            ('0.5', 'jaunty'),
+            ('0.6', 'karmic'),
+            )
+        for pseries_name, dseries_name in seriesnames:
+            productseries = self.factory.makeProductSeries(
+                self.product, pseries_name)
             all_templates.append(self.factory.makePOTemplate(
-                productseries=series, name=self.templatename))
-        distroseries_names = (
-            'feisty', 'gutsy', 'hardy', 'intrepid', 'jaunty', 'karmic')
-        for series_name in distroseries_names:
-            series = self.factory.makeDistroSeries(
-                self.ubuntu, name=series_name)
+                productseries=productseries, name=self.templatename))
+            distroseries = self.factory.makeDistroSeries(
+                self.ubuntu, name=dseries_name)
             all_templates.append(self.factory.makePOTemplate(
-                distroseries=series, sourcepackagename=self.packagename,
+                distroseries=distroseries, sourcepackagename=self.packagename,
                 name=self.templatename))
+            sourcepackage = self.factory.makeSourcePackage(
+                self.packagename, distroseries)
+            sourcepackage.setPackaging(productseries, self.owner)
+        # Don't forget warty and stable.
         all_templates.append(self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename))
         all_templates.append(self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename))
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=self.packagename,
-            distroseries=self.hoary)
-        self.trunk.setPackaging(self.hoary, self.packagename, self.owner)
+        warty_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.warty)
+        warty_sourcepackage.setPackaging(self.stable, self.owner)
 
         # Looking from the product side.
         subset = self.potemplateset.getSharingSubset(product=self.product)
