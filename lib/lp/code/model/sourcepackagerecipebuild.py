@@ -87,11 +87,9 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
     datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
 
-    # See `IBuildBase` - the following attributes are aliased until
-    # IBuildBase is removed to allow a shared implementation of
-    # handleStatus methods.
-    # buildstate is aliased to status for forwards compatibility
-    # with handleStatus() methods which assume the status attribute.
+    # See `IBuildBase` - the following attributes are aliased
+    # to allow a shared implementation of the handleStatus methods
+    # until IBuildBase is removed.
     status = buildstate
     date_finished = datebuilt
     log = buildlog

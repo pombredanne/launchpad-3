@@ -345,24 +345,25 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIsNot(None, self.build.date_finished)
 
 
-class TestGetUploadMethodsForBinaryPackageBuild(
-    TestGetUploadMethodsMixin, TestCaseWithFactory):
+class MakeBinaryPackageBuildMixin:
+    """Provide the makeBuild method returning a queud build."""
 
     def makeBuild(self):
         test_publisher = SoyuzTestPublisher()
         test_publisher.prepareBreezyAutotest()
         binaries = test_publisher.getPubBinaries()
         return binaries[0].binarypackagerelease.build
+
+
+class TestGetUploadMethodsForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
+    TestCaseWithFactory):
+    """IBuildBase.getUpload-related methods work with binary builds."""
 
 
 class TestHandleStatusForBinaryPackageBuild(
-    TestHandleStatusMixin, TestCaseWithFactory):
-
-    def makeBuild(self):
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
-        binaries = test_publisher.getPubBinaries()
-        return binaries[0].binarypackagerelease.build
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    """IBuildBase.handleStatus works with binary builds."""
 
 
 def test_suite():

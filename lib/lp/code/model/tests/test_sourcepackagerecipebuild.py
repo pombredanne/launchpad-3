@@ -196,40 +196,32 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual([binary], list(spb.binary_builds))
 
 
+class MakeSPRecipeBuildMixin:
+    """Provide the common makeBuild method returning a queued build."""
+
+    def makeBuild(self):
+        person = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
+        distroseries_i386 = distroseries.newArch(
+            'i386', processor_fam, False, person,
+            supports_virtualized=True)
+        distroseries.nominatedarchindep = distroseries_i386
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries,
+            status=BuildStatus.FULLYBUILT)
+        build.queueBuild(build)
+        return build
+
+
 class TestGetUploadMethodsForSPRecipeBuild(
-    TestGetUploadMethodsMixin, TestCaseWithFactory):
-
-    def makeBuild(self):
-        person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
-        distroseries_i386 = distroseries.newArch(
-            'i386', processor_fam, False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
-        build = self.factory.makeSourcePackageRecipeBuild(
-            distroseries=distroseries,
-            status=BuildStatus.FULLYBUILT)
-        build.queueBuild(build)
-        return build
+    MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
+    """IBuildBase.getUpload-related methods work with SPRecipe builds."""
 
 
-class TestHandleStatusForSPRBuild(TestHandleStatusMixin, TestCaseWithFactory):
-
-    def makeBuild(self):
-        """Overridden to create an SPRBuild."""
-        person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
-        distroseries_i386 = distroseries.newArch(
-            'i386', processor_fam, False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
-        build = self.factory.makeSourcePackageRecipeBuild(
-            distroseries=distroseries,
-            status=BuildStatus.FULLYBUILT)
-        build.queueBuild(build)
-        return build
+class TestHandleStatusForSPRBuild(
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    """IBuildBase.handleStatus works with SPRecipe builds."""
 
 
 def test_suite():

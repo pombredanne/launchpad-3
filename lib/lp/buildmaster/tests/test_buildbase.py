@@ -148,7 +148,7 @@ class TestHandleStatusMixin:
         is successfully built and check that incorrect upload paths will
         set the status to FAILEDTOUPLOAD.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def setUp(self):
         super(TestHandleStatusMixin, self).setUp()
