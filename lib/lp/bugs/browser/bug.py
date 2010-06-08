@@ -695,7 +695,7 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @property
     def label(self):
-        return 'Bug #%i - Set visiblity and security' % self.context.bug.id
+        return 'Bug #%i - Set visibility and security' % self.context.bug.id
 
     page_title = label
 
