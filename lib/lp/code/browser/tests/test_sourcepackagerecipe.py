@@ -241,6 +241,55 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_edit_recipe_but_not_name(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        source_package = self.factory.makeSourcePackage()
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        meat_path = meat_branch.bzr_identity
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
+        browser.getLink('Edit recipe').click()
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        pattern = """\
+            Master Chef's things recipe
+            .*
+
+            Description
+            This is stuff
+
+            Recipe information
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: 1.0
+            Distribution series: Mumbly Midget
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 1.0
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
+
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
