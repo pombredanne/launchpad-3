@@ -103,7 +103,6 @@ from lp.registry.model.structuralsubscription import (
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
@@ -131,7 +130,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
-        IHasQueueItems, IHasTranslationTemplates)
+        IHasQueueItems)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -1304,15 +1303,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
-            )
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)))
         origin = [
             DistroSeriesPackageCache,
             Join(
                 BinaryPackageName,
                 DistroSeriesPackageCache.binarypackagename ==
-                    BinaryPackageName.id
-                )
+                    BinaryPackageName.id),
             ]
 
         # Note: When attempting to convert the query below into straight
@@ -1326,7 +1323,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text)),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting
@@ -1890,7 +1887,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        return result
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
