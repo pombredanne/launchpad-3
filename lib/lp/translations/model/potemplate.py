@@ -43,6 +43,7 @@ from lp.translations.utilities.rosettastats import RosettaStats
 from lp.services.database.prejoin import prejoin
 from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -355,8 +356,7 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries is not None:
             return self.productseries
         elif self.distroseries is not None:
-            from lp.registry.model.sourcepackage import \
-                SourcePackage
+            from lp.registry.model.sourcepackage import SourcePackage
             return SourcePackage(distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
@@ -1371,6 +1371,7 @@ class POTemplateSharingSubset(object):
         self.potemplateset = potemplateset
         self.distribution = None
         self.product = None
+        self.share_by_name = False
 
         if distribution is not None:
             if sourcepackagename is None:
@@ -1383,7 +1384,38 @@ class POTemplateSharingSubset(object):
                         distribution, sourcepackagename)
         if product is not None:
             self.product = product
-            self.distrosourcepackages = product.distrosourcepackages
+
+    def _findUpstreamProduct(self, distribution, sourcepackagename):
+        """Find the upstream product by looking at the translation focus.
+
+        The translation focus is used to pick a distroseries, so a source
+        package instance can be created. If no translation focus is set,
+        the distribution's current series is used."""
+        
+        from lp.registry.model.sourcepackage import SourcePackage
+        distroseries = distribution.translation_focus
+        if distroseries is None:
+            distroseries = distribution.currentseries
+        sourcepackage = SourcePackage(sourcepackagename, distroseries)
+        return sourcepackage.productseries.product
+
+    def _canShareByName(self, distribution, sourcepackagename):
+        """Determine if sharing by sourcepackagename is a wise thing.
+
+        Without a product, the linkage between sharing packages can only be
+        determined by their name. This is only (fairly) safe if none of these
+        is packaged elsewhere.
+        """
+        origin = Join(
+            Packaging, DistroSeries,
+            Packaging.distroseries == DistroSeries.id)
+        result = Store.of(distribution).using(origin).find(
+            Packaging,
+            And(DistroSeries.distribution == distribution.id,
+                Packaging.sourcepackagename == sourcepackagename.id)
+            ).count()
+        return result == 0
+
 
     def _get_potemplate_equivalence_class(self, template):
         """Return whatever we group `POTemplate`s by for sharing purposes."""
