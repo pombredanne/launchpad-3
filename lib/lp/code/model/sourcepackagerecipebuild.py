@@ -99,7 +99,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
     buildstate = DBEnum(enum=BuildStatus, name='build_state')
-
     dependencies = Unicode(allow_none=True)
 
     upload_log_id = Int(name='upload_log', allow_none=True)
@@ -111,6 +110,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
     datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
+
+    # See `IBuildBase` - the following attributes are aliased
+    # to allow a shared implementation of the handleStatus methods
+    # until IBuildBase is removed.
+    status = buildstate
+    date_finished = datebuilt
+    log = buildlog
 
     @property
     def datestarted(self):
