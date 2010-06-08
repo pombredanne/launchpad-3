@@ -431,6 +431,100 @@ The patches view works for people and teams.
     Tabs: ...
     Main heading: Patch attachments for Patchy Person
 
+The patches view for a person or team will also show patches to which a person
+or team is structurally subscribed.  Structural subscription searching is
+thoroughly tested in bugtask-search.txt so here a single structural
+subscription will be tested.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> project_subscriber = factory.doAsUser(
+    ...     'foo.bar@canonical.com', factory.makePerson,
+    ...     name="project-subscriber", displayname="Project Subscriber")
+    >>> login('foo.bar@canonical.com')
+    >>> patchy_product.addBugSubscription(project_subscriber,
+    ...     project_subscriber)
+    <StructuralSubscription at ...>
+    >>> logout()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> subscriber_name = removeSecurityProxy(project_subscriber).name
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/~%s/+patches' % subscriber_name)
+    >>> show_patches_view(anon_browser.contents)
+    Bug                  Importance  Status        Project          Patch Age
+    Bug #18: bug_c title Wishlist  Fix Committed patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #17: bug_b title Critical  Confirmed     patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_c.diff
+    description of patch c
+    Bug #16: bug_a title Undecided New           patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
+
+To ensure that all bugs with patches are shown for every structural
+subscription a new bug and is made to affect the evolution source package for
+Ubuntu.  Additionally, a patch is added to that bug report so that it will
+show up in the +patches view.  Project-subscriber is then subscribed to the
+evolution source package for Ubuntu and it is tested that both groups of
+patches are shown.
+
+    >>> hacky_product = factory.doAsUser(
+    ...     'foo.bar@canonical.com', factory.makeProduct,
+    ...     name='hacky-product', displayname="Hacky Product")
+    >>> transaction.commit()
+    >>> bug_e = factory.doAsUser(
+    ...     'foo.bar@canonical.com', make_bug,
+    ...     title="bug_e is for evolution", product=hacky_product,
+    ...     importance=BugTaskImportance.WISHLIST,
+    ...     status=BugTaskStatus.NEW)
+    >>> factory.doAsUser(
+    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    ...     comment="comment about patch h",
+    ...     filename="patch_h.diff", owner=patch_submitter,
+    ...     description="patch h is for helping", bug=bug_e, is_patch=True)
+    <BugAttachment at...
+    >>> factory.doAsUser(
+    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_e,
+    ...     target='evolution', target_is_spkg_name=True,
+    ...     importance=BugTaskImportance.MEDIUM,
+    ...     status=BugTaskStatus.TRIAGED)
+    >>> transaction.commit()
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_evolution = ubuntu.getSourcePackage("evolution")
+    >>> ubuntu_evolution.addBugSubscription(project_subscriber,
+    ...     project_subscriber)
+    <StructuralSubscription at ...>
+    >>> logout()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> subscriber_name = removeSecurityProxy(project_subscriber).name
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/~%s/+patches' % subscriber_name)
+    >>> show_patches_view(anon_browser.contents)
+    Bug                  Importance  Status        Project          Patch Age
+    Bug #20: bug_e is... Medium      Triaged     evolution        ...second...
+    From: Patchy Person
+    Link: patch_h.diff
+    patch h is for helping
+    Bug #18: bug_c title Wishlist  Fix Committed patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_f.diff
+    description of patch f
+    Bug #17: bug_b title Critical  Confirmed     patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_c.diff
+    description of patch c
+    Bug #16: bug_a title Undecided New           patchy-product-1 ...second...
+    From: Patchy Person
+    Link: patch_a.diff
+    description of patch a
+
 Reaching the Patches View
 -------------------------
 
@@ -496,24 +590,28 @@ And from a portlet on the distro bugs page:
 
     >>> print_bugfilters_portlet_filled(anon_browser, 'ubuntu')
     6 New bugs
-    9 Open bugs
+    10 Open bugs
     0 In-progress bugs
     0 Critical bugs
     1 High importance bug
     0 Incomplete bugs (can expire)
     <BLANKLINE>
-    5 Bugs with patches
+    6 Bugs with patches
     2 Bugs fixed elsewhere
     2 Open CVE bugs - CVE reports
 
 The number of bugs with patches shown in the bugfilter stats portlet
 might be lower than the number of bugs (bugtasks) listed on the
 corresponding patches view page, because the latter shows resolved
-bugs too.
+bugs too.  N.B. only 5 bug tasks will appear at a time.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
     >>> show_patches_view(anon_browser.contents)
     Bug                        Importance    Status    Package    Patch Age
+    Bug #20: bug_e...            Medium      Triaged   evolution  ...second...
+    From: Patchy Person
+    Link: patch_h.diff
+    patch h is for helping
     Bug #18: bug_c title          High       Triaged   a52dec     ...second...
     From: Patchy Person
     Link: patch_f.diff
@@ -527,10 +625,6 @@ bugs too.
     Link: patch_c.diff
     description of patch c
     Bug #16: bug_a title         Medium  Fix Committed evolution  ...second...
-    From: Patchy Person
-    Link: patch_a.diff
-    description of patch a
-    Bug #16: bug_a title        Undecided      New     ubuntu     ...second...
     From: Patchy Person
     Link: patch_a.diff
     description of patch a
