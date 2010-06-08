@@ -26,7 +26,7 @@ from sqlobject import (
     StringCol)
 from storm.expr import Alias, And, Desc, In, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
-from storm.store import Store
+from storm.store import EmptyResultSet, Store
 from zope.component import getAdapter, getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -1367,19 +1367,20 @@ class POTemplateSharingSubset(object):
         assert distribution or not sourcepackagename, (
             "Picking a source package only makes sense with a distribution.")
         self.potemplateset = potemplateset
-        self.distribution = None
-        self.product = None
         self.share_by_name = False
+        self.subset = None
 
         if distribution is not None:
-            if sourcepackagename is None:
-                self.distribution = distribution
-            else:
-                product = self._findUpstreamProduct(
+            assert sourcepackagename is not None, (
+                   "Need sourcepackagename to select from distribution.")
+            product = self._findUpstreamProduct(
+                distribution, sourcepackagename)
+            if product is None:
+                self.share_by_name = self._canShareByName(
                     distribution, sourcepackagename)
-                if product is None:
-                    self.share_by_name = self._canShareByName(
-                        distribution, sourcepackagename)
+                if self.share_by_name:
+                    self.distribution = distribution
+                    self.sourcepackagename = sourcepackagename
         if product is not None:
             self.product = product
 
@@ -1426,10 +1427,10 @@ class POTemplateSharingSubset(object):
             package = template.sourcepackagename.name
         return (template.name, package)
 
-    def _build_query(self, templatename):
+    def _queryByProduct(self, templatename):
         from lp.registry.model.productseries import ProductSeries
 
-        ProductSeries1 = ClassAlias(ProductSeries, 'productseries1')
+        ProductSeries1 = ClassAlias(ProductSeries)
         origin = LeftJoin(
             LeftJoin(
                 POTemplate, ProductSeries,
@@ -1452,15 +1453,28 @@ class POTemplateSharingSubset(object):
                 POTemplate.name == templatename
                 ))
 
+    def _queryBySourcepackagename(self, templatename):
+        from lp.registry.model.distroseries import DistroSeries
+        origin = Join(
+            POTemplate, DistroSeries,
+            POTemplate.distroseries == DistroSeries.id)
+        return Store.of(self.distribution).using(origin).find(
+            POTemplate,
+            And(
+                DistroSeries.distributionID == self.distribution.id,
+                POTemplate.sourcepackagename == self.sourcepackagename,
+                POTemplate.name == templatename
+                ))
+
     def getSharingPOTemplates(self, potemplate_name):
         """See IPOTemplateSharingSubset."""
-        if self.distribution is not None:
-            assert self.sourcepackagename is not None, (
-                   "Need sourcepackagename to select from distribution.")
 
-        if self.product is None:
-            return []
-        return self._build_query(potemplate_name)
+        if self.product is not None:
+            return self._queryByProduct(potemplate_name)
+        elif self.share_by_name:
+            return self._queryBySourcepackagename(potemplate_name)
+        else:
+            return EmptyResultSet()
 #        escaped_potemplate_name = re.escape(potemplate_name)
 #        return self._iterate_potemplates("^%s$" % escaped_potemplate_name)
 
