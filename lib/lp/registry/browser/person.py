@@ -1942,7 +1942,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=critical_bugs_params)
 
     def getHighBugsURL(self, distributionsourcepackage):
-        """Return URL for high importance bugs on distributionsourcepackage."""
+        """Return URL for high bugs on distributionsourcepackage."""
         high_bugs_params = {
             'field.status': [], 'field.importance': "High"}
 
@@ -2503,7 +2503,7 @@ class PersonKarmaView(LaunchpadView):
         if self.user == self.context:
             return 'Your Launchpad Karma'
         else:
-            return 'Launchpad Karma for %s' %  self.context.displayname
+            return 'Launchpad Karma for %s' % self.context.displayname
 
     @cachedproperty
     def has_karma(self):
@@ -3208,7 +3208,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
-                _("This team does not have a mailing list."))
+                _("This team does not use Launchpad to host a mailing list."))
         if not self.user:
             raise Unauthorized(
                 _("You must be logged in to unsubscribe."))
@@ -5192,14 +5192,14 @@ class PersonRelatedSoftwareView(LaunchpadView):
             builds_by_package[package] = []
             needs_build_by_package[package] = False
         for build in all_builds:
-            if build.buildstate == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.sourcepackagerelease].append(build)
-            needs_build = build.buildstate in [
+            if build.status == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.source_package_release].append(build)
+            needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.sourcepackagerelease] = needs_build
+            needs_build_by_package[build.source_package_release] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 

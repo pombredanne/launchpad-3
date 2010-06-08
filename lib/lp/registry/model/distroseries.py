@@ -103,7 +103,6 @@ from lp.registry.model.structuralsubscription import (
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from lp.soyuz.interfaces.publishing import (
@@ -131,7 +130,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
-        IHasQueueItems, IHasTranslationTemplates)
+        IHasQueueItems)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -332,7 +331,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         origin = SQL(joins)
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
-        results = results.order_by('score DESC')
+        results = results.order_by('score DESC', SourcePackageName.name)
         return [{
                  'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -1047,8 +1046,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageRelease.build =
-            Build.id AND
-        Build.sourcepackagerelease =
+            BinaryPackageBuild.id AND
+        BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
@@ -1085,8 +1084,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = " AND ".join(query)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName']
+                        'BinaryPackageRelease', 'BinaryPackageName',
+                        'BinaryPackageBuild', 'SourcePackageRelease',
+                        'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -1303,15 +1303,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
-            )
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)))
         origin = [
             DistroSeriesPackageCache,
             Join(
                 BinaryPackageName,
                 DistroSeriesPackageCache.binarypackagename ==
-                    BinaryPackageName.id
-                )
+                    BinaryPackageName.id),
             ]
 
         # Note: When attempting to convert the query below into straight
@@ -1325,7 +1323,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text)),
             ).config(distinct=True)
 
         # Create a function that will decorate the results, converting
@@ -1889,7 +1887,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        return result
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
