@@ -55,7 +55,6 @@ from lp.soyuz.model.files import (
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishedpackage import PublishedPackage
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
@@ -1000,9 +999,10 @@ class Archive(SQLBase):
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
         component = sourcepackage.latest_published_component
-        # strict_component is True because the source package already exists
-        # (otherwise we couldn't have a suitesourcepackage object) and
-        # nascentupload passes True as a matter of policy when the package exists.
+        # strict_component is True because the source package already
+        # exists (otherwise we couldn't have a suitesourcepackage
+        # object) and nascentupload passes True as a matter of policy
+        # when the package exists.
         reason = self.checkUpload(
             person, distroseries, sourcepackagename, component, pocket,
             strict_component=True)
@@ -1026,7 +1026,7 @@ class Archive(SQLBase):
             if not distroseries.canUploadToPocket(pocket):
                 return CannotUploadToPocket(distroseries, pocket)
 
-    def _checkUpload(self, person, distroseries, sourcepackagename, component, 
+    def _checkUpload(self, person, distroseries, sourcepackagename, component,
                     pocket, strict_component=True):
         """See `IArchive`."""
         if isinstance(component, basestring):

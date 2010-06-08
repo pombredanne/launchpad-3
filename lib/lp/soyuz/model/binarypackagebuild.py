@@ -543,7 +543,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         extra_headers = {
             'X-Launchpad-Build-State': self.status.name,
             'X-Launchpad-Build-Component' : self.current_component.name,
-            'X-Launchpad-Build-Arch' : self.distro_arch_series.architecturetag,
+            'X-Launchpad-Build-Arch' :
+                self.distro_arch_series.architecturetag,
             }
 
         # XXX cprov 2006-10-27: Temporary extra debug info about the
