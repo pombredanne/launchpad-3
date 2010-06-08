@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-__all__ = ['BaseMailer']
+__all__ = ['BaseMailer', 'RecipientReason']
 
 import logging
 from smtplib import SMTPException
