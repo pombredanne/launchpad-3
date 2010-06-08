@@ -237,16 +237,15 @@ subscriptions on their own participation page.
     >>> print find_tag_by_id(content, 'participation-actions')
     None
 
-    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> sample_browser.open('http://launchpad.dev/~name12/+participation')
+    >>> user_browser.open('http://launchpad.dev/~no-priv/+participation')
     >>> actions = find_tag_by_id(
-    ...     sample_browser.contents, 'participation-actions')
+    ...     user_browser.contents, 'participation-actions')
     >>> print extract_text(actions)
     Register a team
     Change mailing list subscriptions
 
-    >>> sample_browser.getLink('Register a team')
+    >>> user_browser.getLink('Register a team')
     <Link ... url='http://.../people/+newteam'>
-    >>> sample_browser.getLink('Change mailing list subscriptions')
-    <Link ... url='http://.../~name12/+editemails'>
+    >>> user_browser.getLink('Change mailing list subscriptions')
+    <Link ... url='http://.../~no-priv/+editemails'>
 
