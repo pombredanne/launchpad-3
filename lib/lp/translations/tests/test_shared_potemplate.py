@@ -245,10 +245,13 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
 
     def test_getSharingPOTemplates_product_multiple_series(self):
         # Sharing templates for a product include the same templates from
-        # a linked source package, even with multiple series.
+        # a linked source package, even from multiple product series.
+        # But templates for the same sourcepackagename are not returned
+        # if they are not linked.
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
-        warty_template = self.factory.makePOTemplate(
+        # This will not be returned.
+        self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename)
         self.factory.makeSourcePackagePublishingHistory(
@@ -260,21 +263,25 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
             subset.getSharingPOTemplates(self.templatename))
 
         self.assertContentEqual(
-            [self.trunk_template, self.hoary_template,
-             stable_template, warty_template],
+            [self.trunk_template, self.hoary_template, stable_template],
             templates)
 
     def test_getSharingPOTemplates_package_multiple_series(self):
         # Sharing templates for a source package include the same templates 
-        # from a linked product, even with multiple series.
+        # from a linked product, even with multiple product series.
+        # To include templates from other source packages, the product must
+        # be linked to that one, too.
         stable_template = self.factory.makePOTemplate(
             productseries=self.stable, name=self.templatename)
         warty_template = self.factory.makePOTemplate(
             distroseries=self.warty, sourcepackagename=self.packagename,
             name=self.templatename)
-        sourcepackage = self.factory.makeSourcePackage(
+        hoary_sourcepackage = self.factory.makeSourcePackage(
             self.packagename, self.hoary)
-        sourcepackage.setPackaging(self.trunk, self.owner)
+        hoary_sourcepackage.setPackaging(self.trunk, self.owner)
+        warty_sourcepackage = self.factory.makeSourcePackage(
+            self.packagename, self.warty)
+        warty_sourcepackage.setPackaging(self.stable, self.owner)
         subset = self.potemplateset.getSharingSubset(
             distribution=self.ubuntu,
             sourcepackagename=self.packagename)
