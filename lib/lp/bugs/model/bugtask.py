@@ -149,7 +149,7 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     search for all tasks related to a user given by `context`.
 
     Which tasks are related to a user?
-      * the user has to be either assignee or owner of this tasks
+      * the user has to be either assignee or owner of this task
         OR
       * the user has to be subscriber or commenter to the underlying bug
         OR
@@ -158,7 +158,8 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
         always get one task owned by the bug reporter
     """
     assert IPerson.providedBy(context), "Context argument needs to be IPerson"
-    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter')
+    relevant_fields = ('assignee', 'bug_subscriber', 'owner', 'bug_commenter',
+                       'structural_subscriber')
     search_params = []
     for key in relevant_fields:
         # all these parameter default to None
@@ -1640,6 +1641,48 @@ class BugTaskSet:
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
+
+        if params.structural_subscriber is not None:
+            structural_subscriber_clause = ( """BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE BugTask.product = StructuralSubscription.product
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distribution = StructuralSubscription.distribution
+                    AND BugTask.sourcepackagename =
+                        StructuralSubscription.sourcepackagename
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distroseries = StructuralSubscription.distroseries
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.milestone = StructuralSubscription.milestone
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.productseries = StructuralSubscription.productseries
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
+                WHERE
+                    BugTask.product = Product.id
+                    AND Product.project = StructuralSubscription.project
+                    AND StructuralSubscription.subscriber = %(personid)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, StructuralSubscription
+                WHERE
+                    BugTask.distribution = StructuralSubscription.distribution
+                    AND StructuralSubscription.sourcepackagename is NULL
+                    AND StructuralSubscription.subscriber = %(personid)s)""" %
+                sqlvalues(personid=params.structural_subscriber))
+            extra_clauses.append(structural_subscriber_clause)
 
         if params.component:
             clauseTables += ["SourcePackagePublishingHistory",
