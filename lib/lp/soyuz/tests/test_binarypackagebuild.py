@@ -17,6 +17,8 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.tests.test_buildbase import (
+    TestGetUploadMethodsMixin, TestHandleStatusMixin)
 from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuild, IBinaryPackageBuildSet)
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
@@ -343,6 +345,27 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertEqual(self.builder, self.build.builder)
         self.assertIs(None, self.build.dependencies)
         self.assertIsNot(None, self.build.date_finished)
+
+
+class MakeBinaryPackageBuildMixin:
+    """Provide the makeBuild method returning a queud build."""
+
+    def makeBuild(self):
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.prepareBreezyAutotest()
+        binaries = test_publisher.getPubBinaries()
+        return binaries[0].binarypackagerelease.build
+
+
+class TestGetUploadMethodsForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
+    TestCaseWithFactory):
+    """IBuildBase.getUpload-related methods work with binary builds."""
+
+
+class TestHandleStatusForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TestCaseWithFactory):
+    """IBuildBase.handleStatus works with binary builds."""
 
 
 def test_suite():

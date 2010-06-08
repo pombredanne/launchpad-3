@@ -24,7 +24,7 @@ from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild, IPackageBuildSource)
-from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.model.buildbase import handle_status_for_build, BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
@@ -185,7 +185,7 @@ class PackageBuildDerived:
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IPackageBuild`."""
-        return BuildBase.handleStatus(self, status, librarian, slave_status)
+        return handle_status_for_build(self, status, librarian, slave_status)
 
     # The following private handlers currently re-use the BuildBase
     # implementation until it is no longer in use. If we find in the
