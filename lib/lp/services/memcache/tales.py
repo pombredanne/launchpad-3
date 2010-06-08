@@ -225,7 +225,7 @@ class MemcacheExpr:
 
         if cached_chunk is None:
             logging.debug("Memcache miss for %s", key)
-            return MemcacheMiss(key, self.max_age)
+            return MemcacheMiss(key, self)
         else:
             logging.debug("Memcache hit for %s", key)
             return MemcacheHit(cached_chunk)
@@ -244,13 +244,19 @@ class MemcacheMiss:
     tag contents and invokes this callback, which will store the
     result in memcache against the key calculated by the MemcacheExpr.
     """
-    def __init__(self, key, max_age):
+    def __init__(self, key, memcache_expr):
         self._key = key
-        self._max_age = max_age
+        self._memcache_expr = memcache_expr
 
     def __call__(self, value):
+        lpconfig = config.instance_name
+        if 'development' in lpconfig or 'test' in lpconfig:
+            # For debugging and testing purposes, prepend a description of
+            # the memcache expression used to the stored value.
+            value = "<!-- Cache hit: %s -->%s<!-- End cache hit: %s -->" % (
+                self._memcache_expr, value, self._memcache_expr)
         if getUtility(IMemcacheClient).set(
-            self._key, value, self._max_age):
+            self._key, value, self._memcache_expr.max_age):
             logging.debug("Memcache set succeeded for %s", self._key)
         else:
             logging.warn("Memcache set failed for %s", self._key)
