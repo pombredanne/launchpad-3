@@ -150,3 +150,40 @@ class BaseMailer:
                     # Don't want an entire stack trace, just some details.
                     self.logger.warning(
                         'send failed for %s, %s' % (email, e))
+
+
+class RecipientReason:
+    """Reason for sending mail to a recipient."""
+
+    def __init__(self, subscriber, recipient, mail_header, reason_template):
+        self.subscriber = subscriber
+        self.recipient = recipient
+        self.mail_header = mail_header
+        self.reason_template = reason_template
+
+    @staticmethod
+    def makeRationale(rationale_base, person):
+        if person.is_team:
+            return '%s @%s' % (rationale_base, person.name)
+        else:
+            return rationale_base
+
+    def _getTemplateValues(self):
+        template_values = {
+            'entity_is': 'You are',
+            'lc_entity_is': 'you are',
+            }
+        if self.recipient != self.subscriber:
+            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
+                '%s does not participate in team %s.' %
+                (self.recipient.displayname, self.subscriber.displayname))
+        if self.recipient != self.subscriber or self.subscriber.is_team:
+            template_values['entity_is'] = (
+                'Your team %s is' % self.subscriber.displayname)
+            template_values['lc_entity_is'] = (
+                'your team %s is' % self.subscriber.displayname)
+        return template_values
+
+    def getReason(self):
+        """Return a string explaining why the recipient is a recipient."""
+        return (self.reason_template % self._getTemplateValues())
