@@ -405,10 +405,10 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
 
     def test_getSharingPOTemplates_product_different_names_same_series(self):
         # A product may be packaged into differently named packages even in
-        # the same distroseries.
+        # the same distroseries. Must use different product series, though.
         other_packagename = self.factory.makeSourcePackageName()
         other_template = self.factory.makePOTemplate(
-            distroseries=self.warty, sourcepackagename=other_packagename,
+            distroseries=self.hoary, sourcepackagename=other_packagename,
             name=self.templatename)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.packagename,
@@ -417,7 +417,7 @@ class TestMessageSharingProductPackage(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=other_packagename,
             distroseries=self.hoary)
-        self.trunk.setPackaging(self.hoary, other_packagename, self.owner)
+        self.stable.setPackaging(self.hoary, other_packagename, self.owner)
         subset = self.potemplateset.getSharingSubset(product=self.product)
         templates = self._count_statements(
             subset.getSharingPOTemplates(self.templatename))
