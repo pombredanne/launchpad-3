@@ -119,6 +119,27 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             pattern, main_text)
 
+    def test_create_new_recipe_empty_name(self):
+        # Leave off the name and make sure that the widgets validate before
+        # the content validates.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        self.factory.makeSourcePackage()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        self.assertEqual(
+            extract_text(find_tags_by_class(browser.contents, 'message')[1]),
+            'Required input is missing.')
+
     def test_create_recipe_bad_text(self):
         # If a user tries to create source package recipe with bad text, they
         # should get an error.
