@@ -32,7 +32,7 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
 
         key = (table_name + repr(primary_key)
                + ',' + config._instance_name
-               + ',' + media_type + ',' + str(version))
+               + ',' + media_type + ',' + str(version)).replace(' ', '.')
         return key
 
     def get_by_key(self, key, default=None):
