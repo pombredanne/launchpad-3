@@ -18,7 +18,6 @@ __all__ = [
 import datetime
 import logging
 import os
-import re
 
 from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
@@ -1436,7 +1435,8 @@ class POTemplateSharingSubset(object):
                 Packaging.productseriesID == ProductSeries1.id),
             And(
                 Packaging.distroseriesID == POTemplate.distroseriesID,
-                Packaging.sourcepackagenameID == POTemplate.sourcepackagenameID
+                Packaging.sourcepackagenameID == (
+                        POTemplate.sourcepackagenameID)
                 )
             )
         return Store.of(self.product).using(origin).find(
@@ -1567,10 +1567,6 @@ class POTemplateToTranslationFileDataAdapter:
                     for flag in row.flags_comment.split(',')
                     if flag
                     ])
-
-            # Store sequences so we can detect later whether we changed the
-            # message.
-            sequence = row.sequence
 
             # Store the message.
             messages.append(msgset)

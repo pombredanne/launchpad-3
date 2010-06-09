@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from storm.store import Store
 import unittest
 
 from zope.component import getUtility
@@ -13,8 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
-from lp.testing import (record_statements, run_with_storm_debug,
-    TestCaseWithFactory)
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 class TestTranslationSharingPOTemplate(TestCaseWithFactory):
@@ -109,8 +107,6 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         self.assertEquals(has_message_id, True)
 
     def test_hasPluralMessage(self):
-        naked_potemplate = removeSecurityProxy(self.devel_potemplate)
-
         # At the moment, a POTemplate has no plural form messages.
         self.assertEquals(self.devel_potemplate.hasPluralMessage(), False)
 
