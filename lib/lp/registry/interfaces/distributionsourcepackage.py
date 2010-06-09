@@ -96,7 +96,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
-        distribution and their correspodning publishing history.
+        distribution and their corresponding publishing history.
 
         Items in the list are tuples comprised of a
         DistributionSourcePackage and a list of
