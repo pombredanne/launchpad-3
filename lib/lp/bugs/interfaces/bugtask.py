@@ -175,7 +175,7 @@ class BugTaskStatus(DBEnumeratedType):
     EXPIRED = DBItem(19, """
         Expired
 
-        This bug is expired. There was no activity since a longer time.
+        This bug is expired. There was no activity for a long time.
         """)
 
     CONFIRMED = DBItem(20, """
@@ -1075,7 +1075,7 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None
+                 linked_branches=None, structural_subscriber=None
                  ):
 
         self.bug = bug
@@ -1120,6 +1120,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
+        self.structural_subscriber = structural_subscriber
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1192,7 +1193,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_bug_reporter=None,
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
-                       hardware_is_linked_to_bug=False, linked_branches=None):
+                       hardware_is_linked_to_bug=False, linked_branches=None,
+                       structural_subscriber=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1260,6 +1262,7 @@ class BugTaskSearchParams:
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
         search_params.linked_branches=linked_branches
+        search_params.structural_subscriber = structural_subscriber
 
         return search_params
 
