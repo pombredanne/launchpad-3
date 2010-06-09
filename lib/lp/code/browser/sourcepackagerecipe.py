@@ -218,6 +218,17 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     cancel_url = next_url
 
+    def validate(self, data):
+        over_quota_distroseries = []
+        for distroseries in data['distros']:
+            if self.context.isOverQuota(self.user, distroseries):
+                over_quota_distroseries.append(str(distroseries))
+        if len(over_quota_distroseries) > 0:
+            self.setFieldError(
+                'distros',
+                "You have exceeded today's quota for %s." %
+                ', '.join(over_quota_distroseries))
+
     @action('Request builds', name='request')
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
