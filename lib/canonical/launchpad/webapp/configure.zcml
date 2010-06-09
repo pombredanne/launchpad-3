@@ -421,7 +421,7 @@
     <adapter
         for="lp.buildmaster.interfaces.packagebuild.IPackageBuild"
         provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildBaseFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.PackageBuildFormatterAPI"
         name="fmt"
         />
 
