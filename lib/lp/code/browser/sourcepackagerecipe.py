@@ -399,8 +399,15 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
         parser = RecipeParser(recipe_text)
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
-            self.context.builder_recipe = recipe
-            changed = True
+            try:
+                self.context.builder_recipe = recipe
+                changed = True
+            except ForbiddenInstruction:
+                self.setFieldError(
+                    'recipe_text',
+                    'The bzr-builder instruction "run" is not permitted here.')
+                return
+
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:
