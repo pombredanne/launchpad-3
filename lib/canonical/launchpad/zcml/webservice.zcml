@@ -18,9 +18,9 @@
 
     <securedutility
         class="canonical.launchpad.systemhomes.WebServiceApplication"
-        provides="canonical.launchpad.interfaces.IWebServiceApplication">
+        provides="canonical.launchpad.interfaces.launchpad.IWebServiceApplication">
         <allow
-            interface="canonical.launchpad.interfaces.IWebServiceApplication" />
+            interface="canonical.launchpad.interfaces.launchpad.IWebServiceApplication" />
         <allow interface='lazr.restful.interfaces.IServiceRootResource' />
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
@@ -40,7 +40,7 @@
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
-        for="canonical.launchpad.interfaces.IWebServiceApplication"
+        for="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"
         type="canonical.launchpad.layers.WebServiceLayer"
         factory="canonical.launchpad.browser.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"

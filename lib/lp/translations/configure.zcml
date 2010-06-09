@@ -44,9 +44,9 @@
     </class>
     <securedutility
         class="canonical.launchpad.systemhomes.RosettaApplication"
-        provides="canonical.launchpad.interfaces.IRosettaApplication">
+        provides="canonical.launchpad.interfaces.launchpad.IRosettaApplication">
         <allow
-            interface="canonical.launchpad.interfaces.IRosettaApplication"/>
+            interface="canonical.launchpad.interfaces.launchpad.IRosettaApplication"/>
     </securedutility>
 
     <!-- TranslationsOverview -->

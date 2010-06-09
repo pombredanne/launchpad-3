@@ -380,7 +380,7 @@ these URLs in Apache.
   permission="zope.Public"
   />
 <xmlrpc:view
-  for="canonical.launchpad.interfaces.IRosettaApplication"
+  for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
   interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
   class="canonical.launchpad.xmlrpc.RosettaSelfTest"
   permission="zope.Public"

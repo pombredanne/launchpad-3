@@ -818,7 +818,7 @@
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             path_expression="string:bugtrackers"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"
             rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
@@ -931,7 +931,7 @@
         <browser:url
             for="lp.bugs.interfaces.cve.ICveSet"
             path_expression="string:cve"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"/>
         <browser:navigation
             module="lp.bugs.browser.cve"
             classes="
@@ -1070,7 +1070,7 @@
         <browser:url
             for="lp.bugs.interfaces.bug.IBugSet"
             path_expression="string:bugs"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"/>
     </facet>
     <facet
         facet="bugs">

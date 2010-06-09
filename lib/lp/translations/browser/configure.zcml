@@ -9,11 +9,11 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <browser:url
-        for="canonical.launchpad.interfaces.IRosettaApplication"
+        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
         path_expression="string:translations"
         parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IRosettaApplication"
+        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
         name="+index"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:navigation
@@ -21,7 +21,7 @@
         classes="
             RosettaApplicationNavigation"/>
     <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
+        for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
         facet="translations"
         permission="zope.Public"
         class="lp.translations.browser.translations.RosettaApplicationView"
@@ -40,7 +40,7 @@
             template="../templates/rosetta-portlet-groups.pt"/>
     </browser:pages>
     <browser:page
-      for="canonical.launchpad.interfaces.IRosettaApplication"
+      for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
       facet="translations"
       permission="zope.Public"
       class="lp.translations.browser.translations.TranslatableProductsView"

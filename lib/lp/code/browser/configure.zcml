@@ -126,14 +126,14 @@
         classes="
             BranchRefNavigation"/>
     <browser:url
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         path_expression="string:+code"
         parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         name="+index"/>
     <browser:pages
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
         facet="branches">

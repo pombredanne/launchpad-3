@@ -1724,7 +1724,7 @@
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
         path_expression="string:series"
-        parent_utility="canonical.launchpad.interfaces.IBazaarApplication"/>
+        parent_utility="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
     <browser:menus
         classes="
             ProductSeriesFacets

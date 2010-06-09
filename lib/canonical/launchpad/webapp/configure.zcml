@@ -680,7 +680,7 @@
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IFeedsApplication"
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
