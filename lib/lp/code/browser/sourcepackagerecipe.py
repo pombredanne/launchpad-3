@@ -30,7 +30,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,

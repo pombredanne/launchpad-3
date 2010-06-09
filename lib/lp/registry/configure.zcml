@@ -272,9 +272,9 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.faqcollection.IFAQCollection"/>
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
-            interface="canonical.launchpad.interfaces.questioncollection.IQuestionCollection"/>
+            interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
             interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
         <require

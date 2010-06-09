@@ -475,7 +475,7 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.specification.ISpecification"
+        for="lp.blueprints.interfaces.specification.ISpecification"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
         name="fmt"

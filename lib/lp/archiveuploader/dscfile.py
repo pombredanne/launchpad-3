@@ -34,7 +34,7 @@ from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.buildmaster.interfaces.buildbase import BuildStatus
 from lp.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
 from lp.archiveuploader.tagfiles import (
