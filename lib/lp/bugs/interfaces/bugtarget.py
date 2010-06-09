@@ -76,6 +76,7 @@ class IHasBugs(Interface):
         bug_supervisor=Reference(schema=Interface),
         bug_commenter=Reference(schema=Interface),
         bug_subscriber=Reference(schema=Interface),
+        structural_subscriber=Reference(schema=Interface),
         owner=Reference(schema=Interface),
         affected_user=Reference(schema=Interface),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
@@ -184,7 +185,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False, linked_branches=None):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    structural_subscriber=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
@@ -234,6 +236,16 @@ class IBugTarget(IHasBugs):
             description=(
                 u"These guidelines will be shown to "
                 "anyone reporting a bug."),
+            required=False,
+            max_length=50000))
+
+    bug_reported_acknowledgement = exported(
+        Text(
+            title=(
+                u"After reporting a bug, I can expect the following."),
+            description=(
+                u"This message of acknowledgement will be displayed "
+                "to anyone after reporting a bug."),
             required=False,
             max_length=50000))
 

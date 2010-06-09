@@ -9,7 +9,8 @@ Source packages can be obtained from the context of a distribution.
     ...     name='mozilla-firefox').jsonBody()
 
     >>> print pretty(mozilla_firefox)
-    {u'bug_reporting_guidelines': None,
+    {u'bug_reported_acknowledgement': None,
+     u'bug_reporting_guidelines': None,
      u'display_name': u'mozilla-firefox in debian',
      u'distribution_link': u'http://.../debian',
      u'http_etag': u'...',

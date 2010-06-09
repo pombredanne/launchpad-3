@@ -24,7 +24,7 @@ to private or a private branch to public in certain circumstances.
 Branches with no visibility policy
 ----------------------------------
 
-If there is no policy set, then the user is not able to change the visiblity
+If there is no policy set, then the user is not able to change the visibility
 of the branch.
 
     >>> browser = setupBrowser(auth='Basic eric@example.com:test')

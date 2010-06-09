@@ -24,6 +24,7 @@ import xmlrpclib
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol)
+from storm.expr import Count, Sum
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -36,7 +37,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, SLAVE_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import BuildStatus
@@ -693,7 +694,7 @@ class BuilderSet(object):
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
 
-    def getBuildQueueSizeForProcessor(self, processor, virtualized=False):
+    def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.archive import Archive
@@ -702,33 +703,33 @@ class BuilderSet(object):
             DistroArchSeries)
         from lp.soyuz.model.processor import Processor
 
-        store = Store.of(processor)
-        origin = (
-            Archive,
-            BinaryPackageBuild,
-            PackageBuild,
-            BuildFarmJob,
-            BuildPackageJob,
-            BuildQueue,
-            DistroArchSeries,
+        find_spec = (
+            Count(),
+            Sum(BuildQueue.estimated_duration),
             Processor,
+            Archive.require_virtualized,
             )
-        queue = store.using(*origin).find(
-            BuildQueue,
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        results = store.find(
+            find_spec,
             BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == BinaryPackageBuild.id,
-            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == Archive.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
+            PackageBuild.archive == Archive.id,
+            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
             BuildFarmJob.status == BuildStatus.NEEDSBUILD,
-            Archive._enabled == True,
-            Processor.id == processor.id,
-            Archive.require_virtualized == virtualized,
-            )
+            Archive._enabled == True).group_by(
+                Processor, Archive.require_virtualized)
 
-        return (queue.count(), queue.sum(BuildQueue.estimated_duration))
+        result_dict = {'virt': {}, 'nonvirt': {}}
+        for size, duration, processor, virtualized in results:
+            virt_str = 'virt' if virtualized else 'nonvirt'
+            result_dict[virt_str][processor.name] = (
+                size, duration)
+
+        return result_dict
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
