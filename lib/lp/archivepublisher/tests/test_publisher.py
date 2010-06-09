@@ -18,6 +18,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.zeca.ftests.harness import ZecaTestSetup
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.publishing import Publisher, getPublisher
@@ -37,7 +38,6 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey)
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
 class TestPublisherBase(TestNativePublishingBase):
@@ -436,6 +436,19 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(1, pending_archives.count())
         pending_archive = pending_archives[0]
         self.assertEqual(spiv.archive.id, pending_archive.id)
+
+    def testDeletingArchive(self):
+        # IArchiveSet.getPendingPPAs should return archives that have a
+        # status of DELETING.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+
+        archive = self.factory.makeArchive()
+        old_num_pending_archives = ubuntu.getPendingPublicationPPAs().count()
+        archive.status = ArchiveStatus.DELETING
+        new_num_pending_archives = ubuntu.getPendingPublicationPPAs().count()
+        self.assertEqual(
+            1 + old_num_pending_archives, new_num_pending_archives)
+
 
     def _checkCompressedFile(self, archive_publisher, compressed_file_path,
                              uncompressed_file_path):

@@ -75,7 +75,7 @@ from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
+    ArchivePurpose, ArchiveStatus, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -1345,7 +1345,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
             orderBy=['archive.id'], distinct=True)
 
-        return src_archives.union(bin_archives)
+        deleting_archives = Archive.selectBy(
+            status=ArchiveStatus.DELETING).orderBy(['archive.id'])
+
+        return src_archives.union(bin_archives).union(deleting_archives)
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""

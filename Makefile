@@ -1,8 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.5
-PYTHON=python${PYTHON_VERSION}
+PYTHON=python
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -88,18 +87,6 @@ check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-
-# A version of 'make check' that applies modifications specifically for the
-# ec2 environment.
-ec2_check: clean build
-        # XXX mars 2010-05-17 bug=570380
-        # Disable the windmill test suite to prevent the whole system from
-        # hanging.  See bug 570380.
-        #
-        # Yes, this is code duplication.  If you conceive of a better
-        # solution in a less heated moment, then please replace this!
-	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
-		--layer='!\(MailmanLayer\|WindmillLayer\)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -215,7 +202,7 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 
 compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
-	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
