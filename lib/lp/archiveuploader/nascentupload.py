@@ -27,7 +27,6 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.archiveuploader.changesfile import ChangesFile
@@ -37,6 +36,7 @@ from lp.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 

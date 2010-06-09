@@ -172,7 +172,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         We refetch any parameters from different stores from the
         correct master Store.
         """
-        from canonical.launchpad.interfaces.lpstore import IMasterStore
+        from canonical.launchpad.interfaces.lpstorm import IMasterStore
         store = IMasterStore(self.__class__)
 
         # The constructor will fail if objects from a different Store
@@ -205,7 +205,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     @classmethod
     def _get_store(cls):
-        from canonical.launchpad.interfaces.lpstore import IStore
+        from canonical.launchpad.interfaces.lpstorm import IStore
         return IStore(cls)
 
     def __repr__(self):
@@ -215,7 +215,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
     def destroySelf(self):
-        from canonical.launchpad.interfaces.lpstore import IMasterObject
+        from canonical.launchpad.interfaces.lpstorm import IMasterObject
         my_master = IMasterObject(self)
         if self is my_master:
             super(SQLBase, self).destroySelf()

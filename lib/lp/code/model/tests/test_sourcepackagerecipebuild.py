@@ -18,7 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.buildmaster.interfaces.buildbase import BuildStatus, IBuildBase
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue

@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
 
-from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication

@@ -36,9 +36,8 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.cve import ICveSet
 from canonical.launchpad.interfaces.mail import (
     IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-    IBugTaskEditEmailCommand, EmailProcessingError, BugTargetNotFound, 
-    UserCannotUnsubscribePerson)
-
+    IBugTaskEditEmailCommand, EmailProcessingError, BugTargetNotFound)
+from lp.app.errors import UserCannotUnsubscribePerson
 
 from canonical.launchpad.mail.helpers import (
     get_error_message, get_person_or_team)

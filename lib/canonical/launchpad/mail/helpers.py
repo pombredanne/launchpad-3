@@ -8,7 +8,7 @@ import re
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.structuralsubscriptions import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from lp.bugs.interfaces.bugtask import (
     IDistroBugTask, IDistroSeriesBugTask, IUpstreamBugTask)

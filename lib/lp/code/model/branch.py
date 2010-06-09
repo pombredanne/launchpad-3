@@ -885,7 +885,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        from canonical.launchpad.interfaces.lpstore import IStore
+        from canonical.launchpad.interfaces.lpstorm import IStore
         IStore(self).find(
             Branch,
             Branch.id == self.id,

@@ -37,7 +37,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log as default_log
-from lp.registry.interfaces.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
