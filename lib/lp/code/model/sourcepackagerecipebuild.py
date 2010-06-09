@@ -17,7 +17,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.webapp import canonical_url
 
 from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
@@ -33,43 +32,16 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.code.mail.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildMailer)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
-from lp.services.mail.basemailer import BaseMailer, RecipientReason
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
-
-class SourcePackageRecipeBuildMailer(BaseMailer):
-
-    def __init__(self, build):
-        requester = build.requester
-        recipients = {requester: RecipientReason.forBuildRequester(requester)}
-        BaseMailer.__init__(
-            self, '%(status)s: %(recipe)s for %(distroseries)s',
-            'build-request.txt', recipients, 'from_address')
-        self.build = build
-
-    def _getTemplateParams(self, email):
-        params = super(
-            SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
-        params.update({
-            'status': str(self.build.buildstate),
-            'distroseries': self.build.distroseries.name,
-            'recipe': self.build.recipe.name,
-            'recipe_owner': self.build.recipe.owner.name,
-            'archive': self.build.archive.name,
-            'build_url': canonical_url(self.build),
-        })
-        return params
-
-    def _getFooter(self, params):
-        return ('%(build_url)s\n'
-                '%(reason)s\n' % params)
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
@@ -258,7 +230,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
-        mailer = SourcePackageRecipeBuildMailer(self)
+        mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
     def getFileByName(self, filename):
